@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "7 * * * 1-5"        # 平日每小時
     - cron: "7 */4 * * 0,6"      # 週末每 4 小時
+  push:                          # 推送新程式後立刻重建，不必等排程
+    branches: [main]
+    paths-ignore: ["**.md"]
   workflow_dispatch:
     inputs:
       no_ai:
