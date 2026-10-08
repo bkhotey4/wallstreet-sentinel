@@ -49,7 +49,8 @@ from wsb.data.options import parse_chain  # noqa: E402
 rng = np.random.default_rng(7)
 # the synthetic history ends on the last business day (a fixed end date made every component "stale" a week later)
 END = (pd.Timestamp.today().normalize() - pd.tseries.offsets.BDay(1)).normalize()
-idx = pd.bdate_range("2012-01-02", END)
+# fixed length (so the seeded random draws never change from day to day), always ending on the last business day
+idx = pd.bdate_range(end=END, periods=len(pd.bdate_range("2012-01-02", "2026-10-07")))
 n = len(idx)
 
 # market factor with two crash episodes

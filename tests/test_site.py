@@ -25,6 +25,20 @@ def main():
     out = Path("/tmp/wsb_site_test")
     p = asyncio.run(B.build(out, use_ai=False, engine=eng))
     page = p.read_text(encoding="utf-8")
+    # trading-desk layout: strip, hoverable charts, radar, bilingual labels, theme + language toggles
+    assert 'class="strip"' in page and 'id="c_ssi"' in page and 'id="c_radar"' in page and 'id="c_t0"' in page
+    assert 'id="langBtn"' in page and 'id="themeBtn"' in page and 'data-en="Systemic Stress Index"' in page
+    import json as _j, re as _re
+    cd = _j.loads(_re.search(r'<script type="application/json" id="chart-data">(.*?)</script>', page, _re.S).group(1))
+    assert "c_ssi" in cd and len(cd["c_ssi"]["x"]) == len(cd["c_ssi"]["v"]) > 100
+    # no position advice anywhere on the public page (playbook action list is not rendered)
+    assert "一般性行動框架" not in page
+    # AI commentary: advice lines are scrubbed, market description kept
+    txt = "**一句話結論**\n信用利差擴大，SSI 升溫。\n- 建議減碼半導體 20%\n- 避險比例提高到 15%\n- 關注週五非農"
+    clean = B.scrub_advice(txt)
+    assert "減碼" not in clean and "15%" not in clean and "非農" in clean and "信用利差" in clean
+    html2 = B.render(eng, clean, "test-llm")
+    assert "AI 市場評論" in html2 and "非農" in html2 and "<h4><b>一句話結論</b></h4>" in html2
     assert "系統性壓力指數" in page and "全球跨資產行情" in page and "衝擊雷達" in page and "風險劇本" in page
     assert "<script>alert" not in page and "&lt;script&gt;" in page, "untrusted headline must be escaped"
     assert 'href="javascript:' not in page, "non-http links must be neutralised"
