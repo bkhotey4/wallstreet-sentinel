@@ -1,0 +1,456 @@
+# =====================================================================
+#  WallStreet Sentinel — 全域設定檔
+#  所有「追蹤標的 / 權重 / 更新頻率 / 警報門檻 / 排程」都在這裡調整，
+#  程式碼裡不寫死任何市場數字。所有數值一律來自即時資料源。
+# =====================================================================
+
+timezone: Asia/Taipei
+
+# ---------- 更新頻率（秒） ----------
+refresh:
+  quotes: 120          # 全球即時報價（股/債/匯/商品/加密/波動率）
+  history_hours: 8     # 長期日線歷史重建（壓力指數/崩盤機率用）
+  fred: 3600           # 聯準會 FRED 總經/信用/流動性
+  crypto: 300
+  news: 300
+  options_gamma: 900   # CBOE SPX 選擇權 gamma
+  sec: 1800            # SEC EDGAR 持股公告
+  calendar: 21600
+
+history_years: 20      # 用多長歷史做動態基準（z-score、崩盤機率回測）
+
+# ---------- 全球監控宇宙（Yahoo Finance 代號） ----------
+universe:
+  us_equity:
+    "^GSPC": 標普500
+    "^NDX": 那斯達克100
+    "^DJI": 道瓊
+    "^RUT": 羅素2000
+    "ES=F": 標普期貨
+    "NQ=F": 那指期貨
+    "QQQ": 那斯達克100 ETF
+    "RSP": 標普等權重
+    "SMH": 半導體ETF
+    "^SOX": 費城半導體
+  volatility:
+    "^VIX": VIX
+    "^VIX9D": VIX 9日
+    "^VIX3M": VIX 3個月
+    "^VVIX": VVIX(波動率的波動率)
+    "^MOVE": MOVE美債波動率
+    "^SKEW": SKEW尾部風險
+  europe:
+    "^STOXX50E": 歐洲斯托克50
+    "^GDAXI": 德國DAX
+    "^FTSE": 英國富時100
+    "^FCHI": 法國CAC40
+    "EUFN": 歐洲金融股
+  asia:
+    "^N225": 日經225
+    "^HSI": 恆生指數
+    "000001.SS": 上證綜指
+    "^KS11": 韓國KOSPI
+    "^TWII": 台灣加權
+    "^BSESN": 印度Sensex
+    "^AXJO": 澳洲ASX200
+    "KWEB": 中概網路
+    "EWT": 台灣ETF(美股盤)
+    "2330.TW": 台積電(台股)
+  emerging:
+    "EEM": 新興市場
+    "EMB": 新興市場美元債
+    "^BVSP": 巴西Bovespa
+  rates:
+    "^IRX": 美債3個月
+    "^FVX": 美債5年
+    "^TNX": 美債10年
+    "^TYX": 美債30年
+    "TLT": 長債ETF
+    "IEF": 7-10年美債
+    "SHY": 1-3年美債
+  credit:
+    "HYG": 高收益債
+    "JNK": 垃圾債
+    "LQD": 投資級債
+    "BKLN": 槓桿貸款
+    "BIZD": 私募信貸BDC
+    "KRE": 區域銀行
+    "XLF": 金融股
+    "BX": 黑石
+    "APO": 阿波羅
+    "ARES": Ares
+  fx:
+    "DX-Y.NYB": 美元指數
+    "EURUSD=X": 歐元/美元
+    "JPY=X": 美元/日圓
+    "CNY=X": 美元/人民幣
+    "KRW=X": 美元/韓元
+    "TWD=X": 美元/台幣
+    "AUDJPY=X": 澳幣/日圓(風險偏好)
+    "CHF=X": 美元/瑞郎
+    "MXN=X": 美元/披索
+  commodities:
+    "CL=F": WTI原油
+    "BZ=F": 布蘭特原油
+    "NG=F": 天然氣
+    "GC=F": 黃金
+    "SI=F": 白銀
+    "HG=F": 銅
+    "DBC": 商品指數
+  crypto:
+    "BTC-USD": 比特幣
+    "ETH-USD": 以太幣
+    "SOL-USD": Solana
+  sectors:
+    "XLK": 科技
+    "XLC": 通訊
+    "XLY": 非必需消費
+    "XLP": 必需消費
+    "XLE": 能源
+    "XLV": 醫療
+    "XLI": 工業
+    "XLU": 公用事業
+    "XLB": 原物料
+    "XLRE": 不動產
+    "IGV": 軟體
+    "IWM": 小型股
+    "MTUM": 動能因子
+    "USMV": 低波動因子
+
+# ---------- FRED 總經 / 信用 / 流動性序列 ----------
+fred_series:
+  BAMLH0A0HYM2: 高收益債利差 OAS
+  BAMLC0A0CM: 投資級利差 OAS
+  BAMLH0A3HYC: CCC級利差
+  T10Y3M: 10年-3個月利差
+  T10Y2Y: 10年-2年利差
+  DGS2: 2年期殖利率
+  DGS10: 10年期殖利率
+  DFII10: 10年實質利率
+  T10YIE: 10年通膨預期
+  NFCI: 芝加哥金融狀況指數
+  STLFSI4: 聖路易金融壓力指數
+  WALCL: 聯準會資產負債表
+  WTREGEN: 財政部TGA帳戶
+  RRPONTSYD: 逆回購 RRP
+  WRESBAL: 銀行準備金
+  SOFR: SOFR
+  ICSA: 初領失業金
+  UNRATE: 失業率
+  SAHMREALTIME: 薩姆衰退指標
+  CPIAUCSL: CPI
+  DTWEXBGS: 廣義美元指數
+  IRLTLT01JPM156N: 日本10年期公債(月)
+  IRLTLT01DEM156N: 德國10年期公債(月)
+
+# ---------- 系統性壓力指數 (SSI) 組成 ----------
+# kind:
+#   level        -> 取序列值本身
+#   ret:N        -> N日報酬
+#   rel:N:BENCH  -> 相對 BENCH 的 N日超額報酬
+#   ratio:B      -> 與 B 的比值
+#   diff:N       -> N日差值
+#   dist_ma:N    -> 偏離 N日均線
+#   corr:N       -> sectors 平均相關係數 (N日)
+#   netliq:N     -> 聯準會淨流動性 N日變化
+# direction: +1 越高越危險, -1 越低越危險
+# 每項都用「自身滾動歷史」算 z-score → 百分位，不設死門檻
+stress_components:
+  - {id: hy_oas,      block: 信用,      src: fred, series: BAMLH0A0HYM2, kind: level,        direction: 1,  weight: 1.5}
+  - {id: ccc_oas,     block: 信用,      src: fred, series: BAMLH0A3HYC,  kind: level,        direction: 1,  weight: 1.0}
+  - {id: hyg_ief,     block: 信用,      src: px,   series: HYG,  kind: "rel:20:IEF",          direction: -1, weight: 1.2}
+  - {id: bizd,        block: 私募信貸,  src: px,   series: BIZD, kind: "rel:20:SPY",          direction: -1, weight: 0.8}
+  - {id: kre,         block: 信用,      src: px,   series: KRE,  kind: "rel:20:SPY",          direction: -1, weight: 1.0}
+  - {id: vix_term,    block: 波動率,    src: px,   series: "^VIX", kind: "ratio:^VIX3M",      direction: 1,  weight: 1.5}
+  - {id: vix_level,   block: 波動率,    src: px,   series: "^VIX", kind: level,               direction: 1,  weight: 1.0}
+  - {id: vvix,        block: 波動率,    src: px,   series: "^VVIX", kind: level,              direction: 1,  weight: 0.6}
+  - {id: move,        block: 波動率,    src: px,   series: "^MOVE", kind: level,              direction: 1,  weight: 1.0}
+  - {id: nfci,        block: 流動性,    src: fred, series: NFCI,    kind: level,             direction: 1,  weight: 1.0}
+  - {id: stlfsi,      block: 流動性,    src: fred, series: STLFSI4, kind: level,             direction: 1,  weight: 1.0}
+  - {id: net_liq,     block: 流動性,    src: fred, series: WALCL,   kind: "netliq:63",       direction: -1, weight: 0.8}
+  - {id: us2y_drop,   block: 利率,      src: fred, series: DGS2,    kind: "diff:20",         direction: -1, weight: 0.8}
+  - {id: curve_steep, block: 利率,      src: fred, series: T10Y3M,  kind: "diff:63",         direction: 1,  weight: 0.6}
+  - {id: dxy,         block: 匯率套息,  src: px,   series: "DX-Y.NYB", kind: "ret:20",       direction: 1,  weight: 0.8}
+  - {id: yen_carry,   block: 匯率套息,  src: px,   series: "JPY=X",    kind: "ret:10",       direction: -1, weight: 1.0}
+  - {id: audjpy,      block: 匯率套息,  src: px,   series: "AUDJPY=X", kind: "ret:10",       direction: -1, weight: 0.8}
+  - {id: cnh,         block: 匯率套息,  src: px,   series: "CNY=X",    kind: "ret:20",       direction: 1,  weight: 0.5}
+  - {id: spx_trend,   block: 股市結構,  src: px,   series: "^GSPC", kind: "dist_ma:200",      direction: -1, weight: 1.0}
+  - {id: breadth,     block: 股市結構,  src: px,   series: RSP,     kind: "rel:60:SPY",       direction: -1, weight: 0.5}
+  - {id: correlation, block: 股市結構,  src: px,   series: sectors, kind: "corr:20",          direction: 1,  weight: 0.8}
+  - {id: em_debt,     block: 全球新興,  src: px,   series: EMB,     kind: "rel:20:IEF",       direction: -1, weight: 0.7}
+  - {id: eu_banks,    block: 全球新興,  src: px,   series: EUFN,    kind: "rel:20:SPY",       direction: -1, weight: 0.6}
+  - {id: copper_gold, block: 全球新興,  src: px,   series: "HG=F",  kind: "rel:60:GC=F",      direction: -1, weight: 0.6}
+  - {id: oil_shock,   block: 商品加密,  src: px,   series: "BZ=F",  kind: "ret:20",           direction: 1,  weight: 0.5}
+  - {id: btc,         block: 商品加密,  src: px,   series: "BTC-USD", kind: "ret:20",         direction: -1, weight: 0.4}
+  # ---- 2026/09/30 新增：信用廣度、實質利率、景氣/就業、私募信貸、AI 龍頭、亞洲匯率、避險需求 ----
+  - {id: ig_oas,      block: 信用,      src: fred, series: BAMLC0A0CM,  kind: level,         direction: 1,  weight: 0.8}
+  - {id: loans,       block: 私募信貸,  src: px,   series: BKLN, kind: "rel:20:IEF",          direction: -1, weight: 0.6}
+  - {id: alt_bx,      block: 私募信貸,  src: px,   series: BX,   kind: "rel:20:SPY",          direction: -1, weight: 0.35}
+  - {id: alt_apo,     block: 私募信貸,  src: px,   series: APO,  kind: "rel:20:SPY",          direction: -1, weight: 0.35}
+  - {id: alt_ares,    block: 私募信貸,  src: px,   series: ARES, kind: "rel:20:SPY",          direction: -1, weight: 0.35}
+  - {id: real_yield,  block: 利率,      src: fred, series: DFII10,  kind: "diff:63",         direction: 1,  weight: 0.7}
+  - {id: long_bond,   block: 利率,      src: px,   series: "^TYX",  kind: "diff:20",         direction: 1,  weight: 0.5}
+  - {id: reserves,    block: 流動性,    src: fred, series: WRESBAL, kind: "diff:63",         direction: -1, weight: 0.5}
+  - {id: claims,      block: 景氣就業,  src: fred, series: ICSA,    kind: "ret:63",          direction: 1,  weight: 0.8}
+  - {id: sahm,        block: 景氣就業,  src: fred, series: SAHMREALTIME, kind: level,        direction: 1,  weight: 0.8}
+  - {id: small_caps,  block: 景氣就業,  src: px,   series: IWM,     kind: "rel:60:SPY",       direction: -1, weight: 0.5}
+  - {id: vix_short,   block: 波動率,    src: px,   series: "^VIX9D", kind: "ratio:^VIX",      direction: 1,  weight: 0.6}
+  - {id: spx_rvol,    block: 波動率,    src: px,   series: "^GSPC", kind: "rvol:20",          direction: 1,  weight: 0.6}
+  - {id: ai_leaders,  block: 股市結構,  src: px,   series: SMH,     kind: "rel:20:SPY",       direction: -1, weight: 0.6}
+  - {id: krw,         block: 全球新興,  src: px,   series: "KRW=X", kind: "ret:20",           direction: 1,  weight: 0.5}
+  - {id: gold_bid,    block: 商品加密,  src: px,   series: "GC=F",  kind: "rel:20:^GSPC",     direction: 1,  weight: 0.4}
+
+stress_zscore_window: 756   # 3年滾動基準
+stress_zscore_min: 252
+
+stress_levels:              # 綜合分數 0-100 標籤
+  - {max: 35,  label: 平靜,   emoji: "🟢"}
+  - {max: 55,  label: 正常,   emoji: "🟡"}
+  - {max: 70,  label: 升溫,   emoji: "🟠"}
+  - {max: 85,  label: 高壓,   emoji: "🔴"}
+  - {max: 101, label: 極端,   emoji: "🚨"}
+
+# ---------- 崩盤機率（經驗回測） ----------
+crash_odds:
+  benchmark: "^GSPC"
+  horizons:
+    - {days: 21, drawdown: 0.05}
+    - {days: 63, drawdown: 0.10}
+    - {days: 126, drawdown: 0.20}
+  buckets: [0, 35, 55, 70, 85, 101]
+  momentum:                     # 升溫速度層：SSI 20 日變化對自身歷史的百分位（動態門檻）
+    lookback: 20
+    rising_pctile: 80           # 20 日變化高於歷史 80 百分位 → 升溫
+    falling_pctile: 20          # 低於 20 百分位 → 降溫
+    prior_windows: 4            # 樣本少時向「只看水準」的機率收斂的強度
+
+# ---------- 歷史壓力情境（實際歷史價格重播） ----------
+stress_scenarios:
+  - {name: 2008 雷曼倒閉,     start: "2008-09-12", end: "2008-10-10"}
+  - {name: 2011 美債降評,     start: "2011-07-22", end: "2011-08-08"}
+  - {name: 2018 Volmageddon,  start: "2018-01-26", end: "2018-02-08"}
+  - {name: 2020 疫情崩盤,     start: "2020-02-19", end: "2020-03-23"}
+  - {name: 2022 暴力升息,     start: "2022-01-03", end: "2022-06-16"}
+  - {name: 2023 矽谷銀行,     start: "2023-03-08", end: "2023-03-13"}
+  - {name: 2024 日圓套息拆倉, start: "2024-07-10", end: "2024-08-05"}
+  - {name: 2025 關稅衝擊,     start: "2025-04-02", end: "2025-04-08"}
+
+# ---------- 持倉 ----------
+portfolio:
+  # 情報站模式：enabled=false 時完全不讀取、不分析任何持倉（持倉分析／X 光／停損／集中度皆自動停用）
+  # 要恢復個人持倉分析：改成 true 並填入下列檔案路徑（支援 sim_trading.json 或 portfolio_holdings.json）
+  enabled: false
+  file: ""
+  fallback_file: ""
+  account_id_env: PRIMARY_PORTFOLIO_USER_ID
+  benchmark: SPY
+  var_lookback_days: 504
+
+# ---------- 警報規則 ----------
+alerts:
+  cooldown_minutes: 240
+  stress_level_cross: true         # 壓力等級往上跨級
+  stress_jump_points: 8            # 綜合分數單日跳升 N 點
+  sigma_move: 3.0                  # 任一監控標的單日漲跌超過自身 N 倍標準差
+  sigma_move_key_only: false       # true=只看 key_assets
+  key_assets: ["^GSPC", "^NDX", "^VIX", "^TNX", "HYG", "JPY=X", "DX-Y.NYB", "BTC-USD", "GC=F", "BZ=F", "^N225", "^TWII", "^HSI", "KRE"]
+  vix_backwardation: true          # VIX > VIX3M 期限結構倒掛
+  news_score: 8                    # 新聞風險分數 >= N 即推播
+  portfolio_drawdown_pct: 3.0      # 持倉單日跌幅 >= N%
+  gamma_flip: true                 # SPX 跌破零 gamma 翻轉點
+
+# ---------- 自我監控：資料健康 + 持倉集中度 ----------
+health:
+  min_coverage: 0.90          # 壓力指數資料涵蓋率低於此值 → 私訊
+  grace_minutes: 15           # 重啟後多久才開始檢查資料源
+  core_sources: [yahoo_quotes, yahoo_history, fred, cboe_spx]
+concentration:
+  max_weight_pct: 25          # 單一部位權重上限
+  max_risk_contrib_pct: 30    # 單一部位風險貢獻上限
+  max_beta: 1.5               # 整體對標普 β 上限
+  themes:                     # 主題合計權重上限（同一主題的股票常同漲同跌；可依自己的需求增減）
+    半導體:
+      max_weight_pct: 40
+      tickers: [NVDA, TSM, AVGO, AMD, ASML, MU, AMAT, LRCX, KLAC, QCOM, INTC, TXN, ADI, MRVL, ARM, SMH, SOXX, 2330.TW]
+    大型科技:
+      max_weight_pct: 50
+      tickers: [AAPL, MSFT, GOOGL, GOOG, AMZN, META, NVDA, AVGO, TSLA]
+
+# ---------- 衝擊雷達（下一次金融衝擊會從哪裡點火） ----------
+shock:
+  divergence_threshold: 15       # 信用/利率/流動性壓力 − 股市隱含恐慌 ≥ N 分 → 背離警示
+  credit_blocks: [信用, 私募信貸, 利率, 流動性, 全球新興]
+  equity_blocks: [波動率, 股市結構]
+  quality_refresh_hours: 6       # 準確度回測的重算間隔
+
+# ---------- 避險計算器 ----------
+hedge:
+  target_dte: [45, 90]      # 挑最接近的到期日（天）
+  otm_pct: [0, 5, 10]       # 價外幅度 %
+  shocks_pct: [10, 20]      # 情境：大盤跌幅 %
+
+# ---------- 警報成績單 ----------
+scorecard:
+  horizons:
+    - {days: 5,  drawdown: 0.02}
+    - {days: 20, drawdown: 0.04}
+
+# ---------- 華爾街財報季 / 晨會 ----------
+street:
+  min_mcap_bn: 50          # 市值 ≥ 500 億美元才列入「重要財報」
+  per_day: 8
+  weekly_board: {weekday: 0, time: "08:05"}   # 每週一 08:05 私訊財報季看板
+  watchlist: [AAPL, MSFT, NVDA, GOOGL, AMZN, META, AVGO, TSM, TSLA, AMD, ASML, NFLX,
+              JPM, GS, MS, BAC, WFC, V, MA, LLY, UNH, XOM, WMT, COST]
+
+# ---------- 台灣市場 ----------
+taiwan:
+  refresh_seconds: 7200
+  watch_stocks: ["2330", "2317", "2454", "2308", "3711", "2382", "3231", "6669", "2303", "2881"]
+  revenue_watch: ["2330", "2454", "2317", "2308", "3711", "2382", "3231", "6669", "2303"]
+
+# ---------- 可靠性 ----------
+backup:
+  keep: 7                 # 每日備份 sentinel.db 到 data_cache/backups，保留最近幾份
+
+web:
+  enabled: true           # true → 只在本機 http://127.0.0.1:8787 開唯讀儀表板（不對外）
+  port: 8787
+
+# ---------- 呈現方式 ----------
+display:
+  mode: slides            # slides=投影片大字圖卡 / classic=傳統 Discord 卡片（也可用 /style 切換）
+
+# ---------- 推播目的地 ----------
+# 頻道用 /setchannel 設定；私訊收件人用 /dmme 設定（或 .env 的 OWNER_USER_ID）
+# 沒設定任何頻道時，一律改發私訊
+delivery:
+  dm_briefings: true      # 定時簡報也私訊給我
+  dm_alerts: all          # all=全部警報私訊 / critical=只有緊急 / none=不私訊
+
+# ---------- 定時簡報（台北時間） ----------
+briefings:
+  - {time: "07:30", kind: morning_recap, title: 華爾街晨會｜美股收盤回顧, weekdays: [1,2,3,4,5]}
+  - {time: "08:40", kind: taiwan,    title: 台股開盤前籌碼情報, weekdays: [0,1,2,3,4]}
+  - {time: "15:30", kind: europe,    title: 歐洲開盤風險掃描, weekdays: [0,1,2,3,4]}
+  - {time: "21:00", kind: morning_call, title: 華爾街晨會｜美股開盤前, weekdays: [0,1,2,3,4]}
+  - {time: "10:00", kind: weekend,   title: 週末全球風險與加密情報, weekdays: [5,6]}
+# weekdays: 0=週一 ... 6=週日（台北時間）
+
+# ---------- 新聞來源 ----------
+news_feeds:
+  - {name: CNBC,        url: "https://www.cnbc.com/id/100003114/device/rss/rss.html"}
+  - {name: CNBC Finance, url: "https://www.cnbc.com/id/10000664/device/rss/rss.html"}
+  - {name: MarketWatch, url: "https://feeds.content.dowjones.io/public/rss/mw_topstories"}
+  - {name: Bloomberg,   url: "https://feeds.bloomberg.com/markets/news.rss"}
+  - {name: Yahoo,       url: "https://finance.yahoo.com/news/rssindex"}
+  - {name: FT Markets,  url: "https://www.ft.com/markets?format=rss"}
+  - {name: Fed,         url: "https://www.federalreserve.gov/feeds/press_all.xml"}
+  - {name: ECB,         url: "https://www.ecb.europa.eu/rss/press.html"}
+  - {name: BOJ,         url: "https://www.boj.or.jp/en/rss/whatsnew.xml"}
+  - {name: CoinDesk,    url: "https://www.coindesk.com/arc/outboundfeeds/rss/"}
+  - {name: GNews 風險,  url: "https://news.google.com/rss/search?q=(credit+default+OR+liquidity+crisis+OR+bank+run+OR+margin+call+OR+contagion)+when:1d&hl=en-US&gl=US&ceid=US:en"}
+  - {name: GNews 地緣,  url: "https://news.google.com/rss/search?q=(sanctions+OR+missile+OR+invasion+OR+blockade+OR+Taiwan+Strait)+markets+when:1d&hl=en-US&gl=US&ceid=US:en"}
+  - {name: GNews 中文,  url: "https://news.google.com/rss/search?q=(美股+OR+央行+OR+違約+OR+崩盤+OR+台股)+when:1d&hl=zh-TW&gl=TW&ceid=TW:zh-Hant"}
+
+# 新聞風險關鍵字權重（英文不分大小寫）
+news_keywords:
+  default: 4
+  bankruptcy: 4
+  chapter 11: 4
+  bank run: 5
+  contagion: 4
+  liquidity crisis: 5
+  margin call: 4
+  downgrade: 3
+  emergency: 3
+  circuit breaker: 5
+  trading halt: 4
+  intervention: 3
+  sanctions: 2
+  missile: 3
+  invasion: 5
+  blockade: 5
+  taiwan strait: 4
+  tariff: 2
+  recession: 2
+  selloff: 2
+  sell-off: 2
+  plunge: 2
+  crash: 3
+  rate cut: 1
+  rate hike: 2
+  inflation: 1
+  private credit: 3
+  redemption: 2
+  gated: 3
+  writedown: 3
+  hedge fund: 1
+  yen: 1
+  boj: 2
+  treasury auction: 2
+  違約: 4
+  崩盤: 3
+  暴跌: 2
+  央行: 1
+  制裁: 2
+  台海: 4
+  熔斷: 5
+
+# ---------- 經濟行事曆（FRED 發布名稱關鍵字） ----------
+calendar_releases:
+  - Consumer Price Index
+  - Employment Situation
+  - Gross Domestic Product
+  - Personal Income and Outlays
+  - Producer Price Index
+  - Advance Monthly Sales for Retail
+  - Job Openings and Labor Turnover
+  - Unemployment Insurance Weekly Claims
+  - H.4.1
+
+# ---------- 風險劇本 / 避險失靈偵測 ----------
+playbook:
+  equity: "^GSPC"
+  bond: TLT
+  gold: "GC=F"
+  corr_window: 60            # 股債相關係數窗口（交易日）
+  stock_bond_corr: 0.30      # 相關係數 ≥ 此值 → 債券失去避險功能
+  double_kill_days: 3        # 近 20 日『股債雙殺』天數門檻
+  haven_fail_pct: 50         # 股票跌≥1% 的日子裡，長債與黃金同跌的比例門檻（%）
+  alert_min_stage: 2         # 劇本階段升到此級以上才私訊
+
+# ---------- 特徵實驗室（新指標必須在走步驗證中真的提升準確度才會被採用） ----------
+lab:
+  min_auc_gain: 0.02          # 樣本外 AUC 至少提升多少才算數
+  min_years_improved: 0.6     # 且至少這個比例的年份都有進步（避免只靠少數年份）
+  max_features: 3             # 最多採用幾個新特徵（越少越不容易過擬合）
+
+# ---------- 每週復盤（取代獨立的成績單週報；成績單併入其中） ----------
+weekly_report: {weekday: 6, time: "20:00"}
+
+# ---------- 持倉 X 光 ----------
+xray:
+  cluster_corr: 0.70         # 相關係數 ≥ 此值的持股視為同一群（實際上是同一個押注）
+  stop_atr_mult: 3.0         # 波動停損線 = 22 日最高收盤 − N × 14 日平均波幅
+  vol_target_pct: 25         # 持倉年化波動目標（%）；市場越亂，建議縮減曝險
+  stop_alert_min_weight: 3   # 權重 ≥ 此值（%）的持股跌破停損線才警報
+
+# ---------- 情報融合（新聞情報 × 市場價格 × 總經象限） ----------
+intel:
+  weights: {量化: 0.5, 總經: 0.25, 情報: 0.25}   # 綜合風險的支柱權重（缺資料的支柱自動排除並重新正規化）
+  market_weight: 0.65          # 每條傳導路徑的融合分數：價格(衝擊雷達點火) 65% + 新聞熱度 35%
+  half_life_hours: 12          # 新聞衰減半衰期
+  baseline_days: 30            # 新聞熱度和自身多少天的歷史比較
+  min_baseline: 48             # 至少幾筆快照（每 30 分鐘一筆 → 約 1 天）才改用百分位
+  record_every_minutes: 30
+  warmup_heat_scale: 5         # 基準不足時，絕對熱度 → 0-100 的飽和尺度
+  news_warm_count: 5           # ≥5 則風險新聞至少算「溫」（不會被判成新聞安靜）
+  news_hot: 80                 # 新聞熱度 ≥80（且 ≥2 則）= 熱
+  news_warm: 60
+  confirm_bonus: 4             # 每條『確認』路徑加分（新聞與價格同時示警）
+  confirm_bonus_cap: 8
+  quadrant_edge_z: 0.3         # 成長/通膨 z 在 ±0.3 內 → 觀察清單提示象限可能轉換
+  alert_min_label: 高          # 綜合風險升到這一級才推播
+  alert_quadrant_change: true
+  # channels: 可覆寫各傳導路徑的關鍵字 {路徑名: {risk: [...], relief: [...]}}，路徑名需與衝擊雷達一致

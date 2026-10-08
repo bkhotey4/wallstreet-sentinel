@@ -1,0 +1,82 @@
+name: 更新情報站
+
+on:
+  schedule:
+    - cron: "7 * * * 1-5"        # 平日每小時
+    - cron: "7 */4 * * 0,6"      # 週末每 4 小時
+  workflow_dispatch:
+    inputs:
+      no_ai:
+        description: "跳過 AI 研判（省 API 額度）"
+        type: boolean
+        default: false
+
+concurrency:
+  group: intel-station
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-site.txt
+
+      - run: pip install -r requirements-site.txt
+
+      # 歷史價格快取：沒有它每次要重抓十幾年資料，會多花好幾分鐘
+      - name: 還原歷史價格快取
+        uses: actions/cache@v4
+        with:
+          path: data_cache/history_close.pkl
+          key: history-${{ github.run_id }}
+          restore-keys: history-
+
+      - name: 產生網站
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
+          python -m tools.build_site --out site $FLAG
+
+      - name: 確認輸出不含持倉
+        run: |
+          test -s site/index.html
+          ! grep -Eq "持倉總值|未實現|VaR99" site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # 公開倉庫連續 60 天沒有活動時，GitHub 會自動停用排程；每次執行順便重新啟用，避免悄悄停擺
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/update.yml/enable" || true

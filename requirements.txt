@@ -1,0 +1,11 @@
+discord.py>=2.4
+python-dotenv>=1.0
+PyYAML>=6.0
+aiohttp>=3.9
+feedparser>=6.0
+yfinance>=0.2.54
+pandas>=2.1
+numpy>=1.26
+anthropic>=0.40
+google-genai>=1.0
+Pillow>=10.0

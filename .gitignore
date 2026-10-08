@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+data_cache/
+site/
+*.db
+*.pkl
+*.log
+# 個人持倉檔：永遠不要提交
+portfolio_holdings.json
+sim_trading.json
+knowledge_base/
