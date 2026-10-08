@@ -14,15 +14,27 @@ import pandas as pd
 
 
 log = logging.getLogger(__name__)
-_FED_HOL = None
+_NYSE_HOL = None
 
 
 def _holidays():
-    global _FED_HOL
-    if _FED_HOL is None:
-        from pandas.tseries.holiday import USFederalHolidayCalendar
-        _FED_HOL = USFederalHolidayCalendar()
-    return _FED_HOL
+    """NYSE full-day closures (not the federal calendar: Good Friday closed; Columbus/Veterans Day open;
+    New Year's Day falling on a Saturday is NOT observed on the Friday before)."""
+    global _NYSE_HOL
+    if _NYSE_HOL is None:
+        from pandas.tseries.holiday import (AbstractHolidayCalendar, GoodFriday, Holiday, USLaborDay,
+                                            USMartinLutherKingJr, USMemorialDay, USPresidentsDay,
+                                            USThanksgivingDay, nearest_workday, sunday_to_monday)
+
+        class NYSECalendar(AbstractHolidayCalendar):
+            rules = [Holiday("NewYearsDay", month=1, day=1, observance=sunday_to_monday),
+                     USMartinLutherKingJr, USPresidentsDay, GoodFriday, USMemorialDay,
+                     Holiday("Juneteenth", month=6, day=19, start_date="2022-01-01", observance=nearest_workday),
+                     Holiday("IndependenceDay", month=7, day=4, observance=nearest_workday),
+                     USLaborDay, USThanksgivingDay,
+                     Holiday("Christmas", month=12, day=25, observance=nearest_workday)]
+        _NYSE_HOL = NYSECalendar()
+    return _NYSE_HOL
 
 
 def _is_holiday(d: date) -> bool:
@@ -31,7 +43,7 @@ def _is_holiday(d: date) -> bool:
 
 
 def prev_bday(d: date) -> date:
-    """Last trading-ish day on or before d (weekends and US federal holidays skipped)."""
+    """Last NYSE trading day on or before d (weekends and NYSE holidays skipped)."""
     while d.weekday() >= 5 or _is_holiday(d):
         d -= timedelta(days=1)
     return d
@@ -40,16 +52,15 @@ def prev_bday(d: date) -> date:
 def third_friday(year: int, month: int) -> date:
     d = date(year, month, 1)
     d += timedelta(days=(4 - d.weekday()) % 7)           # first Friday
-    return prev_bday(d + timedelta(days=14))             # holiday → the Thursday before (e.g. Juneteenth)
+    return prev_bday(d + timedelta(days=14))             # holiday → the Thursday before (e.g. Good Friday / Juneteenth)
 
 
 def vix_expiry(year: int, month: int) -> date:
-    """VIX options/futures settle on the Wednesday 30 days before the NEXT month's standard expiry."""
+    """CBOE rule: 30 calendar days before the NEXT month's standard SPX expiry (normally a Wednesday).
+    If that Friday is a holiday, count from the business day before it (→ a Tuesday). If the resulting
+    day is itself a holiday, settlement moves to the business day before."""
     ny, nm = (year + 1, 1) if month == 12 else (year, month + 1)
-    d = third_friday(ny, nm) - timedelta(days=30)
-    while d.weekday() != 2:                              # walk to the Wednesday
-        d -= timedelta(days=1)
-    return d
+    return prev_bday(third_friday(ny, nm) - timedelta(days=30))
 
 
 def month_end(year: int, month: int) -> date:

@@ -243,13 +243,27 @@ class Sentinel(commands.Bot):
                 Alert(f"sec:{f['url']}", "ℹ️ INFO", f"SEC：{f['ticker']} 提交 {f['form']}（{f['label']}）",
                       f"{f['date']} {f.get('desc') or ''}\n{f['url']}")
                 for f in fresh if f["form"] in important and not f.get("earnings")][:6])
-            for f in [x for x in fresh if x.get("earnings")][:3]:
+            pend = store.kv_get("earn_pending", []) or []                 # failed earlier → retried on later rounds
+            cands = {x["acc"]: x for x in pend + [x for x in fresh if x.get("earnings")]}
+            for f in list(cands.values())[:3]:
                 if store.kv_get(f"earn_done:{f['acc']}"):
                     continue
-                store.kv_set(f"earn_done:{f['acc']}", True)
-                txt = await ER.analyze_release(eng, f)
-                for t in await self._targets("briefings"):
-                    await P.deliver(t, text=txt, title=f"{f['ticker']} 財報快評")
+                tries = int(store.kv_get(f"earn_try:{f['acc']}", 0) or 0)
+                if tries >= 3:                                     # give up after 3 failed attempts (no endless retry)
+                    continue
+                store.kv_set(f"earn_try:{f['acc']}", tries + 1)
+                try:
+                    txt = await ER.analyze_release(eng, f)
+                    for t in await self._targets("briefings"):
+                        await P.deliver(t, text=txt, title=f"{f['ticker']} 財報快評")
+                    store.kv_set(f"earn_done:{f['acc']}", True)   # mark done only after it was analysed and sent
+                    pend = [x for x in pend if x.get("acc") != f["acc"]]
+                except Exception:  # noqa: BLE001
+                    log.exception("earnings analysis for %s failed (attempt %d/3)", f.get("ticker"), tries + 1)
+                    if all(x.get("acc") != f["acc"] for x in pend):
+                        pend.append({k: v for k, v in f.items() if isinstance(v, (str, int, float, bool, type(None)))})
+            pend = [x for x in pend if int(store.kv_get(f"earn_try:{x.get('acc')}", 0) or 0) < 3]
+            store.kv_set("earn_pending", pend[-10:])
 
         async def sec():
             await sec_process(await eng.sec.refresh([t for t in extra() if "." not in t]))
@@ -370,7 +384,13 @@ class Sentinel(commands.Bot):
                 store.palert_fire(aid)                 # only after the DM went out
                 log.info("price alert #%s fired for %s", aid, uid)
             except Exception as e:  # noqa: BLE001
-                log.warning("price alert DM failed: %s", e)
+                n = int(store.kv_get(f"palert_fail:{aid}", 0) or 0) + 1
+                store.kv_set(f"palert_fail:{aid}", n)
+                if n >= 10:                                   # DMs closed / user gone → stop retrying every 2 minutes
+                    store.palert_fire(aid)
+                    log.warning("price alert #%s disabled after %d failed DMs: %s", aid, n, e)
+                else:
+                    log.warning("price alert DM failed (%d/10): %s", n, e)
 
     async def _demo(self) -> None:
         eng = self.engine

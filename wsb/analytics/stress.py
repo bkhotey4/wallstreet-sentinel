@@ -61,6 +61,11 @@ def avg_pairwise_corr(prices: pd.DataFrame, window: int) -> pd.Series:
     return out.where(cnt >= 9)
 
 
+
+def _today() -> pd.Timestamp:
+    """Single clock for freshness checks (tests pin it so synthetic data never goes stale)."""
+    return pd.Timestamp.today().normalize()
+
 @dataclass
 class ComponentResult:
     id: str
@@ -87,6 +92,7 @@ class StressResult:
     chg_20d: Optional[float] = None
     pctile_all: Optional[float] = None
     coverage: float = 0.0
+    live_history: Optional[pd.Series] = field(default=None, repr=False)   # SSI of the currently-live inputs only
 
     def drivers(self, n: int = 6) -> List[ComponentResult]:
         valid = [c for c in self.components if c.score is not None]
@@ -134,8 +140,8 @@ class StressEngine:
             dates = [self.market.series(t).index.max() for t in SETTINGS.group("sectors") if not self.market.series(t).empty]
             return min(dates) if dates else None
         if kind.startswith("netliq:"):
-            nl = self.fred.net_liquidity()
-            return None if nl.empty else nl.index.max()
+            ds = [self.fred.get(x).index.max() for x in ("WALCL", "WTREGEN", "RRPONTSYD") if not self.fred.get(x).empty]
+            return min(ds) if len(ds) == 3 else None
         s = self.market.series(series) if src == "px" else self.fred.get(series)
         if not s.empty:
             dates.append(s.index.max())
@@ -211,7 +217,7 @@ class StressEngine:
             src_last = self.source_last_date(c)
             max_age = STALE_DAYS.get(c["series"], 7) if c["src"] == "fred" else (12 if str(c["kind"]).startswith("netliq") else 7)
             stale = last_valid is None or src_last is None or \
-                (pd.Timestamp.today().normalize() - pd.Timestamp(src_last).normalize()).days > max_age
+                (_today() - pd.Timestamp(src_last).normalize()).days > max_age
             scores[c["id"]] = sc
             weights[c["id"]] = float(c.get("weight", 1))
             blocks.setdefault(c["block"], []).append(c["id"])
@@ -276,4 +282,4 @@ class StressEngine:
             history=comp_hist, block_history=block_hist,
             chg_1d=chg(1), chg_5d=chg(5), chg_20d=chg(20),
             pctile_all=float((ref < cur).mean() * 100) if len(ref) else None,
-            coverage=wl / W.sum())
+            coverage=wl / W.sum(), live_history=live_hist if len(live_hist) > 20 else None)

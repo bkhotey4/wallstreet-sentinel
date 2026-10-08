@@ -19,6 +19,14 @@ log = logging.getLogger(__name__)
 _SYM = re.compile(r"^([A-Z]+W?)(\d{6})([CP])(\d{8})$")
 
 
+def _expiry(root: str, ymd: str) -> datetime:
+    """Settlement time in New York: SPX root (monthly, AM-settled) 09:30 ET, SPXW/others 16:00 ET — DST-correct."""
+    from zoneinfo import ZoneInfo
+    d = datetime.strptime(ymd, "%y%m%d")
+    hh, mm = (9, 30) if root == "SPX" else (16, 0)
+    return d.replace(hour=hh, minute=mm, tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
+
+
 def _bs_gamma(S: np.ndarray, K: np.ndarray, T: np.ndarray, iv: np.ndarray, r: float = 0.04) -> np.ndarray:
     with np.errstate(divide="ignore", invalid="ignore"):
         d1 = (np.log(S / K) + (r + 0.5 * iv ** 2) * T) / (iv * np.sqrt(T))
@@ -35,9 +43,9 @@ def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
         m = _SYM.match(o.get("option", ""))
         if not m:
             continue
-        exp = datetime.strptime(m.group(2), "%y%m%d").replace(tzinfo=timezone.utc, hour=20)
+        exp = _expiry(m.group(1), m.group(2))
         days = (exp - now).total_seconds() / 86400
-        if days < 0 or days > max_days:
+        if days <= 0 or days > max_days:           # settled contracts no longer carry gamma
             continue
         rows.append((m.group(3), int(m.group(4)) / 1000, max(days, 0.02) / 365,
                      float(o.get("iv") or 0), float(o.get("open_interest") or 0),
@@ -74,6 +82,14 @@ def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
         tot = np.array([ois[strikes == k].sum() for k in uniq])
         return float(uniq[np.argmax(tot)])
 
+    # net dealer gamma by strike (CBOE gamma at today's spot), ±8% around spot → the "Gamma radar" bar chart
+    g_now = np.where(gam > 0, gam, _bs_gamma(np.full_like(K, spot), K, T, np.where(iv > 0, iv, 0.2)))
+    contrib = sign * g_now * oi * 100 * spot * spot * 0.01 / 1e9
+    band = np.abs(K / spot - 1) <= 0.08
+    by_strike = []
+    if band.any():
+        ks = np.unique(K[band])
+        by_strike = [(float(k), float(contrib[band & (K == k)].sum())) for k in ks]
     pc_oi = oi[typ == "P"].sum() / max(oi[typ == "C"].sum(), 1)
     pc_vol = vol[typ == "P"].sum() / max(vol[typ == "C"].sum(), 1)
     return {
@@ -86,6 +102,9 @@ def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
         "put_call_oi": float(pc_oi),
         "put_call_volume": float(pc_vol),
         "contracts": len(rows),
+        "profile": [(float(x), float(y) / 1e9) for x, y in zip(grid, prof)],   # GEX (bn/1%) if SPX were at x
+        "by_strike": by_strike,
+        "asof": now.strftime("%Y-%m-%d %H:%M UTC"),
     }
 
 
@@ -124,7 +143,7 @@ def parse_quotes(js: Dict[str, Any]) -> Dict[str, Any]:
         m = _SYM.match(o.get("option", ""))
         if not m:
             continue
-        exp = datetime.strptime(m.group(2), "%y%m%d").replace(tzinfo=timezone.utc, hour=20)
+        exp = _expiry(m.group(1), m.group(2))
         dte = (exp - now).total_seconds() / 86400
         if dte < 0:
             continue

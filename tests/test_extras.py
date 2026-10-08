@@ -210,7 +210,56 @@ def test_stooq_and_backup_and_web():
     assert "51" in page and "&lt;b&gt;" in page and "<b>x</b>" not in page      # HTML-escaped
 
 
+def test_calendar_and_playbook_honesty():
+    from datetime import date as _d
+    from wsb.data import liquidity as L
+    assert L.third_friday(2030, 4) == _d(2030, 4, 18)          # Good Friday → Thursday
+    assert L.vix_expiry(2026, 5) == _d(2026, 5, 19)            # Juneteenth Friday → Tuesday expiry
+    assert L.vix_expiry(2030, 6) == _d(2030, 6, 18)            # Wednesday that is itself a holiday
+    assert L.vix_expiry(2026, 10) == _d(2026, 10, 21)          # normal Wednesday
+    assert L.month_end(2027, 12) == _d(2027, 12, 31)           # Sat New Year is not observed on Friday by NYSE
+    assert L.prev_bday(_d(2026, 10, 12)) == _d(2026, 10, 12)   # Columbus Day: NYSE open
+    from wsb.analytics import playbook as PB
+    levels = [{"max": 35, "label": "平靜"}, {"max": 55, "label": "正常"}, {"max": 70, "label": "升溫"}, {"max": 85, "label": "高壓"}, {"max": 101, "label": "極端"}]
+    r = PB.score(30.0, levels, {}, {}, {}, True)
+    assert r["stage"] == 0 and r["incomplete"] and set(r["missing"]) >= {"崩跌機率", "衝擊雷達", "避險有效性"}
+    r2 = PB.score(30.0, levels, {}, {}, {}, False)
+    assert "資料涵蓋率不足" in r2["missing"] and not r2["data_ok"]
+    from wsb.data.taiwan import TaiwanData
+    import asyncio
+    from wsb.data import taiwan as TW
+    async def fake(url, **kw):
+        return {"stat": "OK", "data": [["投信", "1", "1", "500000000"]]}       # 外資 row missing (format change)
+    old = TW.http.get
+    TW.http.get = fake
+    try:
+        assert asyncio.run(TaiwanData()._bfi82u(_d(2026, 10, 8))) is None    # skip the day, never a fake 0
+    finally:
+        TW.http.get = old
+
+
+def test_darkpool_and_gamma():
+    from wsb.data import darkpool as DP
+    txt = "Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume|Market\n20261008|AAPL|500|0|1000|B,Q,N\n20261008|ZZZ|1|0|2|Q\n20261008|SPY|300|0|1000|Q"
+    rows = DP.parse(txt, {"AAPL", "SPY"})
+    assert rows == {"AAPL": [500.0, 1000.0], "SPY": [300.0, 1000.0]}
+    syms = DP._cfg()["index_symbols"]
+    days = {f"2026-09-{d:02d}": {s: [400 + d, 1000] for s in syms} | {"SPY": [350, 1000]} for d in range(1, 29)}
+    r = DP.compute(days)
+    assert r["available"] and abs(r["dpi"] - 42.8) < 1e-6 and r["pctile"] is not None and r["etf"]["SPY"] == 35.0
+    assert DP.compute({"2026-09-01": {"AAPL": [1, 2]}})["available"] is False      # too few names → no fake index
+    from wsb.data.options import parse_chain
+    opts = []
+    for k in range(5600, 6401, 50):
+        for typ in ("C", "P"):
+            opts.append({"option": f"SPXW261120{typ}{k * 1000:08d}", "iv": 0.18, "open_interest": 1000, "volume": 10, "gamma": 0.001})
+    r = parse_chain({"data": {"current_price": 6000, "options": opts}}, max_days=400)
+    assert r["profile"] and r["by_strike"] and all(abs(k / 6000 - 1) <= 0.08 for k, _ in r["by_strike"])
+
+
 def main():
+    test_darkpool_and_gamma()
+    test_calendar_and_playbook_honesty()
     test_margin_parse()
     test_stooq_and_backup_and_web()
     test_fomc()

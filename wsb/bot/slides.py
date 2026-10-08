@@ -1060,7 +1060,7 @@ def deck_taiwan(engine, title: str = "台股籌碼情報") -> List[bytes]:
              (fmt(r["total"], 1, sign=True), pn(r["total"]))] for r in tw.flows]
     s = Slide("三大法人現貨買賣超（近 5 日，億元）", f"2/{total}")
     if rows:
-        tot = [("合計", YELLOW)] + [(fmt(sum(r[k] for r in tw.flows), 1, sign=True), pn(sum(r[k] for r in tw.flows)))
+        tot = [("合計", YELLOW)] + [(fmt(sum(r[k] or 0 for r in tw.flows), 1, sign=True), pn(sum(r[k] or 0 for r in tw.flows)))
                                     for k in ("foreign", "trust", "dealer", "total")]
         s.table(["日期", "外資", "投信", "自營商", "三大法人合計"], rows + [tot], 200, [0.2, 0.2, 0.2, 0.2, 0.2], size=42, row_h=100)
     else:
@@ -1084,7 +1084,7 @@ def deck_taiwan(engine, title: str = "台股籌碼情報") -> List[bytes]:
     wmap = {r["code"]: r for r in st.get("watch", [])}
     for r in tw.revenue[:9]:
         w = wmap.get(r["code"], {})
-        rows.append([(f"{r['name']}（{r['code']}）", TEXT), (r["ym"], MUTED), (f"{r['rev_bn']:,.0f}", TEXT),
+        rows.append([(f"{r['name']}（{r['code']}）", TEXT), (r["ym"], MUTED), (fmt(r["rev_bn"], 0), TEXT),
                      (fmt(r["mom"], 1, pct=True, sign=True), pn(r["mom"])), (fmt(r["yoy"], 1, pct=True, sign=True), pn(r["yoy"])),
                      (fmt(r["ytd_yoy"], 1, pct=True, sign=True), pn(r["ytd_yoy"])),
                      (fmt(w.get("foreign"), 0, sign=True), pn(w.get("foreign")))])

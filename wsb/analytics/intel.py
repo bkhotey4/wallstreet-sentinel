@@ -45,7 +45,7 @@ DEFAULT_CHANNELS: Dict[str, Dict[str, List[str]]] = {
         "relief": ["rate cut", "rate cuts", "dovish", "yields fall", "yields drop", "yields ease", "降息", "鴿派"]},
     "套息拆倉": {
         "risk": ["yen", "boj", "bank of japan", "carry trade", "unwind", "currency intervention", "intervention",
-                 "dollar surges", "strong dollar", "yuan", "renminbi", "won", "capital outflows",
+                 "dollar surges", "strong dollar", "yuan", "renminbi", "korean won", "capital outflows",
                  "emerging markets selloff", "日圓", "日銀", "套息", "干預", "人民幣", "韓元", "匯率"],
         "relief": ["yen weakens", "dollar eases"]},
     "波動率／槓桿去化": {
@@ -66,8 +66,14 @@ DEFAULT_CHANNELS: Dict[str, Dict[str, List[str]]] = {
         "relief": ["ceasefire", "truce", "peace talks", "停火", "和談"]},
 }
 
-QUAD_RISK = {"金髮女孩": 30.0, "再通膨": 45.0, "通縮衰退": 65.0, "停滯性通膨": 75.0}
-LEVELS = [(65, "高", "🔴"), (50, "偏高", "🟠"), (35, "中性", "🟡"), (0, "低", "🟢")]
+_M = (CFG.get("model") or {})                       # settings.yaml → intel.model (defaults = original design)
+QUAD_RISK = {k: float(v) for k, v in (_M.get("quadrant_risk") or
+                                      {"金髮女孩": 30.0, "再通膨": 45.0, "通縮衰退": 65.0, "停滯性通膨": 75.0}).items()}
+_LV = _M.get("levels") or [65, 50, 35]
+LEVELS = [(_LV[0], "高", "🔴"), (_LV[1], "偏高", "🟠"), (_LV[2], "中性", "🟡"), (0, "低", "🟢")]
+_PTS = {"liq_contract": 10, "liq_expand": -5, "risk_off": 10, "risk_on": -5, "quad_worse": 8, "quad_better": -4,
+        "growth_drift": 5, "stagflation_drift": 5, **(_M.get("macro_points") or {})}
+_SIDE = _M.get("side_thresholds") or [55, 40]
 STATE_TEXT = {
     "確認": "新聞與價格同時示警——可信度最高，應優先處理",
     "敘事領先": "新聞很吵、價格還沒反應——可能是早期訊號，也可能只是雜訊；盯住相關區塊是否跟上",
@@ -220,28 +226,28 @@ def macro_pillar(rg: Dict) -> Tuple[Optional[float], List[Tuple[float, str]]]:
     why: List[Tuple[float, str]] = [(base, f"象限 {q}（基準分 {base:.0f}" + ("，位於象限邊界、已依 z 值內插" if edge else "") + "）")]
     liq = rg.get("liquidity_mode") or ""
     if liq.startswith("收縮"):
-        why.append((10, f"聯準會淨流動性 13 週 {rg.get('net_liquidity_chg_13w_bn', 0):+,.0f}bn，收縮逆風"))
+        why.append((_PTS["liq_contract"], f"聯準會淨流動性 13 週 {rg.get('net_liquidity_chg_13w_bn', 0):+,.0f}bn，收縮逆風"))
     elif liq.startswith("擴張"):
-        why.append((-5, f"淨流動性 13 週 {rg.get('net_liquidity_chg_13w_bn', 0):+,.0f}bn，擴張順風"))
+        why.append((_PTS["liq_expand"], f"淨流動性 13 週 {rg.get('net_liquidity_chg_13w_bn', 0):+,.0f}bn，擴張順風"))
     rm = rg.get("risk_mode") or ""
     if rm.startswith("Risk-OFF"):
-        why.append((10, f"風險偏好轉弱（z {rg.get('risk_appetite_z', 0):+.2f}）"))
+        why.append((_PTS["risk_off"], f"風險偏好轉弱（z {rg.get('risk_appetite_z', 0):+.2f}）"))
     elif rm.startswith("Risk-ON"):
-        why.append((-5, f"風險偏好強（z {rg.get('risk_appetite_z', 0):+.2f}）"))
+        why.append((_PTS["risk_on"], f"風險偏好強（z {rg.get('risk_appetite_z', 0):+.2f}）"))
     clear = g is not None and i is not None and min(abs(g), abs(i)) >= 0.25   # a flip on z≈0 is noise, not a regime change
     if rg.get("quadrant_changed") and clear:
         base = next((v for k, v in QUAD_RISK.items() if q.startswith(k)), base)
         old = next((v for k, v in QUAD_RISK.items() if (rg.get("quadrant_1m") or "").startswith(k)), base)
         if base > old:
-            why.append((8, f"一個月內由「{rg.get('quadrant_1m')}」轉入「{q}」，往較差的組合移動"))
+            why.append((_PTS["quad_worse"], f"一個月內由「{rg.get('quadrant_1m')}」轉入「{q}」，往較差的組合移動"))
         elif base < old:
-            why.append((-4, f"一個月內由「{rg.get('quadrant_1m')}」改善為「{q}」"))
+            why.append((_PTS["quad_better"], f"一個月內由「{rg.get('quadrant_1m')}」改善為「{q}」"))
     gd = rg.get("growth_drift")
     if gd is not None and gd <= -0.5:
-        why.append((5, f"成長動能一個月內明顯轉弱（z {gd:+.2f}）"))
+        why.append((_PTS["growth_drift"], f"成長動能一個月內明顯轉弱（z {gd:+.2f}）"))
     idr = rg.get("inflation_drift")
     if idr is not None and idr >= 0.5 and (rg.get("growth_z") or 0) <= -0.25:
-        why.append((5, f"成長偏弱時通膨卻升溫（z {idr:+.2f}），滯脹壓力"))
+        why.append((_PTS["stagflation_drift"], f"成長偏弱時通膨卻升溫（z {idr:+.2f}），滯脹壓力"))
     return max(0.0, min(100.0, sum(p for p, _ in why))), why
 
 
@@ -284,7 +290,8 @@ def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dic
 
     lv = sorted((r["news_level"] for r in fused), reverse=True)
     n_news = sum(r["news_n"] for r in fused)
-    pillars["情報"] = (sum(lv[:2]) / len(lv[:2])) if lv and n_news else None
+    topn = int(_M.get("news_top_channels", 2))
+    pillars["情報"] = (sum(lv[:topn]) / len(lv[:topn])) if lv and n_news else None
     for r in fused:
         if r["news_state"] in ("熱", "溫") and r["top"]:
             ledger.append({"pillar": "情報", "pts": None, "dir": "+",
@@ -294,7 +301,7 @@ def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dic
 
     warm = any(r["warmup"] for r in fused)
     if warm and pillars.get("情報") is not None:
-        w = dict(w, 情報=w["情報"] * 0.5)
+        w = dict(w, 情報=w["情報"] * float(_M.get("warmup_news_weight", 0.5)))
     avail = {k: v for k, v in pillars.items() if v is not None}
     if not avail:
         return {"available": False, "pillars": pillars, "ledger": ledger}
@@ -307,7 +314,7 @@ def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dic
                        "text": f"新聞與價格同時確認：{'、'.join(confirmed)}（+{bonus:.0f}）"})
     score = max(0.0, min(100.0, base + bonus))
 
-    side = {k: ("警戒" if v >= 55 else "平穩" if v <= 40 else "中性") for k, v in avail.items()}
+    side = {k: ("警戒" if v >= _SIDE[0] else "平穩" if v <= _SIDE[1] else "中性") for k, v in avail.items()}
     vals = list(side.values())
     agree = max(vals.count(x) for x in vals)
     # deterministic tie-break: the more cautious reading wins

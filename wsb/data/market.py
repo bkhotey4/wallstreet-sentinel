@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from ..config import DATA_DIR, SETTINGS
+from ..config import DATA_DIR, SETTINGS, history_start
 from ..health import HEALTH
 
 log = logging.getLogger(__name__)
@@ -119,7 +119,8 @@ class MarketData:
         if self.history.empty:
             return True
         last = self.history.index.max()
-        return self.history_age_hours > SETTINGS["refresh"]["history_hours"] or \
+        too_short = self.history.index.min() > pd.Timestamp(history_start()) + pd.Timedelta(days=400)
+        return too_short or self.history_age_hours > SETTINGS["refresh"]["history_hours"] or \
             (pd.Timestamp.today().normalize() - last).days > 4
 
     def _save(self) -> None:
@@ -129,10 +130,9 @@ class MarketData:
 
     async def refresh_history(self, extra: Optional[List[str]] = None) -> bool:
         tickers = sorted(set(self.tickers + (extra or [])))
-        years = int(SETTINGS.get("history_years", 20))
         every = SETTINGS["refresh"]["history_hours"] * 3600
         try:
-            df = await asyncio.to_thread(_download, tickers, period=f"{years}y", interval="1d")
+            df = await asyncio.to_thread(_download, tickers, start=history_start().isoformat(), interval="1d")
             if df.empty:
                 raise RuntimeError("empty history download")
             df = df.sort_index()

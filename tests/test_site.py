@@ -19,6 +19,15 @@ def main():
     eng.news.items = [NewsItem("Bloomberg", "Fed <script>alert(1)</script> signals pause", "javascript:alert(1)", time.time(), 9),
                       NewsItem("CNBC", "Credit spreads widen", "https://example.com/a?b=1&c=2", time.time(), 5)]
     eng.calendar.events = []
+    # synthetic slow series for the valuation panel (quarterly Z.1 / BEA, daily Baa spread)
+    import numpy as np, pandas as pd
+    q = pd.date_range("1990-01-01", periods=146, freq="QS")
+    rng = np.random.default_rng(3)
+    gdp = pd.Series(np.linspace(6000, 30000, len(q)), index=q)
+    eq = gdp * 1000 * (0.6 + 1.2 * np.linspace(0, 1, len(q)) + rng.normal(0, 0.05, len(q)))
+    eng.fred.series.update({"GDP": gdp, "NCBEILQ027S": eq, "TNWMVBSNNCB": eq / 1.3,
+                            "DRCCLACBS": pd.Series(3 + rng.normal(0, 0.4, len(q)), index=q),
+                            "BAA10Y": pd.Series(2 + rng.normal(0, 0.3, 5000), index=pd.bdate_range("2006-01-02", periods=5000))})
     HEALTH.ok("yahoo_quotes", 90, every=300)
     asyncio.run(eng.recompute())
     assert not eng.holdings and eng.portfolio.get("error"), "holdings must be disabled in intel-station mode"
@@ -33,6 +42,18 @@ def main():
     assert "c_ssi" in cd and len(cd["c_ssi"]["x"]) == len(cd["c_ssi"]["v"]) > 100
     # no position advice anywhere on the public page (playbook action list is not rendered)
     assert "一般性行動框架" not in page
+    # new sections: every SSI input, past crises (multi-asset, incl. 1997/2008), valuation & bubble watch
+    assert "壓力指數的全部指標" in page and page.count('class="blk"') >= 8
+    assert "1997 亞洲金融風暴" in page and "2008 金融海嘯（全程）" in page and 'id="c_ssi_all"' in page and "恆生" in page
+    assert "巴菲特指標" in page and "信用卡逾期率" in page and "Baa 公司債利差" in page
+    assert eng.valuation["available"] and any(i["key"] == "buffett" and i["estimate"] is not None
+                                              for g in eng.valuation["groups"] for i in g["items"])
+    assert "行情資料日" in page
+    # tabbed layout: every page exists, overview shown first
+    for k in ("overview", "risk", "flows", "crisis", "valuation", "markets", "taiwan", "news", "inputs"):
+        assert f'id="p-{k}"' in page and f'href="#{k}"' in page, k
+    assert 'class="page on" id="p-overview"' in page
+    assert "Gamma 雷達" in page and "暗池指數" in page and "total_mcap_usd" not in page
     # AI commentary: advice lines are scrubbed, market description kept
     txt = "**一句話結論**\n信用利差擴大，SSI 升溫。\n- 建議減碼半導體 20%\n- 避險比例提高到 15%\n- 關注週五非農"
     clean = B.scrub_advice(txt)

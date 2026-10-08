@@ -16,6 +16,7 @@ from .analytics import portfolio as pf
 from .analytics import regime as rg
 from .analytics import shock as sk
 from .analytics import xray as xr
+from .analytics import valuation as va
 from .analytics.stress import StressEngine, StressResult
 from .config import SETTINGS
 from .data.calendar import EventCalendar
@@ -26,6 +27,7 @@ from .data.news import NewsWire
 from .data.options import OptionsPositioning
 from .data.sec import SecWatcher
 from .data.taiwan import TaiwanData
+from .data.darkpool import DarkPool
 from . import store
 
 log = logging.getLogger(__name__)
@@ -41,12 +43,14 @@ class Engine:
         self.sec = SecWatcher()
         self.calendar = EventCalendar()
         self.taiwan = TaiwanData()
+        self.darkpool = DarkPool()
         self.stress_engine = StressEngine(self.market, self.fred)
         self.stress: Optional[StressResult] = None
         self.odds: Dict = {}
         self.shock: Dict = {}
         self.lab: Dict = {}
         self.xray: Dict = {}
+        self.valuation: Dict = {}
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
         self.regime: Dict = {}
@@ -70,7 +74,7 @@ class Engine:
         wanted = set(self.market.tickers) | set(extra)
         h = self.market.history
         missing = {t for t in wanted if t not in h.columns or h[t].notna().sum() == 0}
-        if self.market.history_is_stale() or missing:
+        if self.market.history_is_stale() or (missing and self.market.history_age_hours > 1):
             log.info("history rebuild: stale=%s missing=%d (%s)", self.market.history_is_stale(), len(missing),
                      ", ".join(sorted(missing)[:8]))
             await self.market.refresh_history(extra)
@@ -78,10 +82,15 @@ class Engine:
         await self.recompute()
         self.ready = True
         log.info("phase 1 ready (prices)")
-        await asyncio.gather(self.fred.refresh(), self.crypto.refresh(), self.options.refresh(),
-                             self.news.refresh(), self.calendar.refresh(extra),
-                             self.sec.refresh([t for t in extra if "." not in t]),
-                             self.taiwan.refresh(), return_exceptions=True)
+        names = ("fred", "crypto", "options", "news", "calendar", "sec", "taiwan", "darkpool")
+        res = await asyncio.gather(self.fred.refresh(), self.crypto.refresh(), self.options.refresh(),
+                                   self.news.refresh(), self.calendar.refresh(extra),
+                                   self.sec.refresh([t for t in extra if "." not in t]),
+                                   self.taiwan.refresh(), self.darkpool.refresh(self.market), return_exceptions=True)
+        for nm, r in zip(names, res):
+            if isinstance(r, Exception):
+                log.warning("phase-2 refresh %s failed: %s", nm, r)
+        self._quality = None            # phase-1 quality/lab ran without FRED inputs → recompute on the full index
         await self.recompute()
         self.full_ready = True
         log.info("phase 2 ready (macro/news/options/taiwan)")
@@ -94,7 +103,8 @@ class Engine:
                     store.stress_record(self.stress.score, self.stress.blocks)
                     bench = SETTINGS.get("crash_odds", {}).get("benchmark", "^GSPC")
                     self.odds = await asyncio.to_thread(
-                        co.crash_odds, self.stress.history, self.market.series(bench), self.stress.score,
+                        co.crash_odds, getattr(self.stress, "live_history", None) if getattr(self.stress, "live_history", None) is not None
+                        and len(self.stress.live_history) > 500 else self.stress.history, self.market.series(bench), self.stress.score,
                         self.stress.chg_20d)
             except Exception:  # noqa: BLE001
                 log.exception("stress compute failed")
@@ -127,15 +137,21 @@ class Engine:
             except Exception:  # noqa: BLE001
                 log.exception("portfolio failed")
             try:
+                self.valuation = await asyncio.to_thread(va.build, self)
+            except Exception:  # noqa: BLE001
+                log.exception("valuation failed")
+            try:
                 self.xray = await asyncio.to_thread(xr.build, self)
             except Exception:  # noqa: BLE001
                 log.exception("xray failed")
             try:
                 self.breaks = await asyncio.to_thread(pb.regime_breaks, self.market)
                 if self.stress:
+                    cov_ok = self.stress.coverage >= float(SETTINGS.get("health", {}).get("min_coverage", 0.9))
                     pbk = pb.score(self.stress.score, SETTINGS.get("stress_levels", []), self.odds, self.shock,
-                                   self.breaks, True)
-                    cut = 1 - pb.BETA_FACTOR[pbk["stage"]] if pbk["stage"] >= 2 else 0.15
+                                   self.breaks, cov_ok)
+                    cut = 1 - pb.BETA_FACTOR[pbk["stage"]] if pbk["stage"] >= 2 else \
+                        float(SETTINGS.get("playbook", {}).get("scoring", {}).get("watch_cut_frac", 0.15))
                     der = []
                     if self.portfolio and not self.portfolio.get("error"):
                         der = hg.analyze(self.portfolio, {}, self.stress.score, cut_frac=cut).get("derisk", [])

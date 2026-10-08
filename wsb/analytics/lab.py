@@ -82,7 +82,8 @@ def candidates(h: pd.DataFrame) -> Dict[str, Dict]:
         add("move", "MOVE 美債波動率", h["^MOVE"])
     secs = [t for t in SECTORS if t in h.columns]
     if len(secs) >= 5:
-        above = pd.concat([(h[t] > h[t].rolling(200, min_periods=150).mean()).where(h[t].notna()) for t in secs], axis=1)
+        above = pd.concat([(h[t] > ma).astype(float).where(ma.notna() & h[t].notna())
+                           for t in secs for ma in [h[t].rolling(200, min_periods=150).mean()]], axis=1)
         add("breadth200", "市場廣度（板塊站上200日線比例，低=差）", -above.mean(axis=1))
     if "RSP" in h and c is not None:
         add("narrow", "漲勢集中度（等權重落後市值加權，60日）", -(h["RSP"].ffill().pct_change(60, fill_method=None) - c.ffill().pct_change(60, fill_method=None)))

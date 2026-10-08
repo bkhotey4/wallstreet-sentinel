@@ -1,0 +1,127 @@
+"""Off-exchange ('dark pool') short-volume index from FINRA's free daily Reg SHO files.
+
+Source: https://cdn.finra.org/equity/regsho/daily/CNMSshvolYYYYMMDD.txt  (consolidated NMS, all FINRA TRFs/ADF —
+i.e. trades printed off-exchange, which is where dark pools and internalisers report). Format:
+    Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume|Market
+
+Method (same idea as SqueezeMetrics' DIX white paper): when buyers trade off-exchange, market makers usually sell
+short to fill them, so a HIGH short-volume share off-exchange tends to mean buying pressure, a LOW share selling
+pressure. The index here = equal-weighted short-volume ratio across ~30 large US stocks, plus SPY/QQQ/IWM.
+
+Honesty notes shown on the site: this is published T+1 by FINRA (not real time), it is a proxy (not actual dark-pool
+order flow), and its history only covers the days this program has archived (it grows every day)."""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+from datetime import date, timedelta
+from typing import Dict, List, Optional
+
+import numpy as np
+import pandas as pd
+
+from ..config import DATA_DIR, SETTINGS
+from ..health import HEALTH
+from . import http
+
+log = logging.getLogger(__name__)
+URL = "https://cdn.finra.org/equity/regsho/daily/CNMSshvol{d:%Y%m%d}.txt"
+_FILE = DATA_DIR / "darkpool.json"
+
+
+def _cfg() -> Dict:
+    return SETTINGS.get("darkpool", {}) or {}
+
+
+def symbols() -> List[str]:
+    return list(dict.fromkeys(_cfg().get("index_symbols", []) + _cfg().get("etfs", [])))
+
+
+def parse(text: str, wanted: set) -> Dict[str, List[float]]:
+    out: Dict[str, List[float]] = {}
+    for line in (text or "").splitlines()[1:]:
+        p = line.split("|")
+        if len(p) < 5 or p[1] not in wanted:
+            continue
+        try:
+            sv, tv = float(p[2]), float(p[4])
+        except ValueError:
+            continue
+        if tv > 0:
+            out[p[1]] = [sv, tv]
+    return out
+
+
+class DarkPool:
+    def __init__(self) -> None:
+        self.days: Dict[str, Dict[str, List[float]]] = {}
+        self.result: Dict = {}
+        try:
+            if _FILE.exists():
+                self.days = json.loads(_FILE.read_text(encoding="utf-8"))
+        except Exception as e:  # noqa: BLE001
+            log.warning("darkpool archive unreadable: %s", e)
+
+    async def refresh(self, market=None) -> None:
+        if not _cfg().get("enabled", True):
+            return
+        every = 6 * 3600
+        wanted = set(symbols())
+        back = int(_cfg().get("backfill_days", 90))
+        d, todo = date.today() - timedelta(days=1), []
+        for _ in range(back):
+            if d.weekday() < 5 and d.isoformat() not in self.days:
+                todo.append(d)
+            d -= timedelta(days=1)
+        got, miss = 0, 0
+        for d in todo[:int(_cfg().get("max_fetch_per_run", 40))]:
+            try:
+                txt = await http.get(URL.format(d=d), kind="text", timeout=20, retries=0)
+                rows = parse(txt, wanted)
+                if rows:
+                    self.days[d.isoformat()] = rows
+                    got += 1
+            except Exception as e:  # noqa: BLE001  (holidays → 403/404; keep going)
+                miss += 1
+                log.debug("FINRA %s: %s", d, e)
+            await asyncio.sleep(0.2)
+        if got:
+            self.days = dict(sorted(self.days.items())[-int(_cfg().get("keep_days", 800)):])
+            try:
+                _FILE.write_text(json.dumps(self.days, separators=(",", ":")), encoding="utf-8")
+            except Exception as e:  # noqa: BLE001
+                log.warning("darkpool archive not saved: %s", e)
+        if self.days:
+            self.result = compute(self.days, market)
+            HEALTH.ok("finra_darkpool", len(self.days), every=every)
+        else:
+            HEALTH.fail("finra_darkpool", f"no FINRA files fetched ({miss} failed)", every=every)
+
+
+def compute(days: Dict[str, Dict[str, List[float]]], market=None) -> Dict:
+    idx_syms = _cfg().get("index_symbols", [])
+    rows = []
+    for ds in sorted(days):
+        rec = days[ds]
+        ratios = [rec[x][0] / rec[x][1] for x in idx_syms if x in rec and rec[x][1] > 0]
+        # equal-weighted across the large caps (no price feed needed; one mega-cap cannot dominate the reading)
+        row = {"date": ds, "dpi": float(np.mean(ratios)) * 100 if len(ratios) >= max(5, len(idx_syms) // 2) else None}
+        for e in _cfg().get("etfs", []):
+            if e in rec and rec[e][1]:
+                row[e] = rec[e][0] / rec[e][1] * 100
+        rows.append(row)
+    df = pd.DataFrame(rows).set_index("date") if rows else pd.DataFrame()
+    if df.empty or df["dpi"].dropna().empty:
+        return {"available": False}
+    dpi = df["dpi"].dropna()
+    dpi.index = pd.to_datetime(dpi.index)
+    cur = float(dpi.iloc[-1])
+    avg5 = float(dpi.tail(5).mean())
+    pct = float((dpi < avg5).mean() * 100) if len(dpi) >= 20 else None
+    etf = {e: (float(df[e].dropna().iloc[-1]) if e in df and df[e].notna().any() else None) for e in _cfg().get("etfs", [])}
+    hi, lo = float(_cfg().get("high_pct", 80)), float(_cfg().get("low_pct", 20))
+    state = None if pct is None else ("偏買（場外放空比例高）" if pct >= hi else "偏賣（場外放空比例低）" if pct <= lo else "中性")
+    return {"available": True, "asof": dpi.index[-1].strftime("%Y-%m-%d"), "dpi": cur, "dpi_5d": avg5, "pctile": pct,
+            "state": state, "n_days": int(len(dpi)), "etf": etf, "history": dpi}

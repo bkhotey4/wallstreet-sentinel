@@ -68,6 +68,27 @@ STRIP = [("^GSPC", "標普500", 0), ("^NDX", "那指100", 0), ("^TWII", "台股�
          ("GC=F", "黃金", 0), ("BZ=F", "布蘭特", 2), ("BTC-USD", "比特幣", 0), ("HYG", "高收益債", 2)]
 TRENDS = [("^GSPC", "標普500", 0), ("^TWII", "台股加權", 0), ("^VIX", "VIX 恐慌指數", 2), ("^TNX", "美債10年殖利率", 3)]
 
+COMP_LABELS = {
+    "hy_oas": ("高收益債利差 OAS", "HY OAS"), "baa_spread": ("Baa 公司債利差（長歷史）", "Baa − 10Y spread"), "ccc_oas": ("CCC 級利差", "CCC OAS"), "ig_oas": ("投資級利差 OAS", "IG OAS"),
+    "hyg_ief": ("高收益債 vs 公債（20日）", "HYG vs IEF 20d"), "kre": ("區域銀行 vs 大盤（20日）", "Regional banks vs SPY"),
+    "bizd": ("私募信貸 BDC vs 大盤", "BDCs vs SPY"), "loans": ("槓桿貸款 vs 公債", "Leveraged loans vs IEF"),
+    "alt_bx": ("黑石 vs 大盤", "Blackstone vs SPY"), "alt_apo": ("阿波羅 vs 大盤", "Apollo vs SPY"), "alt_ares": ("Ares vs 大盤", "Ares vs SPY"),
+    "vix_term": ("VIX 期限結構（VIX/VIX3M）", "VIX term structure"), "vix_level": ("VIX 水準", "VIX level"),
+    "vvix": ("VVIX 波動率的波動率", "VVIX"), "move": ("MOVE 美債波動率", "MOVE index"), "vix_short": ("短天期恐慌（VIX9D/VIX）", "VIX9D / VIX"),
+    "spx_rvol": ("標普 20日實現波動", "S&P 20d realized vol"), "nfci": ("芝加哥金融狀況指數", "Chicago NFCI"),
+    "stlfsi": ("聖路易金融壓力指數", "St. Louis FSI"), "net_liq": ("聯準會淨流動性（63日）", "Fed net liquidity 63d"),
+    "reserves": ("銀行準備金（63日）", "Bank reserves 63d"), "us2y_drop": ("2年殖利率急跌（20日）", "2Y yield drop 20d"),
+    "curve_steep": ("10年-3月利差變化（63日）", "10Y-3M curve change 63d"), "real_yield": ("10年實質利率變化（63日）", "10Y real yield 63d"),
+    "long_bond": ("30年殖利率變化（20日）", "30Y yield change 20d"), "dxy": ("美元指數（20日）", "DXY 20d"),
+    "yen_carry": ("美元/日圓（10日）", "USD/JPY 10d"), "audjpy": ("澳幣/日圓（10日）", "AUD/JPY 10d"), "cnh": ("美元/人民幣（20日）", "USD/CNY 20d"),
+    "spx_trend": ("標普距 200日線", "S&P vs 200d MA"), "breadth": ("等權重 vs 市值加權（60日）", "Equal vs cap weight 60d"),
+    "correlation": ("類股同漲同跌程度（20日）", "Sector correlation 20d"), "ai_leaders": ("半導體 vs 大盤（20日）", "Semis vs SPY 20d"),
+    "em_debt": ("新興市場債 vs 公債", "EM debt vs IEF"), "eu_banks": ("歐洲金融股 vs 大盤", "EU financials vs SPY"),
+    "copper_gold": ("銅金比（60日）", "Copper/gold 60d"), "krw": ("美元/韓元（20日）", "USD/KRW 20d"),
+    "oil_shock": ("布蘭特原油（20日）", "Brent 20d"), "btc": ("比特幣（20日）", "Bitcoin 20d"), "gold_bid": ("黃金 vs 標普（20日）", "Gold vs S&P 20d"),
+    "claims": ("初領失業金（63日）", "Jobless claims 63d"), "sahm": ("薩姆衰退指標", "Sahm rule"), "small_caps": ("小型股 vs 大盤（60日）", "Small caps vs SPY 60d"),
+}
+
 # status palette (fixed, never themed) — always shown next to a text label, never colour alone
 LEVEL_COLORS = ["#0ca30c", "#fab219", "#ec835a", "#d03b3b", "#a3142f"]
 STAGE_COLORS = ["#0ca30c", "#fab219", "#ec835a", "#d03b3b"]
@@ -130,6 +151,18 @@ def tick_label(v: float) -> str:
     return f"{v:,.2f}".rstrip("0").rstrip(".")
 
 
+def data_asof(eng) -> Tuple[Optional[str], bool]:
+    """Newest quote date among the headline tickers, and whether it is stale (> 4 calendar days, i.e. older
+    than a long weekend) — the page must say when its numbers are from, not only when it was built."""
+    ds = [(eng.market.q(t) or {}).get("asof") for t, _, _ in STRIP if not t.endswith("-USD")]
+    ds = [d for d in ds if d]
+    if not ds:
+        return None, True
+    last = max(ds)
+    ny = datetime.now(ZoneInfo("America/New_York")).date()
+    return last, (ny - datetime.fromisoformat(last).date()).days > 4
+
+
 def ret_since(s, days: int) -> Optional[float]:
     s = s.dropna()
     if s.empty:
@@ -143,7 +176,8 @@ _CHARTS: Dict[str, dict] = {}
 
 
 def line_chart(cid: str, s, label: str, digits: int = 2, w: int = 560, h: int = 190,
-               bands: Optional[List[Tuple[float, float, str]]] = None, fixed: Optional[Tuple[float, float]] = None) -> str:
+               bands: Optional[List[Tuple[float, float, str]]] = None, fixed: Optional[Tuple[float, float]] = None,
+               spans: Optional[List[Tuple[str, str, str]]] = None) -> str:
     s = s.dropna()
     if len(s) < 10:
         return '<p class="muted">—</p>'
@@ -171,6 +205,13 @@ def line_chart(cid: str, s, label: str, digits: int = 2, w: int = 560, h: int = 
         y0 = pt + (1 - (max(b0, lo) - lo) / (hi - lo)) * H
         if y0 > y1:
             parts.append(f'<rect x="{pl}" y="{y1:.1f}" width="{W}" height="{y0 - y1:.1f}" fill="{col}" opacity="0.10"/>')
+    for a, b, lab in spans or []:                      # shaded windows (e.g. past crises), labelled at the top
+        ia, ib = s.index.searchsorted(pd.Timestamp(a)), s.index.searchsorted(pd.Timestamp(b))
+        if ib <= 0 or ia >= n:
+            continue
+        xa, xb = pl + min(ia, n - 1) * W / (n - 1), pl + min(ib, n - 1) * W / (n - 1)
+        parts.append(f'<rect x="{xa:.1f}" y="{pt}" width="{max(xb - xa, 2):.1f}" height="{H}" class="span"/>'
+                     f'<text x="{(xa + xb) / 2:.1f}" y="{pt + 11}" class="spanlbl" text-anchor="middle">{esc(lab)}</text>')
     for t in ticks:
         if lo <= t <= hi:
             y = pt + (1 - (t - lo) / (hi - lo)) * H
@@ -179,7 +220,7 @@ def line_chart(cid: str, s, label: str, digits: int = 2, w: int = 560, h: int = 
     d0, dm, d1 = s.index[0], s.index[n // 2], s.index[-1]
     parts.append(f'<text x="{pl}" y="{h - 6}" class="axis">{d0:%Y-%m}</text>'
                  f'<text x="{pl + W / 2:.0f}" y="{h - 6}" class="axis" text-anchor="middle">{dm:%Y-%m}</text>'
-                 f'<text x="{pl + W}" y="{h - 6}" class="axis" text-anchor="end">{d1:%m-%d}</text>')
+                 f'<text x="{pl + W}" y="{h - 6}" class="axis" text-anchor="end">{d1.strftime("%Y-%m" if (d1 - d0).days > 800 else "%m-%d")}</text>')
     parts.append(f'<path d="{area}" class="wash"/><polyline points="{pts}" class="ln"/>'
                  f'<circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="4" class="dot"/>'
                  f'<text x="{xs[-1] + 8:.1f}" y="{ys[-1] + 4:.1f}" class="endlbl">{num(vals[-1], digits)}</text>')
@@ -250,9 +291,9 @@ def sec_strip(eng) -> str:
             continue
         price = q["price"] if q else float(s.iloc[-1])
         chg = q.get("chg_pct") if q else None
-        tiles.append(f'<div class="tile"><div class="tl">{T(zh, ASSET_EN.get(t, t))}</div>'
-                     f'<div class="tv">{num(price, dg)}</div><div class="tc {cls(chg)}">{num(chg, 2, sign=True, pct=True)}</div>'
-                     f'{spark(s)}</div>')
+        asof = q.get("asof") if q else s.dropna().index[-1].strftime("%Y-%m-%d")
+        tiles.append(f'<div class="tile" title="{esc(asof)}"><div class="tl">{T(zh, ASSET_EN.get(t, t))}<span class="asof">{esc(asof[5:])}</span></div>'
+                     f'<div class="tv">{num(price, dg)}</div><div class="tc {cls(chg)}">{num(chg, 2, sign=True, pct=True)}</div>{spark(s)}</div>')
     return f'<div class="strip" aria-label="market strip">{"".join(tiles)}</div>'
 
 
@@ -262,7 +303,10 @@ def sec_ssi(eng) -> str:
         return card("系統性壓力指數 SSI", "Systemic Stress Index", '<p class="muted">—</p>', "ssi")
     col = LEVEL_COLORS[level_idx(st.score)]
     pb = eng.playbook or {}
-    stg = int(pb.get("stage", 0) or 0)
+    stg = pb.get("stage")
+    sc = STAGE_COLORS[min(int(stg), 3)] if stg is not None else "#6b7280"
+    miss = pb.get("missing") or ([] if pb else ["風險劇本"])
+    warn = (f'<div class="miss">⚠ {T("資料不足：" + "、".join(miss), "Incomplete inputs: " + ", ".join(miss))}</div>') if miss else ""
     lv = SETTINGS.get("stress_levels", [])
     segs = "".join('<i style="background:%s;flex:%s"></i>' % (LEVEL_COLORS[min(i, 4)], min(l["max"], 100) - (lv[i - 1]["max"] if i else 0))
                    for i, l in enumerate(lv))
@@ -281,8 +325,8 @@ def sec_ssi(eng) -> str:
 <div><div class="lvl"><i class="sw" style="background:{col}"></i>{T(str(st.label))}</div>
 <div class="muted">{T("歷史百分位", "Historical pct")} {num(st.pctile_all, 0)}% · {T("資料涵蓋", "Coverage")} {st.coverage * 100:.0f}%</div>
 <div class="chips">{chips}</div></div>
-<div class="stage" style="--sc:{STAGE_COLORS[min(stg, 3)]}"><div class="sl">{T("風險階段", "Risk stage")}</div>
-<div class="sv">{esc(pb.get("emoji", ""))} {T(str(pb.get("name", "—")))}</div><div class="muted">{T("風險分", "Score")} {pb.get("points", "—")}</div></div></div>
+<div class="stage" style="--sc:{sc}"><div class="sl">{T("風險階段", "Risk stage")}</div>
+<div class="sv">{esc(pb.get("emoji", ""))} {T(str(pb.get("name", "—")))}</div><div class="muted">{T("風險分", "Score")} {pb.get("points", "—")}</div>{warn}</div></div>
 <div class="gauge"><div class="track">{segs}<b style="left:{min(st.score, 100):.1f}%"></b></div></div>
 {chart}<p class="note">{note}</p></section>'''
 
@@ -291,8 +335,9 @@ def sec_radar(eng) -> str:
     st = eng.stress
     if not st or not st.blocks:
         return ""
-    note = T("十個風險區塊的壓力分數（0–100）；越往外越緊張，粗線圈為 50。",
-             "Stress score of ten risk blocks (0–100); further out = tighter, bold ring = 50.")
+    nb = len(st.blocks)
+    note = T(f"{nb} 個風險區塊的壓力分數（0–100）；越往外越緊張，粗線圈為 50。",
+             f"Stress score of {nb} risk blocks (0–100); further out = tighter, bold ring = 50.")
     return card("風險雷達", "Risk radar", f'<div class="rwrap">{radar("c_radar", st.blocks)}</div><p class="note">{note}</p>', "span3")
 
 
@@ -403,7 +448,8 @@ def sec_markets(eng) -> str:
             f'<td class="r">{num(r["price"], 2)}</td><td class="r {cls(r["d1"])}">{num(r["d1"], 2, sign=True, pct=True)}</td>'
             f'<td class="r {cls(r.get("w1"))}">{num(r.get("w1"), 1, sign=True, pct=True)}</td><td class="r {cls(r.get("m1"))}">{num(r.get("m1"), 1, sign=True, pct=True)}</td>'
             f'<td class="r {cls(r.get("ytd"))}">{num(r.get("ytd"), 1, sign=True, pct=True)}</td>'
-            f'<td class="r"><div class="pos" title="{num(r.get("pct_52w"), 0)}%"><i style="left:{min(max(r.get("pct_52w") or 0, 0), 100):.0f}%"></i></div></td></tr>'
+            + (f'<td class="r"><div class="pos" title="{num(r.get("pct_52w"), 0)}%"><i style="left:{min(max(r["pct_52w"], 0), 100):.0f}%"></i></div></td></tr>'
+               if r.get("pct_52w") is not None else '<td class="r muted">—</td></tr>')
             for r in rows)
         zh, en = GROUP_EN.get(g, (g, g))
         tabs.append(f'<button class="tab{" on" if not tabs else ""}" data-t="g{i}" data-en="{esc(en)}" type="button">{esc(zh)}</button>')
@@ -437,19 +483,152 @@ def sec_macro(eng) -> str:
     return card("總經與流動性", "Macro & liquidity", reg + tbl, "span4")
 
 
+SENTIMENT = [("cnn_fng", "CNN 恐懼與貪婪", "CNN Fear & Greed", "{:.0f}", "cnn_fng_label"),
+             ("crypto_fng", "加密恐懼與貪婪", "Crypto Fear & Greed", "{:.0f}", "crypto_fng_label"),
+             ("total_mcap_usd", "加密總市值", "Crypto market cap", "money", None),
+             ("btc_dominance", "比特幣市占", "BTC dominance", "{:.1f}%", None),
+             ("BTC_funding_ann_pct", "BTC 永續資金費率（年化）", "BTC perp funding (ann.)", "{:+.1f}%", None),
+             ("stablecoin_chg_30d_pct", "穩定幣供給 30 日變化", "Stablecoin supply 30d", "{:+.2f}%", None)]
+
+
+def _money(v) -> str:
+    a = abs(v)
+    return f"${v / 1e12:.2f}T" if a >= 1e12 else f"${v / 1e9:.0f}B" if a >= 1e9 else f"${v / 1e6:.0f}M"
+
+
 def sec_positioning(eng) -> str:
-    op = eng.options.spx or {}
-    L = []
-    if op:
-        L.append(f'<div class="kv"><div><span class="muted">GEX (bn/1%)</span><b class="{cls(op.get("gex_usd_bn_per_1pct"))}">{num(op.get("gex_usd_bn_per_1pct"), 2, sign=True)}</b></div>'
-                 f'<div><span class="muted">{T("零 Gamma 翻轉點", "Zero-gamma flip")}</span><b>{num(op.get("zero_gamma"), 0)}</b></div>'
-                 f'<div><span class="muted">{T("Call 牆／Put 牆", "Call / Put wall")}</span><b>{num(op.get("call_wall"), 0)} / {num(op.get("put_wall"), 0)}</b></div>'
-                 f'<div><span class="muted">P/C (OI)</span><b>{num(op.get("put_call_oi"), 2)}</b></div></div>')
     cd = eng.crypto.data or {}
-    if cd:
-        L.append('<div class="kv">' + "".join(f'<div><span class="muted">{esc(str(k))}</span><b>{esc(num(v, 2) if isinstance(v, (int, float)) else str(v))}</b></div>'
-                                             for k, v in list(cd.items())[:8]) + '</div>')
-    return card("部位與情緒", "Positioning & sentiment", "".join(L), "span4") if L else ""
+    cells = []
+    for key, zh, en, fmt, lab in SENTIMENT:
+        v = cd.get(key)
+        if not isinstance(v, (int, float)) or v != v:
+            continue
+        txt = _money(v) if fmt == "money" else fmt.format(v)
+        extra = f' <span class="muted small">{esc(str(cd.get(lab)))}</span>' if lab and cd.get(lab) else ""
+        cells.append(f'<div><span class="muted">{T(zh, en)}</span><b>{esc(txt)}</b>{extra}</div>')
+    if not cells:
+        return ""
+    return card("市場情緒", "Sentiment", f'<div class="kv">{"".join(cells)}</div>', "span4")
+
+
+def sec_gamma(eng) -> str:
+    op = eng.options.spx or {}
+    if not op:
+        return card("Gamma 雷達（SPX 選擇權）", "Gamma radar (SPX options)", f'<p class="muted">{T("CBOE 資料暫時取不到", "CBOE data unavailable")}</p>', "wide")
+    gex, flip, spot = op.get("gex_usd_bn_per_1pct"), op.get("zero_gamma"), op.get("spot")
+    regime = (T("正 Gamma：造市商傾向「逢高賣、逢低買」，波動被壓抑", "Positive gamma: dealers sell rallies / buy dips — volatility dampened")
+              if (gex or 0) > 0 else T("負 Gamma：造市商傾向「追漲殺跌」，波動容易被放大", "Negative gamma: dealers chase moves — volatility amplified"))
+    kv = (f'<div class="kv"><div><span class="muted">GEX（十億美元／每 1%）</span><b class="{cls(gex)}">{num(gex, 2, sign=True)}</b></div>'
+          f'<div><span class="muted">{T("零 Gamma 翻轉點", "Zero-gamma flip")}</span><b>{num(flip, 0)}</b> <span class="small {cls(op.get("spot_vs_flip_pct"))}">{num(op.get("spot_vs_flip_pct"), 1, sign=True, pct=True)}</span></div>'
+          f'<div><span class="muted">SPX</span><b>{num(spot, 0)}</b></div>'
+          f'<div><span class="muted">{T("Call 牆（壓力）", "Call wall")}</span><b>{num(op.get("call_wall"), 0)}</b></div>'
+          f'<div><span class="muted">{T("Put 牆（支撐）", "Put wall")}</span><b>{num(op.get("put_wall"), 0)}</b></div>'
+          f'<div><span class="muted">P/C（OI／量）</span><b>{num(op.get("put_call_oi"), 2)} / {num(op.get("put_call_volume"), 2)}</b></div></div>'
+          f'<p><b>{regime}</b></p>')
+    # profile: GEX if SPX moved to x
+    prof = op.get("profile") or []
+    chart1 = ""
+    if len(prof) > 10:
+        ps = pd.Series([y for _, y in prof], index=pd.Index([x for x, _ in prof]))
+        chart1 = gex_profile_svg("c_gexp", ps, spot, flip)
+    bars = strike_bars_svg("c_gexs", op.get("by_strike") or [], spot, op.get("call_wall"), op.get("put_wall"))
+    note = T("資料：CBOE 延遲報價（約 15 分鐘），60 天內到期合約；慣例假設造市商持有客戶賣出的 Call、買入的 Put（業界常用但不一定準確）。"
+             "零 Gamma 翻轉點以下，市場對壞消息的反應通常更劇烈。" + (" 更新 " + str(op.get("asof")) if op.get("asof") else ""),
+             "CBOE delayed quotes (~15 min), expiries within 60 days; assumes dealers are long calls / short puts (a common convention, not certain). "
+             "Below the zero-gamma flip, markets tend to react more violently.")
+    body = (kv + f'<div class="g2"><div><h3>{T("如果 SPX 移動到這個價位，造市商 Gamma 會是多少", "Dealer gamma if SPX moved to this level")}</h3>{chart1}</div>'
+            f'<div><h3>{T("各履約價的造市商淨 Gamma（現價 ±8%）", "Net dealer gamma by strike (±8%)")}</h3>{bars}</div></div><p class="note">{note}</p>')
+    return card("Gamma 雷達（SPX 選擇權）", "Gamma radar (SPX options)", body, "wide")
+
+
+def gex_profile_svg(cid, ps, spot, flip, w=560, h=220) -> str:
+    pl, pr, pt, pb = 52, 16, 12, 26
+    W, H = w - pl - pr, h - pt - pb
+    xs, ys = list(ps.index.astype(float)), list(ps.values.astype(float))
+    x0, x1 = min(xs), max(xs)
+    lo, hi = min(min(ys), 0), max(max(ys), 0)
+    pad = (hi - lo) * 0.08 or 1
+    lo, hi = lo - pad, hi + pad
+    X = lambda v: pl + (v - x0) / (x1 - x0) * W           # noqa: E731
+    Y = lambda v: pt + (1 - (v - lo) / (hi - lo)) * H      # noqa: E731
+    pts = " ".join(f"{X(a):.1f},{Y(b):.1f}" for a, b in zip(xs, ys))
+    parts = [f'<line x1="{pl}" x2="{pl + W}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" class="zero"/>']
+    for t in nice_ticks(lo, hi, 4):
+        if lo <= t <= hi:
+            parts.append(f'<text x="{pl - 6}" y="{Y(t) + 4:.1f}" class="axis" text-anchor="end">{tick_label(t)}</text>')
+    for v, lab, c in ((spot, "SPX", "var(--tx)"), (flip, "Flip", "var(--warn)")):
+        if v and x0 <= v <= x1:
+            parts.append(f'<line x1="{X(v):.1f}" x2="{X(v):.1f}" y1="{pt}" y2="{pt + H}" style="stroke:{c};stroke-dasharray:0" class="mk"/>'
+                         f'<text x="{X(v) + 4:.1f}" y="{pt + 11}" class="spanlbl">{lab} {v:,.0f}</text>')
+    parts.append(f'<polyline points="{pts}" class="gln"/>')
+    for t in (x0, (x0 + x1) / 2, x1):
+        parts.append(f'<text x="{X(t):.1f}" y="{h - 6}" class="axis" text-anchor="middle">{t:,.0f}</text>')
+    _CHARTS[cid] = {"label": "GEX", "d": [f"SPX {a:,.0f}" for a in xs], "v": [round(b, 3) for b in ys],
+                    "x": [round(X(a), 1) for a in xs], "y": [round(Y(b), 1) for b in ys], "dg": 2}
+    parts.append(f'<g class="hover" visibility="hidden"><line class="xh" y1="{pt}" y2="{pt + H}"/><circle r="4" class="dot"/></g>'
+                 f'<rect class="hit" x="{pl}" y="{pt}" width="{W}" height="{H}" fill="transparent"/>')
+    return f'<svg id="{cid}" class="chart lc" viewBox="0 0 {w} {h}" role="img" aria-label="GEX profile">{"".join(parts)}</svg>'
+
+
+def strike_bars_svg(cid, rows, spot, cw, pw, w=560, h=220) -> str:
+    if not rows:
+        return '<p class="muted">—</p>'
+    pl, pr, pt, pb = 52, 10, 12, 26
+    W, H = w - pl - pr, h - pt - pb
+    vals = [v for _, v in rows]
+    m = max(abs(min(vals)), abs(max(vals))) or 1
+    Y = lambda v: pt + (1 - (v + m) / (2 * m)) * H         # noqa: E731
+    bw = max(1.5, W / len(rows) - 1)
+    parts = [f'<line x1="{pl}" x2="{pl + W}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" class="zero"/>',
+             f'<text x="{pl - 6}" y="{Y(m) + 8:.1f}" class="axis" text-anchor="end">{tick_label(m)}</text>',
+             f'<text x="{pl - 6}" y="{Y(-m):.1f}" class="axis" text-anchor="end">{tick_label(-m)}</text>']
+    for i, (k, v) in enumerate(rows):
+        x = pl + i * W / len(rows)
+        y0, y1 = sorted((Y(0), Y(v)))
+        col = "var(--ac)" if v >= 0 else "var(--dn)"
+        parts.append(f'<rect x="{x:.1f}" y="{y0:.1f}" width="{bw:.1f}" height="{max(y1 - y0, 0.5):.1f}" fill="{col}" rx="1"/>'
+                     f'<rect x="{x:.1f}" y="{pt}" width="{max(bw, 4):.1f}" height="{H}" fill="transparent" class="thit" '
+                     f'data-tip="{v:+.2f} bn|{k:,.0f}"/>')
+    for k, lab in ((spot, "SPX"), (cw, "Call"), (pw, "Put")):
+        if k and rows[0][0] <= k <= rows[-1][0]:
+            i = min(range(len(rows)), key=lambda j: abs(rows[j][0] - k))
+            x = pl + (i + 0.5) * W / len(rows)
+            parts.append(f'<text x="{x:.1f}" y="{h - 6}" class="axis" text-anchor="middle">{lab} {k:,.0f}</text>')
+    return f'<svg id="{cid}" class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="gamma by strike">{"".join(parts)}</svg>'
+
+
+def sec_darkpool(eng) -> str:
+    dp = (getattr(eng, "darkpool", None) and eng.darkpool.result) or {}
+    if not dp.get("available"):
+        return card("暗池指數（場外放空量）", "Dark-pool index (off-exchange short volume)",
+                    f'<p class="muted">{T("FINRA 資料暫時取不到或累積天數不足", "FINRA data unavailable or not enough history yet")}</p>', "wide")
+    etf = dp.get("etf") or {}
+    kv = (f'<div class="kv"><div><span class="muted">{T("暗池指數（30 檔大型股）", "Dark-pool index (30 large caps)")}</span><b>{dp["dpi"]:.1f}%</b></div>'
+          f'<div><span class="muted">{T("5 日平均", "5-day avg")}</span><b>{dp["dpi_5d"]:.1f}%</b></div>'
+          f'<div><span class="muted">{T("5 日平均的歷史百分位", "5d avg percentile")}（{dp["n_days"]} {T("天", "d")}）</span><b>{num(dp.get("pctile"), 0)}</b></div>'
+          + "".join(f'<div><span class="muted">{esc(e)}</span><b>{num(v, 1)}%</b></div>' for e, v in etf.items() if v is not None)
+          + f'</div><p><b>{T(str(dp.get("state") or "累積天數不足，暫不判斷"), "")}</b></p>')
+    hist = dp.get("history")
+    chart = line_chart("c_dpi", hist, "DPI %", 1, w=1100, h=210) if hist is not None and len(hist) >= 10 else ""
+    note = T(f"資料：FINRA 每日 Reg SHO 場外成交（含暗池、券商內部撮合）的放空量比例，T+1 公布，資料日 {dp['asof']}。"
+             "做法類似 SqueezeMetrics 的 DIX：買家在場外成交時，造市商通常以放空方式供貨，所以「放空比例偏高」反而代表買盤偏強、偏低代表賣壓。"
+             "這是代理指標，不是真正的暗池委託單；歷史只涵蓋本站已累積的天數，會逐日變長。",
+             f"Source: FINRA daily Reg SHO off-exchange short volume (T+1), as of {dp['asof']}. Same idea as SqueezeMetrics' DIX: a HIGH short "
+             "share off-exchange usually reflects dealers filling buyers. A proxy, not actual dark-pool orders; history grows daily.")
+    return card("暗池指數（場外放空量）", "Dark-pool index (off-exchange short volume)", kv + chart + f'<p class="note">{note}</p>', "wide")
+
+
+def sec_taiwan_trends(eng) -> str:
+    cells = []
+    for i, (t, zh, dg) in enumerate((("^TWII", "台股加權", 0), ("2330.TW", "台積電", 0), ("TWD=X", "美元/台幣", 3), ("EWT", "台灣 ETF（美股盤）", 2))):
+        s = eng.market.series(t)
+        if s.empty:
+            continue
+        q = eng.market.q(t)
+        chg = q.get("chg_pct") if q else None
+        cells.append(f'<div class="trend"><div class="th"><b>{T(zh, ASSET_EN.get(t, t))}</b><span class="muted">{T("今日", "1D")} '
+                     f'<span class="{cls(chg)}">{num(chg, 2, sign=True, pct=True)}</span></span></div>{line_chart(f"c_tw{i}", s.tail(260), ASSET_EN.get(t, t), dg)}</div>')
+    return card("台股走勢", "Taiwan trends", f'<div class="g2">{"".join(cells)}</div>', "wide") if cells else ""
 
 
 def sec_taiwan(eng) -> str:
@@ -484,6 +663,198 @@ def sec_news(eng) -> str:
                 sub=T("依關鍵字風險分數排序", "Ranked by keyword risk score"))
 
 
+# ----------------------------------------------------------------- 42 indicators / crises / valuation
+def fmt_raw(x) -> str:
+    if x is None or x != x:
+        return "—"
+    a = abs(x)
+    if a >= 1000:
+        return f"{x:,.0f}"
+    if a >= 1:
+        return f"{x:,.2f}"
+    return f"{x:.4f}"
+
+
+def sec_indicators(eng) -> str:
+    st = eng.stress
+    if not st or not st.components:
+        return ""
+    order = sorted(st.blocks, key=lambda b: -(st.blocks.get(b) or 0))
+    by: Dict[str, list] = {}
+    for c in st.components:
+        by.setdefault(c.block, []).append(c)
+    cells = []
+    for b in order + [k for k in by if k not in order]:
+        comps = sorted(by.get(b, []), key=lambda c: -(c.score if c.score is not None else -1))
+        if not comps:
+            continue
+        rows = ""
+        for c in comps:
+            zh, en = COMP_LABELS.get(c.id, (c.id, c.id))
+            if c.score is None:
+                stt = str(c.status).split(":")[0]
+                rows += (f'<tr class="off"><td>{T(zh, en)}</td><td class="r muted">—</td><td class="r muted">—</td>'
+                         f'<td colspan="2" class="muted small">{T("未納入：" + stt, "excluded: " + stt)}</td></tr>')
+                continue
+            col = LEVEL_COLORS[level_idx(c.score)]
+            rows += (f'<tr><td>{T(zh, en)}</td><td class="r">{fmt_raw(c.raw)}</td><td class="r {cls(c.z)}">{num(c.z, 1, sign=True)}</td>'
+                     f'<td class="r"><b>{c.score:.0f}</b></td><td><div class="meter"><i style="width:{min(c.score, 100):.0f}%;background:{col}"></i></div></td></tr>')
+        bs = st.blocks.get(b)
+        head = f'{T(b, BLOCK_EN.get(b))} <span class="muted">{"—" if bs is None else f"{bs:.0f}"}</span>'
+        cells.append(f'<div class="blk"><h3>{head}</h3><table><thead><tr><th>{T("指標", "Indicator")}</th><th class="r">{T("數值", "Raw")}</th>'
+                     f'<th class="r">z</th><th class="r">{T("分數", "Score")}</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>')
+    live = sum(1 for c in st.components if c.score is not None)
+    note = T(f"共 {len(st.components)} 項指標，本次納入 {live} 項。z ＝ 與自身近 3 年常態相比偏離幾個標準差（已依「越高越危險」的方向調整），分數 0–100、50 為常態；"
+             f"「未納入」代表資料缺或過期，不會被當成 50 分。",
+             f"{len(st.components)} indicators, {live} live. z = standard deviations from the indicator's own 3-year norm (signed so higher = riskier); "
+             f"score 0–100 with 50 = normal. Excluded inputs are never treated as 50.")
+    return card("壓力指數的全部指標", "Every indicator behind the SSI", f'<div class="g2">{"".join(cells)}</div><p class="note">{note}</p>', "wide")
+
+
+CRISIS_ASSETS = [("^GSPC", "標普", "S&P", "pct"), ("^TNX", "美債10年", "US 10Y", "bp"), ("DX-Y.NYB", "美元", "USD", "pct"),
+                 ("GC=F", "黃金", "Gold", "pct"), ("^HSI", "恆生", "Hang Seng", "pct"), ("^N225", "日經", "Nikkei", "pct"),
+                 ("^KS11", "韓國", "KOSPI", "pct"), ("^TWII", "台股", "TAIEX", "pct")]
+
+
+def _window_move(s, a, b, kind):
+    s = s.dropna()
+    if s.empty:
+        return None
+    a, b = pd.Timestamp(a), pd.Timestamp(b)
+    s0, s1 = s[s.index <= a], s[s.index <= b]
+    if not len(s0) or not len(s1) or (a - s0.index[-1]).days > 7:
+        return None
+    v0, v1 = float(s0.iloc[-1]), float(s1.iloc[-1])
+    return (v1 - v0) * 100 if kind == "bp" else ((v1 / v0 - 1) * 100 if v0 else None)
+
+
+def _mv_cell(v, kind):
+    if v is None:
+        return '<td class="r muted">—</td>'
+    txt = f"{v:+.0f}bp" if kind == "bp" else f"{v:+.1f}%"
+    return f'<td class="r {cls(v)}">{txt}</td>'
+
+
+def sec_crisis(eng) -> str:
+    st = eng.stress
+    scen = sorted(SETTINGS.get("stress_scenarios", []), key=lambda x: str(x["start"]))
+    if not scen:
+        return ""
+    ssi = st.history.dropna() if st else pd.Series(dtype=float)
+    bh = st.block_history if st is not None else pd.DataFrame()
+    marks = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"
+    rows, spans = [], []
+    for k, sc in enumerate(scen):
+        a, b = sc["start"], sc["end"]
+        mk = marks[k] if k < len(marks) else str(k + 1)
+        cells = "".join(_mv_cell(_window_move(eng.market.series(t), a, b, kind), kind) for t, _, _, kind in CRISIS_ASSETS)
+        win = ssi[(ssi.index >= pd.Timestamp(a)) & (ssi.index <= pd.Timestamp(b))]
+        if len(win):
+            pk = win.idxmax()
+            before = ssi[ssi.index <= pd.Timestamp(a)]
+            pre = f"{before.iloc[-21]:.0f}" if len(before) > 21 else "—"
+            tops = bh.loc[:pk].iloc[-1].dropna().sort_values(ascending=False).head(3) if len(bh) else pd.Series(dtype=float)
+            topb = "、".join(f"{x}" for x in tops.index)
+            ssi_cells = f'<td class="r">{pre}</td><td class="r"><b>{win.max():.0f}</b></td><td class="small">{esc(topb)}</td>'
+            spans.append((a, b, mk))
+        else:
+            ssi_cells = f'<td class="r muted" colspan="3">{T("壓力指數尚未涵蓋（資料不足）", "SSI not available for this period")}</td>'
+        rows.append(f'<tr><td class="nw">{mk} {esc(sc["name"])}</td><td class="small muted nw">{esc(a)} → {esc(b)}</td>{cells}{ssi_cells}</tr>')
+    # today: last 20 trading days, for scale
+    today_cells = ""
+    for t, _, _, kind in CRISIS_ASSETS:
+        s = eng.market.series(t).dropna()
+        v = None
+        if len(s) > 21:
+            v = (float(s.iloc[-1]) - float(s.iloc[-21])) * 100 if kind == "bp" else (float(s.iloc[-1]) / float(s.iloc[-21]) - 1) * 100
+        today_cells += _mv_cell(v, kind)
+    if st:
+        tops = sorted(st.blocks.items(), key=lambda kv: -kv[1])[:3]
+        today_cells += (f'<td class="r">{ssi.iloc[-21]:.0f}</td>' if len(ssi) > 21 else '<td class="r">—</td>') + \
+            f'<td class="r"><b>{st.score:.0f}</b></td><td class="small">{esc("、".join(k for k, _ in tops))}</td>'
+    rows.append(f'<tr class="today"><td class="nw"><b>{T("今天（近 20 日）", "Today (last 20d)")}</b></td><td></td>{today_cells}</tr>')
+    head = "".join(f'<th class="r">{T(zh, en)}</th>' for _, zh, en, _ in CRISIS_ASSETS)
+    table = (f'<div class="scroll"><table class="crisis"><thead><tr><th>{T("危機", "Crisis")}</th><th>{T("期間", "Window")}</th>{head}'
+             f'<th class="r">{T("事前 SSI", "SSI before")}</th><th class="r">{T("期間最高 SSI", "Peak SSI")}</th><th>{T("當時最緊張區塊", "Hottest blocks")}</th>'
+             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>')
+    chart = ""
+    if len(ssi) > 50:
+        wk = ssi.resample("W-FRI").last().dropna()
+        lv = SETTINGS.get("stress_levels", [])
+        bands, prev = [], 0.0
+        for i, l in enumerate(lv):
+            bands.append((prev, min(l["max"], 100), LEVEL_COLORS[min(i, 4)]))
+            prev = min(l["max"], 100)
+        chart = line_chart("c_ssi_all", wk, "SSI", 1, w=1100, h=230, bands=bands, fixed=(0, 100), spans=spans)
+    # every ≥10% S&P drawdown the SSI covers: did it warn before the peak?
+    ql = ((eng.shock or {}).get("quality") or {})
+    eps = ql.get("episodes") or []
+    ep_rows = "".join(
+        f'<tr><td class="nw">{esc(e["peak"])} → {esc(e["trough"])}</td><td class="r dn">{e["depth_pct"]:.1f}%</td>'
+        f'<td class="r">{e["ssi_at_peak"]:.0f}</td><td class="r">{num(e.get("ssi_max_pre"), 0)}</td>'
+        f'<td class="nw">{esc(e["first_warn"] or "—")}</td>'
+        f'<td class="r">{"—" if e.get("lead_days") is None else (str(e["lead_days"]) + T(" 天", " d"))}</td>'
+        f'<td>{T("✓ 高點前已預警", "✓ before the peak") if e.get("warned_before_peak") else (T("期間才預警", "during the fall") if e.get("first_warn") else T("✗ 未預警", "✗ missed"))}</td></tr>'
+        for e in eps)
+    es = ql.get("episode_summary") or {}
+    ep = ""
+    if ep_rows:
+        summ = T(f"共 {es.get('n', len(eps))} 次，高點前已預警 {es.get('warned_before_peak', 0)} 次"
+                 + (f"，領先中位數 {es['median_lead_days']:.0f} 個交易日" if es.get("median_lead_days") is not None else ""),
+                 f"{es.get('n', len(eps))} episodes, warned before the peak {es.get('warned_before_peak', 0)} times")
+        ep = (f'<h3>{T("壓力指數有沒有提前預警？（標普每次回檔 ≥10%）", "Did the SSI warn ahead of each ≥10% S&P drawdown?")}</h3><p class="small">{summ}</p>'
+              f'<div class="scroll"><table><thead><tr><th>{T("高點 → 低點", "Peak → trough")}</th><th class="r">{T("跌幅", "Fall")}</th>'
+              f'<th class="r">{T("高點時 SSI", "SSI at peak")}</th><th class="r">{T("高點前最高 SSI", "Max SSI before")}</th><th>{T("首次警示", "First warning")}</th>'
+              f'<th class="r">{T("領先", "Lead")}</th><th>{T("結果", "Result")}</th></tr></thead><tbody>{ep_rows}</tbody></table></div>')
+    note = T("各資產欄位是危機期間的漲跌（美債 10 年為殖利率變化，bp）；「—」代表當時還沒有該資料。壓力指數需要足夠多的指標才計算，"
+             "大約自 2003 年起才有數值，1997、2000 年的危機只能看資產表現。今天那一列是近 20 個交易日，方便和歷次危機比較強度。",
+             "Asset columns show the move during each crisis (US 10Y = yield change in bp); '—' = no data then. The SSI needs enough inputs "
+             "and starts around 2003, so 1997/2000 show asset moves only. The 'today' row is the last 20 trading days for scale.")
+    return card("歷史危機對照：金融海嘯、亞洲金融風暴與歷次崩盤", "Past crises: GFC, Asian crisis and other crashes",
+                chart + table + f'<p class="note">{note}</p>' + ep, "wide")
+
+
+VAL_COLORS = {"極端": "#d03b3b", "偏熱": "#ec835a", "正常": "#6b7280", "偏冷": "#3987e5", "資料缺": "#6b7280",
+              "恐慌": "#d03b3b", "緊張": "#ec835a", "自滿": "#fab219", "極度自滿": "#fab219"}
+VAL_EN = {"極端": "Extreme", "偏熱": "Hot", "正常": "Normal", "偏冷": "Cool", "資料缺": "n/a",
+          "恐慌": "Panic", "緊張": "Stressed", "自滿": "Complacent", "極度自滿": "Very complacent"}
+
+
+def sec_valuation(eng) -> str:
+    val = getattr(eng, "valuation", None) or {}
+    if not val.get("available"):
+        return ""
+    cols = []
+    for g in val["groups"]:
+        if not g["items"]:
+            continue
+        rows = ""
+        for i in g["items"]:
+            v = "—" if i["value"] is None else (f'{i["value"]:.2f}{i["unit"]}' if i["unit"] != "%" or abs(i["value"]) < 1000 else f'{i["value"]:,.0f}%')
+            p = i["pctile"]
+            mark = f'<i style="left:{p:.0f}%"></i>' if p is not None else ""
+            c = VAL_COLORS.get(i["grade"], "#6b7280")
+            extra = ""
+            if i.get("estimate") is not None:
+                extra = T(f"（{i['quarter'][:7]} 季資料 {i['reported']:.2f}，依標普漲跌推估至今）",
+                          f"(Q data {i['quarter'][:7]}: {i['reported']:.2f}, rolled forward with the S&P)")
+            elif i.get("asof"):
+                extra = f'<span class="muted">（{esc(i["asof"])}）</span>'
+            rows += (f'<div class="vrow"><div class="vh"><b>{T(i["label"], i["label_en"])}</b>'
+                     f'<span class="pill"><i class="sw" style="background:{c}"></i>{T(i["grade"], VAL_EN.get(i["grade"]))}</span></div>'
+                     f'<div class="vv"><span class="vnum">{v}</span><span class="small muted">{T("歷史百分位", "Hist. pct")} '
+                     f'{"—" if p is None else f"{p:.0f}"}（{T("自", "since")} {esc(str(i["hist_start"]))}）</span></div>'
+                     f'<div class="pct">{mark}</div><p class="small muted">{esc(i["what"])} {extra}</p></div>')
+        cols.append(f'<div><h3>{T(g["title"], g["title_en"])}</h3>{rows}</div>')
+    note = T("這些是「慢變數」：告訴你市場貴不貴、底層信用是否在惡化，但無法告訴你何時反轉——2000 年與 2021 年的估值高點都撐了很久。"
+             "百分位是和各指標自己的歷史相比；季資料約晚 10 週公布。",
+             "Slow variables: they say how stretched things are and whether credit is deteriorating, not when it turns. "
+             "Percentiles are versus each series' own history; quarterly data lag about 10 weeks.")
+    return card("估值與泡沫觀察", "Valuation & bubble watch", f'<div class="g3">{"".join(cols)}</div><p class="note">{note}</p>', "wide",
+                sub=T("巴菲特指標、信用週期與投機熱度", "Buffett indicator, credit cycle and speculation"))
+
+
+
 def sec_quality(eng) -> str:
     from wsb.health import HEALTH
     sk = eng.shock or {}
@@ -507,12 +878,12 @@ def sec_quality(eng) -> str:
     bad = [s.name for s in HEALTH.sources.values() if s.state != "ok"]
     badh = f'<span class="muted">（{T("異常", "issues")}：{esc(", ".join(bad[:6]))}）</span>' if bad else ""
     lis = "".join(f"<li>{x}</li>" for x in lines)
-    note = T("AUC 0.5 ＝ 隨機、1.0 ＝ 完美；低於 0.6 代表鑑別力有限。請把本站當風險溫度計，而不是預測器。",
-             "AUC 0.5 = random, 1.0 = perfect; below 0.6 = weak. Treat this as a risk thermometer, not a forecaster.")
+    note = T("AUC 0.5 ＝ 隨機、1.0 ＝ 完美；≥0.65 有鑑別力、0.55–0.65 偏弱、<0.55 接近隨機。請把本站當風險溫度計，而不是預測器。",
+             "AUC 0.5 = random, 1.0 = perfect; ≥0.65 useful, 0.55–0.65 weak, <0.55 near random. Treat this as a risk thermometer, not a forecaster.")
     body = (f'<div class="scroll"><table><thead><tr><th>{T("情境", "Horizon")}</th><th class="r">{T("樣本外 AUC", "OOS AUC")}</th>'
             f'<th>{T("鑑別力", "Verdict")}</th></tr></thead><tbody>{rows}</tbody></table></div><ul class="lines">{lis}</ul>'
             f'<p>{T("資料源", "Data sources")} <b>{ok}/{len(HEALTH.sources)}</b> {T("正常", "OK")}{badh}</p><p class="note">{note}</p>')
-    return f'<details class="card wide"><summary><h2>{T("模型可信度與資料健康", "Model credibility & data health")}</h2></summary>{body}</details>'
+    return card("模型可信度與資料健康", "Model credibility & data health", body, "wide")
 
 
 def sec_ai(text: str, engine_name: str) -> str:
@@ -599,7 +970,7 @@ body{margin:0;background:var(--page);color:var(--tx);font:14px/1.55 system-ui,-a
 .wrap{max-width:1320px;margin:0 auto;padding:12px 16px 40px}
 .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(148px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
 .tile{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px 11px;position:relative;min-height:86px}
-.tl{color:var(--mu);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tv{font-size:18px;font-weight:700;margin-top:2px}.tc{font-size:12px;font-variant-numeric:tabular-nums}
+.tl{color:var(--mu);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;justify-content:space-between;gap:6px}.tv{font-size:18px;font-weight:700;margin-top:2px}.tc{font-size:12px;font-variant-numeric:tabular-nums}
 .spark{position:absolute;right:8px;bottom:8px;width:80px;height:24px}.spark polyline{fill:none;stroke:var(--mu);stroke-width:1.5}.spark circle{fill:var(--ac)}
 .grid12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-flow:row dense;gap:12px;margin-top:12px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;grid-column:span 4;min-width:0}
@@ -641,11 +1012,28 @@ a{color:var(--tx);text-decoration:none}a:hover{color:var(--ac);text-decoration:u
 details.card summary{cursor:pointer;list-style:none}details.card summary::-webkit-details-marker{display:none}
 details.card summary h2{display:inline;margin:0}details.card summary h2::before{content:"▸ ";color:var(--mu)}details.card[open] summary h2::before{content:"▾ "}details.card[open] summary{margin-bottom:10px}
 details.card{margin-top:12px}
+.lc .span{fill:var(--warn);opacity:.13}.spanlbl{fill:var(--tx2);font-size:11px}
+.live.stale i{background:var(--mu)}.live.stale{color:var(--warn)}.asof{color:var(--mu);font-size:11px;margin-left:4px}
+.miss{margin-top:6px;font-size:11.5px;color:var(--warn);max-width:220px}
+.blk h3{margin:6px 0 4px;color:var(--tx)}.blk table{font-size:12.5px}.blk td,.blk th{padding:4px 6px}.blk tr.off td{opacity:.7}
+table.crisis td,table.crisis th{padding:6px 6px;font-size:12.5px}.scroll table.crisis{min-width:1000px}.nw{white-space:nowrap}tr.today td{background:var(--card2)}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.vrow{padding:8px 0;border-bottom:1px solid var(--bd)}
+.vh{display:flex;justify-content:space-between;gap:8px;align-items:center}.vv{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 4px}
+.vnum{font-size:18px;font-weight:700}.pct{position:relative;height:6px;border-radius:99px;margin:4px 0;
+background:var(--card2)}
+.pct i{position:absolute;top:-4px;width:3px;height:14px;background:var(--tx);border-radius:2px;transform:translateX(-1px)}
+.pnav{border-top:1px solid var(--bd)}
+.pbar{max-width:1320px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.pbar::-webkit-scrollbar{display:none}
+.ptab{white-space:nowrap;padding:10px 12px;color:var(--tx2);text-decoration:none;border-bottom:2px solid transparent;font-size:13.5px}
+.ptab:hover{color:var(--tx);text-decoration:none}.ptab.on{color:var(--tx);border-bottom-color:var(--ac);font-weight:700}
+.page{display:none}.page.on{display:block}
+.chart .zero{stroke:var(--axis);stroke-width:1}.chart .mk{stroke-width:1}.gln{fill:none;stroke:var(--ac);stroke-width:2}.thit{cursor:crosshair}
 #tip{position:fixed;z-index:9;pointer-events:none;background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.35);display:none}
 #tip b{display:block;font-size:14px;color:var(--tx)}#tip span{color:var(--mu)}
 footer{color:var(--mu);font-size:12px;padding:16px 0 0;border-top:1px solid var(--bd);margin-top:16px}
 @media(max-width:1100px){.card.ssi{grid-column:span 12}.card.span3{grid-column:span 6}.card.span4{grid-column:span 6}.card.span8{grid-column:span 12}}
-@media(max-width:760px){.card,.card.ssi,.card.span3,.card.span4,.card.span8{grid-column:span 12}.g2{grid-template-columns:1fr}.ai{columns:1}
+@media(max-width:1100px){.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.g3{grid-template-columns:1fr}.card,.card.ssi,.card.span3,.card.span4,.card.span8{grid-column:span 12}.g2{grid-template-columns:1fr}.ai{columns:1}
  .big{font-size:52px}.stage{margin-left:0}.live{margin-left:0;width:100%;order:3}}
 """
 
@@ -665,6 +1053,14 @@ document.querySelectorAll('svg.lc').forEach(function(svg){var c=D[svg.id];if(!c)
 document.querySelectorAll('.rhit').forEach(function(el){function sh(ev){var p=el.dataset.tip.split('|'),en=document.documentElement.lang==='en',r=el.getBoundingClientRect();
   show(ev.clientX||r.left+r.width/2,ev.clientY||r.top,[p[2]+' / 100',en?p[1]:p[0]]);}
  el.addEventListener('pointermove',sh);el.addEventListener('focus',sh);el.addEventListener('pointerleave',hide);el.addEventListener('blur',hide);});
+function page(k){var ok=document.getElementById('p-'+k);if(!ok){k='overview';}
+ document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('on',e.id==='p-'+k);});
+ document.querySelectorAll('.ptab').forEach(function(e){e.classList.toggle('on',e.dataset.p===k);});hide();}
+document.querySelectorAll('.ptab').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();page(a.dataset.p);
+ try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){location.hash=a.dataset.p;}window.scrollTo(0,0);});});
+window.addEventListener('hashchange',function(){page(location.hash.slice(1));});if(location.hash)page(location.hash.slice(1));
+document.querySelectorAll('.thit').forEach(function(el){function sh(ev){var p=el.dataset.tip.split('|');show(ev.clientX,ev.clientY,p);}
+ el.addEventListener('pointermove',sh);el.addEventListener('pointerleave',hide);});
 document.querySelectorAll('.tab').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab,.panel').forEach(function(e){e.classList.remove('on');});b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');});});
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function setLang(l){document.documentElement.lang=l==='en'?'en':'zh-Hant';document.querySelectorAll('[data-en]').forEach(function(e){if(e.dataset.zh===undefined)e.dataset.zh=e.textContent;e.textContent=l==='en'?e.dataset.en:e.dataset.zh;});
@@ -682,10 +1078,24 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    sections = (sec_ssi, sec_radar, sec_odds, None, sec_trends, sec_shock, sec_playbook_breaks, sec_macro,
-                sec_positioning, sec_markets, sec_taiwan, sec_calendar, sec_news)
-    grid = "".join(sec_ai(ai_text, ai_engine) if f is None else f(eng) for f in sections)
-    strip, quality = sec_strip(eng), sec_quality(eng)
+    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, sec_trends]),
+            ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
+            ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, sec_positioning]),
+            ("crisis", "歷史危機", "Past crises", [sec_crisis]),
+            ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
+            ("markets", "全球行情", "Markets", [sec_markets]),
+            ("taiwan", "台股", "Taiwan", [sec_taiwan_trends, sec_taiwan]),
+            ("news", "新聞日曆", "News & calendar", [sec_calendar, sec_news]),
+            ("inputs", "指標明細", "All inputs", [sec_indicators])]
+    nav, panels = [], []
+    for i, (key, zh, en, fs) in enumerate(tabs):
+        html_ = "".join(sec_ai(ai_text, ai_engine) if f is None else f(eng) for f in fs)
+        if not html_.strip():
+            html_ = f'<section class="card wide"><p class="muted">{T("這一頁的資料暫時取不到", "No data for this page right now")}</p></section>'
+        nav.append(f'<a class="ptab{" on" if i == 0 else ""}" href="#{key}" data-p="{key}" data-en="{esc(en)}">{esc(zh)}</a>')
+        panels.append(f'<div class="page{" on" if i == 0 else ""}" id="p-{key}"><div class="grid12">{html_}</div></div>')
+    strip = sec_strip(eng)
+    asof, stale = data_asof(eng)
     data = json.dumps(_CHARTS, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     foot = T("資料來源：Yahoo Finance、FRED、CBOE、證交所／期交所、公開新聞 RSS。平日每小時、週末每 4 小時自動更新。所有數字由程式自動計算；崩跌機率是歷史頻率而非預測。本站僅提供市場資訊，不構成任何投資建議。",
              "Sources: Yahoo Finance, FRED, CBOE, TWSE/TAIFEX, public news RSS. Updated hourly on weekdays, every 4 hours on weekends. "
@@ -694,9 +1104,10 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <meta name="robots" content="noindex,nofollow"><meta name="color-scheme" content="dark light"><title>WallStreet Sentinel｜全球金融風險情報站</title>
 <style>{CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
-<span class="live"><i></i>{T("更新於", "Updated")} {now:%Y-%m-%d %H:%M} {T("台北", "Taipei")}</span>
-<button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div></header>
-<main class="wrap">{strip}<div class="grid12">{grid}</div>{quality}<footer>{foot}</footer></main>
+<span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
+<button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
+<nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
+<main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
 <div id="tip" role="status"></div>
 <script type="application/json" id="chart-data">{data}</script><script>{JS}</script></body></html>'''
 
@@ -719,9 +1130,10 @@ async def ai_commentary(eng) -> Tuple[str, str]:
         pack = context.build(eng, "full", private=False)
     except TypeError:                                            # older context.build without the public switch
         pack = context.build(eng, "full")
-    text, name = await llm.complete(PUBLIC_SYSTEM, pack + "\n\n" + PUBLIC_BRIEF, 2600)
+    text, name = await llm.complete(PUBLIC_SYSTEM, pack + "\n\n" + PUBLIC_BRIEF, 4000)
     if name == "none" or text.startswith("⚠️"):
         return "", ""
+    text = text.replace("（輸出達長度上限，內容可能不完整）", "").strip()
     return scrub_advice(text), name
 
 

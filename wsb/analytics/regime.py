@@ -7,6 +7,8 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from ..config import SETTINGS
+
 
 def _z_last(s: pd.Series, window: int = 756, lag: int = 0) -> Optional[float]:
     """z-score of the observation `lag` rows before the last, against the `window` rows ending there."""
@@ -74,7 +76,8 @@ def classify(market, fred) -> Dict:
                        drift=f"成長{'轉強' if g > g1 else '轉弱'}（{g - g1:+.2f}）、通膨{'升溫' if i > i1 else '降溫'}（{i - i1:+.2f}）",
                        quadrant_changed=QUADRANTS[(g1 >= 0, i1 >= 0)][0] != name)
     if r is not None:
-        out["risk_mode"] = "Risk-ON 追價" if r > 0.5 else "Risk-OFF 避險" if r < -0.5 else "中性/分歧"
+        band = float(SETTINGS.get("regime", {}).get("risk_band_z", 0.5))
+        out["risk_mode"] = "Risk-ON 追價" if r > band else "Risk-OFF 避險" if r < -band else "中性/分歧"
 
     nl = fred.net_liquidity()
     if not nl.empty and len(nl) > 20:

@@ -38,13 +38,17 @@ jobs:
 
       - run: pip install -r requirements-site.txt
 
-      # 歷史價格快取：沒有它每次要重抓十幾年資料，會多花好幾分鐘
-      - name: 還原歷史價格快取
-        uses: actions/cache@v4
+      # 歷史價格、FRED 檔案庫、暗池指數與資料庫快取：失敗時也照樣存，避免下次重抓 30 年資料
+      - name: 還原資料快取
+        uses: actions/cache/restore@v4
         with:
-          path: data_cache/history_close.pkl
-          key: history-${{ github.run_id }}
-          restore-keys: history-
+          path: |
+            data_cache/history_close.pkl
+            data_cache/fred_series.pkl
+            data_cache/darkpool.json
+            data_cache/sentinel.db
+          key: data-${{ github.run_id }}
+          restore-keys: data-
 
       - name: 產生網站
         env:
@@ -55,10 +59,22 @@ jobs:
           if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
           python -m tools.build_site --out site $FLAG
 
+      - name: 儲存資料快取
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data_cache/history_close.pkl
+            data_cache/fred_series.pkl
+            data_cache/darkpool.json
+            data_cache/sentinel.db
+          key: data-${{ github.run_id }}
+
+      # 只檢查「持倉區塊才會出現」的標記，避免 AI 評論或新聞裡的一般用詞（例如「未實現」）誤判
       - name: 確認輸出不含持倉
         run: |
           test -s site/index.html
-          ! grep -Eq "持倉總值|未實現|VaR99" site/index.html
+          ! grep -Eq "## 使用者持倉|持倉總值|未實現損益|data-private" site/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

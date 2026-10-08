@@ -21,6 +21,11 @@ from .crash_odds import forward_min_return
 CFG = SETTINGS.get("shock", {})
 CREDIT_LIKE = CFG.get("credit_blocks", ["信用", "私募信貸", "利率", "流動性", "全球新興"])
 EQUITY_LIKE = CFG.get("equity_blocks", ["波動率", "股市結構"])
+def _k(key, default):
+    """Model constant from settings.yaml → shock.model (defaults = the values the radar was designed with)."""
+    return (SETTINGS.get("shock", {}).get("model") or {}).get(key, default)
+
+
 DEFAULT_PATHS = [
     {"name": "信用事件", "blocks": ["私募信貸", "信用"],
      "story": "私募信貸/BDC 贖回與壞帳 → 區域銀行與高收益債利差擴大 → 融資收緊 → 股市被迫去槓桿"},
@@ -69,15 +74,16 @@ def block_radar(st, close: Optional[pd.Series] = None, horizon: int = 63, dd: fl
         chg = float(level - s.iloc[-21]) if len(s) > 21 else None
         d20 = s.diff(20).dropna()
         pct = float((d20 < chg).mean() * 100) if chg is not None and len(d20) > 100 else None
-        if level >= 70 and (pct or 0) >= 70:
+        if level >= _k("ignite_level", 70) and (pct or 0) >= _k("ignite_accel_pct", 70):
             state = "點火中"
-        elif level >= 60 or (pct or 0) >= 90:
+        elif level >= _k("heat_level", 60) or (pct or 0) >= _k("heat_accel_pct", 90):
             state = "升溫"
         else:
             state = "平靜"
         rows.append({"block": b, "level": float(level), "chg20": chg, "accel_pctile": pct, "state": state,
                      "auc": lead.get(b), "auc_verdict": _verdict(lead.get(b))})
-    return sorted(rows, key=lambda r: -(r["level"] + 0.25 * ((r["accel_pctile"] or 50) - 50)))
+    w = float(_k("accel_weight", 0.25))
+    return sorted(rows, key=lambda r: -(r["level"] + w * ((r["accel_pctile"] or 50) - 50)))
 
 
 # ---------------------------------------------------------------- 2) transmission paths
@@ -91,10 +97,10 @@ def shock_paths(radar: List[Dict]) -> List[Dict]:
             continue
         level = float(np.mean([r["level"] for r in rs]))
         accel = float(np.mean([r["accel_pctile"] if r["accel_pctile"] is not None else 50.0 for r in rs]))
-        ign = level + 0.25 * (accel - 50)                       # level, nudged by how fast it is rising
+        ign = level + float(_k("accel_weight", 0.25)) * (accel - 50)   # level, nudged by how fast it is rising
         out.append({"name": p["name"], "blocks": p["blocks"], "story": p.get("story", ""), "level": level,
                     "accel_pctile": accel, "ignition": ign,
-                    "state": "高度警戒" if ign >= 70 else ("留意" if ign >= 58 else "低")})
+                    "state": "高度警戒" if ign >= _k("path_alert", 70) else ("留意" if ign >= _k("path_watch", 58) else "低")})
     return sorted(out, key=lambda x: -x["ignition"])
 
 
@@ -114,10 +120,10 @@ def divergence(st, close: Optional[pd.Series] = None, thr: Optional[float] = Non
     ee = [b for b in EQUITY_LIKE if b in bh.columns]
     if close is not None and cc and ee and len(close) > 300:
         gh = (bh[cc].mean(axis=1) - bh[ee].mean(axis=1)).dropna()
-        fmr = forward_min_return(close.dropna(), 63)
+        fmr = forward_min_return(close.dropna(), int(_k("divergence_horizon_days", 63)))
         j = pd.concat([gh.rename("g"), fmr.rename("f")], axis=1).dropna()
         if len(j) > 300:
-            hit = j["f"] <= -0.10
+            hit = j["f"] <= -float(_k("divergence_drawdown", 0.10))
             on = j["g"] >= thr
             out["hist"] = {"days_flagged": int(on.sum()), "base_rate": float(hit.mean() * 100),
                            "prob_when_flagged": float(hit[on].mean() * 100) if on.sum() >= 20 else None,
@@ -209,7 +215,7 @@ def model_quality(ssi: pd.Series, close: pd.Series) -> Dict:
         df = pd.DataFrame({"ssi": ssi}).join(close.dropna().rename("px"), how="inner").dropna()
         fm = forward_min_return(df["px"], int(h["days"]))
         w["auc_in"] = auc(df["ssi"], ((fm <= -float(h["drawdown"])).astype(float)).where(fm.notna()))
-    eps = drawdown_episodes(close, ssi)
+    eps = drawdown_episodes(close, ssi, warn=float(_k("episode_warn_ssi", 55.0)))
     warned = [e for e in eps if e["warned_before_peak"]]
     early_or_during = [e for e in eps if e["first_warn"] is not None]
     return {"walk_forward": wf, "episodes": eps,

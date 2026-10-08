@@ -13,17 +13,23 @@ import pandas as pd
 
 from ..config import SETTINGS
 
-STAGES = [
-    {"name": "正常", "emoji": "🟢", "thr": 0},
-    {"name": "留意", "emoji": "🟡", "thr": 2},
-    {"name": "戒備", "emoji": "🟠", "thr": 4},
-    {"name": "防禦", "emoji": "🔴", "thr": 6},
-]
-BETA_FACTOR = [1.0, 1.0, 0.85, 0.65]          # target portfolio beta as a fraction of today's beta
-
-
 def _cfg() -> Dict:
     return SETTINGS.get("playbook", {})
+
+
+def _p(key, default):
+    """Model constant from settings.yaml → playbook.scoring (defaults = the values the rules were designed with)."""
+    return (_cfg().get("scoring") or {}).get(key, default)
+
+
+_THR = _p("stage_thresholds", [0, 2, 4, 6])
+STAGES = [
+    {"name": "正常", "emoji": "🟢", "thr": _THR[0]},
+    {"name": "留意", "emoji": "🟡", "thr": _THR[1]},
+    {"name": "戒備", "emoji": "🟠", "thr": _THR[2]},
+    {"name": "防禦", "emoji": "🔴", "thr": _THR[3]},
+]
+BETA_FACTOR = _p("beta_factor", [1.0, 1.0, 0.85, 0.65])     # target portfolio beta as a fraction of today's beta
 
 
 # ---------------------------------------------------------------- regime breaks (do the usual hedges still work?)
@@ -75,21 +81,35 @@ def regime_breaks(market) -> Dict:
 
 # ---------------------------------------------------------------- stage scoring
 def score(ssi: Optional[float], levels: List[Dict], odds: Dict, shock: Dict, breaks: Dict, health_ok: bool = True) -> Dict:
-    pts, why = 0, []
+    """Sum of transparent points. Inputs that are missing are listed in `missing` (and `incomplete`=True) so a
+    quiet stage caused by absent data is never presented as an all-clear."""
+    pts, why, missing = 0, [], []
+    ssi_pts = _p("ssi_points", [0, 0, 1, 2, 3])                     # points per stress_levels index
     if ssi is not None:
         idx = next((i for i, lv in enumerate(levels) if ssi < lv["max"]), len(levels) - 1)
-        add = {0: 0, 1: 0, 2: 1, 3: 2, 4: 3}.get(idx, 0)
+        add = ssi_pts[idx] if idx < len(ssi_pts) else ssi_pts[-1]
         if add:
             pts += add
             why.append((add, f"SSI {ssi:.0f}（{levels[idx]['label']}）"))
-    h63 = next((h for h in (odds or {}).get("horizons", []) if h["days"] == 63), None)
-    la = (h63 or {}).get("lift_adj", (h63 or {}).get("lift")) if h63 else None
+    else:
+        missing.append("壓力指數")
+    hdays = int(_p("odds_horizon_days", 63))
+    hz = next((h for h in (odds or {}).get("horizons", []) if h["days"] == hdays), None)
+    if hz is None and (odds or {}).get("horizons"):                 # horizon not configured → use the middle one
+        hs = odds["horizons"]
+        hz = hs[len(hs) // 2]
+    la = (hz or {}).get("lift_adj", (hz or {}).get("lift")) if hz else None
     if la is not None:
-        add = 2 if la >= 2.2 else 1 if la >= 1.5 else 0
+        lo, hi = _p("lift_points", [1.5, 2.2])
+        add = 2 if la >= hi else 1 if la >= lo else 0
         if add:
             pts += add
             why.append((add, f"崩跌機率為歷史基準的 ×{la:.1f}"))
+    else:
+        missing.append("崩跌機率")
     paths = (shock or {}).get("paths") or []
+    if not (shock or {}).get("radar"):
+        missing.append("衝擊雷達")
     top = paths[0] if paths else None
     if top and top["state"] == "高度警戒":
         pts += 1
@@ -98,19 +118,24 @@ def score(ssi: Optional[float], levels: List[Dict], odds: Dict, shock: Dict, bre
     if dv.get("flag"):
         hs = dv.get("hist") or {}
         pw, base = hs.get("prob_when_flagged"), hs.get("base_rate")
-        if pw is not None and base and pw >= 1.2 * base:          # a rule earns its point only if history backs it
+        if pw is not None and base and pw >= float(_p("divergence_backing", 1.2)) * base:   # a rule earns its point only if history backs it
             pts += 1
             why.append((1, f"信用壓力領先股市恐慌（差 {dv['gap']:+.0f}；歷史背離後跌幅機率 {pw:.0f}% vs 基準 {base:.0f}%）"))
         else:
             why.append((0, f"信用壓力領先股市恐慌（差 {dv['gap']:+.0f}），但歷史上未顯示更高跌幅機率，不計分"))
+    if not (breaks or {}).get("available"):
+        missing.append("避險有效性")
     nb = len((breaks or {}).get("flags", []))
     if nb:
         add = 2 if nb >= 2 else 1
         pts += add
         why.append((add, f"避險機制失效訊號 {nb} 項"))
+    if not health_ok:
+        missing.append("資料涵蓋率不足")
     stage = max(i for i, s in enumerate(STAGES) if pts >= s["thr"])
     return {"points": pts, "stage": stage, "name": STAGES[stage]["name"], "emoji": STAGES[stage]["emoji"], "why": why,
-            "next_thr": STAGES[stage + 1]["thr"] if stage < 3 else None, "data_ok": health_ok}
+            "next_thr": STAGES[stage + 1]["thr"] if stage < 3 else None, "data_ok": health_ok and not missing,
+            "incomplete": bool(missing), "missing": missing}
 
 
 def hysteresis(prev: Optional[int], cur: Dict) -> int:

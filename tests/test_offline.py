@@ -48,9 +48,11 @@ from wsb.data.options import parse_chain  # noqa: E402
 
 rng = np.random.default_rng(7)
 # the synthetic history ends on the last business day (a fixed end date made every component "stale" a week later)
-END = (pd.Timestamp.today().normalize() - pd.tseries.offsets.BDay(1)).normalize()
+END = pd.Timestamp("2026-10-07")          # fixed synthetic history → identical numbers every day
+import wsb.analytics.stress as _STRESS  # noqa: E402
+_STRESS._today = lambda: END + pd.Timedelta(days=1)   # freshness is judged against the synthetic "today"
 # fixed length (so the seeded random draws never change from day to day), always ending on the last business day
-idx = pd.bdate_range(end=END, periods=len(pd.bdate_range("2012-01-02", "2026-10-07")))
+idx = pd.bdate_range("2012-01-02", END)
 n = len(idx)
 
 # market factor with two crash episodes
@@ -60,7 +62,8 @@ for start in (1500, 2900):
 stress_factor = pd.Series(-mkt).rolling(20).mean().fillna(0).values
 
 cols = {}
-for t in SETTINGS.all_tickers() + ["NVDA", "TSM", "NEWCO"]:
+_VAL = set(SETTINGS.get("valuation", {}).get("tickers", []))     # added later: keep the seeded draws of the core set unchanged
+for t in [x for x in SETTINGS.all_tickers() if x not in _VAL] + ["NVDA", "TSM", "NEWCO"]:
     beta = rng.uniform(0.3, 1.6)
     if t.startswith("^VIX") or t in ("^VVIX", "^MOVE", "^SKEW"):
         base = 18 if t != "^VVIX" else 90
@@ -73,6 +76,9 @@ for t in SETTINGS.all_tickers() + ["NVDA", "TSM", "NEWCO"]:
     if t == "JPY=X":
         r = -0.3 * mkt + rng.normal(0, 0.005, n)
     cols[t] = 100 * np.exp(np.cumsum(r))
+_rng2 = np.random.default_rng(11)
+for t in sorted(_VAL):
+    cols[t] = 100 * np.exp(np.cumsum(_rng2.uniform(0.6, 1.4) * mkt + _rng2.normal(0, 0.008, n)))
 hist = pd.DataFrame(cols, index=idx)
 hist.loc[:"2020-01-01", "NEWCO"] = np.nan   # recent IPO → beta proxy path
 

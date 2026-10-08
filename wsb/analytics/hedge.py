@@ -160,11 +160,13 @@ def advice(ssi: Optional[float], res: Dict) -> str:
                  if small else "")
     if ssi is None:
         return size_note or "壓力指數尚未就緒。"
-    if ssi < 45:
+    lv = SETTINGS.get("stress_levels", [])               # same cut-offs as the SSI labels (平靜/正常/升溫/高壓/極端)
+    idx = next((i for i, x in enumerate(lv) if ssi < x["max"]), len(lv) - 1)
+    if idx <= 0:
         base = "壓力低：保險最便宜但也最不需要；若要避險，選 10% 價外、90 天，當作『災難保險』即可。"
-    elif ssi < 60:
+    elif idx == 1:
         base = "壓力中性：可用 5–10% 價外、45–90 天的賣權保護核心部位，或在財報/FOMC 前短期加保。"
-    elif ssi < 75:
+    elif idx == 2:
         base = "壓力升溫：建議建立保護——價平～5% 價外、90 天賣權，或減碼風險貢獻最高的持股。"
     else:
         base = "壓力極高：保險費已變貴，優先『減碼』而非追買賣權；剩餘部位用反向 ETF 對沖。"

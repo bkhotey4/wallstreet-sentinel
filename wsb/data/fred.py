@@ -11,7 +11,7 @@ from typing import Dict
 
 import pandas as pd
 
-from ..config import FRED_API_KEY, SETTINGS
+from ..config import FRED_API_KEY, SETTINGS, history_start
 from ..health import HEALTH
 from . import http
 
@@ -38,15 +38,44 @@ async def _one(series_id: str, start: str) -> pd.Series:
     return s.sort_index()
 
 
+_CACHE = None
+
+
+def _cache_file():
+    global _CACHE
+    if _CACHE is None:
+        from ..config import DATA_DIR
+        _CACHE = DATA_DIR / "fred_series.pkl"
+    return _CACHE
+
+
 class FredData:
     def __init__(self) -> None:
         self.series: Dict[str, pd.Series] = {}
         self.ts = 0.0
+        # Append-only local archive: some FRED series (ICE BofA OAS) now publish only the last 3 years, so the
+        # history we have already seen is kept and merged — the backtest window grows instead of shrinking.
+        self._archive: Dict[str, pd.Series] = {}
+        try:
+            if _cache_file().exists():
+                self._archive = pd.read_pickle(_cache_file())
+        except Exception as e:  # noqa: BLE001
+            log.warning("FRED archive unreadable: %s", e)
+
+    def _merge(self, sid: str, s: pd.Series) -> pd.Series:
+        old = self._archive.get(sid)
+        if old is not None and len(old):
+            s = pd.concat([old[old.index < s.index.min()], s]) if len(s) else old
+        self._archive[sid] = s
+        return s
 
     async def refresh(self) -> None:
         every = SETTINGS["refresh"]["fred"]
-        start = (date.today() - timedelta(days=365 * int(SETTINGS.get("history_years", 20)))).isoformat()
-        ids = list(SETTINGS.get("fred_series", {}).keys())
+        start = history_start().isoformat()
+        val = SETTINGS.get("valuation", {}) or {}
+        long_start = str(val.get("fred_start", start))
+        ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())))
+        starts = {sid: long_start for sid in (val.get("fred") or {})}
         sem = asyncio.Semaphore(4)
         ok, fails, last_err = 0, 0, ""
 
@@ -56,7 +85,7 @@ class FredData:
                 if ok == 0 and fails >= 4:          # circuit breaker: FRED unreachable → stop early
                     return
                 try:
-                    self.series[sid] = await _one(sid, start)
+                    self.series[sid] = self._merge(sid, await _one(sid, starts.get(sid, start)))
                     ok += 1
                 except Exception as e:  # noqa: BLE001
                     fails += 1
@@ -65,7 +94,17 @@ class FredData:
                 await asyncio.sleep(0.3)
 
         await asyncio.gather(*(run(s) for s in ids))
+        for sid in ids:                                   # failed this round → fall back to the archive
+            if sid not in self.series and sid in self._archive:
+                self.series[sid] = self._archive[sid]
         if ok:
+            try:
+                tmp = _cache_file().with_suffix(".tmp")
+                pd.to_pickle(self._archive, tmp)
+                import os
+                os.replace(tmp, _cache_file())
+            except Exception as e:  # noqa: BLE001
+                log.warning("FRED archive not saved: %s", e)
             self.ts = time.time()
             HEALTH.ok("fred", ok, every=every)
         else:
@@ -79,8 +118,8 @@ class FredData:
         if s.empty:
             return None
         out = {"value": float(s.iloc[-1]), "date": s.index[-1].strftime("%Y-%m-%d")}
-        for lbl, days in (("chg_1m", 30), ("chg_3m", 91), ("chg_1y", 365)):
-            past = s[s.index <= s.index[-1] - pd.Timedelta(days=days)]
+        for lbl, months in (("chg_1m", 1), ("chg_3m", 3), ("chg_1y", 12)):
+            past = s[s.index <= s.index[-1] - pd.DateOffset(months=months)]   # calendar months (monthly series dated the 1st)
             out[lbl] = float(s.iloc[-1] - past.iloc[-1]) if len(past) else None
         tail = s[s.index >= s.index[-1] - pd.Timedelta(days=365 * 3)]
         if len(tail) > 20:
@@ -94,8 +133,9 @@ class FredData:
             return pd.Series(dtype=float)
         idx = walcl.index.union(tga.index).union(rrp.index)
         df = pd.DataFrame({
-            "walcl": walcl.reindex(idx).ffill() / 1000.0,   # mn → bn
-            "tga": tga.reindex(idx).ffill() / 1000.0,        # mn → bn
-            "rrp": rrp.reindex(idx).ffill(),                 # bn
+            "walcl": walcl.reindex(idx).ffill(limit=10) / 1000.0,   # mn → bn (weekly: at most ~2 weeks of carry)
+            "tga": tga.reindex(idx).ffill(limit=10) / 1000.0,        # mn → bn
+            "rrp": rrp.reindex(idx).ffill(limit=10),                 # bn
         }).dropna()
-        return (df["walcl"] - df["tga"] - df["rrp"]).rename("net_liquidity")
+        last = min(walcl.index.max(), tga.index.max(), rrp.index.max())   # freshness = the stalest input
+        return (df["walcl"] - df["tga"] - df["rrp"]).rename("net_liquidity").loc[:last + pd.Timedelta(days=14)]

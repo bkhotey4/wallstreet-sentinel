@@ -56,9 +56,16 @@ class TaiwanData:
             return None
         rows = {r[0]: _n(r[3]) for r in js["data"]}
         def get(prefix):
-            return sum(v for k, v in rows.items() if k.startswith(prefix) and v is not None) / 1e8
-        return {"date": d.isoformat(), "foreign": get("外資及陸資"), "trust": get("投信"),
-                "dealer": get("自營商"), "total": (rows.get("合計") or 0) / 1e8}
+            vals = [v for k, v in rows.items() if k.startswith(prefix) and v is not None]
+            return sum(vals) / 1e8 if vals else None              # missing/renamed row → None, never a fake 0
+        out = {"date": d.isoformat(), "foreign": get("外資及陸資"), "trust": get("投信"), "dealer": get("自營商")}
+        if out["foreign"] is None:                                 # format changed: skip the day rather than show 0
+            log.warning("BFI82U %s: 外資 row not found (format change?)", d)
+            return None
+        tot = rows.get("合計")
+        out["total"] = tot / 1e8 if tot is not None else (None if None in (out["trust"], out["dealer"])
+                                                            else out["foreign"] + out["trust"] + out["dealer"])
+        return out
 
     async def _t86(self, d: date) -> Optional[Dict]:
         js = await http.get("https://www.twse.com.tw/rwd/zh/fund/T86", headers=HDR, timeout=30, retries=1,
@@ -115,9 +122,9 @@ class TaiwanData:
         hist[m["date"]] = m["bal_bn"]
         hist = dict(sorted(hist.items())[-40:])
         store.kv_set("tw_margin_hist", hist)
-        old = [v for k, v in sorted(hist.items()) if k < m["date"]]
-        ref = old[-5] if len(old) >= 5 else (old[0] if old else None)
-        m["chg_5d_pct"] = (m["bal_bn"] / ref - 1) * 100 if ref else None
+        old = [(k, v) for k, v in sorted(hist.items()) if k < m["date"]]
+        ok = len(old) >= 5 and (date.fromisoformat(m["date"]) - date.fromisoformat(old[-5][0])).days <= 9
+        m["chg_5d_pct"] = (m["bal_bn"] / old[-5][1] - 1) * 100 if ok and old[-5][1] else None
         return m
 
     async def _revenue(self) -> List[Dict]:
@@ -130,7 +137,7 @@ class TaiwanData:
             if c not in order:
                 continue
             out.append({"code": c, "name": r.get("公司名稱"), "ym": _roc_ym(r.get("資料年月", "")),
-                        "rev_bn": (_n(r.get("營業收入-當月營收")) or 0) / 1e5,     # 千元 → 億元
+                        "rev_bn": (lambda v: None if v is None else v / 1e5)(_n(r.get("營業收入-當月營收"))),   # 千元 → 億元
                         "mom": _n(r.get("營業收入-上月比較增減(%)")), "yoy": _n(r.get("營業收入-去年同月增減(%)")),
                         "ytd_yoy": _n(r.get("累計營業收入-前期比較增減(%)"))})
         return sorted(out, key=lambda x: order.get(x["code"], 99))
@@ -230,7 +237,7 @@ class TaiwanData:
         L = []
         if self.flows:
             f = self.flows[0]
-            L.append(f"三大法人（{f['date']}）外資 {f['foreign']:+.1f} 億、投信 {f['trust']:+.1f} 億、自營 {f['dealer']:+.1f} 億；"
+            L.append(f"三大法人（{f['date']}）外資 {sg(f['foreign'])} 億、投信 {sg(f.get('trust'))} 億、自營 {sg(f.get('dealer'))} 億；"
                      f"外資近 {len(self.flows)} 日合計 {sum(x['foreign'] for x in self.flows):+.1f} 億")
         fu = self.futures
         if fu.get("oi_foreign") is not None:
@@ -248,5 +255,5 @@ class TaiwanData:
         if fu.get("pcr"):
             L.append(f"台指選擇權 Put/Call 未平倉比 {fu['pcr'][0]['oi']}%")
         for r in self.revenue[:4]:
-            L.append(f"{r['name']} {r['ym']} 營收 {r['rev_bn']:,.0f} 億，月增 {sg(r['mom'])}%、年增 {sg(r['yoy'])}%、累計年增 {sg(r['ytd_yoy'])}%")
+            L.append(f"{r['name']} {r['ym']} 營收 {'NA' if r['rev_bn'] is None else format(r['rev_bn'], ',.0f')} 億，月增 {sg(r['mom'])}%、年增 {sg(r['yoy'])}%、累計年增 {sg(r['ytd_yoy'])}%")
         return L

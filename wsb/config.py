@@ -68,6 +68,7 @@ class Settings:
         tickers.add(self.raw.get("crash_odds", {}).get("benchmark", "^GSPC"))
         tickers.add(self.raw.get("portfolio", {}).get("benchmark", "SPY"))
         tickers.update(["SPY", "IEF"])
+        tickers.update(self.raw.get("valuation", {}).get("tickers", []))
         return sorted(tickers)
 
 
@@ -78,6 +79,16 @@ def load_settings(path: Path | None = None) -> Settings:
 
 
 SETTINGS = load_settings()
+
+
+def history_start():
+    """Fixed sample start (settings.history_start) so crises such as 2008 never roll out of the backtests;
+    falls back to a rolling `history_years` window only when no start date is configured."""
+    from datetime import date, timedelta
+    v = SETTINGS.get("history_start")
+    if v:
+        return v if isinstance(v, date) else date.fromisoformat(str(v))
+    return date.today() - timedelta(days=365 * int(SETTINGS.get("history_years", 20)))
 
 # ---- secrets / runtime env ----
 DISCORD_TOKEN = env("DISCORD_BOT_TOKEN")

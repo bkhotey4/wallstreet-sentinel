@@ -28,8 +28,8 @@ _MONTHS = {m: i for i, m in enumerate(
 
 
 async def _fred_releases(days: int = 21) -> List[dict]:
-    if not FRED_API_KEY:
-        return []
+    if not FRED_API_KEY:                                   # no key → report it, don't pretend "0 events, healthy"
+        raise RuntimeError("FRED_API_KEY not set: macro release calendar (CPI/NFP…) unavailable")
     today = us_today()
     js = await http.get("https://api.stlouisfed.org/fred/releases/dates", params={
         "api_key": FRED_API_KEY, "file_type": "json",

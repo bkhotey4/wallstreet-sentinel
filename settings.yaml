@@ -17,7 +17,8 @@ refresh:
   sec: 1800            # SEC EDGAR 持股公告
   calendar: 21600
 
-history_years: 20      # 用多長歷史做動態基準（z-score、崩盤機率回測）
+history_start: "1995-01-01"   # 固定歷史起點：行情資料自 1995 起（1997 亞洲風暴、2000 泡沫、2008 海嘯的資產表現都在）；壓力指數因指標不足約 2001 年後才有數值
+history_years: 20      # 只有在沒設 history_start 時才用（滾動視窗）
 
 # ---------- 全球監控宇宙（Yahoo Finance 代號） ----------
 universe:
@@ -184,6 +185,8 @@ stress_components:
   - {id: btc,         block: 商品加密,  src: px,   series: "BTC-USD", kind: "ret:20",         direction: -1, weight: 0.4}
   # ---- 2026/09/30 新增：信用廣度、實質利率、景氣/就業、私募信貸、AI 龍頭、亞洲匯率、避險需求 ----
   - {id: ig_oas,      block: 信用,      src: fred, series: BAMLC0A0CM,  kind: level,         direction: 1,  weight: 0.8}
+  # Baa 公司債利差：1986 年起的長歷史（ICE 高收益利差在 FRED 只剩近 3 年），讓 2008、2020 進得了回測
+  - {id: baa_spread,  block: 信用,      src: fred, series: BAA10Y,  kind: level,             direction: 1,  weight: 1.0}
   - {id: loans,       block: 私募信貸,  src: px,   series: BKLN, kind: "rel:20:IEF",          direction: -1, weight: 0.6}
   - {id: alt_bx,      block: 私募信貸,  src: px,   series: BX,   kind: "rel:20:SPY",          direction: -1, weight: 0.35}
   - {id: alt_apo,     block: 私募信貸,  src: px,   series: APO,  kind: "rel:20:SPY",          direction: -1, weight: 0.35}
@@ -225,15 +228,49 @@ crash_odds:
     prior_windows: 4            # 樣本少時向「只看水準」的機率收斂的強度
 
 # ---------- 歷史壓力情境（實際歷史價格重播） ----------
-stress_scenarios:
+stress_scenarios:             # 歷史危機（網站的「歷史危機對照」與 bot 的危機重播共用；可自行增減）
+  - {name: 1997 亞洲金融風暴,    start: "1997-07-02", end: "1998-01-12"}
+  - {name: 1998 俄債與LTCM,      start: "1998-07-17", end: "1998-10-08"}
+  - {name: 2000 網路泡沫破裂,    start: "2000-03-24", end: "2002-10-09"}
+  - {name: 2008 金融海嘯（全程）, start: "2007-10-09", end: "2009-03-09"}
   - {name: 2008 雷曼倒閉,     start: "2008-09-12", end: "2008-10-10"}
   - {name: 2011 美債降評,     start: "2011-07-22", end: "2011-08-08"}
   - {name: 2018 Volmageddon,  start: "2018-01-26", end: "2018-02-08"}
   - {name: 2020 疫情崩盤,     start: "2020-02-19", end: "2020-03-23"}
   - {name: 2022 暴力升息,     start: "2022-01-03", end: "2022-06-16"}
+  - {name: 2015 人民幣貶值,   start: "2015-08-10", end: "2015-08-25"}
   - {name: 2023 矽谷銀行,     start: "2023-03-08", end: "2023-03-13"}
   - {name: 2024 日圓套息拆倉, start: "2024-07-10", end: "2024-08-05"}
   - {name: 2025 關稅衝擊,     start: "2025-04-02", end: "2025-04-08"}
+
+# ---------- 估值與泡沫觀察（巴菲特指標、信用週期、投機熱度；屬「慢變數」，說明貴不貴，不負責抓時點） ----------
+valuation:
+  fred_start: "1950-01-01"          # 這些序列抓完整歷史，百分位才有意義
+  fred:
+    NCBEILQ027S: 非金融企業股票市值（Z.1，百萬美元）
+    GDP: 名目 GDP（十億美元，年化）
+    TNWMVBSNNCB: 非金融企業淨值（市值計，百萬美元）
+    BAA10Y: Baa 公司債 − 10年公債利差
+    DRCCLACBS: 信用卡逾期率
+    DRSFRMACBS: 住宅房貸逾期率
+    DRCRELEXFACBS: 商用不動產貸款逾期率
+    DRTSCILM: 銀行收緊企業放款標準的淨比例
+    TDSP: 家庭償債支出占可支配所得
+  tickers: [SPHB, SPLV, ARKK]       # 高 β vs 低波動、創新成長股（投機熱度）
+  hot_pct: 85                       # 歷史百分位 ≥ 此值 → 標示「偏熱／偏緊」
+  extreme_pct: 95
+
+# ---------- 場外（暗池）放空量指數：FINRA 每日 Reg SHO 檔，DIX 類做法 ----------
+darkpool:
+  enabled: true
+  index_symbols: [AAPL, MSFT, NVDA, AMZN, GOOGL, META, AVGO, TSLA, JPM, LLY, V, UNH, XOM, MA, COST, HD, PG, JNJ, WMT,
+                  NFLX, ORCL, BAC, ABBV, CRM, AMD, KO, PEP, CVX, MRK]   # 美股大型權值股（各股場外放空比例取等權平均）
+  etfs: [SPY, QQQ, IWM]
+  backfill_days: 120          # 首次回補多少個日曆日
+  max_fetch_per_run: 40       # 每次最多抓幾天（避免一次太久）
+  keep_days: 800
+  high_pct: 80                # 5 日均值在自身歷史 ≥80 百分位 → 偏買；≤20 → 偏賣
+  low_pct: 20
 
 # ---------- 持倉 ----------
 portfolio:
@@ -282,8 +319,22 @@ shock:
   credit_blocks: [信用, 私募信貸, 利率, 流動性, 全球新興]
   equity_blocks: [波動率, 股市結構]
   quality_refresh_hours: 6       # 準確度回測的重算間隔
+  model:                         # 衝擊雷達的判斷門檻（改這裡即可，不必動程式）
+    ignite_level: 70             # 區塊水準 ≥70 且升溫速度百分位 ≥70 →「點火中」
+    ignite_accel_pct: 70
+    heat_level: 60               # 水準 ≥60 或升溫速度百分位 ≥90 →「升溫」
+    heat_accel_pct: 90
+    accel_weight: 0.25           # 點火分數 = 水準 + 0.25 ×（升溫百分位 − 50）
+    path_alert: 70               # 傳導路徑點火分數 ≥70 →「高度警戒」
+    path_watch: 58               # ≥58 →「留意」
+    divergence_horizon_days: 63  # 股債背離的歷史驗證：之後 63 日內…
+    divergence_drawdown: 0.10    # …標普跌 ≥10% 的機率
+    episode_warn_ssi: 55         # 回檔事後檢討：SSI ≥55 視為「已預警」
 
 # ---------- 避險計算器 ----------
+regime:
+  risk_band_z: 0.5          # 風險偏好 z > +0.5 視為 Risk-ON、< −0.5 視為 Risk-OFF
+
 hedge:
   target_dte: [45, 90]      # 挑最接近的到期日（天）
   otm_pct: [0, 5, 10]       # 價外幅度 %
@@ -419,6 +470,14 @@ playbook:
   double_kill_days: 3        # 近 20 日『股債雙殺』天數門檻
   haven_fail_pct: 50         # 股票跌≥1% 的日子裡，長債與黃金同跌的比例門檻（%）
   alert_min_stage: 2         # 劇本階段升到此級以上才私訊
+  scoring:                   # 風險劇本計分規則（每一分都會在畫面上列出原因）
+    stage_thresholds: [0, 2, 4, 6]   # 正常／留意／戒備／防禦 的進入分數
+    ssi_points: [0, 0, 1, 2, 3]      # SSI 落在 stress_levels 第 0..4 級時加幾分
+    odds_horizon_days: 63            # 用哪一個崩跌機率期間計分（需存在於 crash_odds.horizons）
+    lift_points: [1.5, 2.2]          # 崩跌機率 ≥ 基準 ×1.5 加 1 分、×2.2 加 2 分
+    divergence_backing: 1.2          # 股債背離要在歷史上讓跌幅機率 ≥ 基準 ×1.2 才計分
+    beta_factor: [1.0, 1.0, 0.85, 0.65]   # 各階段建議的 β 倍數（僅 bot 的持倉模式使用）
+    watch_cut_frac: 0.15             # 留意階段的建議減碼比例（僅 bot 的持倉模式使用）
 
 # ---------- 特徵實驗室（新指標必須在走步驗證中真的提升準確度才會被採用） ----------
 lab:
@@ -453,4 +512,12 @@ intel:
   quadrant_edge_z: 0.3         # 成長/通膨 z 在 ±0.3 內 → 觀察清單提示象限可能轉換
   alert_min_label: 高          # 綜合風險升到這一級才推播
   alert_quadrant_change: true
+  model:                        # 情報融合的計分常數（改這裡即可，不必動程式）
+    quadrant_risk: {金髮女孩: 30, 再通膨: 45, 通縮衰退: 65, 停滯性通膨: 75}   # 各總經象限的基準風險分
+    levels: [65, 50, 35]        # 綜合風險 ≥65 高、≥50 偏高、≥35 中性，其餘低
+    macro_points: {liq_contract: 10, liq_expand: -5, risk_off: 10, risk_on: -5, quad_worse: 8, quad_better: -4,
+                   growth_drift: 5, stagflation_drift: 5}
+    side_thresholds: [55, 40]   # 各支柱 ≥55 視為「警戒」、≤40 視為「平穩」
+    news_top_channels: 2        # 情報支柱 = 新聞熱度最高的幾條路徑的平均
+    warmup_news_weight: 0.5     # 新聞基準不足時，情報支柱權重打折
   # channels: 可覆寫各傳導路徑的關鍵字 {路徑名: {risk: [...], relief: [...]}}，路徑名需與衝擊雷達一致

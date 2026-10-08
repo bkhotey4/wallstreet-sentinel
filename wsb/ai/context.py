@@ -83,7 +83,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         for w in ql.get("walk_forward", []):
             if w.get("n_test"):
                 L.append(f"模型可信度（走步外樣本，{w['days']}日跌≥{w['drawdown_pct']:.0f}%）: AUC {f(w.get('auc_oos'), 2)}（{w.get('verdict')}），"
-                         f"相對基準的 Brier 技能分數 {f((w.get('skill') or 0) * 100, 0)}%")
+                         f"相對基準的 Brier 技能分數 {f(None if w.get('skill') is None else w['skill'] * 100, 0)}%")
         es = ql.get("episode_summary") or {}
         if es.get("n"):
             L.append(f"歷史 {es['n']} 次標普≥10%回檔：高點前已預警 {es['warned_before_peak']} 次，回檔期間才/曾預警共 {es['warned_any']} 次"
@@ -117,6 +117,11 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         v = xr_.get("vol") or {}
         if v.get("available") and v["scale"] < 1:
             L.append(f"持倉波動 {v['current']:.0f}% 超過目標 {v['target']:.0f}%，建議曝險縮到 {v['scale'] * 100:.0f}%")
+    val = getattr(engine, "valuation", None) or {}
+    if val.get("available"):
+        from ..analytics import valuation as _va
+        L.append("## 估值與泡沫觀察（慢變數：說明貴不貴，不負責抓時點）")
+        L += _va.summary_lines(val)
     pbk = getattr(engine, "playbook", None) or {}
     if pbk:
         L.append("## 風險劇本（規則式階段，可追溯）")
