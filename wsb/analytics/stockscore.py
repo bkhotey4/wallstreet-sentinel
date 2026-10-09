@@ -32,6 +32,7 @@ from ..data.stocks import cfg, theme_names, universe
 
 log = logging.getLogger(__name__)
 _HIST = DATA_DIR / "stockscore_hist.json"
+MIN_BARS = 60                             # ~3 months of trading: enough for the 50-day average, RSI and 3-month momentum
 
 
 def rsi(c: pd.Series, n: int = 14) -> Optional[float]:
@@ -57,7 +58,7 @@ def _ret(c: pd.Series, a: int, b: int = 0) -> Optional[float]:
 
 def features(c: pd.Series, v: pd.Series, bench: pd.Series) -> Optional[Dict]:
     c = c[c > 0].dropna()
-    if len(c) < 130:
+    if len(c) < MIN_BARS:                 # new listings (e.g. a recent IPO) are scored on what exists; longer factors stay None
         return None
     p = float(c.iloc[-1])
     ma50 = float(c.tail(50).mean())

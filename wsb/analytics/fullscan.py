@@ -22,7 +22,7 @@ from . import stockscore as SS
 
 log = logging.getLogger(__name__)
 COLS = ["sym", "code", "name", "ind", "board", "tech", "rank", "r1d", "r1m", "r6", "rsi", "st", "stl", "why", "when",
-        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px"]
+        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk"]
 BENCH = {"us": "^GSPC", "tw": "^TWII", "hk": "^HSI"}
 LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
@@ -43,7 +43,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
             continue
         c = close[s].dropna()
         c = c[c > 0]
-        if len(c) < 130:
+        if len(c) < SS.MIN_BARS:
             continue
         v = volume[s].reindex(c.index).fillna(0) if s in volume.columns else pd.Series(0.0, index=c.index)
         turn = float((c.tail(20) * v.tail(20)).mean())
@@ -66,7 +66,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
         row = {"sym": s, "code": it["code"], "name": zh_names.get(s) or it.get("name") or it["code"], "ind": it.get("ind", ""),
                "board": it.get("board", ""), "tech": _r(t, 1), "r1d": _r(f["r1d"], 1), "r1m": _r(f["r1m"], 1), "r6": _r(f["r6"], 0),
                "rsi": _r(f["rsi"], 0), "px": _r(f["price"], 3)}
-        if len(c) >= 230:
+        if len(c) >= 60:
             try:
                 pats = SG.detect(c, v)
                 hits = SG.evaluate(pats, t, base)
@@ -83,11 +83,18 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
             elif pats is not None:
                 df0 = next(iter(pats.values()))
                 st = SG.status(df0)
-                row.update({"st": st["status"], "stl": st["label"], "why": st["why"], "when": SG.trigger_text(st["status"], df0)[0],
+                young = "（上市未滿一年：還沒有 200 日線，只檢查突破與超賣）" if df0["ma200"].isna().iloc[-1] else ""
+                row.update({"st": st["status"], "stl": st["label"], "why": st["why"] + young, "when": SG.trigger_text(st["status"], df0)[0],
                             "str": _r(st["base"] + 0.25 * (t - 50), 1)})
         else:
-            row.update({"st": "nodata", "stl": "資料不足", "why": "上市未滿約一年，均線資料不足", "str": 0})
+            row.update({"st": "nodata", "stl": "資料不足", "why": "上市未滿約三個月，資料太少", "str": 0})
         rows.append(row)
+    cfp = SG.pick_cfg()                                              # ★ 規則精選: top n per market among qualifying signals
+    cand = sorted([r for r in rows if r.get("st") == "signal" and SG.pick_ok(
+        r.get("pat"), r.get("str"), bool(r.get("inz")), (r["tgtp"] / r["risk"]) if r.get("tgtp") and r.get("risk") else None,
+        r.get("risk"), cfp)], key=lambda r: -(r.get("str") or 0))
+    for i, r in enumerate(cand[:int(cfp["n"]) * 5], 1):           # full market is much bigger → 5× the curated count
+        r["pk"] = i
     rows.sort(key=lambda r: -(r["tech"] or 0))
     for i, r in enumerate(rows, 1):
         r["rank"] = i

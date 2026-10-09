@@ -708,7 +708,7 @@ class Sentinel(commands.Bot):
             for m, r in fresh[:mx]:
                 h = r["patterns"][0]
                 out.append(Alert(f"push:signal:{r['sym']}:{h['pattern']}:{m['asof']}", "ℹ️ INFO",
-                                 f"技術面訊號：{m['label']} {r['name']}（{r['code']}）{h['label']}，強度 {r['strength']:.0f}",
+                                 f"技術面訊號{'（★規則精選）' if r.get('pick') else ''}：{m['label']} {r['name']}（{r['code']}）{h['label']}，強度 {r['strength']:.0f}",
                                  f"族群 {r.get('theme', '—')}｜現價 {r['price']:.2f}"
                                  + (f"｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}" if h.get("plan") else "")
                                  + f"｜失效線 {r['inv']:.2f}（距離 -{r['risk_pct']:.1f}%）"
@@ -1168,10 +1168,18 @@ def register_commands(bot: Sentinel) -> None:
         e = discord.Embed(title=f"🎯 {m['label']}技術面買點訊號（由強到弱）", color=0x2FBF71,
                           description=f"資料日 {m['asof']}｜掃描 {m['n_universe']} 檔、{len(m['rows'])} 檔有訊號｜"
                                       "規則篩選，不是買賣建議；收盤跌破失效線＝型態失敗")
+        pk = [r for r in m["rows"] if r.get("pick")]
+        e.add_field(name="★ 今日規則精選（條件最齊全）", inline=False, value=("\n".join(
+            f"**★{r.get('pick_rank', '')} {r['name']}** `{r['code']}` {r['patterns'][0]['label']} 強度 **{r['strength']:.0f}**\n"
+            f"└ 現價 {r['price']:.2f} 在進場區 {r['patterns'][0]['plan']['zone_lo']:.2f}–{r['patterns'][0]['plan']['zone_hi']:.2f} 內｜"
+            f"失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）"
+            + (f"｜報酬／風險 {r['patterns'][0]['plan']['rr']:.1f} 倍" if r['patterns'][0]['plan'].get('rr') else "") for r in pk)
+            if pk else "今天沒有同時符合所有條件的個股（寧缺勿濫）")[:880]
+            + "\n-# 條件：順勢型態、現價在進場區內、強度≥65、失效線≤10%、報酬／風險≥1.5；只代表規則條件最齊全，不是買進建議")
         lines = []
         for r in m["rows"][:15]:
             h = r["patterns"][0]
-            tag = "🆕" if r.get("new") else ""
+            tag = ("★" if r.get("pick") else "") + ("🆕" if r.get("new") else "")
             lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` {tag}{h['label']} **{r['strength']:.0f}**｜{r.get('theme', '')}\n"
                          f"└ 現價 {r['price']:.2f}｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}"
                          f"（{'在區內' if h['plan']['in_zone'] else '區外'}）｜失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）")

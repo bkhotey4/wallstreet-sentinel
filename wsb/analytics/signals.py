@@ -141,6 +141,10 @@ def trigger_text(k: str, df: pd.DataFrame) -> tuple:
     last = df.iloc[-1]
     g = lambda c: float(last[c]) if pd.notna(last[c]) else float("nan")  # noqa: E731
     m20, m50, m200, h20 = g("ma20"), g("ma50"), g("ma200"), g("hi20")
+    if not np.isfinite(m200):                       # young listing: no 200-day average yet → only breakout-type triggers
+        return {"near_oversold": ("RSI 跌破 30 後站回 5 日線 → 成立「超賣反彈」（逆勢）", "RSI below 30, then a close back above the 5-day")}.get(
+            k, (f"上市未滿一年：收盤站上 {h20:.2f}（前 20 日高點）且成交量 ≥ 1.5 倍均量 → 成立「帶量突破」",
+                f"Young listing: a close above {h20:.2f} (20-day high) on ≥1.5× volume"))
     return {
         "near_pullback": (f"等股價回到 20 日線 {m20:.2f}（或 50 日線 {m50:.2f}）附近、止跌收紅 → 成立「多頭回檔」",
                           f"Wait for a dip to the 20-day {m20:.2f} (or 50-day {m50:.2f}) and an up close"),
@@ -239,7 +243,7 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
         series, short = {}, []
         for sym in u["symbols"]:
             cl = sp.series(sym)
-            if len(cl) < 230:
+            if len(cl) < 60:                    # < ~3 months: nothing meaningful to say yet
                 short.append(sym)
                 continue
             try:
@@ -274,6 +278,7 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
         out_rows.sort(key=lambda r: -r["strength"])
         for i, r in enumerate(out_rows, 1):
             r["rank"] = i
+        picks = mark_picks(out_rows)
         # every other stock too: where it stands (watch-list status), so the page covers the whole universe
         have = {r["sym"] for r in out_rows}
         rest = []
@@ -286,10 +291,13 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                 df0 = next(iter(series[sym].values()))
                 st = status(df0)
                 st["when"], st["when_en"] = trigger_text(st["status"], df0)
+                if df0["ma200"].isna().iloc[-1]:
+                    st["why"] += "（上市未滿一年：還沒有 200 日線，只檢查突破與超賣型態）"
+                    st["why_en"] += " (listed < 1 year: no 200-day yet — only breakout / oversold patterns apply)"
                 ready = float(np.clip(st["base"] + 0.25 * ((srow.get("score") or 50) - 50), 0, 60))
             else:
-                st = {"status": "nodata", "label": STATUS["nodata"][0], "label_en": STATUS["nodata"][1], "why": "上市或掛牌未滿約一年，均線資料不足",
-                      "why_en": "Less than ~1 year of history", "price": float(sp.series(sym).iloc[-1]) if len(sp.series(sym)) else None}
+                st = {"status": "nodata", "label": STATUS["nodata"][0], "label_en": STATUS["nodata"][1], "why": "上市未滿約三個月，資料太少",
+                      "why_en": "Less than ~3 months of history", "price": float(sp.series(sym).iloc[-1]) if len(sp.series(sym)) else None}
                 ready = 0.0
             rest.append({"sym": sym, "code": sym.split(".")[0], "name": zh, "name_en": en, "theme": u["themes"].get(sym, "其他"),
                          "strength": round(ready, 1), "status": st, "price": st.get("price"), "score": srow.get("score"),
@@ -299,12 +307,46 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                    for r in out_rows] + rest
         for i, r in enumerate(allrows, 1):
             r["rank_all"] = i
-        markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows, "all": allrows,
+        markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows, "all": allrows, "picks": picks,
                        "backtest": bt, "asof": asof, "n_universe": len(series) + len(short), "breadth": br,
                        "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS}}
     if persist:
         _save_seen(seen)
     return {"available": bool(markets), "markets": markets, "horizon": HORIZON}
+
+
+PICK_DEF = {"n": 3, "min_strength": 65, "min_rr": 1.5, "max_risk": 10.0}
+
+
+def pick_cfg() -> Dict:
+    return {**PICK_DEF, **((_cfg().get("picks")) or {})}
+
+
+def pick_ok(pattern: str, strength: Optional[float], in_zone: bool, rr: Optional[float], risk_pct: Optional[float],
+            cf: Optional[Dict] = None) -> bool:
+    """★ 規則精選: the signals whose rule conditions are most complete right now —
+    trend-following pattern (not the counter-trend oversold bounce), price still inside the entry zone,
+    strong enough, room to the 52-week high ≥ min_rr × the distance to the give-up line (or already at the high), give-up line not too far."""
+    cf = cf or pick_cfg()
+    if pattern == "oversold" or not in_zone or strength is None or strength < float(cf["min_strength"]):
+        return False
+    if risk_pct is None or risk_pct > float(cf["max_risk"]):
+        return False
+    return rr is None or rr >= float(cf["min_rr"])
+
+
+def mark_picks(rows: List[Dict]) -> List[str]:
+    """Flag up to n curated signal rows (already sorted strong → weak) as picks; returns their symbols."""
+    cf = pick_cfg()
+    out = []
+    for r in rows:
+        h = r["patterns"][0]
+        pl = h.get("plan") or {}
+        r["pick"] = len(out) < int(cf["n"]) and pick_ok(h["pattern"], r["strength"], bool(pl.get("in_zone")), pl.get("rr"), r.get("risk_pct"), cf)
+        if r["pick"]:
+            out.append(r["sym"])
+            r["pick_rank"] = len(out)
+    return out
 
 
 def _days_ago(asof: str, n: int) -> str:
@@ -333,6 +375,9 @@ def summary_lines(res: Dict, top: int = 5) -> List[str]:
         return []
     L = []
     for m in res["markets"].values():
+        pk = [r for r in m["rows"] if r.get("pick")]
+        if pk:
+            L.append(f"{m['label']}★規則精選（在進場區內、條件最齊全）：" + "、".join(f"{r['name']}({r['code']})" for r in pk))
         rows = m["rows"][:top]
         if rows:
             L.append(f"{m['label']}技術面訊號（強→弱）：" + "、".join(f"{r['name']}({r['code']}) {r['patterns'][0]['label']} {r['strength']:.0f}"

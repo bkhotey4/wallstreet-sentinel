@@ -589,6 +589,7 @@ stockscore:
         GE: [奇異航太, GE Aerospace, 國防軍工]
         KTOS: [Kratos, Kratos Defense, 國防軍工]
         AVAV: [AeroVironment, AeroVironment, 國防軍工]
+        SPCX: [SpaceX, SpaceX, 國防軍工]
         GEV: [GE Vernova, GE Vernova, 電力與工業]
         ETN: [伊頓, Eaton, 電力與工業]
         CEG: [Constellation 能源, Constellation Energy, 電力與工業]
@@ -838,6 +839,11 @@ signals:
   base: {pullback: 60, breakout: 62, golden: 55, oversold: 45}   # 各型態基礎強度（再依個股評分、量能、風險距離、歷史勝率調整）
   push_min_strength: 70       # Discord 只推播強度 ≥ 70 的「新」訊號
   push_max: 6                 # 每次最多推播幾檔
+  picks:                      # ★ 規則精選：每個市場最多標幾檔（全市場為 5 倍）
+    n: 3
+    min_strength: 65          # 訊號強度門檻
+    min_rr: 1.5               # 到 52 週高的空間 ≥ 1.5 倍「到失效線的距離」（已在 52 週高則不限）
+    max_risk: 10              # 失效線離現價不超過 10%
 
 # ---------- 全市場掃描（只在網站建置時執行；Discord /stock 可隨時查任一檔） ----------
 fullmarket:

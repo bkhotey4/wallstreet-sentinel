@@ -167,6 +167,8 @@ def test_fullmarket(eng):
     sig = [r for r in rows if r["st"] == "signal"]
     assert all(r["zlo"] <= r["zhi"] and r["inv"] < r["px"] for r in sig)
     assert all(r["when"] for r in rows if r["st"] not in ("signal", "nodata"))
+    assert all(r["st"] == "signal" and r["inz"] and r["pat"] != "oversold" for r in rows if r.get("pk"))
+    assert sorted(r["pk"] for r in rows if r.get("pk")) == list(range(1, 1 + sum(1 for r in rows if r.get("pk"))))
     # run(): lists come from the (patched) list loader, JSON is written and later published under site/market/
     async def fake_lists(force=False):
         return {"us": items, "tw": [], "hk": []}
@@ -182,6 +184,7 @@ def make_engine(tmp: Path):
     eng.stress_engine = StressEngine(T.m, T.fr)
     eng.calendar.events = []
     eng.stockprices = FakePrices(T.END)
+    eng.stockprices.close.loc[eng.stockprices.close.index[:-82], "SPCX"] = np.nan        # a recent IPO: only 82 sessions
     # curve + term premium (FRED), auctions
     di = pd.bdate_range(end=T.END, periods=900)
     for sid, y in TR.TENORS:
@@ -261,6 +264,20 @@ def main():
     assert rot["available"] and rot["sectors"] and {r["quad"] for r in rot["sectors"]} <= {"領先", "轉弱", "落後", "改善"}
     assert set(rot["breadth"]) == {"us", "tw", "hk"} and 0 <= rot["breadth"]["us"]["now"] <= 100
     assert SS.summary_lines(sc) and TR.summary_lines(bd) and BD.summary_lines(rot)
+    spx_row = next(r for r in sc["markets"]["us"]["rows"] if r["sym"] == "SPCX")                      # young listing is scored
+    spx_all = next(r for r in eng.signals["markets"]["us"]["all"] if r["sym"] == "SPCX")
+    assert spx_row["score"] is not None and (spx_all["signal"] or spx_all["status"]["status"] != "nodata"), spx_all
+    assert "nan" not in json.dumps(spx_all.get("status") or {}, ensure_ascii=False)
+    # ★ 規則精選: rules hold, at most n per market, picks are in zone & trend-following
+    from wsb.analytics import signals as SGm
+    assert SGm.pick_ok("pullback", 70, True, 2.0, 5) and SGm.pick_ok("breakout", 70, True, None, 5)
+    assert not SGm.pick_ok("oversold", 90, True, 3, 3) and not SGm.pick_ok("pullback", 70, False, 3, 3)
+    assert not SGm.pick_ok("pullback", 60, True, 3, 3) and not SGm.pick_ok("pullback", 70, True, 1.2, 3) and not SGm.pick_ok("pullback", 70, True, 3, 12)
+    for m in eng.signals["markets"].values():
+        pk = [r for r in m["rows"] if r.get("pick")]
+        assert len(pk) <= 3 and m["picks"] == [r["sym"] for r in pk]
+        for r in pk:
+            assert r["patterns"][0]["plan"]["in_zone"] and r["patterns"][0]["pattern"] != "oversold"
     # themes: every row tagged, per-market and cross-market tables
     assert all(r.get("theme") for m in sc["markets"].values() for r in m["rows"])
     assert any(t["theme"] == "半導體" and len([k for k, v in t["per"].items() if v]) == 3 for t in sc["themes"]), "semis in US/TW/HK"
@@ -314,6 +331,10 @@ def main():
         assert word not in page, word
     import re
     assert not re.search(r"https?://(?!example\.com|e\.com|www\.sec\.gov)[^\"' ]+\.(js|css)", page)
+    assert "pickbox" in page and "今日規則精選" in page and "sec_picks" not in page
+    npk = sum(len(m["picks"]) for m in eng.signals["markets"].values())
+    assert page.count('class="pickrow"') == npk, (page.count('class="pickrow"'), npk)
+    print(f"  picks: {npk}")
     d = json.loads((out / "data.json").read_text())
     assert d["scores"]["us"], "data.json carries the top of the board"
     # on-demand lookup of a ticker outside the universe (Discord /stock), plus NU now in the universe
