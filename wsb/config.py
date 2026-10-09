@@ -104,4 +104,5 @@ GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.1-pro-preview")
 LLM_PRIMARY = env("LLM_PRIMARY", "claude").lower()
 
 FRED_API_KEY = env("FRED_API_KEY")
-SEC_USER_AGENT = env("SEC_USER_AGENT", "WallStreetSentinel research contact@example.com")
+# SEC asks for "Company contact@domain"; tested: user agents mentioning github.com are refused (403), this form is accepted
+SEC_USER_AGENT = env("SEC_USER_AGENT") or "WallStreetSentinel research contact@example.com"   # empty secret → default

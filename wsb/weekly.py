@@ -71,9 +71,44 @@ def facts(engine, sc: Optional[Dict] = None) -> Dict:
     out["events"] = [e for e in engine.calendar.upcoming(8)]
     # rule report card
     out["families"] = (sc or {}).get("families", {})
+    out.update(board_facts(engine))
     q = (getattr(engine, "shock", None) or {}).get("quality") or {}
     wf = [w for w in q.get("walk_forward", []) if w.get("n_test")]
     out["model_auc"] = [(w["days"], w.get("auc_oos")) for w in wf]
+    return out
+
+
+def board_facts(engine) -> Dict:
+    """Stock board, sectors, Treasuries, 13F and insider facts for the weekly review (all optional)."""
+    from .analytics import breadth as BD
+    from .data import treasury as TR
+    out: Dict = {"board": [], "board_lines": []}
+    sc = getattr(engine, "scores", None) or {}
+    for m in (sc.get("markets") or {}).values():
+        rows = m["rows"]
+        movers = sorted([r for r in rows if r.get("chg5") is not None], key=lambda r: -abs(r["chg5"]))[:3]
+        out["board"].append({"label": m["label"], "top": [(r["name"], r["code"], r["score"]) for r in rows[:5]],
+                             "bottom": [(r["name"], r["code"], r["score"]) for r in rows[-3:]],
+                             "movers": [(r["name"], r["code"], r["chg5"]) for r in movers],
+                             "above200": (m.get("breadth") or {}).get("above200")})
+    tail = TR.summary_lines(getattr(engine, "bonds", None) or {})[:4]
+    out["board_lines"] += BD.summary_lines(getattr(engine, "rotation", None) or {})[:1]
+    gu = (getattr(engine, "gurus", None) and engine.gurus.result) or {}
+    week_ago = (date.today() - timedelta(days=7)).isoformat()
+    for m in gu.get("managers") or []:
+        if m["filed"] >= week_ago:
+            ch = m["chg"]
+            out["board_lines"].append(f"13F 新申報 {m['name']}（{m['period']}）：新建倉 {'、'.join(x['name'].title() for x in ch['new'][:3]) or '無'}；"
+                                      f"出清 {'、'.join(x['name'].title() for x in ch['exit'][:3]) or '無'}")
+    ins = getattr(engine, "insiders", None)
+    if ins is not None:
+        b = ins.board(5)
+        if b.get("big"):
+            out["board_lines"].append("內部人大額非計畫性賣出（90 天）：" + "、".join(b["big"][:6]))
+    dp = (getattr(engine, "darkpool", None) and engine.darkpool.result) or {}
+    if dp.get("available") and dp.get("state"):
+        out["board_lines"].append(f"暗池指數 5 日均 {dp['dpi_5d']:.1f}%（{dp['state']}）")
+    out["board_lines"] += tail
     return out
 
 
@@ -89,6 +124,10 @@ def facts_text(f: Dict) -> str:
                  + "；拖累最大：" + "、".join(f"{c['sym']} {c['contrib']:+.2f}%" for c in f["pf_contrib"][:3]))
     if f["events"]:
         L.append("未來 8 天事件：" + "；".join(f"{e['date']} {e['event']}" for e in f["events"][:10]))
+    for bd in f.get("board", []):
+        L.append(f"{bd['label']}評分前五：" + "、".join(f"{n}({c}) {v:.0f}" for n, c, v in bd["top"])
+                 + ("；5 日分數變化最大：" + "、".join(f"{n} {d:+.0f}" for n, _, d in bd["movers"]) if bd["movers"] else ""))
+    L += f.get("board_lines", [])
     for name, fm in f.get("families", {}).items():
         r = fm["by_horizon"].get(max(fm["by_horizon"])) if fm["by_horizon"] else None
         if r and r.get("episodes"):

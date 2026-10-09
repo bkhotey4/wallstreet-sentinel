@@ -261,6 +261,32 @@ async def main():
     eng_.calendar.events = [{"date": tomorrow, "type": "liquidity", "id": "t1", "event": "四巫日", "importance": 3, "note": "n"},
                             {"date": tomorrow, "type": "liquidity", "id": "t2", "event": "VIX", "importance": 1}]
     assert [a.key for a in bot._liquidity_alerts()] == [f"evt:t1:{tomorrow}"]
+    # intel-station push rules: first run records state silently, then only changes alert
+    import types as _t
+    for k in ("push_dp_state", "push_val_grades", "push_breadth_below", "push_13f_seen", "push_insider_big"):
+        store.kv_set(k, None)
+    eng_.darkpool = _t.SimpleNamespace(result={"pctile": 50.0, "dpi_5d": 42.0, "asof": "2026-10-07"})
+    eng_.valuation = {"available": True, "groups": [{"items": [{"key": "buffett", "grade": "偏熱", "label": "巴菲特指標", "value": 210.0,
+                                                                 "unit": "%", "pctile": 90.0, "hist_start": "1990", "what": "w"}]}]}
+    today = _d.today().isoformat()
+    eng_.bonds = {"weak": [{"cusip": "C1", "date": today, "label": "10-Year", "high_yield": 4.5, "btc": 2.1, "btc_avg": 2.6,
+                            "dealer": 20.0, "dealer_avg": 12.0}]}
+    eng_.rotation = {"breadth": {"us": {"now": 55.0}}}
+    gm = lambda filed: {"available": True, "managers": [{"cik": 1, "name": "波克夏", "period": "2026-06-30", "filed": filed, "url": "u",  # noqa: E731
+                                                          "chg": {"new": [{"name": "APPLE"}], "exit": [], "add": [], "cut": []}}]}
+    eng_.gurus = _t.SimpleNamespace(result=gm("2026-08-14"))
+    eng_.insiders = _t.SimpleNamespace(board=lambda n=20: {"big": [], "sells": []})
+    first = bot._extras_alerts()
+    assert [a.key for a in first] == [f"push:auction:C1:{today}"], [a.key for a in first]     # dated event → fires once
+    eng_.darkpool.result["pctile"] = 95.0
+    eng_.valuation["groups"][0]["items"][0]["grade"] = "極端"
+    eng_.rotation = {"breadth": {"us": {"now": 25.0}}}
+    eng_.gurus = _t.SimpleNamespace(result=gm("2026-11-14"))
+    eng_.insiders = _t.SimpleNamespace(board=lambda n=20: {"big": ["AAPL"], "sells": [{"sym": "AAPL", "sell_disc_usd": 9e7, "n_sellers": 2,
+                                                                                         "big": [{"owner": "x", "title": "CEO", "url": "u"}]}]})
+    keys = {a.key.split(":")[1] for a in bot._extras_alerts()}
+    assert {"dp", "val", "breadth", "13f", "insider", "auction"} <= keys, keys
+    assert not [a for a in bot._extras_alerts() if a.key.split(":")[1] in ("dp", "val", "breadth", "13f", "insider")], "no repeats"
     print("APP SMOKE TESTS PASSED ✅")
 
 

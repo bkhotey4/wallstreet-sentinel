@@ -122,6 +122,36 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         from ..analytics import valuation as _va
         L.append("## 估值與泡沫觀察（慢變數：說明貴不貴，不負責抓時點）")
         L += _va.summary_lines(val)
+    try:
+        from ..analytics import breadth as _bd
+        from ..analytics import stockscore as _ss
+        from ..data import treasury as _tr
+        bonds = getattr(engine, "bonds", None) or {}
+        if bonds.get("available"):
+            L.append("## 美債（殖利率曲線、期限溢價、標售需求）")
+            L += _tr.summary_lines(bonds)
+        rot = getattr(engine, "rotation", None) or {}
+        if rot.get("available"):
+            L.append("## 類股輪動與市場寬度")
+            L += _bd.summary_lines(rot)
+        sc = getattr(engine, "scores", None) or {}
+        if sc.get("available"):
+            L.append("## 個股評分表（技術面＋情報面的量化篩選，非推薦）")
+            L += _ss.summary_lines(sc)
+        gu = (getattr(engine, "gurus", None) and engine.gurus.result) or {}
+        for m in (gu.get("managers") or [])[:8]:
+            if m["stale"]:
+                continue
+            ch = m["chg"]
+            L.append(f"13F {m['name']}（{m['period']}）新建倉：{'、'.join(x['name'].title() for x in ch['new'][:3]) or '無'}；"
+                     f"出清：{'、'.join(x['name'].title() for x in ch['exit'][:3]) or '無'}")
+        ins = getattr(engine, "insiders", None)
+        if ins is not None:
+            bd_ = ins.board(5)
+            if bd_.get("sells"):
+                L.append("內部人非計畫性賣出最多（90 天）：" + "、".join(f"{r['sym']} ${r['sell_disc_usd'] / 1e6:,.1f}M" for r in bd_["sells"][:5] if r["sell_disc_usd"] > 0))
+    except Exception:  # noqa: BLE001  (context must never fail because of an optional panel)
+        pass
     pbk = getattr(engine, "playbook", None) or {}
     if pbk:
         L.append("## 風險劇本（規則式階段，可追溯）")

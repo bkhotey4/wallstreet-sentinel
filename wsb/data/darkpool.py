@@ -29,14 +29,21 @@ from . import http
 log = logging.getLogger(__name__)
 URL = "https://cdn.finra.org/equity/regsho/daily/CNMSshvol{d:%Y%m%d}.txt"
 _FILE = DATA_DIR / "darkpool.json"
+_META = DATA_DIR / "darkpool_meta.json"      # date → symbol-list hash it was fetched with (re-fetch only when the list changes)
 
 
 def _cfg() -> Dict:
     return SETTINGS.get("darkpool", {}) or {}
 
 
+def finra_sym(yahoo: str) -> str:
+    return yahoo.replace("-", ".")                   # BRK-B (Yahoo) → BRK.B (FINRA)
+
+
 def symbols() -> List[str]:
-    return list(dict.fromkeys(_cfg().get("index_symbols", []) + _cfg().get("etfs", [])))
+    """Index members + ETFs + the US names in the stock-scoring universe (per-stock off-exchange short ratio)."""
+    us = list((((SETTINGS.get("stockscore", {}) or {}).get("markets") or {}).get("us") or {}).get("symbols", {}) or {})
+    return list(dict.fromkeys(_cfg().get("index_symbols", []) + _cfg().get("etfs", []) + [finra_sym(x) for x in us]))
 
 
 def parse(text: str, wanted: set) -> Dict[str, List[float]]:
@@ -58,46 +65,80 @@ class DarkPool:
     def __init__(self) -> None:
         self.days: Dict[str, Dict[str, List[float]]] = {}
         self.result: Dict = {}
+        self._per: Dict[str, Optional[Dict]] = {}
         try:
             if _FILE.exists():
                 self.days = json.loads(_FILE.read_text(encoding="utf-8"))
         except Exception as e:  # noqa: BLE001
             log.warning("darkpool archive unreadable: %s", e)
+        self.meta: Dict[str, str] = {}
+        try:
+            if _META.exists():
+                self.meta = json.loads(_META.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            self.meta = {}
 
     async def refresh(self, market=None) -> None:
         if not _cfg().get("enabled", True):
             return
         every = 6 * 3600
         wanted = set(symbols())
+        import hashlib
+        ver = hashlib.md5(",".join(sorted(wanted)).encode()).hexdigest()[:10]
         back = int(_cfg().get("backfill_days", 90))
         d, todo = date.today() - timedelta(days=1), []
         for _ in range(back):
-            if d.weekday() < 5 and d.isoformat() not in self.days:
+            have = self.days.get(d.isoformat())
+            # missing day, or archived before the symbol list grew (e.g. per-stock names added) → (re)fetch
+            if d.weekday() < 5 and (have is None or (len(wanted & set(have)) < 0.9 * len(wanted)
+                                                     and self.meta.get(d.isoformat()) != ver)):
                 todo.append(d)
             d -= timedelta(days=1)
         got, miss = 0, 0
+        days = dict(self.days)                 # build a new dict: scoring may be reading self.days in a worker thread
         for d in todo[:int(_cfg().get("max_fetch_per_run", 40))]:
             try:
                 txt = await http.get(URL.format(d=d), kind="text", timeout=20, retries=0)
                 rows = parse(txt, wanted)
                 if rows:
-                    self.days[d.isoformat()] = rows
+                    days[d.isoformat()] = rows
+                    self.meta[d.isoformat()] = ver
                     got += 1
             except Exception as e:  # noqa: BLE001  (holidays → 403/404; keep going)
                 miss += 1
                 log.debug("FINRA %s: %s", d, e)
             await asyncio.sleep(0.2)
         if got:
-            self.days = dict(sorted(self.days.items())[-int(_cfg().get("keep_days", 800)):])
+            self.days = dict(sorted(days.items())[-int(_cfg().get("keep_days", 800)):])
+            self.meta = {k: v for k, v in self.meta.items() if k in self.days}
             try:
                 _FILE.write_text(json.dumps(self.days, separators=(",", ":")), encoding="utf-8")
+                _META.write_text(json.dumps(self.meta), encoding="utf-8")
             except Exception as e:  # noqa: BLE001
                 log.warning("darkpool archive not saved: %s", e)
         if self.days:
             self.result = compute(self.days, market)
+            self._per = {}
             HEALTH.ok("finra_darkpool", len(self.days), every=every)
         else:
             HEALTH.fail("finra_darkpool", f"no FINRA files fetched ({miss} failed)", every=every)
+
+
+    def ticker(self, yahoo_sym: str) -> Optional[Dict]:
+        """One stock's off-exchange short ratio: 5-day average and its percentile within that stock's own archive.
+        High (vs its own history) = dealers shorting to fill buyers off-exchange → buying pressure (DIX logic)."""
+        if yahoo_sym in self._per:
+            return self._per[yahoo_sym]
+        sym = finra_sym(yahoo_sym)
+        vals = [(d, rec[sym][0] / rec[sym][1] * 100) for d, rec in sorted(self.days.items()) if sym in rec and rec[sym][1] > 0]
+        out = None
+        if len(vals) >= 40:                       # need ~2 months of its own history before a percentile means much
+            s = pd.Series([v for _, v in vals])
+            avg5 = float(s.tail(5).mean())
+            roll5 = s.rolling(5).mean().dropna()
+            out = {"ratio_5d": avg5, "pctile": float((roll5 < avg5).mean() * 100), "n": len(vals), "asof": vals[-1][0]}
+        self._per[yahoo_sym] = out
+        return out
 
 
 def compute(days: Dict[str, Dict[str, List[float]]], market=None) -> Dict:

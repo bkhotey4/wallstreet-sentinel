@@ -124,16 +124,18 @@ async def complete(system: str, user: str, max_tokens: int = 3500) -> Tuple[str,
                         continue
                     raise
             if txt.strip():
-                HEALTH.ok(f"llm:{name}", 1, every=86400)
+                # one health entry for the whole chain: a fallback model answering is a healthy outcome, so a primary
+                # model that is merely unavailable on this account (e.g. free tier) no longer shows as a broken source
+                HEALTH.ok("llm", 1, every=86400)
                 return txt.strip(), name.split(":", 1)[1]
         except Exception as e:  # noqa: BLE001
             reason = _short(e)
             errors.append(f"{name.split(':',1)[1]} {reason}")
             log.warning("LLM %s failed: %s", name, str(e)[:300])
-            HEALTH.fail(f"llm:{name}", reason, every=86400)
             if "429" in reason:
                 _cooldown[name] = time.time() + 600          # skip this model 10 min
             elif "404" in reason or "401" in reason or "無餘額" in reason:
                 _cooldown[name] = time.time() + 6 * 3600
+    HEALTH.fail("llm", "；".join(errors or ["全部引擎冷卻中"]), every=86400)
     return ("⚠️ AI 研判暫時無法產生（" + "；".join(errors or ["全部引擎冷卻中"]) +
             "）。量化數據與警報不受影響，稍後會自動重試。"), "none"

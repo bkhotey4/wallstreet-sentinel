@@ -70,7 +70,8 @@ def test_weekly():
     txt = WK.facts_text(f)
     assert "持倉週報酬" in txt and "風險劇本升級" in txt and "FOMC" in txt
     deck = CMD.deck_weekly(f)
-    assert len(deck) == 3 and all(len(b) > 5000 for b in deck)
+    assert len(deck) == 4 and all(len(b) > 5000 for b in deck)      # review, portfolio, board, next week
+    assert len(CMD.deck_weekly({**f, "pf_contrib": []})) == 3, "no portfolio slide in intel-station mode"
     assert CMD.embed_weekly(f).description
 
 

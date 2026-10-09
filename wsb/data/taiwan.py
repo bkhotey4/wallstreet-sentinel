@@ -7,13 +7,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import time
 from datetime import date, timedelta
 from typing import Dict, List, Optional
 
-from ..config import SETTINGS
+from ..config import DATA_DIR, SETTINGS
 from ..health import HEALTH
 from .. import store
 from . import http
@@ -47,6 +48,14 @@ class TaiwanData:
         self.margin: Dict = {}               # 融資餘額（億元）與變化
         self.asof = ""
         self.ts = 0.0
+        # 個股三大法人每日買賣超（張）存檔：{日期: {代號: [外資, 投信, 三大法人合計]}}，給個股評分算近 5 日籌碼
+        self.t86_hist: Dict[str, Dict[str, List[float]]] = {}
+        try:
+            f = DATA_DIR / "twse_t86.json"
+            if f.exists():
+                self.t86_hist = json.loads(f.read_text(encoding="utf-8"))
+        except Exception as e:  # noqa: BLE001
+            log.warning("T86 archive unreadable: %s", e)
 
     # ------------------------------------------------------------ equities
     async def _bfi82u(self, d: date) -> Optional[Dict]:
@@ -70,6 +79,9 @@ class TaiwanData:
     async def _t86(self, d: date) -> Optional[Dict]:
         js = await http.get("https://www.twse.com.tw/rwd/zh/fund/T86", headers=HDR, timeout=30, retries=1,
                             params={"date": d.strftime("%Y%m%d"), "selectType": "ALLBUT0999", "response": "json"})
+        return self.parse_t86(js, d)
+
+    def parse_t86(self, js: Dict, d: date) -> Optional[Dict]:
         if js.get("stat") != "OK" or not js.get("data"):
             return None
         f = js["fields"]
@@ -84,6 +96,9 @@ class TaiwanData:
                 continue
             rows.append({"code": code, "name": r[i_name].strip(), "foreign": (_n(r[i_for]) or 0) / 1000,
                          "trust": (_n(r[i_trust]) or 0) / 1000, "all": (_n(r[i_all]) or 0) / 1000})
+        # replace the dict instead of mutating it: the stock scorer may be iterating it in a worker thread
+        self.t86_hist = {**self.t86_hist, d.isoformat(): {r["code"]: [round(r["foreign"], 1), round(r["trust"], 1),
+                                                                      round(r["all"], 1)] for r in rows}}
         watch = set(CFG.get("watch_stocks", ["2330"]))
         return {"date": d.isoformat(),
                 "top_buy": sorted([r for r in rows if r["foreign"] > 0], key=lambda x: -x["foreign"])[:8],
@@ -203,6 +218,14 @@ class TaiwanData:
             if flows:
                 self.stocks = await self._t86(date.fromisoformat(flows[0]["date"])) or {}
                 self.asof = flows[0]["date"]
+                for fl in flows[1:5]:                                 # back-fill the 5-day per-stock flow archive
+                    if fl["date"] not in self.t86_hist:
+                        await asyncio.sleep(2.5)
+                        try:
+                            await self._t86(date.fromisoformat(fl["date"]))
+                        except Exception as e:  # noqa: BLE001
+                            log.info("T86 %s back-fill failed: %s", fl["date"], e)
+                self._save_t86()
                 try:
                     m = await self._margin(date.fromisoformat(flows[0]["date"]))
                     if m:
@@ -230,6 +253,23 @@ class TaiwanData:
             log.warning("TWSE revenue failed: %s", e)
             HEALTH.fail("twse_revenue", e, every=6 * 3600)
         self.ts = time.time()
+
+    def _save_t86(self) -> None:
+        self.t86_hist = dict(sorted(self.t86_hist.items())[-30:])
+        try:
+            (DATA_DIR / "twse_t86.json").write_text(json.dumps(self.t86_hist, separators=(",", ":")), encoding="utf-8")
+        except Exception as e:  # noqa: BLE001
+            log.warning("T86 archive not saved: %s", e)
+
+    def stock_flow(self, code: str, days: int = 5) -> Optional[Dict]:
+        """Net buy (張, thousand shares) by 外資 / 投信 / 三大法人 over the last `days` archived sessions."""
+        h = self.t86_hist
+        ds = sorted(h)[-days:]
+        rows = [h[d][code] for d in ds if code in h[d]]
+        if not rows:
+            return None
+        return {"days": len(rows), "foreign": sum(r[0] for r in rows), "trust": sum(r[1] for r in rows),
+                "all": sum(r[2] for r in rows), "asof": ds[-1]}
 
     def summary_lines(self) -> List[str]:
         def sg(x, d=1):

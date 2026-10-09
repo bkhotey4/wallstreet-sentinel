@@ -17,6 +17,8 @@ from .analytics import regime as rg
 from .analytics import shock as sk
 from .analytics import xray as xr
 from .analytics import valuation as va
+from .analytics import stockscore as ss
+from .analytics import breadth as bd
 from .analytics.stress import StressEngine, StressResult
 from .config import SETTINGS
 from .data.calendar import EventCalendar
@@ -28,6 +30,11 @@ from .data.options import OptionsPositioning
 from .data.sec import SecWatcher
 from .data.taiwan import TaiwanData
 from .data.darkpool import DarkPool
+from .data.stocks import StockPrices
+from .data.stocknews import StockNews
+from .data.edgar_holdings import Gurus, Insiders
+from .data.treasury import Treasury
+from .data import treasury as tsy
 from . import store
 
 log = logging.getLogger(__name__)
@@ -44,6 +51,11 @@ class Engine:
         self.calendar = EventCalendar()
         self.taiwan = TaiwanData()
         self.darkpool = DarkPool()
+        self.stockprices = StockPrices()
+        self.stocknews = StockNews()
+        self.gurus = Gurus()
+        self.insiders = Insiders()
+        self.treasury = Treasury()
         self.stress_engine = StressEngine(self.market, self.fred)
         self.stress: Optional[StressResult] = None
         self.odds: Dict = {}
@@ -51,6 +63,9 @@ class Engine:
         self.lab: Dict = {}
         self.xray: Dict = {}
         self.valuation: Dict = {}
+        self.scores: Dict = {}            # 個股評分表（美股／台股／港股）
+        self.bonds: Dict = {}             # 美債專區（殖利率曲線、期限溢價、標售）
+        self.rotation: Dict = {}          # 類股輪動與市場寬度
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
         self.regime: Dict = {}
@@ -82,11 +97,14 @@ class Engine:
         await self.recompute()
         self.ready = True
         log.info("phase 1 ready (prices)")
-        names = ("fred", "crypto", "options", "news", "calendar", "sec", "taiwan", "darkpool")
+        names = ("fred", "crypto", "options", "news", "calendar", "sec", "taiwan", "darkpool", "stocks", "stocknews",
+                 "treasury", "edgar")
         res = await asyncio.gather(self.fred.refresh(), self.crypto.refresh(), self.options.refresh(),
                                    self.news.refresh(), self.calendar.refresh(extra),
                                    self.sec.refresh([t for t in extra if "." not in t]),
-                                   self.taiwan.refresh(), self.darkpool.refresh(self.market), return_exceptions=True)
+                                   self.taiwan.refresh(), self.darkpool.refresh(self.market), self.stockprices.refresh(),
+                                   self.stocknews.refresh(), self.treasury.refresh(), self.refresh_edgar(),
+                                   return_exceptions=True)
         for nm, r in zip(names, res):
             if isinstance(r, Exception):
                 log.warning("phase-2 refresh %s failed: %s", nm, r)
@@ -94,6 +112,22 @@ class Engine:
         await self.recompute()
         self.full_ready = True
         log.info("phase 2 ready (macro/news/options/taiwan)")
+
+    async def refresh_edgar(self, force: bool = False) -> None:
+        """13F first, then Form 4 (which also hands the 13F matcher the SEC company names of the scoring universe)."""
+        try:
+            await self.gurus.refresh(force)
+        finally:
+            await self.insiders.refresh(force, gurus=self.gurus)
+
+    async def refresh_extras(self) -> None:
+        """Slow feeds behind the stock board / bond zone (each one skips itself until its own refresh interval)."""
+        res = await asyncio.gather(self.stockprices.refresh(), self.stocknews.refresh(), self.treasury.refresh(),
+                                   self.refresh_edgar(), self.darkpool.refresh(self.market), return_exceptions=True)
+        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool"), res):
+            if isinstance(r, Exception):
+                log.warning("extras refresh %s failed: %s", nm, r)
+        await self.recompute()
 
     async def recompute(self) -> None:
         async with self._lock:
@@ -140,6 +174,12 @@ class Engine:
                 self.valuation = await asyncio.to_thread(va.build, self)
             except Exception:  # noqa: BLE001
                 log.exception("valuation failed")
+            for attr, fn, label in (("scores", ss.build, "stock scores"), ("bonds", tsy.build, "treasury"),
+                                    ("rotation", bd.build, "breadth")):
+                try:
+                    setattr(self, attr, await asyncio.to_thread(fn, self))
+                except Exception:  # noqa: BLE001
+                    log.exception("%s failed", label)
             try:
                 self.xray = await asyncio.to_thread(xr.build, self)
             except Exception:  # noqa: BLE001

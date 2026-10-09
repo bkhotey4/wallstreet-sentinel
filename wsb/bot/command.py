@@ -270,8 +270,28 @@ def _w_next(f: dict, tag: str) -> Slide:
     return s
 
 
+def _w_board(f: dict, tag: str) -> Slide:
+    s = Slide("本週個股評分與資金動向", tag, "技術面＋情報面量化篩選（非推薦）｜美債、類股、大師申報")
+    rows = []
+    for bd in f.get("board", []):
+        top = "、".join(f"{n} {v:.0f}" for n, _, v in bd["top"][:4])
+        mv = "、".join(f"{n} {d:+.0f}" for n, _, d in bd["movers"][:2]) or "—"
+        rows.append([(bd["label"], TEXT), (top[:34], GREEN), (mv[:20], ORANGE),
+                     (f"{bd['above200']:.0f}%" if bd.get("above200") is not None else "—", TEXT)])
+    if not rows:
+        rows = [[("—", MUTED), ("個股資料尚未就緒", MUTED), ("", MUTED), ("", MUTED)]]
+    y = s.table(["市場", "評分前段", "5 日變化最大", "站上200日線"], rows, 235, [0.12, 0.5, 0.24, 0.14], size=28, row_h=66,
+                align=["l", "l", "l", "r"])
+    yy = y + 40
+    for line in (f.get("board_lines") or [])[:6]:
+        if yy > 990:
+            break
+        yy = s.paragraph("・" + line[:120], M, yy, W - 2 * M, size=26, color=MUTED) + 12
+    return s
+
+
 def deck_weekly(f: dict) -> List[bytes]:
-    bs = [_w_review, _w_pf, _w_next]
+    bs = [_w_review] + ([_w_pf] if f.get("pf_contrib") else []) + [_w_board, _w_next]
     return [b(f, f"{i}/{len(bs)}").png() for i, b in enumerate(bs, 1)]
 
 

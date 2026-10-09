@@ -25,12 +25,14 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from wsb.config import SETTINGS
+from tools import site_sections as S2
+from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
+                           tick_label)
 
 # Intel-station mode is enforced here, whatever settings.yaml says: this site must never carry holdings.
 SETTINGS.raw.setdefault("portfolio", {})["enabled"] = False
 
 log = logging.getLogger("build_site")
-esc = html.escape
 
 # ----------------------------------------------------------------- vocabulary (中 → EN)
 GROUP_EN = {"us_equity": ("美股指數", "US equities"), "volatility": ("波動率", "Volatility"), "europe": ("歐洲", "Europe"),
@@ -40,11 +42,6 @@ GROUP_EN = {"us_equity": ("美股指數", "US equities"), "volatility": ("波動
 BLOCK_EN = {"信用": "Credit", "私募信貸": "Private credit", "全球新興": "Global EM", "匯率套息": "FX carry",
             "利率": "Rates", "波動率": "Volatility", "股市結構": "Equity structure", "流動性": "Liquidity",
             "商品加密": "Commodities & crypto", "景氣就業": "Growth & jobs"}
-WORD_EN = {"平靜": "Calm", "正常": "Normal", "升溫": "Elevated", "高壓": "High stress", "極端": "Extreme",
-           "點火中": "Igniting", "留意": "Watch", "戒備": "Alert", "防禦": "Defensive", "低": "Low",
-           "高度警戒": "High alert", "降溫": "Cooling", "持平": "Flat",
-           "信用事件": "Credit event", "利率／債市衝擊": "Rates / bond shock", "套息拆倉": "Carry unwind",
-           "波動率／槓桿去化": "Vol / deleveraging", "景氣衰退": "Recession", "商品／地緣能源": "Commodities / geo-energy"}
 ASSET_EN = {"^GSPC": "S&P 500", "^NDX": "Nasdaq 100", "^DJI": "Dow Jones", "^RUT": "Russell 2000", "ES=F": "S&P futures",
             "NQ=F": "Nasdaq futures", "QQQ": "Nasdaq 100 ETF", "RSP": "S&P equal weight", "SMH": "Semiconductor ETF",
             "^SOX": "PHLX Semiconductor", "^VIX": "VIX", "^VIX9D": "VIX 9-day", "^VIX3M": "VIX 3-month", "^VVIX": "VVIX",
@@ -94,61 +91,12 @@ LEVEL_COLORS = ["#0ca30c", "#fab219", "#ec835a", "#d03b3b", "#a3142f"]
 STAGE_COLORS = ["#0ca30c", "#fab219", "#ec835a", "#d03b3b"]
 
 
-def T(zh: str, en: Optional[str] = None, tag: str = "span", cls_: str = "") -> str:
-    """Bilingual text node: Chinese by default, English swapped in by the toggle."""
-    en = WORD_EN.get(zh, zh) if en is None else en
-    c = f' class="{cls_}"' if cls_ else ""
-    return f'<{tag}{c} data-en="{esc(en)}">{esc(zh)}</{tag}>'
-
-
 # ----------------------------------------------------------------- number helpers
-def num(x, d=2, sign=False, pct=False, na="—"):
-    if x is None:
-        return na
-    try:
-        if x != x:
-            return na
-        s = f"{x:+,.{d}f}" if sign else f"{x:,.{d}f}"
-    except (TypeError, ValueError):
-        return na
-    return s + ("%" if pct else "")
-
-
-def cls(x):
-    if x is None or x != x:
-        return ""
-    return "up" if x > 0 else ("dn" if x < 0 else "")
-
-
 def level_idx(score) -> int:
     for i, lv in enumerate(SETTINGS.get("stress_levels", [])):
         if score < lv["max"]:
             return min(i, len(LEVEL_COLORS) - 1)
     return len(LEVEL_COLORS) - 1
-
-
-def nice_ticks(lo: float, hi: float, n: int = 4) -> List[float]:
-    if hi <= lo:
-        hi = lo + 1
-    raw = (hi - lo) / max(n - 1, 1)
-    mag = 10 ** math.floor(math.log10(raw))
-    step = next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
-    v, out = math.floor(lo / step) * step, []
-    while v <= hi + step * 0.5:
-        out.append(round(v, 10))
-        v += step
-    return out
-
-
-def tick_label(v: float) -> str:
-    a = abs(v)
-    if a >= 10000:
-        return f"{v / 1000:,.0f}K"
-    if a >= 100:
-        return f"{v:,.0f}"
-    if a >= 10:
-        return f"{v:,.1f}".rstrip("0").rstrip(".")
-    return f"{v:,.2f}".rstrip("0").rstrip(".")
 
 
 def data_asof(eng) -> Tuple[Optional[str], bool]:
@@ -172,79 +120,6 @@ def ret_since(s, days: int) -> Optional[float]:
 
 
 # ----------------------------------------------------------------- charts (inline SVG + JSON for the hover layer)
-_CHARTS: Dict[str, dict] = {}
-
-
-def line_chart(cid: str, s, label: str, digits: int = 2, w: int = 560, h: int = 190,
-               bands: Optional[List[Tuple[float, float, str]]] = None, fixed: Optional[Tuple[float, float]] = None,
-               spans: Optional[List[Tuple[str, str, str]]] = None) -> str:
-    s = s.dropna()
-    if len(s) < 10:
-        return '<p class="muted">—</p>'
-    pl, pr, pt, pb = 46, 58, 10, 24
-    W, H = w - pl - pr, h - pt - pb
-    vals = [float(v) for v in s.values]
-    if fixed:
-        lo, hi = fixed
-    else:
-        lo, hi = min(vals), max(vals)
-        pad = (hi - lo) * 0.08 or 1
-        lo, hi = lo - pad, hi + pad
-    ticks = nice_ticks(lo, hi, 4)
-    if not fixed:
-        lo, hi = min(lo, ticks[0]), max(hi, ticks[-1])
-    n = len(vals)
-    xs = [pl + i * W / (n - 1) for i in range(n)]
-    ys = [pt + (1 - (v - lo) / (hi - lo)) * H for v in vals]
-    base = pt + H
-    pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, ys))
-    area = f"M{xs[0]:.1f},{base:.1f} L" + " L".join(f"{x:.1f},{y:.1f}" for x, y in zip(xs, ys)) + f" L{xs[-1]:.1f},{base:.1f} Z"
-    parts = []
-    for b0, b1, col in bands or []:
-        y1 = pt + (1 - (min(b1, hi) - lo) / (hi - lo)) * H
-        y0 = pt + (1 - (max(b0, lo) - lo) / (hi - lo)) * H
-        if y0 > y1:
-            parts.append(f'<rect x="{pl}" y="{y1:.1f}" width="{W}" height="{y0 - y1:.1f}" fill="{col}" opacity="0.10"/>')
-    for a, b, lab in spans or []:                      # shaded windows (e.g. past crises), labelled at the top
-        ia, ib = s.index.searchsorted(pd.Timestamp(a)), s.index.searchsorted(pd.Timestamp(b))
-        if ib <= 0 or ia >= n:
-            continue
-        xa, xb = pl + min(ia, n - 1) * W / (n - 1), pl + min(ib, n - 1) * W / (n - 1)
-        parts.append(f'<rect x="{xa:.1f}" y="{pt}" width="{max(xb - xa, 2):.1f}" height="{H}" class="span"/>'
-                     f'<text x="{(xa + xb) / 2:.1f}" y="{pt + 11}" class="spanlbl" text-anchor="middle">{esc(lab)}</text>')
-    for t in ticks:
-        if lo <= t <= hi:
-            y = pt + (1 - (t - lo) / (hi - lo)) * H
-            parts.append(f'<line x1="{pl}" x2="{pl + W}" y1="{y:.1f}" y2="{y:.1f}" class="grid"/>'
-                         f'<text x="{pl - 6}" y="{y + 4:.1f}" class="axis" text-anchor="end">{tick_label(t)}</text>')
-    d0, dm, d1 = s.index[0], s.index[n // 2], s.index[-1]
-    parts.append(f'<text x="{pl}" y="{h - 6}" class="axis">{d0:%Y-%m}</text>'
-                 f'<text x="{pl + W / 2:.0f}" y="{h - 6}" class="axis" text-anchor="middle">{dm:%Y-%m}</text>'
-                 f'<text x="{pl + W}" y="{h - 6}" class="axis" text-anchor="end">{d1.strftime("%Y-%m" if (d1 - d0).days > 800 else "%m-%d")}</text>')
-    parts.append(f'<path d="{area}" class="wash"/><polyline points="{pts}" class="ln"/>'
-                 f'<circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="4" class="dot"/>'
-                 f'<text x="{xs[-1] + 8:.1f}" y="{ys[-1] + 4:.1f}" class="endlbl">{num(vals[-1], digits)}</text>')
-    parts.append(f'<g class="hover" visibility="hidden"><line class="xh" y1="{pt}" y2="{base}"/><circle r="4" class="dot"/></g>'
-                 f'<rect class="hit" x="{pl}" y="{pt}" width="{W}" height="{H}" fill="transparent"/>')
-    _CHARTS[cid] = {"label": label, "d": [i.strftime("%Y-%m-%d") for i in s.index], "v": [round(v, 4) for v in vals],
-                    "x": [round(x, 1) for x in xs], "y": [round(y, 1) for y in ys], "dg": digits}
-    return (f'<svg id="{cid}" class="chart lc" viewBox="0 0 {w} {h}" role="img" aria-label="{esc(label)}">'
-            + "".join(parts) + "</svg>")
-
-
-def spark(s, w=96, h=28) -> str:
-    s = s.dropna().tail(90)
-    if len(s) < 5:
-        return ""
-    v = [float(x) for x in s.values]
-    lo, hi = min(v), max(v)
-    hi = hi if hi > lo else lo + 1
-    pts = " ".join(f"{i * (w - 6) / (len(v) - 1) + 1:.1f},{2 + (1 - (x - lo) / (hi - lo)) * (h - 4):.1f}" for i, x in enumerate(v))
-    ly = 2 + (1 - (v[-1] - lo) / (hi - lo)) * (h - 4)
-    return (f'<svg class="spark" viewBox="0 0 {w} {h}" aria-hidden="true"><polyline points="{pts}"/>'
-            f'<circle cx="{w - 5:.1f}" cy="{ly:.1f}" r="2.5"/></svg>')
-
-
 def radar(cid: str, blocks: Dict[str, float], size: int = 320) -> str:
     order = list(BLOCK_EN)
     items = sorted(blocks.items(), key=lambda kv: order.index(kv[0]) if kv[0] in order else 99)
@@ -277,11 +152,6 @@ def radar(cid: str, blocks: Dict[str, float], size: int = 320) -> str:
 
 
 # ----------------------------------------------------------------- sections
-def card(title_zh: str, title_en: str, body: str, cls_: str = "", sub: str = "") -> str:
-    s = f'<p class="sub">{sub}</p>' if sub else ""
-    return f'<section class="card {cls_}"><h2>{T(title_zh, title_en)}</h2>{s}{body}</section>'
-
-
 def sec_strip(eng) -> str:
     tiles = []
     for t, zh, dg in STRIP:
@@ -597,6 +467,10 @@ def strike_bars_svg(cid, rows, spot, cw, pw, w=560, h=220) -> str:
     return f'<svg id="{cid}" class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="gamma by strike">{"".join(parts)}</svg>'
 
 
+DP_EN = {"偏買（場外放空比例高）": "Buy-side pressure (high off-exchange short share)",
+         "偏賣（場外放空比例低）": "Sell-side pressure (low off-exchange short share)", "中性": "Neutral"}
+
+
 def sec_darkpool(eng) -> str:
     dp = (getattr(eng, "darkpool", None) and eng.darkpool.result) or {}
     if not dp.get("available"):
@@ -607,7 +481,7 @@ def sec_darkpool(eng) -> str:
           f'<div><span class="muted">{T("5 日平均", "5-day avg")}</span><b>{dp["dpi_5d"]:.1f}%</b></div>'
           f'<div><span class="muted">{T("5 日平均的歷史百分位", "5d avg percentile")}（{dp["n_days"]} {T("天", "d")}）</span><b>{num(dp.get("pctile"), 0)}</b></div>'
           + "".join(f'<div><span class="muted">{esc(e)}</span><b>{num(v, 1)}%</b></div>' for e, v in etf.items() if v is not None)
-          + f'</div><p><b>{T(str(dp.get("state") or "累積天數不足，暫不判斷"), "")}</b></p>')
+          + f'</div><p><b>{T(str(dp.get("state") or "累積天數不足，暫不判斷"), DP_EN.get(dp.get("state"), "Not enough history yet"))}</b></p>')
     hist = dp.get("history")
     chart = line_chart("c_dpi", hist, "DPI %", 1, w=1100, h=210) if hist is not None and len(hist) >= 10 else ""
     note = T(f"資料：FINRA 每日 Reg SHO 場外成交（含暗池、券商內部撮合）的放空量比例，T+1 公布，資料日 {dp['asof']}。"
@@ -901,7 +775,8 @@ PUBLIC_SYSTEM = """你是華爾街跨資產策略分析師，正在為一個「�
 2. 這是市場描述，不是投資建議：不得提出任何買進、賣出、加碼、減碼、停損、避險比例、目標 β、部位調整幅度等操作建議，也不得針對個股給出價位或操作；不得假設讀者持有任何部位。
 3. 可以描述市場正在發生什麼、哪些風險訊號在升溫、歷史上類似情況如何、接下來值得觀察的數據與事件。
 4. 機率要誠實；引用崩跌機率時說明那是歷史頻率、不是預測。
-5. 一律使用台灣繁體中文與台灣用語，語氣冷靜精準；金融術語可保留英文。"""
+5. 一律使用台灣繁體中文與台灣用語，語氣冷靜精準；金融術語可保留英文。
+6. 個股評分、大師 13F 持倉、內部人申報只能當作「市場正在發生什麼」來描述（哪些族群強、誰上季新建倉或出清），不得暗示讀者跟進或據此操作。"""
 
 PUBLIC_BRIEF = """根據 DATA PACK 撰寫今日的公開市場評論（Markdown，總長 ≤ 1800 字），結構如下：
 
@@ -909,7 +784,7 @@ PUBLIC_BRIEF = """根據 DATA PACK 撰寫今日的公開市場評論（Markdown�
 
 **風險儀表**（SSI 與最主要的 3 個推升因子，附數據；崩跌機率相對基準的意義）
 
-**跨資產掃描**（只挑有訊號的市場：美股、利率、信用、匯率、商品、加密、亞洲與台股）
+**跨資產掃描**（只挑有訊號的市場：美股與類股輪動、美債曲線與標售、信用、匯率、商品、加密、亞洲與台股）
 
 **背離與暗流**（最多 3 點：哪裡的數據跟主流敘事不一致）
 
@@ -1061,7 +936,13 @@ document.querySelectorAll('.ptab').forEach(function(a){a.addEventListener('click
 window.addEventListener('hashchange',function(){page(location.hash.slice(1));});if(location.hash)page(location.hash.slice(1));
 document.querySelectorAll('.thit').forEach(function(el){function sh(ev){var p=el.dataset.tip.split('|');show(ev.clientX,ev.clientY,p);}
  el.addEventListener('pointermove',sh);el.addEventListener('pointerleave',hide);});
-document.querySelectorAll('.tab').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab,.panel').forEach(function(e){e.classList.remove('on');});b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');});});
+document.querySelectorAll('.tab').forEach(function(b){b.addEventListener('click',function(){var box=b.closest('.tabset')||b.closest('.card')||document;
+ box.querySelectorAll('.tab,.panel').forEach(function(e){e.classList.remove('on');});b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');});});
+document.querySelectorAll('a.golink').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();page(a.dataset.p);
+ try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){location.hash=a.dataset.p;}window.scrollTo(0,0);});});
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){});}
+var dp=null,ib=document.getElementById('installBtn');window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ib)ib.classList.add('show');});
+if(ib)ib.addEventListener('click',function(){if(dp){dp.prompt();dp=null;ib.classList.remove('show');}});
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function setLang(l){document.documentElement.lang=l==='en'?'en':'zh-Hant';document.querySelectorAll('[data-en]').forEach(function(e){if(e.dataset.zh===undefined)e.dataset.zh=e.textContent;e.textContent=l==='en'?e.dataset.en:e.dataset.zh;});
  document.getElementById('langBtn').textContent=l==='en'?'中文':'EN';store('lang',l);}
@@ -1078,14 +959,19 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, sec_trends]),
+    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S2.sec_scores_mini, sec_trends]),
+            ("scores", "個股評分", "Stock scores", [S2.sec_scores]),
             ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, sec_positioning]),
+            ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
+            ("bonds", "美債", "Treasuries", [S2.sec_bonds]),
+            ("rotation", "類股寬度", "Sectors & breadth", [S2.sec_rotation]),
             ("crisis", "歷史危機", "Past crises", [sec_crisis]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
             ("taiwan", "台股", "Taiwan", [sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [sec_calendar, sec_news]),
+            ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("inputs", "指標明細", "All inputs", [sec_indicators])]
     nav, panels = [], []
     for i, (key, zh, en, fs) in enumerate(tabs):
@@ -1097,19 +983,26 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     strip = sec_strip(eng)
     asof, stale = data_asof(eng)
     data = json.dumps(_CHARTS, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    foot = T("資料來源：Yahoo Finance、FRED、CBOE、證交所／期交所、公開新聞 RSS。平日每小時、週末每 4 小時自動更新。所有數字由程式自動計算；崩跌機率是歷史頻率而非預測。本站僅提供市場資訊，不構成任何投資建議。",
-             "Sources: Yahoo Finance, FRED, CBOE, TWSE/TAIFEX, public news RSS. Updated hourly on weekdays, every 4 hours on weekends. "
-             "All figures are computed automatically; crash odds are historical frequencies, not forecasts. Market information only, not investment advice.")
+    foot = T("資料來源：Yahoo Finance、FRED、CBOE、FINRA、SEC EDGAR、TreasuryDirect、證交所／期交所、公開新聞 RSS 與 Google 新聞。平日每小時、週末每 4 小時自動更新。"
+             "所有數字由程式自動計算；崩跌機率是歷史頻率而非預測，個股評分是量化篩選而非推薦。本站僅提供市場資訊，不構成任何投資建議。"
+             "手機：Android 按「加到主畫面」；iPhone 用 Safari 開啟 → 分享 → 加入主畫面，就能像 App 一樣使用。",
+             "Sources: Yahoo Finance, FRED, CBOE, FINRA, SEC EDGAR, TreasuryDirect, TWSE/TAIFEX, public news RSS and Google News. Updated hourly "
+             "on weekdays, every 4 hours on weekends. Crash odds are historical frequencies, stock scores are a rules-based screen — "
+             "market information only, not investment advice. On iPhone: Safari → Share → Add to Home Screen.")
     return f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="color-scheme" content="dark light"><title>WallStreet Sentinel｜全球金融風險情報站</title>
-<style>{CSS}</style></head><body>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0a0b0d"><link rel="icon" href="favicon-64.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="情報站">
+<style>{CSS}{S2.SECTION_CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
-<button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
+<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
 <div id="tip" role="status"></div>
-<script type="application/json" id="chart-data">{data}</script><script>{JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1120,7 +1013,92 @@ def snapshot(eng) -> dict:
                                     "chg_20d": st.chg_20d, "coverage": st.coverage, "blocks": st.blocks},
         "playbook": {k: (eng.playbook or {}).get(k) for k in ("stage", "name", "points")},
         "odds": (eng.odds or {}).get("horizons"),
+        "scores": {k: [[r["code"], r["name"], r["score"]] for r in m["rows"][:10]]
+                   for k, m in ((getattr(eng, "scores", None) or {}).get("markets") or {}).items()},
     }
+
+
+def daily_snapshot(eng, ai_text: str = "") -> dict:
+    """Compact record of what the page said today (time machine)."""
+    st, op = eng.stress, (eng.options.spx or {})
+    dp = (getattr(eng, "darkpool", None) and eng.darkpool.result) or {}
+    spx = eng.market.series("^GSPC")
+    asof, _ = data_asof(eng)
+    val = [{"label": i["label"], "value": i["value"], "pctile": i["pctile"], "grade": i["grade"]}
+           for g in (eng.valuation or {}).get("groups", []) for i in g["items"]]
+    sc = {k: {"label": m["label"], "top": [[r["code"], r["name"], r["score"]] for r in m["rows"][:10]]}
+          for k, m in ((getattr(eng, "scores", None) or {}).get("markets") or {}).items()}
+    return {"date": datetime.now(ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))).date().isoformat(), "asof": asof,
+            "ssi": None if not st else {"score": round(st.score, 2), "label": st.label, "blocks": {k: round(v, 1) for k, v in st.blocks.items()}},
+            "stage": {k: (eng.playbook or {}).get(k) for k in ("stage", "name", "points")},
+            "gamma": {"gex": op.get("gex_usd_bn_per_1pct"), "flip": op.get("zero_gamma"), "spot": op.get("spot")} if op else None,
+            "darkpool": {"dpi": dp.get("dpi_5d"), "pctile": dp.get("pctile"), "state": dp.get("state")} if dp.get("available") else None,
+            "spx": float(spx.iloc[-1]) if len(spx) else None, "valuation": val, "scores": sc, "ai": (ai_text or "")[:6000]}
+
+
+def update_snapshots(eng, snapdir: Path, out: Path, ai_text: str = "") -> Optional[Path]:
+    """Write today's snapshot once (after `snapshots.min_hour` Taipei, only when market data moved on since the last one),
+    then publish every snapshot + an index (with the S&P 500 move since each date) under <out>/snap/."""
+    snapdir.mkdir(parents=True, exist_ok=True)
+    tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
+    now = datetime.now(tz)
+    files = sorted(snapdir.glob("20??-??-??.json"))
+    written = None
+    snap = daily_snapshot(eng, ai_text)
+    target = snapdir / f"{snap['date']}.json"
+    last_asof = None
+    if files:
+        try:
+            last_asof = json.loads(files[-1].read_text(encoding="utf-8")).get("asof")
+        except Exception:  # noqa: BLE001
+            last_asof = None
+    min_hour = int((SETTINGS.get("snapshots", {}) or {}).get("min_hour", 6))
+    if (now.hour >= min_hour and not target.exists() and snap.get("asof") and snap["asof"] != last_asof
+            and snap.get("ssi") is not None):
+        target.write_text(json.dumps(snap, ensure_ascii=False, default=str, separators=(",", ":")), encoding="utf-8")
+        written = target
+        files = sorted(snapdir.glob("20??-??-??.json"))
+    spx_now = snap.get("spx")
+    idx = []
+    dest = out / "snap"
+    dest.mkdir(parents=True, exist_ok=True)
+    for f in files:
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            continue
+        (dest / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+        after = (spx_now / d["spx"] - 1) * 100 if spx_now and d.get("spx") else None
+        idx.append({"date": d.get("date"), "asof": d.get("asof"), "ssi": (d.get("ssi") or {}).get("score"),
+                    "stage": (d.get("stage") or {}).get("name"), "spx": d.get("spx"),
+                    "after": None if after is None else round(after, 2)})
+    (dest / "index.json").write_text(json.dumps(idx, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    return written
+
+
+MANIFEST = {"name": "WallStreet Sentinel 全球金融風險情報站", "short_name": "情報站", "start_url": "./", "scope": "./",
+            "display": "standalone", "background_color": "#0a0b0d", "theme_color": "#0a0b0d", "lang": "zh-Hant",
+            "description": "全球金融風險、個股評分、Gamma、暗池、美債與大師持倉的公開情報站",
+            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+                      {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+                      {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}
+
+# network-first: always try for fresh numbers, fall back to the last copy when offline
+SW_JS = """const C='wss-v1';
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','manifest.webmanifest','icon-192.png'])).catch(()=>{}));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||new URL(r.url).origin!==location.origin)return;
+e.respondWith(fetch(r).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(r,cp));}return res;}).catch(()=>caches.match(r).then(m=>m||caches.match('index.html'))));});
+"""
+
+
+def write_pwa(out: Path) -> None:
+    import shutil
+    static = Path(__file__).resolve().parent / "static"
+    for f in static.glob("*.png"):
+        shutil.copyfile(f, out / f.name)
+    (out / "manifest.webmanifest").write_text(json.dumps(MANIFEST, ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / "sw.js").write_text(SW_JS, encoding="utf-8")
 
 
 # ----------------------------------------------------------------- main
@@ -1137,7 +1115,7 @@ async def ai_commentary(eng) -> Tuple[str, str]:
     return scrub_advice(text), name
 
 
-async def build(out: Path, use_ai: bool = True, engine=None) -> Path:
+async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[Path] = None) -> Path:
     from wsb.engine import Engine
     eng = engine or Engine()
     if engine is None:
@@ -1153,6 +1131,13 @@ async def build(out: Path, use_ai: bool = True, engine=None) -> Path:
     (out / "index.html").write_text(render(eng, ai_text, ai_engine), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")
+    write_pwa(out)
+    if snapdir is not None:
+        try:
+            w = update_snapshots(eng, snapdir, out, ai_text)
+            log.info("time machine: %s", f"new snapshot {w.name}" if w else "no new snapshot this run")
+        except Exception:  # noqa: BLE001
+            log.exception("snapshot update failed")
     return out / "index.html"
 
 
@@ -1160,10 +1145,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="site")
     ap.add_argument("--no-ai", action="store_true")
+    ap.add_argument("--snapdir", default="", help="folder holding the daily time-machine snapshots (data branch checkout)")
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     t0 = time.time()
-    p = asyncio.run(build(Path(a.out), use_ai=not a.no_ai))
+    p = asyncio.run(build(Path(a.out), use_ai=not a.no_ai, snapdir=Path(a.snapdir) if a.snapdir else None))
     print(f"wrote {p} ({p.stat().st_size / 1024:.0f} KB) in {time.time() - t0:.0f}s")
     return 0
 

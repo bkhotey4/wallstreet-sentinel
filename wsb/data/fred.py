@@ -74,7 +74,9 @@ class FredData:
         start = history_start().isoformat()
         val = SETTINGS.get("valuation", {}) or {}
         long_start = str(val.get("fred_start", start))
-        ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())))
+        trs = (SETTINGS.get("treasury", {}) or {}).get("fred") or {}
+        ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())
+                                 + list(trs.keys())))
         starts = {sid: long_start for sid in (val.get("fred") or {})}
         sem = asyncio.Semaphore(4)
         ok, fails, last_err = 0, 0, ""

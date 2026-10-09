@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write        # 只用來把每日快照（時光機）推到 data 分支；main 分支不會被 Actions 改動
   pages: write
   id-token: write
 
@@ -46,18 +46,49 @@ jobs:
             data_cache/history_close.pkl
             data_cache/fred_series.pkl
             data_cache/darkpool.json
+            data_cache/darkpool_meta.json
             data_cache/sentinel.db
+            data_cache/stock_prices.pkl
+            data_cache/stock_news.json
+            data_cache/stockscore_hist.json
+            data_cache/twse_t86.json
+            data_cache/gurus.json
+            data_cache/insiders.json
+            data_cache/sec_tickers.json
+            data_cache/treasury_auctions.json
           key: data-${{ github.run_id }}
           restore-keys: data-
+
+      # 時光機：每日快照存在獨立的 data 分支（不存在就自動建立），不會碰到 main 分支的程式
+      - name: 取出快照分支
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p _data && cd _data && git init -q -b data
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth=1 origin data && git checkout -q -B data FETCH_HEAD || echo "data 分支尚未建立，第一次快照時建立"
+          mkdir -p snap
 
       - name: 產生網站
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
-          python -m tools.build_site --out site $FLAG
+          python -m tools.build_site --out site --snapdir _data/snap $FLAG
+
+      - name: 儲存新快照
+        if: success()
+        run: |
+          cd _data
+          git config user.name "intel-station-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add snap
+          if git diff --cached --quiet; then echo "今天的快照已存在，略過"; exit 0; fi
+          git commit -q -m "快照 $(date -u +%F)"
+          git push -q origin data || echo "快照推送失敗（下次執行會再試）"
 
       - name: 儲存資料快取
         if: always()
@@ -67,7 +98,16 @@ jobs:
             data_cache/history_close.pkl
             data_cache/fred_series.pkl
             data_cache/darkpool.json
+            data_cache/darkpool_meta.json
             data_cache/sentinel.db
+            data_cache/stock_prices.pkl
+            data_cache/stock_news.json
+            data_cache/stockscore_hist.json
+            data_cache/twse_t86.json
+            data_cache/gurus.json
+            data_cache/insiders.json
+            data_cache/sec_tickers.json
+            data_cache/treasury_auctions.json
           key: data-${{ github.run_id }}
 
       # 只檢查「持倉區塊才會出現」的標記，避免 AI 評論或新聞裡的一般用詞（例如「未實現」）誤判

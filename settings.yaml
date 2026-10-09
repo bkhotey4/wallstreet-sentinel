@@ -394,7 +394,8 @@ news_feeds:
   - {name: CNBC Finance, url: "https://www.cnbc.com/id/10000664/device/rss/rss.html"}
   - {name: MarketWatch, url: "https://feeds.content.dowjones.io/public/rss/mw_topstories"}
   - {name: Bloomberg,   url: "https://feeds.bloomberg.com/markets/news.rss"}
-  - {name: Yahoo,       url: "https://finance.yahoo.com/news/rssindex"}
+  - {name: Nasdaq,      url: "https://www.nasdaq.com/feed/rssoutbound?category=Markets"}   # 取代已停用的 Yahoo RSS（404）
+  - {name: Seeking Alpha, url: "https://seekingalpha.com/market_currents.xml"}
   - {name: FT Markets,  url: "https://www.ft.com/markets?format=rss"}
   - {name: Fed,         url: "https://www.federalreserve.gov/feeds/press_all.xml"}
   - {name: ECB,         url: "https://www.ecb.europa.eu/rss/press.html"}
@@ -521,3 +522,212 @@ intel:
     news_top_channels: 2        # 情報支柱 = 新聞熱度最高的幾條路徑的平均
     warmup_news_weight: 0.5     # 新聞基準不足時，情報支柱權重打折
   # channels: 可覆寫各傳導路徑的關鍵字 {路徑名: {risk: [...], relief: [...]}}，路徑名需與衝擊雷達一致
+
+# ---------- 個股評分表（技術面＋情報面；量化篩選，不是買賣建議） ----------
+stockscore:
+  enabled: true
+  refresh_hours: 3            # 個股價格多久重抓一次（約 110 檔、兩年日線）
+  period: "2y"
+  weights: {technical: 0.6, intel: 0.4}    # 情報面資料不足的個股自動只用技術面
+  tech_weights: {trend: 0.25, momentum: 0.30, relative: 0.15, near_high: 0.15, accumulation: 0.10, low_vol: 0.05}
+  rsi_hot: [75, 80]           # RSI 超過 75 扣 4 分、超過 80 扣 8 分（過熱）
+  news_hours: 72              # 個股新聞看最近幾小時
+  news_batch: 8               # 每次 Google 新聞查詢合併幾檔
+  history_days: 40            # 每日分數保留幾天（算 5 日分數變化）
+  markets:
+    us:
+      label: 美股
+      label_en: US
+      bench: "^GSPC"
+      news_lang: en
+      symbols:
+        AAPL: [蘋果, Apple]
+        MSFT: [微軟, Microsoft]
+        NVDA: [輝達, Nvidia]
+        GOOGL: [Alphabet, Google]
+        AMZN: [亞馬遜, Amazon]
+        META: [Meta, Meta Platforms]
+        AVGO: [博通, Broadcom]
+        TSLA: [特斯拉, Tesla]
+        BRK-B: [波克夏, Berkshire Hathaway]
+        JPM: [摩根大通, JPMorgan]
+        V: [Visa, Visa]
+        MA: [萬事達卡, Mastercard]
+        LLY: [禮來, Eli Lilly]
+        UNH: [聯合健康, UnitedHealth]
+        XOM: [埃克森美孚, Exxon Mobil]
+        WMT: [沃爾瑪, Walmart]
+        COST: [好市多, Costco]
+        JNJ: [嬌生, Johnson & Johnson]
+        PG: [寶僑, Procter & Gamble]
+        HD: [家得寶, Home Depot]
+        ORCL: [甲骨文, Oracle]
+        NFLX: [網飛, Netflix]
+        AMD: [超微, AMD]
+        ADBE: [Adobe, Adobe]
+        CRM: [Salesforce, Salesforce]
+        KO: [可口可樂, Coca-Cola]
+        PEP: [百事, PepsiCo]
+        MRK: [默克, Merck]
+        ABBV: [艾伯維, AbbVie]
+        BAC: [美國銀行, Bank of America]
+        WFC: [富國銀行, Wells Fargo]
+        GS: [高盛, Goldman Sachs]
+        MS: [摩根士丹利, Morgan Stanley]
+        CVX: [雪佛龍, Chevron]
+        CAT: [開拓重工, Caterpillar]
+        GE: [奇異航太, GE Aerospace]
+        IBM: [IBM, IBM]
+        QCOM: [高通, Qualcomm]
+        TXN: [德州儀器, Texas Instruments]
+        INTC: [英特爾, Intel]
+        MU: [美光, Micron]
+        AMAT: [應用材料, Applied Materials]
+        LRCX: [科林研發, Lam Research]
+        PLTR: [Palantir, Palantir]
+        UBER: [Uber, Uber]
+        DIS: [迪士尼, Disney]
+        NKE: [Nike, Nike]
+        BA: [波音, Boeing]
+        PFE: [輝瑞, Pfizer]
+        T: [AT&T, AT&T]
+        TSM: [台積電 ADR, TSMC]
+        ASML: [艾司摩爾, ASML]
+    tw:
+      label: 台股
+      label_en: Taiwan
+      bench: "^TWII"
+      news_lang: zh-TW
+      symbols:
+        2330.TW: [台積電, TSMC]
+        2317.TW: [鴻海, Hon Hai]
+        2454.TW: [聯發科, MediaTek]
+        2308.TW: [台達電, Delta Electronics]
+        2382.TW: [廣達, Quanta]
+        2881.TW: [富邦金, Fubon Financial]
+        2882.TW: [國泰金, Cathay Financial]
+        2891.TW: [中信金, CTBC Financial]
+        2303.TW: [聯電, UMC]
+        3711.TW: [日月光投控, ASE Technology]
+        2412.TW: [中華電, Chunghwa Telecom]
+        2886.TW: [兆豐金, Mega Financial]
+        1301.TW: [台塑, Formosa Plastics]
+        1303.TW: [南亞, Nan Ya Plastics]
+        2002.TW: [中鋼, China Steel]
+        2884.TW: [玉山金, E.Sun Financial]
+        2892.TW: [第一金, First Financial]
+        3231.TW: [緯創, Wistron]
+        6669.TW: [緯穎, Wiwynn]
+        2357.TW: [華碩, ASUS]
+        2379.TW: [瑞昱, Realtek]
+        3034.TW: [聯詠, Novatek]
+        2345.TW: [智邦, Accton]
+        2603.TW: [長榮, Evergreen Marine]
+        1216.TW: [統一, Uni-President]
+        2885.TW: [元大金, Yuanta Financial]
+        5880.TW: [合庫金, Taiwan Cooperative]
+        2880.TW: [華南金, Hua Nan Financial]
+        3008.TW: [大立光, Largan]
+        2327.TW: [國巨, Yageo]
+    hk:
+      label: 港股
+      label_en: Hong Kong
+      bench: "^HSI"
+      news_lang: zh-HK
+      symbols:
+        0700.HK: [騰訊, Tencent]
+        9988.HK: [阿里巴巴, Alibaba]
+        3690.HK: [美團, Meituan]
+        1810.HK: [小米, Xiaomi]
+        9618.HK: [京東, JD.com]
+        1211.HK: [比亞迪, BYD]
+        0939.HK: [建設銀行, China Construction Bank]
+        1398.HK: [工商銀行, ICBC]
+        3988.HK: [中國銀行, Bank of China]
+        0005.HK: [匯豐控股, HSBC]
+        1299.HK: [友邦保險, AIA]
+        0388.HK: [港交所, HKEX]
+        0941.HK: [中國移動, China Mobile]
+        0883.HK: [中海油, CNOOC]
+        2318.HK: [中國平安, Ping An]
+        0016.HK: [新鴻基地產, Sun Hung Kai Properties]
+        1109.HK: [華潤置地, China Resources Land]
+        0001.HK: [長和, CK Hutchison]
+        0002.HK: [中電控股, CLP Holdings]
+        0003.HK: [香港中華煤氣, Hong Kong and China Gas]
+        2388.HK: [中銀香港, BOC Hong Kong]
+        0027.HK: [銀河娛樂, Galaxy Entertainment]
+        1024.HK: [快手, Kuaishou]
+        9999.HK: [網易, NetEase]
+        2020.HK: [安踏體育, Anta Sports]
+        0175.HK: [吉利汽車, Geely]
+        0857.HK: [中國石油, PetroChina]
+        0981.HK: [中芯國際, SMIC]
+        9888.HK: [百度, Baidu]
+        0669.HK: [創科實業, Techtronic]
+  news_pos: [beat, beats, tops, surge, surges, soar, soars, jump, jumps, rally, rallies, record high, upgrade, upgraded,
+             raises guidance, raised guidance, raises forecast, buyback, strong demand, outperform, wins contract, approval, approved,
+             大漲, 漲停, 創新高, 上修, 調升, 看好, 優於預期, 獲利成長, 營收創, 買超, 利多, 強勁, 上調]
+  news_neg: [miss, misses, falls short, plunge, plunges, tumble, tumbles, slump, slumps, sink, sinks, downgrade, downgraded,
+             cuts guidance, lowers guidance, lawsuit, probe, investigation, recall, antitrust, fined, layoffs, delay, delays, halt,
+             warning, weak demand, underperform, sell rating,
+             大跌, 跌停, 重挫, 下修, 調降, 不如預期, 衰退, 虧損, 利空, 賣超, 裁員, 調查, 罰款, 訴訟, 示警, 下調]
+
+# ---------- 大師持倉（SEC 13F，每季申報、晚 45 天）與內部人申報（Form 4） ----------
+gurus:
+  enabled: true
+  refresh_hours: 24
+  managers:                   # CIK 為 SEC 編號；停止申報的機構會標示最後申報日
+    - {cik: 1067983, name: 波克夏（巴菲特）, name_en: "Berkshire Hathaway (Buffett)", style: 價值}
+    - {cik: 1649339, name: Scion（Michael Burry，大賣空）, name_en: "Scion (Michael Burry)", style: 放空}
+    - {cik: 1336528, name: Pershing Square（Ackman）, name_en: "Pershing Square (Ackman)", style: 集中}
+    - {cik: 1536411, name: Duquesne（Druckenmiller）, name_en: "Duquesne (Druckenmiller)", style: 總經}
+    - {cik: 1656456, name: Appaloosa（Tepper）, name_en: "Appaloosa (Tepper)", style: 逆勢}
+    - {cik: 1079114, name: Greenlight（Einhorn，放空派）, name_en: "Greenlight (Einhorn)", style: 放空}
+    - {cik: 1061768, name: Baupost（Klarman）, name_en: "Baupost (Klarman)", style: 價值}
+    - {cik: 1350694, name: Bridgewater（Dalio）, name_en: "Bridgewater (Dalio)", style: 總經}
+  stale_days: 200             # 最後一份 13F 超過這麼多天 → 標示「已停止申報／資料過期」
+insiders:
+  enabled: true
+  lookback_days: 90
+  refresh_hours: 12
+  max_fetch_per_run: 250      # 每次最多抓幾份 Form 4（SEC 每秒 ≤10 次請求）；第一次回補約 900 份，會分幾次補完
+  big_sale_usd: 25000000      # 單一個股 90 天「非預先計畫」賣出 ≥ 2,500 萬美元 → 列入大額賣股
+
+# ---------- 美債專區 ----------
+treasury:
+  enabled: true
+  refresh_hours: 6
+  fred:                       # 殖利率曲線各天期 + 期限溢價（Kim-Wright）
+    DGS1MO: 1個月
+    DGS3MO: 3個月
+    DGS6MO: 6個月
+    DGS1: 1年
+    DGS2: 2年
+    DGS3: 3年
+    DGS5: 5年
+    DGS7: 7年
+    DGS10: 10年
+    DGS20: 20年
+    DGS30: 30年
+    THREEFYTP10: 10年期限溢價
+  auction_terms: [2-Year, 3-Year, 5-Year, 7-Year, 10-Year, 20-Year, 30-Year]
+  weak_btc_drop: 0.15         # 得標倍數低於同天期近 6 次平均 0.15 以上 → 需求偏弱
+  weak_dealer_pp: 5           # 初級交易商承接比例高於近 6 次平均 5 個百分點以上 → 需求偏弱
+
+# ---------- 類股輪動與市場寬度 ----------
+breadth:
+  sectors: [XLK, XLC, XLY, XLP, XLE, XLV, XLF, XLI, XLU, XLB, XLRE]
+  bench: SPY
+  windows: {"1週": 5, "1月": 21, "3月": 63, "6月": 126}
+
+# ---------- 時光機（每日快照）與推播 ----------
+snapshots:
+  min_hour: 6                 # 台北時間幾點後才建立當天快照（美股收盤後）
+push:
+  darkpool_extreme: true      # 暗池指數 5 日均值進入極端區（≤10 或 ≥90 百分位）時推播
+  valuation_change: true      # 估值／信用指標分級變成「極端」「恐慌」時推播
+  weak_auction: true          # 公債標售需求偏弱時推播
+  breadth_drop: 30            # 美股評分池站上 200 日線比例跌破這個百分比時推播
+  guru_new_filing: true       # 追蹤的大師有新 13F 時推播
+  insider_big_sale: true      # 評分池個股出現大額非計畫性內部人賣股時推播

@@ -284,6 +284,13 @@ class Sentinel(commands.Bot):
         async def fomc():
             await self.fomc_tick()
 
+        async def extras():
+            await eng.refresh_extras()
+            try:
+                await self._run_alerts(self._extras_alerts())
+            except Exception:  # noqa: BLE001
+                log.exception("extras alerts failed")
+
         async def backup():
             path = await asyncio.to_thread(store.backup, int(SETTINGS.get("backup", {}).get("keep", 7)))
             if path:
@@ -298,6 +305,7 @@ class Sentinel(commands.Bot):
 
         loops = [
             ("backup", 6 * 3600, backup, 120),
+            ("extras", 3600, extras, 900),            # 個股評分／美債標售／13F／內部人／暗池（各自依設定間隔才真的重抓）
             ("fomc", 1200, fomc, 300),
             ("quotes", R["quotes"], quotes, R["quotes"]),
             ("history", 600, history, 600),
@@ -352,11 +360,16 @@ class Sentinel(commands.Bot):
         for line in src.read_text(encoding="utf-8").splitlines():
             if "|" not in line:
                 continue
-            name, url = [x.strip() for x in line.split("|", 1)]
+            name, url, *ua = [x.strip() for x in line.split("|", 2)]
             try:
-                txt = await http.get(url, kind="text", timeout=30, retries=1,
-                                     headers={"Accept": "application/json, text/html, */*"})
-                (outdir / f"{name}.txt").write_text(txt[:30000], encoding="utf-8")
+                hdr = {"Accept": "application/json, text/html, */*"}
+                if ua and ua[0]:
+                    hdr["User-Agent"] = ua[0]
+                elif "sec.gov" in url:                     # SEC fair-access policy: declared User-Agent required
+                    from ..config import SEC_USER_AGENT
+                    hdr["User-Agent"] = SEC_USER_AGENT
+                txt = await http.get(url, kind="text", timeout=30, retries=1, headers=hdr)
+                (outdir / f"{name}.txt").write_text(txt[:400000], encoding="utf-8")
             except Exception as e:  # noqa: BLE001
                 (outdir / f"{name}.txt").write_text(f"ERROR {type(e).__name__}: {e}", encoding="utf-8")
         log.info("probe done")
@@ -610,6 +623,82 @@ class Sentinel(commands.Bot):
             if q_prev and q_prev != rg["quadrant"] and cfg.get("alert_quadrant_change", True):
                 out.append(Alert(f"intel:quad:{rg['quadrant']}:{week}", "ℹ️ INFO", f"總經象限轉換：{q_prev} → {rg['quadrant']}",
                                  f"{rg.get('drift') or ''}；{(self.engine.regime or {}).get('playbook', '')}"))
+        return out
+
+    def _extras_alerts(self) -> List[Alert]:
+        """Push rules for the intel-station panels (settings.push). All edge-triggered; the first run only records state."""
+        eng, out, cfg = self.engine, [], SETTINGS.get("push", {}) or {}
+        now = datetime.now(timezone.utc)
+        day, week = now.strftime("%Y%m%d"), f"{now.isocalendar()[0]}W{now.isocalendar()[1]:02d}"
+        dp = (eng.darkpool.result or {}) if getattr(eng, "darkpool", None) else {}
+        if cfg.get("darkpool_extreme", True) and dp.get("pctile") is not None:
+            was = store.kv_get("push_dp_state")
+            pc = dp["pctile"]
+            # enter the extreme zone at 90/10, leave it only below 85 / above 15 → no re-alerts while hovering at the edge
+            st = ("high" if pc >= 90 or (was == "high" and pc >= 85) else
+                  "low" if pc <= 10 or (was == "low" and pc <= 15) else "mid")
+            store.kv_set("push_dp_state", st)
+            if was is not None and st != "mid" and st != was:
+                out.append(Alert(f"push:dp:{st}:{dp['asof']}", "⚠️ WARNING",
+                                 f"暗池指數進入極端區：5 日均 {dp['dpi_5d']:.1f}%（自身歷史第 {dp['pctile']:.0f} 百分位）",
+                                 ("場外放空比例異常高：通常代表造市商在場外大量供貨給買方（買盤偏強）。" if st == "high" else
+                                  "場外放空比例異常低：場外買盤退潮、賣壓偏重。") + f" 資料日 {dp['asof']}（FINRA，T+1）"))
+        val = eng.valuation or {}
+        if cfg.get("valuation_change", True) and val.get("available"):
+            cur = {i["key"]: i["grade"] for g in val["groups"] for i in g["items"]}
+            prev = store.kv_get("push_val_grades")
+            store.kv_set("push_val_grades", cur)
+            if prev is not None:
+                for g in val["groups"]:
+                    for i in g["items"]:
+                        if i["grade"] in ("極端", "恐慌", "極度自滿") and prev.get(i["key"]) != i["grade"]:
+                            out.append(Alert(f"push:val:{i['key']}:{i['grade']}:{week}", "⚠️ WARNING",
+                                             f"估值／信用警示：{i['label']} 進入「{i['grade']}」",
+                                             f"目前 {i['value']:.2f}{i['unit']}，自 {i['hist_start']} 年以來第 {i['pctile']:.0f} 百分位。{i['what']}"))
+        bonds = getattr(eng, "bonds", None) or {}
+        if cfg.get("weak_auction", True):
+            cut = (now - timedelta(days=3)).strftime("%Y-%m-%d")
+            for a in bonds.get("weak", []):
+                if a["date"] >= cut:
+                    out.append(Alert(f"push:auction:{a['cusip']}:{a['date']}", "⚠️ WARNING",
+                                     f"美債標售需求偏弱：{a['date']} {a['label']}",
+                                     f"得標殖利率 {a['high_yield']:.3f}%，投標倍數 {a['btc']:.2f}（同天期近 6 次均 {a['btc_avg']:.2f}），"
+                                     f"初級交易商承接 {a['dealer']:.0f}%（均 {a['dealer_avg']:.0f}%）→ 終端買家縮手，長端利率可能承壓"))
+        thr = cfg.get("breadth_drop")
+        br = ((getattr(eng, "rotation", None) or {}).get("breadth") or {}).get("us")
+        if thr and br:
+            below = br["now"] < float(thr)
+            was = store.kv_get("push_breadth_below")
+            store.kv_set("push_breadth_below", below)
+            if below and was is False:
+                out.append(Alert(f"push:breadth:{day}", "⚠️ WARNING", f"美股寬度轉弱：評分池只剩 {br['now']:.0f}% 站上 200 日線（< {thr}%）",
+                                 "多數權值股已跌破長期均線，指數若仍撐著代表漲勢高度集中；歷史上寬度崩壞常領先指數修正"))
+        gu = (getattr(eng, "gurus", None) and eng.gurus.result) or {}
+        if cfg.get("guru_new_filing", True) and gu.get("available"):
+            seen = store.kv_get("push_13f_seen")
+            cur = {str(m["cik"]): m["filed"] for m in gu["managers"]}
+            store.kv_set("push_13f_seen", cur)
+            if seen is not None:
+                for m in gu["managers"]:
+                    if seen.get(str(m["cik"])) not in (None, m["filed"]):
+                        ch = m["chg"]
+                        out.append(Alert(f"push:13f:{m['cik']}:{m['filed']}", "ℹ️ INFO", f"大師持倉更新：{m['name']}（{m['period']} 季末）",
+                                         f"新建倉：{'、'.join(x['name'].title() for x in ch['new'][:4]) or '無'}\n"
+                                         f"出清：{'、'.join(x['name'].title() for x in ch['exit'][:4]) or '無'}\n"
+                                         f"加碼：{'、'.join(x['name'].title() for x in ch['add'][:4]) or '無'}\n{m.get('url') or ''}"))
+        ins = getattr(eng, "insiders", None)
+        if cfg.get("insider_big_sale", True) and ins is not None:
+            b = ins.board(20)
+            big = set(b.get("big", []))
+            seen = store.kv_get("push_insider_big")
+            store.kv_set("push_insider_big", sorted(big))
+            if seen is not None:
+                for r in b["sells"]:
+                    if r["sym"] in big and r["sym"] not in seen:
+                        x = r["big"][0] if r.get("big") else {}
+                        out.append(Alert(f"push:insider:{r['sym']}:{week}", "ℹ️ INFO",
+                                         f"內部人大額賣股：{r['sym']} 90 天非計畫性賣出 ${r['sell_disc_usd'] / 1e6:,.0f}M",
+                                         f"{r['n_sellers']} 位內部人；最大一筆 {x.get('owner', '').title()}（{x.get('title') or '—'}）\n{x.get('url') or ''}"))
         return out
 
     def _stop_alerts(self) -> List[Alert]:
@@ -1025,6 +1114,30 @@ def register_commands(bot: Sentinel) -> None:
     async def macro(it: discord.Interaction):
         await it.response.defer(thinking=True)
         await P.deliver(it, slides=lambda: P.v_macro(eng), embeds=lambda: E.macro(eng))
+
+    @tree.command(name="scores", description="個股評分表：美股／台股／港股 技術面＋情報面，由高到低（量化篩選，非推薦）")
+    @app_commands.choices(market=[app_commands.Choice(name="美股", value="us"), app_commands.Choice(name="台股", value="tw"),
+                                  app_commands.Choice(name="港股", value="hk")])
+    async def scores(it: discord.Interaction, market: app_commands.Choice[str]):
+        await it.response.defer(thinking=True)
+        if not await ready_or_wait(it):
+            return
+        m = ((eng.scores or {}).get("markets") or {}).get(market.value)
+        if not m:
+            await it.followup.send("個股資料還在載入（第一次約需 1–2 分鐘），請稍後再試。")
+            return
+        e = discord.Embed(title=f"📊 {m['label']}個股評分（由高到低）", color=0x3987E5,
+                          description=f"資料日 {m['asof']}｜技術面 60% ＋ 情報面 40%｜量化篩選，不是買賣建議")
+        for chunk in range(0, min(len(m["rows"]), 20), 10):
+            lines = []
+            for r in m["rows"][chunk:chunk + 10]:
+                why = "；".join(x["zh"] for x in (r["reasons"][:2] + [{"zh": i["zh"]} for i in r["intel_inputs"][:1]]))
+                lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` **{r['score']:.0f}**（技術 {r['tech']:.0f}"
+                             + (f"／情報 {r['intel']:.0f}" if r.get("intel") is not None else "") + f"）\n└ {why[:120]}")
+            e.add_field(name=f"第 {chunk + 1}–{chunk + len(lines)} 名", value="\n".join(lines)[:1024], inline=False)
+        br = m.get("breadth") or {}
+        e.set_footer(text=f"評分池 {br.get('n')} 檔｜站上 200 日線 {br.get('above200') or 0:.0f}%｜完整表與理由：情報站網頁「個股評分」分頁")
+        await it.followup.send(embed=e)
 
     @tree.command(name="gamma", description="SPX 選擇權造市商 Gamma、零Gamma翻轉點、Put/Call 牆")
     async def gamma(it: discord.Interaction):
