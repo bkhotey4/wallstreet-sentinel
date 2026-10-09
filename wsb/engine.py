@@ -19,6 +19,7 @@ from .analytics import xray as xr
 from .analytics import valuation as va
 from .analytics import stockscore as ss
 from .analytics import breadth as bd
+from .analytics import signals as sg
 from .analytics.stress import StressEngine, StressResult
 from .config import SETTINGS
 from .data.calendar import EventCalendar
@@ -66,6 +67,7 @@ class Engine:
         self.scores: Dict = {}            # 個股評分表（美股／台股／港股）
         self.bonds: Dict = {}             # 美債專區（殖利率曲線、期限溢價、標售）
         self.rotation: Dict = {}          # 類股輪動與市場寬度
+        self.signals: Dict = {}           # 技術面買點訊號（規則篩選）
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
         self.regime: Dict = {}
@@ -175,7 +177,7 @@ class Engine:
             except Exception:  # noqa: BLE001
                 log.exception("valuation failed")
             for attr, fn, label in (("scores", ss.build, "stock scores"), ("bonds", tsy.build, "treasury"),
-                                    ("rotation", bd.build, "breadth")):
+                                    ("rotation", bd.build, "breadth"), ("signals", sg.build, "signals")):
                 try:
                     setattr(self, attr, await asyncio.to_thread(fn, self))
                 except Exception:  # noqa: BLE001

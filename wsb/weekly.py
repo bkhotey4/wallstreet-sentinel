@@ -108,6 +108,15 @@ def board_facts(engine) -> Dict:
     dp = (getattr(engine, "darkpool", None) and engine.darkpool.result) or {}
     if dp.get("available") and dp.get("state"):
         out["board_lines"].append(f"暗池指數 5 日均 {dp['dpi_5d']:.1f}%（{dp['state']}）")
+    th = sc.get("themes") or []
+    if th:
+        out["board_lines"].insert(0, "族群強弱：前段 " + "、".join(f"{t['theme']} {t['score']:.0f}" for t in th[:3] if t["score"] is not None)
+                                  + "；後段 " + "、".join(f"{t['theme']} {t['score']:.0f}" for t in th[-3:] if t["score"] is not None))
+    sg = getattr(engine, "signals", None) or {}
+    for m in (sg.get("markets") or {}).values():
+        if m["rows"]:
+            out["board_lines"].append(f"{m['label']}技術面訊號 {len(m['rows'])} 檔，最強：" + "、".join(
+                f"{r['name']} {r['patterns'][0]['label']}" for r in m["rows"][:3]))
     out["board_lines"] += tail
     return out
 

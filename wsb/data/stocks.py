@@ -24,15 +24,21 @@ def cfg() -> Dict:
 
 
 def universe() -> Dict[str, Dict]:
-    """market key → {label, label_en, bench, news_lang, symbols: {sym: (zh, en)}}"""
+    """market key → {label, label_en, bench, news_lang, symbols: {sym: (zh, en)}, themes: {sym: theme}}"""
     out = {}
     for k, m in (cfg().get("markets") or {}).items():
-        syms = {}
+        syms, themes = {}, {}
         for s, v in (m.get("symbols") or {}).items():
             zh, en = (v[0], v[1]) if isinstance(v, (list, tuple)) and len(v) >= 2 else (str(v), str(v))
             syms[str(s)] = (str(zh), str(en))
-        out[k] = {**m, "symbols": syms}
+            themes[str(s)] = str(v[2]) if isinstance(v, (list, tuple)) and len(v) >= 3 else "其他"
+        out[k] = {**m, "symbols": syms, "themes": themes}
     return out
+
+
+def theme_names() -> Dict[str, str]:
+    """族群 → English name, in display order."""
+    return {str(k): str(v) for k, v in (cfg().get("themes") or {}).items()}
 
 
 def all_symbols() -> List[str]:
@@ -81,7 +87,11 @@ class StockPrices:
             log.warning("stock price cache unreadable: %s", e)
 
     def stale(self) -> bool:
-        return self.close.empty or time.time() - self.ts > float(cfg().get("refresh_hours", 3)) * 3600
+        if self.close.empty or time.time() - self.ts > float(cfg().get("refresh_hours", 3)) * 3600:
+            return True
+        # names added to the universe since the last download → fetch now instead of waiting for the next cycle
+        missing = set(all_symbols()) - set(self.close.columns)
+        return len(missing) > 2 and time.time() - self.ts > 600
 
     async def refresh(self, force: bool = False) -> None:
         if not cfg().get("enabled", True) or not (force or self.stale()):

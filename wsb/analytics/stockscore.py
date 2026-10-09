@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from ..config import DATA_DIR
-from ..data.stocks import cfg, universe
+from ..data.stocks import cfg, theme_names, universe
 
 log = logging.getLogger(__name__)
 _HIST = DATA_DIR / "stockscore_hist.json"
@@ -232,7 +232,8 @@ def build(eng) -> Dict:
             score = w_tech * tech + w_int * intel if intel is not None else tech
             zh, en = m["symbols"][sym]
             p5 = _prev_score(prev.get(mk) or {}, sym, 5, max(x["asof"] for x in feats.values()))
-            rows.append({"sym": sym, "code": sym.split(".")[0], "name": zh, "name_en": en, "score": round(float(score), 1),
+            rows.append({"sym": sym, "code": sym.split(".")[0], "name": zh, "name_en": en, "theme": m["themes"].get(sym, "其他"),
+                         "score": round(float(score), 1),
                          "tech": round(tech, 1), "intel": None if intel is None else round(float(intel), 1),
                          "chg5": None if p5 is None else round(float(score) - p5, 1),
                          "parts": {k: (None if v is None else round(float(v), 0)) for k, v in parts.items()},
@@ -247,9 +248,42 @@ def build(eng) -> Dict:
                    "new_high": sum(1 for f in b if f["new_high"]), "new_low": sum(1 for f in b if f["new_low"])}
         markets[mk] = {"key": mk, "label": m.get("label", mk), "label_en": m.get("label_en", mk), "bench": m.get("bench"),
                        "rows": rows, "breadth": breadth, "asof": max(f["asof"] for f in b),
-                       "missing": [s for s in m["symbols"] if s not in feats]}
+                       "missing": [s for s in m["symbols"] if s not in feats], "themes": theme_stats(rows)}
     _save_hist(prev, markets)
-    return {"available": bool(markets), "markets": markets}
+    return {"available": bool(markets), "markets": markets, "themes": cross_themes(markets)}
+
+
+def theme_stats(rows: List[Dict]) -> List[Dict]:
+    """Per 族群 inside one market: average score, average 1/3/6-month return, share above the 200-day, leaders."""
+    order = list(theme_names())
+    by: Dict[str, List[Dict]] = {}
+    for r in rows:
+        by.setdefault(r["theme"], []).append(r)
+    out = []
+    for th, rs in by.items():
+        mean = lambda k: (float(np.mean([r[k] for r in rs if r.get(k) is not None]))  # noqa: E731
+                          if any(r.get(k) is not None for r in rs) else None)
+        ab = [r["above200"] for r in rs if r.get("above200") is not None]
+        out.append({"theme": th, "theme_en": theme_names().get(th, th), "n": len(rs), "score": mean("score"),
+                    "r1m": mean("r1m"), "r3": mean("r3"), "r6": mean("r6"),
+                    "above200": float(np.mean(ab) * 100) if ab else None,
+                    "leaders": [(r["name"], r["code"], r["score"]) for r in sorted(rs, key=lambda r: -r["score"])[:3]],
+                    "order": order.index(th) if th in order else 99})
+    return sorted(out, key=lambda t: -(t["score"] or 0))
+
+
+def cross_themes(markets: Dict[str, Dict]) -> List[Dict]:
+    """Same 族群 across US / Taiwan / Hong Kong (e.g. 半導體 in all three)."""
+    order = list(theme_names())
+    allt = {t["theme"] for m in markets.values() for t in m["themes"]}
+    out = []
+    for th in sorted(allt, key=lambda t: order.index(t) if t in order else 99):
+        per = {mk: next((t for t in m["themes"] if t["theme"] == th), None) for mk, m in markets.items()}
+        sc = [t["score"] for t in per.values() if t and t["score"] is not None]
+        n = sum(t["n"] for t in per.values() if t)
+        out.append({"theme": th, "theme_en": theme_names().get(th, th), "per": per, "n": n,
+                    "score": float(np.average(sc, weights=[t["n"] for t in per.values() if t and t["score"] is not None])) if sc else None})
+    return sorted(out, key=lambda t: -(t["score"] or 0))
 
 
 def _share(xs) -> Optional[float]:
@@ -297,4 +331,7 @@ def summary_lines(res: Dict, top: int = 5) -> List[str]:
         br = m["breadth"]
         L.append(f"{m['label']}評分前段：{best}；後段：{worst}；評分池站上 200 日線 {br['above200']:.0f}%"
                  if br.get("above200") is not None else f"{m['label']}評分前段：{best}")
+    th = res.get("themes") or []
+    if th:
+        L.append("族群強弱（跨美台港平均分數）：" + "、".join(f"{t['theme']} {t['score']:.0f}" for t in th if t["score"] is not None))
     return L

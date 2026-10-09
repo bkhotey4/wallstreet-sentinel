@@ -14,6 +14,7 @@ import pandas as pd
 
 import tests.test_offline as T
 from wsb.analytics import breadth as BD
+from wsb.analytics import signals as SG
 from wsb.analytics import stockscore as SS
 from wsb.analytics.stress import StressEngine
 from wsb.data import edgar_holdings as EH
@@ -101,6 +102,31 @@ def test_parsers():
     print("  parsers ok (news tone, 13F, Form 4, auctions)")
 
 
+def test_signal_patterns():
+    idx = pd.bdate_range(end="2026-10-07", periods=400)
+    v = pd.Series(1e6, index=idx)
+    c = pd.Series(100 * np.exp(np.linspace(0, 0.6, 400)), index=idx)                 # uptrend, dip to the MA, bounce
+    c.iloc[-6:-1] = c.iloc[-7] * np.array([0.985, 0.97, 0.96, 0.955, 0.958])
+    c.iloc[-1] = c.iloc[-2] * 1.012
+    d = SG.detect(c, v)
+    assert d["pullback"]["flag"].iloc[-1] and d["pullback"]["inv"].iloc[-1] < c.iloc[-1]
+    c2 = pd.Series(100 + np.sin(np.arange(400) / 9) * 2 + np.linspace(0, 10, 400), index=idx)
+    c2.iloc[-1] = c2.iloc[-21:-1].max() * 1.03
+    v2 = v.copy()
+    v2.iloc[-1] = 3e6
+    d2 = SG.detect(c2, v2)
+    assert d2["breakout"]["flag"].iloc[-1] and not SG.detect(c2, v)["breakout"]["flag"].iloc[-1], "needs volume"
+    c3 = pd.Series(100 * np.exp(np.linspace(0, 0.2, 400)), index=idx)
+    c3.iloc[-12:-1] = c3.iloc[-13] * np.cumprod([0.97] * 11)
+    c3.iloc[-1] = c3.iloc[-2] * 1.04
+    assert SG.detect(c3, v)["oversold"]["flag"].iloc[-1]
+    c4 = pd.Series(100 * np.exp(np.concatenate([np.linspace(0, -0.3, 250), np.linspace(-0.3, 0.15, 150)])), index=idx)
+    assert SG.detect(c4, v)["golden"]["flag"].sum() > 0
+    bt = SG.backtest({"A": d, "B": d2})
+    assert set(bt) == set(SG.PATTERNS) and bt["pullback"]["base_win"] is not None
+    print("  signal patterns ok")
+
+
 def make_engine(tmp: Path):
     eng = Engine()
     eng.market, eng.fred = T.m, T.fr
@@ -149,6 +175,7 @@ def make_engine(tmp: Path):
 
 def main():
     test_parsers()
+    test_signal_patterns()
     tmp = Path("/tmp/wsb_expansion")
     shutil.rmtree(tmp, ignore_errors=True)
     eng = make_engine(tmp)
@@ -185,6 +212,15 @@ def main():
     assert rot["available"] and rot["sectors"] and {r["quad"] for r in rot["sectors"]} <= {"領先", "轉弱", "落後", "改善"}
     assert set(rot["breadth"]) == {"us", "tw", "hk"} and 0 <= rot["breadth"]["us"]["now"] <= 100
     assert SS.summary_lines(sc) and TR.summary_lines(bd) and BD.summary_lines(rot)
+    # themes: every row tagged, per-market and cross-market tables
+    assert all(r.get("theme") for m in sc["markets"].values() for r in m["rows"])
+    assert any(t["theme"] == "半導體" and len([k for k, v in t["per"].items() if v]) == 3 for t in sc["themes"]), "semis in US/TW/HK"
+    assert any(r["sym"] == "KLAC" for r in sc["markets"]["us"]["rows"]) and any(r["theme"] == "國防軍工" for r in sc["markets"]["tw"]["rows"])
+    sgr = eng.signals
+    assert sgr["available"] and set(sgr["markets"]) == {"us", "tw", "hk"}
+    allsig = [r for m in sgr["markets"].values() for r in m["rows"]]
+    assert allsig and all(0 <= r["strength"] <= 100 and r["inv"] < r["price"] for r in allsig)
+    assert all(m["rows"] == sorted(m["rows"], key=lambda r: -r["strength"]) for m in sgr["markets"].values())
     # site: new tabs, sections, PWA, time machine (snapshot written once, index published)
     out, snap = tmp / "site", tmp / "snapdir"
     B.update_snapshots.__globals__["SETTINGS"].raw.setdefault("snapshots", {})["min_hour"] = 0
@@ -196,6 +232,10 @@ def main():
     assert "波克夏（巴菲特）" in page and "賣權（看空）" in page and "可能已停止申報" in page
     assert "內部人買賣（Form 4）" in page and "美債專區" in page and 'id="c_curve"' in page and "偏弱" in page
     assert "類股輪動與市場寬度" in page and 'id="c_rot"' in page and 'id="c_br0"' in page
+    for k in ("signals", "themes"):
+        assert f'id="p-{k}"' in page, k
+    assert "技術面買點訊號（由強到弱）" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
+    assert 'class="btn thf"' in page and 'data-th="半導體"' in page
     assert "時光機" in page and 'id="tmSel"' in page and 'rel="manifest"' in page and "serviceWorker" in page
     assert "不是買賣建議" in page or "not investment advice" in page
     for f in ("manifest.webmanifest", "sw.js", "icon-192.png", "icon-512.png", "apple-touch-icon.png"):
@@ -203,7 +243,9 @@ def main():
     files = list(snap.glob("20??-??-??.json"))
     assert len(files) == 1, files
     s = json.loads(files[0].read_text())
-    assert s["ssi"]["score"] > 0 and s["scores"]["us"]["top"] and s["asof"]
+    assert s["ssi"]["score"] > 0 and s["scores"]["us"]["top"] and s["asof"] and "signals" in s
+    pub = json.loads((out / "snap" / files[0].name).read_text())
+    assert all("since_pct" in r for m in pub["signals"].values() for r in m["rows"]), "published snapshot carries since-returns"
     ix = json.loads((out / "snap" / "index.json").read_text())
     assert len(ix) == 1 and ix[0]["date"] == s["date"] and (out / "snap" / files[0].name).exists()
     asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))

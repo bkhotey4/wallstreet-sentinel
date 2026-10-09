@@ -699,6 +699,19 @@ class Sentinel(commands.Bot):
                         out.append(Alert(f"push:insider:{r['sym']}:{week}", "ℹ️ INFO",
                                          f"內部人大額賣股：{r['sym']} 90 天非計畫性賣出 ${r['sell_disc_usd'] / 1e6:,.0f}M",
                                          f"{r['n_sellers']} 位內部人；最大一筆 {x.get('owner', '').title()}（{x.get('title') or '—'}）\n{x.get('url') or ''}"))
+        sg_cfg = SETTINGS.get("signals", {}) or {}
+        sg = getattr(eng, "signals", None) or {}
+        if sg.get("available") and cfg.get("new_signals", True):
+            thr, mx = float(sg_cfg.get("push_min_strength", 70)), int(sg_cfg.get("push_max", 6))
+            fresh = [(m, r) for m in sg["markets"].values() for r in m["rows"] if r.get("new") and r["strength"] >= thr]
+            fresh.sort(key=lambda x: -x[1]["strength"])
+            for m, r in fresh[:mx]:
+                h = r["patterns"][0]
+                out.append(Alert(f"push:signal:{r['sym']}:{h['pattern']}:{m['asof']}", "ℹ️ INFO",
+                                 f"技術面訊號：{m['label']} {r['name']}（{r['code']}）{h['label']}，強度 {r['strength']:.0f}",
+                                 f"族群 {r.get('theme', '—')}｜現價 {r['price']:.2f}｜失效線 {r['inv']:.2f}（距離 -{r['risk_pct']:.1f}%）"
+                                 f"｜綜合分數 {r['score'] if r.get('score') is None else format(r['score'], '.0f')}\n"
+                                 "規則篩選，不是買賣建議；收盤跌破失效線代表型態失敗（/signals 看全部）"))
         return out
 
     def _stop_alerts(self) -> List[Alert]:
@@ -1132,11 +1145,57 @@ def register_commands(bot: Sentinel) -> None:
             lines = []
             for r in m["rows"][chunk:chunk + 10]:
                 why = "；".join(x["zh"] for x in (r["reasons"][:2] + [{"zh": i["zh"]} for i in r["intel_inputs"][:1]]))
-                lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` **{r['score']:.0f}**（技術 {r['tech']:.0f}"
+                lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` {r.get('theme', '')} **{r['score']:.0f}**（技術 {r['tech']:.0f}"
                              + (f"／情報 {r['intel']:.0f}" if r.get("intel") is not None else "") + f"）\n└ {why[:120]}")
             e.add_field(name=f"第 {chunk + 1}–{chunk + len(lines)} 名", value="\n".join(lines)[:1024], inline=False)
         br = m.get("breadth") or {}
         e.set_footer(text=f"評分池 {br.get('n')} 檔｜站上 200 日線 {br.get('above200') or 0:.0f}%｜完整表與理由：情報站網頁「個股評分」分頁")
+        await it.followup.send(embed=e)
+
+    @tree.command(name="signals", description="技術面買點訊號：多頭回檔／帶量突破／黃金交叉／超賣反彈，由強到弱（規則篩選，非建議）")
+    @app_commands.choices(market=[app_commands.Choice(name="美股", value="us"), app_commands.Choice(name="台股", value="tw"),
+                                  app_commands.Choice(name="港股", value="hk")])
+    async def signals_cmd(it: discord.Interaction, market: app_commands.Choice[str]):
+        await it.response.defer(thinking=True)
+        if not await ready_or_wait(it):
+            return
+        m = ((eng.signals or {}).get("markets") or {}).get(market.value)
+        if not m:
+            await it.followup.send("個股資料還在載入，請稍後再試。")
+            return
+        e = discord.Embed(title=f"🎯 {m['label']}技術面買點訊號（由強到弱）", color=0x2FBF71,
+                          description=f"資料日 {m['asof']}｜掃描 {m['n_universe']} 檔、{len(m['rows'])} 檔有訊號｜"
+                                      "規則篩選，不是買賣建議；收盤跌破失效線＝型態失敗")
+        lines = []
+        for r in m["rows"][:15]:
+            h = r["patterns"][0]
+            tag = "🆕" if r.get("new") else ""
+            lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` {tag}{h['label']} **{r['strength']:.0f}**｜{r.get('theme', '')}\n"
+                         f"└ 現價 {r['price']:.2f}，失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）")
+        for i in range(0, len(lines), 5):
+            e.add_field(name=f"第 {i + 1}–{min(i + 5, len(lines))} 名", value="\n".join(lines[i:i + 5])[:1024], inline=False)
+        bt = m.get("backtest") or {}
+        e.set_footer(text="過去約兩年 20 日後上漲比例：" + "、".join(
+            f"{k} {v['win']:.0f}%（n={v['n']}）" for k, v in bt.items() if v.get("win") is not None) + f"｜基準 {next(iter(bt.values())).get('base_win') or 0:.0f}%")
+        await it.followup.send(embed=e)
+
+    @tree.command(name="themes", description="族群強弱：半導體、AI 伺服器、國防軍工…（美股／台股／港股）")
+    async def themes_cmd(it: discord.Interaction):
+        await it.response.defer(thinking=True)
+        if not await ready_or_wait(it):
+            return
+        th = (eng.scores or {}).get("themes") or []
+        if not th:
+            await it.followup.send("個股資料還在載入，請稍後再試。")
+            return
+        mk = list((eng.scores or {}).get("markets") or {})
+        lab = {k: eng.scores["markets"][k]["label"] for k in mk}
+        lines = []
+        for t in th:
+            per = "／".join(f"{lab[k]} {t['per'][k]['score']:.0f}" for k in mk if t["per"].get(k) and t["per"][k].get("score") is not None)
+            lead = "、".join(n for k in mk if t["per"].get(k) for n, _, _ in t["per"][k]["leaders"][:1])
+            lines.append(f"**{t['theme']}** {t['score']:.0f}（{per}）｜領頭：{lead}")
+        e = discord.Embed(title="🧭 族群強弱（平均綜合分數，50＝中性）", color=0x3987E5, description="\n".join(lines)[:4000])
         await it.followup.send(embed=e)
 
     @tree.command(name="gamma", description="SPX 選擇權造市商 Gamma、零Gamma翻轉點、Put/Call 牆")

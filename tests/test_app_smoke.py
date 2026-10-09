@@ -284,7 +284,15 @@ async def main():
     eng_.gurus = _t.SimpleNamespace(result=gm("2026-11-14"))
     eng_.insiders = _t.SimpleNamespace(board=lambda n=20: {"big": ["AAPL"], "sells": [{"sym": "AAPL", "sell_disc_usd": 9e7, "n_sellers": 2,
                                                                                          "big": [{"owner": "x", "title": "CEO", "url": "u"}]}]})
+    sig = lambda new, st: {"available": True, "markets": {"us": {"label": "美股", "asof": "2026-10-07", "rows": [  # noqa: E731
+        {"sym": "KLAC", "code": "KLAC", "name": "科磊", "theme": "半導體", "strength": st, "new": new, "price": 800.0, "inv": 770.0,
+         "risk_pct": 3.9, "score": 72.0, "patterns": [{"pattern": "pullback", "label": "多頭回檔到均線"}]}]}}}
+    eng_.signals = sig(True, 82.0)
     keys = {a.key.split(":")[1] for a in bot._extras_alerts()}
+    assert "signal" in keys, keys
+    eng_.signals = sig(True, 60.0)
+    assert not [a for a in bot._extras_alerts() if ":signal:" in a.key], "weak signals are not pushed"
+    eng_.signals = {}
     assert {"dp", "val", "breadth", "13f", "insider", "auction"} <= keys, keys
     assert not [a for a in bot._extras_alerts() if a.key.split(":")[1] in ("dp", "val", "breadth", "13f", "insider")], "no repeats"
     print("APP SMOKE TESTS PASSED ✅")

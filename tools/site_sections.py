@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from tools.sitekit import T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, tick_label
+from wsb.data.stocks import theme_names
 
 
 # ----------------------------------------------------------------- small helpers
@@ -69,13 +70,27 @@ def _reason_chips(r: Dict) -> str:
     return "".join(out)
 
 
+def _theme_chip(th: str) -> str:
+    return f'<span class="thc">{T(th, theme_names().get(th, th))}</span>'
+
+
+def _theme_filter(rows: List[Dict], tid: str) -> str:
+    """Dropdown that hides table rows (and their reason rows) of other 族群 — rows carry data-th."""
+    ths = sorted({r.get("theme", "其他") for r in rows}, key=lambda t: list(theme_names()).index(t) if t in theme_names() else 99)
+    opts = "".join(f'<option value="{esc(t)}" data-en="{esc(theme_names().get(t, t))}">{esc(t)}</option>' for t in ths)
+    return (f'<label class="small muted">{T("族群篩選", "Filter by theme")} <select class="btn thf" data-for="{tid}">'
+            f'<option value="" data-en="All">全部</option>{opts}</select></label>')
+
+
 def _score_table(m: Dict) -> str:
     rows = []
+    tid = f"st_{m['key']}"
     for r in m["rows"]:
         chg = r.get("chg5")
+        th = esc(r.get("theme", "其他"))
         rows.append(
-            f'<tr><td class="r muted">{r["rank"]}</td>'
-            f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span></td>'
+            f'<tr data-th="{th}"><td class="r muted">{r["rank"]}</td>'
+            f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
             f'<td>{_bar(r["score"], _score_color(r["score"]))}</td>'
             f'<td class="r opt">{num(r["tech"], 0)}</td><td class="r opt">{num(r.get("intel"), 0)}</td>'
             f'<td class="r opt {cls(chg)}">{num(chg, 1, sign=True)}</td>'
@@ -83,7 +98,7 @@ def _score_table(m: Dict) -> str:
             f'<td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td>'
             f'<td class="r {cls(r.get("r6"))}">{num(r.get("r6"), 0, sign=True, pct=True)}</td>'
             f'<td class="r opt">{num(r.get("rsi"), 0)}</td></tr>'
-            f'<tr class="why"><td></td><td colspan="9">{_reason_chips(r)}</td></tr>')
+            f'<tr class="why" data-th="{th}"><td></td><td colspan="9">{_reason_chips(r)}</td></tr>')
     br = m.get("breadth") or {}
     chips = (f'<div class="chips"><span class="chip">{T("評分池", "Universe")} {br.get("n", 0)} {T("檔", "names")}</span>'
              f'<span class="chip">{T("站上 200 日線", "Above 200d")} {num(br.get("above200"), 0)}%</span>'
@@ -91,7 +106,7 @@ def _score_table(m: Dict) -> str:
              f'<span class="chip">{T("創 52 週新高", "52w highs")} {br.get("new_high", 0)} / {T("新低", "lows")} {br.get("new_low", 0)}</span>'
              f'<span class="chip">{T("資料日", "As of")} {esc(m.get("asof") or "—")}</span></div>')
     miss = (f'<p class="note">{T("暫缺資料：", "Missing: ")}{esc("、".join(m["missing"][:12]))}</p>' if m.get("missing") else "")
-    return (chips + '<div class="scroll"><table class="score"><thead><tr>'
+    return (chips + _theme_filter(m["rows"], tid) + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr>'
             f'<th class="r">#</th><th>{T("個股", "Stock")}</th><th>{T("綜合分數", "Score")}</th><th class="r opt">{T("技術", "Tech")}</th>'
             f'<th class="r opt">{T("情報", "Intel")}</th><th class="r opt">{T("5日分數變化", "5d Δ")}</th><th class="r">{T("今日", "1D")}</th>'
             f'<th class="r opt">{T("1月", "1M")}</th><th class="r">{T("6月", "6M")}</th><th class="r opt">RSI</th>'
@@ -128,6 +143,139 @@ def sec_scores_mini(eng) -> str:
     return card("個股評分前五名", "Top-5 stock scores",
                 f'<div class="g3">{"".join(cols)}</div><p class="note"><a href="#scores" class="golink" data-p="scores">'
                 + T("看完整評分表與理由 →", "Full board with reasons →") + "</a></p>", "wide")
+
+
+# ----------------------------------------------------------------- technical entry signals
+PAT_COL = {"pullback": "#2fbf71", "breakout": "#3987e5", "golden": "#c9a227", "oversold": "#ec835a"}
+
+
+def _pat_detail(h: Dict) -> tuple:
+    k = h["pattern"]
+    if k == "pullback":
+        zh, en = f"回測均線後轉強（RSI {num(h.get('rsi'), 0)}）", f"Bounced off its moving average (RSI {num(h.get('rsi'), 0)})"
+    elif k == "breakout":
+        zh, en = f"突破前 20 日高點，成交量 {num(h.get('vol_ratio'), 1)} 倍", f"Broke the prior 20-day high on {num(h.get('vol_ratio'), 1)}× volume"
+    elif k == "golden":
+        zh, en = "50 日線上穿 200 日線，或站回 200 日線", "50-day crossed above 200-day, or price reclaimed the 200-day"
+    else:
+        zh, en = f"RSI 跌破 30 後反彈（逆勢，風險較高）", "Bounce after RSI < 30 (counter-trend, higher risk)"
+    return zh, en
+
+
+def _signal_table(m: Dict) -> str:
+    if not m["rows"]:
+        return f'<p class="muted">{T("目前沒有符合條件的訊號。", "No qualifying signals right now.")}</p>'
+    tid = f"sg_{m['key']}"
+    rows = []
+    for r in m["rows"]:
+        th = esc(r.get("theme", "其他"))
+        pills = "".join(f'<span class="pill"><i class="sw" style="background:{PAT_COL[h["pattern"]]}"></i>{T(h["label"], h["label_en"])}</span>'
+                        for h in r["patterns"])
+        new = f' <span class="pill newp">{T("新", "NEW")}</span>' if r.get("new") else ""
+        det = "；".join(T(*_pat_detail(h)) for h in r["patterns"])
+        rows.append(f'<tr data-th="{th}"><td class="r muted">{r["rank"]}</td>'
+                    f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
+                    f'<td>{pills}{new}</td><td>{_bar(r["strength"], _score_color(r["strength"]))}</td>'
+                    f'<td class="r">{num(r["price"], 2)}</td><td class="r">{num(r["inv"], 2)}<span class="muted small"> ({num(-r["risk_pct"], 1, pct=True)})</span></td>'
+                    f'<td class="r opt">{num(r.get("score"), 0)}</td><td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td></tr>'
+                    f'<tr class="why" data-th="{th}"><td></td><td colspan="7" class="small muted">{det}　'
+                    f'{T("首次出現 " + r["since"], "first seen " + r["since"])}</td></tr>')
+    bt = m.get("backtest") or {}
+    brow = "".join(
+        f'<tr><td><span class="pill"><i class="sw" style="background:{PAT_COL[k]}"></i>{T(*PATTERNS_T[k])}</span></td><td class="r">{b.get("n", 0)}</td>'
+        f'<td class="r">{num(b.get("win"), 0, pct=True)}</td><td class="r {cls(b.get("avg"))}">{num(b.get("avg"), 1, sign=True, pct=True)}</td>'
+        f'<td class="r muted">{num(b.get("base_win"), 0, pct=True)} / {num(b.get("base_avg"), 1, sign=True, pct=True)}</td>'
+        f'<td class="r {cls(_edge(b))}">{num(_edge(b), 0, sign=True)}</td></tr>'
+        for k, b in bt.items())
+    head = (f'<div class="chips"><span class="chip">{T("掃描", "Scanned")} {m["n_universe"]} {T("檔", "names")}</span>'
+            f'<span class="chip">{T("目前有訊號", "With a signal")} {len(m["rows"])} {T("檔", "names")}</span>'
+            f'<span class="chip">{T("資料日", "As of")} {esc(m["asof"])}</span></div>')
+    return (head + _theme_filter(m["rows"], tid) + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr><th class="r">#</th>'
+            f'<th>{T("個股", "Stock")}</th><th>{T("訊號型態", "Pattern")}</th><th>{T("訊號強度", "Strength")}</th><th class="r">{T("現價", "Price")}</th>'
+            f'<th class="r">{T("失效線（距離）", "Invalidation (dist.)")}</th><th class="r opt">{T("綜合分數", "Score")}</th><th class="r opt">{T("1月", "1M")}</th>'
+            f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
+            f'<h4>{T("這些型態在本市場過去約兩年的表現（訊號出現後 20 個交易日）", "How these patterns did here over ~2 years (20 sessions later)")}</h4>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("型態", "Pattern")}</th><th class="r">{T("次數", "n")}</th>'
+            f'<th class="r">{T("上漲比例", "Up share")}</th><th class="r">{T("平均報酬", "Avg return")}</th>'
+            f'<th class="r">{T("同市場任一天（基準）", "Any day (base)")}</th><th class="r">{T("上漲比例 − 基準（百分點）", "Edge (pp)")}</th>'
+            f'</tr></thead><tbody>{brow}</tbody></table></div>'
+            f'<p class="note">{T("「上漲比例 − 基準」接近 0 代表這個型態在這段期間並沒有比隨便哪一天進場更好；樣本只有約兩年、而且同一段期間同時用來定義規則，僅供參考。", "An edge near 0 means the pattern did no better than any random day over this ~2-year in-sample window.")}</p>')
+
+
+def _edge(b: Dict) -> Optional[float]:
+    return None if b.get("win") is None or b.get("base_win") is None else b["win"] - b["base_win"]
+
+
+PATTERNS_T = {"pullback": ("多頭回檔到均線", "Pullback to MA in uptrend"), "breakout": ("帶量突破", "Volume breakout"),
+              "golden": ("黃金交叉／站回年線", "Golden cross / 200-day reclaim"), "oversold": ("超賣反彈（逆勢）", "Oversold bounce")}
+
+
+def sec_signals(eng) -> str:
+    sg = getattr(eng, "signals", None) or {}
+    if not sg.get("available"):
+        return card("技術面買點訊號", "Technical entry signals", f'<p class="muted">{T("個股價格資料暫時取不到", "Stock data unavailable right now")}</p>', "wide")
+    warn = T("⚠️ 這是依均線、動能與量能寫死的規則所做的篩選，只說明「現在出現了哪種技術型態」，不是買進建議，也不保證會漲。"
+             "歷史勝率樣本少、而且是同一段期間內的回測，僅供參考；訊號跌破失效線就代表型態失敗。請自行判斷並控管風險。",
+             "⚠️ A rules-based screen of moving-average, momentum and volume patterns. It describes which technical setups exist now — "
+             "not a recommendation and no guarantee. Back-test samples are small and in-sample; a close below the invalidation line means "
+             "the setup failed.")
+    items = [(m["label"], m["label_en"], _signal_table(m)) for m in sg["markets"].values()]
+    note = T("型態定義：多頭回檔＝股價在 200 日線之上、50 日線在 200 日線之上且年線上升，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
+             "成交量 ≥ 50 日均量 1.5 倍且在 50 日線之上；黃金交叉＝50 日線在 10 天內上穿 200 日線，或股價在多數時間低於年線後重新站回；"
+             "超賣反彈＝RSI 5 天內跌破 30 後站回 5 日線（逆勢）。強度＝型態基礎分＋綜合分數＋量能＋失效線距離＋該型態在本市場的歷史勝率，"
+             "整體寬度太差時扣分。失效線：回檔看所回測的均線 −2%，突破看突破點 −3%，交叉看 200 日線 −2%，超賣看 10 日最低 −1%。",
+             "Definitions: pullback = above a rising 200-day with 50 > 200, touched the 20/50-day within 3 sessions and closed up; breakout = "
+             "close above the prior 20-day high on ≥1.5× 50-day volume, above the 50-day; golden = 50-day crossed the 200-day within 10 "
+             "sessions or price reclaimed the 200-day; oversold = RSI < 30 within 5 sessions, back above the 5-day average.")
+    return card("技術面買點訊號（由強到弱）", "Technical entry signals (strong → weak)",
+                f'<p class="warnbox">{warn}</p>' + _tabset("sg", items) + f'<p class="note">{note}</p>', "wide")
+
+
+# ----------------------------------------------------------------- themes (族群)
+def _score_cell(v: Optional[float], n: Optional[int] = None) -> str:
+    if v is None:
+        return '<td class="r muted">—</td>'
+    d = v - 50
+    a = min(abs(d) / 30, 1.0) * 50
+    col = "var(--up)" if d > 0 else "var(--dn)"
+    nn = f'<span class="muted small"> ({n})</span>' if n else ""
+    return f'<td class="r hm" style="background:color-mix(in srgb,{col} {a:.0f}%,transparent)">{v:.0f}{nn}</td>'
+
+
+def sec_themes(eng) -> str:
+    sc = getattr(eng, "scores", None) or {}
+    if not sc.get("available") or not sc.get("themes"):
+        return card("族群強弱", "Theme strength", f'<p class="muted">{T("資料暫時取不到", "Data unavailable")}</p>', "wide")
+    mks = list(sc["markets"])
+    head = "".join(f'<th class="r">{T(sc["markets"][k]["label"], sc["markets"][k]["label_en"])}</th>' for k in mks)
+    rows = []
+    for t in sc["themes"]:
+        cells = "".join(_score_cell((t["per"].get(k) or {}).get("score"), (t["per"].get(k) or {}).get("n")) for k in mks)
+        leaders = sorted([x for k in mks if t["per"].get(k) for x in t["per"][k]["leaders"]], key=lambda x: -x[2])[:4]
+        lead = "、".join(f"{esc(n)}" for n, _, _ in leaders)
+        r3 = [t["per"][k]["r3"] for k in mks if t["per"].get(k) and t["per"][k].get("r3") is not None]
+        rows.append(f'<tr><td class="nw"><b>{T(t["theme"], t["theme_en"])}</b><span class="muted small"> {t["n"]} {T("檔", "")}</span></td>'
+                    f'{_score_cell(t["score"])}{cells}<td class="r {cls(sum(r3) / len(r3) if r3 else None)}">'
+                    f'{num(sum(r3) / len(r3) if r3 else None, 1, sign=True, pct=True)}</td><td class="small">{lead}</td></tr>')
+    cross = (f'<div class="scroll"><table class="mini"><thead><tr><th>{T("族群", "Theme")}</th><th class="r">{T("綜合", "All")}</th>{head}'
+             f'<th class="r">{T("3 個月平均報酬", "3M avg return")}</th><th>{T("族群內分數最高", "Leaders")}</th></tr></thead>'
+             f'<tbody>{"".join(rows)}</tbody></table></div>')
+    items = []
+    for k, m in sc["markets"].items():
+        trs = "".join(
+            f'<tr><td class="nw">{T(t["theme"], t["theme_en"])}</td><td class="r">{t["n"]}</td><td>{_bar(t["score"], _score_color(t["score"] or 0))}</td>'
+            f'<td class="r {cls(t.get("r1m"))}">{num(t.get("r1m"), 1, sign=True, pct=True)}</td><td class="r {cls(t.get("r3"))}">{num(t.get("r3"), 1, sign=True, pct=True)}</td>'
+            f'<td class="r">{num(t.get("above200"), 0)}%</td>'
+            f'<td class="small">{"、".join(esc(n) + " " + format(v, ".0f") for n, _, v in t["leaders"])}</td></tr>' for t in m["themes"])
+        items.append((m["label"], m["label_en"],
+                      f'<div class="scroll"><table class="mini"><thead><tr><th>{T("族群", "Theme")}</th><th class="r">{T("檔數", "n")}</th>'
+                      f'<th>{T("平均綜合分數", "Avg score")}</th><th class="r">{T("1月", "1M")}</th><th class="r">{T("3月", "3M")}</th>'
+                      f'<th class="r">{T("站上 200 日線", "Above 200d")}</th><th>{T("領頭個股", "Leaders")}</th></tr></thead><tbody>{trs}</tbody></table></div>'))
+    note = T("族群分數＝族群內個股綜合分數的平均（括號內為檔數），50 為中性；檔數少的族群（例如港股國防只有 2 檔）參考價值較低。"
+             "同一個族群在美、台、港三地一起看，可以看出資金是全球同步追捧，還是只集中在某一個市場。",
+             "Theme score = average composite score of its members (count in brackets), 50 = neutral; small themes are less reliable.")
+    return card("族群強弱（跨美股／台股／港股）", "Theme strength across US / Taiwan / Hong Kong",
+                cross + f'<h3>{T("各市場族群明細", "By market")}</h3>' + _tabset("th", items) + f'<p class="note">{note}</p>', "wide")
 
 
 # ----------------------------------------------------------------- gurus (13F) & insiders (Form 4)
@@ -434,6 +582,8 @@ def sec_timemachine(eng) -> str:
 
 
 TM_JS = r"""
+document.querySelectorAll('select.thf').forEach(function(sel){sel.addEventListener('change',function(){var t=document.getElementById(sel.dataset.for);if(!t)return;
+ t.querySelectorAll('tbody tr').forEach(function(tr){tr.style.display=(!sel.value||tr.dataset.th===sel.value)?'':'none';});});});
 (function(){var sel=document.getElementById('tmSel');if(!sel)return;var out=document.getElementById('tmOut'),list=document.getElementById('tmList');
 var en=function(){return document.documentElement.lang==='en';};var IDX=null;
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
@@ -453,6 +603,11 @@ function render(s,meta){out.textContent='';var h=el('h3',null,(en()?'Snapshot ':
  if(s.scores){out.appendChild(el('h4',null,en()?'Top of the scoring board':'評分前段班'));var g=el('div','g3');
   Object.keys(s.scores).forEach(function(k){var m=s.scores[k],d=el('div');d.appendChild(el('b',null,m.label));var ol=el('ol','lines');
    m.top.forEach(function(r){ol.appendChild(el('li',null,r[1]+' ('+r[0]+') '+f(r[2],0)));});d.appendChild(ol);g.appendChild(d);});out.appendChild(g);}
+ if(s.signals){out.appendChild(el('h4',null,en()?'Technical signals that day → since':'當天的技術面訊號 → 之後表現'));var g2=el('div','g3');
+  Object.keys(s.signals).forEach(function(k){var m=s.signals[k],d=el('div');d.appendChild(el('b',null,m.label));var ol=el('ol','lines');
+   m.rows.forEach(function(r){var li=el('li',null,r.name+' ('+r.code+') '+r.pattern+' ');var sp=el('span',r.since_pct>0?'up':r.since_pct<0?'dn':'',
+    r.since_pct==null?'—':((r.since_pct>0?'+':'')+f(r.since_pct,1)+'%'));li.appendChild(sp);if(r.failed)li.appendChild(el('span','muted small',en()?' (invalidated)':'（曾跌破失效線）'));ol.appendChild(li);});
+   d.appendChild(ol);g2.appendChild(d);});out.appendChild(g2);}
  if(s.ai){out.appendChild(el('h4',null,en()?'AI commentary that day':'當天的 AI 評論'));var p=el('div','ai small');p.style.whiteSpace='pre-wrap';p.textContent=s.ai;out.appendChild(p);}
 }
 function load(d){if(!d)return;out.textContent=en()?'Loading…':'載入中…';
@@ -486,6 +641,9 @@ table.score tr.why td{padding:0 6px 8px}.rc{white-space:nowrap;display:inline-bl
 table.mini td,table.mini th{padding:4px 6px;font-size:12.5px}.hm{font-variant-numeric:tabular-nums}
 .tm select{min-width:240px}.tmout{margin-top:10px}#tmList table tr:hover td{background:var(--card2)}
 .install{display:none}.install.show{display:inline-block}
+.thc{display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;background:var(--card2);border:1px solid var(--bd);font-size:11px;color:var(--mu);font-weight:400}
+.thf{margin:6px 0 4px;min-width:150px}.newp{color:var(--up);border-color:var(--up)}
+.warnbox{background:color-mix(in srgb,var(--warn) 12%,transparent);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:8px;padding:8px 11px;font-size:12.5px;margin:0 0 10px}
 ol.top5{margin:4px 0;padding-left:20px}ol.top5 li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid var(--bd)}
 ol.top5 li{display:list-item}ol.top5 li b{float:right}.golink{color:var(--ac)}
 @media(max-width:900px){.gurus{grid-template-columns:1fr}}

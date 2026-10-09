@@ -961,6 +961,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S2.sec_scores_mini, sec_trends]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores]),
+            ("signals", "買點訊號", "Entry signals", [S2.sec_signals]),
+            ("themes", "族群", "Themes", [S2.sec_themes]),
             ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
@@ -1033,7 +1035,10 @@ def daily_snapshot(eng, ai_text: str = "") -> dict:
             "stage": {k: (eng.playbook or {}).get(k) for k in ("stage", "name", "points")},
             "gamma": {"gex": op.get("gex_usd_bn_per_1pct"), "flip": op.get("zero_gamma"), "spot": op.get("spot")} if op else None,
             "darkpool": {"dpi": dp.get("dpi_5d"), "pctile": dp.get("pctile"), "state": dp.get("state")} if dp.get("available") else None,
-            "spx": float(spx.iloc[-1]) if len(spx) else None, "valuation": val, "scores": sc, "ai": (ai_text or "")[:6000]}
+            "spx": float(spx.iloc[-1]) if len(spx) else None, "valuation": val, "scores": sc, "ai": (ai_text or "")[:6000],
+            "signals": {k: {"label": m["label"], "rows": [{"sym": r["sym"], "code": r["code"], "name": r["name"], "pattern": r["patterns"][0]["label"],
+                                                           "strength": r["strength"], "price": r["price"], "inv": r["inv"]} for r in m["rows"][:10]]}
+                        for k, m in ((getattr(eng, "signals", None) or {}).get("markets") or {}).items()}}
 
 
 def update_snapshots(eng, snapdir: Path, out: Path, ai_text: str = "") -> Optional[Path]:
@@ -1067,7 +1072,15 @@ def update_snapshots(eng, snapdir: Path, out: Path, ai_text: str = "") -> Option
             d = json.loads(f.read_text(encoding="utf-8"))
         except Exception:  # noqa: BLE001
             continue
-        (dest / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+        sp = getattr(eng, "stockprices", None)
+        for m in (d.get("signals") or {}).values():          # how did each signal of that day do since? (filled at publish time)
+            for r in m.get("rows", []):
+                s_ = sp.series(r["sym"]) if sp is not None else None
+                if s_ is not None and len(s_) and r.get("price"):
+                    r["now"] = float(s_.iloc[-1])
+                    r["since_pct"] = (r["now"] / r["price"] - 1) * 100
+                    r["failed"] = bool(r.get("inv") and s_[s_.index > pd.Timestamp(d.get("asof") or d["date"])].lt(r["inv"]).any())
+        (dest / f.name).write_text(json.dumps(d, ensure_ascii=False, default=str, separators=(",", ":")), encoding="utf-8")
         after = (spx_now / d["spx"] - 1) * 100 if spx_now and d.get("spx") else None
         idx.append({"date": d.get("date"), "asof": d.get("asof"), "ssi": (d.get("ssi") or {}).get("score"),
                     "stage": (d.get("stage") or {}).get("name"), "spx": d.get("spx"),
