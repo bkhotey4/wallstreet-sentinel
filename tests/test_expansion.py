@@ -221,6 +221,9 @@ def main():
     allsig = [r for m in sgr["markets"].values() for r in m["rows"]]
     assert allsig and all(0 <= r["strength"] <= 100 and r["inv"] < r["price"] for r in allsig)
     assert all(m["rows"] == sorted(m["rows"], key=lambda r: -r["strength"]) for m in sgr["markets"].values())
+    for k, m in sgr["markets"].items():                     # the table covers the WHOLE universe, not only stocks with a signal
+        assert len(m["all"]) == len(universe()[k]["symbols"]) == m["n_universe"], (k, len(m["all"]))
+        assert all(r["status"]["label"] for r in m["all"]) and sum(1 for r in m["all"] if r["signal"]) == len(m["rows"])
     # site: new tabs, sections, PWA, time machine (snapshot written once, index published)
     out, snap = tmp / "site", tmp / "snapdir"
     B.update_snapshots.__globals__["SETTINGS"].raw.setdefault("snapshots", {})["min_hour"] = 0
@@ -235,7 +238,7 @@ def main():
     for k in ("signals", "themes"):
         assert f'id="p-{k}"' in page, k
     assert "技術面買點訊號（由強到弱）" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
-    assert 'class="btn thf"' in page and 'data-th="半導體"' in page
+    assert 'class="btn thf"' in page and 'data-th="半導體"' in page and 'class="small muted onlysig"' in page and 'class="nosig"' in page
     assert "時光機" in page and 'id="tmSel"' in page and 'rel="manifest"' in page and "serviceWorker" in page
     assert "不是買賣建議" in page or "not investment advice" in page
     for f in ("manifest.webmanifest", "sw.js", "icon-192.png", "icon-512.png", "apple-touch-icon.png"):

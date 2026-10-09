@@ -98,6 +98,46 @@ def backtest(series: Dict[str, Dict[str, pd.DataFrame]], horizon: int = HORIZON)
     return out
 
 
+STATUS = {"signal": ("有買點訊號", "Signal active"), "near_pullback": ("接近回檔買點", "Near pullback entry"),
+          "near_breakout": ("接近突破", "Near breakout"), "near_golden": ("接近黃金交叉", "Near golden cross"),
+          "near_oversold": ("接近超賣", "Near oversold"), "extended": ("多頭但漲多", "Uptrend, extended"),
+          "uptrend": ("多頭整理", "Uptrend, consolidating"), "range": ("盤整、無明確型態", "Range-bound"),
+          "downtrend": ("空頭趨勢", "Downtrend"), "nodata": ("資料不足", "Not enough history")}
+
+
+def status(df: pd.DataFrame) -> Dict:
+    """Where a stock without an active signal stands, judged from its latest bar (a watch-list status, not a signal)."""
+    last = df.iloc[-1]
+    c, m20, m50, m200, r, hi = (last.get(k) for k in ("close", "ma20", "ma50", "ma200", "rsi", "hi20"))
+    d = lambda a, b: (a / b - 1) * 100 if pd.notna(a) and pd.notna(b) and b else None  # noqa: E731
+    d20, d50, d200, dhi = d(c, m20), d(c, m50), d(c, m200), d(c, hi)
+    m50_200 = d(m50, m200)
+    pc = lambda x: "—" if x is None else f"{x + 0.0:+.1f}%".replace("-0.0%", "0.0%")  # noqa: E731
+    m50_prev = df["ma50"].iloc[-6] if len(df) > 6 else np.nan
+    up = d200 is not None and d200 > 0 and m50_200 is not None and m50_200 > 0
+    if up and ((d20 is not None and 0 <= d20 <= 3) or (d50 is not None and 0 <= d50 <= 3)):
+        k, rs = "near_pullback", (f"多頭，距 20 日線 {pc(d20)}、50 日線 {pc(d50)}，等待回測止跌",
+                                  f"Uptrend, {pc(d20)} vs 20-day / {pc(d50)} vs 50-day — waiting for a bounce")
+    elif dhi is not None and -2 <= dhi <= 0 and d50 is not None and d50 > 0:
+        k, rs = "near_breakout", (f"距前 20 日高點 {pc(dhi)}，等待放量突破", f"{pc(dhi)} below the 20-day high — waiting for a volume breakout")
+    elif m50_200 is not None and -2 <= m50_200 < 0 and pd.notna(m50_prev) and m50 > m50_prev:
+        k, rs = "near_golden", (f"50 日線在 200 日線下方 {pc(m50_200)} 且上彎", f"50-day {pc(m50_200)} below the 200-day and rising")
+    elif r is not None and pd.notna(r) and r < 35:
+        k, rs = "near_oversold", (f"RSI {r:.0f}，接近超賣但尚未止跌", f"RSI {r:.0f}, near oversold, no bounce yet")
+    elif up and d50 is not None and d50 > 10:
+        k, rs = "extended", (f"多頭，但距 50 日線 {pc(d50)}（追高風險較大）", f"Uptrend but {pc(d50)} above the 50-day (stretched)")
+    elif up:
+        k, rs = "uptrend", (f"多頭整理，距 50 日線 {pc(d50)}", f"Uptrend, {pc(d50)} vs 50-day")
+    elif d200 is not None and d200 < 0 and m50_200 is not None and m50_200 < 0:
+        k, rs = "downtrend", (f"空頭趨勢，在 200 日線下方 {pc(d200)}", f"Downtrend, {pc(d200)} below the 200-day")
+    else:
+        k, rs = "range", (f"盤整，距 200 日線 {pc(d200)}" if d200 is not None else "盤整", "Range-bound")
+    base = {"near_pullback": 45, "near_breakout": 42, "near_golden": 38, "uptrend": 35, "near_oversold": 30, "extended": 25,
+            "range": 20, "downtrend": 10}[k]
+    return {"status": k, "label": STATUS[k][0], "label_en": STATUS[k][1], "why": rs[0], "why_en": rs[1], "base": base,
+            "d20": d20, "d50": d50, "d200": d200, "price": float(c) if pd.notna(c) else None}
+
+
 def build(eng) -> Dict:
     c = _cfg()
     if not c.get("enabled", True):
@@ -112,10 +152,11 @@ def build(eng) -> Dict:
     markets: Dict[str, Dict] = {}
     for mk, u in universe().items():
         rows_by = {r["sym"]: r for r in (sc.get(mk) or {}).get("rows", [])}
-        series = {}
+        series, short = {}, []
         for sym in u["symbols"]:
             cl = sp.series(sym)
             if len(cl) < 230:
+                short.append(sym)
                 continue
             try:
                 series[sym] = detect(cl, sp.vol(sym))
@@ -173,8 +214,32 @@ def build(eng) -> Dict:
         out_rows.sort(key=lambda r: -r["strength"])
         for i, r in enumerate(out_rows, 1):
             r["rank"] = i
-        markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows,
-                       "backtest": bt, "asof": asof, "n_universe": len(series), "breadth": br}
+        # every other stock too: where it stands (watch-list status), so the page covers the whole universe
+        have = {r["sym"] for r in out_rows}
+        rest = []
+        for sym in list(series) + short:
+            if sym in have:
+                continue
+            zh, en = u["symbols"][sym]
+            srow = rows_by.get(sym) or {}
+            if sym in series:
+                st = status(next(iter(series[sym].values())))
+                ready = float(np.clip(st["base"] + 0.25 * ((srow.get("score") or 50) - 50), 0, 60))
+            else:
+                st = {"status": "nodata", "label": STATUS["nodata"][0], "label_en": STATUS["nodata"][1], "why": "上市或掛牌未滿約一年，均線資料不足",
+                      "why_en": "Less than ~1 year of history", "price": float(sp.series(sym).iloc[-1]) if len(sp.series(sym)) else None}
+                ready = 0.0
+            rest.append({"sym": sym, "code": sym.split(".")[0], "name": zh, "name_en": en, "theme": u["themes"].get(sym, "其他"),
+                         "strength": round(ready, 1), "status": st, "price": st.get("price"), "score": srow.get("score"),
+                         "r1m": srow.get("r1m"), "signal": False})
+        rest.sort(key=lambda r: -r["strength"])
+        allrows = [{**r, "signal": True, "status": {"status": "signal", "label": STATUS["signal"][0], "label_en": STATUS["signal"][1]}}
+                   for r in out_rows] + rest
+        for i, r in enumerate(allrows, 1):
+            r["rank_all"] = i
+        markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows, "all": allrows,
+                       "backtest": bt, "asof": asof, "n_universe": len(series) + len(short), "breadth": br,
+                       "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS}}
     _save_seen(seen)
     return {"available": bool(markets), "markets": markets, "horizon": HORIZON}
 

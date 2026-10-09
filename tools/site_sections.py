@@ -162,8 +162,28 @@ def _pat_detail(h: Dict) -> tuple:
     return zh, en
 
 
+ST_COL = {"signal": "#2fbf71", "near_pullback": "#3987e5", "near_breakout": "#3987e5", "near_golden": "#3987e5",
+          "near_oversold": "#ec835a", "extended": "#c9a227", "uptrend": "#6b7280", "range": "#6b7280", "downtrend": "#d03b3b",
+          "nodata": "#6b7280"}
+
+
+def _watch_rows(m: Dict) -> List[str]:
+    """Stocks without an active signal: where each one stands (watch-list status), so the table covers everyone."""
+    out = []
+    for r in [x for x in m.get("all", []) if not x.get("signal")]:
+        th = esc(r.get("theme", "其他"))
+        st = r["status"]
+        out.append(f'<tr data-th="{th}" class="nosig"><td class="r muted">{r["rank_all"]}</td>'
+                   f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
+                   f'<td><span class="pill"><i class="sw" style="background:{ST_COL.get(st["status"], "#6b7280")}"></i>{T(st["label"], st["label_en"])}</span></td>'
+                   f'<td>{_bar(r["strength"], "#6b7280")}</td><td class="r">{num(r.get("price"), 2)}</td><td class="r muted">—</td>'
+                   f'<td class="r opt">{num(r.get("score"), 0)}</td><td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td></tr>'
+                   f'<tr class="why nosig" data-th="{th}"><td></td><td colspan="7" class="small muted">{T(st.get("why", ""), st.get("why_en", ""))}</td></tr>')
+    return out
+
+
 def _signal_table(m: Dict) -> str:
-    if not m["rows"]:
+    if not m.get("all") and not m["rows"]:
         return f'<p class="muted">{T("目前沒有符合條件的訊號。", "No qualifying signals right now.")}</p>'
     tid = f"sg_{m['key']}"
     rows = []
@@ -180,6 +200,7 @@ def _signal_table(m: Dict) -> str:
                     f'<td class="r opt">{num(r.get("score"), 0)}</td><td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td></tr>'
                     f'<tr class="why" data-th="{th}"><td></td><td colspan="7" class="small muted">{det}　'
                     f'{T("首次出現 " + r["since"], "first seen " + r["since"])}</td></tr>')
+    rows += _watch_rows(m)
     bt = m.get("backtest") or {}
     brow = "".join(
         f'<tr><td><span class="pill"><i class="sw" style="background:{PAT_COL[k]}"></i>{T(*PATTERNS_T[k])}</span></td><td class="r">{b.get("n", 0)}</td>'
@@ -189,9 +210,12 @@ def _signal_table(m: Dict) -> str:
         for k, b in bt.items())
     head = (f'<div class="chips"><span class="chip">{T("掃描", "Scanned")} {m["n_universe"]} {T("檔", "names")}</span>'
             f'<span class="chip">{T("目前有訊號", "With a signal")} {len(m["rows"])} {T("檔", "names")}</span>'
-            f'<span class="chip">{T("資料日", "As of")} {esc(m["asof"])}</span></div>')
-    return (head + _theme_filter(m["rows"], tid) + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr><th class="r">#</th>'
-            f'<th>{T("個股", "Stock")}</th><th>{T("訊號型態", "Pattern")}</th><th>{T("訊號強度", "Strength")}</th><th class="r">{T("現價", "Price")}</th>'
+            + "".join(f'<span class="chip"><i class="sw" style="background:{ST_COL[k]}"></i> {T(*_ST_T[k])} {n}</span>'
+                      for k, n in (m.get("status_counts") or {}).items() if n and k != "signal")
+            + f'<span class="chip">{T("資料日", "As of")} {esc(m["asof"])}</span></div>')
+    only = (f'<label class="small muted onlysig"><input type="checkbox" data-for="{tid}"> {T("只看有訊號的", "Signals only")}</label>')
+    return (head + _theme_filter(m.get("all") or m["rows"], tid) + only + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr><th class="r">#</th>'
+            f'<th>{T("個股", "Stock")}</th><th>{T("訊號型態／目前狀態", "Pattern / status")}</th><th>{T("訊號強度／準備度", "Strength / readiness")}</th><th class="r">{T("現價", "Price")}</th>'
             f'<th class="r">{T("失效線（距離）", "Invalidation (dist.)")}</th><th class="r opt">{T("綜合分數", "Score")}</th><th class="r opt">{T("1月", "1M")}</th>'
             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
             f'<h4>{T("這些型態在本市場過去約兩年的表現（訊號出現後 20 個交易日）", "How these patterns did here over ~2 years (20 sessions later)")}</h4>'
@@ -204,6 +228,11 @@ def _signal_table(m: Dict) -> str:
 
 def _edge(b: Dict) -> Optional[float]:
     return None if b.get("win") is None or b.get("base_win") is None else b["win"] - b["base_win"]
+
+
+_ST_T = {"signal": ("有買點訊號", "Signal"), "near_pullback": ("接近回檔買點", "Near pullback"), "near_breakout": ("接近突破", "Near breakout"),
+         "near_golden": ("接近黃金交叉", "Near golden cross"), "near_oversold": ("接近超賣", "Near oversold"), "extended": ("多頭但漲多", "Extended"),
+         "uptrend": ("多頭整理", "Uptrend"), "range": ("盤整", "Range"), "downtrend": ("空頭趨勢", "Downtrend"), "nodata": ("資料不足", "No data")}
 
 
 PATTERNS_T = {"pullback": ("多頭回檔到均線", "Pullback to MA in uptrend"), "breakout": ("帶量突破", "Volume breakout"),
@@ -220,7 +249,8 @@ def sec_signals(eng) -> str:
              "not a recommendation and no guarantee. Back-test samples are small and in-sample; a close below the invalidation line means "
              "the setup failed.")
     items = [(m["label"], m["label_en"], _signal_table(m)) for m in sg["markets"].values()]
-    note = T("型態定義：多頭回檔＝股價在 200 日線之上、50 日線在 200 日線之上且年線上升，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
+    note = T("表格先列出目前有訊號的個股（依訊號強度），接著列出其他所有個股與它們目前的狀態（依「準備度」排序：接近回檔買點 → 接近突破 → 接近黃金交叉 → 多頭整理 → 接近超賣 → 多頭但漲多 → 盤整 → 空頭趨勢），"
+             "準備度只代表離哪一種型態比較近，不是訊號。型態定義：多頭回檔＝股價在 200 日線之上、50 日線在 200 日線之上且年線上升，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
              "成交量 ≥ 50 日均量 1.5 倍且在 50 日線之上；黃金交叉＝50 日線在 10 天內上穿 200 日線，或股價在多數時間低於年線後重新站回；"
              "超賣反彈＝RSI 5 天內跌破 30 後站回 5 日線（逆勢）。強度＝型態基礎分＋綜合分數＋量能＋失效線距離＋該型態在本市場的歷史勝率，"
              "整體寬度太差時扣分。失效線：回檔看所回測的均線 −2%，突破看突破點 −3%，交叉看 200 日線 −2%，超賣看 10 日最低 −1%。",
@@ -582,8 +612,11 @@ def sec_timemachine(eng) -> str:
 
 
 TM_JS = r"""
-document.querySelectorAll('select.thf').forEach(function(sel){sel.addEventListener('change',function(){var t=document.getElementById(sel.dataset.for);if(!t)return;
- t.querySelectorAll('tbody tr').forEach(function(tr){tr.style.display=(!sel.value||tr.dataset.th===sel.value)?'':'none';});});});
+function tfilter(id){var t=document.getElementById(id);if(!t)return;var sel=document.querySelector('select.thf[data-for="'+id+'"]'),
+ cb=document.querySelector('.onlysig input[data-for="'+id+'"]'),v=sel?sel.value:'',only=cb&&cb.checked;
+ t.querySelectorAll('tbody tr').forEach(function(tr){tr.style.display=((!v||tr.dataset.th===v)&&!(only&&tr.classList.contains('nosig')))?'':'none';});}
+document.querySelectorAll('select.thf').forEach(function(sel){sel.addEventListener('change',function(){tfilter(sel.dataset.for);});});
+document.querySelectorAll('.onlysig input').forEach(function(cb){cb.addEventListener('change',function(){tfilter(cb.dataset.for);});});
 (function(){var sel=document.getElementById('tmSel');if(!sel)return;var out=document.getElementById('tmOut'),list=document.getElementById('tmList');
 var en=function(){return document.documentElement.lang==='en';};var IDX=null;
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
@@ -642,7 +675,7 @@ table.mini td,table.mini th{padding:4px 6px;font-size:12.5px}.hm{font-variant-nu
 .tm select{min-width:240px}.tmout{margin-top:10px}#tmList table tr:hover td{background:var(--card2)}
 .install{display:none}.install.show{display:inline-block}
 .thc{display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;background:var(--card2);border:1px solid var(--bd);font-size:11px;color:var(--mu);font-weight:400}
-.thf{margin:6px 0 4px;min-width:150px}.newp{color:var(--up);border-color:var(--up)}
+.thf{margin:6px 0 4px;min-width:150px}.onlysig{margin-left:14px}tr.nosig td{opacity:.88}.newp{color:var(--up);border-color:var(--up)}
 .warnbox{background:color-mix(in srgb,var(--warn) 12%,transparent);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:8px;padding:8px 11px;font-size:12.5px;margin:0 0 10px}
 ol.top5{margin:4px 0;padding-left:20px}ol.top5 li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid var(--bd)}
 ol.top5 li{display:list-item}ol.top5 li b{float:right}.golink{color:var(--ac)}

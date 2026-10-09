@@ -1174,6 +1174,10 @@ def register_commands(bot: Sentinel) -> None:
                          f"└ 現價 {r['price']:.2f}，失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）")
         for i in range(0, len(lines), 5):
             e.add_field(name=f"第 {i + 1}–{min(i + 5, len(lines))} 名", value="\n".join(lines[i:i + 5])[:1024], inline=False)
+        near = [r for r in m.get("all", []) if r["status"]["status"].startswith("near_")][:8]
+        if near:
+            e.add_field(name="接近買點（尚未成立，觀察用）", value="\n".join(
+                f"{r['name']} `{r['code']}` {r['status']['label']}：{r['status']['why']}" for r in near)[:1024], inline=False)
         bt = m.get("backtest") or {}
         e.set_footer(text="過去約兩年 20 日後上漲比例：" + "、".join(
             f"{k} {v['win']:.0f}%（n={v['n']}）" for k, v in bt.items() if v.get("win") is not None) + f"｜基準 {next(iter(bt.values())).get('base_win') or 0:.0f}%")
