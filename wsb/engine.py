@@ -20,6 +20,8 @@ from .analytics import valuation as va
 from .analytics import stockscore as ss
 from .analytics import breadth as bd
 from .analytics import signals as sg
+from .analytics import macro_events as me
+from .analytics import techearn as te
 from .analytics.stress import StressEngine, StressResult
 from .config import SETTINGS
 from .data.calendar import EventCalendar
@@ -35,6 +37,8 @@ from .data.stocks import StockPrices
 from .data.stocknews import StockNews
 from .data.edgar_holdings import Gurus, Insiders
 from .data.treasury import Treasury
+from .data.econcal import EconCalendar
+from .data.earnings_data import EarningsData
 from .data import treasury as tsy
 from . import store
 
@@ -57,6 +61,8 @@ class Engine:
         self.gurus = Gurus()
         self.insiders = Insiders()
         self.treasury = Treasury()
+        self.econ = EconCalendar()
+        self.earnings = EarningsData()
         self.stress_engine = StressEngine(self.market, self.fred)
         self.stress: Optional[StressResult] = None
         self.odds: Dict = {}
@@ -68,6 +74,8 @@ class Engine:
         self.bonds: Dict = {}             # 美債專區（殖利率曲線、期限溢價、標售）
         self.rotation: Dict = {}          # 類股輪動與市場寬度
         self.signals: Dict = {}           # 技術面買點訊號（規則篩選）
+        self.econ_view: Dict = {}         # 財經日曆（FOMC、CPI、PPI…＋影響劇本）
+        self.techearn: Dict = {}          # 科技／半導體財報分析
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
         self.regime: Dict = {}
@@ -100,13 +108,17 @@ class Engine:
         self.ready = True
         log.info("phase 1 ready (prices)")
         names = ("fred", "crypto", "options", "news", "calendar", "sec", "taiwan", "darkpool", "stocks", "stocknews",
-                 "treasury", "edgar")
+                 "treasury", "edgar", "econ")
         res = await asyncio.gather(self.fred.refresh(), self.crypto.refresh(), self.options.refresh(),
                                    self.news.refresh(), self.calendar.refresh(extra),
                                    self.sec.refresh([t for t in extra if "." not in t]),
                                    self.taiwan.refresh(), self.darkpool.refresh(self.market), self.stockprices.refresh(),
-                                   self.stocknews.refresh(), self.treasury.refresh(), self.refresh_edgar(),
+                                   self.stocknews.refresh(), self.treasury.refresh(), self.refresh_edgar(), self.econ.refresh(),
                                    return_exceptions=True)
+        try:
+            await self.refresh_earnings()
+        except Exception as e:  # noqa: BLE001
+            log.warning("phase-2 refresh earnings failed: %s", e)
         for nm, r in zip(names, res):
             if isinstance(r, Exception):
                 log.warning("phase-2 refresh %s failed: %s", nm, r)
@@ -122,13 +134,27 @@ class Engine:
         finally:
             await self.insiders.refresh(force, gurus=self.gurus)
 
+    def tech_symbols(self) -> List[str]:
+        from .data.earnings_data import TECH_THEMES
+        from .data.stocks import universe
+        us = universe().get("us") or {}
+        return [s for s in us.get("symbols", {}) if us.get("themes", {}).get(s) in TECH_THEMES]
+
+    async def refresh_earnings(self, force: bool = False, frames: bool = False) -> None:
+        """frames (whole-market US tech via SEC frames) is only needed by the website build."""
+        await self.earnings.refresh(self.tech_symbols(), force=force, frames=frames)
+
     async def refresh_extras(self) -> None:
         """Slow feeds behind the stock board / bond zone (each one skips itself until its own refresh interval)."""
         res = await asyncio.gather(self.stockprices.refresh(), self.stocknews.refresh(), self.treasury.refresh(),
-                                   self.refresh_edgar(), self.darkpool.refresh(self.market), return_exceptions=True)
-        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool"), res):
+                                   self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(), return_exceptions=True)
+        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
+        try:
+            await self.refresh_earnings()                       # after the 13F / Form 4 pass: both talk to SEC
+        except Exception as e:  # noqa: BLE001
+            log.warning("extras refresh earnings failed: %s", e)
         await self.recompute()
 
     async def recompute(self) -> None:
@@ -177,11 +203,17 @@ class Engine:
             except Exception:  # noqa: BLE001
                 log.exception("valuation failed")
             for attr, fn, label in (("scores", ss.build, "stock scores"), ("bonds", tsy.build, "treasury"),
-                                    ("rotation", bd.build, "breadth"), ("signals", sg.build, "signals")):
+                                    ("rotation", bd.build, "breadth"), ("signals", sg.build, "signals"),
+                                    ("econ_view", me.build, "econ calendar"), ("techearn", te.build, "tech earnings")):
                 try:
                     setattr(self, attr, await asyncio.to_thread(fn, self))
                 except Exception:  # noqa: BLE001
                     log.exception("%s failed", label)
+            try:
+                from .ai import econ_ai
+                econ_ai.attach(self)
+            except Exception:  # noqa: BLE001
+                log.exception("econ AI attach failed")
             try:
                 self.xray = await asyncio.to_thread(xr.build, self)
             except Exception:  # noqa: BLE001

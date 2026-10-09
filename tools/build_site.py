@@ -26,6 +26,7 @@ import pandas as pd
 
 from wsb.config import SETTINGS
 from tools import site_sections as S2
+from tools import site_econ as S3
 from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
                            tick_label)
 
@@ -959,9 +960,12 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S2.sec_picks_mini, S2.sec_scores_mini, sec_trends]),
+    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S3.sec_econ_mini, S2.sec_scores_mini, sec_trends]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, lambda e: S2.sec_fullmarket(e, "signal")]),
+            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_cal]),
+            ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
+            ("growth", "成長估值", "Growth value", [S3.sec_growth]),
             ("themes", "族群", "Themes", [S2.sec_themes]),
             ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, sec_positioning]),
@@ -997,14 +1001,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{S2.SECTION_CSS}</style></head><body>
+<style>{CSS}{S2.SECTION_CSS}{S3.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
 <div id="tip" role="status"></div>
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1140,12 +1144,45 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.info("full-market scan: %s", await FS.run(eng))
         except Exception:  # noqa: BLE001
             log.exception("full-market scan failed")
+    from wsb.analytics import techearn as TE
+    if fullmarket:
+        try:
+            await eng.refresh_earnings(force=True, frames=True)
+            eng.techearn = TE.build(eng)
+            r = await TE.write_ustech(eng.earnings)
+            log.info("US tech (SEC frames): %s rows", r.get("n"))
+        except Exception:  # noqa: BLE001
+            log.exception("US tech table failed")
+    from wsb.analytics import growth as GR
+    if fullmarket:
+        try:
+            r = await GR.write_us(eng.earnings)
+            log.info("growth screen US: %s rows, %s ranked", r.get("n"), r.get("ranked"))
+        except Exception:  # noqa: BLE001
+            log.exception("US growth screen failed")
+    try:
+        TE.write_tw(eng.earnings)
+        r = GR.write_tw(eng.earnings)
+        log.info("growth screen TW: %s rows, %s ranked", r.get("n"), r.get("ranked"))
+    except Exception:  # noqa: BLE001
+        log.exception("TW revenue / growth table failed")
     ai_text, ai_engine = "", ""
     if use_ai:
         try:
             ai_text, ai_engine = await ai_commentary(eng)
         except Exception as e:  # noqa: BLE001
             log.warning("AI commentary skipped: %s", e)
+        try:
+            from wsb.ai import econ_ai
+            log.info("econ / earnings AI notes written: %d", await econ_ai.generate(eng))
+        except Exception as e:  # noqa: BLE001
+            log.warning("econ AI notes skipped: %s", e)
+    try:
+        from wsb.ai import econ_ai
+        eng.techearn = TE.build(eng) if getattr(eng, "earnings", None) is not None else eng.techearn
+        econ_ai.attach(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("econ AI attach failed")
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render(eng, ai_text, ai_engine), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
@@ -1157,6 +1194,9 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         src = FS._out(mk)
         if src.exists():
             (out / "market" / f"{mk}.json").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    for src, name in ((TE.OUT_US, "ustech.json"), (TE.OUT_TW, "twrev.json"), (GR.OUT_US, "growth_us.json"), (GR.OUT_TW, "growth_tw.json")):
+        if src.exists():
+            (out / "market" / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
     if snapdir is not None:
         try:
             w = update_snapshots(eng, snapdir, out, ai_text)

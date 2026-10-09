@@ -134,6 +134,16 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         if rot.get("available"):
             L.append("## 類股輪動與市場寬度")
             L += _bd.summary_lines(rot)
+        from ..analytics import macro_events as _me
+        from ..analytics import techearn as _te
+        ev = getattr(engine, "econ_view", None) or {}
+        if ev.get("available"):
+            L.append("## 財經日曆（重要經濟數據與 FOMC）")
+            L += _me.summary_lines(ev)
+        tq = getattr(engine, "techearn", None) or {}
+        if tq.get("available"):
+            L.append("## 科技／半導體財報")
+            L += _te.summary_lines(tq)
         sc = getattr(engine, "scores", None) or {}
         if sc.get("available"):
             L.append("## 個股評分表（技術面＋情報面的量化篩選，非推薦）")

@@ -300,7 +300,7 @@ def main():
     assert SGm.pick_ok("macd", 61, True, 1.2, 12)
     for m in eng.signals["markets"].values():
         pk = [r for r in m["rows"] if r.get("pick")]
-        assert len(pk) <= 5 and m["picks"] == [r["sym"] for r in pk]
+        assert not pk and m["picks"] == [], "★ picks are switched off (settings: signals.picks.enabled false)"
         for r in m["rows"]:                                   # tiers: A = pick, B = in zone, C = outside the zone
             assert r["tier"] == ("A" if r.get("pick") else "B" if r["patterns"][0]["plan"]["in_zone"] else "C")
         assert all(r["tier"] == "D" for r in m["all"] if r["status"]["status"] in SGm.NEAR_D)
@@ -340,19 +340,19 @@ def main():
     assert pl["zone_lo"] < pl["zone_hi"] and pl["where"] and (pl["target"] is None or pl["target"] > hit["price"])
     assert all(r["status"].get("when") for m in eng.signals["markets"].values() for r in m["all"]
                if not r["signal"] and r["status"]["status"] != "nodata")
-    assert "技術面買點訊號（由強到弱）" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
-    assert 'class="btn thf"' in page and 'data-th="半導體"' in page and 'class="small muted onlysig"' in page and 'class="nosig"' in page
+    assert "技術面買點訊號" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
+    assert 'class="btn thf"' in page and 'data-th="半導體"' in page and 'class="sgp' in page and 'class="sm"' in page and 'class="sd"' in page
     assert "時光機" in page and 'id="tmSel"' in page and 'rel="manifest"' in page and "serviceWorker" in page
     assert "不是買賣建議" in page or "not investment advice" in page
     for f in ("manifest.webmanifest", "sw.js", "icon-192.png", "icon-512.png", "apple-touch-icon.png"):
         assert (out / f).exists(), f
     files = list(snap.glob("20??-??-??.json"))
     assert len(files) == 1, files
-    s = json.loads(files[0].read_text())
+    s = json.loads(files[0].read_text(encoding="utf-8"))
     assert s["ssi"]["score"] > 0 and s["scores"]["us"]["top"] and s["asof"] and "signals" in s
-    pub = json.loads((out / "snap" / files[0].name).read_text())
+    pub = json.loads((out / "snap" / files[0].name).read_text(encoding="utf-8"))
     assert all("since_pct" in r for m in pub["signals"].values() for r in m["rows"]), "published snapshot carries since-returns"
-    ix = json.loads((out / "snap" / "index.json").read_text())
+    ix = json.loads((out / "snap" / "index.json").read_text(encoding="utf-8"))
     assert len(ix) == 1 and ix[0]["date"] == s["date"] and (out / "snap" / files[0].name).exists()
     asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
     assert len(list(snap.glob("20??-??-??.json"))) == 1, "one snapshot per day"
@@ -360,11 +360,8 @@ def main():
         assert word not in page, word
     import re
     assert not re.search(r"https?://(?!example\.com|e\.com|www\.sec\.gov)[^\"' ]+\.(js|css)", page)
-    assert "pickbox" in page and "今日規則精選" in page and "sec_picks" not in page
-    npk = sum(len(m["picks"]) for m in eng.signals["markets"].values())
-    assert page.count('class="pickrow"') == npk, (page.count('class="pickrow"'), npk)
-    print(f"  picks: {npk}")
-    d = json.loads((out / "data.json").read_text())
+    assert "今日規則精選" not in page and "class=\"pickbox\"" not in page
+    d = json.loads((out / "data.json").read_text(encoding="utf-8"))
     assert d["scores"]["us"], "data.json carries the top of the board"
     # on-demand lookup of a ticker outside the universe (Discord /stock), plus NU now in the universe
     from wsb.analytics import lookup as LK
@@ -375,11 +372,11 @@ def main():
     idx2 = eng.stockprices.close.index
     STK._download = lambda syms, period: (pd.DataFrame({syms[0]: 50 * np.exp(np.linspace(0, 0.4, len(idx2)))}, index=idx2),
                                           pd.DataFrame({syms[0]: np.full(len(idx2), 1e6)}, index=idx2))
-    before = SS._HIST.read_text() if SS._HIST.exists() else ""
+    before = SS._HIST.read_text(encoding="utf-8") if SS._HIST.exists() else ""
     lk = asyncio.run(LK.lookup(eng, "zzzz"))
     assert lk["ok"] and not lk["in_universe"] and lk["row"]["sym"] == "ZZZZ" and lk["n"] == len(sc["markets"]["us"]["rows"]) + 1
     assert lk["signal"] or lk["status"], lk
-    assert (SS._HIST.read_text() if SS._HIST.exists() else "") == before, "lookup must not touch saved history"
+    assert (SS._HIST.read_text(encoding="utf-8") if SS._HIST.exists() else "") == before, "lookup must not touch saved history"
     assert asyncio.run(LK.lookup(eng, "NU"))["in_universe"]
     from wsb import weekly as WK
     from wsb.bot import command as CMD

@@ -418,6 +418,10 @@ def mark_picks(rows: List[Dict]) -> List[str]:
     """Flag up to n curated signal rows (already sorted strong → weak) as picks; returns their symbols."""
     cf = pick_cfg()
     out = []
+    if not cf.get("enabled", True):
+        for r in rows:
+            r["pick"] = False
+        return out
     for r in rows:
         h = r["patterns"][0]
         pl = h.get("plan") or {}

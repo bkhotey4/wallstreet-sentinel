@@ -93,7 +93,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
     cand = sorted([r for r in rows if r.get("st") == "signal" and SG.pick_ok(
         r.get("pat"), r.get("str"), bool(r.get("inz")), (r["tgtp"] / r["risk"]) if r.get("tgtp") and r.get("risk") else None,
         r.get("risk"), cfp)], key=lambda r: -(r.get("str") or 0))
-    for i, r in enumerate(cand[:int(cfp["n"]) * 5], 1):           # full market is much bigger → 5× the curated count
+    for i, r in enumerate(cand[:int(cfp["n"]) * 5] if cfp.get("enabled", True) else [], 1):           # full market is much bigger → 5× the curated count
         r["pk"] = i
     for r in rows:
         r["tier"] = SG.tier_fm(r.get("st"), r.get("pk"), r.get("inz"))
