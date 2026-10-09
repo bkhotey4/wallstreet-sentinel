@@ -148,7 +148,15 @@ def sec_scores_mini(eng) -> str:
 
 
 # ----------------------------------------------------------------- technical entry signals
-PAT_COL = {"pullback": "#2fbf71", "breakout": "#3987e5", "golden": "#c9a227", "oversold": "#ec835a"}
+PAT_COL = {"pullback": "#2fbf71", "breakout": "#3987e5", "golden": "#c9a227", "oversold": "#ec835a",
+           "shallow": "#14b8a6", "vcp": "#8b5cf6", "high52": "#e879f9", "macd": "#94a3b8"}
+TIER_COL = {"A": "#c9a227", "B": "#2fbf71", "C": "#3987e5", "D": "#6b7280"}
+TIER_T = {"A": ("A ★ 規則精選", "A ★ Top setup"), "B": ("B 在進場區內", "B In the zone"), "C": ("C 有訊號・等拉回", "C Wait for pullback"),
+          "D": ("D 快成立", "D Almost there")}
+
+
+def _tier(t: Optional[str]) -> str:
+    return f'<span class="tier t{t}" title="{esc(TIER_T[t][0])}">{t}</span>' if t else ""
 
 
 def _pat_detail(h: Dict) -> tuple:
@@ -159,6 +167,14 @@ def _pat_detail(h: Dict) -> tuple:
         zh, en = f"突破前 20 日高點，成交量 {num(h.get('vol_ratio'), 1)} 倍", f"Broke the prior 20-day high on {num(h.get('vol_ratio'), 1)}× volume"
     elif k == "golden":
         zh, en = "50 日線上穿 200 日線，或站回 200 日線", "50-day crossed above 200-day, or price reclaimed the 200-day"
+    elif k == "shallow":
+        zh, en = f"均線多頭排列，回測 10 日線後收紅（RSI {num(h.get('rsi'), 0)}）", "Stacked averages; dipped to the 10-day and closed up"
+    elif k == "vcp":
+        zh, en = f"波動收斂成窄箱後放量突破，成交量 {num(h.get('vol_ratio'), 1)} 倍", f"Tight range, then a breakout on {num(h.get('vol_ratio'), 1)}× volume"
+    elif k == "high52":
+        zh, en = f"收盤創 52 週新高，成交量 {num(h.get('vol_ratio'), 1)} 倍", f"Closed at a new 52-week high on {num(h.get('vol_ratio'), 1)}× volume"
+    elif k == "macd":
+        zh, en = "多頭趨勢中 MACD 線上穿訊號線", "MACD crossed above its signal line in an uptrend"
     else:
         zh, en = f"RSI 跌破 30 後反彈（逆勢，風險較高）", "Bounce after RSI < 30 (counter-trend, higher risk)"
     return zh, en
@@ -181,13 +197,14 @@ def _watch_rows(m: Dict) -> List[str]:
         st = r["status"]
         when = (f'<b class="act">▶ {T("何時才算買點", "What would trigger an entry")}：</b>{T(st.get("when", "—"), st.get("when_en", "—"))}'
                 if st.get("when") else "")
-        out.append(f'<tr data-th="{th}" data-q="{_q(r)}" class="nosig"><td class="r muted">{r["rank_all"]}</td>'
-                   f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
+        tg = r.get("tier") or ""
+        out.append(f'<tr data-th="{th}" data-q="{_q(r)}" data-tier="{tg}" class="nosig"><td class="r muted">{r["rank_all"]}</td>'
+                   f'<td class="nw">{_tier(r.get("tier"))}<b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
                    f'<td><span class="pill"><i class="sw" style="background:{ST_COL.get(st["status"], "#6b7280")}"></i>{T(st["label"], st["label_en"])}</span></td>'
                    f'<td>{_bar(r["strength"], "#6b7280")}</td><td class="r">{num(r.get("price"), 2)}</td>'
                    f'<td class="r muted">{T("尚未成立", "not yet")}</td><td class="r muted">—</td>'
                    f'<td class="r opt">{num(r.get("score"), 0)}</td></tr>'
-                   f'<tr class="why nosig" data-th="{th}"><td></td><td colspan="7" class="small">{when}'
+                   f'<tr class="why nosig" data-th="{th}" data-tier="{tg}"><td></td><td colspan="7" class="small">{when}'
                    f'<div class="muted">{T(st.get("why", ""), st.get("why_en", ""))}</div></td></tr>')
     return out
 
@@ -197,8 +214,10 @@ def _signal_table(m: Dict) -> str:
         return f'<p class="muted">{T("目前沒有符合條件的訊號。", "No qualifying signals right now.")}</p>'
     tid = f"sg_{m['key']}"
     rows = []
-    for r in m["rows"]:
+    rk = {r["sym"]: r.get("rank_all") for r in m.get("all", [])}
+    for r in sorted(m["rows"], key=lambda r: ("ABC".index(r.get("tier") or "C"), -r["strength"])):
         th = esc(r.get("theme", "其他"))
+        tg = r.get("tier") or ""
         pills = "".join(f'<span class="pill"><i class="sw" style="background:{PAT_COL[h["pattern"]]}"></i>{T(h["label"], h["label_en"])}</span>'
                         for h in r["patterns"])
         new = f' <span class="pill newp">{T("新", "NEW")}</span>' if r.get("new") else ""
@@ -223,13 +242,13 @@ def _signal_table(m: Dict) -> str:
         action = ('<b class="act">▶ ' + T("何時買（規則參考）", "When (rule reference)") + "：</b>"
                   + T(pl.get("zone", ""), pl.get("zone_en", "")) + "；" + T(pl.get("where", ""), pl.get("where_en", "")) + "。"
                   + '<b class="act">▶ ' + T("何時放棄", "Give up if") + "：</b>" + give + "。" + over)
-        rows.append(f'<tr data-th="{th}" data-q="{_q(r)}"{trc}><td class="r muted">{r["rank"]}</td>'
-                    f'<td class="nw">{"★ " if r.get("pick") else ""}<b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
+        rows.append(f'<tr data-th="{th}" data-q="{_q(r)}" data-tier="{tg}"{trc}><td class="r muted">{rk.get(r["sym"]) or r["rank"]}</td>'
+                    f'<td class="nw">{_tier(r.get("tier"))}<b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
                     f'<td>{star}{pills}{new}</td><td>{_bar(r["strength"], _score_color(r["strength"]))}</td>'
                     f'<td class="r">{num(r["price"], 2)}</td><td class="r nw">{zone} {inz}</td>'
                     f'<td class="r">{num(r["inv"], 2)}<span class="muted small"> (-{num(r["risk_pct"], 1)}%)</span></td>'
                     f'<td class="r opt">{num(r.get("score"), 0)}</td></tr>'
-                    f'<tr class="why{" pickrow" if r.get("pick") else ""}" data-th="{th}"><td></td><td colspan="7" class="small">{action}'
+                    f'<tr class="why{" pickrow" if r.get("pick") else ""}" data-th="{th}" data-tier="{tg}"><td></td><td colspan="7" class="small">{action}'
                     f'<div class="muted">{det}　{T("首次出現 " + r["since"], "first seen " + r["since"])}</div></td></tr>')
     rows += _watch_rows(m)
     bt = m.get("backtest") or {}
@@ -241,11 +260,17 @@ def _signal_table(m: Dict) -> str:
         for k, b in bt.items())
     head = (f'<div class="chips"><span class="chip">{T("掃描", "Scanned")} {m["n_universe"]} {T("檔", "names")}</span>'
             f'<span class="chip">{T("目前有訊號", "With a signal")} {len(m["rows"])} {T("檔", "names")}</span>'
+            + "".join(f'<span class="chip">{_tier(t)} {T(TIER_T[t][0][2:], TIER_T[t][1][2:])} {n}</span>'
+                      for t, n in (m.get("tiers") or {}).items())
             + "".join(f'<span class="chip"><i class="sw" style="background:{ST_COL[k]}"></i> {T(*_ST_T[k])} {n}</span>'
                       for k, n in (m.get("status_counts") or {}).items() if n and k != "signal")
             + f'<span class="chip">{T("資料日", "As of")} {esc(m["asof"])}</span></div>')
     only = (f'<label class="small muted onlysig"><input type="checkbox" data-for="{tid}"> {T("只看有訊號的", "Signals only")}</label>')
-    return (head + _theme_filter(m.get("all") or m["rows"], tid) + only + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr><th class="r">#</th>'
+    tsel = (f'<label class="small muted onlysig">{T("分級", "Tier")} <select class="btn tierf" data-for="{tid}">'
+            f'<option value="" data-en="All">全部</option><option value="AB" data-en="A+B (in the zone)">A+B（在進場區內）</option>'
+            + "".join(f'<option value="{t}" data-en="{esc(TIER_T[t][1])}">{esc(TIER_T[t][0])}</option>' for t in "ABCD")
+            + "</select></label>")
+    return (head + _tier_lists(m) + _theme_filter(m.get("all") or m["rows"], tid) + tsel + only + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr><th class="r">#</th>'
             f'<th>{T("個股", "Stock")}</th><th>{T("訊號型態／目前狀態", "Pattern / status")}</th><th>{T("訊號強度／準備度", "Strength / readiness")}</th><th class="r">{T("現價", "Price")}</th>'
             f'<th class="r">{T("進場參考區", "Entry zone")}</th><th class="r">{T("失效線", "Give-up line")}</th><th class="r opt">{T("綜合分數", "Score")}</th>'
             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
@@ -255,6 +280,40 @@ def _signal_table(m: Dict) -> str:
             f'<th class="r">{T("同市場任一天（基準）", "Any day (base)")}</th><th class="r">{T("上漲比例 − 基準（百分點）", "Edge (pp)")}</th>'
             f'</tr></thead><tbody>{brow}</tbody></table></div>'
             f'<p class="note">{T("「上漲比例 − 基準」接近 0 代表這個型態在這段期間並沒有比隨便哪一天進場更好；樣本只有約兩年、而且同一段期間同時用來定義規則，僅供參考。", "An edge near 0 means the pattern did no better than any random day over this ~2-year in-sample window.")}</p>')
+
+
+def _tier_lists(m: Dict) -> str:
+    """Four compact columns: what each tier means and which names are in it, with the one price that matters."""
+    sig = {r["sym"]: r for r in m["rows"]}
+    cols = []
+    for t in "ABCD":
+        its = [r for r in m.get("all", []) if r.get("tier") == t]
+        lis = []
+        for r in its[:8]:
+            nm = f'<b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>'
+            if t == "D":
+                txt = T(r["status"].get("when", ""), r["status"].get("when_en", ""))
+            else:
+                s = sig.get(r["sym"]) or r
+                pl = s["patterns"][0].get("plan") or {}
+                if t == "C":
+                    above = (s["price"] or 0) > pl.get("zone_hi", 0)
+                    txt = (T("等拉回到 ", "wait for ") if above else T("等站回 ", "needs back above ")) + f'{num(pl.get("zone_lo"), 2)}–{num(pl.get("zone_hi"), 2)}'
+                else:
+                    txt = T("區間 ", "zone ") + f'{num(pl.get("zone_lo"), 2)}–{num(pl.get("zone_hi"), 2)}・' + T("失效 ", "give-up ") + num(s["inv"], 2)
+            lis.append(f'<li>{nm} <span class="small muted">{txt}</span></li>')
+        more = (f'<li class="muted small">{T("還有 %d 檔，用下方「分級」篩選" % (len(its) - 8), "+%d more — use the Tier filter" % (len(its) - 8))}</li>'
+                if len(its) > 8 else "")
+        empty = "" if its else f'<li class="muted small">{T("今天沒有", "none today")}</li>'
+        cols.append(f'<div class="tcol"><h5>{_tier(t)} {T(TIER_T[t][0][2:], TIER_T[t][1][2:])}'
+                    f' <span class="muted">{len(its)}</span></h5><p class="small muted">{T(*TIER_HINT[t])}</p><ul>{"".join(lis)}{more}{empty}</ul></div>')
+    return f'<div class="tiers">{"".join(cols)}</div>'
+
+
+TIER_HINT = {"A": ("條件最齊全：順勢、在區內、強度夠、報酬／風險夠", "Every condition met"),
+             "B": ("有訊號、現價在進場區內，但有一兩個條件較弱（例如上方空間小、逆勢型態）", "Signal and in the zone, one condition weaker"),
+             "C": ("有訊號但現價已離開進場區——區間價位可當「掛單參考」，回到區間才符合規則", "Signal, price outside the zone — the zone is a limit-order reference"),
+             "D": ("還沒有訊號，但離成立只差一步；寫的是觸發條件與價位", "No signal yet — the trigger condition and price")}
 
 
 def _edge(b: Dict) -> Optional[float]:
@@ -267,13 +326,16 @@ _ST_T = {"signal": ("有買點訊號", "Signal"), "near_pullback": ("接近回�
 
 
 PATTERNS_T = {"pullback": ("多頭回檔到均線", "Pullback to MA in uptrend"), "breakout": ("帶量突破", "Volume breakout"),
-              "golden": ("黃金交叉／站回年線", "Golden cross / 200-day reclaim"), "oversold": ("超賣反彈（逆勢）", "Oversold bounce")}
+              "golden": ("黃金交叉／站回年線", "Golden cross / 200-day reclaim"), "oversold": ("超賣反彈（逆勢）", "Oversold bounce"),
+              "shallow": ("強勢股淺回檔", "Shallow dip, strong trend"), "vcp": ("收斂後突破", "Tight-range breakout"),
+              "high52": ("創 52 週新高", "New 52-week high"), "macd": ("MACD 黃金交叉", "MACD bullish cross")}
 
 
-PICK_RULE = ("★ 規則精選＝今天「有買點訊號」的股票裡，同時符合：①順勢型態（不含逆勢的超賣反彈）②現價還在進場參考區內 ③訊號強度 ≥ 65 "
-             "④失效線離現價 ≤ 10% ⑤到 52 週高的空間 ≥ 1.5 倍風險（已在 52 週高則不限），依強度取前 3 名。只代表規則條件最齊全，不是買進建議。",
-             "★ Top setup = today's signals that are trend-following, still inside the entry zone, strength ≥ 65, give-up line ≤ 10% away and "
-             "reward/risk ≥ 1.5 (or at the 52-week high); top 3 by strength. Most complete rule conditions — not a recommendation.")
+PICK_RULE = ("A 級 ★ 規則精選＝今天「有買點訊號」的股票裡，同時符合：①順勢型態（不含逆勢的超賣反彈）②現價還在進場參考區內 ③訊號強度 ≥ 60 "
+             "④失效線離現價 ≤ 12% ⑤到 52 週高的空間 ≥ 1.2 倍風險（已在 52 週高則不限），依強度取前 5 名。其餘有訊號的分成 B（在區內）與 C（等拉回），"
+             "快成立的是 D。只代表規則條件齊不齊全，不是買進建議。",
+             "A ★ Top setup = today's signals that are trend-following, still inside the entry zone, strength ≥ 60, give-up line ≤ 12% away and "
+             "reward/risk ≥ 1.2 (or at the 52-week high); top 5 by strength. Other signals are B (in zone) or C (wait); D = almost there. Not advice.")
 
 
 def _pick_card(m: Dict, r: Dict) -> str:
@@ -303,7 +365,7 @@ def picks_box(sg: Dict, compact: bool = False) -> str:
     body = (f'<div class="picks">{"".join(cards)}</div>' if cards else "") + none
     if compact:
         return body
-    return (f'<div class="pickbox"><h4>★ {T("今日規則精選（條件最齊全，表格中以金色標示）", "Today’s top setups (highlighted in gold below)")}</h4>{body}'
+    return (f'<div class="pickbox"><h4>★ {T("今日規則精選（A 級，條件最齊全；B／C／D 級在下方表格）", "Today’s top setups (highlighted in gold below)")}</h4>{body}'
             f'<p class="small muted">{T(*PICK_RULE)}</p></div>')
 
 
@@ -332,14 +394,19 @@ def sec_signals(eng) -> str:
              f'<li>{T("「▶ 何時放棄」是失效線：收盤跌破就代表型態失敗，規則上不再成立（很多人把它當停損參考）。", "The give-up line: a close below it means the setup failed.")}</li>'
              f'<li>{T("「▶ 上方壓力」是 52 週高點；報酬／風險倍數 = 到壓力的空間 ÷ 到失效線的距離，倍數越高代表同樣風險下上方空間越大。", "Overhead = 52-week high; reward/risk = room to it ÷ distance to the give-up line.")}</li>'
              f'<li>{T("其他股票還沒有訊號：看「▶ 何時才算買點」，裡面寫了要等到哪個價位、出現什麼條件才會成立（例如收盤站上某價位且放量）。訊號一成立，Discord 會推播。", "Other rows: the exact price/condition that would create a signal. Discord pushes when one fires.")}</li>'
+             f'<li>{T("分級：A＝條件全部符合；B＝在進場區內但有條件較弱；C＝有訊號但價格離開區間，區間可當掛單參考價；D＝快成立。用「分級」選單可以只看某一級。", "Tiers: A = all conditions; B = in the zone, one weaker; C = signal but outside the zone (zone = limit-order reference); D = almost there.")}</li>'
+             f'<li>{T("進場參考區的寬度會依每檔股票平常的波動放寬（至少 3%，最多 10%）：波動大的股票區間較寬、失效線也放遠一點，不會一天正常波動就跑出去。", "Zone width scales with each stock’s usual daily move (3–10%).")}</li>'
              f'</ol></div>')
     search = (f'<div class="sbox"><input type="search" id="sigQ" class="btn" placeholder="搜尋代號或名稱（含全市場），例如 NU、台積電" aria-label="search">'
               f'<span class="muted small" id="sigQn"></span><div class="fmres" id="sigQfm"></div></div>')
     note = T("表格先列出目前有訊號的個股（依訊號強度），接著列出其他所有個股與它們目前的狀態（依「準備度」排序：接近回檔買點 → 接近突破 → 接近黃金交叉 → 多頭整理 → 接近超賣 → 多頭但漲多 → 盤整 → 空頭趨勢），"
              "準備度只代表離哪一種型態比較近，不是訊號。型態定義：多頭回檔＝股價在 200 日線之上、50 日線在 200 日線之上且年線上升，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
              "成交量 ≥ 50 日均量 1.5 倍且在 50 日線之上；黃金交叉＝50 日線在 10 天內上穿 200 日線，或股價在多數時間低於年線後重新站回；"
-             "超賣反彈＝RSI 5 天內跌破 30 後站回 5 日線（逆勢）。強度＝型態基礎分＋綜合分數＋量能＋失效線距離＋該型態在本市場的歷史勝率，"
-             "整體寬度太差時扣分。失效線：回檔看所回測的均線 −2%，突破看突破點 −3%，交叉看 200 日線 −2%，超賣看 10 日最低 −1%。",
+             "超賣反彈＝RSI 5 天內跌破 30 後站回 5 日線（逆勢）；強勢股淺回檔＝10＞20＞50＞200 日線且上彎，回測 10 日線後收紅；"
+             "收斂後突破＝近 10 天波動縮到前 50 天的 6 成以下、箱體 ≤12%，收盤放量（≥1.3 倍）突破箱頂；創 52 週新高＝收盤超過前 252 日最高且量 ≥1.2 倍；"
+             "MACD 黃金交叉＝多頭趨勢中 MACD 線上穿訊號線。強度＝型態基礎分＋綜合分數＋量能＋失效線距離＋該型態在本市場的歷史勝率，"
+             "整體寬度太差時扣分。失效線：回檔看所回測的均線 −2%，突破看突破點 −3%，交叉看 200 日線 −2%，淺回檔看 20 日線 −2%，新高看前高 −4%，"
+             "收斂突破看箱底 −1%，超賣與 MACD 看 10 日最低 −1%；波動大的股票改用「0.75 倍平均日波動」，取較遠者。",
              "Definitions: pullback = above a rising 200-day with 50 > 200, touched the 20/50-day within 3 sessions and closed up; breakout = "
              "close above the prior 20-day high on ≥1.5× 50-day volume, above the 50-day; golden = 50-day crossed the 200-day within 10 "
              "sessions or price reclaimed the 200-day; oversold = RSI < 30 within 5 sessions, back above the 5-day average.")
@@ -373,7 +440,10 @@ def sec_fullmarket(eng, mode: str = "score") -> str:
                    for i, k in enumerate(("us", "tw", "hk")))
     return card(*title,
                 _fm_summary() + f'<div class="fm" data-mode="{mode}"><div class="tabs">{btns}</div>'
-                f'<div class="fmctl"><select class="btn fmind"><option value="">{T("全部產業", "All industries")}</option></select>'
+                f'<div class="fmctl">' + (f'<select class="btn fmtier"><option value="ABC" data-en="With a signal (A+B+C)">有訊號（A+B+C）</option>'
+                                          f'<option value="A" data-en="A ★ Top setup">A ★ 規則精選</option><option value="AB" data-en="A+B in the zone">A+B 在進場區內</option>'
+                                          f'<option value="C" data-en="C wait for pullback">C 有訊號・等拉回</option><option value="D" data-en="D almost there">D 快成立</option></select>'
+                                          if mode != "score" else "") + f'<select class="btn fmind"><option value="">{T("全部產業", "All industries")}</option></select>'
                 f'<button class="btn fmload" type="button">{T("載入全市場資料", "Load full-market data")}</button>'
                 f'<span class="muted small fmst"></span></div><div class="fmbody"></div></div><p class="note">{note}</p>', "wide")
 
@@ -739,7 +809,8 @@ function sg(v,d){return (v==null||isNaN(v))?'—':((v>0?'+':'')+Number(v).toFixe
 function load(mk){if(CACHE[mk])return CACHE[mk];CACHE[mk]=fetch('market/'+mk+'.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();})
  .then(function(d){var c=d.cols;d.items=d.rows.map(function(a){var o={};c.forEach(function(k,i){o[k]=a[i];});o.mk=mk;o.N=d.n;return o;});return d;})
  .catch(function(){CACHE[mk]=null;return null;});return CACHE[mk];}
-function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');if(o.pk)h.appendChild(el('span','pill pickp','★ '+(en()?'Top setup':'規則精選')+' '));h.appendChild(el('b',null,o.name+' '));h.appendChild(el('span','tk',o.code));
+var TO={A:0,B:1,C:2,D:3};
+function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');if(o.tier)h.appendChild(el('span','tier t'+o.tier,o.tier));if(o.pk)h.appendChild(el('span','pill pickp','★ '+(en()?'Top setup':'規則精選')+' '));h.appendChild(el('b',null,o.name+' '));h.appendChild(el('span','tk',o.code));
  h.appendChild(el('span','thc',lbl+(o.board?' '+o.board:'')+' · '+(o.ind||'')));d.appendChild(h);
  d.appendChild(el('div','small',(en()?'Tech score ':'技術分數 ')+f(o.tech,0)+(en()?' — rank ':'（全市場第 ')+o.rank+' / '+o.N+(en()?'':' 名）')
   +'　1M '+sg(o.r1m,1)+'　6M '+sg(o.r6,0)+'　RSI '+f(o.rsi,0)+'　'+(en()?'Price ':'現價 ')+f(o.px,2)));
@@ -760,19 +831,19 @@ var T0=0;window.FMsearch=function(v,box){if(!box)return;clearTimeout(T0);box.tex
    box.appendChild(el('div','small muted',(en()?'Full market: ':'全市場結果：')+hits.length+(en()?' match(es)':' 筆')+(hits.length>8?(en()?' (top 8)':'（顯示前 8 筆）'):'')));
    hits.slice(0,8).forEach(function(h){box.appendChild(card(h[1],h[2]));});});},250);};
 document.querySelectorAll('.fm').forEach(function(w){var mode=w.dataset.mode,mk='us',shown=100,data=null,sel=w.querySelector('.fmind'),body=w.querySelector('.fmbody'),
- stl=w.querySelector('.fmst'),btn=w.querySelector('.fmload');
- function render(){body.textContent='';if(!data){return;}var ind=sel.value,its=data.items.filter(function(o){return (!ind||o.ind===ind)&&(mode==='score'||o.st==='signal');});
-  if(mode!=='score')its.sort(function(a,b){return (b.str||0)-(a.str||0);});
+ stl=w.querySelector('.fmst'),btn=w.querySelector('.fmload'),tsel=w.querySelector('.fmtier');
+ if(tsel)tsel.addEventListener('change',function(){shown=100;render();});
+ function render(){body.textContent='';if(!data){return;}var ind=sel.value,tv=tsel?tsel.value:'ABC',its=data.items.filter(function(o){return (!ind||o.ind===ind)&&(mode==='score'||(o.tier&&tv.indexOf(o.tier)>=0));});
+  if(mode!=='score')its.sort(function(a,b){return (TO[a.tier]||0)-(TO[b.tier]||0)||(b.str||0)-(a.str||0);});
   stl.textContent=(en()?' ':' ')+its.length+(en()?' names':' 檔')+' · '+(en()?'as of ':'資料日 ')+data.asof;
   var det=el('div','fmres');body.appendChild(det);det.appendChild(el('p','muted small',en()?'Click a row for the entry / give-up levels.':'點表格任一列，這裡會顯示該檔的「何時買／何時放棄」。'));
   var sc=el('div','scroll'),t=el('table','mini'),th=el('tr');
   (mode==='score'?['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Tech':'技術分',en()?'1M':'1月',en()?'6M':'6月','RSI',en()?'Status':'狀態']
    :['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Pattern':'型態',en()?'Strength':'強度',en()?'Price':'現價',en()?'Entry zone':'進場參考區',en()?'Give-up':'失效線'])
    .forEach(function(x){th.appendChild(el('th',null,x));});var hd=el('thead');hd.appendChild(th);t.appendChild(hd);var tb=el('tbody');
-  if(mode!=='score')its.sort(function(a,b){return (a.pk?0:1)-(b.pk?0:1)||(a.pk||0)-(b.pk||0)||(b.str||0)-(a.str||0);});
-  its.slice(0,shown).forEach(function(o,i){var tr=el('tr');if(o.pk&&mode!=='score')tr.className='pickrow';var nm=el('td','nw');if(o.pk)nm.appendChild(el('span','fmstar','★ '));nm.appendChild(el('b',null,o.name+' '));nm.appendChild(el('span','tk',o.code));
+  its.slice(0,shown).forEach(function(o,i){var tr=el('tr');if(o.pk&&mode!=='score')tr.className='pickrow';var nm=el('td','nw');if(o.tier&&mode!=='score')nm.appendChild(el('span','tier t'+o.tier,o.tier));nm.appendChild(el('b',null,o.name+' '));nm.appendChild(el('span','tk',o.code));
    var cells=mode==='score'?[String(o.rank),nm,o.ind||'',f(o.tech,0),sg(o.r1m,1),sg(o.r6,0),f(o.rsi,0),o.stl||'']
-    :[String(i+1),nm,o.ind||'',o.patl||'',f(o.str,0),f(o.px,2),f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' ✓':' 區內'):''),f(o.inv,2)+'（-'+f(o.risk,1)+'%）'];
+    :[String(i+1),nm,o.ind||'',o.patl||o.stl||'',f(o.str,0),f(o.px,2),o.zlo==null?'—':(f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' ✓':' 區內'):'')),o.inv==null?'—':(f(o.inv,2)+'（-'+f(o.risk,1)+'%）')];
    cells.forEach(function(c){if(typeof c==='string'){tr.appendChild(el('td',null,c));}else tr.appendChild(c);});
    tr.style.cursor='pointer';tr.title=en()?'Click for details':'點一下看何時買／何時放棄';
    tr.addEventListener('click',function(){det.textContent='';det.appendChild(card(o,data.label));det.scrollIntoView({block:'nearest'});});tb.appendChild(tr);});
@@ -799,8 +870,11 @@ TM_JS = r"""
   if(window.FMsearch)window.FMsearch(v,document.getElementById(cf[0]+'fm'));
   if(first){var pid=first.closest('.panel').id,b=document.querySelector('.tab[data-t="'+pid+'"]');if(b&&!b.classList.contains('on'))b.click();}});});
 function tfilter(id){var t=document.getElementById(id);if(!t)return;var sel=document.querySelector('select.thf[data-for="'+id+'"]'),
- cb=document.querySelector('.onlysig input[data-for="'+id+'"]'),v=sel?sel.value:'',only=cb&&cb.checked;
- t.querySelectorAll('tbody tr').forEach(function(tr){tr.style.display=((!v||tr.dataset.th===v)&&!(only&&tr.classList.contains('nosig')))?'':'none';});}
+ cb=document.querySelector('.onlysig input[data-for="'+id+'"]'),ts=document.querySelector('select.tierf[data-for="'+id+'"]'),
+ v=sel?sel.value:'',only=cb&&cb.checked,tv=ts?ts.value:'';
+ t.querySelectorAll('tbody tr').forEach(function(tr){var tg=tr.dataset.tier||'';
+  tr.style.display=((!v||tr.dataset.th===v)&&!(only&&tr.classList.contains('nosig'))&&(!tv||(tg&&tv.indexOf(tg)>=0)))?'':'none';});}
+document.querySelectorAll('select.tierf').forEach(function(sel){sel.addEventListener('change',function(){tfilter(sel.dataset.for);});});
 document.querySelectorAll('select.thf').forEach(function(sel){sel.addEventListener('change',function(){tfilter(sel.dataset.for);});});
 document.querySelectorAll('.onlysig input').forEach(function(cb){cb.addEventListener('change',function(){tfilter(cb.dataset.for);});});
 (function(){var sel=document.getElementById('tmSel');if(!sel)return;var out=document.getElementById('tmOut'),list=document.getElementById('tmList');
@@ -864,6 +938,11 @@ table.mini td,table.mini th{padding:4px 6px;font-size:12.5px}.hm{font-variant-nu
 .thf{margin:6px 0 4px;min-width:150px}.fmres{margin-top:6px}.fmcard{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 11px;margin:6px 0}
 .fmcard .fmh{margin-bottom:3px}.fmcard div{margin:2px 0}.fmctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}.act{color:var(--tx);font-weight:600;margin-right:2px}td .act{margin-left:2px}
 .pill.inz{color:var(--up);border-color:var(--up)}
+.tier{display:inline-block;min-width:17px;text-align:center;border-radius:4px;font-size:11px;font-weight:700;padding:0 4px;margin-right:5px;color:#111}
+.tier.tA{background:#c9a227}.tier.tB{background:#2fbf71}.tier.tC{background:#3987e5;color:#fff}.tier.tD{background:#6b7280;color:#fff}
+.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:8px 0 10px}.tcol{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:6px 9px}
+.tcol h5{margin:2px 0;font-size:13px}.tcol p{margin:2px 0 4px}.tcol ul{margin:0;padding-left:16px;font-size:12.5px}.tcol li{margin:3px 0}
+@media(max-width:900px){.tiers{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.tiers{grid-template-columns:1fr}}
 .pickbox{border:2px solid #c9a227;border-radius:10px;padding:8px 12px;margin:0 0 12px;background:color-mix(in srgb,#c9a227 8%,transparent)}
 .pickbox h4{margin:2px 0 6px;color:#c9a227}.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:4px 0}
 .pick{background:var(--card);border:1px solid #c9a227;border-radius:8px;padding:8px 10px}.pick div{margin:3px 0}

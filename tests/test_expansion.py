@@ -124,6 +124,30 @@ def test_signal_patterns():
     assert SG.detect(c4, v)["golden"]["flag"].sum() > 0
     bt = SG.backtest({"A": d, "B": d2})
     assert set(bt) == set(SG.PATTERNS) and bt["pullback"]["base_win"] is not None
+    rng = np.random.default_rng(3)
+    # 強勢股淺回檔: steady strong uptrend, a ~3% dip to the 10-day, then an up close
+    c5 = pd.Series(100 * np.exp(np.linspace(0, 0.9, 400) + rng.normal(0, 0.004, 400)), index=idx)
+    c5.iloc[-3] = c5.iloc[-4] * 0.985
+    c5.iloc[-2] = c5.iloc[-3] * 0.985
+    c5.iloc[-1] = c5.iloc[-2] * 1.03
+    d5 = SG.detect(c5, v)
+    assert d5["shallow"]["flag"].iloc[-1], d5["shallow"].tail(3)
+    # 收斂後突破 + 創 52 週新高: volatile rise, a very quiet 10-day box near the high, then a volume breakout
+    c6 = pd.Series(100 * np.exp(np.linspace(0, 0.5, 400) + rng.normal(0, 0.02, 400)), index=idx)
+    top = c6.iloc[:-12].max()
+    c6.iloc[-12:-1] = top * (1 + rng.normal(0, 0.002, 11))
+    c6.iloc[-1] = c6.iloc[-12:-1].max() * 1.03
+    v6 = v.copy()
+    v6.iloc[-1] = 2.5e6
+    d6 = SG.detect(c6, v6)
+    assert d6["vcp"]["flag"].iloc[-1] and d6["high52"]["flag"].iloc[-1]
+    assert not SG.detect(c6, v)["vcp"]["flag"].iloc[-1], "VCP needs volume"
+    # MACD 黃金交叉 only in an uptrend
+    assert d5["macd"]["flag"].sum() > 0 and SG.detect(c4.iloc[:250], v)["macd"]["flag"].sum() == 0
+    # ATR-scaled zone: a volatile stock gets a wider zone than the 3% floor, a calm one keeps 3%
+    assert abs(SG.zone_width(100, 0.03, 1.0) - 3.0) < 1e-9 and SG.zone_width(100, 0.03, 6.0) == 6.0 and SG.zone_width(100, 0.03, 20) == 10.0
+    pl = SG.plan("vcp", d6["vcp"], idx[-1], float(d6["vcp"]["inv"].iloc[-1]))
+    assert pl["zone_lo"] < pl["zone_hi"] and "收斂區上緣" in pl["zone"]
     print("  signal patterns ok")
 
 
@@ -272,10 +296,15 @@ def main():
     from wsb.analytics import signals as SGm
     assert SGm.pick_ok("pullback", 70, True, 2.0, 5) and SGm.pick_ok("breakout", 70, True, None, 5)
     assert not SGm.pick_ok("oversold", 90, True, 3, 3) and not SGm.pick_ok("pullback", 70, False, 3, 3)
-    assert not SGm.pick_ok("pullback", 60, True, 3, 3) and not SGm.pick_ok("pullback", 70, True, 1.2, 3) and not SGm.pick_ok("pullback", 70, True, 3, 12)
+    assert not SGm.pick_ok("pullback", 55, True, 3, 3) and not SGm.pick_ok("pullback", 70, True, 1.1, 3) and not SGm.pick_ok("pullback", 70, True, 3, 13)
+    assert SGm.pick_ok("macd", 61, True, 1.2, 12)
     for m in eng.signals["markets"].values():
         pk = [r for r in m["rows"] if r.get("pick")]
-        assert len(pk) <= 3 and m["picks"] == [r["sym"] for r in pk]
+        assert len(pk) <= 5 and m["picks"] == [r["sym"] for r in pk]
+        for r in m["rows"]:                                   # tiers: A = pick, B = in zone, C = outside the zone
+            assert r["tier"] == ("A" if r.get("pick") else "B" if r["patterns"][0]["plan"]["in_zone"] else "C")
+        assert all(r["tier"] == "D" for r in m["all"] if r["status"]["status"] in SGm.NEAR_D)
+        assert sum(m["tiers"].values()) == len(m["rows"]) + sum(1 for r in m["all"] if r["status"]["status"] in SGm.NEAR_D)
         for r in pk:
             assert r["patterns"][0]["plan"]["in_zone"] and r["patterns"][0]["pattern"] != "oversold"
     # themes: every row tagged, per-market and cross-market tables

@@ -1,6 +1,6 @@
 """Technical entry-signal screen (技術面買點訊號) for the stock-scoring universe — rules, not recommendations.
 
-Four patterns, all computed from daily closes and volume:
+Eight patterns, all computed from daily closes and volume:
     pullback   多頭回檔到均線   uptrend (price > 200-day, 50 > 200, 200-day rising) that dipped ≥3% to the 20- or 50-day
                                 average in the last 3 sessions and is turning up again (RSI 40–62)
     breakout   帶量突破         close above the prior 20-day high on ≥1.5× the 50-day average volume, above the 50-day
@@ -8,7 +8,13 @@ Four patterns, all computed from daily closes and volume:
                                 200-day after spending most of the previous month below it
     oversold   超賣反彈（逆勢） RSI(14) below 30 within the last 5 sessions, now back above the 5-day average (or a ≥3%
                                 up day above the close two sessions ago) — counter-trend, higher risk, flagged as such
-Each signal carries an invalidation line (訊號失效線): a close below it means the pattern has failed.
+    shallow    強勢股淺回檔     10 > 20 > 50 > 200-day stacked and rising; dipped ≥2% to the 10-day and closed back above it
+    vcp        收斂後突破       daily swings over the last 10 sessions ≤ 60% of the prior 50 and a ≤12% range, then a close
+                                above that 10-day box on ≥1.3× volume (above the 50-day)
+    high52     創 52 週新高     close above the prior 252-session high on ≥1.2× volume
+    macd       MACD 黃金交叉    MACD(12,26) crossed above its 9-day signal line, in an uptrend (above a rising 200-day, 50 > 200)
+Entry zones and give-up lines widen with the stock's own volatility (close-to-close ATR), so a volatile name is not
+"run away" after one normal day.  Each signal carries an invalidation line (訊號失效線): a close below it means the pattern has failed.
 
 Strength (0–100) = pattern base + stock composite score tilt + volume / risk-distance tweaks + the pattern's own
 historical edge in that market (back-test over the cached ~2 years: share of first-day signals up 20 sessions
@@ -28,7 +34,13 @@ from ..data.stocks import universe
 log = logging.getLogger(__name__)
 _SEEN = DATA_DIR / "signals_seen.json"
 PATTERNS = {"pullback": ("多頭回檔到均線", "Pullback to MA in uptrend"), "breakout": ("帶量突破", "Volume breakout"),
-            "golden": ("黃金交叉／站回年線", "Golden cross / 200-day reclaim"), "oversold": ("超賣反彈（逆勢）", "Oversold bounce (counter-trend)")}
+            "golden": ("黃金交叉／站回年線", "Golden cross / 200-day reclaim"), "oversold": ("超賣反彈（逆勢）", "Oversold bounce (counter-trend)"),
+            "shallow": ("強勢股淺回檔", "Shallow dip in a strong trend"), "vcp": ("收斂後突破", "Tight-range breakout (VCP)"),
+            "high52": ("創 52 週新高", "New 52-week high"), "macd": ("MACD 黃金交叉", "MACD bullish cross")}
+BASE = {"pullback": 60, "breakout": 62, "golden": 55, "oversold": 45, "shallow": 58, "vcp": 64, "high52": 60, "macd": 50}
+TIERS = {"A": ("★ 規則精選", "★ Top setup"), "B": ("在進場區內", "In the entry zone"), "C": ("有訊號・等拉回", "Signal — wait for a pullback"),
+         "D": ("快成立", "Almost there")}
+NEAR_D = ("near_pullback", "near_breakout", "near_golden")
 HORIZON = 20
 
 
@@ -43,11 +55,29 @@ def rsi_series(c: pd.Series, n: int = 14) -> pd.Series:
     return 100 - 100 / (1 + up / dn.replace(0, np.nan))
 
 
+def base_strengths() -> Dict[str, float]:
+    return {**BASE, **((_cfg().get("base")) or {})}
+
+
+def _below(level: pd.Series, pct: float, atr: pd.Series) -> pd.Series:
+    """Give-up line: `pct` under the level, or 0.75 ATR under it when the stock moves more than that on a normal day."""
+    return pd.concat([level * (1 - pct), level - 0.75 * atr], axis=1).min(axis=1).where(level.notna())
+
+
+def zone_width(level: float, floor_pct: float, atr: Optional[float]) -> float:
+    """Entry-zone width above the key level: max(floor %, 1 ATR), capped at 10% of the level."""
+    w = level * floor_pct
+    if atr is not None and np.isfinite(atr):
+        w = max(w, float(atr))
+    return min(w, level * 0.10)
+
+
 def detect(c: pd.Series, v: pd.Series) -> Dict[str, pd.DataFrame]:
     """Boolean flag + invalidation-line series for every pattern over the whole history of one stock."""
     c = c[c > 0].dropna()
     v = v.reindex(c.index).fillna(0) if len(v) else pd.Series(0.0, index=c.index)
-    ma5, ma20, ma50, ma200 = (c.rolling(n, min_periods=n).mean() for n in (5, 20, 50, 200))
+    ma5, ma10, ma20, ma50, ma200 = (c.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 50, 200))
+    atr = c.diff().abs().rolling(14, min_periods=10).mean()          # close-to-close ATR (the cache has no intraday high/low)
     r = rsi_series(c)
     vavg = v.rolling(50, min_periods=30).mean()
     hi20 = c.rolling(20).max().shift(1)
@@ -59,23 +89,45 @@ def detect(c: pd.Series, v: pd.Series) -> Dict[str, pd.DataFrame]:
     t20, t50 = lo3 <= ma20 * 1.01, lo3 <= ma50 * 1.015
     dip = c.rolling(10).max() / lo3 - 1 >= 0.03                       # a real pullback (≥3% off the 10-day high), not drift
     pb = trend & up_day & dip & r.between(40, 62) & ((t20 & (c > ma20)) | (t50 & (c > ma50)))
-    pb_inv = (ma50.where(t50 & (c > ma50), ma20)) * 0.98
+    pb_inv = _below(ma50.where(t50 & (c > ma50), ma20), 0.02, atr)
     bo = (c > hi20) & (v >= 1.5 * vavg) & (c > ma50) & (vavg > 0)
-    bo_inv = hi20 * 0.97
+    bo_inv = _below(hi20, 0.03, atr)
     cross = ((ma50 > ma200) & (ma50.shift(1) <= ma200.shift(1))).astype(float).rolling(10, min_periods=1).max() > 0
     below_before = (c.shift(1) < ma200.shift(1)).astype(float).rolling(20, min_periods=20).sum() >= 15
     reclaim = ((c > ma200) & (c.shift(1) <= ma200.shift(1)) & below_before).astype(float).rolling(3, min_periods=1).max() > 0
     gc = (cross | reclaim) & (c > ma200)
-    gc_inv = ma200 * 0.98
+    gc_inv = _below(ma200, 0.02, atr)
     thrust = (c / c.shift(1) - 1 >= 0.03) & (c > c.shift(2))          # a strong up day after a slide also counts as "turning"
     os_ = (r.rolling(5, min_periods=1).min() < 30) & ((c > ma5) | thrust) & up_day
     os_inv = c.rolling(10).min() * 0.99
+    # 強勢股淺回檔: stacked, rising averages; a ≥2% dip that touched the 10-day and closed back above it
+    stack = (ma10 > ma20) & (ma20 > ma50) & (ma50 > ma200) & (ma200 > ma200.shift(20))
+    lo2 = c.rolling(2).min()
+    sh = stack & up_day & (lo2 <= ma10 * 1.01) & (c > ma10) & (c.rolling(10).max() / lo2 - 1 >= 0.02) & r.between(45, 72)
+    sh_inv = _below(ma20, 0.02, atr)
+    # 收斂後突破 (VCP-style): quiet, tight 10-day box, then a volume close above it
+    ret = c.pct_change()
+    hi10, lo10p = c.rolling(10).max().shift(1), c.rolling(10).min().shift(1)
+    sd10, sd50 = ret.rolling(10).std().shift(1), ret.rolling(50, min_periods=40).std().shift(11)
+    tight = (sd10 <= 0.6 * sd50) & (hi10 / lo10p - 1 <= 0.12)
+    vcp = tight & (c > hi10) & (v >= 1.3 * vavg) & (vavg > 0) & (c > ma50) & ((ma50 > ma200) | ma200.isna())
+    vcp_inv = lo10p * 0.99
+    # 創 52 週新高
+    hi252p = c.rolling(252, min_periods=200).max().shift(1)
+    nh = (c > hi252p) & (v >= 1.2 * vavg) & (vavg > 0) & (c > ma50)
+    nh_inv = _below(hi252p, 0.04, atr)
+    # MACD 黃金交叉 (trend-following: only above a rising 200-day with 50 > 200)
+    macd = c.ewm(span=12, adjust=False).mean() - c.ewm(span=26, adjust=False).mean()
+    msig = macd.ewm(span=9, adjust=False).mean()
+    md = (macd > msig) & (macd.shift(1) <= msig.shift(1)) & (c > ma200) & (ma50 > ma200) & (ma200 > ma200.shift(20))
+    md_inv = c.rolling(10).min() * 0.99                                # under the recent swing low
     vol_ratio = (v / vavg).replace([np.inf, -np.inf], np.nan)
     out = {}
-    for k, flag, inv in (("pullback", pb, pb_inv), ("breakout", bo, bo_inv), ("golden", gc, gc_inv), ("oversold", os_, os_inv)):
+    for k, flag, inv in (("pullback", pb, pb_inv), ("breakout", bo, bo_inv), ("golden", gc, gc_inv), ("oversold", os_, os_inv),
+                         ("shallow", sh, sh_inv), ("vcp", vcp, vcp_inv), ("high52", nh, nh_inv), ("macd", md, md_inv)):
         out[k] = pd.DataFrame({"flag": flag.fillna(False).astype(bool), "inv": inv, "close": c, "rsi": r, "vol_ratio": vol_ratio,
-                               "ma20": ma20, "ma50": ma50, "ma200": ma200, "hi20": hi20, "hi252": hi252, "lo10": lo10,
-                               "touch50": t50 & (c > ma50)})
+                               "ma10": ma10, "ma20": ma20, "ma50": ma50, "ma200": ma200, "hi20": hi20, "hi252": hi252, "lo10": lo10,
+                               "touch50": t50 & (c > ma50), "atr": atr, "hi10": hi10, "hi252p": hi252p})
     return out
 
 
@@ -113,18 +165,24 @@ def plan(k: str, df: pd.DataFrame, trig_i, inv: float) -> Dict:
     setup fails, and the nearest overhead resistance (52-week high) with the resulting reward/risk multiple."""
     last, t = df.iloc[-1], df.loc[trig_i]
     px = float(last["close"])
-    if k == "pullback":
-        sup = float(t["ma50"] if bool(t.get("touch50")) else t["ma20"])
-        lo, hi, zh, en = sup, sup * 1.03, f"回測的均線 {sup:.2f} 到 +3%（{sup * 1.03:.2f}）之間", f"{sup:.2f}–{sup * 1.03:.2f} (the moving average it bounced off, +3%)"
-    elif k == "breakout":
-        lvl = float(t["hi20"])
-        lo, hi, zh, en = lvl, lvl * 1.03, f"突破點 {lvl:.2f} 到 +3%（回測突破點不破）", f"{lvl:.2f}–{lvl * 1.03:.2f} (a retest of the breakout level)"
-    elif k == "golden":
-        m = float(last["ma200"])
-        lo, hi, zh, en = m, m * 1.04, f"200 日線 {m:.2f} 到 +4%（站穩年線）", f"{m:.2f}–{m * 1.04:.2f} (holding above the 200-day)"
-    else:
-        lo10 = float(last["lo10"])
-        lo, hi, zh, en = lo10, lo10 * 1.04, f"10 日低點 {lo10:.2f} 到 +4%（逆勢，只宜小量）", f"{lo10:.2f}–{lo10 * 1.04:.2f} (counter-trend, small size only)"
+    atr = float(t["atr"]) if "atr" in t and pd.notna(t["atr"]) else None
+    tc = float(t["close"])
+    key = {"pullback": (float(t["ma50"] if bool(t.get("touch50")) else t["ma20"]), 0.03, "回測的均線", "the moving average it bounced off"),
+           "breakout": (float(t["hi20"]), 0.03, "突破點（前 20 日高）", "the breakout level"),
+           "golden": (float(last["ma200"]), 0.04, "200 日線", "the 200-day"),
+           "oversold": (float(last["lo10"]), 0.04, "10 日低點", "the 10-day low"),
+           "shallow": (float(t["ma10"]), 0.03, "10 日線", "the 10-day"),
+           "vcp": (float(t["hi10"]), 0.03, "收斂區上緣（前 10 日高）", "the top of the tight range"),
+           "high52": (float(t["hi252p"]), 0.03, "前 52 週高點", "the prior 52-week high"),
+           "macd": (tc, 0.04, "交叉當天收盤", "the crossover-day close")}[k]
+    lvl, floor, nm, nm_en = key
+    w = zone_width(lvl, floor, atr)
+    lo, hi = (lvl - w / 2, lvl + w / 2) if k == "macd" else (lvl, lvl + w)
+    wide = w > lvl * floor * 1.001
+    adj = "，依股價波動放寬" if wide else ""
+    tail = {"oversold": "；逆勢，只宜小量", "breakout": "；回測突破點不破", "high52": "；回測前高不破", "vcp": "；回測箱頂不破"}.get(k, "")
+    zh = f"{nm} {lvl:.2f} 附近：{lo:.2f}–{hi:.2f}（區寬 {w / lvl * 100:.1f}%{adj}{tail}）"
+    en = f"{lo:.2f}–{hi:.2f} ({nm_en}, width {w / lvl * 100:.1f}%{' — widened for volatility' if wide else ''})"
     where = ("現價在參考區內" if lo <= px <= hi else f"現價高於參考區 {((px / hi - 1) * 100):.1f}%，回到區間內較符合規則" if px > hi
              else f"現價低於參考區 {((px / lo - 1) * 100):.1f}%，需重新站回")
     where_en = ("price is inside the zone" if lo <= px <= hi else f"price is {((px / hi - 1) * 100):.1f}% above the zone" if px > hi
@@ -204,13 +262,15 @@ def evaluate(pats: Dict[str, pd.DataFrame], score: Optional[float], base: Dict[s
         last = df.iloc[-1]
         inv = float(df.loc[trig_i, "inv"]) if pd.notna(df.loc[trig_i, "inv"]) else None
         px, trig_px = float(last["close"]), float(df.loc[trig_i, "close"])
-        if inv is None or px <= inv or px > trig_px * 1.05:      # failed already, or ran away from the entry
+        a = df.loc[trig_i, "atr"] if "atr" in df.columns else np.nan
+        run = max(0.05, 2 * float(a) / trig_px) if pd.notna(a) else 0.05
+        if inv is None or px <= inv or px > trig_px * (1 + min(run, 0.12)):   # failed already, or ran away from the entry
             continue
         risk = (px / inv - 1) * 100
-        s = base[k]
+        s = base.get(k, BASE[k])
         if score is not None:
             s += 0.35 * (score - 50)
-        if k == "breakout" and pd.notna(df.loc[trig_i, "vol_ratio"]):
+        if k in ("breakout", "vcp", "high52") and pd.notna(df.loc[trig_i, "vol_ratio"]):
             s += min(10.0, max(0.0, (float(df.loc[trig_i, "vol_ratio"]) - 1.5) * 8))
         s += 5 if 2 <= risk <= 6 else (-5 if risk > 10 else 0)
         b = (bt or {}).get(k) or {}
@@ -234,7 +294,7 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
     if sp is None or sp.close.empty:
         return {"available": False}
     sc = ((getattr(eng, "scores", None) or {}).get("markets") or {})
-    base = {"pullback": 60, "breakout": 62, "golden": 55, "oversold": 45, **(c.get("base") or {})}
+    base = base_strengths()
     lookback = int(c.get("active_days", 3))
     seen = _load_seen()
     markets: Dict[str, Dict] = {}
@@ -279,6 +339,8 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
         for i, r in enumerate(out_rows, 1):
             r["rank"] = i
         picks = mark_picks(out_rows)
+        for r in out_rows:
+            r["tier"] = tier_of(r)
         # every other stock too: where it stands (watch-list status), so the page covers the whole universe
         have = {r["sym"] for r in out_rows}
         rest = []
@@ -292,8 +354,8 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                 st = status(df0)
                 st["when"], st["when_en"] = trigger_text(st["status"], df0)
                 if df0["ma200"].isna().iloc[-1]:
-                    st["why"] += "（上市未滿一年：還沒有 200 日線，只檢查突破與超賣型態）"
-                    st["why_en"] += " (listed < 1 year: no 200-day yet — only breakout / oversold patterns apply)"
+                    st["why"] += "（上市未滿一年：還沒有 200 日線，只檢查突破、收斂突破與超賣型態）"
+                    st["why_en"] += " (listed < 1 year: no 200-day yet — only breakout / tight-range / oversold patterns apply)"
                 ready = float(np.clip(st["base"] + 0.25 * ((srow.get("score") or 50) - 50), 0, 60))
             else:
                 st = {"status": "nodata", "label": STATUS["nodata"][0], "label_en": STATUS["nodata"][1], "why": "上市未滿約三個月，資料太少",
@@ -301,21 +363,23 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                 ready = 0.0
             rest.append({"sym": sym, "code": sym.split(".")[0], "name": zh, "name_en": en, "theme": u["themes"].get(sym, "其他"),
                          "strength": round(ready, 1), "status": st, "price": st.get("price"), "score": srow.get("score"),
-                         "r1m": srow.get("r1m"), "signal": False})
+                         "r1m": srow.get("r1m"), "signal": False, "tier": "D" if st["status"] in NEAR_D else None})
         rest.sort(key=lambda r: -r["strength"])
+        rest.sort(key=lambda r: (r["tier"] != "D", -r["strength"]))
         allrows = [{**r, "signal": True, "status": {"status": "signal", "label": STATUS["signal"][0], "label_en": STATUS["signal"][1]}}
-                   for r in out_rows] + rest
+                   for r in sorted(out_rows, key=lambda r: ("ABC".index(r["tier"]), -r["strength"]))] + rest
         for i, r in enumerate(allrows, 1):
             r["rank_all"] = i
         markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows, "all": allrows, "picks": picks,
                        "backtest": bt, "asof": asof, "n_universe": len(series) + len(short), "breadth": br,
-                       "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS}}
+                       "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS},
+                       "tiers": {t: sum(1 for r in allrows if r.get("tier") == t) for t in TIERS}}
     if persist:
         _save_seen(seen)
     return {"available": bool(markets), "markets": markets, "horizon": HORIZON}
 
 
-PICK_DEF = {"n": 3, "min_strength": 65, "min_rr": 1.5, "max_risk": 10.0}
+PICK_DEF = {"n": 5, "min_strength": 60, "min_rr": 1.2, "max_risk": 12.0}
 
 
 def pick_cfg() -> Dict:
@@ -333,6 +397,21 @@ def pick_ok(pattern: str, strength: Optional[float], in_zone: bool, rr: Optional
     if risk_pct is None or risk_pct > float(cf["max_risk"]):
         return False
     return rr is None or rr >= float(cf["min_rr"])
+
+
+def tier_of(r: Dict) -> str:
+    """A ★ pick · B signal with price inside the entry zone · C signal but price outside the zone (wait / limit-order reference)."""
+    if r.get("pick"):
+        return "A"
+    pl = r["patterns"][0].get("plan") or {}
+    return "B" if pl.get("in_zone") else "C"
+
+
+def tier_fm(st: Optional[str], pk, inz) -> Optional[str]:
+    """Same tiers for a full-market row."""
+    if st == "signal":
+        return "A" if pk else ("B" if inz else "C")
+    return "D" if st in NEAR_D else None
 
 
 def mark_picks(rows: List[Dict]) -> List[str]:

@@ -836,14 +836,14 @@ push:
 signals:
   enabled: true
   active_days: 3              # 最近幾個交易日內觸發、且尚未失效的訊號都列出
-  base: {pullback: 60, breakout: 62, golden: 55, oversold: 45}   # 各型態基礎強度（再依個股評分、量能、風險距離、歷史勝率調整）
+  base: {pullback: 60, breakout: 62, golden: 55, oversold: 45, shallow: 58, vcp: 64, high52: 60, macd: 50}   # 各型態基礎強度（再依個股評分、量能、風險距離、歷史勝率調整）
   push_min_strength: 70       # Discord 只推播強度 ≥ 70 的「新」訊號
   push_max: 6                 # 每次最多推播幾檔
-  picks:                      # ★ 規則精選：每個市場最多標幾檔（全市場為 5 倍）
-    n: 3
-    min_strength: 65          # 訊號強度門檻
-    min_rr: 1.5               # 到 52 週高的空間 ≥ 1.5 倍「到失效線的距離」（已在 52 週高則不限）
-    max_risk: 10              # 失效線離現價不超過 10%
+  picks:                      # ★ 規則精選（A 級）：每個市場最多標幾檔（全市場為 5 倍）
+    n: 5
+    min_strength: 60          # 訊號強度門檻
+    min_rr: 1.2               # 到 52 週高的空間 ≥ 1.2 倍「到失效線的距離」（已在 52 週高則不限）
+    max_risk: 12              # 失效線離現價不超過 12%
 
 # ---------- 全市場掃描（只在網站建置時執行；Discord /stock 可隨時查任一檔） ----------
 fullmarket:

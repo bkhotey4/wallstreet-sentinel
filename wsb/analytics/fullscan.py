@@ -22,7 +22,7 @@ from . import stockscore as SS
 
 log = logging.getLogger(__name__)
 COLS = ["sym", "code", "name", "ind", "board", "tech", "rank", "r1d", "r1m", "r6", "rsi", "st", "stl", "why", "when",
-        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk"]
+        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier"]
 BENCH = {"us": "^GSPC", "tw": "^TWII", "hk": "^HSI"}
 LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
@@ -34,7 +34,7 @@ def _r(x, d=2):
 def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, bench: pd.Series) -> Dict:
     cf = FM.cfg()
     zh_names = {s: v[0] for m in universe().values() for s, v in m["symbols"].items()}
-    base = {"pullback": 60, "breakout": 62, "golden": 55, "oversold": 45, **((SG._cfg().get("base")) or {})}
+    base = SG.base_strengths()
     min_turn = float(cf.get("hk_min_turnover", 5e6)) if mk == "hk" else float(cf.get("min_turnover", 0))
     feats, meta, series = {}, {}, {}
     for it in items:
@@ -83,7 +83,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
             elif pats is not None:
                 df0 = next(iter(pats.values()))
                 st = SG.status(df0)
-                young = "（上市未滿一年：還沒有 200 日線，只檢查突破與超賣）" if df0["ma200"].isna().iloc[-1] else ""
+                young = "（上市未滿一年：還沒有 200 日線，只檢查突破、收斂突破與超賣）" if df0["ma200"].isna().iloc[-1] else ""
                 row.update({"st": st["status"], "stl": st["label"], "why": st["why"] + young, "when": SG.trigger_text(st["status"], df0)[0],
                             "str": _r(st["base"] + 0.25 * (t - 50), 1)})
         else:
@@ -95,6 +95,8 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
         r.get("risk"), cfp)], key=lambda r: -(r.get("str") or 0))
     for i, r in enumerate(cand[:int(cfp["n"]) * 5], 1):           # full market is much bigger → 5× the curated count
         r["pk"] = i
+    for r in rows:
+        r["tier"] = SG.tier_fm(r.get("st"), r.get("pk"), r.get("inz"))
     rows.sort(key=lambda r: -(r["tech"] or 0))
     for i, r in enumerate(rows, 1):
         r["rank"] = i

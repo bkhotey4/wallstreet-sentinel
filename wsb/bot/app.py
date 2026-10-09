@@ -1169,29 +1169,37 @@ def register_commands(bot: Sentinel) -> None:
                           description=f"資料日 {m['asof']}｜掃描 {m['n_universe']} 檔、{len(m['rows'])} 檔有訊號｜"
                                       "規則篩選，不是買賣建議；收盤跌破失效線＝型態失敗")
         pk = [r for r in m["rows"] if r.get("pick")]
-        e.add_field(name="★ 今日規則精選（條件最齊全）", inline=False, value=("\n".join(
+        e.add_field(name="A ★ 今日規則精選（條件最齊全）", inline=False, value=("\n".join(
             f"**★{r.get('pick_rank', '')} {r['name']}** `{r['code']}` {r['patterns'][0]['label']} 強度 **{r['strength']:.0f}**\n"
             f"└ 現價 {r['price']:.2f} 在進場區 {r['patterns'][0]['plan']['zone_lo']:.2f}–{r['patterns'][0]['plan']['zone_hi']:.2f} 內｜"
             f"失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）"
             + (f"｜報酬／風險 {r['patterns'][0]['plan']['rr']:.1f} 倍" if r['patterns'][0]['plan'].get('rr') else "") for r in pk)
             if pk else "今天沒有同時符合所有條件的個股（寧缺勿濫）")[:880]
-            + "\n-# 條件：順勢型態、現價在進場區內、強度≥65、失效線≤10%、報酬／風險≥1.5；只代表規則條件最齊全，不是買進建議")
+            + "\n-# 條件：順勢型態、現價在進場區內、強度≥60、失效線≤12%、報酬／風險≥1.2；只代表規則條件最齊全，不是買進建議")
+        tc = m.get("tiers") or {}
+        e.description += f"\n分級：A {tc.get('A', 0)}｜B 在區內 {tc.get('B', 0)}｜C 等拉回 {tc.get('C', 0)}｜D 快成立 {tc.get('D', 0)}"
         lines = []
-        for r in m["rows"][:15]:
+        for r in [x for x in m["rows"] if x.get("tier") == "B"][:10]:
             h = r["patterns"][0]
-            tag = ("★" if r.get("pick") else "") + ("🆕" if r.get("new") else "")
+            tag = "🆕" if r.get("new") else ""
             lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` {tag}{h['label']} **{r['strength']:.0f}**｜{r.get('theme', '')}\n"
                          f"└ 現價 {r['price']:.2f}｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}"
                          f"（{'在區內' if h['plan']['in_zone'] else '區外'}）｜失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）")
         for i in range(0, len(lines), 5):
-            e.add_field(name=f"第 {i + 1}–{min(i + 5, len(lines))} 名", value="\n".join(lines[i:i + 5])[:1024], inline=False)
-        near = [r for r in m.get("all", []) if r["status"]["status"].startswith("near_")][:6]
+            e.add_field(name=f"B 在進場區內（{i + 1}–{min(i + 5, len(lines))}）", value="\n".join(lines[i:i + 5])[:1024], inline=False)
+        cs = [r for r in m["rows"] if r.get("tier") == "C"][:8]
+        if cs:
+            e.add_field(name="C 有訊號・等拉回（區間可當掛單參考）", inline=False, value="\n".join(
+                f"{r['name']} `{r['code']}` {r['patterns'][0]['label']}｜現價 {r['price']:.2f} → 區間 "
+                f"{r['patterns'][0]['plan']['zone_lo']:.2f}–{r['patterns'][0]['plan']['zone_hi']:.2f}｜失效 {r['inv']:.2f}" for r in cs)[:1024])
+        near = [r for r in m.get("all", []) if r.get("tier") == "D"][:6]
         if near:
-            e.add_field(name="接近買點（尚未成立）— 何時才算買點", value="\n".join(
+            e.add_field(name="D 快成立（尚未成立）— 何時才算買點", value="\n".join(
                 f"{r['name']} `{r['code']}`：{r['status'].get('when') or r['status']['why']}" for r in near)[:1024], inline=False)
         bt = m.get("backtest") or {}
+        from ..analytics.signals import PATTERNS as _PT
         e.set_footer(text="過去約兩年 20 日後上漲比例：" + "、".join(
-            f"{k} {v['win']:.0f}%（n={v['n']}）" for k, v in bt.items() if v.get("win") is not None) + f"｜基準 {next(iter(bt.values())).get('base_win') or 0:.0f}%")
+            f"{_PT.get(k, (k,))[0]} {v['win']:.0f}%（n={v['n']}）" for k, v in bt.items() if v.get("win") is not None) + f"｜基準 {next(iter(bt.values())).get('base_win') or 0:.0f}%")
         await it.followup.send(embed=e)
 
     @tree.command(name="stock", description="查任一檔個股的評分、排名與技術面狀態（不在評分池的也可以，例如 NU、2330、0700.HK）")
