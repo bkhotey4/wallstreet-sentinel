@@ -609,6 +609,7 @@ stockscore:
         MA: [萬事達卡, Mastercard, 金融]
         AXP: [美國運通, American Express, 金融]
         BRK-B: [波克夏, Berkshire Hathaway, 金融]
+        NU: [Nu Holdings（巴西數位銀行）, Nu Holdings, 金融]
         XOM: [埃克森美孚, Exxon Mobil, 能源]
         CVX: [雪佛龍, Chevron, 能源]
         COP: [康菲石油, ConocoPhillips, 能源]
@@ -837,3 +838,19 @@ signals:
   base: {pullback: 60, breakout: 62, golden: 55, oversold: 45}   # 各型態基礎強度（再依個股評分、量能、風險距離、歷史勝率調整）
   push_min_strength: 70       # Discord 只推播強度 ≥ 70 的「新」訊號
   push_max: 6                 # 每次最多推播幾檔
+
+# ---------- 全市場掃描（只在網站建置時執行；Discord /stock 可隨時查任一檔） ----------
+fullmarket:
+  enabled: true
+  markets: [us, tw, hk]
+  min_mcap_usd: 1000000000    # 美股：市值 ≥ 10 億美元（約 2,500 檔）
+  hk_min_turnover: 5000000    # 港股：近 20 日平均成交額 ≥ 500 萬港幣才列入（主板約 800 檔）
+  min_turnover: 0             # 美股／台股不另設成交額門檻（台股上市＋上櫃全部）
+  budget_s: 420               # 每次建置最多花幾秒抓價格（第一次回補會分好幾次完成）
+  budget_share: {us: 0.45, tw: 0.3, hk: 0.25}
+  backfill_period: 15mo       # 新加入的個股先抓 15 個月日線（足夠算 200 日線與 12 個月動能）
+  chunk_backfill: 60
+  chunk_update: 100
+  pause_s: 1.0
+  keep_bars: 330
+  list_days: 7                # 個股清單每 7 天重抓一次

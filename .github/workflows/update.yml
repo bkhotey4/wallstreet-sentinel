@@ -26,7 +26,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -57,6 +57,7 @@ jobs:
             data_cache/insiders.json
             data_cache/sec_tickers.json
             data_cache/treasury_auctions.json
+            data_cache/fullmarket_*
           key: data-${{ github.run_id }}
           restore-keys: data-
 
@@ -78,7 +79,7 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
-          python -m tools.build_site --out site --snapdir _data/snap $FLAG
+          python -m tools.build_site --out site --snapdir _data/snap --fullmarket $FLAG
 
       - name: 儲存新快照
         if: success()
@@ -110,6 +111,7 @@ jobs:
             data_cache/insiders.json
             data_cache/sec_tickers.json
             data_cache/treasury_auctions.json
+            data_cache/fullmarket_*
           key: data-${{ github.run_id }}
 
       # 只檢查「持倉區塊才會出現」的標記，避免 AI 評論或新聞裡的一般用詞（例如「未實現」）誤判

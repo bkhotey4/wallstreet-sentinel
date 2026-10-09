@@ -936,8 +936,8 @@ document.querySelectorAll('.ptab').forEach(function(a){a.addEventListener('click
 window.addEventListener('hashchange',function(){page(location.hash.slice(1));});if(location.hash)page(location.hash.slice(1));
 document.querySelectorAll('.thit').forEach(function(el){function sh(ev){var p=el.dataset.tip.split('|');show(ev.clientX,ev.clientY,p);}
  el.addEventListener('pointermove',sh);el.addEventListener('pointerleave',hide);});
-document.querySelectorAll('.tab').forEach(function(b){b.addEventListener('click',function(){var box=b.closest('.tabset')||b.closest('.card')||document;
- box.querySelectorAll('.tab,.panel').forEach(function(e){e.classList.remove('on');});b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');});});
+document.querySelectorAll('.tab[data-t]').forEach(function(b){b.addEventListener('click',function(){var box=b.closest('.tabset')||b.closest('.card')||document;
+ box.querySelectorAll('.tab[data-t],.panel').forEach(function(e){e.classList.remove('on');});b.classList.add('on');document.getElementById(b.dataset.t).classList.add('on');});});
 document.querySelectorAll('a.golink').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();page(a.dataset.p);
  try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){location.hash=a.dataset.p;}window.scrollTo(0,0);});});
 if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){});}
@@ -960,8 +960,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S2.sec_scores_mini, sec_trends]),
-            ("scores", "個股評分", "Stock scores", [S2.sec_scores]),
-            ("signals", "買點訊號", "Entry signals", [S2.sec_signals]),
+            ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
+            ("signals", "買點訊號", "Entry signals", [S2.sec_signals, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("themes", "族群", "Themes", [S2.sec_themes]),
             ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, sec_positioning]),
@@ -1004,7 +1004,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
 <div id="tip" role="status"></div>
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1128,12 +1128,18 @@ async def ai_commentary(eng) -> Tuple[str, str]:
     return scrub_advice(text), name
 
 
-async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[Path] = None) -> Path:
+async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[Path] = None, fullmarket: bool = False) -> Path:
     from wsb.engine import Engine
     eng = engine or Engine()
     if engine is None:
         await eng.bootstrap()
     assert not eng.holdings and not eng.portfolio.get("positions"), "intel-station build must not contain holdings"
+    if fullmarket:
+        try:
+            from wsb.analytics import fullscan as FS
+            log.info("full-market scan: %s", await FS.run(eng))
+        except Exception:  # noqa: BLE001
+            log.exception("full-market scan failed")
     ai_text, ai_engine = "", ""
     if use_ai:
         try:
@@ -1145,6 +1151,12 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")
     write_pwa(out)
+    from wsb.analytics import fullscan as FS
+    (out / "market").mkdir(exist_ok=True)
+    for mk in ("us", "tw", "hk"):
+        src = FS._out(mk)
+        if src.exists():
+            (out / "market" / f"{mk}.json").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
     if snapdir is not None:
         try:
             w = update_snapshots(eng, snapdir, out, ai_text)
@@ -1159,10 +1171,11 @@ def main() -> int:
     ap.add_argument("--out", default="site")
     ap.add_argument("--no-ai", action="store_true")
     ap.add_argument("--snapdir", default="", help="folder holding the daily time-machine snapshots (data branch checkout)")
+    ap.add_argument("--fullmarket", action="store_true", help="refresh + scan the whole-market lists (US/TW/HK) within a time budget")
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     t0 = time.time()
-    p = asyncio.run(build(Path(a.out), use_ai=not a.no_ai, snapdir=Path(a.snapdir) if a.snapdir else None))
+    p = asyncio.run(build(Path(a.out), use_ai=not a.no_ai, snapdir=Path(a.snapdir) if a.snapdir else None, fullmarket=a.fullmarket))
     print(f"wrote {p} ({p.stat().st_size / 1024:.0f} KB) in {time.time() - t0:.0f}s")
     return 0
 

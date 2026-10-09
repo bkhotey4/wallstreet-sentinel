@@ -89,7 +89,7 @@ def _score_table(m: Dict) -> str:
         chg = r.get("chg5")
         th = esc(r.get("theme", "其他"))
         rows.append(
-            f'<tr data-th="{th}"><td class="r muted">{r["rank"]}</td>'
+            f'<tr data-th="{th}" data-q="{esc((r["name"] + " " + r["name_en"] + " " + r["code"]).lower())}"><td class="r muted">{r["rank"]}</td>'
             f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
             f'<td>{_bar(r["score"], _score_color(r["score"]))}</td>'
             f'<td class="r opt">{num(r["tech"], 0)}</td><td class="r opt">{num(r.get("intel"), 0)}</td>'
@@ -127,7 +127,9 @@ def sec_scores(eng) -> str:
              "penalty. Intel (50 = neutral): headline tone, US off-exchange short ratio (FINRA), insider buying/selling (SEC Form 4), "
              "tracked managers' 13F changes, Taiwan foreign + trust 5-day net buying. A rules-based screen of current strength — "
              "not a forecast and not investment advice.")
-    return card("個股評分表（由高到低）", "Stock scoring board (high → low)", _tabset("sc", items) + f'<p class="note">{note}</p>', "wide")
+    search = (f'<div class="sbox"><input type="search" id="stockQ" class="btn" placeholder="搜尋代號或名稱（含全市場），例如 NU、台積電、0700" '
+              f'aria-label="search"><span class="muted small" id="stockQn"></span><div class="fmres" id="stockQfm"></div></div>')
+    return card("個股評分表（由高到低）", "Stock scoring board (high → low)", search + _tabset("sc", items) + f'<p class="note">{note}</p>', "wide")
 
 
 def sec_scores_mini(eng) -> str:
@@ -167,18 +169,26 @@ ST_COL = {"signal": "#2fbf71", "near_pullback": "#3987e5", "near_breakout": "#39
           "nodata": "#6b7280"}
 
 
+def _q(r: Dict) -> str:
+    return esc((r["name"] + " " + r["name_en"] + " " + r["code"]).lower())
+
+
 def _watch_rows(m: Dict) -> List[str]:
-    """Stocks without an active signal: where each one stands (watch-list status), so the table covers everyone."""
+    """Stocks without an active signal: where each one stands and the exact condition that would create a signal."""
     out = []
     for r in [x for x in m.get("all", []) if not x.get("signal")]:
         th = esc(r.get("theme", "其他"))
         st = r["status"]
-        out.append(f'<tr data-th="{th}" class="nosig"><td class="r muted">{r["rank_all"]}</td>'
+        when = (f'<b class="act">▶ {T("何時才算買點", "What would trigger an entry")}：</b>{T(st.get("when", "—"), st.get("when_en", "—"))}'
+                if st.get("when") else "")
+        out.append(f'<tr data-th="{th}" data-q="{_q(r)}" class="nosig"><td class="r muted">{r["rank_all"]}</td>'
                    f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
                    f'<td><span class="pill"><i class="sw" style="background:{ST_COL.get(st["status"], "#6b7280")}"></i>{T(st["label"], st["label_en"])}</span></td>'
-                   f'<td>{_bar(r["strength"], "#6b7280")}</td><td class="r">{num(r.get("price"), 2)}</td><td class="r muted">—</td>'
-                   f'<td class="r opt">{num(r.get("score"), 0)}</td><td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td></tr>'
-                   f'<tr class="why nosig" data-th="{th}"><td></td><td colspan="7" class="small muted">{T(st.get("why", ""), st.get("why_en", ""))}</td></tr>')
+                   f'<td>{_bar(r["strength"], "#6b7280")}</td><td class="r">{num(r.get("price"), 2)}</td>'
+                   f'<td class="r muted">{T("尚未成立", "not yet")}</td><td class="r muted">—</td>'
+                   f'<td class="r opt">{num(r.get("score"), 0)}</td></tr>'
+                   f'<tr class="why nosig" data-th="{th}"><td></td><td colspan="7" class="small">{when}'
+                   f'<div class="muted">{T(st.get("why", ""), st.get("why_en", ""))}</div></td></tr>')
     return out
 
 
@@ -193,13 +203,32 @@ def _signal_table(m: Dict) -> str:
                         for h in r["patterns"])
         new = f' <span class="pill newp">{T("新", "NEW")}</span>' if r.get("new") else ""
         det = "；".join(T(*_pat_detail(h)) for h in r["patterns"])
-        rows.append(f'<tr data-th="{th}"><td class="r muted">{r["rank"]}</td>'
+        pl = r["patterns"][0].get("plan") or {}
+        zone = (f'{num(pl.get("zone_lo"), 2)}–{num(pl.get("zone_hi"), 2)}' if pl else "—")
+        inz = (f'<span class="pill {"inz" if pl.get("in_zone") else ""}">{T("在區內", "in zone") if pl.get("in_zone") else T("區外", "outside")}</span>'
+               if pl else "")
+        tgt = (f'{num(pl.get("target"), 2)}<span class="muted small"> (+{num(pl.get("target_pct"), 0)}%)</span>' if pl.get("target")
+               else f'<span class="muted small">{T("已近 52 週高", "at 52w high")}</span>')
+        rrv = pl.get("rr")
+        rr = T("，報酬／風險約 %.1f 倍" % rrv, ", reward/risk ≈ %.1f×" % rrv) if rrv else ""
+        inv_v, risk_v = r["inv"], r["risk_pct"]
+        give = T("收盤跌破 %.2f（距現價 -%.1f%%）" % (inv_v, risk_v), "a close below %.2f (-%.1f%%)" % (inv_v, risk_v))
+        over = ""
+        if pl.get("target"):
+            tg, tp = pl["target"], pl["target_pct"]
+            over = ('<b class="act">▶ ' + T("上方壓力", "Overhead") + "：</b>"
+                    + T("52 週高點 %.2f（+%.0f%%）" % (tg, tp), "52-week high %.2f (+%.0f%%)" % (tg, tp)) + rr + "。")
+        action = ('<b class="act">▶ ' + T("何時買（規則參考）", "When (rule reference)") + "：</b>"
+                  + T(pl.get("zone", ""), pl.get("zone_en", "")) + "；" + T(pl.get("where", ""), pl.get("where_en", "")) + "。"
+                  + '<b class="act">▶ ' + T("何時放棄", "Give up if") + "：</b>" + give + "。" + over)
+        rows.append(f'<tr data-th="{th}" data-q="{_q(r)}"><td class="r muted">{r["rank"]}</td>'
                     f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}</td>'
                     f'<td>{pills}{new}</td><td>{_bar(r["strength"], _score_color(r["strength"]))}</td>'
-                    f'<td class="r">{num(r["price"], 2)}</td><td class="r">{num(r["inv"], 2)}<span class="muted small"> ({num(-r["risk_pct"], 1, pct=True)})</span></td>'
-                    f'<td class="r opt">{num(r.get("score"), 0)}</td><td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td></tr>'
-                    f'<tr class="why" data-th="{th}"><td></td><td colspan="7" class="small muted">{det}　'
-                    f'{T("首次出現 " + r["since"], "first seen " + r["since"])}</td></tr>')
+                    f'<td class="r">{num(r["price"], 2)}</td><td class="r nw">{zone} {inz}</td>'
+                    f'<td class="r">{num(r["inv"], 2)}<span class="muted small"> (-{num(r["risk_pct"], 1)}%)</span></td>'
+                    f'<td class="r opt">{num(r.get("score"), 0)}</td></tr>'
+                    f'<tr class="why" data-th="{th}"><td></td><td colspan="7" class="small">{action}'
+                    f'<div class="muted">{det}　{T("首次出現 " + r["since"], "first seen " + r["since"])}</div></td></tr>')
     rows += _watch_rows(m)
     bt = m.get("backtest") or {}
     brow = "".join(
@@ -216,7 +245,7 @@ def _signal_table(m: Dict) -> str:
     only = (f'<label class="small muted onlysig"><input type="checkbox" data-for="{tid}"> {T("只看有訊號的", "Signals only")}</label>')
     return (head + _theme_filter(m.get("all") or m["rows"], tid) + only + f'<div class="scroll"><table class="score" id="{tid}"><thead><tr><th class="r">#</th>'
             f'<th>{T("個股", "Stock")}</th><th>{T("訊號型態／目前狀態", "Pattern / status")}</th><th>{T("訊號強度／準備度", "Strength / readiness")}</th><th class="r">{T("現價", "Price")}</th>'
-            f'<th class="r">{T("失效線（距離）", "Invalidation (dist.)")}</th><th class="r opt">{T("綜合分數", "Score")}</th><th class="r opt">{T("1月", "1M")}</th>'
+            f'<th class="r">{T("進場參考區", "Entry zone")}</th><th class="r">{T("失效線", "Give-up line")}</th><th class="r opt">{T("綜合分數", "Score")}</th>'
             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
             f'<h4>{T("這些型態在本市場過去約兩年的表現（訊號出現後 20 個交易日）", "How these patterns did here over ~2 years (20 sessions later)")}</h4>'
             f'<div class="scroll"><table class="mini"><thead><tr><th>{T("型態", "Pattern")}</th><th class="r">{T("次數", "n")}</th>'
@@ -249,6 +278,14 @@ def sec_signals(eng) -> str:
              "not a recommendation and no guarantee. Back-test samples are small and in-sample; a close below the invalidation line means "
              "the setup failed.")
     items = [(m["label"], m["label_en"], _signal_table(m)) for m in sg["markets"].values()]
+    howto = (f'<div class="howto"><b>{T("怎麼看「何時買」", "How to read the timing")}</b><ol>'
+             f'<li>{T("「有買點訊號」的股票：規則條件今天已成立。看每一列的「▶ 何時買」——現價落在「進場參考區」內，才算符合規則；高於區間代表已經跑掉，規則上是等它拉回區間。", "Signal rows: the rule fired. Price inside the entry zone = in line with the rule; above it = wait for a pullback into the zone.")}</li>'
+             f'<li>{T("「▶ 何時放棄」是失效線：收盤跌破就代表型態失敗，規則上不再成立（很多人把它當停損參考）。", "The give-up line: a close below it means the setup failed.")}</li>'
+             f'<li>{T("「▶ 上方壓力」是 52 週高點；報酬／風險倍數 = 到壓力的空間 ÷ 到失效線的距離，倍數越高代表同樣風險下上方空間越大。", "Overhead = 52-week high; reward/risk = room to it ÷ distance to the give-up line.")}</li>'
+             f'<li>{T("其他股票還沒有訊號：看「▶ 何時才算買點」，裡面寫了要等到哪個價位、出現什麼條件才會成立（例如收盤站上某價位且放量）。訊號一成立，Discord 會推播。", "Other rows: the exact price/condition that would create a signal. Discord pushes when one fires.")}</li>'
+             f'</ol></div>')
+    search = (f'<div class="sbox"><input type="search" id="sigQ" class="btn" placeholder="搜尋代號或名稱（含全市場），例如 NU、台積電" aria-label="search">'
+              f'<span class="muted small" id="sigQn"></span><div class="fmres" id="sigQfm"></div></div>')
     note = T("表格先列出目前有訊號的個股（依訊號強度），接著列出其他所有個股與它們目前的狀態（依「準備度」排序：接近回檔買點 → 接近突破 → 接近黃金交叉 → 多頭整理 → 接近超賣 → 多頭但漲多 → 盤整 → 空頭趨勢），"
              "準備度只代表離哪一種型態比較近，不是訊號。型態定義：多頭回檔＝股價在 200 日線之上、50 日線在 200 日線之上且年線上升，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
              "成交量 ≥ 50 日均量 1.5 倍且在 50 日線之上；黃金交叉＝50 日線在 10 天內上穿 200 日線，或股價在多數時間低於年線後重新站回；"
@@ -258,7 +295,41 @@ def sec_signals(eng) -> str:
              "close above the prior 20-day high on ≥1.5× 50-day volume, above the 50-day; golden = 50-day crossed the 200-day within 10 "
              "sessions or price reclaimed the 200-day; oversold = RSI < 30 within 5 sessions, back above the 5-day average.")
     return card("技術面買點訊號（由強到弱）", "Technical entry signals (strong → weak)",
-                f'<p class="warnbox">{warn}</p>' + _tabset("sg", items) + f'<p class="note">{note}</p>', "wide")
+                f'<p class="warnbox">{warn}</p>' + howto + search + _tabset("sg", items) + f'<p class="note">{note}</p>', "wide")
+
+
+# ----------------------------------------------------------------- full market (全市場)
+def _fm_summary() -> str:
+    from wsb.analytics import fullscan as FS
+    chips = []
+    for mk in ("us", "tw", "hk"):
+        d = FS.published(mk)
+        if not d:
+            continue
+        pend = d.get("pending") or 0
+        extra = T(f"，還有 {pend} 檔資料補抓中", f", {pend} still loading") if pend else ""
+        chips.append(f'<span class="chip">{T(d["label"], d["label_en"])} {d["n"]} {T("檔", "names")}'
+                     f'（{T("資料日", "as of")} {esc(d["asof"])}{extra}）</span>')
+    return f'<div class="chips">{"".join(chips)}</div>' if chips else \
+        f'<p class="muted">{T("全市場資料第一次建立中（會分幾次補齊），稍後重新整理即可。", "The full-market database is being built; check back later.")}</p>'
+
+
+def sec_fullmarket(eng, mode: str = "score") -> str:
+    """Shell for the client-side full-market table (data loaded from market/<mk>.json only when opened)."""
+    title = ("全市場排行（美股市值 10 億美元以上、台股上市＋上櫃、港股主板）", "Full-market ranking") if mode == "score" else \
+        ("全市場買點訊號", "Full-market entry signals")
+    note = T("全市場資料每天收盤後更新，只算技術面（情報面只有上方精選池才有）。分數在同一個市場內排名；族群為交易所／Nasdaq 官方產業分類。"
+             "搜尋框輸入任何代號或名稱都會一起查全市場。", "Updated daily, technical only; ranks within each market; official industry groups.")
+    btns = "".join(f'<button class="tab{" on" if i == 0 else ""}" data-fmk="{k}" type="button">{T(*FM_LABEL[k])}</button>'
+                   for i, k in enumerate(("us", "tw", "hk")))
+    return card(*title,
+                _fm_summary() + f'<div class="fm" data-mode="{mode}"><div class="tabs">{btns}</div>'
+                f'<div class="fmctl"><select class="btn fmind"><option value="">{T("全部產業", "All industries")}</option></select>'
+                f'<button class="btn fmload" type="button">{T("載入全市場資料", "Load full-market data")}</button>'
+                f'<span class="muted small fmst"></span></div><div class="fmbody"></div></div><p class="note">{note}</p>', "wide")
+
+
+FM_LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
 
 # ----------------------------------------------------------------- themes (族群)
@@ -611,7 +682,72 @@ def sec_timemachine(eng) -> str:
                 f'<div id="tmList"></div></div><p class="note">{note}</p>', "wide")
 
 
+FM_JS = r"""
+(function(){var CACHE={},en=function(){return document.documentElement.lang==='en';};
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+function f(v,d){return (v==null||isNaN(v))?'—':Number(v).toFixed(d);}
+function sg(v,d){return (v==null||isNaN(v))?'—':((v>0?'+':'')+Number(v).toFixed(d)+'%');}
+function load(mk){if(CACHE[mk])return CACHE[mk];CACHE[mk]=fetch('market/'+mk+'.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();})
+ .then(function(d){var c=d.cols;d.items=d.rows.map(function(a){var o={};c.forEach(function(k,i){o[k]=a[i];});o.mk=mk;o.N=d.n;return o;});return d;})
+ .catch(function(){CACHE[mk]=null;return null;});return CACHE[mk];}
+function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');h.appendChild(el('b',null,o.name+' '));h.appendChild(el('span','tk',o.code));
+ h.appendChild(el('span','thc',lbl+(o.board?' '+o.board:'')+' · '+(o.ind||'')));d.appendChild(h);
+ d.appendChild(el('div','small',(en()?'Tech score ':'技術分數 ')+f(o.tech,0)+(en()?' — rank ':'（全市場第 ')+o.rank+' / '+o.N+(en()?'':' 名）')
+  +'　1M '+sg(o.r1m,1)+'　6M '+sg(o.r6,0)+'　RSI '+f(o.rsi,0)+'　'+(en()?'Price ':'現價 ')+f(o.px,2)));
+ var st=el('div','small');st.appendChild(el('b','act',(o.stl||'—')+(o.patl?'：'+o.patl:'')+' '));d.appendChild(st);
+ if(o.st==='signal'){d.appendChild(el('div','small','▶ '+(en()?'Entry zone ':'何時買（規則參考）：進場參考區 ')+f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' (in zone)':'（現價在區內）'):(en()?' (outside)':'（現價在區外）'))));
+  d.appendChild(el('div','small','▶ '+(en()?'Give up below ':'何時放棄：收盤跌破 ')+f(o.inv,2)+'（-'+f(o.risk,1)+'%）'+(o.tgt?('　▶ '+(en()?'Overhead ':'上方壓力 52 週高 ')+f(o.tgt,2)+'（+'+f(o.tgtp,0)+'%）'):'')));}
+ else{if(o.when)d.appendChild(el('div','small','▶ '+(en()?'Would trigger: ':'何時才算買點：')+o.when));if(o.why)d.appendChild(el('div','small muted',o.why));}
+ return d;}
+var T0=0;window.FMsearch=function(v,box){if(!box)return;clearTimeout(T0);box.textContent='';if(!v||v.length<1)return;
+ T0=setTimeout(function(){box.textContent=en()?'Searching the full market…':'搜尋全市場中…';
+  Promise.all(['us','tw','hk'].map(load)).then(function(ds){box.textContent='';var q=v.toLowerCase(),hits=[];
+   ds.forEach(function(d,i){if(!d)return;d.items.forEach(function(o){var c=(o.code||'').toLowerCase(),nm=(o.name||'').toLowerCase(),sc=-1;
+    if(c===q||(o.sym||'').toLowerCase()===q)sc=3;else if(c.indexOf(q)===0||nm.indexOf(q)===0)sc=2;else if(q.length>=2&&nm.indexOf(q)>=0)sc=1;
+    if(sc>=0)hits.push([sc,o,d.label]);});});
+   if(!hits.length){if(ds.every(function(d){return !d;}))box.appendChild(el('p','muted small',en()?'Full-market data not available yet.':'全市場資料尚未建立。'));
+    else box.appendChild(el('p','muted small',en()?'No match in the full market — try Discord /stock.':'全市場也找不到，可用 Discord 的 /stock 查詢。'));return;}
+   hits.sort(function(a,b){return b[0]-a[0]||(b[1].tech||0)-(a[1].tech||0);});
+   box.appendChild(el('div','small muted',(en()?'Full market: ':'全市場結果：')+hits.length+(en()?' match(es)':' 筆')+(hits.length>8?(en()?' (top 8)':'（顯示前 8 筆）'):'')));
+   hits.slice(0,8).forEach(function(h){box.appendChild(card(h[1],h[2]));});});},250);};
+document.querySelectorAll('.fm').forEach(function(w){var mode=w.dataset.mode,mk='us',shown=100,data=null,sel=w.querySelector('.fmind'),body=w.querySelector('.fmbody'),
+ stl=w.querySelector('.fmst'),btn=w.querySelector('.fmload');
+ function render(){body.textContent='';if(!data){return;}var ind=sel.value,its=data.items.filter(function(o){return (!ind||o.ind===ind)&&(mode==='score'||o.st==='signal');});
+  if(mode!=='score')its.sort(function(a,b){return (b.str||0)-(a.str||0);});
+  stl.textContent=(en()?' ':' ')+its.length+(en()?' names':' 檔')+' · '+(en()?'as of ':'資料日 ')+data.asof;
+  var det=el('div','fmres');body.appendChild(det);det.appendChild(el('p','muted small',en()?'Click a row for the entry / give-up levels.':'點表格任一列，這裡會顯示該檔的「何時買／何時放棄」。'));
+  var sc=el('div','scroll'),t=el('table','mini'),th=el('tr');
+  (mode==='score'?['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Tech':'技術分',en()?'1M':'1月',en()?'6M':'6月','RSI',en()?'Status':'狀態']
+   :['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Pattern':'型態',en()?'Strength':'強度',en()?'Price':'現價',en()?'Entry zone':'進場參考區',en()?'Give-up':'失效線'])
+   .forEach(function(x){th.appendChild(el('th',null,x));});var hd=el('thead');hd.appendChild(th);t.appendChild(hd);var tb=el('tbody');
+  its.slice(0,shown).forEach(function(o,i){var tr=el('tr');var nm=el('td','nw');nm.appendChild(el('b',null,o.name+' '));nm.appendChild(el('span','tk',o.code));
+   var cells=mode==='score'?[String(o.rank),nm,o.ind||'',f(o.tech,0),sg(o.r1m,1),sg(o.r6,0),f(o.rsi,0),o.stl||'']
+    :[String(i+1),nm,o.ind||'',o.patl||'',f(o.str,0),f(o.px,2),f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' ✓':' 區內'):''),f(o.inv,2)+'（-'+f(o.risk,1)+'%）'];
+   cells.forEach(function(c){if(typeof c==='string'){tr.appendChild(el('td',null,c));}else tr.appendChild(c);});
+   tr.style.cursor='pointer';tr.title=en()?'Click for details':'點一下看何時買／何時放棄';
+   tr.addEventListener('click',function(){det.textContent='';det.appendChild(card(o,data.label));det.scrollIntoView({block:'nearest'});});tb.appendChild(tr);});
+  t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
+  if(its.length>shown){var more=el('button','btn',en()?'Show 100 more':'再顯示 100 檔');more.type='button';more.addEventListener('click',function(){shown+=100;render();});body.appendChild(more);}}
+ function go(){btn.style.display='none';stl.textContent=en()?'Loading…':'載入中…';load(mk).then(function(d){data=d;shown=100;
+  if(!d){stl.textContent=en()?'Full-market data not available yet.':'全市場資料尚未建立。';return;}
+  var inds={};d.items.forEach(function(o){if(o.ind)inds[o.ind]=(inds[o.ind]||0)+1;});sel.length=1;
+  Object.keys(inds).sort(function(a,b){return inds[b]-inds[a];}).forEach(function(k){var op=el('option',null,k+' ('+inds[k]+')');op.value=k;sel.appendChild(op);});
+  render();});}
+ btn.addEventListener('click',go);sel.addEventListener('change',function(){shown=100;render();});
+ w.querySelectorAll('[data-fmk]').forEach(function(b){b.addEventListener('click',function(){w.querySelectorAll('[data-fmk]').forEach(function(x){x.classList.remove('on');});
+  b.classList.add('on');mk=b.dataset.fmk;sel.value='';if(btn.style.display==='none')go();});});});
+})();
+"""
+
 TM_JS = r"""
+[['stockQ','stockQn','st_'],['sigQ','sigQn','sg_']].forEach(function(cf){var q=document.getElementById(cf[0]);if(!q)return;var n=document.getElementById(cf[1]);
+ q.addEventListener('input',function(){var v=q.value.trim().toLowerCase(),first=null,cnt=0;
+  document.querySelectorAll('table.score[id^="'+cf[2]+'"]').forEach(function(t){var hit=0;t.querySelectorAll('tbody tr').forEach(function(tr){
+   var main=tr.classList.contains('why')?tr.previousElementSibling:tr;var ok=!v||((main.dataset.q||'').indexOf(v)>=0);tr.style.display=ok?'':'none';
+   if(ok&&!tr.classList.contains('why')&&v){hit++;}});if(hit&&!first)first=t;cnt+=hit;});
+  n.textContent=v?(cnt?(' '+cnt+(document.documentElement.lang==='en'?' match(es) in the curated list':' 筆在精選池')):(document.documentElement.lang==='en'?' not in the curated list':' 不在精選池')):'';
+  if(window.FMsearch)window.FMsearch(v,document.getElementById(cf[0]+'fm'));
+  if(first){var pid=first.closest('.panel').id,b=document.querySelector('.tab[data-t="'+pid+'"]');if(b&&!b.classList.contains('on'))b.click();}});});
 function tfilter(id){var t=document.getElementById(id);if(!t)return;var sel=document.querySelector('select.thf[data-for="'+id+'"]'),
  cb=document.querySelector('.onlysig input[data-for="'+id+'"]'),v=sel?sel.value:'',only=cb&&cb.checked;
  t.querySelectorAll('tbody tr').forEach(function(tr){tr.style.display=((!v||tr.dataset.th===v)&&!(only&&tr.classList.contains('nosig')))?'':'none';});}
@@ -675,7 +811,10 @@ table.mini td,table.mini th{padding:4px 6px;font-size:12.5px}.hm{font-variant-nu
 .tm select{min-width:240px}.tmout{margin-top:10px}#tmList table tr:hover td{background:var(--card2)}
 .install{display:none}.install.show{display:inline-block}
 .thc{display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;background:var(--card2);border:1px solid var(--bd);font-size:11px;color:var(--mu);font-weight:400}
-.thf{margin:6px 0 4px;min-width:150px}.onlysig{margin-left:14px}tr.nosig td{opacity:.88}.newp{color:var(--up);border-color:var(--up)}
+.thf{margin:6px 0 4px;min-width:150px}.fmres{margin-top:6px}.fmcard{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 11px;margin:6px 0}
+.fmcard .fmh{margin-bottom:3px}.fmcard div{margin:2px 0}.fmctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}.act{color:var(--tx);font-weight:600;margin-right:2px}td .act{margin-left:2px}
+.pill.inz{color:var(--up);border-color:var(--up)}.howto{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:12.5px;margin:0 0 10px}
+.howto ol{margin:4px 0 0;padding-left:20px}.howto li{margin:3px 0}.sbox{margin:0 0 8px}.sbox input{min-width:280px;padding:6px 10px;text-align:left}.onlysig{margin-left:14px}tr.nosig td{opacity:.88}.newp{color:var(--up);border-color:var(--up)}
 .warnbox{background:color-mix(in srgb,var(--warn) 12%,transparent);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:8px;padding:8px 11px;font-size:12.5px;margin:0 0 10px}
 ol.top5{margin:4px 0;padding-left:20px}ol.top5 li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid var(--bd)}
 ol.top5 li{display:list-item}ol.top5 li b{float:right}.golink{color:var(--ac)}

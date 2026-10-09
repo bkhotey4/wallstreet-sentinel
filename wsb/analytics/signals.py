@@ -51,6 +51,8 @@ def detect(c: pd.Series, v: pd.Series) -> Dict[str, pd.DataFrame]:
     r = rsi_series(c)
     vavg = v.rolling(50, min_periods=30).mean()
     hi20 = c.rolling(20).max().shift(1)
+    hi252 = c.rolling(252, min_periods=120).max()
+    lo10 = c.rolling(10).min()
     lo3 = c.rolling(3).min()
     up_day = c > c.shift(1)
     trend = (c > ma200) & (ma50 > ma200) & (ma200 > ma200.shift(20))
@@ -72,7 +74,8 @@ def detect(c: pd.Series, v: pd.Series) -> Dict[str, pd.DataFrame]:
     out = {}
     for k, flag, inv in (("pullback", pb, pb_inv), ("breakout", bo, bo_inv), ("golden", gc, gc_inv), ("oversold", os_, os_inv)):
         out[k] = pd.DataFrame({"flag": flag.fillna(False).astype(bool), "inv": inv, "close": c, "rsi": r, "vol_ratio": vol_ratio,
-                               "ma20": ma20, "ma50": ma50, "ma200": ma200, "hi20": hi20})
+                               "ma20": ma20, "ma50": ma50, "ma200": ma200, "hi20": hi20, "hi252": hi252, "lo10": lo10,
+                               "touch50": t50 & (c > ma50)})
     return out
 
 
@@ -103,6 +106,53 @@ STATUS = {"signal": ("有買點訊號", "Signal active"), "near_pullback": ("接
           "near_oversold": ("接近超賣", "Near oversold"), "extended": ("多頭但漲多", "Uptrend, extended"),
           "uptrend": ("多頭整理", "Uptrend, consolidating"), "range": ("盤整、無明確型態", "Range-bound"),
           "downtrend": ("空頭趨勢", "Downtrend"), "nodata": ("資料不足", "Not enough history")}
+
+
+def plan(k: str, df: pd.DataFrame, trig_i, inv: float) -> Dict:
+    """Rule-based entry reference for an ACTIVE signal: the price zone the rule regards as the entry area, where the
+    setup fails, and the nearest overhead resistance (52-week high) with the resulting reward/risk multiple."""
+    last, t = df.iloc[-1], df.loc[trig_i]
+    px = float(last["close"])
+    if k == "pullback":
+        sup = float(t["ma50"] if bool(t.get("touch50")) else t["ma20"])
+        lo, hi, zh, en = sup, sup * 1.03, f"回測的均線 {sup:.2f} 到 +3%（{sup * 1.03:.2f}）之間", f"{sup:.2f}–{sup * 1.03:.2f} (the moving average it bounced off, +3%)"
+    elif k == "breakout":
+        lvl = float(t["hi20"])
+        lo, hi, zh, en = lvl, lvl * 1.03, f"突破點 {lvl:.2f} 到 +3%（回測突破點不破）", f"{lvl:.2f}–{lvl * 1.03:.2f} (a retest of the breakout level)"
+    elif k == "golden":
+        m = float(last["ma200"])
+        lo, hi, zh, en = m, m * 1.04, f"200 日線 {m:.2f} 到 +4%（站穩年線）", f"{m:.2f}–{m * 1.04:.2f} (holding above the 200-day)"
+    else:
+        lo10 = float(last["lo10"])
+        lo, hi, zh, en = lo10, lo10 * 1.04, f"10 日低點 {lo10:.2f} 到 +4%（逆勢，只宜小量）", f"{lo10:.2f}–{lo10 * 1.04:.2f} (counter-trend, small size only)"
+    where = ("現價在參考區內" if lo <= px <= hi else f"現價高於參考區 {((px / hi - 1) * 100):.1f}%，回到區間內較符合規則" if px > hi
+             else f"現價低於參考區 {((px / lo - 1) * 100):.1f}%，需重新站回")
+    where_en = ("price is inside the zone" if lo <= px <= hi else f"price is {((px / hi - 1) * 100):.1f}% above the zone" if px > hi
+                else f"price is {((px / lo - 1) * 100):.1f}% below the zone")
+    h52 = float(last["hi252"]) if pd.notna(last["hi252"]) else None
+    tgt = h52 if h52 and h52 > px * 1.01 else None
+    rr = (tgt - px) / (px - inv) if tgt and inv and px > inv else None
+    return {"zone_lo": lo, "zone_hi": hi, "zone": zh, "zone_en": en, "in_zone": lo <= px <= hi, "where": where, "where_en": where_en,
+            "target": tgt, "target_pct": (tgt / px - 1) * 100 if tgt else None, "rr": rr}
+
+
+def trigger_text(k: str, df: pd.DataFrame) -> tuple:
+    """For a stock WITHOUT a signal: the concrete condition that would turn it into one (with today's price levels)."""
+    last = df.iloc[-1]
+    g = lambda c: float(last[c]) if pd.notna(last[c]) else float("nan")  # noqa: E731
+    m20, m50, m200, h20 = g("ma20"), g("ma50"), g("ma200"), g("hi20")
+    return {
+        "near_pullback": (f"等股價回到 20 日線 {m20:.2f}（或 50 日線 {m50:.2f}）附近、止跌收紅 → 成立「多頭回檔」",
+                          f"Wait for a dip to the 20-day {m20:.2f} (or 50-day {m50:.2f}) and an up close"),
+        "near_breakout": (f"收盤站上 {h20:.2f}（前 20 日高點）且成交量 ≥ 1.5 倍均量 → 成立「帶量突破」",
+                          f"A close above {h20:.2f} (20-day high) on ≥1.5× volume"),
+        "near_golden": (f"50 日線（{m50:.2f}）上穿 200 日線（{m200:.2f}）→ 成立「黃金交叉」", f"50-day {m50:.2f} crossing above the 200-day {m200:.2f}"),
+        "near_oversold": ("RSI 跌破 30 後站回 5 日線 → 成立「超賣反彈」（逆勢）", "RSI below 30, then a close back above the 5-day"),
+        "uptrend": (f"回測 20 日線 {m20:.2f} 止跌，或放量突破 {h20:.2f}，才會出現買點", f"A dip to {m20:.2f} that holds, or a volume break above {h20:.2f}"),
+        "extended": (f"離均線太遠，規則上等回到 20 日線 {m20:.2f} 附近再看", f"Too stretched — the rules wait for a return toward {m20:.2f}"),
+        "range": (f"放量突破 {h20:.2f}，或站上 200 日線 {m200:.2f}，才會出現買點", f"A volume break above {h20:.2f} or a reclaim of the 200-day {m200:.2f}"),
+        "downtrend": (f"空頭：站回 200 日線 {m200:.2f} 之前，規則不給順勢買點", f"Downtrend: no trend-following entry until it reclaims the 200-day {m200:.2f}"),
+    }.get(k, ("—", "—"))
 
 
 def status(df: pd.DataFrame) -> Dict:
@@ -138,7 +188,41 @@ def status(df: pd.DataFrame) -> Dict:
             "d20": d20, "d50": d50, "d200": d200, "price": float(c) if pd.notna(c) else None}
 
 
-def build(eng) -> Dict:
+def evaluate(pats: Dict[str, pd.DataFrame], score: Optional[float], base: Dict[str, float], lookback: int = 3,
+             bt: Optional[Dict] = None, br: Optional[float] = None) -> List[Dict]:
+    """Active signals of one stock (triggered within `lookback` sessions, not yet failed, not run away), strongest first."""
+    hits = []
+    for k, df in pats.items():
+        tail = df.tail(lookback)
+        if not tail["flag"].any():
+            continue
+        trig_i = tail.index[tail["flag"].values][-1]
+        last = df.iloc[-1]
+        inv = float(df.loc[trig_i, "inv"]) if pd.notna(df.loc[trig_i, "inv"]) else None
+        px, trig_px = float(last["close"]), float(df.loc[trig_i, "close"])
+        if inv is None or px <= inv or px > trig_px * 1.05:      # failed already, or ran away from the entry
+            continue
+        risk = (px / inv - 1) * 100
+        s = base[k]
+        if score is not None:
+            s += 0.35 * (score - 50)
+        if k == "breakout" and pd.notna(df.loc[trig_i, "vol_ratio"]):
+            s += min(10.0, max(0.0, (float(df.loc[trig_i, "vol_ratio"]) - 1.5) * 8))
+        s += 5 if 2 <= risk <= 6 else (-5 if risk > 10 else 0)
+        b = (bt or {}).get(k) or {}
+        if b.get("n", 0) >= 15 and b.get("win") is not None and b.get("base_win") is not None:
+            s += float(np.clip((b["win"] - b["base_win"]) * 0.5, -8, 8))
+        if br is not None and br < 40 and k != "oversold":
+            s -= 5
+        hits.append({"pattern": k, "label": PATTERNS[k][0], "label_en": PATTERNS[k][1], "strength": float(np.clip(s, 0, 100)),
+                     "inv": inv, "risk_pct": risk, "trigger": trig_i.strftime("%Y-%m-%d"), "since": trig_i.strftime("%Y-%m-%d"),
+                     "plan": plan(k, df, trig_i, inv),
+                     "vol_ratio": None if pd.isna(df.loc[trig_i, "vol_ratio"]) else float(df.loc[trig_i, "vol_ratio"]),
+                     "rsi": None if pd.isna(last["rsi"]) else float(last["rsi"])})
+    return sorted(hits, key=lambda h: -h["strength"])
+
+
+def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
     c = _cfg()
     if not c.get("enabled", True):
         return {"available": False}
@@ -150,7 +234,7 @@ def build(eng) -> Dict:
     lookback = int(c.get("active_days", 3))
     seen = _load_seen()
     markets: Dict[str, Dict] = {}
-    for mk, u in universe().items():
+    for mk, u in (uni or universe()).items():
         rows_by = {r["sym"]: r for r in (sc.get(mk) or {}).get("rows", [])}
         series, short = {}, []
         for sym in u["symbols"]:
@@ -169,37 +253,13 @@ def build(eng) -> Dict:
         asof = max(next(iter(p.values())).index[-1] for p in series.values()).strftime("%Y-%m-%d")
         out_rows = []
         for sym, pats in series.items():
-            hits = []
-            for k, df in pats.items():
-                tail = df.tail(lookback)
-                if not tail["flag"].any():
-                    continue
-                trig_i = tail.index[tail["flag"].values][-1]
-                last = df.iloc[-1]
-                inv = float(df.loc[trig_i, "inv"]) if pd.notna(df.loc[trig_i, "inv"]) else None
-                px, trig_px = float(last["close"]), float(df.loc[trig_i, "close"])
-                if inv is None or px <= inv or px > trig_px * 1.05:      # failed already, or ran away from the entry
-                    continue
-                risk = (px / inv - 1) * 100
-                s = base[k]
-                srow = rows_by.get(sym)
-                if srow:
-                    s += 0.35 * (srow["score"] - 50)
-                if k == "breakout" and pd.notna(df.loc[trig_i, "vol_ratio"]):
-                    s += min(10.0, max(0.0, (float(df.loc[trig_i, "vol_ratio"]) - 1.5) * 8))
-                s += 5 if 2 <= risk <= 6 else (-5 if risk > 10 else 0)
-                b = bt.get(k) or {}
-                if b.get("n", 0) >= 15 and b.get("win") is not None and b.get("base_win") is not None:
-                    s += float(np.clip((b["win"] - b["base_win"]) * 0.5, -8, 8))
-                if br is not None and br < 40 and k != "oversold":
-                    s -= 5
-                key = f"{sym}:{k}"
+            srow = rows_by.get(sym)
+            hits = evaluate(pats, srow["score"] if srow else None, base, lookback, bt, br)
+            for h in hits:
+                key = f"{sym}:{h['pattern']}"
                 first = seen.get(key) if seen.get(key, "") >= _days_ago(asof, 10) else None
-                seen[key] = first or trig_i.strftime("%Y-%m-%d")
-                hits.append({"pattern": k, "label": PATTERNS[k][0], "label_en": PATTERNS[k][1], "strength": float(np.clip(s, 0, 100)),
-                             "inv": inv, "risk_pct": risk, "since": seen[key], "trigger": trig_i.strftime("%Y-%m-%d"),
-                             "vol_ratio": None if pd.isna(df.loc[trig_i, "vol_ratio"]) else float(df.loc[trig_i, "vol_ratio"]),
-                             "rsi": None if pd.isna(last["rsi"]) else float(last["rsi"])})
+                seen[key] = first or h["trigger"]
+                h["since"] = seen[key]
             if not hits:
                 continue
             hits.sort(key=lambda h: -h["strength"])
@@ -223,7 +283,9 @@ def build(eng) -> Dict:
             zh, en = u["symbols"][sym]
             srow = rows_by.get(sym) or {}
             if sym in series:
-                st = status(next(iter(series[sym].values())))
+                df0 = next(iter(series[sym].values()))
+                st = status(df0)
+                st["when"], st["when_en"] = trigger_text(st["status"], df0)
                 ready = float(np.clip(st["base"] + 0.25 * ((srow.get("score") or 50) - 50), 0, 60))
             else:
                 st = {"status": "nodata", "label": STATUS["nodata"][0], "label_en": STATUS["nodata"][1], "why": "上市或掛牌未滿約一年，均線資料不足",
@@ -240,7 +302,8 @@ def build(eng) -> Dict:
         markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows, "all": allrows,
                        "backtest": bt, "asof": asof, "n_universe": len(series) + len(short), "breadth": br,
                        "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS}}
-    _save_seen(seen)
+    if persist:
+        _save_seen(seen)
     return {"available": bool(markets), "markets": markets, "horizon": HORIZON}
 
 

@@ -180,20 +180,43 @@ def _reasons(f: Dict, ranks: Dict, n: int) -> List[Dict]:
     return R
 
 
-def build(eng) -> Dict:
+def technical_scores(feats: Dict[str, Dict]) -> Dict[str, tuple]:
+    """sym → (technical score 0–100, factor parts, momentum rank) with every factor ranked within `feats` (one market)."""
+    tw = cfg().get("tech_weights") or {}
+    W = {"trend": 0.25, "momentum": 0.30, "relative": 0.15, "near_high": 0.15, "accumulation": 0.10, "low_vol": 0.05, **tw}
+    hot1, hot2 = (cfg().get("rsi_hot") or [75, 80])[:2]
+    mom_parts = [_rank({k: f["r12_1"] for k, f in feats.items()}), _rank({k: f["r6"] for k, f in feats.items()}),
+                 _rank({k: f["r3"] for k, f in feats.items()})]
+    mom = {k: (float(np.nanmean([p[k] for p in mom_parts if p[k] is not None])) if any(p[k] is not None for p in mom_parts) else None)
+           for k in feats}
+    rk = {"momentum": mom,
+          "relative": _rank({k: f["rel3"] for k, f in feats.items()}),
+          "near_high": _rank({k: f["dist_high"] for k, f in feats.items()}),
+          "accumulation": _rank({k: f["accum"] for k, f in feats.items()}),
+          "low_vol": _rank({k: f["vol60"] for k, f in feats.items()}, higher_better=False)}
+    out = {}
+    for sym, f in feats.items():
+        parts = {"trend": f["trend"] * 100, **{k: rk[k][sym] for k in rk}}
+        have = {k: v for k, v in parts.items() if v is not None}
+        tech = sum(W[k] * v for k, v in have.items()) / sum(W[k] for k in have)
+        if f["rsi"] is not None:
+            tech -= 8 if f["rsi"] >= hot2 else 4 if f["rsi"] >= hot1 else 0
+        out[sym] = (float(np.clip(tech, 0, 100)), parts, mom[sym])
+    return out
+
+
+def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
+    """uni: optional universe override (used by the on-demand /stock lookup); persist=False leaves the score history alone."""
     if not cfg().get("enabled", True):
         return {"available": False}
     sp = getattr(eng, "stockprices", None)
     if sp is None or sp.close.empty:
         return {"available": False}
-    tw = cfg().get("tech_weights") or {}
-    W = {"trend": 0.25, "momentum": 0.30, "relative": 0.15, "near_high": 0.15, "accumulation": 0.10, "low_vol": 0.05, **tw}
     wt = cfg().get("weights") or {}
     w_tech, w_int = float(wt.get("technical", 0.6)), float(wt.get("intel", 0.4))
-    hot1, hot2 = (cfg().get("rsi_hot") or [75, 80])[:2]
     prev = _load_hist()
     markets: Dict[str, Dict] = {}
-    for mk, m in universe().items():
+    for mk, m in (uni or universe()).items():
         bench = sp.series(m.get("bench", ""))
         if bench.empty and getattr(eng, "market", None) is not None:
             bench = eng.market.series(m.get("bench", ""))
@@ -208,23 +231,10 @@ def build(eng) -> Dict:
                 feats[sym] = f
         if len(feats) < 5:
             continue
-        mom_parts = [_rank({k: f["r12_1"] for k, f in feats.items()}), _rank({k: f["r6"] for k, f in feats.items()}),
-                     _rank({k: f["r3"] for k, f in feats.items()})]
-        mom = {k: (np.nanmean([p[k] for p in mom_parts if p[k] is not None]) if any(p[k] is not None for p in mom_parts) else None)
-               for k in feats}
-        rk = {"momentum": mom,
-              "relative": _rank({k: f["rel3"] for k, f in feats.items()}),
-              "near_high": _rank({k: f["dist_high"] for k, f in feats.items()}),
-              "accumulation": _rank({k: f["accum"] for k, f in feats.items()}),
-              "low_vol": _rank({k: f["vol60"] for k, f in feats.items()}, higher_better=False)}
+        tscores = technical_scores(feats)
         rows = []
         for sym, f in feats.items():
-            parts = {"trend": f["trend"] * 100, **{k: rk[k][sym] for k in rk}}
-            have = {k: v for k, v in parts.items() if v is not None}
-            tech = sum(W[k] * v for k, v in have.items()) / sum(W[k] for k in have)
-            if f["rsi"] is not None:
-                tech -= 8 if f["rsi"] >= hot2 else 4 if f["rsi"] >= hot1 else 0
-            tech = float(np.clip(tech, 0, 100))
+            tech, parts, mom_s = tscores[sym]
             ins = _intel_inputs(eng, mk, sym, f)
             # shrink toward neutral when the evidence is thin: one input alone can move intel at most ±(50 × w/2)
             wsum = sum(i["w"] for i in ins)
@@ -237,7 +247,7 @@ def build(eng) -> Dict:
                          "tech": round(tech, 1), "intel": None if intel is None else round(float(intel), 1),
                          "chg5": None if p5 is None else round(float(score) - p5, 1),
                          "parts": {k: (None if v is None else round(float(v), 0)) for k, v in parts.items()},
-                         "intel_inputs": ins, "reasons": _reasons(f, {"momentum": mom[sym]}, len(feats)),
+                         "intel_inputs": ins, "reasons": _reasons(f, {"momentum": mom_s}, len(feats)),
                          **{k: f[k] for k in ("price", "r1d", "r1m", "r3", "r6", "rsi", "dist_high", "asof", "above200", "above50",
                                               "new_high", "new_low")}})
         rows.sort(key=lambda r: -r["score"])
@@ -249,7 +259,8 @@ def build(eng) -> Dict:
         markets[mk] = {"key": mk, "label": m.get("label", mk), "label_en": m.get("label_en", mk), "bench": m.get("bench"),
                        "rows": rows, "breadth": breadth, "asof": max(f["asof"] for f in b),
                        "missing": [s for s in m["symbols"] if s not in feats], "themes": theme_stats(rows)}
-    _save_hist(prev, markets)
+    if persist:
+        _save_hist(prev, markets)
     return {"available": bool(markets), "markets": markets, "themes": cross_themes(markets)}
 
 

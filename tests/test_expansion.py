@@ -127,6 +127,55 @@ def test_signal_patterns():
     print("  signal patterns ok")
 
 
+def test_fullmarket(eng):
+    """Whole-market lists → price queue → scan → published JSON (all offline)."""
+    import io as _io
+    from wsb.analytics import fullscan as FS
+    from wsb.data import fullmarket as FMD
+    from wsb.data import stocks as STK
+    # HKEX xlsx parsing (header row found by name; only Main Board equities kept)
+    df = pd.DataFrame([["List of Securities", None, None, None], [None, None, None, None],
+                       ["Stock Code", "Name of Securities", "Category", "Sub-Category"],
+                       ["00700", "TENCENT", "Equity", "Equity Securities (Main Board)"],
+                       ["08001", "GEM CO", "Equity", "Equity Securities (GEM)"], ["04335", "SOME BOND", "Debt Securities", "x"]])
+    buf = _io.BytesIO()
+    df.to_excel(buf, header=False, index=False)
+    hk = FMD.parse_hkex(buf.getvalue(), "Stock Code")
+    assert list(hk["Stock Code"]) == ["00700", "08001", "04335"]
+    assert FMD._clean_us_name("Nu Holdings Ltd. Class A Ordinary Shares") == "Nu Holdings Ltd."
+    # price queue: missing names are back-filled, failures remembered, everything merged into the archive
+    idx = pd.bdate_range(end=T.END, periods=320)
+    rng = np.random.default_rng(9)
+    syms = [f"U{i:03d}" for i in range(60)] + ["DEAD"]
+
+    def fake_dl(part, period):
+        ok = [s for s in part if s != "DEAD"]
+        cl = pd.DataFrame({s: 50 * np.exp(np.cumsum(rng.normal(0.0006 * (1 + int(s[1:]) % 3 - 1), 0.02, len(idx)))) for s in ok}, index=idx)
+        vo = pd.DataFrame({s: rng.integers(1e5, 1e6, len(idx)).astype(float) for s in ok}, index=idx)
+        return cl, vo
+    STK._download = fake_dl
+    st = FMD.refresh_prices("us", syms, idx[-1], time.time() + 60)
+    assert st["backfilled"] == 61 and st["have"] == 60 and st["failed"] == 1 and st["pending"] == 0, st
+    st2 = FMD.refresh_prices("us", syms, idx[-1], time.time() + 60)
+    assert st2["backfilled"] == 0 and st2["updated"] == 0, "nothing to do on a second run the same day"
+    close, volume = FMD.load_prices("us")
+    items = [{"sym": s, "code": s, "name": f"Name {s}", "ind": "科技" if i % 2 else "金融"} for i, s in enumerate(syms)]
+    res = FS.scan("us", items, close, volume, close.mean(axis=1))
+    assert res["available"] and res["n"] == 60 and res["cols"] == FS.COLS
+    rows = [dict(zip(res["cols"], r)) for r in res["rows"]]
+    assert [r["rank"] for r in rows] == list(range(1, 61)) and all(r["st"] for r in rows)
+    sig = [r for r in rows if r["st"] == "signal"]
+    assert all(r["zlo"] <= r["zhi"] and r["inv"] < r["px"] for r in sig)
+    assert all(r["when"] for r in rows if r["st"] not in ("signal", "nodata"))
+    # run(): lists come from the (patched) list loader, JSON is written and later published under site/market/
+    async def fake_lists(force=False):
+        return {"us": items, "tw": [], "hk": []}
+    FMD.lists = fake_lists
+    rep = asyncio.run(FS.run(eng, 30))
+    assert rep["us"]["scanned"] == 60 and FS.published("us")["n"] == 60
+    print("  full-market ok")
+
+
 def make_engine(tmp: Path):
     eng = Engine()
     eng.market, eng.fred = T.m, T.fr
@@ -225,6 +274,7 @@ def main():
         assert len(m["all"]) == len(universe()[k]["symbols"]) == m["n_universe"], (k, len(m["all"]))
         assert all(r["status"]["label"] for r in m["all"]) and sum(1 for r in m["all"] if r["signal"]) == len(m["rows"])
     # site: new tabs, sections, PWA, time machine (snapshot written once, index published)
+    test_fullmarket(eng)
     out, snap = tmp / "site", tmp / "snapdir"
     B.update_snapshots.__globals__["SETTINGS"].raw.setdefault("snapshots", {})["min_hour"] = 0
     p = asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
@@ -235,8 +285,15 @@ def main():
     assert "波克夏（巴菲特）" in page and "賣權（看空）" in page and "可能已停止申報" in page
     assert "內部人買賣（Form 4）" in page and "美債專區" in page and 'id="c_curve"' in page and "偏弱" in page
     assert "類股輪動與市場寬度" in page and 'id="c_rot"' in page and 'id="c_br0"' in page
+    assert (out / "market" / "us.json").exists() and "全市場排行" in page and "全市場買點訊號" in page and 'id="stockQfm"' in page
     for k in ("signals", "themes"):
         assert f'id="p-{k}"' in page, k
+    assert "何時買（規則參考）" in page and "何時才算買點" in page and "進場參考區" in page and 'id="sigQ"' in page and 'id="stockQ"' in page
+    hit = next(r for m in eng.signals["markets"].values() for r in m["rows"])
+    pl = hit["patterns"][0]["plan"]
+    assert pl["zone_lo"] < pl["zone_hi"] and pl["where"] and (pl["target"] is None or pl["target"] > hit["price"])
+    assert all(r["status"].get("when") for m in eng.signals["markets"].values() for r in m["all"]
+               if not r["signal"] and r["status"]["status"] != "nodata")
     assert "技術面買點訊號（由強到弱）" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
     assert 'class="btn thf"' in page and 'data-th="半導體"' in page and 'class="small muted onlysig"' in page and 'class="nosig"' in page
     assert "時光機" in page and 'id="tmSel"' in page and 'rel="manifest"' in page and "serviceWorker" in page
@@ -259,6 +316,21 @@ def main():
     assert not re.search(r"https?://(?!example\.com|e\.com|www\.sec\.gov)[^\"' ]+\.(js|css)", page)
     d = json.loads((out / "data.json").read_text())
     assert d["scores"]["us"], "data.json carries the top of the board"
+    # on-demand lookup of a ticker outside the universe (Discord /stock), plus NU now in the universe
+    from wsb.analytics import lookup as LK
+    from wsb.data import stocks as STK
+    assert LK.normalise("nu") == ("NU", "us") and LK.normalise("2330") == ("2330.TW", "tw") and LK.normalise("0050") == ("0050.TW", "tw")
+    assert LK.normalise("700") == ("0700.HK", "hk") and LK.normalise("0700.hk") == ("0700.HK", "hk") and LK.normalise("brk.b") == ("BRK-B", "us")
+    assert any(r["sym"] == "NU" for r in sc["markets"]["us"]["rows"])
+    idx2 = eng.stockprices.close.index
+    STK._download = lambda syms, period: (pd.DataFrame({syms[0]: 50 * np.exp(np.linspace(0, 0.4, len(idx2)))}, index=idx2),
+                                          pd.DataFrame({syms[0]: np.full(len(idx2), 1e6)}, index=idx2))
+    before = SS._HIST.read_text() if SS._HIST.exists() else ""
+    lk = asyncio.run(LK.lookup(eng, "zzzz"))
+    assert lk["ok"] and not lk["in_universe"] and lk["row"]["sym"] == "ZZZZ" and lk["n"] == len(sc["markets"]["us"]["rows"]) + 1
+    assert lk["signal"] or lk["status"], lk
+    assert (SS._HIST.read_text() if SS._HIST.exists() else "") == before, "lookup must not touch saved history"
+    assert asyncio.run(LK.lookup(eng, "NU"))["in_universe"]
     from wsb import weekly as WK
     from wsb.bot import command as CMD
     bf = WK.board_facts(eng)
