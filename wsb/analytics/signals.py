@@ -178,6 +178,8 @@ def plan(k: str, df: pd.DataFrame, trig_i, inv: float) -> Dict:
     lvl, floor, nm, nm_en = key
     w = zone_width(lvl, floor, atr)
     lo, hi = (lvl - w / 2, lvl + w / 2) if k == "macd" else (lvl, lvl + w)
+    if inv is not None and inv >= lo:               # the give-up line must sit under the entry zone
+        inv = lo * 0.99
     wide = w > lvl * floor * 1.001
     adj = "，依股價波動放寬" if wide else ""
     tail = {"oversold": "；逆勢，只宜小量", "breakout": "；回測突破點不破", "high52": "；回測前高不破", "vcp": "；回測箱頂不破"}.get(k, "")
@@ -191,7 +193,7 @@ def plan(k: str, df: pd.DataFrame, trig_i, inv: float) -> Dict:
     tgt = h52 if h52 and h52 > px * 1.01 else None
     rr = (tgt - px) / (px - inv) if tgt and inv and px > inv else None
     return {"zone_lo": lo, "zone_hi": hi, "zone": zh, "zone_en": en, "in_zone": lo <= px <= hi, "where": where, "where_en": where_en,
-            "target": tgt, "target_pct": (tgt / px - 1) * 100 if tgt else None, "rr": rr}
+            "target": tgt, "target_pct": (tgt / px - 1) * 100 if tgt else None, "rr": rr, "inv": inv}
 
 
 def trigger_text(k: str, df: pd.DataFrame) -> tuple:
@@ -270,6 +272,8 @@ def watch_plan(k: str, df: pd.DataFrame) -> Optional[Dict]:
     lo, hi = lvl, lvl + w
     gap = {"break": 0.03, "low": 0.01}.get(basis, 0.02)
     inv = min(lvl * (1 - gap), lvl - 0.75 * atr) if atr and basis != "low" else lvl * (1 - gap)
+    if inv >= lo:                                   # the give-up line must sit under the reference zone
+        inv = lo * 0.99
     pending = basis in ("break", "reclaim") and px < lvl
     pend = {"break": (f"需先放量站上 {lvl:.2f}（前 20 日高）", f"needs a volume close above {lvl:.2f} first"),
             "reclaim": (f"需先站回 200 日線 {lvl:.2f}", f"needs to reclaim the 200-day {lvl:.2f} first")}.get(basis, ("", ""))
@@ -335,8 +339,11 @@ def evaluate(pats: Dict[str, pd.DataFrame], score: Optional[float], base: Dict[s
         px, trig_px = float(last["close"]), float(df.loc[trig_i, "close"])
         a = df.loc[trig_i, "atr"] if "atr" in df.columns else np.nan
         run = max(0.05, 2 * float(a) / trig_px) if pd.notna(a) else 0.05
-        if inv is None or px <= inv or px > trig_px * (1 + min(run, 0.12)):   # failed already, or ran away from the entry
+        # failed (closed under the give-up line at ANY point since the trigger, even if it recovered), or ran away
+        if inv is None or float(df.loc[trig_i:, "close"].min()) <= inv or px <= inv or px > trig_px * (1 + min(run, 0.12)):
             continue
+        pl = plan(k, df, trig_i, inv)
+        inv = pl["inv"]                                  # clamped under the entry zone when needed (only ever lower)
         risk = (px / inv - 1) * 100
         s = base.get(k, BASE[k])
         if score is not None:
@@ -351,7 +358,7 @@ def evaluate(pats: Dict[str, pd.DataFrame], score: Optional[float], base: Dict[s
             s -= 5
         hits.append({"pattern": k, "label": PATTERNS[k][0], "label_en": PATTERNS[k][1], "strength": float(np.clip(s, 0, 100)),
                      "inv": inv, "risk_pct": risk, "trigger": trig_i.strftime("%Y-%m-%d"), "since": trig_i.strftime("%Y-%m-%d"),
-                     "plan": plan(k, df, trig_i, inv),
+                     "plan": pl,
                      "vol_ratio": None if pd.isna(df.loc[trig_i, "vol_ratio"]) else float(df.loc[trig_i, "vol_ratio"]),
                      "rsi": None if pd.isna(last["rsi"]) else float(last["rsi"])})
     return sorted(hits, key=lambda h: -h["strength"])

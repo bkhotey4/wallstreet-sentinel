@@ -368,26 +368,38 @@ def _avg(xs: List[Optional[float]]) -> Optional[float]:
 
 
 # ------------------------------------------------------------------ context (目前背景)
-def _last_vals(past: List[Dict], key: str, row: int = 0, k: int = 4) -> List[Tuple[str, float]]:
+def _last_vals(past: List[Dict], key: str, row=0, k: int = 4) -> List[Tuple[str, float]]:
+    """Last k actual values of one row of an event type.  `row` is the row LABEL (e.g. "失業率"); rows are compacted
+    when Nasdaq omits one, so a position would silently pick another row.  An int is still accepted as the position
+    in EV[key]["rows"] and translated to that row's label."""
+    lab = row
+    if isinstance(row, int):
+        spec = EV[key]["rows"]
+        lab = spec[row][2] if row < len(spec) else None
     out = []
     for e in sorted([e for e in past if e["key"] == key], key=lambda x: x["date"]):
-        if len(e["rows"]) > row and e["rows"][row].get("a") is not None:
-            out.append((e["date"], e["rows"][row]["a"]))
+        r = _row_by(e, lab)
+        if r is not None and r.get("a") is not None:
+            out.append((e["date"], r["a"]))
     return out[-k:]
+
+
+def _row_by(e: Dict, label) -> Optional[Dict]:
+    return next((r for r in e.get("rows") or [] if label and r.get("label") == label), None)
 
 
 def context(past: List[Dict], upcoming: List[Dict], hist: pd.DataFrame) -> Dict[str, str]:
     """One data-backed sentence per theme, used under every event card."""
     ctx: Dict[str, str] = {}
-    cc = _last_vals(past, "cpi", 1)
-    pc = _last_vals(past, "pce", 1)
-    rate = _last_vals(past, "fomc", 0, 2)
+    cc = _last_vals(past, "cpi", "核心 CPI 年增")
+    pc = _last_vals(past, "pce", "核心 PCE 年增")
+    rate = _last_vals(past, "fomc", "政策利率（上限）", 2)
     nxt = next((e for e in upcoming if e["key"] == "fomc"), None)
     fed = ""
     if rate:
         fed = f"聯準會政策利率上限 {rate[-1][1]:.2f}%"
         if nxt:
-            c = nxt["rows"][0].get("c") if nxt.get("rows") else None
+            c = (_row_by(nxt, "政策利率（上限）") or {}).get("c")
             exp = ("" if c is None else ("，市場預期維持" if abs(c - rate[-1][1]) < 0.01 else
                                           f"，市場預期{'降' if c < rate[-1][1] else '升'}息至 {c:.2f}%"))
             fed += f"；下次會議 {nxt['date']}{exp}"
@@ -396,8 +408,8 @@ def context(past: List[Dict], upcoming: List[Dict], hist: pd.DataFrame) -> Dict[
         infl.append(f"核心 CPI 年增 {cc[-1][1]:.1f}%" + (f"（{len(cc) - 1} 次前 {cc[0][1]:.1f}%）" if len(cc) > 1 else ""))
     if pc:
         infl.append(f"核心 PCE 年增 {pc[-1][1]:.1f}%（聯準會目標 2%）")
-    ur = _last_vals(past, "nfp", 1)
-    nf = _last_vals(past, "nfp", 0, 3)
+    ur = _last_vals(past, "nfp", "失業率")
+    nf = _last_vals(past, "nfp", "非農新增就業（千人）", 3)
     lab = []
     if ur:
         lab.append(f"失業率 {ur[-1][1]:.1f}%" + (f"（{len(ur) - 1} 次前 {ur[0][1]:.1f}%）" if len(ur) > 1 else ""))

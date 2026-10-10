@@ -6,6 +6,7 @@ crypto, vol indices). Two layers:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import time
@@ -19,6 +20,14 @@ from ..health import HEALTH
 
 log = logging.getLogger(__name__)
 _HIST_FILE = DATA_DIR / "history_close.pkl"
+_FAIL_FILE = DATA_DIR / "history_fail.json"       # {ticker: last time a full history download came back without it}
+HIST_FAIL_DAYS = 7                                 # such tickers don't trigger another full rebuild for this long
+_HIST_BACKOFF = (1800, 7200, 21600)                # after a failed rebuild: next try in 30 min, then 2 h, then 6 h
+
+
+def is_rebaseable(t: str) -> bool:
+    """Only equities / ETFs get split / dividend re-basing; indices (^), futures / FX (=) and crypto (-USD) never do."""
+    return not (t.startswith("^") or "=" in t or t.endswith("-USD"))
 
 
 def _yf():
@@ -102,6 +111,14 @@ class MarketData:
         self.quotes: Dict[str, dict] = {}
         self.history_ts = 0.0
         self.quotes_ts = 0.0
+        self._hist_fails = 0                       # consecutive failed history rebuilds (in-memory backoff)
+        self._hist_next = 0.0                      # don't attempt another full rebuild before this time
+        self.hist_failed: Dict[str, float] = {}
+        try:
+            if _FAIL_FILE.exists():
+                self.hist_failed = {str(k): float(v) for k, v in json.loads(_FAIL_FILE.read_text(encoding="utf-8")).items()}
+        except Exception as e:  # noqa: BLE001
+            log.warning("history failure list unreadable: %s", e)
         if _HIST_FILE.exists():
             try:
                 self.history = pd.read_pickle(_HIST_FILE)
@@ -123,14 +140,30 @@ class MarketData:
         return too_short or self.history_age_hours > SETTINGS["refresh"]["history_hours"] or \
             (pd.Timestamp.today().normalize() - last).days > 4
 
+    def recently_failed(self, days: float = HIST_FAIL_DAYS) -> set:
+        """Tickers a full history download failed on within `days` → not a reason for another full rebuild yet."""
+        cut = time.time() - days * 86400
+        return {t for t, ts in self.hist_failed.items() if ts >= cut}
+
+    def _save_failed(self) -> None:
+        try:
+            tmp = _FAIL_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.hist_failed), encoding="utf-8")
+            os.replace(tmp, _FAIL_FILE)
+        except Exception as e:  # noqa: BLE001
+            log.warning("history failure list not saved: %s", e)
+
     def _save(self) -> None:
         tmp = _HIST_FILE.with_suffix(".tmp")
         self.history.to_pickle(tmp)
         os.replace(tmp, _HIST_FILE)                   # atomic: a crash mid-write can't corrupt the cache
 
-    async def refresh_history(self, extra: Optional[List[str]] = None) -> bool:
+    async def refresh_history(self, extra: Optional[List[str]] = None, force: bool = False) -> bool:
         tickers = sorted(set(self.tickers + (extra or [])))
         every = SETTINGS["refresh"]["history_hours"] * 3600
+        if not force and time.time() < self._hist_next:     # backing off after a failed full rebuild
+            log.info("history rebuild skipped: backing off for %.0f more min", (self._hist_next - time.time()) / 60)
+            return False
         try:
             df = await asyncio.to_thread(_download, tickers, start=history_start().isoformat(), interval="1d")
             if df.empty:
@@ -146,11 +179,18 @@ class MarketData:
             self.history = df
             self.history_ts = time.time()
             await asyncio.to_thread(self._save)
+            self.hist_failed = {t: time.time() for t in bad}       # remembered so they don't force another rebuild soon
+            self._save_failed()
+            self._hist_fails, self._hist_next = 0, 0.0
             HEALTH.ok("yahoo_history", df.shape[1] - len(bad) + len(kept), every=every)
             return True
         except Exception as e:  # noqa: BLE001
             log.exception("history refresh failed")
             HEALTH.fail("yahoo_history", e, every=every)
+            wait = _HIST_BACKOFF[min(self._hist_fails, len(_HIST_BACKOFF) - 1)]
+            self._hist_fails += 1
+            self._hist_next = time.time() + wait
+            log.warning("history rebuild failed %d time(s) in a row: next attempt in %.1f h", self._hist_fails, wait / 3600)
             return False
 
     async def refresh_quotes(self, extra: Optional[List[str]] = None) -> None:
@@ -219,12 +259,15 @@ class MarketData:
             if col not in h.columns:
                 h[col] = np.nan
                 continue
-            # split / dividend re-basing: recent auto-adjusted bars may be on a new basis → rescale older history
+            # split / dividend re-basing: recent auto-adjusted bars may be on a new basis → rescale older history.
+            # Equities / ETFs only (an index or FX rate has no splits), and only with ≥3 overlapping bars, leaving out
+            # history's last bar (it may be a partial intraday one) so one odd print can't rescale decades of data.
             r = recent[col].dropna()
-            if r.empty:
+            if r.empty or not is_rebaseable(col):
                 continue
-            ov = h[col].reindex(r.index).dropna()
-            if len(ov):
+            hc = h[col].dropna().iloc[:-1]
+            ov = hc.reindex(r.index).dropna()
+            if len(ov) >= 3:
                 k = float((r.reindex(ov.index) / ov).median())
                 if np.isfinite(k) and k > 0 and abs(k - 1) > 0.015:
                     h.loc[h.index < r.index.min(), col] *= k

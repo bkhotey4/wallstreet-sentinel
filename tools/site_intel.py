@@ -4,7 +4,7 @@ alarm-rule backtest, geopolitical heat), US→TW linkage, overheating list, hard
 the brokerage-cost calculator.  Nothing here reads personal holdings."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -20,9 +20,21 @@ def _sx(eng) -> Dict:
     return getattr(eng, "sx", None) or {}
 
 
+def _name(r: Dict) -> str:
+    return r.get("name") or r.get("sym") or ""
+
+
 def _nm(r: Dict) -> str:
-    return (f'<b>{T(r.get("name") or r.get("sym", ""), r.get("name_en") or r.get("name") or r.get("sym", ""))}</b>'
-            f'<span class="tk">{esc(r.get("code") or r.get("sym", ""))}</span>')
+    return (f'<b>{T(_name(r), r.get("name_en") or _name(r))}</b>'
+            f'<span class="tk">{esc(r.get("code") or r.get("sym") or "")}</span>')
+
+
+def _tpe(ts) -> str:
+    """Unix time → 'MM-DD HH:MM' Taipei time."""
+    try:
+        return datetime.fromtimestamp(float(ts), timezone(timedelta(hours=8))).strftime("%m-%d %H:%M")
+    except (TypeError, ValueError, OverflowError, OSError):
+        return ""
 
 
 def _td(v, txt: str, c: str = "r") -> str:
@@ -58,7 +70,7 @@ def _analyst_table(rows: List[Dict], mk: str) -> str:
     if not rows:
         return f'<p class="muted">{T("這個市場還沒有分析師資料（每小時補抓一部分）。", "No analyst data for this market yet.")}</p>'
     tr = "".join(
-        f'<tr data-q="{esc((r["name"] + " " + r["code"]).lower())}"><td class="nw">{_nm(r)}{_theme_chip(r["theme"])}</td>'
+        f'<tr data-q="{esc((_name(r) + " " + (r.get("code") or "")).lower())}"><td class="nw">{_nm(r)}{_theme_chip(r["theme"])}</td>'
         + _td(r["px"], num(r["px"], 2)) + _td(r["tm"], num(r["tm"], 2))
         + _td(r["up"], f'<b class="{cls(r["up"])}">{num(r["up"], 0, sign=True, pct=True)}</b>')
         + _td(r.get("upl"), f'<span class="muted">{num(r.get("upl"), 0, sign=True, pct=True)} ~ {num(r.get("uph"), 0, sign=True, pct=True)}</span>')
@@ -82,10 +94,11 @@ def sec_analyst(eng) -> str:
 def _div_table(rows: List[Dict], mk: str) -> str:
     if not rows:
         return f'<p class="muted">{T("這個市場還沒有配息資料。", "No dividend data yet.")}</p>'
-    net_h = T("扣 30% 預扣稅後", "After 30% US tax") if mk == "us" else T("實拿（不含所得稅）", "Gross")
+    net_h = T("扣預扣稅後", "After withholding") if mk == "us" else T("實拿（不含所得稅）", "Gross")
     tr = "".join(
         f'<tr><td class="nw">{_nm(r)}{_theme_chip(r["theme"])}</td>' + _td(r["yld"], f'<b>{num(r["yld"], 2, pct=True)}</b>')
-        + _td(r["net"], num(r["net"], 2, pct=True)) + _td(r["rate"], num(r["rate"], 2))
+        + _td(r.get("net"), num(r.get("net"), 2, pct=True) + (f' <span class="muted small">{r["tax"]:.0f}%</span>' if r.get("tax") is not None and r["tax"] != 30 else ""))
+        + _td(r["rate"], num(r["rate"], 2))
         + _td(r.get("ex") or "", (f'<b class="up">{esc(r["ex"])}</b>' if r.get("ex_soon") else esc(r.get("ex") or "—")), "nw")
         + _td(r.get("paid"), num(r.get("paid"), 0)) + _td(r.get("grow"), num(r.get("grow"), 0))
         + _td(r.get("payout"), num(r.get("payout"), 0, pct=True)) + "</tr>" for r in rows)
@@ -99,9 +112,11 @@ def sec_dividends(eng) -> str:
     if not any(dv.values()):
         return ""
     items = [(MK[mk][0] + f" {len(dv.get(mk) or [])}", MK[mk][1], _div_table(dv.get(mk) or [], mk)) for mk in ("us", "tw", "hk")]
-    note = T("殖利率＝年配息 ÷ 現價（自行計算）。美股股息對台灣投資人預扣 30%（台積電 ADR 等外國公司依其母國稅制，可能不同）；"
+    note = T("殖利率＝年配息 ÷ 現價（自行計算）。美國公司股息對台灣投資人預扣 30%；外國公司 ADR 依母國稅制，表上台積電 21%、艾司摩爾 15%、"
+             "諾和諾德 27%、Cameco 25%（實際以券商扣繳為準），其他非美國公司顯示「—」；"
              "台股股息併入綜所稅、單筆 ≥ 2 萬元另扣 2.11% 二代健保補充保費，表上未扣。綠色除息日＝30 天內。"
-             "連續年數只看最近幾年的完整年度資料；高殖利率有時是股價大跌造成，請一併看配息率是否過高。",
+             "連續年數＝到去年為止、逐年不中斷的完整年度（中間停發一年就歸零重算；增配要比前一年高）。超過 7 天沒更新、"
+             "財報幣別與交易幣別不同，或本站股價與 Yahoo 差距過大的個股不列出。高殖利率有時是股價大跌造成，請一併看配息率是否過高。",
              "Yield = annual dividend ÷ price. US dividends carry 30% withholding for Taiwan residents. Green ex-date = within 30 days.")
     return card("股息雷達", "Dividend radar", f'<p class="small muted">{note}</p>' + _tabset("dv", items), "wide")
 
@@ -157,12 +172,17 @@ def sec_earn_moves(eng) -> str:
         f'<tr><td class="nw">{esc(r["date"][5:])}{_wd(r["date"])} <span class="muted small">{T(*tm.get(r["time"], tm[""]))}</span></td>'
         f'<td class="nw">{_nm(r)}{_theme_chip(r["theme"])}</td>'
         + _td(r.get("mv"), f'<b>±{num(r["mv"], 1)}%</b>' if r.get("mv") is not None else '<span class="muted">—</span>')
-        + f'<td class="small muted nw">{esc((r.get("exp") or "—")[5:])}</td>'
+        + f'<td class="small muted nw">{esc(r["exp"][5:]) if r.get("exp") else "—"}</td>'
         + f'<td class="small nw">{" ".join(f"<span class={cls(v)}>{v:+.1f}%</span>" for v in r["reacts"]) or "—"}</td>'
         + _td(r.get("avg"), num(r.get("avg"), 1, pct=True)) + f'<td class="small">{verdict(r)}</td></tr>' for r in rows)
-    note = T("隱含波動＝財報日後第一個到期日的價平跨式（買權＋賣權中價）÷ 股價，代表選擇權市場「平均預期」的漲跌幅度（約 0.8 個標準差），"
-             "到期日離財報越遠、混入的非財報波動越多。過去反應＝最近 4 次財報前一日收盤到財報後一日收盤的漲跌（盤前、盤後公布都涵蓋）。"
-             "CBOE 延遲報價，資料每 4 小時更新。", "Implied move = ATM straddle (first expiry after the report) ÷ price. Past reactions = last 4 reports.")
+    asof = sorted({r["asof"] for r in rows if r.get("asof")})
+    note = T("隱含波動＝財報日隔天（含）之後第一個到期日、以現價估算的跨式價（買權＋賣權中價，扣除內含價值後內插到現價）÷ 股價，"
+             "代表選擇權市場「平均預期」的漲跌幅度（約 0.8 個標準差），涵蓋財報前後兩個交易日，和右邊的歷史反應用同一個區間比較；"
+             "到期日離財報越遠、混入的非財報波動越多。過去反應＝最近 4 次財報前一日收盤到財報後一日收盤（兩個交易日）的漲跌，"
+             "過去公布時間（盤前／盤後）無法回溯，所以一律用這兩個交易日。CBOE 延遲報價，資料每 4 小時更新"
+             + (f"（報價時間 {asof[-1]}）" if asof else "") + "。這是市場預期的整理，不是投資建議。",
+             "Implied move = straddle at spot (first expiry on/after the day after the report) ÷ price, covering the same two sessions as "
+             "the past reactions (close before → close after the report). Not advice.")
     return card("財報前隱含波動 vs 歷史反應（未來 14 天）", "Earnings implied move vs history (next 14 days)",
                 f'<p class="small muted">{note}</p><div class="scroll"><table class="mini srt"><thead><tr>{_th("財報日", "Report", False)}'
                 f'{_th("個股", "Stock", False)}{_th("隱含波動", "Implied")}<th>{T("到期日", "Expiry")}</th><th>{T("過去 4 次反應", "Last 4 reactions")}</th>'
@@ -231,6 +251,7 @@ def sec_em(eng) -> str:
     if not em.get("available"):
         return ""
     tr = []
+    asof = sorted({r["asof"] for r in em["rows"] if r.get("asof")})
     for r in em["rows"]:
         for b in r["bands"]:
             rt = b.get("ratio")
@@ -241,7 +262,9 @@ def sec_em(eng) -> str:
                       f'<td class="r"><b>±{num(b["sd"], 1)}%</b></td><td class="r nw">{num(b["lo"], 2)} – {num(b["hi"], 2)}</td>'
                       f'<td class="r">±{num(b.get("rv_sd"), 1)}%</td><td class="small">{rd}</td></tr>')
     note = T("用 CBOE 延遲報價的價平跨式價推算：一個標準差 ≈ 跨式價 ÷ 股價 × 1.25，約 68% 的機率收在區間內。收盤落在區間外＝超出市場預期的「真突破／真破位」，"
-             "區間內的漲跌多半是雜訊。右側用近 20 日實際波動換算同樣天數做比較。", "One standard deviation ≈ ATM straddle ÷ price × 1.25 (≈68% range).")
+             "區間內的漲跌多半是雜訊。右側用近 20 日實際波動換算同樣天數做比較。超過 3 天沒更新的報價不顯示。"
+             + (f"報價時間 {asof[-1]}。" if asof else ""), "One standard deviation ≈ straddle at spot ÷ price × 1.25 (≈68% range)."
+             + (f" Quotes as of {asof[-1]}." if asof else ""))
     return card("期權預期波動區間", "Options-implied ranges",
                 f'<p class="small muted">{note}</p><div class="scroll"><table class="mini"><thead><tr><th>ETF</th><th>{T("期間", "Horizon")}</th>'
                 f'<th class="r">{T("現價", "Spot")}</th><th class="r">{T("一個標準差", "1 s.d.")}</th><th class="r">{T("預期區間", "Range")}</th>'
@@ -286,7 +309,9 @@ def sec_geo(eng) -> str:
     cards = []
     for r in g["rows"]:
         lv = r["level"]
-        rt = f'{T("約平常的", "≈")} {lv["ratio"]:.1f} {T("倍", "× normal")}' if lv.get("ratio") else T("基準累積中", "baseline building")
+        rt = (f'{T("約平常的", "≈")} {lv["ratio"]:.1f} {T("倍", "× normal")}' if lv.get("ratio") is not None and not lv.get("building")
+              else T("基準累積中（最高只顯示升溫）", "baseline building (capped at Rising)"))
+        upd = f'・{T("更新", "updated")} {_tpe(r["ts"])}' if r.get("ts") else ""
         mk = "".join(f'<span class="chip">{esc(TK_NM.get(m["t"], m["t"]))} <b class="{cls(m["d1"])}">{num(m["d1"], 1, sign=True, pct=True)}</b>'
                      f'{" <b class=warn>!</b>" if m.get("z") is not None and abs(m["z"]) >= 2 else ""}</span>' for m in r["mk"])
         lv_t = {3: ("重大", "L3"), 2: ("軍事／制裁", "L2"), 1: ("外交", "L1"), 0: ("", "")}
@@ -294,10 +319,11 @@ def sec_geo(eng) -> str:
                        f'<a href="{esc(n["link"])}" target="_blank" rel="noopener">{esc(n["t"][:140])}</a></li>' for n in r["top"])
         cards.append(f'<div class="geoc" style="border-left-color:{GEO_COL[lv["k"]]}"><div class="gh"><b>{T(r["zh"], r["en"])}</b>'
                      f'<span class="pill" style="color:{GEO_COL[lv["k"]]};border-color:{GEO_COL[lv["k"]]}">{T(lv["label"], lv["label_en"])}</span>'
-                     f'<span class="muted small">{T("熱度", "Heat")} {r["score"]:.0f}・{rt}・{T("72 小時", "72h")} {r["n"]} {T("則", "items")}</span></div>'
+                     f'<span class="muted small">{T("熱度", "Heat")} {r["score"]:.0f}・{rt}・{T("72 小時", "72h")} {r["n"]} {T("則", "items")}{upd}</span></div>'
                      f'<div class="chips">{mk}</div><ul class="lines small">{news}</ul></div>')
     note = T("用 Google 新聞標題做關鍵字分級（不經 AI）：重大＝入侵、封鎖、宣戰、核試等；軍事／制裁＝飛彈、空襲、軍演、擊落、制裁等；外交＝談判、警告、停火等。"
-             "熱度＝72 小時內加權則數，和這個區域自己過去 30 天的中位數比較（持續中的戰爭不會天天顯示高度緊張，看的是「變化」）。"
+             "熱度＝72 小時內加權則數，和這個區域自己過去 30 天的中位數比較（中位數最低以 8 計；持續中的戰爭不會天天顯示高度緊張，看的是「變化」）。"
+             "「高度緊張」至少要有一則重大等級新聞；颱風、地震等天災新聞最多只算外交等級。更新時間為台北時間，新聞來源抓取失敗時沿用上一次結果。"
              "關鍵字分級會誤判，請點標題看原文；市場欄的「!」＝今日變動超過該資產兩個標準差。",
              "Keyword-graded Google News headlines (no AI), heat vs each theatre's own last 30 days, plus the related markets.")
     return card("地緣風險燈號", "Geopolitical heat", f'<p class="small muted">{note}</p><div class="geog">{"".join(cards)}</div>', "wide")
@@ -331,7 +357,8 @@ def sec_link(eng) -> str:
                  f'<div><span class="muted">{T("一年區間", "1y range")}</span><b>{num(a["lo"], 0)}% ~ {num(a["hi"], 0)}%</b></div>'
                  f'<div><span class="muted">{T("一年百分位", "1y percentile")}</span><b>{num(a["pct"], 0)}</b></div></div>'
                  + f'<div class="chartbox">{line_chart("adrprem", s, "TSM ADR 溢價 %", 1)}</div>')
-    note = T("台股每個交易日對應「前一晚」的美股收盤（台北時間），用近一年資料算相關係數與 Beta；推估台股＝Beta × 美股前一晚漲跌。"
+    note = T("台股每個交易日對應「上一個台股交易日之後」的美股交易日（台北時間；台股休市時把中間幾晚的美股漲跌複利累計，"
+             "美股休市、中間沒有美股交易的台股交易日不列入），用近一年資料算相關係數與 Beta；推估台股＝Beta × 美股前一晚（累計）漲跌。"
              "族群用本站精選池等權平均（括號內為檔數）。大波動同向率＝美股前一晚漲跌 ≥ 2% 時台股同方向的比例。"
              "ADR 溢價＝TSM ÷（2330 × 5 ÷ 美元台幣）− 1，同日收盤比較，溢價偏高時常有回歸平均的傾向，但可以持續很久。",
              "Each Taiwan session paired with the previous US close; beta / correlation over the last year. ADR premium = TSM vs 5 × 2330 in USD.")
@@ -418,7 +445,8 @@ def sec_explainer(eng) -> str:
     cards = "".join(f'<details class="exp"><summary><b>{esc(zh)}</b> <span class="muted small">{esc(en)}</span>'
                     f'{"".join(_theme_chip(t) for t in ths)}</summary><p>{esc(body)}</p><p class="small muted">{esc(watch)}</p></details>'
                     for zh, en, ths, body, watch in EXPLAIN)
-    note = T("族群背後的關鍵技術，各用一分鐘講清楚在做什麼、為什麼重要、接下來看什麼。內容是技術背景整理，不涉及個股建議。",
+    note = T("族群背後的關鍵技術，各用一分鐘講清楚在做什麼、為什麼重要、接下來看什麼。內容是技術背景整理，不涉及個股建議。"
+             "內容整理於 2026-10，技術與審查進度變化快。",
              "One-minute explainers of the technologies behind the themes.")
     return card("硬科技一分鐘科普", "Hard-tech in one minute", f'<p class="small muted">{note}</p><div class="expg">{cards}</div>', "wide")
 
@@ -431,7 +459,7 @@ def sec_debate(eng) -> str:
     out = []
     for r in rows:
         a = r.get("ai")
-        head = (f'<div class="gh"><span class="muted">#{r["rank"]}</span><b>{esc(r["name"][:32])}</b><span class="tk">{esc(r["sym"])}</span>'
+        head = (f'<div class="gh"><span class="muted">#{r["rank"]}</span><b>{esc(_name(r)[:32])}</b><span class="tk">{esc(r["sym"])}</span>'
                 f'<span class="muted small">{T("營收年增", "Rev growth")} {num(r.get("g"), 0, pct=True)}・{T("估值÷成長", "Value÷growth")} {num(r.get("gav"), 3)} {esc(r.get("basis") or "")}</span></div>')
         if a:
             body = (f'<p><b class="up">{T("多方", "Bull")}</b>　{esc(a["bull"])}</p><p><b class="dn">{T("空方", "Bear")}</b>　{esc(a["bear"])}</p>'
@@ -454,6 +482,7 @@ def sec_fees(eng) -> str:
           f'<label>{T("每筆最低手續費（美元）", "Min. commission (USD)")}<input type="number" step="any" data-k="m" value="0"></label>'
           f'<label>{T("SEC 規費（每百萬美元賣出）", "SEC fee per $1M sold")}<input type="number" step="any" data-k="sec" value="0"></label>'
           f'<label>{T("FINRA TAF（每股，賣出）", "FINRA TAF per share sold")}<input type="number" step="any" data-k="taf" value="0.000166"></label>'
+          f'<label>{T("FINRA TAF 單筆上限（美元）", "FINRA TAF cap per trade (USD)")}<input type="number" step="any" data-k="tafcap" value="8.30"></label>'
           f'<label>{T("每股年配息（美元，選填）", "Annual dividend / share")}<input type="number" step="any" data-k="d" value="0"></label>'
           f'</div><div class="cout"></div></div>')
     tw = (f'<div class="calc" data-m="tw"><div class="cg">'
@@ -467,7 +496,8 @@ def sec_fees(eng) -> str:
           f'</div><div class="cout"></div></div>')
     note = T("所有預設值都只是範例，請改成你券商的實際費率（複委託常見有最低手續費、優惠折扣，以對帳單為準）。"
              "台股手續費＝成交金額 × 0.1425% × 折數，買賣各收一次；證交稅只在賣出收。美股股息對台灣投資人預扣 30%。"
-             "SEC 規費費率每年由 SEC 公告調整，FINRA TAF 只在賣出收取且有單筆上限。計算只在你的瀏覽器裡進行，不會送出或儲存任何資料。",
+             "SEC 規費費率每年由 SEC 公告調整，FINRA TAF 只在賣出收取且有單筆上限（上限填 0＝不設上限）。計算只在你的瀏覽器裡進行，不會送出或儲存任何資料。"
+             "費率為範例，以券商與主管機關最新公告為準（2026-10 整理）。",
              "All defaults are placeholders — enter your broker's real rates. Runs entirely in your browser; nothing is sent or stored.")
     return card("交易成本試算（手續費・稅・損益兩平）", "Trading-cost calculator",
                 f'<p class="small muted">{note}</p>' + _tabset("fee", [("美股複委託", "US (sub-brokerage)", us), ("台股", "Taiwan", tw)]), "wide")
@@ -499,12 +529,13 @@ document.querySelectorAll('table.srt').forEach(function(t){var ths=t.querySelect
 function f(x,d){return isFinite(x)?Number(x).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):'—';}
 function row(a,b,c){return '<tr><td>'+a+'</td><td class="r">'+b+'</td>'+(c?'<td class="muted small">'+c+'</td>':'')+'</tr>';}
 function calc(w){var m=w.dataset.m,v={};w.querySelectorAll('[data-k]').forEach(function(i){v[i.dataset.k]=parseFloat(i.value)||0;});
+ var tf=function(n){return v.tafcap>0?Math.min(n*v.taf,v.tafcap):n*v.taf;};
  var q=v.q,bv=q*v.b,sv=q*v.s,cur=m==='us'?'US$':'NT$',d=m==='us'?2:0,bf,sf,tax=0,taf=0,sec=0;
- if(m==='us'){bf=Math.max(bv*v.r/100,v.m);sf=Math.max(sv*v.r/100,v.m);sec=sv*v.sec/1e6;taf=Math.min(q*v.taf,8.30);}
+ if(m==='us'){bf=Math.max(bv*v.r/100,v.m);sf=Math.max(sv*v.r/100,v.m);sec=sv*v.sec/1e6;taf=tf(q);}
  else{bf=Math.max(Math.floor(bv*0.001425*v.dc),v.m);sf=Math.max(Math.floor(sv*0.001425*v.dc),v.m);tax=Math.floor(sv*v.tax);}
  var fees=bf+sf+tax+sec+taf,pnl=sv-bv-fees,cost=bv+bf;
  // break-even sell price: solve q*p - fee(p) = cost (fees are near-linear; iterate)
- var p=v.b;for(var k=0;k<40;k++){var s2=q*p,f2=m==='us'?Math.max(s2*v.r/100,v.m)+s2*v.sec/1e6+Math.min(q*v.taf,8.30):Math.max(Math.floor(s2*0.001425*v.dc),v.m)+Math.floor(s2*v.tax);p=(cost+f2)/q;}
+ var p=v.b;for(var k=0;k<40;k++){var s2=q*p,f2=m==='us'?Math.max(s2*v.r/100,v.m)+s2*v.sec/1e6+tf(q):Math.max(Math.floor(s2*0.001425*v.dc),v.m)+Math.floor(s2*v.tax);p=(cost+f2)/q;}
  var be=(p/v.b-1)*100,fr=fees/Math.max(bv,1)*100,L=en();
  var h='<table class="mini">'+row(L?'Buy amount':'買進金額',cur+' '+f(bv,d))+row(L?'Buy commission':'買進手續費',cur+' '+f(bf,d))
   +row(L?'Sell amount':'賣出金額',cur+' '+f(sv,d))+row(L?'Sell commission':'賣出手續費',cur+' '+f(sf,d))

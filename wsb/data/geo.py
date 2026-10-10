@@ -51,6 +51,17 @@ L2 = ["missile", "missiles", "airstrike", "airstrikes", "air strike", "drone att
 L1 = ["tension", "tensions", "talks", "warns", "warning", "condemns", "ceasefire", "diplomat", "diplomatic", "protest",
       "警告", "談判", "停火", "抗議", "緊張"]
 W = {3: 5.0, 2: 2.0, 1: 0.5, 0: 0.0}
+# weather / disaster headlines ("typhoon strikes", "earthquake struck") are never graded above L1
+WEATHER = ["颱風", "豪雨", "地震", "typhoon", "typhoons", "storm", "storms", "hurricane", "hurricanes", "earthquake", "earthquakes"]
+# non-military "attack" / "strike" phrases, removed before grading
+_NEG = re.compile(r"\b(?:heart|panic|asthma|anxiety|shark|dog)\s+attacks?\b"
+                  r"|\b(?:labou?r|workers?'?|union|general|hunger|teachers?'?|nurses?'?|dockworkers?'?|transit)\s+strikes?\b"
+                  r"|\b(?:on|go on|went on|goes on)\s+strike\b|\bstrike\s+action\b"
+                  r"|\bstrikes?\s+(?:a\s+|an\s+)?(?:deal|deals|agreement|accord|balance|chord|tone|gold|pact)\b|\blightning\s+strikes?\b")
+_MIL = re.compile(r"共軍|解放軍|軍|部隊|\btroops?\b|\bmilitary\b|\barmy\b")          # 「入侵」 only counts with a military context
+_SEA = re.compile(r"海|港|航|\bblockade\b|\bports?\b|\bshipping\b|\bstrait\b")    # 「封鎖」 only with a sea / port / shipping context
+_NT_SOFT = re.compile(r"\b(?:could|may|might|plans?|planning|prepar\w*|threat\w*|warns?|possible|potential|ready|readies|"
+                      r"signs?\s+of|would|vows?)\b[^.;:]{0,40}\bnuclear test")       # talk of a test is L2, an actual test is L3
 
 
 def _has(t: str, words: List[str]) -> List[str]:
@@ -62,10 +73,26 @@ def _has(t: str, words: List[str]) -> List[str]:
     return out
 
 
+def _l3_ok(w: str, t: str) -> bool:
+    if w == "入侵":
+        return bool(_MIL.search(t))
+    if w == "封鎖":
+        return bool(_SEA.search(re.sub("上海|香港", "", t)))      # not 「上海封鎖」 lockdown news
+    if w == "nuclear test":
+        return not _NT_SOFT.search(t)
+    return True
+
+
 def grade(title: str) -> tuple:
-    t = title.lower()
-    for lv, words in ((3, L3), (2, L2), (1, L1)):
-        h = _has(t, words)
+    t = _NEG.sub(" ", title.lower())
+    raw3 = _has(t, L3)
+    h3 = [w for w in raw3 if _l3_ok(w, t)]
+    h2 = (["nuclear test"] if "nuclear test" in raw3 and "nuclear test" not in h3 else []) + _has(t, L2)
+    h1 = _has(t, L1)
+    if _has(t, WEATHER) and "storm shadow" not in t:          # Storm Shadow is a missile, not weather
+        hits = h3 + h2 + h1
+        return (1, hits[:3]) if hits else (0, [])
+    for lv, h in ((3, h3), (2, h2), (1, h1)):
         if h:
             return lv, h[:3]
     return 0, []
@@ -76,16 +103,24 @@ def heat(items: List[Dict], now: Optional[float] = None, hours: int = 72) -> flo
     return round(sum(W[i["lv"]] for i in items if now - i["ts"] <= hours * 3600), 1)
 
 
-def level(score: float, hist: List[float]) -> Dict:
-    """Relative to the theatre's own recent history: ratio to the median of earlier days."""
-    base = statistics.median(hist) if len(hist) >= 5 else None
-    r = score / base if base and base > 0 else None
-    if r is None:
-        k = 0 if score < 15 else 1 if score < 40 else 2
+BASE_FLOOR = 8.0                                              # a quiet theatre's median is floored so a few headlines can't read as a spike
+
+
+def level(score: float, hist: List[float], n3: int = 0) -> Dict:
+    """Relative to the theatre's own recent history: ratio to the median of earlier days (floored at BASE_FLOOR).
+    The top level needs at least one L3 headline; with under 5 days of history the level is capped at 1 (baseline building)."""
+    if len(hist) < 5:
+        k = 0 if score < 15 else 1
+        base, r, building = None, None, True
     else:
+        base = max(float(statistics.median(hist)), BASE_FLOOR)
+        r = score / base
         k = 0 if r < 1.3 else 1 if r < 1.8 else 2 if r < 2.5 else 3
+        building = False
+        if k >= 3 and n3 < 1:
+            k = 2
     lab = [("平穩", "Calm"), ("升溫", "Rising"), ("緊張", "Tense"), ("高度緊張", "Elevated")][k]
-    return {"k": k, "label": lab[0], "label_en": lab[1], "ratio": r, "base": base}
+    return {"k": k, "label": lab[0], "label_en": lab[1], "ratio": r, "base": base, "building": building}
 
 
 async def _feed(url: str) -> List[Dict]:
@@ -120,8 +155,16 @@ def _save(d: Dict) -> None:
         log.warning("geo cache not saved: %s", e)
 
 
+_PUB = re.compile(r"\s+-\s+[^-]{1,60}$")                         # Google News appends " - Publisher"
+
+
+def _key(title: str) -> str:
+    return re.sub(r"[^a-z0-9一-鿿]+", "", _PUB.sub("", title).lower())[:80]
+
+
 def assemble(raw: Dict[str, List[Dict]], cache: Dict, now: Optional[float] = None) -> Dict:
-    """raw = {theatre: headlines}. Updates cache['days'] (one heat value per theatre per UTC day) and returns the view."""
+    """raw = {theatre: headlines}, only for theatres whose feeds answered.  Updates cache['days'] (one heat value per theatre
+    per UTC day) for those theatres only and returns their view entries."""
     now = now or time.time()
     day = datetime.fromtimestamp(now, tz=timezone.utc).date().isoformat()
     days = cache.setdefault("days", {})
@@ -129,7 +172,7 @@ def assemble(raw: Dict[str, List[Dict]], cache: Dict, now: Optional[float] = Non
     for th, items in raw.items():
         seen, graded = set(), []
         for it in sorted(items, key=lambda x: -x["ts"]):
-            key = re.sub(r"[^a-z0-9一-鿿]+", "", it["t"].lower())[:80]
+            key = _key(it["t"])
             if key in seen or now - it["ts"] > 72 * 3600:
                 continue
             seen.add(key)
@@ -138,8 +181,9 @@ def assemble(raw: Dict[str, List[Dict]], cache: Dict, now: Optional[float] = Non
         sc = heat(graded, now)
         hist = [v[th] for d, v in sorted(days.items()) if d < day and th in v][-30:]
         days.setdefault(day, {})[th] = sc
-        out[th] = {"score": sc, "level": level(sc, hist), "hist": hist[-14:] + [sc], "n": len(graded),
-                   "n3": sum(1 for g in graded if g["lv"] == 3), "n2": sum(1 for g in graded if g["lv"] == 2),
+        n3 = sum(1 for g in graded if g["lv"] == 3)
+        out[th] = {"score": sc, "level": level(sc, hist, n3), "hist": hist[-14:] + [sc], "n": len(graded), "ts": now,
+                   "n3": n3, "n2": sum(1 for g in graded if g["lv"] == 2),
                    "top": sorted(graded, key=lambda g: (-g["lv"], -g["ts"]))[:6]}
     for d in sorted(days)[:-60]:
         days.pop(d, None)
@@ -150,19 +194,24 @@ async def refresh(every_h: float = 2) -> Dict:
     cache = _load()
     if cache.get("view") and time.time() - float(cache.get("ts", 0)) < every_h * 3600:
         return cache["view"]
+    ths = list(THEATRES)
+    res = await asyncio.gather(*(asyncio.gather(*(_feed(u) for u in THEATRES[th][2]), return_exceptions=True) for th in ths))
     raw: Dict[str, List[Dict]] = {}
-    ok = 0
-    for th, (_, _, urls, _) in THEATRES.items():
-        res = await asyncio.gather(*(_feed(u) for u in urls), return_exceptions=True)
-        raw[th] = [x for r in res if not isinstance(r, Exception) for x in r]
-        ok += sum(1 for r in res if not isinstance(r, Exception))
-    if not ok:
+    for th, rs in zip(ths, res):
+        good = [r for r in rs if not isinstance(r, BaseException)]
+        if good:                                           # a theatre whose feeds all failed keeps its previous view entry
+            raw[th] = [x for r in good for x in r]
+    if not raw:
         return cache.get("view") or {}
-    view = assemble(raw, cache)
+    view = {**(cache.get("view") or {}), **assemble(raw, cache)}
+    view = {k: v for k, v in view.items() if k in THEATRES}
     cache.update({"ts": time.time(), "view": view})
     _save(cache)
     return view
 
 
-def load() -> Dict:
-    return _load().get("view") or {}
+def load(max_age_h: float = 24) -> Dict:
+    c = _load()
+    if time.time() - float(c.get("ts", 0)) > max_age_h * 3600:
+        return {}
+    return c.get("view") or {}

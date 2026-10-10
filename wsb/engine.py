@@ -87,6 +87,8 @@ class Engine:
         self._lock = asyncio.Lock()
         self.ready = False
         self.full_ready = False          # phase 2 (macro/news/options/taiwan) loaded
+        self.site_mode = False           # set by tools.build_site: headless build that runs earnings itself
+        self.recompute_ts = 0.0          # when recompute() last finished (heartbeat / health)
 
     # ------------------------------------------------------------------
     def holding_tickers(self) -> List[str]:
@@ -99,28 +101,34 @@ class Engine:
         wanted = set(self.market.tickers) | set(extra)
         h = self.market.history
         missing = {t for t in wanted if t not in h.columns or h[t].notna().sum() == 0}
+        missing -= self.market.recently_failed()        # Yahoo had nothing for these lately → no full rebuild over them
         if self.market.history_is_stale() or (missing and self.market.history_age_hours > 1):
             log.info("history rebuild: stale=%s missing=%d (%s)", self.market.history_is_stale(), len(missing),
                      ", ".join(sorted(missing)[:8]))
             await self.market.refresh_history(extra)
         await self.market.refresh_quotes(extra)
-        await self.recompute()
+        # site build: the model-quality backtest + feature lab run once, after phase 2 (they'd be redone anyway)
+        await self.recompute(skip_quality=self.site_mode)
         self.ready = True
         log.info("phase 1 ready (prices)")
-        names = ("fred", "crypto", "options", "news", "calendar", "sec", "taiwan", "darkpool", "stocks", "stocknews",
-                 "treasury", "edgar", "econ")
-        res = await asyncio.gather(self.fred.refresh(), self.crypto.refresh(), self.options.refresh(),
-                                   self.news.refresh(), self.calendar.refresh(extra),
-                                   self.sec.refresh([t for t in extra if "." not in t]),
-                                   self.taiwan.refresh(), self.darkpool.refresh(self.market), self.stockprices.refresh(),
-                                   self.stocknews.refresh(), self.treasury.refresh(), self.refresh_edgar(), self.econ.refresh(),
-                                   return_exceptions=True)
-        try:
-            await self.refresh_earnings()
-        except Exception as e:  # noqa: BLE001
-            log.warning("phase-2 refresh earnings failed: %s", e)
-        for nm, r in zip(names, res):
-            if isinstance(r, Exception):
+        tmo = float(SETTINGS.get("engine", {}).get("feed_timeout_s", 300))
+        feeds = (("fred", self.fred.refresh()), ("crypto", self.crypto.refresh()), ("options", self.options.refresh()),
+                 ("news", self.news.refresh()), ("calendar", self.calendar.refresh(extra)),
+                 ("sec", self.sec.refresh([t for t in extra if "." not in t])),
+                 ("taiwan", self.taiwan.refresh()), ("darkpool", self.darkpool.refresh(self.market)),
+                 ("stocks", self.stockprices.refresh()), ("stocknews", self.stocknews.refresh()),
+                 ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()))
+        # each feed gets its own timeout: one hung source can't hold phase 2 (and the bot's loops) forever
+        res = await asyncio.gather(*(asyncio.wait_for(c, tmo) for _, c in feeds), return_exceptions=True)
+        if not self.site_mode:                           # the site build forces its own (frames) earnings refresh later
+            try:
+                await asyncio.wait_for(self.refresh_earnings(), float(SETTINGS.get("engine", {}).get("earnings_timeout_s", 240)))
+            except Exception as e:  # noqa: BLE001
+                log.warning("phase-2 refresh earnings failed: %s", e if str(e) else type(e).__name__)
+        for (nm, _), r in zip(feeds, res):
+            if isinstance(r, asyncio.TimeoutError):
+                log.warning("phase-2 refresh %s timed out after %.0fs", nm, tmo)
+            elif isinstance(r, Exception):
                 log.warning("phase-2 refresh %s failed: %s", nm, r)
         self._quality = None            # phase-1 quality/lab ran without FRED inputs → recompute on the full index
         await self.recompute()
@@ -157,7 +165,7 @@ class Engine:
             log.warning("extras refresh earnings failed: %s", e)
         await self.recompute()
 
-    async def recompute(self) -> None:
+    async def recompute(self, skip_quality: bool = False) -> None:
         async with self._lock:
             try:
                 self.stress = await asyncio.to_thread(self.stress_engine.compute)
@@ -175,7 +183,7 @@ class Engine:
                     bench = SETTINGS.get("crash_odds", {}).get("benchmark", "^GSPC")
                     close = self.market.series(bench)
                     hrs = float(SETTINGS.get("shock", {}).get("quality_refresh_hours", 6))
-                    if self._quality is None or time.time() - self._quality_ts > hrs * 3600:
+                    if not skip_quality and (self._quality is None or time.time() - self._quality_ts > hrs * 3600):
                         self._quality = await asyncio.to_thread(sk.model_quality, self.stress.history, close)
                         self._quality_ts = time.time()
                         try:
@@ -234,6 +242,7 @@ class Engine:
                     self.playbook = pbk
             except Exception:  # noqa: BLE001
                 log.exception("playbook failed")
+            self.recompute_ts = time.time()
 
     def age_str(self) -> str:
         if not self.market.quotes_ts:

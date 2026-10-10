@@ -5,6 +5,7 @@ index expected moves, geopolitical heat and the weekly AI bull/bear notes on the
 refresh() does the network work (each feed budgeted and cached); build() is pure and fills eng.sx."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -53,30 +54,43 @@ def _growth_top(n: int = 10) -> List[Dict]:
     return sorted(rows, key=lambda r: r["rank"])[:n]
 
 
-async def refresh(eng) -> Dict:
+async def refresh(eng, deadline_s: Optional[float] = None) -> Dict:
+    """All network feeds under ONE overall deadline (default site_extras.refresh_deadline_s or 360 s).  Each feed gets
+    min(its own budget, time left) and is additionally wrapped in asyncio.wait_for(time left), so a hung feed can't overrun."""
     c = cfg()
+    total = float(deadline_s if deadline_s is not None else c.get("refresh_deadline_s", 360))
+    t_end = time.monotonic() + total
     u = universe()
     us = list((u.get("us") or {}).get("symbols", {}))
     allsyms = us + list((u.get("tw") or {}).get("symbols", {})) + list((u.get("hk") or {}).get("symbols", {}))
     allsyms += [r["sym"] for r in _growth_top() if r["sym"] not in allsyms]
-    rep = {}
-    for nm, coro in (("yahoo", lambda: SI.refresh_yf(allsyms, float(c.get("yf_budget_s", 150)))),
-                     ("sec8k", lambda: SI.refresh_8k(us, float(c.get("sec_budget_s", 60)))),
-                     ("geo", lambda: GEO.refresh())):
+    rep: Dict = {}
+
+    def left() -> float:
+        return t_end - time.monotonic()
+
+    async def run(nm: str, mk):
+        rem = left()
+        if rem < 5:
+            log.warning("site extras %s skipped: overall deadline reached", nm)
+            return None
         try:
-            r = await coro()
-            rep[nm] = len(r)
+            return await asyncio.wait_for(mk(max(1.0, rem - 3)), rem)   # the feed's own budget ends a little before the hard stop
+        except asyncio.TimeoutError:
+            log.warning("site extras %s cut off by the overall deadline", nm)
         except Exception as e:  # noqa: BLE001
             log.warning("site extras %s failed: %s", nm, e)
+        return None
+
+    for nm, mk in (("yahoo", lambda rem: SI.refresh_yf(allsyms, min(float(c.get("yf_budget_s", 150)), rem))),
+                   ("sec8k", lambda rem: SI.refresh_8k(us, min(float(c.get("sec_budget_s", 60)), rem))),
+                   ("geo", lambda rem: GEO.refresh())):
+        r = await run(nm, mk)
+        if r is not None:
+            rep[nm] = len(r)
     up = upcoming(getattr(eng, "earnings", None), us)
-    try:
-        await ED.refresh_surprises([x["sym"] for x in up], {}, float(c.get("surprise_budget_s", 40)))
-    except Exception as e:  # noqa: BLE001
-        log.warning("earnings history failed: %s", e)
-    try:
-        await SI.refresh_options(list(MO.EM_SYMS) + [x["sym"] for x in up], float(c.get("cboe_budget_s", 75)))
-    except Exception as e:  # noqa: BLE001
-        log.warning("CBOE straddles failed: %s", e)
+    await run("earnings history", lambda rem: ED.refresh_surprises([x["sym"] for x in up], {}, min(float(c.get("surprise_budget_s", 40)), rem)))
+    await run("CBOE straddles", lambda rem: SI.refresh_options(list(MO.EM_SYMS) + [x["sym"] for x in up], min(float(c.get("cboe_budget_s", 75)), rem)))
     rep["earnings_window"] = len(up)
     return rep
 
@@ -95,8 +109,27 @@ def _last(sp, s: str) -> Optional[float]:
     return float(x.iloc[-1]) if len(x) else None
 
 
-def stock_rows(info: Dict, u: Dict, sp, today: str) -> Dict:
+# Dividend withholding (%) for a Taiwan resident on foreign ADRs in the US universe (home-country rate, as usually applied
+# through a US broker); other non-US issuers show "—".  US-domiciled issuers: 30%.
+ADR_TAX = {"TSM": 21.0, "ASML": 15.0, "NVO": 27.0, "CCJ": 25.0}
+STALE_DAYS = 7
+
+
+def _net_yield(s: str, d: Dict, y: float, mk: str):
+    """→ (after-withholding yield or None, withholding rate % or None)."""
+    if mk != "us":
+        return y, None
+    if s in ADR_TAX:
+        return y * (1 - ADR_TAX[s] / 100), ADR_TAX[s]
+    ctry = d.get("country")
+    if ctry in (None, "", "United States"):                   # older caches have no country: the US list is US issuers by default
+        return y * 0.7, 30.0
+    return None, None
+
+
+def stock_rows(info: Dict, u: Dict, sp, today: str, now: Optional[float] = None) -> Dict:
     nm = _names(u)
+    now = now or time.time()
     ana: Dict[str, List[Dict]] = {"us": [], "tw": [], "hk": []}
     div: Dict[str, List[Dict]] = {"us": [], "tw": [], "hk": []}
     soon = (date.fromisoformat(today) + timedelta(days=30)).isoformat()
@@ -104,6 +137,9 @@ def stock_rows(info: Dict, u: Dict, sp, today: str) -> Dict:
         d = info.get(s) or {}
         if not d:
             continue
+        ok_ts = d.get("ok_ts") or d.get("ts")
+        if not ok_ts or now - float(ok_ts) > STALE_DAYS * 86400:
+            continue                                           # last successful Yahoo fetch too old: don't show stale numbers
         px = _last(sp, s) or d.get("px")
         base = {"sym": s, "code": s.split(".")[0], "name": zh, "name_en": en, "theme": th, "px": px}
         if d.get("tm") and px and (d.get("n") or 0) >= 1:
@@ -111,14 +147,19 @@ def stock_rows(info: Dict, u: Dict, sp, today: str) -> Dict:
                             "rk": d.get("rk"), "up": (d["tm"] / px - 1) * 100, "uph": (d["th"] / px - 1) * 100 if d.get("th") else None,
                             "upl": (d["tl"] / px - 1) * 100 if d.get("tl") else None})
         if d.get("div") and px:
+            if d.get("fcur") and d.get("cur") and d["fcur"] != d["cur"] and s not in ADR_TAX:
+                continue                                       # dividend may be in the reporting currency, price in the trading one
+            if d.get("px") and abs(px / d["px"] - 1) > 0.3:
+                continue                                       # our price and Yahoo's disagree (split / unit problem)
             y = d["div"] / px * 100
             if y <= 0 or y > 25:
                 continue
-            div[mk].append({**base, "yld": y, "net": y * 0.7 if mk == "us" else y, "rate": d["div"], "ex": d.get("ex"),
+            net, tax = _net_yield(s, d, y, mk)
+            div[mk].append({**base, "yld": y, "net": net, "tax": tax, "rate": d["div"], "ex": d.get("ex"),
                             "ex_soon": bool(d.get("ex") and today <= d["ex"] <= soon), "paid": d.get("paid"), "grow": d.get("grow"),
                             "payout": d["payout"] * 100 if d.get("payout") else None, "y5": d.get("y5")})
     for mk in ana:
-        ana[mk].sort(key=lambda r: -(r["up"] or -999))
+        ana[mk].sort(key=lambda r: -(r["up"] if r["up"] is not None else -999))
         div[mk].sort(key=lambda r: -r["yld"])
     return {"analyst": ana, "div": div}
 
@@ -127,14 +168,15 @@ def filings(k8: Dict, u: Dict, today: str, days: int = 30) -> Dict:
     nm = _names(u)
     lo = (date.fromisoformat(today) - timedelta(days=days)).isoformat()
     rows = []
-    for s, rec in k8.items():
+    cur = {s: k8[s] for s in nm if s in k8}                  # current universe only (the cache may hold dropped names)
+    for s, rec in cur.items():
         for r in rec.get("rows", []):
             if r["date"] >= lo:
-                zh = nm.get(s, (s, s, "us", ""))
+                zh = nm[s]
                 rows.append({**r, "name": zh[0], "name_en": zh[1], "theme": zh[3]})
     rows.sort(key=lambda r: r["date"], reverse=True)
     rows.sort(key=lambda r: -r["sev"])
-    covered = sum(1 for v in k8.values() if not v.get("na"))
+    covered = sum(1 for v in cur.values() if not v.get("na"))
     return {"rows": rows[:60], "n_hi": sum(1 for r in rows if r["sev"] >= 3), "n_mid": sum(1 for r in rows if r["sev"] == 2),
             "covered": covered, "days": days}
 
@@ -145,13 +187,16 @@ def earnings_moves(up: List[Dict], opt: Dict, surp: Dict, sp, u: Dict) -> List[D
     out = []
     for x in up:
         s = x["sym"]
-        w = SI.straddle_after(opt.get(s) or {}, x["date"], x["time"] == "after")
+        # first live expiry on/after report date + 1, for pre-market, after-close and unknown times alike: it covers both
+        # sessions of the historical reaction window (close before the report → close the session after it)
+        w = SI.straddle_after(opt.get(s) or {}, x["date"], after_close=True)
         past = [r["date"] for r in (surp.get(s) or {}).get("rows", []) if r.get("date") and r["date"] < x["date"]]
         reacts = [v for v in (reaction(sp.series(s), d) if sp is not None else None for d in sorted(past)[-4:]) if v is not None]
         avg = float(np.mean([abs(v) for v in reacts])) if reacts else None
         zh = nm.get(s, (s, s, "us", ""))
         out.append({"sym": s, "name": zh[0], "name_en": zh[1], "theme": zh[3], "date": x["date"], "time": x["time"],
                     "mv": w["mv"] if w else None, "exp": w["exp"] if w else None, "spot": (opt.get(s) or {}).get("spot"),
+                    "asof": (opt.get(s) or {}).get("asof") if w else None,
                     "reacts": [round(v, 1) for v in reacts], "avg": avg, "ratio": (w["mv"] / avg) if w and avg else None})
     out.sort(key=lambda r: (r["date"], r["sym"]))
     return out
@@ -209,7 +254,7 @@ def build(eng) -> Dict:
             res[k] = {}
     db = _load_debate()
     top = _growth_top()
-    res["debate"] = [{**r, "ai": db.get(r["sym"])} for r in top]
+    res["debate"] = [{**r, "ai": db.get(r["sym"]) if (db.get(r["sym"]) or {}).get("bull") else None} for r in top]
     res["n_info"] = len(allc["yf"])
     return res
 
@@ -241,30 +286,77 @@ def debate_prompt(r: Dict, info: Dict) -> str:
     return "\n".join(L)
 
 
-async def generate_debates(limit: int = 10, max_age_days: float = 7) -> int:
-    from ..ai import llm
-    from ..ai.econ_ai import scrub
-    db = _load_debate()
-    info = SI.load_all()["yf"]
-    n = 0
-    for r in _growth_top(limit):
-        rec = db.get(r["sym"]) or {}
-        if time.time() - float(rec.get("ts", 0)) < max_age_days * 86400:
-            continue
-        text, name = await llm.complete(DEBATE_SYS, debate_prompt(r, info.get(r["sym"]) or {}), 900)
-        if name == "none" or not text or text.startswith("⚠️"):
-            break
-        try:
-            js = json.loads(text[text.index("{"):text.rindex("}") + 1])
-            out = {k: scrub(str(js.get(k, ""))) for k in ("bull", "bear", "risk")}
-        except Exception:  # noqa: BLE001
-            continue
-        if not all(out.values()):
-            continue
-        db[r["sym"]] = {**out, "engine": name, "ts": time.time(), "date": us_today().isoformat()}
-        n += 1
+def _save_debate(db: Dict) -> None:
     try:
-        F_DEBATE.write_text(json.dumps(db, ensure_ascii=False), encoding="utf-8")
+        F_DEBATE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = F_DEBATE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(db, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(F_DEBATE)                                  # atomic: a killed run never leaves a half-written cache
     except Exception as e:  # noqa: BLE001
         log.warning("debate cache not saved: %s", e)
+
+
+def _prune_debate(db: Dict, keep: List[str], max_n: int = 30) -> Dict:
+    if keep:                                                   # no growth list (screen failed) → leave the cache alone
+        ks = set(keep)
+        db = {k: v for k, v in db.items() if k in ks}
+    if len(db) > max_n:
+        db = dict(sorted(db.items(), key=lambda kv: -float(kv[1].get("ts") or kv[1].get("fail_ts") or 0))[:max_n])
+    return db
+
+
+async def generate_debates(limit: int = 10, max_age_days: float = 7, deadline_s: float = 150, max_new: int = 3,
+                           fail_backoff_h: float = 24, call_timeout_s: float = 90) -> int:
+    """At most max_new new notes per run, inside deadline_s.  A failed call or unparseable answer records {"fail_ts"} and
+    that symbol is skipped for fail_backoff_h hours (an existing note is kept)."""
+    from ..ai import llm
+    from ..ai.econ_ai import scrub
+    t_end = time.monotonic() + deadline_s
+    top = _growth_top(limit)
+    db = _prune_debate(_load_debate(), [r["sym"] for r in top])
+    info = SI.load_all()["yf"]
+    n = 0
+
+    def failed(sym: str, why: str) -> None:
+        db[sym] = {**(db.get(sym) or {}), "fail_ts": time.time()}
+        log.info("AI bull/bear note %s failed (%s); retry in %.0fh", sym, why, fail_backoff_h)
+
+    try:
+        for r in top:
+            if n >= max_new or t_end - time.monotonic() <= 1:
+                break
+            sym = r["sym"]
+            rec = db.get(sym) or {}
+            if time.time() - float(rec.get("fail_ts") or 0) < fail_backoff_h * 3600:
+                continue
+            if rec.get("bull") and time.time() - float(rec.get("ts", 0)) < max_age_days * 86400:
+                continue
+            wait = min(call_timeout_s, t_end - time.monotonic())
+            try:
+                text, name = await asyncio.wait_for(llm.complete(DEBATE_SYS, debate_prompt(r, info.get(sym) or {}), 900), wait)
+            except asyncio.TimeoutError:
+                if wait >= call_timeout_s:                     # the call itself hung (not just the end of this run's budget)
+                    failed(sym, "timeout")
+                break
+            except Exception as e:  # noqa: BLE001
+                failed(sym, str(e)[:80])
+                continue
+            if name == "none":
+                break                                          # no AI engine configured: not the symbol's fault
+            if not text or text.startswith("⚠️"):
+                failed(sym, (text or "empty")[:80])
+                break                                          # the engine is failing: stop for this run
+            try:
+                js = json.loads(text[text.index("{"):text.rindex("}") + 1])
+                out = {k: scrub(str(js.get(k, ""))) for k in ("bull", "bear", "risk")}
+            except Exception:  # noqa: BLE001
+                failed(sym, "unparseable JSON")
+                continue
+            if not all(out.values()):
+                failed(sym, "missing fields")
+                continue
+            db[sym] = {**out, "engine": name, "ts": time.time(), "date": us_today().isoformat()}
+            n += 1
+    finally:
+        _save_debate(db)
     return n

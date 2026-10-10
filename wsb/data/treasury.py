@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from typing import Dict, List, Optional
 
@@ -104,7 +105,9 @@ class Treasury:
             if not parsed:
                 raise RuntimeError("no auctions parsed")
             self.auctions, self.ts = judge(parsed), time.time()
-            _FILE.write_text(json.dumps({"ts": self.ts, "auctions": self.auctions}, ensure_ascii=False), encoding="utf-8")
+            tmp = _FILE.with_suffix(_FILE.suffix + ".tmp")          # atomic: a cancelled run can't truncate it
+            tmp.write_text(json.dumps({"ts": self.ts, "auctions": self.auctions}, ensure_ascii=False), encoding="utf-8")
+            os.replace(tmp, _FILE)
             HEALTH.ok("treasury_auctions", len(parsed), every=every)
         except Exception as e:  # noqa: BLE001
             log.warning("TreasuryDirect failed: %s", e)

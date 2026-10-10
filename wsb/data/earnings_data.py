@@ -18,7 +18,7 @@ from typing import Dict, List, Optional, Tuple
 from ..config import DATA_DIR, SEC_USER_AGENT, SETTINGS
 from ..health import HEALTH
 from . import http
-from .econcal import NQ_HDR, num, us_today
+from .econcal import EMPTY_MAX, NQ_HDR, empty_wait, num, us_today
 
 log = logging.getLogger(__name__)
 F_DAYS = DATA_DIR / "earn_days.json"
@@ -87,7 +87,8 @@ async def refresh_calendar(budget_s: float = 90, force_days: Optional[List[date]
             continue
         rec = days.get(d.isoformat())
         age = now - float((rec or {}).get("ts", 0))
-        if rec is None or (i < -3 and not rec.get("final")) or (-3 <= i <= 2 and age > 1800) or (2 < i <= 10 and age > 6 * 3600) \
+        past_due = rec is not None and i < -3 and not rec.get("final") and (not rec.get("empty") or age > empty_wait(rec["empty"]))
+        if rec is None or past_due or (-3 <= i <= 2 and age > 1800) or (2 < i <= 10 and age > 6 * 3600) \
                 or (i > 10 and age > 20 * 3600):
             q.append(d)
     ok = err = 0
@@ -95,7 +96,14 @@ async def refresh_calendar(budget_s: float = 90, force_days: Optional[List[date]
         if time.time() - t0 > budget_s:
             break
         try:
-            days[d.isoformat()] = {"ts": time.time(), "rows": await _cal_day(d), "final": (today - d).days > 3}
+            rows = await _cal_day(d)
+            old = days.get(d.isoformat()) or {}
+            final = (today - d).days > 3
+            if not rows and d.weekday() < 5:        # HTTP 200 with empty/null rows: keep what we had, retry with back-off
+                n = int(old.get("empty", 0)) + 1
+                days[d.isoformat()] = {"ts": time.time(), "rows": old.get("rows") or [], "final": final and n >= EMPTY_MAX, "empty": n}
+            else:
+                days[d.isoformat()] = {"ts": time.time(), "rows": rows, "final": final}
             ok += 1
         except Exception as e:  # noqa: BLE001
             err += 1
@@ -188,10 +196,13 @@ def _periods(facts: List[Dict], instant: bool = False) -> Tuple[Dict[Tuple[str, 
     return qs, ys
 
 
-def quarterly(facts: List[Dict]) -> Dict[str, float]:
-    """end date → quarterly value, with Q4 derived as fiscal year minus the three reported quarters inside it."""
+def quarterly(facts: List[Dict], derive: bool = True) -> Dict[str, float]:
+    """end date → quarterly value, with Q4 derived as fiscal year minus the three reported quarters inside it
+    (derive=False for per-share values such as EPS, which are not additive across quarters)."""
     qs, ys = _periods(facts)
     out = {e: v for (s, e), v in qs.items()}
+    if not derive:
+        return out
     for (ys_, ye), yv in ys.items():
         if ye in out:
             continue
@@ -227,7 +238,7 @@ def parse_facts(cf: Dict) -> List[Dict]:
                 qs, _ = _periods(_units(cf, tag), instant=True)
                 q = {e: v for (_s, e), v in qs.items()}
             else:
-                q = quarterly(_units(cf, tag))
+                q = quarterly(_units(cf, tag), derive=(k != "eps"))     # FY EPS − Q1..Q3 EPS is not the Q4 EPS
             for e, v in q.items():
                 merged.setdefault(e, v)
         ser[k] = merged
@@ -327,9 +338,29 @@ def cy_quarters(today: date, n: int = 6) -> List[str]:
     return out
 
 
+def _cyq(d: date) -> str:
+    return f"CY{d.year}Q{(d.month - 1) // 3 + 1}"
+
+
+def _prev_q(per: str, k: int) -> str:
+    """CY quarter label k quarters before `per` (CYyyyyQn)."""
+    n = int(per[2:6]) * 4 + int(per[-1]) - 1 - k
+    return f"CY{n // 4}Q{n % 4 + 1}"
+
+
 class FrameReader:
     """Values of one company from the cached frames, always from ONE tag per concept (the tag with the most quarters),
-    so a company that switched revenue tags never mixes two definitions; CY Q4 = calendar year − Q1..Q3 of that tag."""
+    so a company that switched revenue tags never mixes two definitions.
+
+    Missing quarters.  Frames only hold reported 3-month values, and most filers never tag their fiscal Q4 as a 3-month
+    value (the 10-K reports the year), so every company has a hole at the calendar quarter holding its fiscal Q4 —
+    December year-ends at CY Q4, but AAPL (Sep) at CY Q3, MSFT (Jun) at CY Q2, CSCO (Jul) at CY Q3, NVDA (Jan) at CY Q4.
+    The annual frames (CYyyyy) are cached with each filer's period END date ("e", stored by refresh_frames), so the hole
+    is filled as: the annual value whose fiscal year's last three months fall in that calendar quarter, minus the three
+    calendar quarters before it (= that fiscal year's Q1–Q3, which the frames do hold).  The calendar label of an annual
+    frame only approximates the fiscal year (SEC picks the best-overlapping calendar year), which is why the end date,
+    not the label, decides.  Annual frames cached before end dates were stored fall back to "calendar year − Q1..Q3"
+    for CY Q4 only.  Per-share tags (EPS) are never derived: EPS is not additive."""
 
     def __init__(self, frames: Dict[str, Dict], pers: List[str]):
         self.fr, self.pers, self._best = frames or {}, pers, {}
@@ -337,11 +368,35 @@ class FrameReader:
     def _raw(self, tag: str, cik: str, per: str) -> Optional[float]:
         return ((self.fr.get(f"{tag}/{per}") or {}).get("v") or {}).get(cik)
 
+    def _annual_for(self, tag: str, cik: str, per: str) -> Optional[float]:
+        """Annual value of the fiscal year whose last quarter is the calendar quarter `per`, or None."""
+        y = int(per[2:6])
+        for ay in (f"CY{y}", f"CY{y - 1}", f"CY{y + 1}"):
+            rec = self.fr.get(f"{tag}/{ay}") or {}
+            yv = (rec.get("v") or {}).get(cik)
+            if yv is None:
+                continue
+            ends = rec.get("e")
+            if ends is None:                         # legacy cache without end dates: calendar year → CY Q4 only
+                if per.endswith("Q4") and ay == f"CY{y}":
+                    return yv
+                continue
+            end = ends.get(cik)
+            if not end:
+                continue
+            try:
+                mid = date.fromisoformat(end) - timedelta(days=45)     # middle of the fiscal year's last 3 months
+            except ValueError:
+                continue
+            if _cyq(mid) == per:
+                return yv
+        return None
+
     def tag_val(self, tag: str, cik: str, per: str) -> Optional[float]:
         v = self._raw(tag, cik, per)
-        if v is None and per.endswith("Q4") and len(per) == 8:
-            yv = self._raw(tag, cik, per[:6])
-            parts = [self._raw(tag, cik, f"{per[:6]}Q{i}") for i in (1, 2, 3)]
+        if v is None and len(per) == 8 and per[6] == "Q" and not tag.startswith("EarningsPerShare"):
+            yv = self._annual_for(tag, cik, per)
+            parts = [self._raw(tag, cik, _prev_q(per, k)) for k in (1, 2, 3)]
             if yv is not None and all(p is not None for p in parts):
                 v = yv - sum(parts)
         return v
@@ -363,11 +418,18 @@ def parse_frame(js: Dict) -> Dict[str, float]:
     return {str(int(r["cik"])): float(r["val"]) for r in (js or {}).get("data") or [] if r.get("val") is not None}
 
 
+def parse_frame_ends(js: Dict) -> Dict[str, str]:
+    """cik → period end date of each filer's value in a (duration) frame; stored for the annual frames only."""
+    return {str(int(r["cik"])): str(r["end"]) for r in (js or {}).get("data") or [] if r.get("val") is not None and r.get("end")}
+
+
 async def refresh_frames(budget_s: float = 150) -> Dict[str, Dict]:
     cache = _load(F_FRAMES)
     today = us_today()
     qs = cy_quarters(today, int(cfg().get("frame_quarters", 10)))
-    years = sorted({f"CY{int(q[2:6])}" for q in qs})[:-1] or [f"CY{today.year - 1}"]
+    # every calendar year the quarters touch, the current one included: a non-December fiscal year (AAPL Sep, MSFT Jun)
+    # that ends this year sits in this year's annual frame and fills that company's fiscal-Q4 hole (FrameReader)
+    years = sorted({f"CY{int(q[2:6])}" for q in qs})
     t0, ok = time.time(), 0
     inst = [q + "I" for q in qs[:7]]                 # goodwill at quarter ends: a jump flags acquisition-driven growth
     plan = [(k, tag, qs + years) for k, tags in FRAME_TAGS.items() for tag in tags] + [("i", t, inst) for t in INSTANT_TAGS]
@@ -377,7 +439,7 @@ async def refresh_frames(budget_s: float = 150) -> Dict[str, Dict]:
             for i, per in enumerate(pers):
                 key = f"{tag}/{per}"
                 rec = cache.get(key) or {}
-                fresh = 20 * 3600 if (i < 3 or per in years[-1:]) else 7 * 86400
+                fresh = 20 * 3600 if (i < 3 or per in years[-2:]) else 7 * 86400
                 if time.time() - float(rec.get("ts", 0)) < fresh:
                     continue
                 if time.time() - t0 > budget_s:
@@ -385,6 +447,8 @@ async def refresh_frames(budget_s: float = 150) -> Dict[str, Dict]:
                 try:
                     js = await http.get(f"https://data.sec.gov/api/xbrl/frames/us-gaap/{tag}/{unit}/{per}.json", headers=SEC_HDR, timeout=40, retries=0)
                     cache[key] = {"ts": time.time(), "v": parse_frame(js)}
+                    if per in years:                 # annual: keep each filer's fiscal year end (see FrameReader)
+                        cache[key]["e"] = parse_frame_ends(js)
                     ok += 1
                 except Exception as e:  # noqa: BLE001
                     msg = str(e)
@@ -420,23 +484,40 @@ def parse_twrev(rows: List[Dict], board: str) -> Dict[str, Dict]:
     return out
 
 
+def _merge_boards(got: Dict[str, Dict], old: Dict[str, Dict], failed: List[str]) -> Dict[str, Dict]:
+    """New rows of the boards that answered + the previous rows of the boards that failed (TWSE 上市 / TPEx 上櫃),
+    so one board's outage never drops the other board's companies from the table."""
+    out = dict(got)
+    for code, r in old.items():
+        if r.get("board") in failed and code not in out:
+            out[code] = r
+    return out
+
+
 async def refresh_twrev() -> Dict:
     arc = _load(F_TW)
     if time.time() - float(arc.get("ts", 0)) < 6 * 3600:
         return arc
     got: Dict[str, Dict] = {}
+    failed = []
     for url, board in (("https://openapi.twse.com.tw/v1/opendata/t187ap05_L", "上市"),
                        ("https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O", "上櫃")):
         try:
-            got.update(parse_twrev(await http.get(url, timeout=40, retries=1), board))
+            part = parse_twrev(await http.get(url, timeout=40, retries=1), board)
+            if not part:
+                raise ValueError("empty answer")
+            got.update(part)
         except Exception as e:  # noqa: BLE001
+            failed.append(board)
             log.info("TW monthly revenue %s: %s", board, e)
     if got:
         months = arc.get("months") or {}
         for code, r in got.items():
             months.setdefault(r["ym"], {})[code] = {k: r[k] for k in ("rev", "mom", "yoy", "cum_yoy")}
         months = {k: months[k] for k in sorted(months)[-24:]}
-        arc = {"ts": time.time(), "latest": got, "months": months}
+        latest = _merge_boards(got, arc.get("latest") or {}, failed)
+        # one board missing → keep its previous rows and try again in about an hour instead of 6
+        arc = {"ts": time.time() - (5 * 3600 if failed else 0), "latest": latest, "months": months}
         _save(F_TW, arc)
         HEALTH.ok("tw_monthly_revenue", len(got), every=86400)
     else:
@@ -463,14 +544,20 @@ async def refresh_twpe() -> Dict:
     if time.time() - float(cache.get("ts", 0)) < 12 * 3600:
         return cache
     got: Dict[str, Dict] = {}
+    failed = []
     for url, board in (("https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL", "上市"),
                        ("https://www.tpex.org.tw/openapi/v1/tpex_mainboard_peratio_analysis", "上櫃")):
         try:
-            got.update(parse_twpe(await http.get(url, timeout=40, retries=1), board))
+            part = parse_twpe(await http.get(url, timeout=40, retries=1), board)
+            if not part:
+                raise ValueError("empty answer")
+            got.update(part)
         except Exception as e:  # noqa: BLE001
+            failed.append(board)
             log.info("TW P/E %s: %s", board, e)
     if got:
-        cache = {"ts": time.time(), "v": got}
+        got = _merge_boards(got, cache.get("v") or {}, failed)
+        cache = {"ts": time.time() - (11 * 3600 if failed else 0), "v": got}
         _save(F_TWPE, cache)
         HEALTH.ok("tw_pe", len(got), every=86400)
     return cache
@@ -564,6 +651,8 @@ class EarningsData:
 
     async def poll_day(self, d: date) -> List[Dict]:
         rows = await _cal_day(d)
+        if not rows:                                 # an empty answer never wipes the rows we already have
+            rows = (self.days.get(d.isoformat()) or {}).get("rows") or []
         self.days[d.isoformat()] = {"ts": time.time(), "rows": rows, "final": False}
         _save(F_DAYS, self.days)
         return rows

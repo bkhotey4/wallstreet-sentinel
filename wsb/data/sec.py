@@ -67,13 +67,24 @@ class SecWatcher:
         try:
             await self._load_map()
             recent = []
+            ok = 0
+            failed: List[str] = []
             for t in tickers:
                 cik = self.cik.get(t.upper().replace(".", "-"))
                 if not cik:
                     continue
-                js = await http.get(f"https://data.sec.gov/submissions/CIK{cik}.json",
-                                    headers={"User-Agent": SEC_USER_AGENT})
-                for item in self._parse(t, cik, js):
+                try:                     # one ticker's error must not abort the whole round
+                    js = await http.get(f"https://data.sec.gov/submissions/CIK{cik}.json",
+                                        headers={"User-Agent": SEC_USER_AGENT})
+                    items = self._parse(t, cik, js)
+                    ok += 1
+                except Exception as e:  # noqa: BLE001
+                    failed.append(t)
+                    log.info("SEC %s failed: %s", t, e)
+                    recent.extend(x for x in self.recent if x.get("ticker") == t)     # keep its last known filings
+                    await asyncio.sleep(0.12)
+                    continue
+                for item in items:
                     recent.append(item)
                     if store.seen_check_and_mark(f"sec:{item['acc']}"):
                         fresh.append(item)
@@ -81,6 +92,10 @@ class SecWatcher:
             recent.sort(key=lambda x: x["date"], reverse=True)
             self.recent = recent[:60]
             self.last_fresh = fresh
+            if failed:
+                log.warning("SEC: %d ticker(s) failed this round: %s", len(failed), ", ".join(failed[:10]))
+            if failed and not ok:
+                raise RuntimeError(f"all {len(failed)} SEC lookups failed")
             self.ts = time.time()
             HEALTH.ok("sec_edgar", len(recent), every=every)
         except Exception as e:  # noqa: BLE001

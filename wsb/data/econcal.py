@@ -4,7 +4,8 @@ Sources (all public, no key):
   * Nasdaq economic calendar  api.nasdaq.com/api/calendar/economicevents?date=D
       - quirk: the response for ?date=D lists the events of D-1 (verified against ISM = first business day, NFP Fridays and
         the Fed's own meeting calendar), so the events of day X are fetched with ?date=X+1
-      - quirk: times are in a fixed UTC-4 clock all year (an 08:30 EST release shows as 09:30), converted here to UTC
+      - quirk: times have been in a fixed UTC-4 clock all year (an 08:30 EST release shows as 09:30); the offset is
+        re-checked per day from anchor releases with a fixed US-Eastern time (clock_offset), UTC-4 when nothing to check
       - carries consensus / previous / actual, also for past dates → used to back-fill ~2 years of release history
   * ForexFactory this-week feed (nfs.faireconomy.media) — fills a missing consensus for this week's releases
   * federalreserve.gov meeting calendar — FOMC dates further out, and which meetings carry projections (SEP, the "*")
@@ -30,6 +31,7 @@ _FOMC_FILE = DATA_DIR / "econ_fomc.json"
 NQ_HDR = {"Accept": "application/json, text/plain, */*", "Origin": "https://www.nasdaq.com", "Referer": "https://www.nasdaq.com/"}
 _MONTHS = {m: i for i, m in enumerate(["January", "February", "March", "April", "May", "June", "July", "August",
                                          "September", "October", "November", "December"], 1)}
+_MON3 = {m[:3].lower(): i for m, i in _MONTHS.items()}
 
 
 def cfg() -> Dict:
@@ -65,28 +67,55 @@ def num(s) -> Optional[float]:
         return None
 
 
-def _utc(day: date, hhmm: str) -> Optional[str]:
-    """Nasdaq clock (fixed UTC-4) → ISO UTC timestamp."""
+DEFAULT_OFF_MIN = -240          # the clock Nasdaq has used so far: fixed UTC-4 (verified in summer and in January)
+# releases whose US-Eastern clock time never changes → used to check which UTC offset Nasdaq's clock had on a given day
+ANCHOR_ET = {"cpi": (8, 30), "core cpi": (8, 30), "ppi": (8, 30), "core ppi": (8, 30), "nonfarm payrolls": (8, 30),
+             "retail sales": (8, 30), "core retail sales": (8, 30), "gdp": (8, 30), "initial jobless claims": (8, 30),
+             "ism manufacturing pmi": (10, 0), "ism non-manufacturing pmi": (10, 0), "jolts job openings": (10, 0),
+             "michigan consumer sentiment": (10, 0)}
+
+
+def _hm(hhmm) -> Optional[Tuple[int, int]]:
     m = re.match(r"(\d{1,2}):(\d{2})", clean(hhmm))
-    if not m:
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _utc(day: date, hhmm: str, off_min: int = DEFAULT_OFF_MIN) -> Optional[str]:
+    """Nasdaq clock (UTC offset `off_min` minutes; fixed UTC-4 unless the day's anchors say otherwise) → ISO UTC timestamp."""
+    hm = _hm(hhmm)
+    if not hm:
         return None
-    t = datetime(day.year, day.month, day.day, int(m.group(1)), int(m.group(2)), tzinfo=timezone(timedelta(hours=-4)))
+    t = datetime(day.year, day.month, day.day, hm[0], hm[1], tzinfo=timezone(timedelta(minutes=off_min)))
     return t.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def clock_offset(rows: List[Dict], day: date) -> int:
+    """UTC offset (minutes) of the Nasdaq clock on `day`, inferred from anchor releases with a known US-Eastern time:
+    offset = shown clock − true UTC time of that release (zoneinfo handles EST/EDT).  Every anchor of the day must agree
+    and the result must be a plausible US offset (−4 h / −5 h); otherwise the long-standing fixed UTC−4 is kept.
+    This keeps release times right if Nasdaq switches its clock with US daylight saving (2026-11-01)."""
+    from zoneinfo import ZoneInfo
+    seen = set()
+    for r in rows:
+        et = ANCHOR_ET.get(clean(r.get("eventName") if "eventName" in r else r.get("name")).lower())
+        hm = _hm(r.get("gmt", ""))
+        if not et or not hm:
+            continue
+        true_utc = datetime(day.year, day.month, day.day, et[0], et[1], tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
+        shown = datetime(day.year, day.month, day.day, hm[0], hm[1], tzinfo=timezone.utc)
+        seen.add(int(round((shown - true_utc).total_seconds() / 60)))
+    if len(seen) == 1 and next(iter(seen)) in (-240, -300):
+        return next(iter(seen))
+    return DEFAULT_OFF_MIN
 
 
 def parse_nasdaq(js: Dict, day: date) -> List[Dict]:
     """US rows of one Nasdaq response (already the events of `day`)."""
     rows = ((js or {}).get("data") or {}).get("rows") or []
-    out = []
-    for r in rows:
-        if clean(r.get("country")) != "United States":
-            continue
-        name = clean(r.get("eventName"))
-        if not name:
-            continue
-        out.append({"name": name, "utc": _utc(day, r.get("gmt", "")), "actual": clean(r.get("actual")),
-                    "cons": clean(r.get("consensus")), "prev": clean(r.get("previous"))})
-    return out
+    us = [r for r in rows if clean(r.get("country")) == "United States" and clean(r.get("eventName"))]
+    off = clock_offset(us, day)
+    return [{"name": clean(r.get("eventName")), "utc": _utc(day, r.get("gmt", ""), off), "actual": clean(r.get("actual")),
+             "cons": clean(r.get("consensus")), "prev": clean(r.get("previous"))} for r in us]
 
 
 # ------------------------------------------------------------------ cache
@@ -108,6 +137,14 @@ def save(days: Dict[str, Dict]) -> None:
         log.warning("econ cache not saved: %s", e)
 
 
+EMPTY_MAX = 5                    # an empty answer for a weekday is retried this many times before it is accepted as final
+
+
+def empty_wait(n: int) -> float:
+    """Back-off before re-trying a weekday that came back empty for the n-th time: 30 min, 1 h, 2 h, 4 h, then 6 h."""
+    return min(1800.0 * 2 ** max(0, min(int(n), 10) - 1), 6 * 3600.0)
+
+
 def _due(day: date, rec: Optional[Dict], today: date, now: float) -> bool:
     """How often a day is re-fetched: final days once, the live window often, the far future twice a day."""
     if rec is None:
@@ -115,16 +152,39 @@ def _due(day: date, rec: Optional[Dict], today: date, now: float) -> bool:
     age = now - float(rec.get("ts", 0))
     d = (day - today).days
     if d < -3:
-        return not rec.get("final")
+        if rec.get("final"):
+            return False
+        return age > empty_wait(rec["empty"]) if rec.get("empty") else True
     if d <= 7:
         return age > float(cfg().get("live_refresh_s", 1500))
     return age > 12 * 3600
 
 
-async def fetch_day(day: date) -> List[Dict]:
+async def _fetch(day: date) -> Tuple[List[Dict], int]:
+    """(US rows, number of raw rows of any country) — the raw count tells an empty/null answer from a quiet US day."""
     js = await http.get("https://api.nasdaq.com/api/calendar/economicevents", params={"date": (day + timedelta(days=1)).isoformat()},
                         headers=NQ_HDR, timeout=20, retries=1)
-    return parse_nasdaq(js, day)
+    return parse_nasdaq(js, day), len(((js or {}).get("data") or {}).get("rows") or [])
+
+
+async def fetch_day(day: date) -> List[Dict]:
+    return (await _fetch(day))[0]
+
+
+def store_day(days: Dict[str, Dict], day: date, rows: List[Dict], n_raw: int, today: date) -> Dict:
+    """Write one fetched day.  An HTTP-200 answer with no rows at all for a weekday is a feed hiccup, not a quiet day:
+    the previous rows are kept and the day stays non-final with a try counter (re-fetched with back-off, see _due),
+    so a glitch can never be frozen into the history as an empty final day; after EMPTY_MAX tries it is accepted."""
+    k = day.isoformat()
+    old = days.get(k) or {}
+    final = (today - day).days > 3
+    if n_raw == 0 and day.weekday() < 5:
+        n = int(old.get("empty", 0)) + 1
+        rec = {"ts": time.time(), "rows": old.get("rows") or [], "final": final and n >= EMPTY_MAX, "empty": n}
+    else:
+        rec = {"ts": time.time(), "rows": rows, "final": final}
+    days[k] = rec
+    return rec
 
 
 async def refresh(budget_s: Optional[float] = None, force_days: Optional[List[date]] = None) -> Dict[str, Dict]:
@@ -138,14 +198,14 @@ async def refresh(budget_s: Optional[float] = None, force_days: Optional[List[da
     want = [today + timedelta(days=i) for i in range(-7, ahead + 1)]
     hist = [today - timedelta(days=i) for i in range(8, back + 1)]
     queue = list(force_days or []) + [d for d in want if _due(d, days.get(d.isoformat()), today, now)]
-    queue += [d for d in hist if d.weekday() < 5 and d.isoformat() not in days][: int(c.get("backfill_per_run", 80))]
+    queue += [d for d in hist if d.weekday() < 5 and _due(d, days.get(d.isoformat()), today, now)][: int(c.get("backfill_per_run", 80))]
     n_ok = n_err = 0
     for d in queue:
         if time.time() - t0 > budget:
             break
         try:
-            rows = await fetch_day(d)
-            days[d.isoformat()] = {"ts": time.time(), "rows": rows, "final": (today - d).days > 3}
+            rows, n_raw = await _fetch(d)
+            store_day(days, d, rows, n_raw, today)
             n_ok += 1
         except Exception as e:  # noqa: BLE001
             n_err += 1
@@ -161,7 +221,7 @@ async def refresh(budget_s: Optional[float] = None, force_days: Optional[List[da
         HEALTH.fail("econ_calendar", RuntimeError(f"{n_err} Nasdaq calendar requests failed"), every=3600)
     else:
         HEALTH.ok("econ_calendar", n_ok, every=3600)
-    pending = sum(1 for d in hist if d.weekday() < 5 and d.isoformat() not in days)
+    pending = sum(1 for d in hist if d.weekday() < 5 and not (days.get(d.isoformat()) or {}).get("final"))
     log.info("econ calendar: %d days fetched, %d failed, %d history days still missing", n_ok, n_err, pending)
     return days
 
@@ -211,21 +271,35 @@ async def ff_week() -> List[Dict]:
 
 # ------------------------------------------------------------------ FOMC meeting calendar (dates + SEP)
 def parse_fomc(page_html: str) -> List[Dict]:
+    """Scheduled meetings from the Fed's calendar page.  Cross-month meetings ("Apr/May" 30-1, "Oct/Nov" 31-1) start in
+    the first month and end in the second; months match on their first three letters; lines that are not a scheduled
+    meeting ("22 (notation vote)", "unscheduled") are skipped because the day cell must be just "d" or "d-d", plus "*"."""
     out = []
     for ym in re.finditer(r"(\d{4}) FOMC Meetings(.*?)(?=\d{4} FOMC Meetings|$)", page_html, re.S):
         year, block = int(ym.group(1)), ym.group(2)
-        for m in re.finditer(r'fomc-meeting__month[^>]*>\s*<strong>([A-Za-z/]+)</strong>.*?'
+        for m in re.finditer(r'fomc-meeting__month[^>]*>\s*<strong>([A-Za-z/. ]+)</strong>.*?'
                              r'fomc-meeting__date[^>]*>([^<]+)<', block, re.S):
-            month = m.group(1).split("/")[-1]
-            raw = m.group(2)
-            days = re.findall(r"\d+", raw)
-            if month in _MONTHS and days:
-                try:
-                    d = date(year, _MONTHS[month], int(days[-1]))
-                except ValueError:
-                    continue
-                out.append({"date": d.isoformat(), "sep": "*" in raw, "start": f"{year}-{_MONTHS[month]:02d}-{int(days[0]):02d}"})
+            mons = [_MON3.get(x.strip()[:3].lower()) for x in m.group(1).split("/")]
+            raw = re.sub(r"\s+", "", clean(m.group(2)))
+            dm = re.match(r"^(\d+)(?:-(\d+))?(\*?)$", raw)
+            if not dm or not mons or any(x is None for x in mons):
+                continue
+            d0, d1 = int(dm.group(1)), int(dm.group(2) or dm.group(1))
+            try:
+                start, end = date(year, mons[0], d0), date(year, mons[-1], d1)
+            except ValueError:
+                continue
+            if end < start:
+                continue
+            out.append({"date": end.isoformat(), "sep": bool(dm.group(3)), "start": start.isoformat()})
     return sorted({x["date"]: x for x in out}.values(), key=lambda x: x["date"])
+
+
+def _fomc_cached() -> List[Dict]:
+    try:
+        return json.loads(_FOMC_FILE.read_text(encoding="utf-8")) if _FOMC_FILE.exists() else []
+    except Exception:  # noqa: BLE001
+        return []
 
 
 async def fomc_meetings() -> List[Dict]:
@@ -237,16 +311,15 @@ async def fomc_meetings() -> List[Dict]:
     try:
         page = await http.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", kind="text", timeout=25, retries=1)
         out = parse_fomc(page)
-        if out:
-            _FOMC_FILE.write_text(json.dumps(out), encoding="utf-8")
+        if not out:                                  # page layout changed → keep the last good list
+            HEALTH.fail("fomc_dates", RuntimeError("Fed calendar page parsed to no meetings"), every=86400)
+            return _fomc_cached()
+        _FOMC_FILE.write_text(json.dumps(out), encoding="utf-8")
         HEALTH.ok("fomc_dates", len(out), every=86400)
         return out
     except Exception as e:  # noqa: BLE001
         HEALTH.fail("fomc_dates", e, every=86400)
-        try:
-            return json.loads(_FOMC_FILE.read_text(encoding="utf-8")) if _FOMC_FILE.exists() else []
-        except Exception:  # noqa: BLE001
-            return []
+        return _fomc_cached()
 
 
 class EconCalendar:
@@ -273,8 +346,9 @@ class EconCalendar:
         self.ts = time.time()
 
     async def poll_day(self, day: date) -> List[Dict]:
-        """Fast path for the release watcher: re-fetch one day now and store it."""
-        rows = await fetch_day(day)
-        self.days[day.isoformat()] = {"ts": time.time(), "rows": rows, "final": False}
+        """Fast path for the release watcher: re-fetch one day now and store it (an empty answer keeps the old rows)."""
+        rows, n_raw = await _fetch(day)
+        rec = store_day(self.days, day, rows, n_raw, us_today())
+        rec["final"] = False
         save(self.days)
-        return rows
+        return rec["rows"]

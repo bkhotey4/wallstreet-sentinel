@@ -1,7 +1,8 @@
 """Discord：重要經濟數據公布前提醒、公布後即時解讀、精選池科技／半導體財報結果。
 
-由 Sentinel 的 econ 迴圈每分鐘呼叫一次 tick()。去重用 store.kv（同一事件只推一次）；機器人停機期間錯過的事件不補推
-（超過 50 分鐘的公布就不再當作「即時」）。"""
+由 Sentinel 的 econ 迴圈每分鐘呼叫一次 tick()。去重用 store.kv（同一事件只推一次，送出成功後才記錄）；機器人停機期間
+錯過的事件不補推（排定時間 60 分鐘後就不再當作「即時」；財報結果超過 1 天不補推）。公布監看從排定時間前 70 分鐘開始，
+以「實際值出現」為準，所以日曆時間即使差 1 小時（夏令時間切換）也不會漏推。AI 解讀在規則版訊息送出後才產生，最多等 60 秒。"""
 from __future__ import annotations
 
 import asyncio
@@ -20,6 +21,9 @@ from ..data import econcal as EC
 
 log = logging.getLogger(__name__)
 FUT = [("ES=F", "標普期"), ("NQ=F", "那指期"), ("^TNX", "10 年殖利率"), ("DX-Y.NYB", "美元指數")]
+WATCH_BEFORE_MIN, WATCH_AFTER_MIN = 70, 60     # poll window around the calendar time (covers a 1-hour clock error)
+AI_TIMEOUT_S = 60
+EARN_STALE_S = 86400                            # earnings results older than this (e.g. after a restart) are not pushed
 COL = {"hot": 0xE74C3C, "cool": 0x2FBF71, "inline": 0x95A5A6, None: 0x3498DB}
 
 
@@ -123,26 +127,44 @@ def detail_embed(r: Dict) -> discord.Embed:
     return em
 
 
-async def _send(bot, em: discord.Embed) -> None:
+def ai_embed(e: Dict, text: str) -> discord.Embed:
+    em = discord.Embed(title=f"🧠 {e['zh']}：AI 解讀", color=COL.get(e.get("dir"), 0x3498DB), description=text[:3000])
+    em.set_footer(text="AI 依公布數字與規則劇本撰寫，僅供參考｜不構成投資建議")
+    return em
+
+
+async def _send(bot, em: discord.Embed) -> bool:
+    """True when at least one destination got the message (or there is none to send to)."""
     from . import present as P
-    for t in await bot._targets("alerts"):
-        await P.deliver(t, embeds=lambda: em)
+    targets = await bot._targets("alerts")
+    ok = not targets
+    for t in targets:
+        try:
+            await P.deliver(t, embeds=lambda: em)
+            ok = True
+        except Exception:  # noqa: BLE001
+            log.warning("econ push to %s failed", t, exc_info=True)
+    return ok
 
 
-def _passed(d: str, tm: str, now: datetime) -> bool:
+def _report_time(d: str, tm: str) -> datetime:
     from zoneinfo import ZoneInfo
     hh, mm = {"pre": (8, 0), "after": (16, 15)}.get(tm, (16, 45))
     dd = date.fromisoformat(d)
-    return now >= datetime(dd.year, dd.month, dd.day, hh, mm, tzinfo=ZoneInfo("America/New_York"))
+    return datetime(dd.year, dd.month, dd.day, hh, mm, tzinfo=ZoneInfo("America/New_York"))
 
 
-async def tick(bot) -> None:
+def _passed(d: str, tm: str, now: datetime) -> bool:
+    return now >= _report_time(d, tm)
+
+
+async def tick(bot, now: Optional[datetime] = None) -> None:
     eng = bot.engine
     if not getattr(eng, "full_ready", False):
         return
     c = EC.cfg()
     ev = getattr(eng, "econ_view", None) or {}
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
     min_imp, lead = int(c.get("push_min_imp", 2)), float(c.get("remind_hours", 3))
     if ev.get("available"):
         for e in ev["events"]:
@@ -151,10 +173,12 @@ async def tick(bot) -> None:
             dh = (_t(e["utc"]) - now).total_seconds() / 3600
             k = f"econ_rem:{e['id']}"
             if 0 < dh <= lead and not store.kv_get(k):
-                store.kv_set(k, True)
-                await _send(bot, reminder_embed(e))
-        due = sorted({e["date"] for e in ev["events"] if e["imp"] >= min_imp and e.get("utc") and e.get("rows")
-                      and -1 <= (now - _t(e["utc"])).total_seconds() / 60 <= 50 and not store.kv_get(f"econ_res:{e['id']}")})
+                if await _send(bot, reminder_embed(e)):
+                    store.kv_set(k, True)
+        watch = {e["id"]: e["date"] for e in ev["events"] if e["imp"] >= min_imp and e.get("utc") and e.get("rows")
+                 and -WATCH_BEFORE_MIN <= (now - _t(e["utc"])).total_seconds() / 60 <= WATCH_AFTER_MIN
+                 and not store.kv_get(f"econ_res:{e['id']}")}
+        due = sorted(set(watch.values()))
         if due:
             for d in due:
                 try:
@@ -166,19 +190,26 @@ async def tick(bot) -> None:
             except Exception:  # noqa: BLE001
                 log.exception("econ view rebuild failed")
                 return
-            for e in eng.econ_view["events"]:
+            sent = []
+            for e in eng.econ_view["events"]:          # 1) the rule-based result first — numbers can't wait for a model
                 k = f"econ_res:{e['id']}"
-                if e["date"] in due and e["released"] and e["imp"] >= min_imp and e.get("rows") and not store.kv_get(k):
-                    store.kv_set(k, True)
-                    ai = None
-                    if c.get("ai_on_release", True):
-                        try:
-                            cache = EA.load()
-                            got = await EA._gen(e["id"], EA.event_prompt(e), cache)
-                            ai = got[0] if got else None
-                        except Exception:  # noqa: BLE001
-                            log.exception("econ AI note failed")
-                    await _send(bot, result_embed(e, eng.market.quotes, ai))
+                if e["id"] in watch and e["released"] and e["imp"] >= min_imp and e.get("rows") and not store.kv_get(k):
+                    if await _send(bot, result_embed(e, eng.market.quotes, None)):
+                        store.kv_set(k, True)          # only after a successful send → a failed send is retried next minute
+                        sent.append(e)
+            if sent and c.get("ai_on_release", True):  # 2) then the AI note, bounded so the minute loop keeps running
+                cache = EA.load()
+                for e in sent:
+                    try:
+                        got = await asyncio.wait_for(EA._gen(e["id"], EA.event_prompt(e), cache), AI_TIMEOUT_S)
+                    except asyncio.TimeoutError:
+                        log.info("econ AI note for %s timed out → skipped", e["id"])
+                        continue
+                    except Exception:  # noqa: BLE001
+                        log.exception("econ AI note failed")
+                        continue
+                    if got and got[0]:
+                        await _send(bot, ai_embed(e, got[0]))
     await earnings_tick(bot, now)
 
 
@@ -207,8 +238,12 @@ async def earnings_tick(bot, now: datetime) -> None:
         for r in rows:
             k = f"earn_res:{r['sym']}:{d}"
             if r["sym"] in tech and r.get("eps") is not None and not store.kv_get(k):
+                if (now - _report_time(d, r.get("time", ""))).total_seconds() > EARN_STALE_S:
+                    store.kv_set(k, True)              # e.g. first run after a restart: old news, remember silently
+                    continue
+                if not await _send(bot, earnings_embed(r, rows_by.get(r["sym"]))):
+                    continue
                 store.kv_set(k, True)
-                await _send(bot, earnings_embed(r, rows_by.get(r["sym"])))
                 try:
                     ed.surprise = await ED.refresh_surprises([r["sym"]], {r["sym"]: d}, 20)
                 except Exception:  # noqa: BLE001
@@ -223,9 +258,8 @@ async def earnings_tick(bot, now: datetime) -> None:
         if seen is None:
             store.kv_set(k, end)                       # first sight: remember silently
         elif end > seen:
-            store.kv_set(k, end)
-            if (today - date.fromisoformat(end)).days <= 120:
-                await _send(bot, detail_embed(r))
+            if (today - date.fromisoformat(end)).days > 120 or await _send(bot, detail_embed(r)):
+                store.kv_set(k, end)
 
 
 def econ_week_embed(ev: Dict) -> discord.Embed:

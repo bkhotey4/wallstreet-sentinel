@@ -12,6 +12,8 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from ..data import stockinfo as SI
+
 
 def _s(h: pd.DataFrame, t: str) -> Optional[pd.Series]:
     if h is None or t not in h.columns:
@@ -174,9 +176,10 @@ def rule_backtest(h: pd.DataFrame, bench: str = "^GSPC", cooldown: int = 10) -> 
             vd, vz, ve = "rev", "常是短線低點：之後 20 日平均反而較好", "Often a short-term low: better than average afterwards"
         else:
             vd, vz, ve = "none", "沒有明顯預警力", "No clear edge"
-        recent = [d for d in ev if d >= spx.index[max(0, len(spx) - 5)]]
+        raw_on = flag[flag]                                    # raw flag (not the cooldown-thinned events) for "now" / "last"
         rows.append({"k": k, "zh": zh, "en": en, "n": n, "avg5": a5, "avg20": a20, "win20": w20, "dd5": p, "verdict": vd,
-                     "vz": vz, "ve": ve, "last": ev[-1].strftime("%Y-%m-%d") if ev else None, "now": bool(recent)})
+                     "vz": vz, "ve": ve, "last": raw_on.index[-1].strftime("%Y-%m-%d") if len(raw_on) else None,
+                     "now": bool(flag.iloc[-5:].any())})
     order = {"warn": 0, "rev": 1, "none": 2, "n": 3}
     rows.sort(key=lambda r: (order[r["verdict"]], -(r["dd5"] or 0)))
     return {"available": True, "rows": rows, "base": base, "since": spx.index[0].strftime("%Y"), "asof": spx.index[-1].strftime("%Y-%m-%d"),
@@ -195,14 +198,25 @@ def _theme_ret(sp, syms: List[str]) -> Optional[pd.Series]:
     return pd.concat(cols, axis=1).mean(axis=1, skipna=True).dropna() * 100
 
 
+def _compound(r: np.ndarray) -> float:
+    return float((np.prod(1 + np.asarray(r, dtype=float) / 100) - 1) * 100)
+
+
 def _link(us: pd.Series, tw: pd.Series, n: int = 250) -> Dict:
-    """Pair each Taiwan session with the most recent US session BEFORE it (the night before, Taipei time)."""
-    us = us.dropna()
-    tw = tw.dropna()
-    pos = us.index.searchsorted(tw.index, side="left") - 1
-    ok = pos >= 0
-    x = pd.Series(us.values[pos[ok]], index=tw.index[ok])
-    y = tw[ok]
+    """Pair each Taiwan session t with ALL US sessions since the previous Taiwan session (prev_tw <= d < t; a US session on
+    prev_tw's date closes after Taipei's close), compounded.  Taiwan sessions with no US session in between (US holiday) are
+    dropped, so one US night is never counted twice."""
+    us = us.dropna().sort_index()
+    tw = tw.dropna().sort_index()
+    if len(tw) < 2 or not len(us):
+        return {}
+    ui, ti = us.index, tw.index
+    cum = np.concatenate([[0.0], np.cumsum(np.log1p(us.values / 100))])
+    lo = ui.searchsorted(ti[:-1], side="left")                 # first US date >= previous TW date
+    hi = ui.searchsorted(ti[1:], side="left")                  # first US date >= this TW date (exclusive end)
+    ok = hi > lo
+    x = pd.Series(np.expm1(cum[hi] - cum[lo]) * 100, index=ti[1:])[ok]
+    y = tw.iloc[1:][ok]
     xy = pd.concat([x, y], axis=1).dropna().iloc[-n:]
     if len(xy) < 60:
         return {}
@@ -210,10 +224,13 @@ def _link(us: pd.Series, tw: pd.Series, n: int = 250) -> Dict:
     beta = float(np.cov(xy.iloc[:, 0], xy.iloc[:, 1])[0, 1] / np.var(xy.iloc[:, 0], ddof=1))
     big = xy[xy.iloc[:, 0].abs() >= 2]
     same = float((np.sign(big.iloc[:, 0]) == np.sign(big.iloc[:, 1])).mean() * 100) if len(big) >= 8 else None
-    last_us_d = us.index[-1]
-    tw_after = tw[tw.index > last_us_d]
+    last_us_d = ui[-1]
+    tw_after = tw[ti > last_us_d]
+    tw_upto = ti[ti <= last_us_d]
+    since = us[ui >= tw_upto[-1]] if len(tw_upto) else us.iloc[-1:]   # US sessions since the last TW session, compounded
+    us_now = _compound(since.values)
     return {"corr": c, "beta": beta, "n": len(xy), "same_big": same, "n_big": int(len(big)), "us_d": last_us_d.strftime("%Y-%m-%d"),
-            "us": float(us.iloc[-1]), "implied": beta * float(us.iloc[-1]),
+            "us": us_now, "us_days": int(len(since)), "implied": beta * us_now,
             "tw": float(tw_after.iloc[0]) if len(tw_after) else None,
             "tw_d": tw_after.index[0].strftime("%Y-%m-%d") if len(tw_after) else None}
 
@@ -268,7 +285,7 @@ def expected_move(opt: Dict, h: Optional[pd.DataFrame]) -> Dict:
     out = []
     for sym, (zh, proxy) in EM_SYMS.items():
         rec = opt.get(sym) or {}
-        rows = rec.get("rows") or []
+        rows = SI.live_rows(rec)                               # days recomputed from today; expired / stale (> 3 days) dropped
         if not rows:
             continue
         spot = rec.get("spot")

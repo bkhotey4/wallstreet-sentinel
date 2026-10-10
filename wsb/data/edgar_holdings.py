@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import time
 import xml.etree.ElementTree as ET
@@ -67,6 +68,18 @@ def _num(s) -> Optional[float]:
         return None
 
 
+def _write_json(path, obj) -> None:
+    """Atomic write (tmp + os.replace): a crash / cancelled run mid-write can't leave a truncated archive."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _blocked(e: Exception) -> bool:
+    """SEC said 'too many requests' / 'forbidden' → stop for this run instead of hammering it."""
+    return getattr(e, "status", None) in (403, 429)
+
+
 async def _get(url: str, kind: str = "json"):
     r = await http.get(url, kind=kind, headers=HDR, timeout=30, retries=1)
     await asyncio.sleep(0.15)                       # SEC fair access: stay well under 10 requests / second
@@ -88,7 +101,7 @@ async def ticker_map() -> Dict[str, Dict]:
     js = await _get("https://www.sec.gov/files/company_tickers.json")
     out = {v["ticker"].upper(): {"cik": int(v["cik_str"]), "title": v["title"]} for v in js.values()}
     try:
-        _MAP_FILE.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+        _write_json(_MAP_FILE, out)
     except Exception as e:  # noqa: BLE001
         log.warning("SEC ticker map not cached: %s", e)
     return out
@@ -197,7 +210,7 @@ class Gurus:
         if ok:
             self.data["ts"] = time.time()
             try:
-                _GURU_FILE.write_text(json.dumps(self.data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                _write_json(_GURU_FILE, self.data)
             except Exception as e:  # noqa: BLE001
                 log.warning("13F archive not saved: %s", e)
             HEALTH.ok("sec_13f", ok, every=every)
@@ -319,6 +332,13 @@ class Insiders:
             gurus.set_names({s: norm_name((tmap.get(s) or tmap.get(s.replace("-", ".")) or {}).get("title", "")) for s in uni})
         todo: List[Tuple[str, int, str, str, str]] = []
         ok = fail = 0
+        max_tries = int(c.get("max_tries", 3))
+        forms = self.data["forms"]
+
+        def want(acc: str) -> bool:                  # new filing, or an earlier failed download with tries left
+            f = forms.get(acc)
+            return f is None or (bool(f.get("error")) and int(f.get("tries", 1)) < max_tries)
+        blocked = False
         for sym in uni:
             info = tmap.get(sym) or tmap.get(sym.replace("-", ".")) or tmap.get(sym.replace("-", ""))
             if not info:
@@ -330,32 +350,47 @@ class Insiders:
             except Exception as e:  # noqa: BLE001
                 fail += 1
                 log.info("submissions %s failed: %s", sym, e)
+                if _blocked(e):
+                    log.warning("SEC returned HTTP %s: stopping the insider pass for this run", getattr(e, "status", "?"))
+                    blocked = True
+                    break
                 continue
             r = sub.get("filings", {}).get("recent", {})
             for acc, fm, d, doc in zip(r.get("accessionNumber", []), r.get("form", []), r.get("filingDate", []),
                                        r.get("primaryDocument", [])):
                 if d < cutoff:
                     break
-                if fm == "4" and acc not in self.data["forms"]:
+                if fm == "4" and want(acc):
                     todo.append((sym, cik, acc, d, doc.split("/")[-1]))
         todo.sort(key=lambda x: x[3], reverse=True)
-        got = 0
-        for sym, cik, acc, d, doc in todo[:cap]:
+        got = tried = retry_left = 0
+        deadline = time.time() + float(c.get("time_budget_s", 120))
+        for sym, cik, acc, d, doc in ([] if blocked else todo[:cap]):
+            if time.time() > deadline:
+                log.info("form4: %ss budget used, %d filings left for the next run", c.get("time_budget_s", 120), len(todo) - tried)
+                break
             try:
                 xml = await _get(f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc.replace('-', '')}/{doc}", kind="text")
                 rec = parse_form4(xml)
                 rec.update({"sym": sym, "filed": d, "url": f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc.replace('-', '')}/"})
-                self.data["forms"][acc] = rec
+                forms[acc] = rec
                 got += 1
             except Exception as e:  # noqa: BLE001
+                if _blocked(e):                      # throttled: not this filing's fault, so it costs no try
+                    log.warning("SEC returned HTTP %s on Form 4: stopping for this run", getattr(e, "status", "?"))
+                    break
                 log.info("form4 %s %s failed: %s", sym, acc, e)
-                self.data["forms"][acc] = {"sym": sym, "issuer": "", "filed": d, "tx": [], "error": True}
-        self.data["forms"] = {a: f for a, f in self.data["forms"].items() if f.get("filed", "") >= cutoff}
+                tries = int((forms.get(acc) or {}).get("tries", 1 if acc in forms else 0)) + 1   # pre-retry records = 1 try
+                forms[acc] = {"sym": sym, "issuer": "", "filed": d, "tx": [], "error": True, "tries": tries, "ts": time.time()}
+                retry_left += tries < max_tries
+            tried += 1
+        self.data["forms"] = {a: f for a, f in forms.items() if f.get("filed", "") >= cutoff}
         if ok:
             self.data["ts"] = time.time()
-            self.data["pending"] = max(0, len(todo) - cap)
+            # still to do: filings not reached this run (cap / budget / throttling) + failed ones with tries left
+            self.data["pending"] = max(0, len(todo) - tried) + retry_left
             try:
-                _INS_FILE.write_text(json.dumps(self.data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                _write_json(_INS_FILE, self.data)
             except Exception as e:  # noqa: BLE001
                 log.warning("insider archive not saved: %s", e)
             HEALTH.ok("sec_form4", got, every=every)

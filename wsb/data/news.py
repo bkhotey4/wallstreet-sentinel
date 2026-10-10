@@ -52,6 +52,13 @@ class NewsWire:
         self.items: List[NewsItem] = []
         self.last_fresh: List[NewsItem] = []
         self.ts = 0.0
+        # undated entries keep the time we first saw them (not "now" on every refresh, which kept them forever fresh)
+        self._first_seen: Dict[str, float] = {}
+        try:
+            fs = store.kv_get("news_first_seen", {}) or {}
+            self._first_seen = {str(k): float(v) for k, v in fs.items()} if isinstance(fs, dict) else {}
+        except Exception as e:  # noqa: BLE001
+            log.debug("news first-seen map unavailable: %s", e)
 
     async def _feed(self, name: str, url: str) -> List[NewsItem]:
         import feedparser
@@ -63,8 +70,10 @@ class NewsWire:
             if not title:
                 continue
             st = e.get("published_parsed") or e.get("updated_parsed")
-            ts = calendar.timegm(st) if st else time.time()
-            out.append(NewsItem(name, title, e.get("link", ""), ts))
+            it = NewsItem(name, title, e.get("link", ""), calendar.timegm(st) if st else 0.0)
+            if not st:
+                it.ts = self._first_seen.setdefault(it.uid, time.time())
+            out.append(it)
         return out
 
     async def refresh(self) -> List[NewsItem]:
@@ -99,6 +108,12 @@ class NewsWire:
             if it.new:
                 fresh.append(it)
         items.sort(key=lambda i: (i.score, i.ts), reverse=True)
+        keep = time.time() - 72 * 3600                  # first-seen times only matter inside the 36 h window
+        self._first_seen = {k: v for k, v in self._first_seen.items() if v >= keep}
+        try:
+            store.kv_set("news_first_seen", self._first_seen)
+        except Exception as e:  # noqa: BLE001
+            log.debug("news first-seen map not saved: %s", e)
         self.items = items
         self.ts = time.time()
         self.last_fresh = sorted(fresh, key=lambda i: i.score, reverse=True)

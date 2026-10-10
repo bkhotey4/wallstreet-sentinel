@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import time
 from datetime import date, timedelta
@@ -257,7 +258,10 @@ class TaiwanData:
     def _save_t86(self) -> None:
         self.t86_hist = dict(sorted(self.t86_hist.items())[-30:])
         try:
-            (DATA_DIR / "twse_t86.json").write_text(json.dumps(self.t86_hist, separators=(",", ":")), encoding="utf-8")
+            path = DATA_DIR / "twse_t86.json"
+            tmp = path.with_suffix(".json.tmp")                       # atomic: a cancelled run can't truncate it
+            tmp.write_text(json.dumps(self.t86_hist, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, path)
         except Exception as e:  # noqa: BLE001
             log.warning("T86 archive not saved: %s", e)
 

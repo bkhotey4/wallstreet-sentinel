@@ -23,6 +23,9 @@ from ..data.econcal import us_today
 log = logging.getLogger(__name__)
 OUT_US = DATA_DIR / "growth_us.json"
 OUT_TW = DATA_DIR / "growth_tw.json"
+F_YF = DATA_DIR / "sinfo_yf.json"          # Yahoo info cache written by data/stockinfo ("fcur" = financialCurrency)
+FLAG_FX = "非美元財報"                       # Nasdaq annual fallback in the filer's own currency (e.g. TSM in TWD)
+FLAG_FX_SUSPECT = "疑似非美元財報"            # currency unknown, but P/S < 0.3 with no gross margin looks like one
 
 
 def _r(v, n=1):
@@ -45,12 +48,24 @@ def _rank(vals: Dict[str, Optional[float]], invert: bool = False) -> Dict[str, f
     return {k: float(s.get(k, 50.0)) for k in vals}
 
 
+def _fin_currency() -> Dict[str, str]:
+    """symbol → reporting currency (Yahoo financialCurrency) from the stock-info cache, when present."""
+    try:
+        d = json.loads(F_YF.read_text(encoding="utf-8")) if F_YF.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+    return {s: str(v["fcur"]).upper() for s, v in d.items() if isinstance(v, dict) and v.get("fcur")}
+
+
 def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[str, Dict]] = None, today: Optional[date] = None) -> List[Dict]:
     """One row per US company with enough revenue history (frames) or a Nasdaq annual statement (fallback)."""
     today = today or us_today()
     qs = ED.cy_quarters(today, 10)
     _fr = ED.FrameReader(ed.frames or {}, qs)
     val, raw = _fr.val, _fr._raw
+    fcur = _fin_currency()
+    ocf_tag = ED.FRAME_TAGS["ocf"][0]
+    years = [f"CY{y}" for y in range(today.year, today.year - 3, -1)]
 
     tech = tech or {}
     out, seen = [], set()
@@ -75,7 +90,8 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
                 gp = val("gp", cik, qs[i])
                 gw_now = raw("Goodwill", cik, qs[i] + "I")
                 gw_old = raw("Goodwill", cik, qs[i + 4] + "I") if i + 4 < len(qs) else None
-                ma = (gw_now is not None and gw_now - (gw_old or 0) > max(100e6, 0.1 * ttm) and gw_now > 1.3 * (gw_old or 0))
+                # year-ago goodwill missing = unknown (not fetched / not reported) → never flag on a guess
+                ma = (gw_now is not None and gw_old is not None and gw_now - gw_old > max(100e6, 0.1 * ttm) and gw_now > 1.3 * gw_old)
                 row = {"per": qs[i][2:6] + "Q" + qs[i][-1], "ttm": ttm, "g": _pct(ttm, ttm_p) if ttm_p else yoy, "q_yoy": yoy, "base": ttm_p, "ma": ma,
                        "accel": (yoy - yoy_p) if yoy is not None and yoy_p is not None else None,
                        "gm": (gp / rev[i] * 100) if gp is not None and rev[i] and gp < rev[i] * 0.99 else None,
@@ -93,6 +109,10 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
                 sti = raw("ShortTermInvestments", cik, qs[j] + "I") or 0.0
                 ocf = [val("ocf", cik, p) for p in qs[j:j + 4]]
                 ocf_t = sum(ocf) if all(v is not None for v in ocf) else None
+                row["burn_basis"] = "近4季" if ocf_t is not None else None
+                if ocf_t is None:                   # 10-Qs report cash flow year-to-date, so quarterly frames are often
+                    ocf_t = next((v for v in (raw(ocf_tag, cik, y) for y in years) if v is not None), None)   # empty → latest annual
+                    row["burn_basis"] = "年度" if ocf_t is not None else None
                 row["cash"] = (cash + sti) if cash is not None else None
                 row["burn"] = -ocf_t if ocf_t is not None and ocf_t < 0 else (0.0 if ocf_t is not None else None)
                 row["runway"] = (row["cash"] / row["burn"]) if row["cash"] is not None and row.get("burn") else None
@@ -103,9 +123,16 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
                 row = {"per": "FY" + a["end"][:4], "ttm": a["rev"], "g": _pct(a["rev"], b["rev"]), "q_yoy": None, "accel": None,
                        "gm": (a["gp"] / a["rev"] * 100) if a.get("gp") else None, "om": (a["op"] / a["rev"] * 100) if a.get("op") is not None else None,
                        "ni": a.get("ni"), "src": "Nasdaq 年報"}
+                cur = fcur.get(sym)
+                if cur and cur != "USD":            # statement in the filer's currency: growth % is fine, valuation is not
+                    row.update({"flag": FLAG_FX, "unrank": True, "fcur": cur})
         if row is None or row["ttm"] is None or row["ttm"] < 0:
             continue
         ps = mcap / row["ttm"] if mcap and row["ttm"] > 0 else None
+        if row.get("flag") == FLAG_FX:
+            ps, row["ni"] = None, None                   # USD market cap ÷ TWD/EUR/… revenue or profit is meaningless
+        elif row["src"] == "Nasdaq 年報" and ps is not None and ps < 0.3 and row.get("gm") is None:
+            row.update({"flag": FLAG_FX_SUSPECT, "unrank": True})
         g = row["g"]
         row.update({"sym": sym, "name": it.get("name", ""), "ind": it.get("ind", ""), "sub": it.get("sub", ""), "mcap": mcap, "ps": ps,
                     "psg": (ps / g) if ps is not None and g is not None and g > 0 else None,
@@ -128,7 +155,7 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.
         r["odd"] = (r.get("g") or 0) > 300 or (r.get("base") is not None and r["base"] < min_rev / 2)
         ge = min(r["g"], cap_g) if r.get("g") is not None else None
         r["gav"], r["basis"] = None, None
-        if ge and ge > 0 and r.get("mcap"):
+        if ge and ge > 0 and r.get("mcap") and r.get("flag") != FLAG_FX:     # foreign-currency statement: no valuation
             if r.get("gm") is not None and r["gm"] >= 15:
                 r["gav"], r["basis"] = (r["mcap"] / (r["ttm"] * r["gm"] / 100)) / ge, "P/GP"
             elif r.get("pe") is not None:
@@ -138,7 +165,7 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.
         r["small"] = r["ttm"] < 50e6
     still = lambda r: r.get("q_yoy") is None or r["q_yoy"] >= min_g / 2  # noqa: E731  (latest quarter still growing)
     elig = {r["sym"]: r for r in rows if r["ttm"] >= min_rev and (r["g"] or -1) >= min_g and r.get("gav") is not None
-            and not r.get("ma") and still(r) and r.get("ind") not in exclude}
+            and not r.get("ma") and not r.get("unrank") and still(r) and r.get("ind") not in exclude}
     g = _rank({s: min(r["g"], cap_g) for s, r in elig.items()})
     v: Dict[str, float] = {}
     for basis in ("P/GP", "P/E", "P/S"):
@@ -158,7 +185,7 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.
     return rows
 
 
-US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "gav", "basis", "score", "st", "tech", "src", "small", "odd", "ma", "cash", "burn", "runway"]
+US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "gav", "basis", "score", "st", "tech", "src", "small", "odd", "ma", "cash", "burn", "runway", "flag", "burn_basis"]
 TW_COLS = ["rank", "code", "name", "ind", "board", "ym", "rev", "cum_yoy", "yoy", "streak", "pe", "pb", "dy", "peg", "score", "st", "cur"]
 
 

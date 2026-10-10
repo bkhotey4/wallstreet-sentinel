@@ -9,6 +9,7 @@ so an hourly website build spreads the work over several runs."""
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import json
 import logging
 import re
@@ -67,24 +68,22 @@ def parse_info(info: Dict, annual: Dict[str, float], last_div: Optional[str] = N
         ex = datetime.fromtimestamp(ex, tz=timezone.utc).date().isoformat()
     elif not isinstance(ex, str):
         ex = None
-    yrs = sorted(int(y) for y in annual if str(y).isdigit())
+    annual = {str(k): float(v or 0) for k, v in (annual or {}).items() if str(k).isdigit()}
+    yrs = sorted(int(y) for y in annual)
     this_year = date.today().year
-    full = [y for y in yrs if y < this_year]
-    streak, paid = 0, 0
-    for y in reversed(full):                                  # consecutive years paid / raised, newest complete year backwards
-        if annual.get(str(y), 0) > 0:
-            paid += 1
-        else:
-            break
-    for i in range(len(full) - 1, 0, -1):
-        a, b = annual.get(str(full[i]), 0), annual.get(str(full[i - 1]), 0)
-        if a > 0 and b > 0 and a >= b * 0.995 and full[i] - full[i - 1] == 1:
-            streak += 1
-        else:
-            break
+    # consecutive CALENDAR years ending at the last complete year (this_year − 1); the first missing year stops the count,
+    # so a company that stopped paying shows 0
+    paid, y = 0, this_year - 1
+    while annual.get(str(y), 0) > 0:
+        paid += 1
+        y -= 1
+    streak, y = 0, this_year - 1                              # strict raises only (≥ +0.1%), consecutive years
+    while annual.get(str(y), 0) > 0 and annual.get(str(y - 1), 0) > 0 and annual[str(y)] >= annual[str(y - 1)] * 1.001:
+        streak += 1
+        y -= 1
     tm, th, tl = _f(info.get("targetMeanPrice")), _f(info.get("targetHighPrice")), _f(info.get("targetLowPrice"))
     n = _f(info.get("numberOfAnalystOpinions"))
-    return {"px": px, "cur": info.get("currency"), "tm": tm, "th": th, "tl": tl, "n": int(n) if n else None,
+    return {"px": px, "cur": info.get("currency"), "fcur": info.get("financialCurrency"), "country": info.get("country"), "tm": tm, "th": th, "tl": tl, "n": int(n) if n else None,
             "rm": _f(info.get("recommendationMean")), "rk": str(info.get("recommendationKey") or "").lower() or None,
             "up": (tm / px - 1) * 100 if tm and px else None, "uph": (th / px - 1) * 100 if th and px else None,
             "div": rate, "yld": yld, "ex": ex, "payout": _f(info.get("payoutRatio")), "y5": _f(info.get("fiveYearAvgDividendYield")),
@@ -109,32 +108,53 @@ def _yf_one(sym: str) -> Dict:
     return parse_info(info, annual, last)
 
 
-async def refresh_yf(syms: List[str], budget_s: float = 150, max_age_h: float = 20, conc: int = 4) -> Dict[str, Dict]:
-    cache = _load(F_YF)
+def _prune(cache: Dict, keep: List[str]) -> Dict:
+    """Drop symbols that left the universe (cache keys starting with "_" are metadata and kept)."""
+    ks = set(keep)
+    return {k: v for k, v in cache.items() if k in ks or k.startswith("_")}
+
+
+async def refresh_yf(syms: List[str], budget_s: float = 150, max_age_h: float = 20, conc: int = 4,
+                     max_fail_streak: int = 3) -> Dict[str, Dict]:
+    """"ts" = last attempt (drives the retry schedule); "ok_ts" = last successful fetch (drives staleness on the site)."""
+    cache = _prune(_load(F_YF), syms)
     now = time.time()
     todo = sorted((s for s in syms if now - float((cache.get(s) or {}).get("ts", 0)) > max_age_h * 3600),
                   key=lambda s: float((cache.get(s) or {}).get("ts", 0)))
     t0, sem, done = time.time(), asyncio.Semaphore(conc), 0
+    fails, stop = 0, False
+    loop = asyncio.get_running_loop()
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=conc, thread_name_prefix="yf")   # own pool: timed-out calls can't block others
 
     async def one(s: str):
-        nonlocal done
+        nonlocal done, fails, stop
         async with sem:
-            if time.time() - t0 > budget_s:
+            if stop or time.time() - t0 > budget_s:
                 return
             try:
-                d = await asyncio.wait_for(asyncio.to_thread(_yf_one, s), 40)
+                d = await asyncio.wait_for(loop.run_in_executor(pool, _yf_one, s), 40)
                 if d.get("px") is None and not d.get("tm") and not d.get("div"):
                     raise ValueError("empty quote summary")
-                d["ts"] = time.time()
+                d["ts"] = d["ok_ts"] = time.time()
                 cache[s] = d
                 done += 1
+                fails = 0
             except Exception as e:  # noqa: BLE001
                 log.debug("yahoo info %s: %s", s, e)
                 old = cache.get(s) or {}
-                old["ts"] = time.time() - max_age_h * 3600 + 3 * 3600     # retry in ~3h, keep old values
+                if old and not old.get("ok_ts") and old.get("ts"):
+                    old["ok_ts"] = old["ts"]                          # older caches: the last attempt was the last success
+                old["ts"] = time.time() - max_age_h * 3600 + 3 * 3600     # retry in ~3h, keep old values (and their ok_ts)
                 cache[s] = old
-    await asyncio.gather(*(one(s) for s in todo))
-    _save(F_YF, cache)
+                fails += 1
+                if fails >= max_fail_streak and not stop:
+                    stop = True                                       # several failures in a row: probably rate-limited
+                    log.warning("Yahoo info: %d failures in a row, stopping this run", fails)
+    try:
+        await asyncio.gather(*(one(s) for s in todo))
+    finally:                                                          # also on cancellation by the caller's deadline
+        pool.shutdown(wait=False, cancel_futures=True)
+        _save(F_YF, cache)
     log.info("stock info (Yahoo): %d refreshed, %d stale left", done, max(0, len(todo) - done))
     return cache
 
@@ -182,18 +202,30 @@ async def _cik_map() -> Dict[str, str]:
     m = _load(F_CIK)
     if m.get("_ts", 0) > time.time() - 7 * 86400 and len(m) > 100:
         return m
-    js = await http.get("https://www.sec.gov/files/company_tickers.json", headers={"User-Agent": SEC_USER_AGENT})
-    m = {v["ticker"].upper(): str(v["cik_str"]).zfill(10) for v in js.values()}
-    m["_ts"] = time.time()
-    _save(F_CIK, m)
-    return m
+    try:
+        js = await http.get("https://www.sec.gov/files/company_tickers.json", headers={"User-Agent": SEC_USER_AGENT},
+                            timeout=20, retries=1)
+        new = {v["ticker"].upper(): str(v["cik_str"]).zfill(10) for v in js.values()}
+    except Exception as e:  # noqa: BLE001
+        if len(m) > 1:                                       # tickers → CIK rarely change: a stale map beats none
+            log.warning("SEC ticker map refresh failed (%s); using the cached map", e)
+            return m
+        raise
+    new["_ts"] = time.time()
+    _save(F_CIK, new)
+    return new
+
+
+def _backoff_ts(every_h: float, retry_h: float = 2) -> float:
+    """A "ts" that makes the symbol due again in about retry_h hours (instead of on the very next run)."""
+    return time.time() - every_h * 3600 + retry_h * 3600
 
 
 async def refresh_8k(syms: List[str], budget_s: float = 60, every_h: float = 6) -> Dict[str, Dict]:
-    cache = _load(F_8K)
+    cache = _prune(_load(F_8K), syms)
     now = time.time()
     todo = sorted((s for s in syms if now - float((cache.get(s) or {}).get("ts", 0)) > every_h * 3600),
-                  key=lambda s: float((cache.get(s) or {}).get("ts", 0)))
+                  key=lambda s: float((cache.get(s) or {}).get("ts", 0)))      # oldest first: slow names can't starve others
     if not todo:
         return cache
     try:
@@ -202,21 +234,24 @@ async def refresh_8k(syms: List[str], budget_s: float = 60, every_h: float = 6) 
         log.warning("SEC ticker map failed: %s", e)
         return cache
     t0, done = time.time(), 0
-    for s in todo:
-        if time.time() - t0 > budget_s:
-            break
-        c = cik.get(s.upper().replace(".", "-"))
-        if not c:
-            cache[s] = {"ts": time.time(), "rows": [], "na": True}
-            continue
-        try:
-            js = await http.get(f"https://data.sec.gov/submissions/CIK{c}.json", headers={"User-Agent": SEC_USER_AGENT}, timeout=20, retries=1)
-            cache[s] = {"ts": time.time(), "rows": parse_filings(js, s)}
-            done += 1
-        except Exception as e:  # noqa: BLE001
-            log.debug("SEC submissions %s: %s", s, e)
-        await asyncio.sleep(0.15)                            # SEC fair access: < 10 requests / second
-    _save(F_8K, cache)
+    try:
+        for s in todo:
+            if time.time() - t0 > budget_s:
+                break
+            c = cik.get(s.upper().replace(".", "-"))
+            if not c:
+                cache[s] = {"ts": time.time(), "rows": [], "na": True}
+                continue
+            try:
+                js = await http.get(f"https://data.sec.gov/submissions/CIK{c}.json", headers={"User-Agent": SEC_USER_AGENT}, timeout=20, retries=1)
+                cache[s] = {"ts": time.time(), "ok_ts": time.time(), "rows": parse_filings(js, s)}
+                done += 1
+            except Exception as e:  # noqa: BLE001
+                log.debug("SEC submissions %s: %s", s, e)
+                cache[s] = {**(cache.get(s) or {"rows": []}), "ts": _backoff_ts(every_h)}   # keep old rows, retry in ~2h
+            await asyncio.sleep(0.15)                            # SEC fair access: < 10 requests / second
+    finally:
+        _save(F_8K, cache)
     log.info("SEC 8-K: %d refreshed", done)
     return cache
 
@@ -225,8 +260,30 @@ async def refresh_8k(syms: List[str], budget_s: float = 60, every_h: float = 6) 
 _OSYM = re.compile(r"^([A-Z]+)(\d{6})([CP])(\d{8})$")
 
 
-def parse_cboe(js: Dict, today: Optional[date] = None, max_days: int = 70) -> Dict:
-    """→ {"spot", "rows": [{"exp", "days", "k", "c", "p", "st", "mv"}]} — one ATM straddle per expiry (mid prices).
+def _tv_at_spot(ks: Dict[float, Dict[str, float]], spot: float, max_gap: float = 0.05, max_one: float = 0.02) -> Optional[tuple]:
+    """Straddle value AT the spot price.  For every strike with both legs, time value = C + P − |S − K| (removes the intrinsic
+    value an off-spot strike carries); interpolate it linearly between the two strikes bracketing spot.  An at-spot straddle has
+    no intrinsic value, so the interpolated time value IS the straddle.  With only one side, the nearest strike must be within 2%.
+    → (straddle_at_spot, nearest strike) or None."""
+    tv = {k: v["C"] + v["P"] - abs(spot - k) for k, v in ks.items() if "C" in v and "P" in v}
+    tv = {k: x for k, x in tv.items() if x > 0}
+    if not tv:
+        return None
+    near = min(tv, key=lambda k: abs(k - spot))
+    lo = [k for k in tv if k <= spot and spot - k <= spot * max_gap]
+    hi = [k for k in tv if k >= spot and k - spot <= spot * max_gap]
+    if lo and hi:
+        a, b = max(lo), min(hi)
+        st = tv[a] if a == b else tv[a] + (tv[b] - tv[a]) * (spot - a) / (b - a)
+        return st, near
+    if abs(near / spot - 1) <= max_one:
+        return tv[near], near
+    return None
+
+
+def parse_cboe(js: Dict, today: Optional[date] = None, max_days: int = 70, max_spread: float = 0.4) -> Dict:
+    """→ {"spot", "rows": [{"exp", "days", "k", "c", "p", "st", "mv"}]} — one straddle per expiry, estimated AT spot (mid prices;
+    quotes with no bid or a bid/ask spread wider than 40% of mid are dropped).  k / c / p = the nearest strike's legs (display).
     mv = straddle ÷ spot: the move size the options market prices on average (≈ 0.8 σ√t; one standard deviation ≈ 1.25 × mv)."""
     d = (js or {}).get("data") or {}
     spot = _f(d.get("current_price")) or _f(d.get("close"))
@@ -245,28 +302,47 @@ def parse_cboe(js: Dict, today: Optional[date] = None, max_days: int = 70) -> Di
         bid, ask = _f(o.get("bid")), _f(o.get("ask"))
         if not bid or not ask or ask < bid or bid <= 0:
             continue
+        mid = (bid + ask) / 2
+        if (ask - bid) / mid > max_spread:                   # too wide to trust the mid
+            continue
         k = int(m.group(4)) / 1000
         if abs(k / spot - 1) > 0.15:
             continue
-        by.setdefault(exp.isoformat(), {}).setdefault(k, {})[m.group(3)] = (bid + ask) / 2
+        by.setdefault(exp.isoformat(), {}).setdefault(k, {})[m.group(3)] = mid
     rows = []
     for exp, ks in sorted(by.items()):
-        both = [k for k, v in ks.items() if "C" in v and "P" in v]
-        if not both:
+        r = _tv_at_spot(ks, spot)
+        if not r:
             continue
-        k = min(both, key=lambda x: abs(x - spot))
-        if abs(k / spot - 1) > 0.05:
-            continue
-        st = ks[k]["C"] + ks[k]["P"]
+        st, k = r
         rows.append({"exp": exp, "days": (date.fromisoformat(exp) - today).days, "k": k, "c": round(ks[k]["C"], 3), "p": round(ks[k]["P"], 3),
                      "st": round(st, 3), "mv": round(st / spot * 100, 2)})   # straddle ÷ spot ≈ expected |move|
     return {"spot": spot, "rows": rows}
 
 
-def straddle_after(rec: Dict, d: str, after_close: bool = False) -> Optional[Dict]:
-    """The first expiry that still includes the event day's reaction."""
+def live_rows(rec: Dict, today: Optional[date] = None, max_age_days: float = 3) -> List[Dict]:
+    """A cached CBOE record's rows as of today: "days" recomputed from "exp", expired expiries dropped, and nothing at all
+    when the last successful fetch is older than max_age_days (stale quotes)."""
+    rec = rec or {}
+    ok = rec.get("ok_ts") or rec.get("ts")
+    if ok is not None and time.time() - float(ok) > max_age_days * 86400:
+        return []
+    today = today or date.today()
+    out = []
+    for r in rec.get("rows") or []:
+        try:
+            dd = (date.fromisoformat(r["exp"]) - today).days
+        except (KeyError, TypeError, ValueError):
+            continue
+        if dd >= 0:
+            out.append({**r, "days": dd})
+    return out
+
+
+def straddle_after(rec: Dict, d: str, after_close: bool = False, today: Optional[date] = None) -> Optional[Dict]:
+    """The first live expiry that still includes the event day's reaction (on/after d, or d + 1 with after_close)."""
     lim = (date.fromisoformat(d) + timedelta(days=1 if after_close else 0)).isoformat()
-    for r in (rec or {}).get("rows", []):
+    for r in live_rows(rec, today):
         if r["exp"] >= lim:
             return r
     return None
@@ -276,25 +352,32 @@ async def refresh_options(syms: List[str], budget_s: float = 60, every_h: float 
     cache = _load(F_OPT)
     now = time.time()
     t0, done = time.time(), 0
-    for s in syms:
-        if now - float((cache.get(s) or {}).get("ts", 0)) < every_h * 3600:
-            continue
-        if time.time() - t0 > budget_s:
-            break
-        root = "_" + s.lstrip("^") if s.startswith("^") else s.replace("-", ".")
-        try:
-            js = await http.get(f"https://cdn.cboe.com/api/global/delayed_quotes/options/{root}.json",
-                                headers={"Referer": "https://www.cboe.com/"}, timeout=25, retries=1)
-            rec = parse_cboe(js)
-            rec["ts"] = time.time()
-            rec["asof"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-            cache[s] = rec
-            done += 1
-        except Exception as e:  # noqa: BLE001
-            log.debug("CBOE %s: %s", s, e)
-    for s in [k for k, v in cache.items() if now - float(v.get("ts", 0)) > 10 * 86400]:
-        cache.pop(s, None)                                   # names that dropped out of the earnings window
-    _save(F_OPT, cache)
+    want = list(dict.fromkeys(syms))
+    todo = sorted((s for s in want if now - float((cache.get(s) or {}).get("ts", 0)) >= every_h * 3600),
+                  key=lambda s: float((cache.get(s) or {}).get("ts", 0)))      # oldest first: slow names can't starve others
+    try:
+        for s in todo:
+            if time.time() - t0 > budget_s:
+                break
+            root = "_" + s.lstrip("^") if s.startswith("^") else s.replace("-", ".")
+            try:
+                js = await http.get(f"https://cdn.cboe.com/api/global/delayed_quotes/options/{root}.json",
+                                    headers={"Referer": "https://www.cboe.com/"}, timeout=25, retries=1)
+                rec = parse_cboe(js)
+                rec["ts"] = rec["ok_ts"] = time.time()
+                rec["asof"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+                cache[s] = rec
+                done += 1
+            except Exception as e:  # noqa: BLE001
+                log.debug("CBOE %s: %s", s, e)
+                old = cache.get(s) or {}
+                cache[s] = {**old, "ok_ts": old.get("ok_ts") or old.get("ts"), "ts": _backoff_ts(every_h)}   # keep old quotes, retry in ~2h
+        keep = set(want)
+        for s in [k for k, v in cache.items()
+                  if k not in keep and now - float(v.get("ok_ts") or v.get("ts", 0)) > 10 * 86400]:
+            cache.pop(s, None)                                   # names that dropped out of the earnings window
+    finally:
+        _save(F_OPT, cache)
     log.info("CBOE straddles: %d refreshed", done)
     return cache
 

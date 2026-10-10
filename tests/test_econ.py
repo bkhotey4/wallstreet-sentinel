@@ -97,6 +97,180 @@ def test_parsers():
     return days, q
 
 
+def test_fixes():
+    """Audit fixes 2026-10: DST clock, empty-answer retries, FOMC cross-month, fiscal-Q4 holes, Q4 EPS, currency flag,
+    annual cash-burn fallback, goodwill unknown, per-board TW merge, context by label."""
+    from wsb.analytics import growth as GR
+    tmp = Path("/tmp/wsb_econ_fix")
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    # 1) Nasdaq clock: inferred per day from anchors; fixed UTC-4 kept when there is nothing to check or anchors disagree
+    us = lambda n, t: {"country": "United States", "eventName": n, "gmt": t, "actual": "", "consensus": "", "previous": ""}  # noqa: E731
+    w = EC.parse_nasdaq(FX["econ"]["2024-01-05"], date(2024, 1, 4))
+    assert next(r for r in w if r["name"] == "Initial Jobless Claims")["utc"] == "2024-01-04T13:30:00Z", "winter, Nasdaq on UTC-4 (09:30)"
+    et = EC.parse_nasdaq({"data": {"rows": [us("CPI", "08:30"), us("Fed Interest Rate Decision", "14:00")]}}, date(2026, 12, 10))
+    assert [r["utc"] for r in et] == ["2026-12-10T13:30:00Z", "2026-12-10T19:00:00Z"], "Nasdaq switched to US Eastern (EST)"
+    old = EC.parse_nasdaq({"data": {"rows": [us("CPI", "09:30"), us("Fed Interest Rate Decision", "15:00")]}}, date(2026, 12, 10))
+    assert [r["utc"] for r in old] == ["2026-12-10T13:30:00Z", "2026-12-10T19:00:00Z"], "Nasdaq still on fixed UTC-4"
+    mixed = EC.parse_nasdaq({"data": {"rows": [us("CPI", "08:30"), us("ISM Manufacturing PMI", "11:00"), us("X", "14:00")]}}, date(2026, 12, 1))
+    assert mixed[-1]["utc"] == "2026-12-01T18:00:00Z", "anchors disagree → UTC-4"
+    assert EC.parse_nasdaq({"data": {"rows": [us("X", "14:00")]}}, date(2026, 12, 1))[0]["utc"] == "2026-12-01T18:00:00Z"
+    # 2a) economic calendar: an HTTP-200 empty answer for a weekday is retried with back-off, old rows kept, final after 5 tries
+    X_DAY, SAT = TODAY - timedelta(days=7), TODAY - timedelta(days=6)
+    calls = []
+
+    async def fake_fetch(d):
+        calls.append(d)
+        if d in (X_DAY, SAT):
+            return [], 0
+        return [{"name": "GDP", "utc": None, "actual": "1", "cons": "", "prev": ""}], 3
+    saved = (EC._fetch, EC.cfg, EC._FILE)
+    EC._fetch, EC._FILE = fake_fetch, tmp / "econ_days.json"
+    EC.cfg = lambda: {"days_ahead": 0, "backfill_days": 10, "backfill_per_run": 5, "sleep_s": 0}
+    try:
+        EC.save({X_DAY.isoformat(): {"ts": 0, "rows": [{"name": "CPI", "utc": None, "actual": "0.3%", "cons": "", "prev": ""}], "final": False}})
+        d1 = asyncio.run(EC.refresh(5))
+        rx = d1[X_DAY.isoformat()]
+        assert rx["empty"] == 1 and not rx["final"] and rx["rows"][0]["name"] == "CPI", rx
+        assert d1[SAT.isoformat()]["final"] and "empty" not in d1[SAT.isoformat()], "weekend: empty is normal"
+        assert d1[(TODAY - timedelta(days=4)).isoformat()]["final"]
+        calls.clear()
+        asyncio.run(EC.refresh(5))
+        assert X_DAY not in calls, "backing off"
+        for i in range(2, 6):
+            dd = EC.load()
+            dd[X_DAY.isoformat()]["ts"] = 0
+            EC.save(dd)
+            rx = asyncio.run(EC.refresh(5))[X_DAY.isoformat()]
+            assert rx["empty"] == i and rx["final"] == (i >= EC.EMPTY_MAX), rx
+        calls.clear()
+        dd = EC.load()
+        dd[X_DAY.isoformat()]["ts"] = 0
+        EC.save(dd)
+        asyncio.run(EC.refresh(5))
+        assert X_DAY not in calls, "final after 5 empty tries"
+    finally:
+        EC._fetch, EC.cfg, EC._FILE = saved
+    # 2b) earnings calendar: same rule
+    ecalls = []
+
+    async def fake_cal(d):
+        ecalls.append(d)
+        return [] if d == X_DAY else [{"sym": "AAA", "name": "A", "time": "pre", "fq": "", "eps_f": 1.0, "n_est": 1, "eps_ly": 1.0,
+                                       "mcap": 1e9, "eps": None, "surprise": None}]
+    saved = (ED._cal_day, ED.cfg, ED.F_DAYS)
+    ED._cal_day, ED.F_DAYS = fake_cal, tmp / "earn_days.json"
+    ED.cfg = lambda: {"cal_back": 8, "cal_ahead": 0}
+    try:
+        ed1 = asyncio.run(ED.refresh_calendar(30))
+        assert ed1[X_DAY.isoformat()]["empty"] == 1 and not ed1[X_DAY.isoformat()]["final"]
+        assert ed1[(TODAY - timedelta(days=4)).isoformat()]["final"]
+        ecalls.clear()
+        asyncio.run(ED.refresh_calendar(30))
+        assert X_DAY not in ecalls
+        for i in range(2, 6):
+            dd = ED._load(ED.F_DAYS)
+            dd[X_DAY.isoformat()]["ts"] = 0
+            ED._save(ED.F_DAYS, dd)
+            rx = asyncio.run(ED.refresh_calendar(30))[X_DAY.isoformat()]
+            assert rx["empty"] == i and rx["final"] == (i >= 5), rx
+    finally:
+        ED._cal_day, ED.cfg, ED.F_DAYS = saved
+    # 3) FOMC: cross-month meetings, notation votes ignored
+    fm = {m["date"]: m for m in EC.parse_fomc(FX["fed"])}
+    assert fm["2024-05-01"]["start"] == "2024-04-30" and fm["2023-02-01"]["start"] == "2023-01-31"
+    assert fm["2023-11-01"]["start"] == "2023-10-31" and "2025-08-22" not in fm
+    assert not EC.parse_fomc("<html>layout changed</html>")
+    # 4) fiscal-Q4 hole of a non-December fiscal year, filled from the annual frame by its END date
+    fr = {}
+    for per, a5, a6, a7 in (("CY2024Q4", 120, 10, 1), ("CY2025Q1", 90, 11, 2), ("CY2025Q2", 95, 12, 3), ("CY2025Q3", None, 13, 4),
+                            ("CY2025Q4", 130, None, None), ("CY2026Q1", 100, 15, 5), ("CY2026Q2", 105, 16, 6), ("CY2024Q3", 88, 9, 1),
+                            ("CY2024Q2", 85, 8, 1), ("CY2024Q1", 80, 7, 1)):
+        fr[f"Revenues/{per}"] = {"v": {c: v for c, v in (("5", a5), ("6", a6), ("7", a7)) if v is not None}}
+    fr["Revenues/CY2025"] = {"v": {"5": 420.0, "6": 50.0, "7": 10.0}, "e": {"5": "2025-09-27", "6": "2025-12-31", "7": "2025-09-27"}}
+    fr["EarningsPerShareDiluted/CY2025"] = {"v": {"5": 6.0}, "e": {"5": "2025-09-27"}}
+    for per in ("CY2024Q4", "CY2025Q1", "CY2025Q2"):
+        fr[f"EarningsPerShareDiluted/{per}"] = {"v": {"5": 1.5}}
+    qs = ED.cy_quarters(TODAY, 10)
+    rd = ED.FrameReader(fr, qs)
+    assert rd.val("rev", "5", "CY2025Q3") == 420 - 120 - 90 - 95, "Sep year-end: CY Q3 = FY − the three quarters before"
+    assert rd.val("rev", "6", "CY2025Q4") == 50 - 11 - 12 - 13, "Dec year-end: CY Q4 as before"
+    assert rd.val("rev", "7", "CY2025Q4") is None, "never derive a quarter the fiscal year doesn't end in"
+    assert rd.tag_val("EarningsPerShareDiluted", "5", "CY2025Q3") is None, "EPS is not additive"
+    ed = type("Ed", (), {})()
+    ed.frames, ed.nqann = fr, {}
+    rows = GR.us_rows(ed, [{"sym": "SEPFY", "name": "Sep FY", "ind": "科技", "mcap": 9e9}], {"SEPFY": {"cik": 5}}, {}, TODAY)
+    assert rows and rows[0]["per"] == "2026Q2" and rows[0]["ttm"] == 105 + 100 + 130 + 115, rows
+    # 11) companyfacts: derived Q4 EPS is None, revenue still derived
+    eps = [{"start": "2025-01-27", "end": "2025-04-27", "val": 0.76, "filed": "2025-05-28"},
+           {"start": "2025-04-28", "end": "2025-07-27", "val": 1.08, "filed": "2025-08-27"},
+           {"start": "2025-07-28", "end": "2025-10-26", "val": 1.30, "filed": "2025-11-19"},
+           {"start": "2025-01-27", "end": "2026-01-25", "val": 4.90, "filed": "2026-02-25"}]
+    cf = {"facts": {"us-gaap": {"Revenues": FX["sec_rev"], "EarningsPerShareDiluted": {"units": {"USD/shares": eps}}}}}
+    qf = {r["end"]: r for r in ED.parse_facts(cf)}
+    assert qf["2026-01-25"]["eps"] is None and qf["2026-01-25"]["rev"] and qf["2025-10-26"]["eps"] == 1.30
+    # 5) Nasdaq annual fallback in a foreign currency → listed, unranked, flagged; unknown currency + P/S < 0.3 → suspect
+    saved = GR.F_YF
+    GR.F_YF = tmp / "sinfo_yf.json"
+    GR.F_YF.write_text(json.dumps({"TWX": {"fcur": "TWD", "cur": "USD"}, "USX": {"fcur": "USD"}}), encoding="utf-8")
+    try:
+        ed.frames = {}
+        ed.nqann = {"TWX": {"y": [{"end": "2024-12-31", "rev": 2.9e12, "gp": 1.6e12, "op": 1.3e12, "ni": 1.2e12},
+                                  {"end": "2025-12-31", "rev": 3.8e12, "gp": 2.2e12, "op": 1.8e12, "ni": 1.7e12}]},
+                    "SUS": {"y": [{"end": "2024-12-31", "rev": 40e9, "gp": None, "op": 2e9, "ni": 1e9},
+                                  {"end": "2025-12-31", "rev": 50e9, "gp": None, "op": 3e9, "ni": 2e9}]},
+                    "USX": {"y": [{"end": "2024-12-31", "rev": 4e9, "gp": None, "op": 1e9, "ni": 0.5e9},
+                                  {"end": "2025-12-31", "rev": 5e9, "gp": None, "op": 1.2e9, "ni": 0.8e9}]}}
+        items = [{"sym": "TWX", "name": "TW ADR", "ind": "科技", "mcap": 1.5e12}, {"sym": "SUS", "name": "Sus", "ind": "科技", "mcap": 10e9},
+                 {"sym": "USX", "name": "Us", "ind": "科技", "mcap": 20e9}]
+        rows = GR.score_us(GR.us_rows(ed, items, {}, {}, TODAY), 0, 15)
+        by = {r["sym"]: r for r in rows}
+        assert by["TWX"]["flag"] == GR.FLAG_FX and by["TWX"]["score"] is None and by["TWX"]["ps"] is None and by["TWX"]["gav"] is None and abs(by["TWX"]["g"] - 31.03) < 0.01
+        assert by["SUS"]["flag"] == GR.FLAG_FX_SUSPECT and by["SUS"]["score"] is None
+        assert not by["USX"].get("flag") and by["USX"]["ps"] == 4.0
+        packed = GR.pack(rows, GR.US_COLS)
+        assert GR.FLAG_FX in [dict(zip(packed["cols"], r))["flag"] for r in packed["rows"]]
+    finally:
+        GR.F_YF = saved
+    # 7) cash burn from the latest annual operating cash flow when quarterly frames are missing; 12) goodwill unknown → no M&A flag
+    ed.nqann, fr = {}, {}
+    for k, per in enumerate(reversed(qs[1:9])):
+        fr[f"Revenues/{per}"] = {"v": {"8": 100e6 * 1.1 ** k}}
+    fr[f"Goodwill/{qs[1]}I"] = {"v": {"8": 900e6}}
+    fr["NetCashProvidedByUsedInOperatingActivities/CY2025"] = {"v": {"8": -300e6}}
+    fr[f"CashAndCashEquivalentsAtCarryingValue/{qs[1]}I"] = {"v": {"8": 600e6}}
+    ed.frames = fr
+    r8 = GR.us_rows(ed, [{"sym": "BURN", "name": "Burn", "ind": "科技", "mcap": 3e9}], {"BURN": {"cik": 8}}, {}, TODAY)[0]
+    assert r8["burn"] == 300e6 and r8["runway"] == 2.0 and r8["burn_basis"] == "年度" and not r8["ma"], r8
+    # 6) Taiwan: one board failing keeps that board's previous rows
+    from wsb.data import http as H
+    saved = (H.get, ED.F_TW, ED.F_TWPE)
+    ED.F_TW, ED.F_TWPE = tmp / "tw.json", tmp / "twpe.json"
+    ED._save(ED.F_TW, {"ts": 0, "months": {}, "latest": {
+        "2330": {"code": "2330", "name": "台積電", "ind": "半導體業", "board": "上市", "ym": "2026-07", "rev": 1.0, "mom": 0, "yoy": 1, "cum_yoy": 1, "ly": 1},
+        "3105": {"code": "3105", "name": "穩懋", "ind": "半導體業", "board": "上櫃", "ym": "2026-07", "rev": 2.0, "mom": 0, "yoy": 5, "cum_yoy": 4, "ly": 1}}})
+    ED._save(ED.F_TWPE, {"ts": 0, "v": {"3105": {"pe": 12.0, "pb": 1.5, "dy": 2.0, "name": "穩懋", "board": "上櫃"}}})
+
+    async def half_down(url, **kw):
+        if "tpex" in url:
+            raise RuntimeError("TPEx down")
+        return FX["tw_l"] if "t187ap05" in url else [{"Code": "2330", "Name": "台積電", "PEratio": "25.0", "DividendYield": "1.5", "PBratio": "7.0"}]
+    H.get = half_down
+    try:
+        tw = asyncio.run(ED.refresh_twrev())
+        assert tw["latest"]["2330"]["ym"] == "2026-08" and tw["latest"]["3105"]["ym"] == "2026-07", "OTC rows kept"
+        pe = asyncio.run(ED.refresh_twpe())
+        assert pe["v"]["2330"]["pe"] == 25.0 and pe["v"]["3105"]["pe"] == 12.0
+    finally:
+        H.get, ED.F_TW, ED.F_TWPE = saved
+    # 13) context reads rows by label: a missing payrolls row can't turn the unemployment rate into "payrolls"
+    past = [{"key": "nfp", "date": "2026-10-02", "rows": [{"label": "失業率", "a": 4.3}]},
+            {"key": "cpi", "date": "2026-09-11", "rows": [{"label": "CPI 年增", "a": 2.9}]}]
+    ctx = ME.context(past, [], None)
+    assert ctx["labor"] == "失業率 4.3%" and ctx["inflation"] == "", ctx
+    print("  audit fixes ok")
+
+
 def make_eng(tmp: Path, days, q):
     eng = X.make_engine(tmp)
     eng.econ.days, eng.econ.ff, eng.econ.fomc = days, EC.parse_ff(FX["ff"]), EC.parse_fomc(FX["fed"])
@@ -129,6 +303,7 @@ def main():
     _freeze()
     test_command_names()
     days, q = test_parsers()
+    test_fixes()
     tmp = Path("/tmp/wsb_econ")
     shutil.rmtree(tmp, ignore_errors=True)
     eng = make_eng(tmp, days, q)
@@ -270,6 +445,24 @@ def main():
     EA.attach(eng)
     note = next(e for e in eng.econ_view["events"] if e["id"] == "nfp:2026-10-02")["ai"]["text"]
     assert "建議買進" not in note and "PCE" in note
+    # scrub is per sentence (descriptive flows kept); an all-advice note is never cached; generate() has a deadline
+    assert EA.scrub("外資買進台積電，資金回流。投資人可考慮加碼。\n下一步看 CPI！") == "外資買進台積電，資金回流。\n下一步看 CPI！"
+    saved_file = EA._FILE
+    EA._FILE = tmp / "econ_ai_fix.json"
+
+    async def advice_only(system, prompt, max_tokens=900):
+        return "建議買進半導體。", "stub"
+    LLM.complete = advice_only
+    c0 = {}
+    assert asyncio.run(EA._gen("x:1", "p", c0)) is None and "x:1" not in c0 and "x:1" not in EA.load()
+
+    async def slow(system, prompt, max_tokens=900):
+        await asyncio.sleep(5)
+        return "慢。", "stub"
+    LLM.complete = slow
+    t0 = time.time()
+    assert asyncio.run(EA.generate(eng, deadline_s=0.5)) == 0 and time.time() - t0 < 3, "overall deadline"
+    EA._FILE, LLM.complete = saved_file, fake_complete
     # site
     out = tmp / "site"
     asyncio.run(B.build(out, use_ai=False, engine=eng))
@@ -303,7 +496,7 @@ def test_bot(eng):
 
         async def _targets(self, kind, critical=False):
             return ["dest"]
-    now = datetime.now(__import__("datetime").timezone.utc)
+    now = datetime(TODAY.year, TODAY.month, TODAY.day, 15, 0, tzinfo=__import__("datetime").timezone.utc)   # 11:00 ET on TODAY
     iso = lambda t: t.isoformat().replace("+00:00", "Z")  # noqa: E731
     day = TODAY.isoformat()
     base = [{"name": "Core CPI", "utc": iso(now - timedelta(minutes=5)), "actual": "", "cons": "0.3%", "prev": "0.3%"},
@@ -332,15 +525,58 @@ def test_bot(eng):
     async def no_surp(*a, **k):
         return eng.earnings.surprise
     ED.refresh_surprises = no_surp
-    asyncio.run(EP.tick(Bot()))
+    yday = (TODAY - timedelta(days=1)).isoformat()                 # a result from yesterday morning: > 1 day old → not pushed
+    eng.earnings.days[yday] = {"ts": time.time(), "rows": [{"sym": "AMD", "name": "AMD", "time": "pre", "fq": "Sep/2026", "eps_f": 1.0,
+                                                            "n_est": 9, "eps_ly": 0.8, "mcap": 4e11, "eps": 1.2, "surprise": 20.0}]}
+    asyncio.run(EP.tick(Bot(), now=now))
     titles = [e.title for e in sent]
     assert any(t.startswith("⏰ PPI") for t in titles), titles
-    res = next(e for e in sent if e.title.startswith("📢 CPI"))
-    assert "高於預期" in res.title and any(n == "🧠 AI 解讀" for n, _ in res.fields), res.fields
+    i_res = next(i for i, e in enumerate(sent) if e.title.startswith("📢 CPI"))
+    assert "高於預期" in sent[i_res].title and not any(n == "🧠 AI 解讀" for n, _ in sent[i_res].fields), "numbers first, no AI wait"
+    ai = next(i for i, e in enumerate(sent) if e.title.startswith("🧠 CPI"))
+    assert ai > i_res and "PCE" in sent[ai].description and "建議買進" not in sent[ai].description
     assert any("NVDA" in t and "2.60 vs 預期 2.40" in t for t in titles), titles
+    assert not any("AMD" in t for t in titles), "a day-old result after a restart is not pushed"
     n = len(sent)
-    asyncio.run(EP.tick(Bot()))
+    asyncio.run(EP.tick(Bot(), now=now))
     assert len(sent) == n, "each event is pushed once"
+    # a failed send is NOT remembered → retried on the next tick; a slow AI note is skipped after the timeout
+    from wsb import store
+    # calendar time 65 min LATER than the real release (a 1-hour clock error) → still watched and pushed once the actual appears
+    base2 = [{"name": "Retail Sales", "utc": iso(now + timedelta(minutes=65)), "actual": "", "cons": "0.3%", "prev": "0.2%"}]
+    eng.econ.days[day]["rows"] = list(eng.econ.days[day]["rows"]) + base2
+
+    async def poll2(d):
+        rows = [dict(r) for r in eng.econ.days[d.isoformat()]["rows"]]
+        for r in rows:
+            if r["name"] == "Retail Sales":
+                r["actual"] = "0.9%"
+        eng.econ.days[d.isoformat()] = {"ts": time.time(), "rows": rows}
+        return rows
+    eng.econ.poll_day = poll2
+    eng.econ_view = ME.build(eng)
+    fail = {"on": True}
+
+    async def flaky_deliver(dest, **kw):
+        if fail["on"]:
+            raise RuntimeError("discord down")
+        sent.append(kw["embeds"]())
+    P.deliver = flaky_deliver
+    EP.AI_TIMEOUT_S = 0.2
+    import wsb.ai.llm as LLM
+
+    async def slow_complete(system, prompt, max_tokens=900):
+        await asyncio.sleep(5)
+        return "太慢了。", "stub"
+    LLM.complete = slow_complete
+    rid = next(e["id"] for e in eng.econ_view["events"] if e["id"].startswith("retail:"))
+    asyncio.run(EP.tick(Bot(), now=now))
+    assert not store.kv_get(f"econ_res:{rid}"), "send failed → key not written"
+    fail["on"] = False
+    t0 = time.time()
+    asyncio.run(EP.tick(Bot(), now=now))
+    assert store.kv_get(f"econ_res:{rid}") and any(e.title.startswith("📢 零售銷售") for e in sent[n:]), [e.title for e in sent[n:]]
+    assert not any(e.title.startswith("🧠 零售銷售") for e in sent[n:]) and time.time() - t0 < 4, "AI timed out → skipped"
     em = EP.econ_week_embed(eng.econ_view)
     assert em.fields and EP.tech_embed(eng.techearn["rows"][0]).fields
     print(f"  discord pushes ok ({n})")

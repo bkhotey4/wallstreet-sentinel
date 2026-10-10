@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 
 from typing import Dict, List, Optional
 
@@ -328,7 +329,9 @@ def _save_hist(hist: Dict, markets: Dict) -> None:
         h[m["asof"]] = {r["sym"]: r["score"] for r in m["rows"]}
         hist[mk] = dict(sorted(h.items())[-keep:])
     try:
-        _HIST.write_text(json.dumps(hist, separators=(",", ":")), encoding="utf-8")
+        tmp = _HIST.with_suffix(_HIST.suffix + ".tmp")              # atomic: a cancelled run can't truncate it
+        tmp.write_text(json.dumps(hist, separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, _HIST)
     except Exception as e:  # noqa: BLE001
         log.warning("score history not saved: %s", e)
 

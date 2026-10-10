@@ -36,6 +36,15 @@ def _rsi(c: pd.Series, n: int = 14) -> pd.Series:
     return 100 - 100 / (1 + up / dn.replace(0, np.nan))
 
 
+def _partial_last(v: pd.Series) -> bool:
+    """True when the last bar's volume looks incomplete (an intraday snapshot): < 0.6 × median of the previous 20 bars.
+    Volume rules then use the previous complete bar instead; price rules are unaffected."""
+    if len(v) < 21:
+        return False
+    med = float(np.median(v.iloc[-21:-1].values))
+    return med > 0 and float(v.iloc[-1]) < 0.6 * med
+
+
 def _pivots_low(x: np.ndarray, w: int = 5) -> List[int]:
     return [i for i in range(w, len(x) - w) if x[i] == x[i - w:i + w + 1].min()]
 
@@ -100,9 +109,10 @@ def tags(c: pd.Series, v: Optional[pd.Series] = None) -> List[str]:
         above = last5 > hi * 1.01                              # a real close above the box, not noise
         if above.any():
             first = int(np.argmax(above.values))
+            vok = not (first == 4 and _partial_last(v))          # breakout on a still-forming bar: its volume can't confirm yet
             vi = v.iloc[-5 + first]
             va = vavg.iloc[-5 + first]
-            if c.iloc[-1] > hi and va and va > 0 and vi >= 1.5 * va:
+            if c.iloc[-1] > hi and vok and va and va > 0 and vi >= 1.5 * va:
                 out.append("box_break")
             elif c.iloc[-1] <= hi * 1.005:
                 out.append("box_fail")
@@ -140,13 +150,16 @@ def exhaustion(c: pd.Series, v: Optional[pd.Series] = None) -> Dict:
             if pd.notna(rp) and pd.notna(rn) and rp >= 70 and rn <= rp - 5 and w.iloc[i_now] > prev.iloc[i_prev]:
                 flags.append("rsi_div")
                 det["rsi_div"] = (round(float(rp)), round(float(rn)))
-    v50 = v.rolling(50, min_periods=30).mean()
-    if v.iloc[-60:].sum() > 0 and pd.notna(v50.iloc[-1]) and v50.iloc[-1] > 0:
-        if c.iloc[-3:].max() >= c.iloc[-20:].max() * 0.999 and v.iloc[-5:].mean() < 0.8 * v50.iloc[-1]:
+    partial = _partial_last(v)
+    vv = v.iloc[:-1] if partial else v                        # volume tests skip a still-forming last bar
+    v50 = vv.rolling(50, min_periods=30).mean()
+    if vv.iloc[-60:].sum() > 0 and pd.notna(v50.iloc[-1]) and v50.iloc[-1] > 0:
+        if c.iloc[-3:].max() >= c.iloc[-20:].max() * 0.999 and vv.iloc[-5:].mean() < 0.8 * v50.iloc[-1]:
             flags.append("vol_div")
-            det["vol_div"] = round(float(v.iloc[-5:].mean() / v50.iloc[-1]), 2)
+            det["vol_div"] = round(float(vv.iloc[-5:].mean() / v50.iloc[-1]), 2)
+        v50 = v50.reindex(c.index)
         h52 = c.iloc[-252:].max()
-        for k in range(-5, 0):
+        for k in range(-5, -1 if partial else 0):
             if c.iloc[k] < c.iloc[k - 1] and c.iloc[k] >= h52 * 0.95 and pd.notna(v50.iloc[k]) and v50.iloc[k] > 0 and v.iloc[k] >= 2 * v50.iloc[k]:
                 flags.append("dist")
                 det["dist"] = round(float(v.iloc[k] / v50.iloc[k]), 1)

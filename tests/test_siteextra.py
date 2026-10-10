@@ -69,12 +69,12 @@ def test_patterns():
     print("  patterns ok")
 
 
-def cboe_fixture(spot=500.0, days=(4, 11, 32), today=None):
+def cboe_fixture(spot=500.0, days=(4, 11, 32), today=None, step=5):
     today = today or date.today()
     opts = []
     for d in days:
         e = (today + timedelta(days=d)).strftime("%y%m%d")
-        for k in range(int(spot * 0.9), int(spot * 1.1) + 1, 5):
+        for k in range(int(spot * 0.9), int(spot * 1.1) + 1, step):
             intr_c, intr_p = max(spot - k, 0), max(k - spot, 0)
             tv = spot * 0.02 * np.sqrt(d / 7) * np.exp(-((k - spot) / (spot * 0.05)) ** 2)
             for cp, intr in (("C", intr_c), ("P", intr_p)):
@@ -114,6 +114,87 @@ def test_parsers():
     assert v["taiwan"]["n"] == 12 and v["taiwan"]["score"] == 24.0 and v["taiwan"]["level"]["k"] == 2, v["taiwan"]
     assert v["korea"]["level"]["k"] == 0
     print("  parsers ok")
+
+
+def test_audit_fixes():
+    y = date.today().year
+    # dividends: consecutive calendar years ending last year; a gap or a stop resets; raises must be strict
+    d = SI.parse_info({"currentPrice": 10, "financialCurrency": "TWD", "currency": "USD", "country": "Taiwan"},
+                      {str(y - 1): 1.0, str(y - 2): 1.0, str(y - 4): 0.9, str(y - 5): 0.8})
+    assert d["paid"] == 2 and d["grow"] == 0 and d["fcur"] == "TWD" and d["cur"] == "USD" and d["country"] == "Taiwan", d
+    d = SI.parse_info({"currentPrice": 10}, {str(y - 3): 1.0, str(y - 4): 0.9, str(y - 5): 0.8})
+    assert d["paid"] == 0 and d["grow"] == 0, "stopped paying → 0"
+    d = SI.parse_info({"currentPrice": 10}, {str(y - 1): 1.2, str(y - 2): 1.1, str(y - 3): 1.1, str(y - 4): 1.0})
+    assert d["paid"] == 4 and d["grow"] == 1, d
+    # CBOE: straddle estimated AT spot (time value interpolated between bracketing strikes), not at an off-spot strike
+    true_mv = 4 * np.sqrt(4 / 7)                              # fixture: each leg's time value at spot = 2% × √(d/7)
+    ch = SI.parse_cboe(cboe_fixture(spot=502.5))
+    assert abs(ch["rows"][0]["mv"] - true_mv) < 0.1, (ch["rows"][0], true_mv)
+    coarse = SI.parse_cboe(cboe_fixture(spot=512.0, step=25))           # strikes 460 / 485 / 510 / 535 / 560
+    assert abs(coarse["rows"][0]["mv"] - true_mv) < 0.3, coarse["rows"][0]
+    wide = cboe_fixture()
+    for o in wide["data"]["options"]:
+        o["bid"], o["ask"] = round(o["ask"] * 0.5, 2), o["ask"]          # spread = 67% of mid → dropped
+    assert SI.parse_cboe(wide)["rows"] == []
+    # build-time rows: days recomputed, expired dropped, stale records hidden
+    rec = {**SI.parse_cboe(cboe_fixture(today=date.today() - timedelta(days=5))), "ts": time.time()}
+    lr = SI.live_rows(rec)
+    assert [r["days"] for r in lr] == [6, 27], lr
+    assert SI.live_rows({**rec, "ok_ts": time.time() - 4 * 86400}) == []
+    # geo keywords
+    for t, lv in (("Man suffers heart attack", 0), ("Labor strike shuts port", 0), ("Workers strike at Boeing", 0),
+                  ("Typhoon strikes Taiwan, live-fire drills cancelled", 1), ("駭客入侵銀行系統", 0), ("共軍入侵領空", 3),
+                  ("上海封鎖延長", 0), ("共軍宣布封鎖台海", 3), ("North Korea could conduct nuclear test", 2),
+                  ("North Korea conducts nuclear test", 3), ("Israel strikes Gaza", 2), ("UK sends Storm Shadow missiles", 2)):
+        assert GEO.grade(t)[0] == lv, (t, GEO.grade(t))
+    lv = GEO.level(40, [1.0] * 10, n3=0)
+    assert lv["base"] == 8 and lv["k"] == 2, lv                          # floored base; top level needs an L3 headline
+    assert GEO.level(40, [1.0] * 10, n3=1)["k"] == 3
+    lv = GEO.level(100, [10.0, 10.0], n3=5)
+    assert lv["k"] == 1 and lv["building"] and lv["ratio"] is None, lv  # < 5 days of history: capped at 升溫
+    now = time.time()
+    v = GEO.assemble({"taiwan": [{"t": "PLA drills near Taiwan - Reuters", "link": "a", "ts": now},
+                                 {"t": "PLA drills near Taiwan - Focus Taiwan", "link": "b", "ts": now}]}, {}, now)
+    assert v["taiwan"]["n"] == 1 and v["taiwan"]["ts"] == now, v["taiwan"]
+    # US → TW linkage: each TW session gets the compounded US sessions since the previous TW session; US holidays dropped
+    rng = np.random.default_rng(3)
+    days = pd.bdate_range(end="2026-10-07", periods=400)
+    us_d = days.delete([50, 120, 121, 300])                              # US holidays
+    tw_d = days.delete([10, 11, 200, 333])                               # TW holidays
+    us_r = pd.Series(rng.normal(0, 1.5, len(us_d)), index=us_d)
+    tw_v = []
+    for i, t in enumerate(tw_d):
+        if i == 0:
+            tw_v.append(0.0)
+            continue
+        win = us_r[(us_r.index >= tw_d[i - 1]) & (us_r.index < t)]
+        tw_v.append((np.prod(1 + win.values / 100) - 1) * 100 if len(win) else rng.normal(0, 5))
+    lk = MO._link(us_r, pd.Series(tw_v, index=tw_d))
+    assert lk["corr"] > 0.999 and abs(lk["beta"] - 1) < 0.01, lk
+    # partial last volume bar is ignored by volume rules
+    idx = pd.bdate_range(end="2026-10-07", periods=300)
+    c = pd.Series(np.cumprod(np.concatenate([np.full(1, 100.0), 1 + np.concatenate([rng.normal(0.0005, 0.01, 259), np.full(40, 0.012)])])), index=idx)
+    v = pd.Series(2e6, index=idx)
+    v.iloc[-5:] = [1.5e6, 1.5e6, 1.5e6, 1.5e6, 0.1e6]
+    assert "vol_div" not in PT.exhaustion(c, v)["flags"], "a half-day last bar must not count as fading volume"
+    v.iloc[-1] = 1.5e6
+    assert "vol_div" in PT.exhaustion(c, v)["flags"]
+    # 個股情報 rows: stale / currency mismatch / price mismatch skipped; after-tax by domicile
+    u = {"us": {"symbols": {s: (s, s) for s in ("AAA", "OLD", "MIX", "BAD", "TSM", "FOR")}, "themes": {}}}
+    base = {"px": 100.0, "tm": 120.0, "n": 5, "div": 3.0, "cur": "USD", "ts": time.time(), "ok_ts": time.time()}
+    info = {"AAA": dict(base, country="United States"), "OLD": dict(base, ok_ts=time.time() - 8 * 86400),
+            "MIX": dict(base, fcur="CNY", country="China"), "TSM": dict(base, fcur="TWD", country="Taiwan"),
+            "FOR": dict(base, country="Netherlands"), "BAD": dict(base, px=50.0)}
+    class _SP:                                                           # our own closes: 100 for every name
+        @staticmethod
+        def series(s):
+            return pd.Series([100.0])
+    sr = SX.stock_rows(info, u, _SP(), date.today().isoformat())
+    dv = {r["sym"]: r for r in sr["div"]["us"]}
+    assert set(dv) == {"AAA", "TSM", "FOR"}, set(dv)                    # OLD stale, MIX currency mismatch, BAD px 100 vs Yahoo 50
+    assert abs(dv["AAA"]["net"] - 2.1) < 1e-9 and abs(dv["TSM"]["net"] - 3 * 0.79) < 1e-9 and dv["FOR"]["net"] is None, dv
+    assert "OLD" not in {r["sym"] for r in sr["analyst"]["us"]}
+    print("  audit fixes ok")
 
 
 def test_mood():
@@ -172,6 +253,7 @@ async def fake_get(url, **kw):
 def main():
     test_patterns()
     test_parsers()
+    test_audit_fixes()
     test_mood()
     tmp = Path("/tmp/wsb_siteextra")
     shutil.rmtree(tmp, ignore_errors=True)
@@ -201,6 +283,26 @@ def main():
         return json.dumps({"bull": "營收年增 40%，成長加速。", "bear": "估值偏高。\n建議買進。", "risk": "觀察營收年增是否跌破 20%。"}), "stub"
     llm.complete = fake_llm
     assert asyncio.run(SX.generate_debates(3)) == 3 and asyncio.run(SX.generate_debates(3)) == 0, "weekly cache"
+    calls = []
+
+    async def bad_llm(system, prompt, max_tokens=900):
+        calls.append(1)
+        return "not json at all", "stub"
+    llm.complete = bad_llm
+    assert asyncio.run(SX.generate_debates()) == 0 and len(calls) == 7, len(calls)   # 3 fresh notes skipped, 7 failures recorded
+    assert asyncio.run(SX.generate_debates()) == 0 and len(calls) == 7, "failed symbols back off for 24h"
+    dbc = json.loads(SX.F_DEBATE.read_text(encoding="utf-8"))
+    assert sum(1 for v in dbc.values() if v.get("fail_ts")) == 7 and not SX.F_DEBATE.with_suffix(".tmp").exists()
+
+    async def slow_llm(system, prompt, max_tokens=900):
+        await asyncio.sleep(30)
+    llm.complete = slow_llm
+    SX.F_DEBATE.write_text(json.dumps({}), encoding="utf-8")
+    t0 = time.time()
+    assert asyncio.run(SX.generate_debates(deadline_s=1.5)) == 0 and time.time() - t0 < 5, "run deadline"
+    assert not any(v.get("fail_ts") for v in json.loads(SX.F_DEBATE.read_text(encoding="utf-8")).values()), "deadline ≠ symbol failure"
+    llm.complete = fake_llm
+    SX.F_DEBATE.write_text(json.dumps(dbc), encoding="utf-8")
     cl = eng.stockprices.close                               # a realistic ADR premium (~20%) for the synthetic prices
     fx = eng.market.history["TWD=X"].reindex(cl.index).ffill()
     cl["TSM"] = cl["2330.TW"] * 5 / fx * (1.2 + 0.02 * np.sin(np.arange(len(cl)) / 20))
@@ -224,6 +326,43 @@ def main():
     (out / "index.html").write_text(page, encoding="utf-8")
     for k in ("sec_fees", "sec_explainer"):
         assert getattr(S4, k)(eng)
+    assert sx["debate"][5]["ai"] is None, "a failure-only record is not rendered as a note"
+    assert 'data-k="tafcap"' in page and "2026-10 整理" in page and "內容整理於 2026-10" in page and "兩個交易日" in page
+    # geo: a theatre whose feeds all fail keeps its previous entry and gets no baseline value for today
+    marker = {"score": 1.0, "level": GEO.level(1.0, []), "hist": [], "n": 0, "n3": 0, "n2": 0, "top": [], "ts": 1.0}
+    GEO._save({"ts": 0, "view": {"taiwan": marker}, "days": {}})
+    tw_urls = set(GEO.THEATRES["taiwan"][2])
+
+    async def part_feed(u):
+        if u in tw_urls:
+            raise RuntimeError("down")
+        return [{"t": "Missile strike reported", "link": "x", "ts": time.time()}]
+    GEO._feed = part_feed
+    gv = asyncio.run(GEO.refresh())
+    assert gv["taiwan"] == marker and gv["mideast"]["n"] == 1, gv
+    assert all("taiwan" not in d for d in GEO._load()["days"].values())
+    GEO._save({**GEO._load(), "ts": time.time() - 25 * 3600})
+    assert GEO.load() == {}, "a view older than 24h is not shown"
+    # overall refresh deadline: a hung feed is cut off
+    GEO.F_GEO.unlink()
+
+    async def hung_feed(u):
+        await asyncio.sleep(120)
+    GEO._feed = hung_feed
+    t0 = time.time()
+    asyncio.run(SX.refresh(eng, deadline_s=6))
+    assert time.time() - t0 < 12, time.time() - t0
+    # Yahoo: stop after 3 failures in a row; ok_ts only moves on success
+    n_calls = []
+
+    def yf_fail(s):
+        n_calls.append(s)
+        raise RuntimeError("429")
+    SI._yf_one = yf_fail
+    asyncio.run(SI.refresh_yf(["Z%d" % i for i in range(10)], conc=1))
+    assert len(n_calls) == 3, n_calls
+    yc = SI._load(SI.F_YF)
+    assert set(yc) == {"Z0", "Z1", "Z2"} and not any(v.get("ok_ts") for v in yc.values()), "pruned to the universe"
     print(f"  site {len(page) / 1024:.0f} KB")
     print("SITE EXTRAS TESTS PASSED ✅")
 

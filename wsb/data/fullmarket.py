@@ -10,6 +10,7 @@ no history yet (≈15 months back-fill), then the names whose last bar is older 
 so the first fill is spread over several runs and later runs only add the newest bars."""
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 import logging
@@ -136,8 +137,17 @@ async def _hk() -> List[Dict]:
     return out
 
 
+def _write_json(path, obj) -> None:
+    """Atomic write (tmp + os.replace): a run cancelled mid-write can't leave a truncated cache file behind."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.replace(tmp, path)
+
+
 async def lists(force: bool = False) -> Dict[str, List[Dict]]:
-    """{us: [...], tw: [...], hk: [...]} — refreshed weekly (lists change slowly); the last good copy is kept on failure."""
+    """{us: [...], tw: [...], hk: [...]} — refreshed weekly (lists change slowly); the last good copy is kept on failure.
+    The refresh has its own time budget (list_budget_s); when it fails outright the next attempt waits a day
+    (list_retry_hours) instead of eating into every hourly build."""
     old: Dict = {}
     try:
         if _LISTS.exists():
@@ -146,25 +156,37 @@ async def lists(force: bool = False) -> Dict[str, List[Dict]]:
         old = {}
     if not force and old.get("ts") and time.time() - float(old["ts"]) < float(cfg().get("list_days", 7)) * 86400:
         return old["markets"]
+    if not force and old.get("fail_ts") and time.time() - float(old["fail_ts"]) < float(cfg().get("list_retry_hours", 24)) * 3600:
+        return dict(old.get("markets") or {})
     mk = dict(old.get("markets") or {})
-    ok = 0
-    for key, fn in (("us", _us), ("tw", _tw), ("hk", _hk)):
-        if key not in (cfg().get("markets") or ["us", "tw", "hk"]):
-            continue
-        try:
-            rows = await fn()
-            if len(rows) > 50:
-                mk[key] = rows
-                ok += 1
-        except Exception as e:  # noqa: BLE001
-            log.warning("full-market list %s failed: %s", key, e)
-            HEALTH.fail(f"fullmarket_list_{key}", e, every=7 * 86400)
-    if ok:
-        try:
-            _LISTS.write_text(json.dumps({"ts": time.time(), "markets": mk}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        except Exception as e:  # noqa: BLE001
-            log.warning("full-market lists not saved: %s", e)
-    return mk
+    state = {"ok": 0}
+
+    async def _fetch_all() -> None:
+        for key, fn in (("us", _us), ("tw", _tw), ("hk", _hk)):
+            if key not in (cfg().get("markets") or ["us", "tw", "hk"]):
+                continue
+            try:
+                rows = await fn()
+                if len(rows) > 50:
+                    mk[key] = rows
+                    state["ok"] += 1
+            except Exception as e:  # noqa: BLE001
+                log.warning("full-market list %s failed: %s", key, e)
+                HEALTH.fail(f"fullmarket_list_{key}", e, every=7 * 86400)
+
+    try:
+        await asyncio.wait_for(_fetch_all(), float(cfg().get("list_budget_s", 180)))
+    except asyncio.TimeoutError:
+        log.warning("full-market list refresh exceeded its %ss budget", cfg().get("list_budget_s", 180))
+    try:
+        if state["ok"]:
+            _write_json(_LISTS, {"ts": time.time(), "markets": mk})
+        else:                                           # nothing refreshed: keep the old lists, retry after a day
+            _write_json(_LISTS, {**old, "markets": dict(old.get("markets") or {}), "fail_ts": time.time()})
+            log.warning("full-market lists not refreshed; next attempt in ~%sh", cfg().get("list_retry_hours", 24))
+    except Exception as e:  # noqa: BLE001
+        log.warning("full-market lists not saved: %s", e)
+    return mk if state["ok"] else dict(old.get("markets") or {})
 
 
 # ------------------------------------------------------------------ prices
@@ -205,24 +227,70 @@ def _merge(old: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _splice(old: pd.DataFrame, new: pd.DataFrame, min_overlap: int = 3, tol: float = 0.005):
+    """Merge a freshly downloaded (auto-adjusted) close window onto stored history. A split or dividend since the last
+    download moves Yahoo's whole adjusted series, so the median new/old ratio over the overlapping bars rescales every
+    stored bar before the new window (|ratio − 1| > tol). Fewer than `min_overlap` usable overlapping bars → the column
+    is dropped so the next run back-fills it in full. Returns (merged close, dropped symbols)."""
+    if old.empty or new.empty:
+        return _merge(old, new), []
+    old = old.copy()
+    dropped = []
+    for c in new.columns:
+        s = new[c].dropna()
+        if s.empty or c not in old.columns:
+            continue
+        o = old[c].dropna()
+        if o.empty:
+            continue
+        o = o.iloc[:-1]                                  # the stored last bar may have been a partial (intraday) one
+        ov = o.index.intersection(s.index)
+        if len(ov) < min_overlap:
+            dropped.append(c)
+            continue
+        k = float((s.reindex(ov) / o.reindex(ov)).median())
+        if k > 0 and abs(k - 1) > tol and k == k:
+            old.loc[old.index < s.index.min(), c] *= k
+            log.info("full-market %s re-based by %.4f (split/dividend adjustment)", c, k)
+    if dropped:
+        old = old.drop(columns=dropped)
+        new = new.drop(columns=[c for c in dropped if c in new.columns])
+        log.info("full-market: %d names lost their overlap with the stored history → full re-download next run: %s",
+                 len(dropped), ", ".join(dropped[:8]))
+    return _merge(old, new), dropped
+
+
+def _load_json(path) -> Dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def refresh_prices(mk: str, syms: List[str], ref_date: Optional[pd.Timestamp], deadline: float) -> Dict:
-    """Work the queue for one market until `deadline` (time.time()). Runs in a worker thread (yfinance is blocking)."""
+    """Work the queue for one market until `deadline` (time.time()). Runs in a worker thread (yfinance is blocking).
+    Part of the budget (update_reserve) is kept for updating names already on file, so a big first-time back-fill
+    can't leave the existing board stale."""
     from .stocks import _download
     close, volume = load_prices(mk)
     ffile = DATA_DIR / f"fullmarket_failed_{mk}.json"
-    try:
-        failed = json.loads(ffile.read_text(encoding="utf-8")) if ffile.exists() else {}
-    except Exception:  # noqa: BLE001
-        failed = {}
-    retry = time.time() - 7 * 86400                     # names Yahoo has no data for are retried weekly, not every run
+    nfile = DATA_DIR / f"fullmarket_nobar_{mk}.json"
+    failed, nobar = _load_json(ffile), _load_json(nfile)
+    now = time.time()
+    retry = now - 7 * 86400                             # names Yahoo has no data for are retried weekly, not every run
+    nobar_retry = now - float(cfg().get("nobar_retry_days", 2)) * 86400   # updated, but no new bar (halted / delisted)
     last = {c: close[c].last_valid_index() for c in close.columns} if not close.empty else {}
     missing = [s for s in syms if last.get(s) is None and float(failed.get(s, 0)) < retry]
-    stale = [s for s in syms if last.get(s) is not None and ref_date is not None and last[s] < ref_date]
+    stale = [s for s in syms if last.get(s) is not None and ref_date is not None and last[s] < ref_date
+             and float(nobar.get(s, 0)) < nobar_retry]
     chunk_new, chunk_upd = int(cfg().get("chunk_backfill", 60)), int(cfg().get("chunk_update", 100))
+    reserve = max(0.0, deadline - now) * float(cfg().get("update_reserve", 0.4)) if stale else 0.0
     done_new = done_upd = 0
-    for queue, period, chunk in ((missing, str(cfg().get("backfill_period", "15mo")), chunk_new), (stale, "1mo", chunk_upd)):
+    empty_runs = 0
+    for queue, period, chunk, dl in ((missing, str(cfg().get("backfill_period", "15mo")), chunk_new, deadline - reserve),
+                                     (stale, "1mo", chunk_upd, deadline)):
         for i in range(0, len(queue), chunk):
-            if time.time() > deadline:
+            if time.time() > dl or empty_runs >= 2:
                 break
             part = queue[i:i + chunk]
             try:
@@ -231,10 +299,30 @@ def refresh_prices(mk: str, syms: List[str], ref_date: Optional[pd.Timestamp], d
                 log.warning("full-market %s download failed: %s", mk, e)
                 time.sleep(3)
                 continue
-            close, volume = _merge(close, cl), _merge(volume, vo)
+            # a whole batch (of more than a handful of names) coming back empty = throttled by Yahoo, not "no such stock"
+            if len(part) >= 5 and (cl.empty or cl.dropna(how="all").empty):
+                empty_runs += 1
+                log.warning("full-market %s: empty batch of %d (rate-limited?) — not marked as failed", mk, len(part))
+                time.sleep(5)
+                continue
+            empty_runs = 0
             if period == "1mo":
+                cl, dropped = _splice(close, cl)
+                if dropped:
+                    volume = volume.drop(columns=[c for c in dropped if c in volume.columns])
+                    vo = vo.drop(columns=[c for c in dropped if c in vo.columns])
+                close, volume = cl, _merge(volume, vo)
                 done_upd += len(part)
+                for s in part:
+                    if s in dropped:
+                        continue
+                    nl = close[s].last_valid_index() if s in close.columns else None
+                    if nl is None or (last.get(s) is not None and nl <= last[s]):
+                        nobar[s] = time.time()            # no new bar → back off instead of re-asking every run
+                    else:
+                        nobar.pop(s, None)
             else:
+                close, volume = _merge(close, cl), _merge(volume, vo)
                 done_new += len(part)
                 for s in part:
                     if s not in cl.columns or cl[s].dropna().empty:
@@ -242,10 +330,12 @@ def refresh_prices(mk: str, syms: List[str], ref_date: Optional[pd.Timestamp], d
             time.sleep(float(cfg().get("pause_s", 1.0)))
     if done_new or done_upd:
         save_prices(mk, close, volume)
-        try:
-            ffile.write_text(json.dumps(failed), encoding="utf-8")
-        except Exception:  # noqa: BLE001
-            pass
+        for path, obj in ((ffile, failed), (nfile, nobar)):
+            try:
+                _write_json(path, obj)
+            except Exception:  # noqa: BLE001
+                pass
     have = set(close.columns) if not close.empty else set()
     left = len([s for s in syms if s not in have and float(failed.get(s, 0)) < retry]) + max(0, len(stale) - done_upd)
-    return {"backfilled": done_new, "updated": done_upd, "pending": left, "have": len(have), "failed": len(failed)}
+    return {"backfilled": done_new, "updated": done_upd, "pending": left, "have": len(have), "failed": len(failed),
+            "nobar": len(nobar)}

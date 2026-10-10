@@ -38,12 +38,13 @@ jobs:
 
       - run: pip install -r requirements-site.txt
 
-      # 歷史價格、FRED 檔案庫、暗池指數與資料庫快取：失敗時也照樣存，避免下次重抓 30 年資料
+      # 歷史價格、FRED 檔案庫、暗池指數與資料庫快取：建置失敗時也照樣存（被取消的不存，避免寫到一半的檔），避免下次重抓 30 年資料
       - name: 還原資料快取
         uses: actions/cache/restore@v4
         with:
           path: |
             data_cache/history_close.pkl
+            data_cache/history_fail.json
             data_cache/fred_series.pkl
             data_cache/darkpool.json
             data_cache/darkpool_meta.json
@@ -62,7 +63,7 @@ jobs:
             data_cache/earn_*
             data_cache/sinfo_*
             data_cache/growth_*
-          key: data-${{ github.run_id }}
+          key: data-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: data-
 
       # 時光機：每日快照存在獨立的 data 分支（不存在就自動建立），不會碰到 main 分支的程式
@@ -97,11 +98,12 @@ jobs:
           git push -q origin data || echo "快照推送失敗（下次執行會再試）"
 
       - name: 儲存資料快取
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/cache/save@v4
         with:
           path: |
             data_cache/history_close.pkl
+            data_cache/history_fail.json
             data_cache/fred_series.pkl
             data_cache/darkpool.json
             data_cache/darkpool_meta.json
@@ -120,7 +122,7 @@ jobs:
             data_cache/earn_*
             data_cache/sinfo_*
             data_cache/growth_*
-          key: data-${{ github.run_id }}
+          key: data-${{ github.run_id }}-${{ github.run_attempt }}
 
       # 只檢查「持倉區塊才會出現」的標記，避免 AI 評論或新聞裡的一般用詞（例如「未實現」）誤判
       - name: 確認輸出不含持倉

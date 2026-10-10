@@ -174,12 +174,15 @@ class Sentinel(commands.Bot):
     async def _every(self, name: str, seconds: float, fn: Callable[[], Awaitable[None]],
                      first_delay: float = 0) -> None:
         await asyncio.sleep(first_delay)
+        limit = max(5 * seconds, 600)                 # a hung round must not freeze this loop forever
         while not self.is_closed():
             t0 = time.time()
             try:
-                await fn()
+                await asyncio.wait_for(fn(), limit)
             except asyncio.CancelledError:
                 raise
+            except asyncio.TimeoutError:
+                log.warning("loop %s timed out after %.0fs (abandoned this round, continuing)", name, limit)
             except Exception:  # noqa: BLE001
                 log.exception("loop %s crashed (continuing)", name)
             await asyncio.sleep(max(5.0, seconds - (time.time() - t0)))
@@ -472,7 +475,9 @@ class Sentinel(commands.Bot):
             self.spawn(self._demo(), "demo")
         st = self.engine.stress
         payload = json.dumps({"ts": time.time(), "iso": datetime.now().isoformat(timespec="seconds"),
-                              "ssi": st.score if st else None, "ready": self.engine.ready})
+                              "ssi": st.score if st else None, "ready": self.engine.ready,
+                              "quotes_ts": getattr(self.engine.market, "quotes_ts", 0) or None,
+                              "recompute_ts": getattr(self.engine, "recompute_ts", 0) or None})
         for attempt in range(4):                    # Windows: the watchdog/antivirus may hold the file for a moment
             try:
                 (DATA_DIR / "heartbeat.json").write_text(payload, encoding="utf-8")

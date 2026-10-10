@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import date, timedelta
 from typing import Dict, List, Optional
@@ -112,8 +113,10 @@ class DarkPool:
             self.days = dict(sorted(days.items())[-int(_cfg().get("keep_days", 800)):])
             self.meta = {k: v for k, v in self.meta.items() if k in self.days}
             try:
-                _FILE.write_text(json.dumps(self.days, separators=(",", ":")), encoding="utf-8")
-                _META.write_text(json.dumps(self.meta), encoding="utf-8")
+                for path, text in ((_FILE, json.dumps(self.days, separators=(",", ":"))), (_META, json.dumps(self.meta))):
+                    tmp = path.with_suffix(path.suffix + ".tmp")     # atomic: a cancelled run can't truncate the archive
+                    tmp.write_text(text, encoding="utf-8")
+                    os.replace(tmp, path)
             except Exception as e:  # noqa: BLE001
                 log.warning("darkpool archive not saved: %s", e)
         if self.days:

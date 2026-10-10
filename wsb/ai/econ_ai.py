@@ -4,6 +4,7 @@
 一次關鍵字過濾。沒有可用的 AI 時就跳過，頁面照樣顯示規則劇本與統計。"""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -23,7 +24,10 @@ SYSTEM = """你是華爾街總經與科技產業分析師，為公開的市場�
 4. 歷史統計樣本小，要誠實說明只是過去平均、不代表這次。
 5. 台灣繁體中文、台灣用語，冷靜精準；金融術語可保留英文。純文字段落，不要標題、不要條列超過 4 點。"""
 
-ADVICE_RX = re.compile(r"(減碼|加碼|停損|停利|買進|賣出|建議(?:買|賣|持有|布局|配置)|目標價|部位.{0,6}(?:調整|降低|提高))")
+# 買進/賣出 right after a market participant ("外資買進", "法人賣出") describes flows, not advice → kept
+_WHO = "".join(f"(?<!{w})" for w in ("外資", "投信", "法人", "散戶", "資金", "大戶", "自營商", "央行"))
+ADVICE_RX = re.compile(r"(減碼|加碼|停損|停利|" + _WHO + r"買進|" + _WHO + r"賣出|建議(?:買|賣|持有|布局|配置)|目標價|部位.{0,6}(?:調整|降低|提高))")
+_SENT_RX = re.compile(r"(?<=[。！？!?])")
 
 
 def load() -> Dict[str, Dict]:
@@ -44,7 +48,13 @@ def _save(d: Dict[str, Dict]) -> None:
 
 
 def scrub(text: str) -> str:
-    return "\n".join(ln for ln in text.splitlines() if not ADVICE_RX.search(ln)).strip()
+    """Drop only the SENTENCES (split on 。！？ and line breaks) that read like trading advice, not whole paragraphs."""
+    lines = []
+    for ln in (text or "").split("\n"):
+        kept = "".join(p for p in _SENT_RX.split(ln) if p and not ADVICE_RX.search(p))
+        if kept.strip() or not ln.strip():            # a line emptied by the filter disappears; blank lines stay
+            lines.append(kept)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
 
 def _fmt(v, n=2, sign=False) -> str:
@@ -117,38 +127,53 @@ async def _gen(key: str, prompt: str, cache: Dict[str, Dict], max_tokens: int = 
     if name == "none" or not text or text.startswith("⚠️"):
         return None
     text = scrub(text.replace("（輸出達長度上限，內容可能不完整）", ""))
+    if not text:                                       # everything was scrubbed → nothing worth caching or showing
+        return None
     cache[key] = {"text": text, "engine": name, "ts": time.time()}
     _save(cache)
     return text, name
 
 
-async def generate(eng, limit: int = 6) -> int:
-    """Write the missing notes: released key events (last 3 days), curated tech reports (last 10 days), the season roll-up (daily)."""
+async def generate(eng, limit: int = 6, deadline_s: float = 150) -> int:
+    """Write the missing notes: released key events (last 3 days), curated tech reports (last 10 days), the season roll-up (daily).
+    Stops when `deadline_s` seconds have passed overall (a slow model can't hold up the site build / bot loop)."""
     cache = load()
     n = 0
+    t_end = time.monotonic() + float(deadline_s)
+
+    async def gen(key: str, prompt: str, max_tokens: int = 900):
+        left = t_end - time.monotonic()
+        if left <= 1:
+            return None
+        try:
+            return await asyncio.wait_for(_gen(key, prompt, cache, max_tokens), left)
+        except asyncio.TimeoutError:
+            log.info("econ AI: deadline reached at %s", key)
+            return None
+
     ev = getattr(eng, "econ_view", None) or {}
     for e in (ev.get("events") or [])[::-1]:
-        if n >= limit:
+        if n >= limit or time.monotonic() >= t_end:
             break
         if not e.get("released") or e["imp"] < 2 or not e.get("rows") or e["id"] in cache or e.get("move") is None:
             continue                                   # "move" is only set for releases of the last 3 days
-        if await _gen(e["id"], event_prompt(e), cache):
+        if await gen(e["id"], event_prompt(e)):
             n += 1
     te = getattr(eng, "techearn", None) or {}
     import datetime as _dt
     lim = (_dt.date.fromisoformat(te.get("asof", "2000-01-01")) - _dt.timedelta(days=10)).isoformat() if te.get("asof") else "9999"
     for r in te.get("rows") or []:
-        if n >= limit:
+        if n >= limit or time.monotonic() >= t_end:
             break
         d = r["s"].get("last_date")
         k = f"earn:{r['sym']}:{d}"
         if not d or d < lim or k in cache or r.get("rev_yoy") is None:
             continue
-        if await _gen(k, earnings_prompt(r), cache):
+        if await gen(k, earnings_prompt(r)):
             n += 1
-    if te.get("available") and te["season"].get("n"):
+    if te.get("available") and te["season"].get("n") and time.monotonic() < t_end:
         k = f"season:{te['asof']}"
-        if k not in cache and await _gen(k, season_prompt(te), cache, 1400):
+        if k not in cache and await gen(k, season_prompt(te), 1400):
             n += 1
     return n
 
@@ -158,14 +183,14 @@ def attach(eng) -> None:
     cache = load()
     ev = getattr(eng, "econ_view", None) or {}
     for e in ev.get("events") or []:
-        if e["id"] in cache:
+        if (cache.get(e["id"]) or {}).get("text"):
             e["ai"] = cache[e["id"]]
     te = getattr(eng, "techearn", None) or {}
     for r in te.get("rows") or []:
         k = f"earn:{r['sym']}:{r['s'].get('last_date')}"
-        if k in cache:
+        if (cache.get(k) or {}).get("text"):
             r["ai"] = cache[k]
     if te.get("asof"):
-        ks = sorted(k for k in cache if k.startswith("season:"))
+        ks = sorted(k for k in cache if k.startswith("season:") and (cache[k] or {}).get("text"))
         if ks:
             te["ai_season"] = cache[ks[-1]]

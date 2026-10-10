@@ -14,6 +14,7 @@ import html
 import json
 import logging
 import math
+import os
 import re
 import sys
 import time
@@ -101,16 +102,26 @@ def level_idx(score) -> int:
     return len(LEVEL_COLORS) - 1
 
 
+CORE_US = ("^GSPC", "^NDX", "^VIX", "HYG")
+
+
+def _asof(eng, t: str) -> Optional[str]:
+    return (eng.market.q(t) or {}).get("asof")
+
+
 def data_asof(eng) -> Tuple[Optional[str], bool]:
-    """Newest quote date among the headline tickers, and whether it is stale (> 4 calendar days, i.e. older
-    than a long weekend) — the page must say when its numbers are from, not only when it was built."""
-    ds = [(eng.market.q(t) or {}).get("asof") for t, _, _ in STRIP if not t.endswith("-USD")]
+    """Newest quote date among the headline tickers (shown in the header), and whether the data is stale.
+    Stale looks at the OLDEST date among the core US tickers (> 4 calendar days, i.e. older than a long weekend), so one
+    fresh foreign quote can't hide a stuck US feed — the page must say when its numbers are from, not only when it was built."""
+    ds = [_asof(eng, t) for t, _, _ in STRIP if not t.endswith("-USD")]
     ds = [d for d in ds if d]
     if not ds:
         return None, True
     last = max(ds)
+    core = [d for d in (_asof(eng, t) for t in CORE_US) if d]
+    ref = min(core) if core else last
     ny = datetime.now(ZoneInfo("America/New_York")).date()
-    return last, (ny - datetime.fromisoformat(last).date()).days > 4
+    return last, (ny - datetime.fromisoformat(ref).date()).days > 4
 
 
 def ret_since(s, days: int) -> Optional[float]:
@@ -479,7 +490,8 @@ def sec_darkpool(eng) -> str:
         return card("暗池指數（場外放空量）", "Dark-pool index (off-exchange short volume)",
                     f'<p class="muted">{T("FINRA 資料暫時取不到或累積天數不足", "FINRA data unavailable or not enough history yet")}</p>', "wide")
     etf = dp.get("etf") or {}
-    kv = (f'<div class="kv"><div><span class="muted">{T("暗池指數（30 檔大型股）", "Dark-pool index (30 large caps)")}</span><b>{dp["dpi"]:.1f}%</b></div>'
+    n_dp = len((SETTINGS.get("darkpool", {}) or {}).get("index_symbols") or [])
+    kv = (f'<div class="kv"><div><span class="muted">{T(f"暗池指數（{n_dp} 檔大型股）", f"Dark-pool index ({n_dp} large caps)")}</span><b>{dp["dpi"]:.1f}%</b></div>'
           f'<div><span class="muted">{T("5 日平均", "5-day avg")}</span><b>{dp["dpi_5d"]:.1f}%</b></div>'
           f'<div><span class="muted">{T("5 日平均的歷史百分位", "5d avg percentile")}（{dp["n_days"]} {T("天", "d")}）</span><b>{num(dp.get("pctile"), 0)}</b></div>'
           + "".join(f'<div><span class="muted">{esc(e)}</span><b>{num(v, 1)}%</b></div>' for e, v in etf.items() if v is not None)
@@ -957,6 +969,15 @@ if(load('theme')==='light')setTheme('light');if(load('lang')==='en')setLang('en'
 """
 
 
+def _safe_section(f, eng) -> str:
+    """One broken section must not abort the whole build / deploy: log it and render nothing in its place."""
+    try:
+        return f(eng) or ""
+    except Exception:  # noqa: BLE001
+        log.exception("section %s failed", getattr(f, "__name__", f))
+        return ""
+
+
 def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
@@ -985,7 +1006,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("inputs", "指標明細", "All inputs", [sec_indicators])]
     nav, panels = [], []
     for i, (key, zh, en, fs) in enumerate(tabs):
-        html_ = "".join(sec_ai(ai_text, ai_engine) if f is None else f(eng) for f in fs)
+        html_ = "".join(sec_ai(ai_text, ai_engine) if f is None else _safe_section(f, eng) for f in fs)
         if not html_.strip():
             html_ = f'<section class="card wide"><p class="muted">{T("這一頁的資料暫時取不到", "No data for this page right now")}</p></section>'
         nav.append(f'<a class="ptab{" on" if i == 0 else ""}" href="#{key}" data-p="{key}" data-en="{esc(en)}">{esc(zh)}</a>')
@@ -1033,7 +1054,7 @@ def daily_snapshot(eng, ai_text: str = "") -> dict:
     st, op = eng.stress, (eng.options.spx or {})
     dp = (getattr(eng, "darkpool", None) and eng.darkpool.result) or {}
     spx = eng.market.series("^GSPC")
-    asof, _ = data_asof(eng)
+    asof = _asof(eng, "^GSPC") or data_asof(eng)[0]      # "data moved on" = a new S&P 500 session, not any foreign quote
     val = [{"label": i["label"], "value": i["value"], "pctile": i["pctile"], "grade": i["grade"]}
            for g in (eng.valuation or {}).get("groups", []) for i in g["items"]]
     sc = {k: {"label": m["label"], "top": [[r["code"], r["name"], r["score"]] for r in m["rows"][:10]]}
@@ -1136,10 +1157,15 @@ async def ai_commentary(eng) -> Tuple[str, str]:
     return scrub_advice(text), name
 
 
+SOFT_BUDGET_S = 30 * 60      # Actions job times out at 40 min: past this, skip the (slow, optional) AI steps so the site still ships
+
+
 async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[Path] = None, fullmarket: bool = False) -> Path:
     from wsb.engine import Engine
+    t_start = time.time()
     eng = engine or Engine()
     if engine is None:
+        eng.site_mode = True          # headless build: engine skips work build() does itself (earnings, duplicate lab runs)
         await eng.bootstrap()
     assert not eng.holdings and not eng.portfolio.get("positions"), "intel-station build must not contain holdings"
     if fullmarket:
@@ -1157,6 +1183,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.info("US tech (SEC frames): %s rows", r.get("n"))
         except Exception:  # noqa: BLE001
             log.exception("US tech table failed")
+    elif getattr(eng, "site_mode", False):         # bootstrap skipped earnings for the site build → plain refresh here
+        try:
+            await asyncio.wait_for(eng.refresh_earnings(), 240)
+        except Exception as e:  # noqa: BLE001
+            log.warning("earnings refresh failed: %s", e if str(e) else type(e).__name__)
     from wsb.analytics import growth as GR
     if fullmarket:
         try:
@@ -1176,6 +1207,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     except Exception:  # noqa: BLE001
         log.exception("site extras refresh failed")
     ai_text, ai_engine = "", ""
+    if use_ai and time.time() - t_start > SOFT_BUDGET_S:
+        log.warning("build already took %.0f min (> %.0f min soft budget): skipping AI steps this run",
+                    (time.time() - t_start) / 60, SOFT_BUDGET_S / 60)
+        use_ai = False
     if use_ai:
         try:
             log.info("AI bull/bear notes written: %d", await SX.generate_debates())
@@ -1223,6 +1258,29 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     return out / "index.html"
 
 
+def _run(coro):
+    """asyncio.run(), except that a stuck executor thread (a hung yfinance / HTTP call) can't block the shutdown forever:
+    the default executor gets 30 s to drain, then we move on (main() exits with os._exit, so no thread is joined)."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            pending = [t for t in asyncio.all_tasks(loop) if not t.done()]
+            for t in pending:
+                t.cancel()
+            if pending:
+                loop.run_until_complete(asyncio.wait(pending, timeout=10))
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.run_until_complete(asyncio.wait_for(loop.shutdown_default_executor(), 30))
+        except Exception as e:  # noqa: BLE001
+            log.warning("event-loop shutdown incomplete (%s): leftover threads are abandoned", type(e).__name__)
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="site")
@@ -1232,10 +1290,23 @@ def main() -> int:
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     t0 = time.time()
-    p = asyncio.run(build(Path(a.out), use_ai=not a.no_ai, snapdir=Path(a.snapdir) if a.snapdir else None, fullmarket=a.fullmarket))
+    p = _run(build(Path(a.out), use_ai=not a.no_ai, snapdir=Path(a.snapdir) if a.snapdir else None, fullmarket=a.fullmarket))
     print(f"wrote {p} ({p.stat().st_size / 1024:.0f} KB) in {time.time() - t0:.0f}s")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        rc = main()
+    except SystemExit as e:                                      # argparse --help / usage errors
+        rc = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+    except BaseException:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        rc = 1
+    # Leftover executor threads (yfinance / HTTP pools) can keep the interpreter from exiting after the site is written,
+    # which would let the Actions job run into its timeout and skip the deploy: flush and leave right away.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    logging.shutdown()
+    os._exit(rc)

@@ -150,10 +150,12 @@ def build(eng) -> Dict:
         m = metrics(f.get("q") or [])
         su = [r for r in ((ed.surprise or {}).get(s) or {}).get("rows", []) if r.get("surp") is not None]
         px = sp.series(s) if sp is not None else None
-        reacts = [x for x in (reaction(px, r["date"]) for r in su if r.get("date")) if x is not None]
+        react_all = [reaction(px, r["date"]) if r.get("date") else None for r in su]     # same order as su (newest first)
+        reacts = [x for x in react_all if x is not None]
         sinfo = {"n": len(su), "beats": sum(1 for r in su if r["surp"] > 0), "avg": float(np.mean([r["surp"] for r in su])) if su else None,
                  "last": su[0]["surp"] if su else None, "last_date": su[0]["date"] if su else None, "rows": su[:4],
-                 "react_avg": float(np.mean(np.abs(reacts))) if reacts else None, "react_last": reacts[0] if reacts else None}
+                 # the NEWEST report's reaction only (None until its price window exists) — never last quarter's by accident
+                 "react_avg": float(np.mean(np.abs(reacts))) if reacts else None, "react_last": react_all[0] if react_all else None}
         fut = [(d, r) for d, r in cal.get(s, []) if d >= today]
         past = [(d, r) for d, r in cal.get(s, []) if d < today]
         nxt = fut[0] if fut else None
@@ -246,7 +248,8 @@ def _q_label(cy: str) -> str:
 
 
 def ustech(ed, items: List[Dict], tmap: Dict[str, Dict], today: Optional[date] = None) -> Dict:
-    """Latest calendar quarter per company from SEC frames; Q4 derived from the calendar-year frame minus Q1–Q3."""
+    """Latest calendar quarter per company from SEC frames; the fiscal-Q4 quarter is derived from the annual frame minus
+    the three quarters before it (see ED.FrameReader)."""
     today = today or us_today()
     qs = ED.cy_quarters(today, 7)
     val = ED.FrameReader(ed.frames or {}, qs).val
