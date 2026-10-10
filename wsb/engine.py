@@ -10,6 +10,8 @@ from typing import Dict, List, Optional
 from .analytics import crash_odds as co
 from .analytics import hedge as hg
 from .analytics import intel as it
+from .analytics import exposure as ex
+from .analytics import outlook as ol
 from .analytics import lab as lb
 from .analytics import playbook as pb
 from .analytics import portfolio as pf
@@ -29,6 +31,7 @@ from .data.crypto import CryptoSentiment
 from .data.fred import FredData
 from .data.market import MarketData
 from .data.news import NewsWire
+from .ai.news_ai import NewsClassifier
 from .data.options import OptionsPositioning
 from .data.sec import SecWatcher
 from .data.taiwan import TaiwanData
@@ -51,6 +54,7 @@ class Engine:
         self.fred = FredData()
         self.crypto = CryptoSentiment()
         self.news = NewsWire()
+        self.news_ai = NewsClassifier()
         self.options = OptionsPositioning()
         self.sec = SecWatcher()
         self.calendar = EventCalendar()
@@ -80,6 +84,8 @@ class Engine:
         self._quality_ts = 0.0
         self.regime: Dict = {}
         self.intel: Dict = {}
+        self.outlook: Dict = {}          # 全方位風險展望 (all dimensions + forecasts)
+        self.exposure: Dict = {}         # holdings × shock-path sensitivity (private)
         self.breaks: Dict = {}
         self.playbook: Dict = {}
         self.portfolio: Dict = {}
@@ -130,6 +136,10 @@ class Engine:
                 log.warning("phase-2 refresh %s timed out after %.0fs", nm, tmo)
             elif isinstance(r, Exception):
                 log.warning("phase-2 refresh %s failed: %s", nm, r)
+        try:
+            await self.news_ai.classify(self.news.items)      # AI reads the headlines once before the full recompute
+        except Exception:  # noqa: BLE001
+            log.exception("news AI classify failed")
         self._quality = None            # phase-1 quality/lab ran without FRED inputs → recompute on the full index
         await self.recompute()
         self.full_ready = True
@@ -207,6 +217,10 @@ class Engine:
             except Exception:  # noqa: BLE001
                 log.exception("portfolio failed")
             try:
+                self.exposure = await asyncio.to_thread(ex.build, self)
+            except Exception:  # noqa: BLE001
+                log.exception("exposure failed")
+            try:
                 self.valuation = await asyncio.to_thread(va.build, self)
             except Exception:  # noqa: BLE001
                 log.exception("valuation failed")
@@ -242,6 +256,10 @@ class Engine:
                     self.playbook = pbk
             except Exception:  # noqa: BLE001
                 log.exception("playbook failed")
+            try:
+                self.outlook = await asyncio.to_thread(ol.build, self)     # last: it reads every other result
+            except Exception:  # noqa: BLE001
+                log.exception("outlook failed")
             self.recompute_ts = time.time()
 
     def age_str(self) -> str:

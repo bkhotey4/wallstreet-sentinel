@@ -29,6 +29,7 @@ from wsb.config import SETTINGS
 from tools import site_sections as S2
 from tools import site_econ as S3
 from tools import site_intel as S4
+from tools import site_outlook as SO
 from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
                            tick_label)
 
@@ -982,7 +983,9 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S3.sec_econ_mini, S4.sec_fg_mini, S2.sec_scores_mini, sec_trends]),
+    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+                                               S2.sec_scores_mini, sec_trends]),
+            ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
@@ -1026,7 +1029,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}</style></head><body>
+<style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
@@ -1044,6 +1047,10 @@ def snapshot(eng) -> dict:
                                     "chg_20d": st.chg_20d, "coverage": st.coverage, "blocks": st.blocks},
         "playbook": {k: (eng.playbook or {}).get(k) for k in ("stage", "name", "points")},
         "odds": (eng.odds or {}).get("horizons"),
+        "outlook": None if not (getattr(eng, "outlook", None) or {}).get("available") else {
+            "score": eng.outlook["score"], "label": eng.outlook["label"],
+            "dims": {d["key"]: d["score"] for d in eng.outlook["dims"]},
+            "horizons": [[h["months"], round(h["prob"], 2)] for h in eng.outlook["horizons"]]},
         "scores": {k: [[r["code"], r["name"], r["score"]] for r in m["rows"][:10]]
                    for k, m in ((getattr(eng, "scores", None) or {}).get("markets") or {}).items()},
     }

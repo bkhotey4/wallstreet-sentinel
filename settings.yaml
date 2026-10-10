@@ -513,6 +513,12 @@ intel:
   quadrant_edge_z: 0.3         # 成長/通膨 z 在 ±0.3 內 → 觀察清單提示象限可能轉換
   alert_min_label: 高          # 綜合風險升到這一級才推播
   alert_quadrant_change: true
+  min_confirm_news: 2          # 『確認』至少要 2 則風險新聞（單一則只算個案）
+  ai_classifier:               # AI 新聞判讀：有 ANTHROPIC_API_KEY 用 Claude Haiku，否則用 Gemini；都沒有就退回關鍵字
+    enabled: true
+    model: claude-haiku-5-5
+    effort: low
+    max_per_call: 80           # 每次新聞更新最多判讀幾則「還沒判讀過」的標題
   model:                        # 情報融合的計分常數（改這裡即可，不必動程式）
     quadrant_risk: {金髮女孩: 30, 再通膨: 45, 通縮衰退: 65, 停滯性通膨: 75}   # 各總經象限的基準風險分
     levels: [65, 50, 35]        # 綜合風險 ≥65 高、≥50 偏高、≥35 中性，其餘低
@@ -893,3 +899,22 @@ fullmarket:
   pause_s: 1.0
   keep_bars: 330
   list_days: 7                # 個股清單每 7 天重抓一次
+
+# ---------- 曝險：哪條衝擊最傷哪些部位／產業 ----------
+exposure:
+  lookback_days: 756           # 近 3 年
+  step_days: 5                 # 用不重疊的每週變動（避開台美時差）
+  min_t: 2.0                   # |t| < 2 視為統計不顯著（顯示為灰字／(弱)）
+  # universe: [XLK, SMH, XLF, KRE, ...]   # 沒有載入持倉時改看的產業 ETF／資產（預設內建 18 檔）
+
+# ---------- 全方位風險展望（/outlook、網站「全方位風險」分頁） ----------
+outlook:
+  # 綜合分數權重（缺資料的面向自動排除並重新正規化）
+  weights: {recession: 0.16, crisis: 0.18, credit: 0.15, banking: 0.12, valuation: 0.10, earnings: 0.09, sectors: 0.08, macro: 0.07, news: 0.05}
+
+# ---------- 盤中大盤危險訊號（美股 09:30–16:00 紐約、台股 09:00–13:30 台北） ----------
+danger:
+  enabled: true
+  level_points: [3, 6, 9]      # 累積分數 ≥3 注意、≥6 警戒、≥9 危險（同一交易日只在升級時通知）
+  crash_pct: {us: -4.0, tw: -5.0}   # 大盤單日跌幅達此值直接列為「危險」
+  # us_rules / tw_rules 可覆寫各標的門檻：[ticker, 名稱, 群組, 方向(-1跌為壞/+1漲為壞), [[門檻%, 分數], ...]]

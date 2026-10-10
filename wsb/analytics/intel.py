@@ -107,16 +107,36 @@ def level_of(x: Optional[float]) -> Tuple[str, str]:
 
 
 # ---------------------------------------------------------------- 1) news → channels
-def channel_heat(items, now: Optional[float] = None) -> Dict[str, Dict]:
-    """Tag each headline to transmission channels; heat = Σ (0.5 + 0.5·risk score) · recency decay.
-    A headline with no risk keyword at all (score 0, e.g. a routine central-bank data release) weighs half."""
+def channel_heat(items, now: Optional[float] = None, tags: Optional[Dict[str, Dict]] = None) -> Dict[str, Dict]:
+    """Tag each headline to transmission channels; heat = Σ weight · recency decay.
+    AI-tagged headlines (tags[uid] = {ch, dir, sev}): weight = severity (0 = routine/noise → ignored), direction decides
+    risk vs relief.  Untagged headlines fall back to keywords: weight = 0.5 + 0.5·risk score (no keyword hit → half)."""
     now = now or time.time()
     half = float(_cfg("half_life_hours", 12))
     chans = _cfg("channels", None) or DEFAULT_CHANNELS
     out = {c: {"heat": 0.0, "n": 0, "relief": 0.0, "n_relief": 0, "top": []} for c in chans}
+    tags = tags or {}
     for it in items:
         age_h = max(0.0, (now - it.ts) / 3600)
-        w = (0.5 + 0.5 * max(int(it.score), 0)) * 0.5 ** (age_h / half)
+        decay = 0.5 ** (age_h / half)
+        t = tags.get(it.uid)
+        if t is not None:
+            if t["sev"] <= 0 or t["dir"] == "neutral":
+                continue
+            w = float(t["sev"]) * decay
+            for c in t["ch"]:
+                if c not in out:
+                    continue
+                d = out[c]
+                if t["dir"] == "relief":
+                    d["relief"] += w
+                    d["n_relief"] += 1
+                else:
+                    d["heat"] += w
+                    d["n"] += 1
+                    d["top"].append((w, it.source, it.title, [f"AI 嚴重度 {t['sev']}"]))
+            continue
+        w = (0.5 + 0.5 * max(int(it.score), 0)) * decay
         for c, kw in chans.items():
             r, ok = _match(it.title, kw.get("risk", [])), _match(it.title, kw.get("relief", []))
             if not r and not ok:
@@ -178,7 +198,8 @@ def fuse(heat: Dict[str, Dict], shock: Dict, st=None) -> List[Dict]:
         m_hot = p is not None and p["state"] in ("高度警戒", "留意")
         ns = d["news_state"]
         if m_hot:
-            state = "確認" if ns in ("熱", "溫") else "無聲壓力"       # 無聲 only when headlines are genuinely quiet
+            min_n = int(_cfg("min_confirm_news", 2))             # one headline is an anecdote, not confirmation
+            state = "確認" if ns in ("熱", "溫") and d["n"] >= min_n else "無聲壓力"
         else:
             state = "敘事領先" if ns == "熱" else "平靜"
         mk = max(0.0, min(100.0, ign)) if ign is not None else None
@@ -347,7 +368,13 @@ def build(engine, record: bool = True, history: Optional[Dict[str, List[float]]]
           now: Optional[float] = None) -> Dict:
     news = engine.news
     items = list(getattr(news, "items", []) or [])
-    heat = channel_heat(items, now)
+    ai = getattr(engine, "news_ai", None)
+    tags = dict(getattr(ai, "tags", {}) or {})
+    ai_cov = (sum(1 for it in items if it.uid in tags) / len(items)) if items else 0.0
+    if record and ai_cov >= 0.5 and store.kv_get("intel_heat_method") != "ai":
+        store.heat_reset()                       # keyword-era heats are on a different scale → rebuild the baseline
+        store.kv_set("intel_heat_method", "ai")
+    heat = channel_heat(items, now, tags)
     # only feed the baseline with a live news wire (an outage would otherwise teach it that "zero" is normal)
     if record and items and time.time() - float(getattr(news, "ts", 0) or 0) < 3 * 3600:
         store.heat_record({c: (d["heat"], d["n"]) for c, d in heat.items()},
@@ -356,6 +383,9 @@ def build(engine, record: bool = True, history: Optional[Dict[str, List[float]]]
     fused = fuse(heat, getattr(engine, "shock", None) or {}, engine.stress)
     rg = getattr(engine, "regime", None) or {}
     v = verdict(engine.stress, rg, fused, getattr(engine, "odds", None))
+    if v.get("available") and items and ai_cov < 0.5:
+        v["caveats"].append(f"AI 新聞判讀僅涵蓋 {ai_cov * 100:.0f}%，其餘以關鍵字判斷")
     return {"channels": fused, "verdict": v, "watch": watchlist(rg, fused), "news_items": len(items),
+            "ai_coverage": ai_cov,
             "regime": {k: rg.get(k) for k in ("quadrant", "quadrant_1m", "drift", "quadrant_changed", "growth_z",
                                                "inflation_z", "risk_mode", "liquidity_mode")}}

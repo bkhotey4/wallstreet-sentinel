@@ -162,6 +162,15 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
                 L.append("內部人非計畫性賣出最多（90 天）：" + "、".join(f"{r['sym']} ${r['sell_disc_usd'] / 1e6:,.1f}M" for r in bd_["sells"][:5] if r["sell_disc_usd"] > 0))
     except Exception:  # noqa: BLE001  (context must never fail because of an optional panel)
         pass
+    exp = getattr(engine, "exposure", None) or {}
+    if exp.get("mode") == "portfolio" and not private:
+        exp = {}
+    if exp.get("available"):
+        from ..analytics.exposure import summary_lines as _exp_lines
+        L.append(("## 持倉" if exp.get("mode") == "portfolio" else "## 產業／資產")
+                 + " × 傳導路徑曝險（每週報酬對路徑壓力的歷史敏感度；(弱)=統計不顯著）")
+        L += _exp_lines(exp)
+        L.append("解讀規則：回答『哪條衝擊會傷到我』時，先看狀態非平靜的路徑，再引用這裡的最受傷持股；(弱) 的數字不可當成結論。")
     pbk = getattr(engine, "playbook", None) or {}
     if pbk:
         L.append("## 風險劇本（規則式階段，可追溯）")
@@ -185,6 +194,13 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     liq = [e for e in engine.calendar.upcoming(21) if e["type"] == "liquidity" and e.get("importance", 0) >= 2]
     if liq:
         L.append("## 近期流動性事件: " + "；".join(f"{e['date']} {e['event']}" for e in liq[:6]))
+    ol_ = getattr(engine, "outlook", None) or {}
+    if ol_.get("available"):
+        from ..analytics.outlook import summary_lines as _ol_lines
+        L.append("## 全方位風險展望（9 個面向，0–100 越高越危險；預測只來自有實證紀錄的模型）")
+        L += _ol_lines(ol_)
+        L.append("解讀規則：回答『整體風險／會不會崩盤／會不會衰退』時，先引用這一段的綜合分數與最大風險面向，"
+                 "再用各面向證據支持；12 個月衰退機率來自紐約聯準會殖利率曲線模型，1–6 個月崩跌機率來自壓力指數的歷史條件頻率。")
     itl = getattr(engine, "intel", None) or {}
     v = itl.get("verdict") or {}
     if v.get("available"):

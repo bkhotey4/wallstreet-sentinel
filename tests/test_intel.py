@@ -82,6 +82,9 @@ def main():
     # 無聲壓力 ("headlines quiet").  Warm news + stressed prices point the same way → 確認.
     hh["套息拆倉"].update(level=79.0, n=13, news_state="溫")
     assert {r["channel"]: r["state"] for r in I.fuse(hh, sk, None)}["套息拆倉"] == "確認"
+    # …but a single headline is an anecdote, not confirmation
+    hh["套息拆倉"].update(level=85.0, n=1, news_state="溫")
+    assert {r["channel"]: r["state"] for r in I.fuse(hh, sk, None)}["套息拆倉"] == "無聲壓力"
     hh["套息拆倉"].update(level=10.0, n=0, news_state="冷")
     # a routine headline with no risk keyword weighs half of a score-1 headline
     assert abs(I.channel_heat([item("BOJ accounts", 0, 0)], now)["套息拆倉"]["heat"] * 2

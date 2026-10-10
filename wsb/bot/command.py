@@ -545,16 +545,59 @@ def _i_ledger(engine, tag: str) -> Slide:
     return s
 
 
-def deck_intel(engine) -> List[bytes]:
+def _i_exposure(engine, tag: str) -> Slide:
+    exp = getattr(engine, "exposure", None) or {}
+    if exp.get("mode") == "universe":
+        return _i_exposure_universe(exp, tag)
+    s = Slide("持倉曝險：哪條衝擊最傷你的部位？", tag,
+              "每條路徑壓力 +10 點時，持倉的歷史平均變動（每週資料、近 3 年）；灰字 = 統計不顯著，僅供參考")
+    rows = []
+    for r in exp.get("paths", [])[:6]:
+        worst = [h for h in r["holdings"] if h["usd_per10"] < 0][:3]
+        names = "、".join(f"{h['sym']} {h['sens_pct_per10']:+.1f}%" for h in worst) or "無明顯受傷部位"
+        sig = any(h["significant"] for h in worst)
+        pct = r["port_pct_per10"]
+        rows.append([(r["path"], TEXT), (r["state"] or "—", FUSE_COL.get(r["state"], MUTED)),
+                     (f"{pct:+.2f}%" if pct is not None else "—", RED if (pct or 0) < -0.5 else MUTED),
+                     (fmt(r["port_usd_per10"], 0, money=True, sign=True), RED if r["port_usd_per10"] < 0 else GREEN),
+                     (names, TEXT if sig else MUTED)])
+    y = s.table(["傳導路徑", "狀態", "持倉/＋10點", "金額", "最受傷持股"], rows, 235, [0.22, 0.12, 0.14, 0.14, 0.38],
+                size=32, row_h=78, align=["l", "c", "r", "r", "l"]) + 30
+    s.paragraph(exp.get("note", ""), M, y, W - 2 * M, size=26, color="#6E7781")
+    return s
+
+
+def _i_exposure_universe(exp: dict, tag: str) -> Slide:
+    s = Slide("產業曝險：每條衝擊最傷哪些產業？", tag,
+              "路徑壓力 +10 點時各產業 ETF／資產的歷史平均變動（每週資料、近 3 年）；灰字 = 統計不顯著")
+    rows = []
+    for r in exp.get("paths", [])[:6]:
+        worst = [h for h in r["holdings"] if h["sens_pct_per10"] < 0][:3]
+        best = [h for h in reversed(r["holdings"]) if h["sens_pct_per10"] > 0 and h["significant"]][:2]
+        w_txt = "、".join(f"{h['name']} {h['sens_pct_per10']:+.1f}%" for h in worst) or "—"
+        b_txt = "、".join(f"{h['name']} {h['sens_pct_per10']:+.1f}%" for h in best) or "—"
+        rows.append([(r["path"], TEXT), (r["state"] or "—", FUSE_COL.get(r["state"], MUTED)),
+                     (w_txt, RED if any(h["significant"] for h in worst) else MUTED),
+                     (b_txt, GREEN if best else MUTED)])
+    y = s.table(["傳導路徑", "狀態", "最受傷", "相對抗跌"], rows, 235, [0.2, 0.11, 0.42, 0.27],
+                size=30, row_h=78, align=["l", "c", "l", "l"]) + 30
+    s.paragraph(exp.get("note", ""), M, y, W - 2 * M, size=26, color="#6E7781")
+    return s
+
+
+def deck_intel(engine, private: bool = False) -> List[bytes]:
     if not (engine.intel or {}).get("verdict", {}).get("available"):
         s = Slide("情報融合", "1/1")
         s.paragraph("情報融合尚在計算（需要壓力指數、總經與新聞資料），請稍後再試。", M, 260, W - 2 * M, size=44)
         return [s.png()]
     builders = [_i_verdict, _i_channels, _i_ledger]
+    exp = getattr(engine, "exposure", None) or {}
+    if exp.get("available") and (private or exp.get("mode") == "universe"):
+        builders.append(_i_exposure)                         # holdings: owner only; sector view: anyone
     return [b(engine, f"{i}/{len(builders)}").png() for i, b in enumerate(builders, 1)]
 
 
-def embed_intel(engine) -> discord.Embed:
+def embed_intel(engine, private: bool = False) -> discord.Embed:
     itl = engine.intel or {}
     v = itl.get("verdict") or {}
     e = discord.Embed(title="🧩 情報融合：" + (v.get("headline", "計算中") if v.get("available") else "計算中")[:240],
@@ -573,4 +616,32 @@ def embed_intel(engine) -> discord.Embed:
                     value="\n".join(f"{x['pillar']}{'' if x['dir'] == '=' else x['dir']} {_zh(x['text'])}" for x in led)[:1024])
     if itl.get("watch"):
         e.add_field(name="觀察清單", inline=False, value="\n".join("· " + _zh(w) for w in itl["watch"])[:1024])
+    exp = getattr(engine, "exposure", None) or {}
+    if exp.get("available") and (private or exp.get("mode") == "universe"):
+        from ..analytics.exposure import summary_lines
+        e.add_field(name=("持倉" if exp.get("mode") == "portfolio" else "產業") + "曝險（路徑壓力 +10 點）", inline=False, value="\n".join(summary_lines(exp, 4, 2))[:1024])
+    return e
+
+
+
+# ------------------------------------------------------------------ /outlook: integrated risk outlook
+OL_COL = {"高": 0xD03B3B, "偏高": 0xEC835A, "中性": 0xFAB219, "低": 0x0CA30C}
+OL_EMOJI = {"高": "🔴", "偏高": "🟠", "中性": "🟡", "低": "🟢", "資料缺": "⚪"}
+
+
+def embed_outlook(engine) -> discord.Embed:
+    o = getattr(engine, "outlook", None) or {}
+    if not o.get("available"):
+        return discord.Embed(title="🧭 全方位風險展望", description="尚在計算（需要壓力指數與總經資料），請稍後再試。")
+    e = discord.Embed(title=f"🧭 全方位風險：{OL_EMOJI.get(o['label'], '')}{o['label']}（{o['score']:.0f}/100）",
+                      color=OL_COL.get(o["label"], 0x95A5A6))
+    e.description = o["headline"][:4000]
+    hz = "\n".join(f"**{h['zh']}**：{h['prob']:.1f}%" + (f"（平常 {h['base']:.1f}%）" if h.get("base") is not None else "")
+                   for h in o["horizons"])
+    if hz:
+        e.add_field(name="預測（依時間長度）", value=hz[:1024], inline=False)
+    for d in sorted([d for d in o["dims"] if d["score"] is not None], key=lambda d: -d["score"])[:8]:
+        e.add_field(name=f"{OL_EMOJI.get(d['label'], '')} {d['zh']} {d['score']:.0f}",
+                    value=_zh("；".join(d["evidence"][:2]))[:1024] or "—", inline=False)
+    e.set_footer(text="綜合分數是透明加權平均；1–6 個月機率＝壓力指數歷史條件頻率，12 個月衰退＝紐約聯準會殖利率曲線模型。非投資建議。")
     return e

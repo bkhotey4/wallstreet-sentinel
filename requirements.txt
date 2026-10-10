@@ -9,3 +9,4 @@ numpy>=1.26
 anthropic>=0.40
 google-genai>=1.0
 Pillow>=10.0
+openpyxl>=3.1          # fullmarket: HKEX securities list (xlsx)

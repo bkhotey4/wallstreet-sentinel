@@ -532,7 +532,8 @@ def test_bot(eng):
     titles = [e.title for e in sent]
     assert any(t.startswith("⏰ PPI") for t in titles), titles
     i_res = next(i for i, e in enumerate(sent) if e.title.startswith("📢 CPI"))
-    assert "高於預期" in sent[i_res].title and not any(n == "🧠 AI 解讀" for n, _ in sent[i_res].fields), "numbers first, no AI wait"
+    fnames = [getattr(f, "name", None) or (f[0] if isinstance(f, tuple) else None) for f in sent[i_res].fields]
+    assert "高於預期" in sent[i_res].title and "🧠 AI 解讀" not in fnames, "numbers first, no AI wait"
     ai = next(i for i, e in enumerate(sent) if e.title.startswith("🧠 CPI"))
     assert ai > i_res and "PCE" in sent[ai].description and "建議買進" not in sent[ai].description
     assert any("NVDA" in t and "2.60 vs 預期 2.40" in t for t in titles), titles

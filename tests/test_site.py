@@ -68,7 +68,7 @@ def main():
         assert word not in page, word
     assert not re.search(r"https?://(?!example\.com)[^\"' ]+\.(js|css)", page), "page must not load external scripts/styles"
     import json
-    d = json.loads((out / "data.json").read_text())
+    d = json.loads((out / "data.json").read_text(encoding="utf-8"))
     assert d["ssi"]["score"] > 0 and "portfolio" not in json.dumps(d).lower()
     print(f"  site: {len(page) / 1024:.0f} KB, ssi {d['ssi']['score']:.1f} {d['ssi']['label']}")
     print("SITE TESTS PASSED ✅")

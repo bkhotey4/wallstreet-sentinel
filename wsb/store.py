@@ -35,6 +35,7 @@ with _LOCK:
                                                 title TEXT, spx REAL, ssi REAL);
         CREATE TABLE IF NOT EXISTS intel_heat (ts REAL, channel TEXT, heat REAL, n INTEGER);
         CREATE INDEX IF NOT EXISTS ix_intel_heat ON intel_heat (channel, ts);
+        CREATE TABLE IF NOT EXISTS news_tags (uid TEXT PRIMARY KEY, ts REAL, tags TEXT);
         """
     )
     _C.commit()
@@ -138,6 +139,28 @@ def heat_record(heats: dict, min_gap_s: float = 1800, keep_days: float = 60) -> 
         _C.execute("DELETE FROM intel_heat WHERE ts<?", (now - keep_days * 86400,))
         _C.commit()
     return True
+
+
+def heat_reset() -> None:
+    """Drop the news-heat baseline (used once when the heat method changes, so old and new scales never mix)."""
+    with _LOCK:
+        _C.execute("DELETE FROM intel_heat")
+        _C.commit()
+
+
+def news_tags_save(tags: dict) -> None:
+    now = time.time()
+    with _LOCK:
+        _C.executemany("INSERT OR REPLACE INTO news_tags VALUES (?,?,?)",
+                       [(uid, now, json.dumps(t, ensure_ascii=False)) for uid, t in tags.items()])
+        _C.execute("DELETE FROM news_tags WHERE ts<?", (now - 3 * 86400,))     # headlines live ≤36h in the wire
+        _C.commit()
+
+
+def news_tags_load(days: float = 3) -> dict:
+    with _LOCK:
+        rows = _C.execute("SELECT uid, tags FROM news_tags WHERE ts>?", (time.time() - days * 86400,)).fetchall()
+    return {u: json.loads(t) for u, t in rows}
 
 
 def heat_history(channel: str, days: float = 30) -> List[float]:

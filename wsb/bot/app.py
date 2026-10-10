@@ -232,7 +232,12 @@ class Sentinel(commands.Bot):
                 for n in fresh if n.score >= A["news_score"] and n.ts >= recent][:4])
 
         async def news():
-            await news_alerts(await eng.news.refresh())
+            fresh = await eng.news.refresh()
+            try:
+                await eng.news_ai.classify(eng.news.items)     # AI reads only headlines it has not seen
+            except Exception:  # noqa: BLE001
+                log.exception("news AI classify failed")
+            await news_alerts(fresh)
 
         async def options():
             await eng.options.refresh()
@@ -540,6 +545,7 @@ class Sentinel(commands.Bot):
                                         WATCH.concentration_alerts(eng.portfolio)):
             out.append(Alert(key, sev, title, detail))
         out += self._intel_alerts()
+        out += self._danger_alerts()
         out += self._stop_alerts()
         pf = eng.portfolio
         if pf and not pf.get("error") and pf.get("total_value_usd"):
@@ -549,6 +555,36 @@ class Sentinel(commands.Bot):
                 bar_day = max((q_.get("asof", "") for q_ in (eng.market.q(p["sym"]) for p in pf["positions"]) if q_), default="na")
                 out.append(Alert(f"pf_dd:{bar_day}", "🚨 CRITICAL", f"持倉單日回撤 {dd:.2f}%（${pf['day_pnl_usd']:,.0f}）",
                                  "拖累：" + ", ".join(f"{p['sym']} {p['d1_pct']:+.1f}%" for p in worst)))
+        return out
+
+    def _danger_alerts(self) -> List[Alert]:
+        """盤中大盤危險訊號 (US / Taiwan regular sessions): multi-group confirmation, 注意 / 警戒 / 危險, alerting only when the
+        level RISES within a session, with the macro backdrop attached."""
+        from ..analytics import danger as DG
+        if not SETTINGS.get("danger", {}).get("enabled", True):
+            return []
+        eng, out = self.engine, []
+        vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
+        back = bool(vix and v3 and vix["price"] > v3["price"])
+        for mkt in ("us", "tw"):
+            day = DG.in_session(mkt, eng.market.q)
+            if not day:
+                continue
+            r = DG.score(mkt, eng.market.q, vix_backwardation=back)
+            k = f"danger_max:{mkt}:{day}"
+            prev = int(store.kv_get(k) or 0)
+            if r["level"] <= prev:
+                continue
+            store.kv_set(k, r["level"])
+            trig = "、".join(f"{h['label']} {h['chg']:+.2f}%" if h["chg"] is not None else h["label"] for h in r["hits"][:6])
+            ctx = DG.macro_context(eng)
+            sev = "🚨 CRITICAL" if r["level"] >= 3 else "⚠️ WARNING"
+            out.append(Alert(f"danger:{mkt}:{day}:{r['level']}", sev,
+                             f"{r['zh']}盤中危險訊號［{r['name']}］{r['hits'][0]['label'] if r['hits'] else ''} "
+                             f"{r['bench_chg']:+.2f}%（{r['points']} 分）",
+                             f"觸發：{trig}\n判斷：{r['nature']}\n"
+                             + ("\n".join("總經背景：" + c if i == 0 else "　　　　　" + c for i, c in enumerate(ctx)) + "\n" if ctx else "")
+                             + "（免費報價約延遲 15 分鐘；這是風險提示，不是買賣指令。/outlook 看全方位風險）"))
         return out
 
     def _intel_alerts(self) -> List[Alert]:
@@ -988,7 +1024,7 @@ SAFE_HAVEN_FX = {"JPY=X", "CHF=X"}   # USD/JPY falling = yen strength = risk-off
 def _alert_kind(key: str) -> Optional[str]:
     """Classify an alert for the scorecard: 'risk' (should precede weakness), 'news', or None (info)."""
     if key.startswith(("ssi_level", "ssi_jump", "vix_backwardation", "gamma_flip", "pf_dd", "playbook:", "shock:", "regime:",
-                       "intel:confirm:", "intel:level:")):
+                       "intel:confirm:", "intel:level:", "danger:")):
         return "risk"
     if key.startswith("news:"):
         return "news"
@@ -1037,7 +1073,7 @@ def _ticker_stats(s: pd.Series, spy: pd.Series) -> dict:
 
 # commands anyone in the server may use; everything else (holdings, AI briefs, control) is owner-only
 PUBLIC_COMMANDS = {"dashboard", "risk", "crash", "market", "macro", "gamma", "news", "calendar", "quote",
-                   "scorecard", "earnings_week", "shock", "intel", "alert", "alerts", "alert_remove", "status"}
+                   "scorecard", "earnings_week", "shock", "intel", "outlook", "alert", "alerts", "alert_remove", "status"}
 
 
 def _owner_id() -> str:
@@ -1113,6 +1149,20 @@ def register_commands(bot: Sentinel) -> None:
         if await ready_or_wait(it):
             await P.deliver(it, slides=lambda: CMD.deck_shock(eng), embeds=lambda: CMD.embed_shock(eng))
 
+    @tree.command(name="outlook", description="全方位風險展望：總經衰退、金融海嘯、信用、銀行、估值、財報、產業、新聞，含 1–12 個月預測")
+    @app_commands.describe(ai="加上 AI 綜合研判（僅擁有者）")
+    async def outlook(it: discord.Interaction, ai: bool = False):
+        await it.response.defer(thinking=True)
+        if not await ready_or_wait(it):
+            return
+        txt, name = None, ""
+        if ai and is_owner(it):
+            pack = context.build(eng, "full", private=False)
+            txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.OUTLOOK, 4000)
+        elif ai:
+            await it.followup.send("🔒 AI 研判僅限擁有者；以下為數據版。", ephemeral=True)
+        await P.deliver(it, embeds=lambda: CMD.embed_outlook(eng), text=txt, title="全方位風險研判", engine_name=name)
+
     @tree.command(name="intel", description="情報融合：新聞情報 × 市場價格 × 總經象限 → 綜合風險判斷與證據帳本")
     @app_commands.describe(ai="加上 AI 情報融合研判（僅擁有者）")
     async def intel(it: discord.Interaction, ai: bool = False):
@@ -1125,7 +1175,8 @@ def register_commands(bot: Sentinel) -> None:
             txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.INTEL, 4000)
         elif ai:
             await it.followup.send("🔒 AI 研判僅限擁有者；以下為數據版。", ephemeral=True)
-        await P.deliver(it, slides=lambda: CMD.deck_intel(eng), embeds=lambda: CMD.embed_intel(eng),
+        own = is_owner(it)
+        await P.deliver(it, slides=lambda: CMD.deck_intel(eng, private=own), embeds=lambda: CMD.embed_intel(eng, private=own),
                         text=txt, title="情報融合研判", engine_name=name)
 
     @tree.command(name="market", description="查看某一資產類別的即時全表")
