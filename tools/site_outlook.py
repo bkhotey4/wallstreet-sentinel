@@ -132,8 +132,11 @@ def sec_intel(eng) -> str:
              "Confirmed = headlines and prices both flag it; Narrative only = headlines without price confirmation; "
              "Silent stress = prices under stress while headlines are quiet. Ignition = shock-radar price score; heat = news volume "
              "percentile vs its own 30 days (count in brackets).")
+    lead = next((r for r in itl.get("channels", []) if r["state"] != "平靜"), None)
+    lead_txt = (T(f"主軸：{lead['channel']}［{lead['state']}］", f"Lead path: {lead['channel']} [{ST_EN.get(lead['state'], lead['state'])}]")
+                if lead else T("六條傳導路徑皆平靜", "All six paths calm"))
     return card("新聞情報 × 價格確認", "News intelligence × price confirmation",
-                f'<p class="small muted">{esc(v.get("headline", ""))} · {ai}</p><table class="olt"><thead><tr><th>{T("傳導路徑", "Path")}</th>'
+                f'<p class="small muted">{lead_txt} · {ai}</p><table class="olt"><thead><tr><th>{T("傳導路徑", "Path")}</th>'
                 f'<th>{T("狀態", "State")}</th><th>{T("市場點火", "Ignition")}</th><th>{T("新聞熱度", "News heat")}</th><th>{T("融合", "Fused")}</th>'
                 f'</tr></thead><tbody>{"".join(rows)}</tbody></table><p class="note">{note}</p>', "wide")
 

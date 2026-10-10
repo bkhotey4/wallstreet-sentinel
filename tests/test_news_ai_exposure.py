@@ -62,6 +62,20 @@ def main():
     assert nc.tags[c.uid]["sev"] == 3 and b.uid not in nc.tags
     assert asyncio.run(nc.classify(items[:1])) == 0                       # already tagged → no new call
     assert NA.NewsClassifier._parse('{"items": "x"}', "t") is None and NA.NewsClassifier._parse("nope", "t") is None
+    # classify_all keeps reading batches until every headline is tagged (fresh process / site build)
+    nc2 = NA.NewsClassifier.__new__(NA.NewsClassifier)
+    nc2.tags, nc2.ts, nc2._client = {}, 0.0, None
+    calls = []
+
+    async def one(user):
+        calls.append(1)
+        return [{"id": 0, "channels": ["rates"], "direction": "risk", "severity": 1}], "gemini:test"
+    nc2._gemini = one
+    old = NA.CFG.get("max_per_call")
+    NA.CFG["max_per_call"] = 1
+    assert asyncio.run(nc2.classify_all([a, b, c, d], 10)) == 4 and len(calls) == 4 and len(nc2.tags) == 4
+    assert asyncio.run(nc2.classify_all([a, b, c, d], 10)) == 0 and len(calls) == 4      # nothing left → no call
+    NA.CFG["max_per_call"] = old if old is not None else 80
     gs = NA.GEMINI_SCHEMA["properties"]["items"]["items"]
     assert "additionalProperties" not in gs and gs["properties"]["severity"] == {"type": "integer", "minimum": 0, "maximum": 3}
 

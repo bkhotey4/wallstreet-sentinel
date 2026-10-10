@@ -660,7 +660,7 @@ class Sentinel(commands.Bot):
         rank = {"低": 0, "中性": 1, "偏高": 2, "高": 3}
         min_lbl = cfg.get("alert_min_label", "高")
         if was is not None and rank.get(v["label"], 0) > rank.get(was, 0) and rank.get(v["label"], 0) >= rank.get(min_lbl, 3):
-            out.append(Alert(f"intel:level:{v['label']}:{day}", "⚠️ WARNING", f"綜合風險升至「{v['label']}」（{v['score']:.0f}）",
+            out.append(Alert(f"intel:level:{v['label']}:{day}", "⚠️ WARNING", f"情報融合指數升至「{v['label']}」（{v['score']:.0f}）",
                              f"{v['headline']}\n信心 {v['confidence']}，{v['consensus']}（/intel 看證據帳本）"))
         rg = itl.get("regime") or {}
         q_prev = store.kv_get("intel_quadrant")
@@ -1163,7 +1163,7 @@ def register_commands(bot: Sentinel) -> None:
             await it.followup.send("🔒 AI 研判僅限擁有者；以下為數據版。", ephemeral=True)
         await P.deliver(it, embeds=lambda: CMD.embed_outlook(eng), text=txt, title="全方位風險研判", engine_name=name)
 
-    @tree.command(name="intel", description="情報融合：新聞情報 × 市場價格 × 總經象限 → 綜合風險判斷與證據帳本")
+    @tree.command(name="intel", description="情報融合：新聞情報 × 市場價格 × 總經象限 → 新聞是否被價格確認＋證據帳本")
     @app_commands.describe(ai="加上 AI 情報融合研判（僅擁有者）")
     async def intel(it: discord.Interaction, ai: bool = False):
         await it.response.defer(thinking=True)

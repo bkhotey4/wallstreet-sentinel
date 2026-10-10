@@ -204,7 +204,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     itl = getattr(engine, "intel", None) or {}
     v = itl.get("verdict") or {}
     if v.get("available"):
-        L.append("## 情報融合（量化 × 總經 × 新聞情報 → 綜合風險）")
+        L.append("## 情報融合（量化 × 總經 × 新聞情報 → 情報融合指數；與『全方位風險展望』不同，重點是新聞是否被價格確認）")
         L.append(f"{v['headline']}；三方一致度 {v['consensus']}，信心 {v['confidence']}"
                  + (f"；限制：{'；'.join(v['caveats'])}" if v["caveats"] else ""))
         for r in itl.get("channels", []):

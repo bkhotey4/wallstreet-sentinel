@@ -200,5 +200,17 @@ class NewsClassifier:
             log.warning("news AI (%s) returned unparsable output: %s", who, e)
             return None
 
+    async def classify_all(self, items, max_batches: int = 0) -> int:
+        """Keep calling classify() until every headline is tagged or `max_batches` calls were made (startup / site build:
+        a fresh process would otherwise read only one batch and leave most headlines to keyword matching)."""
+        max_batches = max_batches or int(CFG.get("bootstrap_batches", 4))
+        total = 0
+        for _ in range(max_batches):
+            n = await self.classify(items)
+            total += n
+            if n == 0 or all(it.uid in self.tags for it in items):
+                break
+        return total
+
     def coverage(self, items) -> float:
         return sum(1 for it in items if it.uid in self.tags) / len(items) if items else 0.0

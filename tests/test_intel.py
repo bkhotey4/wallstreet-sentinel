@@ -123,7 +123,7 @@ def main():
     exp = sum(v["weights"][k] * x for k, x in v["pillars"].items() if x is not None) / \
         sum(v["weights"][k] for k, x in v["pillars"].items() if x is not None)
     assert abs(v["base"] - exp) < 1e-9 and abs(v["score"] - min(100, exp + v["bonus"])) < 1e-9
-    assert len(out["channels"]) == 6 and v["headline"].startswith("綜合風險")
+    assert len(out["channels"]) == 6 and v["headline"].startswith("情報融合指數")
     # baseline recording is throttled (one snapshot per 30 min)
     assert len(store.heat_history("信用事件")) == 1
     I.build(eng, record=True)

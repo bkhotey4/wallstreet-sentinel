@@ -137,7 +137,7 @@ class Engine:
             elif isinstance(r, Exception):
                 log.warning("phase-2 refresh %s failed: %s", nm, r)
         try:
-            await self.news_ai.classify(self.news.items)      # AI reads the headlines once before the full recompute
+            await self.news_ai.classify_all(self.news.items)  # read ALL headlines (a few batches) before the full recompute
         except Exception:  # noqa: BLE001
             log.exception("news AI classify failed")
         self._quality = None            # phase-1 quality/lab ran without FRED inputs → recompute on the full index

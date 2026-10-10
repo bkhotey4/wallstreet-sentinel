@@ -461,9 +461,9 @@ def _i_verdict(engine, tag: str) -> Slide:
     itl = engine.intel or {}
     v = itl.get("verdict") or {}
     col = LEVEL_COL.get(v.get("label"), MUTED)
-    s = Slide("情報融合：綜合風險判斷", tag, "量化（壓力指數）× 總經（象限／流動性）× 情報（新聞傳導路徑），每一分都可追溯")
+    s = Slide("情報融合：新聞 × 價格 × 總經", tag, "量化（壓力指數）× 總經（象限／流動性）× 情報（新聞傳導路徑），每一分都可追溯")
     s.card((M, 235, 700, 1005), outline=col, width=4)
-    s.d.text((385, 300), "綜合風險", font=font(38, True), fill=MUTED, anchor="mm")
+    s.d.text((385, 300), "情報融合指數", font=font(38, True), fill=MUTED, anchor="mm")
     s.d.text((385, 450), v.get("label", "計算中"), font=font(150, True), fill=col, anchor="mm")
     s.d.text((385, 580), f"{v['score']:.0f} / 100" if v.get("available") else "—", font=font(56, True), fill=TEXT, anchor="mm")
     s.d.text((385, 660), f"信心：{v.get('confidence', '—')}", font=font(40, True), fill=TEXT, anchor="mm")
@@ -523,7 +523,7 @@ def _i_channels(engine, tag: str) -> Slide:
 def _i_ledger(engine, tag: str) -> Slide:
     itl = engine.intel or {}
     v = itl.get("verdict") or {}
-    s = Slide("證據帳本與觀察清單", tag, "推升（＋）與緩解（－）綜合風險的每一項證據；以及什麼數據會改變判斷")
+    s = Slide("證據帳本與觀察清單", tag, "推升（＋）與緩解（－）情報融合指數的每一項證據；以及什麼數據會改變判斷")
     y = 235
     pc = {"量化": ACCENT, "總經": YELLOW, "情報": ORANGE, "融合": RED}
     for e in (v.get("ledger") or [])[:10]:

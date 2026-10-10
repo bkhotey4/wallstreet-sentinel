@@ -356,7 +356,7 @@ def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dic
         caveats.append("缺少：" + "、".join(k for k in pillars if pillars[k] is None))
     label, emoji = level_of(score)
     lead = fused[0] if fused and fused[0]["state"] != "平靜" else None
-    headline = (f"綜合風險 {emoji}{label}（{score:.0f}）｜" + " / ".join(f"{k} {v:.0f}" for k, v in avail.items())
+    headline = (f"情報融合指數 {emoji}{label}（{score:.0f}）｜" + " / ".join(f"{k} {v:.0f}" for k, v in avail.items())
                 + (f"｜主軸：{lead['channel']}［{lead['state']}］" if lead else "｜六條傳導路徑皆平靜"))
     return {"available": True, "score": score, "base": base, "bonus": bonus, "label": label, "emoji": emoji,
             "pillars": pillars, "sides": side, "weights": w, "consensus": consensus,
