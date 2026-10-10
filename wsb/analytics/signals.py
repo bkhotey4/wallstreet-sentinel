@@ -217,6 +217,77 @@ def trigger_text(k: str, df: pd.DataFrame) -> tuple:
     }.get(k, ("—", "—"))
 
 
+def watch_levels(k: str, df: pd.DataFrame) -> List[Dict]:
+    """The price levels a stock WITHOUT a signal is waiting for (same levels as trigger_text), for the table column."""
+    last = df.iloc[-1]
+    g = lambda c: float(last[c]) if c in last and pd.notna(last[c]) else None  # noqa: E731
+    m20, m200, h20 = g("ma20"), g("ma200"), g("hi20")
+    if m200 is None:                                  # young listing: only the breakout level applies
+        return [{"k": "break", "p": h20}] if h20 and k != "near_oversold" else []
+    lv = {"near_pullback": [("pull", m20)], "uptrend": [("pull", m20), ("break", h20)], "extended": [("pull", m20)],
+          "near_breakout": [("break", h20)], "range": [("break", h20), ("ma200", m200)], "near_golden": [("ma200", m200)],
+          "downtrend": [("ma200", m200)]}.get(k, [])
+    return [{"k": a, "p": p} for a, p in lv if p]
+
+
+REF_BASIS = {"ma20": ("回測 20 日線", "dip to the 20-day"), "ma50": ("回測 50 日線", "dip to the 50-day"),
+             "ma200": ("回測 200 日線", "dip to the 200-day"), "reclaim": ("站回 200 日線後", "after reclaiming the 200-day"),
+             "break": ("突破後回測前高", "retest after a breakout"), "low": ("10 日低點附近（逆勢）", "near the 10-day low (counter-trend)")}
+
+
+def watch_plan(k: str, df: pd.DataFrame) -> Optional[Dict]:
+    """Reference zone for a stock WITHOUT an active signal (for adding to an existing position): the support level the
+    rules would watch for this status, a zone above it (same width rule as active signals) and a give-up line under it.
+    NOT a signal — `pending` says whether something still has to happen first (a breakout / a 200-day reclaim)."""
+    if df is None or not len(df) or k == "nodata":
+        return None
+    last = df.iloc[-1]
+    g = lambda c: float(last[c]) if c in last and pd.notna(last[c]) and float(last[c]) > 0 else None  # noqa: E731
+    px, atr = g("close"), g("atr")
+    if px is None:
+        return None
+    m20, m50, m200, h20, lo10 = g("ma20"), g("ma50"), g("ma200"), g("hi20"), g("lo10")
+    sup = lambda: max(((n, v) for n, v in (("ma20", m20), ("ma50", m50), ("ma200", m200)) if v and v <= px * 1.005),  # noqa: E731
+                      key=lambda t: t[1], default=(None, None))
+    if k == "near_oversold":
+        basis, lvl = ("low", lo10)
+    elif m200 is None:                                          # young listing: no 200-day → 20-day support or breakout retest
+        basis, lvl = ("ma20", m20) if m20 and m20 <= px * 1.005 else ("break", h20)
+    elif k in ("near_pullback", "uptrend", "extended", "range"):
+        basis, lvl = sup()
+        if lvl is None:
+            basis, lvl = ("reclaim", m200) if k == "range" else ("break", h20)
+    elif k == "near_breakout":
+        basis, lvl = ("break", h20)
+    elif k in ("near_golden", "downtrend"):
+        basis, lvl = ("reclaim", m200)
+    else:
+        return None
+    if not lvl:
+        return None
+    floor = {"ma200": 0.04, "reclaim": 0.04, "low": 0.04}.get(basis, 0.03)
+    w = zone_width(lvl, floor, atr)
+    lo, hi = lvl, lvl + w
+    gap = {"break": 0.03, "low": 0.01}.get(basis, 0.02)
+    inv = min(lvl * (1 - gap), lvl - 0.75 * atr) if atr and basis != "low" else lvl * (1 - gap)
+    pending = basis in ("break", "reclaim") and px < lvl
+    pend = {"break": (f"需先放量站上 {lvl:.2f}（前 20 日高）", f"needs a volume close above {lvl:.2f} first"),
+            "reclaim": (f"需先站回 200 日線 {lvl:.2f}", f"needs to reclaim the 200-day {lvl:.2f} first")}.get(basis, ("", ""))
+    if lo <= px <= hi:
+        where, where_en = "現價在參考區內", "price is inside the zone"
+    elif px > hi:
+        where, where_en = f"現價高於參考區 {((px / hi - 1) * 100):.1f}%，等回落", f"price is {((px / hi - 1) * 100):.1f}% above the zone"
+    else:
+        where, where_en = ((pend[0] if pending else f"現價低於參考區 {((px / lo - 1) * 100):.1f}%，需重新站回"),
+                           (pend[1] if pending else f"price is {((px / lo - 1) * 100):.1f}% below the zone"))
+    mid = (lo + hi) / 2
+    return {"zone_lo": lo, "zone_hi": hi, "inv": inv, "risk_pct": (mid / inv - 1) * 100, "basis": basis,
+            "basis_label": REF_BASIS[basis][0], "basis_en": REF_BASIS[basis][1], "level": lvl, "in_zone": lo <= px <= hi,
+            "pending": pending, "where": where, "where_en": where_en,
+            "zone": f"{REF_BASIS[basis][0]} {lvl:.2f}：{lo:.2f}–{hi:.2f}（區寬 {w / lvl * 100:.1f}%）",
+            "zone_en": f"{lo:.2f}–{hi:.2f} ({REF_BASIS[basis][1]}, width {w / lvl * 100:.1f}%)"}
+
+
 def status(df: pd.DataFrame) -> Dict:
     """Where a stock without an active signal stands, judged from its latest bar (a watch-list status, not a signal)."""
     last = df.iloc[-1]
@@ -353,6 +424,8 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                 df0 = next(iter(series[sym].values()))
                 st = status(df0)
                 st["when"], st["when_en"] = trigger_text(st["status"], df0)
+                st["levels"] = watch_levels(st["status"], df0)
+                st["plan"] = watch_plan(st["status"], df0)
                 if df0["ma200"].isna().iloc[-1]:
                     st["why"] += "（上市未滿一年：還沒有 200 日線，只檢查突破、收斂突破與超賣型態）"
                     st["why_en"] += " (listed < 1 year: no 200-day yet — only breakout / tight-range / oversold patterns apply)"
@@ -368,11 +441,19 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
         rest.sort(key=lambda r: (r["tier"] != "D", -r["strength"]))
         allrows = [{**r, "signal": True, "status": {"status": "signal", "label": STATUS["signal"][0], "label_en": STATUS["signal"][1]}}
                    for r in sorted(out_rows, key=lambda r: ("ABC".index(r["tier"]), -r["strength"]))] + rest
+        from . import patterns as PT
         for i, r in enumerate(allrows, 1):
             r["rank_all"] = i
+            try:                                             # chart-pattern tags + top-exhaustion flags (descriptive only)
+                cl_, vo_ = sp.series(r["sym"]), sp.vol(r["sym"])
+                r["tags"], r["exh"] = PT.tags(cl_, vo_), PT.exhaustion(cl_, vo_)
+            except Exception:  # noqa: BLE001
+                log.exception("patterns %s", r["sym"])
+                r["tags"], r["exh"] = [], {"flags": [], "n": 0, "detail": {}}
         markets[mk] = {"key": mk, "label": u.get("label", mk), "label_en": u.get("label_en", mk), "rows": out_rows, "all": allrows, "picks": picks,
                        "backtest": bt, "asof": asof, "n_universe": len(series) + len(short), "breadth": br,
                        "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS},
+                       "exhausted": sorted([r for r in allrows if (r.get("exh") or {}).get("n", 0) >= 2], key=lambda r: -r["exh"]["n"]),
                        "tiers": {t: sum(1 for r in allrows if r.get("tier") == t) for t in TIERS}}
     if persist:
         _save_seen(seen)

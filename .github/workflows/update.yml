@@ -60,6 +60,8 @@ jobs:
             data_cache/fullmarket_*
             data_cache/econ_*
             data_cache/earn_*
+            data_cache/sinfo_*
+            data_cache/growth_*
           key: data-${{ github.run_id }}
           restore-keys: data-
 
@@ -116,6 +118,8 @@ jobs:
             data_cache/fullmarket_*
             data_cache/econ_*
             data_cache/earn_*
+            data_cache/sinfo_*
+            data_cache/growth_*
           key: data-${{ github.run_id }}
 
       # 只檢查「持倉區塊才會出現」的標記，避免 AI 評論或新聞裡的一般用詞（例如「未實現」）誤判

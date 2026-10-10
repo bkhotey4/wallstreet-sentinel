@@ -594,6 +594,10 @@ stockscore:
         ETN: [伊頓, Eaton, 電力與工業]
         CEG: [Constellation 能源, Constellation Energy, 電力與工業]
         VST: [Vistra, Vistra, 電力與工業]
+        SMR: [NuScale 核能, NuScale Power, 電力與工業]
+        OKLO: [Oklo 核能, Oklo, 電力與工業]
+        CCJ: [Cameco 鈾礦, Cameco, 電力與工業]
+        LEU: [Centrus 濃縮鈾, Centrus Energy, 電力與工業]
         CAT: [開拓重工, Caterpillar, 電力與工業]
         DE: [迪爾, Deere, 電力與工業]
         HON: [漢威聯合, Honeywell, 電力與工業]
@@ -868,8 +872,9 @@ earnings:
   budget_s: 240
   refresh_s: 1800
   frame_quarters: 10          # SEC frames：抓最近幾個日曆季（算近 4 季營收與年增需要 8 季）
-  growth_min_rev_usd: 200000000   # 成長估值排名：近 4 季營收至少 2 億美元（太小的公司本銷比沒有意義）
+  growth_min_rev_usd: 0       # 成長估值排名：營收門檻（0＝營收小的早期公司也排名，估值改用本銷比、在同類之間比較）
   growth_min_growth: 15       # 成長估值排名：營收年增至少 15%
+  growth_exclude_sectors: [能源, 不動產, 原物料, 公用事業]   # 營收常隨商品價格或併購跳動：列出但不排名
   fallback_min_mcap: 5000000000   # 外國公司（SEC 沒有季報格式）市值 ≥ 50 億美元時用 Nasdaq 年報補
   push_results: true          # Discord：精選池科技／半導體公布財報後推播 EPS 結果
 

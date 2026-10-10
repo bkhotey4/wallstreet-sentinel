@@ -49,25 +49,17 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
     """One row per US company with enough revenue history (frames) or a Nasdaq annual statement (fallback)."""
     today = today or us_today()
     qs = ED.cy_quarters(today, 10)
-    fr = ed.frames or {}
-
-    def val(k: str, cik: str, per: str) -> Optional[float]:
-        for tag in ED.FRAME_TAGS[k]:
-            v = ((fr.get(f"{tag}/{per}") or {}).get("v") or {}).get(cik)
-            if v is not None:
-                return v
-        if per.endswith("Q4") and len(per) == 8:
-            yv = val(k, cik, per[:6])
-            parts = [val(k, cik, f"{per[:6]}Q{i}") for i in (1, 2, 3)]
-            if yv is not None and all(p is not None for p in parts):
-                return yv - sum(parts)
-        return None
+    _fr = ED.FrameReader(ed.frames or {}, qs)
+    val, raw = _fr.val, _fr._raw
 
     tech = tech or {}
-    out = []
-    for it in items:
+    out, seen = [], set()
+    for it in sorted(items, key=lambda x: -(x.get("mcap") or 0)):
         sym, mcap = it["sym"], it.get("mcap")
         cik = str((tmap.get(sym) or tmap.get(sym.replace("-", ".")) or {}).get("cik") or "")
+        if cik and cik in seen:                        # other share classes / notes of the same company
+            continue
+        seen.add(cik)
         row = None
         if cik:
             rev = [val("rev", cik, p) for p in qs]
@@ -81,11 +73,29 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
                 op = [val("op", cik, p) for p in qs[i:i + 4]]
                 ni = [val("ni", cik, p) for p in qs[i:i + 4]]
                 gp = val("gp", cik, qs[i])
-                row = {"per": qs[i][2:6] + "Q" + qs[i][-1], "ttm": ttm, "g": _pct(ttm, ttm_p) if ttm_p else yoy, "q_yoy": yoy,
+                gw_now = raw("Goodwill", cik, qs[i] + "I")
+                gw_old = raw("Goodwill", cik, qs[i + 4] + "I") if i + 4 < len(qs) else None
+                ma = (gw_now is not None and gw_now - (gw_old or 0) > max(100e6, 0.1 * ttm) and gw_now > 1.3 * (gw_old or 0))
+                row = {"per": qs[i][2:6] + "Q" + qs[i][-1], "ttm": ttm, "g": _pct(ttm, ttm_p) if ttm_p else yoy, "q_yoy": yoy, "base": ttm_p, "ma": ma,
                        "accel": (yoy - yoy_p) if yoy is not None and yoy_p is not None else None,
-                       "gm": (gp / rev[i] * 100) if gp is not None and rev[i] else None,
+                       "gm": (gp / rev[i] * 100) if gp is not None and rev[i] and gp < rev[i] * 0.99 else None,
                        "om": (sum(op) / ttm * 100) if all(v is not None for v in op) and ttm else None,
                        "ni": sum(ni) if all(v is not None for v in ni) else None, "src": "SEC"}
+            else:                                   # pre-revenue company: keep it (long-term themes) if SEC has its cash / losses
+                ni = [val("ni", cik, p) for p in qs[1:5]]
+                if all(v is not None for v in ni) and (mcap or 0) >= 1e9:
+                    row = {"per": qs[1][2:6] + "Q" + qs[1][-1], "ttm": 0.0, "g": None, "q_yoy": None, "base": None, "ma": False, "accel": None,
+                           "gm": None, "om": None, "ni": sum(ni), "src": "SEC", "i0": 1}
+                    i = 1
+            if row is not None:                     # cash, cash burn and runway (how long the cash lasts at the current burn)
+                j = row.get("i0", i)
+                cash = next((c for c in (raw("CashAndCashEquivalentsAtCarryingValue", cik, p + "I") for p in qs[j:j + 2]) if c is not None), None)
+                sti = raw("ShortTermInvestments", cik, qs[j] + "I") or 0.0
+                ocf = [val("ocf", cik, p) for p in qs[j:j + 4]]
+                ocf_t = sum(ocf) if all(v is not None for v in ocf) else None
+                row["cash"] = (cash + sti) if cash is not None else None
+                row["burn"] = -ocf_t if ocf_t is not None and ocf_t < 0 else (0.0 if ocf_t is not None else None)
+                row["runway"] = (row["cash"] / row["burn"]) if row["cash"] is not None and row.get("burn") else None
         if row is None:
             y = ((ed.nqann or {}).get(sym) or {}).get("y") or []
             if len(y) >= 2:
@@ -93,9 +103,9 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
                 row = {"per": "FY" + a["end"][:4], "ttm": a["rev"], "g": _pct(a["rev"], b["rev"]), "q_yoy": None, "accel": None,
                        "gm": (a["gp"] / a["rev"] * 100) if a.get("gp") else None, "om": (a["op"] / a["rev"] * 100) if a.get("op") is not None else None,
                        "ni": a.get("ni"), "src": "Nasdaq 年報"}
-        if row is None or not row["ttm"] or row["ttm"] <= 0:
+        if row is None or row["ttm"] is None or row["ttm"] < 0:
             continue
-        ps = mcap / row["ttm"] if mcap else None
+        ps = mcap / row["ttm"] if mcap and row["ttm"] > 0 else None
         g = row["g"]
         row.update({"sym": sym, "name": it.get("name", ""), "ind": it.get("ind", ""), "sub": it.get("sub", ""), "mcap": mcap, "ps": ps,
                     "psg": (ps / g) if ps is not None and g is not None and g > 0 else None,
@@ -107,17 +117,38 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
     return out
 
 
-def score_us(rows: List[Dict], min_rev: float, min_g: float) -> List[Dict]:
-    elig = {r["sym"]: r for r in rows if r["ttm"] >= min_rev and (r["g"] or -1) >= min_g and r.get("psg") is not None}
-    g = _rank({s: r["g"] for s, r in elig.items()})
-    v = _rank({s: r["psg"] for s, r in elig.items()}, invert=True)
+EXCLUDE = ("能源", "不動產", "原物料", "公用事業")   # commodity / M&A-driven revenue swings: listed, not ranked by default
+
+
+def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.0, exclude=EXCLUDE) -> List[Dict]:
+    """Rank growth-at-a-value.  Valuation is compared like-for-like: price ÷ gross profit when the company reports a gross
+    margin (so low-margin businesses don't look cheap just because P/S is low), otherwise P/E; either one divided by
+    growth (capped at 100% so an acquisition-driven jump isn't rewarded), ranked within its own basis."""
+    for r in rows:                                   # a tiny or missing prior-year base makes the growth % meaningless
+        r["odd"] = (r.get("g") or 0) > 300 or (r.get("base") is not None and r["base"] < min_rev / 2)
+        ge = min(r["g"], cap_g) if r.get("g") is not None else None
+        r["gav"], r["basis"] = None, None
+        if ge and ge > 0 and r.get("mcap"):
+            if r.get("gm") is not None and r["gm"] >= 15:
+                r["gav"], r["basis"] = (r["mcap"] / (r["ttm"] * r["gm"] / 100)) / ge, "P/GP"
+            elif r.get("pe") is not None:
+                r["gav"], r["basis"] = r["pe"] / ge, "P/E"
+            elif r.get("ps") is not None:              # small / loss-making growers: compared among themselves on P/S
+                r["gav"], r["basis"] = r["ps"] / ge, "P/S"
+        r["small"] = r["ttm"] < 50e6
+    still = lambda r: r.get("q_yoy") is None or r["q_yoy"] >= min_g / 2  # noqa: E731  (latest quarter still growing)
+    elig = {r["sym"]: r for r in rows if r["ttm"] >= min_rev and (r["g"] or -1) >= min_g and r.get("gav") is not None
+            and not r.get("ma") and still(r) and r.get("ind") not in exclude}
+    g = _rank({s: min(r["g"], cap_g) for s, r in elig.items()})
+    v: Dict[str, float] = {}
+    for basis in ("P/GP", "P/E", "P/S"):
+        v.update(_rank({s: r["gav"] for s, r in elig.items() if r["basis"] == basis}, invert=True))
     gm = _rank({s: r.get("gm") for s, r in elig.items()})
     r40 = _rank({s: r.get("r40") for s, r in elig.items()})
     for r in rows:
         s = r["sym"]
         r["elig"] = s in elig
-        r["score"] = round(0.4 * g[s] + 0.4 * v[s] + 0.1 * gm[s] + 0.1 * r40[s], 1) if s in elig else None
-        r["small"] = r["ttm"] < 50e6
+        r["score"] = round(0.4 * g[s] + 0.4 * v.get(s, 50.0) + 0.1 * gm[s] + 0.1 * r40[s], 1) if s in elig else None
     rows.sort(key=lambda r: (-(r["score"] if r["score"] is not None else -1), -(r.get("mcap") or 0)))
     rank = 0
     for r in rows:
@@ -127,7 +158,7 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float) -> List[Dict]:
     return rows
 
 
-US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "score", "st", "tech", "src", "small"]
+US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "gav", "basis", "score", "st", "tech", "src", "small", "odd", "ma", "cash", "burn", "runway"]
 TW_COLS = ["rank", "code", "name", "ind", "board", "ym", "rev", "cum_yoy", "yoy", "streak", "pe", "pb", "dy", "peg", "score", "st", "cur"]
 
 
@@ -135,7 +166,7 @@ def pack(rows: List[Dict], cols: List[str], **extra) -> Dict:
     def cv(r, k):
         v = r.get(k)
         if isinstance(v, float):
-            return _r(v, 0 if k in ("mcap", "ttm") else 3 if k in ("psg",) else 2 if k in ("ps", "pe", "pb") else 1)
+            return _r(v, 0 if k in ("mcap", "ttm", "cash", "burn") else 3 if k in ("psg", "gav") else 2 if k in ("ps", "pe", "pb") else 1)
         return v
     return {"available": bool(rows), "n": len(rows), "cols": cols, "rows": [[cv(r, k) for k in cols] for r in rows], **extra}
 
@@ -219,7 +250,8 @@ async def write_us(ed) -> Dict:
     if need:
         ed.nqann = await ED.refresh_nq_annual(need, float(c.get("fallback_budget_s", 90)))
         rows = us_rows(ed, items, tmap, tech)
-    rows = score_us(rows, float(c.get("growth_min_rev_usd", 2e8)), float(c.get("growth_min_growth", 15)))
+    rows = score_us(rows, float(c.get("growth_min_rev_usd", 2e8)), float(c.get("growth_min_growth", 15)),
+                    exclude=tuple(c.get("growth_exclude_sectors", EXCLUDE)))
     res = pack(rows, US_COLS, asof=us_today().isoformat(), listed=len(items), ranked=sum(1 for r in rows if r.get("score") is not None))
     if res["available"]:
         OUT_US.write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

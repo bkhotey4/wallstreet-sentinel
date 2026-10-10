@@ -408,7 +408,7 @@ def sec_tw_rev(eng) -> str:
 
 
 JT_PH = {"tw": "搜尋代號或名稱，例如 2330、聯發科", "us": "搜尋代號或名稱，例如 NVDA、Snowflake",
-         "gus": "搜尋代號或名稱，例如 NU、SMR、HOOD", "gtw": "搜尋代號或名稱，例如 2330、奇鋐"}
+         "gus": "搜尋代號或名稱，例如 NU、SMR、HOOD", "gearly": "搜尋代號或名稱，例如 SMR、OKLO、RKLB", "gtw": "搜尋代號或名稱，例如 2330、奇鋐"}
 
 
 def _jt(kind: str, only: bool = False, autoload: bool = False) -> str:
@@ -427,11 +427,11 @@ def _top_us(d: Dict, n: int = 12) -> str:
     tr = "".join(f'<tr><td class="r muted">{r["rank"]}</td><td class="nw"><b>{esc(r["name"][:28])}</b><span class="tk">{esc(r["sym"])}</span></td>'
                  f'<td class="small muted">{esc(r["ind"] or "")}</td><td class="r">{num((r["mcap"] or 0) / 1e9, 1)}</td>'
                  f'<td class="r {cls(r["g"])}">{num(r["g"], 0, pct=True)}</td><td class="r">{num(r["gm"], 0, pct=True)}</td>'
-                 f'<td class="r">{num(r["ps"], 1)}</td><td class="r"><b>{num(r["psg"], 2)}</b></td><td class="r">{num(r["r40"], 0)}</td>'
+                 f'<td class="r">{num(r["ps"], 1)}</td><td class="r"><b>{num(r.get("gav"), 3)}</b><span class="muted small"> {esc(r.get("basis") or "")}</span></td><td class="r">{num(r["r40"], 0)}</td>'
                  f'<td class="small">{esc(r.get("st") or "—")}</td></tr>' for r in rows)
     return (f'<div class="scroll"><table class="mini"><thead><tr><th class="r">#</th><th>{T("公司", "Company")}</th><th>{T("產業", "Sector")}</th>'
             f'<th class="r">{T("市值（十億美元）", "Mkt cap ($bn)")}</th><th class="r">{T("營收年增", "Rev growth")}</th><th class="r">{T("毛利率", "GM")}</th>'
-            f'<th class="r">P/S</th><th class="r">PSG</th><th class="r">{T("40 法則", "Rule of 40")}</th><th>{T("技術面狀態", "Technical")}</th></tr></thead><tbody>{tr}</tbody></table></div>')
+            f'<th class="r">P/S</th><th class="r">{T("估值÷成長", "Value ÷ growth")}</th><th class="r">{T("40 法則", "Rule of 40")}</th><th>{T("技術面狀態", "Technical")}</th></tr></thead><tbody>{tr}</tbody></table></div>')
 
 
 def _top_tw(d: Dict, n: int = 12) -> str:
@@ -451,22 +451,26 @@ def sec_growth(eng) -> str:
     us, tw = GR.published("us"), GR.published("tw")
     howto = (f'<details class="sgx" open><summary>{T("這頁在找什麼、怎麼看", "What this page looks for")}</summary><ul class="small">'
              f'<li>{T("技術面買點只看股價型態，抓不到「營收成長很快、但估值還不貴」的公司。這頁反過來從財報找：成長越快、成長調整後的估值越低，排名越前面。", "Finds fast revenue growth at a relatively low growth-adjusted valuation.")}</li>'
-             f'<li>{T("美股 PSG＝本銷比（市值÷近 4 季營收）÷營收年增率（%）。例如本銷比 4.4 倍、營收年增 37% → PSG 0.12；數字越低，代表每一分成長付的價格越便宜。", "PSG = P/S ÷ revenue growth (%). Lower = cheaper per unit of growth.")}</li>'
+             f'<li>{T("美股「估值÷成長」：有毛利率的公司用「市值÷近 4 季毛利」（P/GP，避免低毛利行業只因本銷比低就看起來便宜），沒有毛利資料的（金融等）用本益比，再除以營收年增率；兩種分開比較，數字越低代表每一分成長付的價格越便宜。成長率超過 100% 以 100% 計（避免併購造成的跳增被當成成長），最新一季也要仍在成長。本銷比 P/S 與 PSG 也列出供參考。", "Value ÷ growth: price/gross profit (or P/E without a gross margin) ÷ revenue growth, compared within each basis; growth capped at 100%.")}</li>'
              f'<li>{T("40 法則＝營收年增＋營益率，常用來看成長股「成長與獲利」的平衡（≥ 40 算健康）。", "Rule of 40 = growth + operating margin.")}</li>'
              f'<li>{T("台股 PEG＝本益比÷今年累計營收年增率；營收是每月公布，比季報即時。", "Taiwan PEG = P/E ÷ YTD revenue growth (monthly data).")}</li>'
-             f'<li>{T("限制：營收太小（例如 SMR 這類尚未大規模營收的公司）本銷比沒有意義，不列入排名但查得到；外國公司（例如 NU）用 Nasdaq 年報補，是年度數字。估值低也可能有原因（成長不持續、獲利差、景氣循環高點），只是篩選起點，不是買進建議。", "Tiny revenue bases are not ranked; foreign filers use annual statements. A screen, not advice.")}</li>'
+             f'<li>{T("營收還小的早期公司也一起排名：還沒有毛利或獲利的，估值用本銷比、只跟同類公司比較；成長率超過 100% 以 100% 計，避免小基期的爆發成長把排名洗掉。外國公司（例如 NU）用 Nasdaq 年報補，是年度數字。", "Early-stage companies are ranked too (P/S basis among themselves); growth capped at 100%; foreign filers use annual statements.")}</li>'
+             f'<li>{T("下方另有「早期公司（營收 < 2 億美元）」清單，連營收還沒成長、甚至還沒有營收的公司（例如 SMR、核能、太空、生技）都列出，重點看「現金還能撐幾年」。估值低也可能有原因（成長不持續、獲利差、景氣循環高點），只是篩選起點，不是買進建議。", "An early-stage list (revenue < $200m) shows cash runway. A screen, not advice.")}</li>'
              '</ul></details>')
     parts = [howto]
     if us and us.get("available"):
         parts.append(f'<h4>{T("美股：成長價值排名前段", "US: top of the growth-value ranking")}<span class="muted small">　{T("合格", "ranked")} {us.get("ranked", 0)} / {us["n"]} {T("家", "")}・{esc(us.get("asof", ""))}</span></h4>'
-                     + _top_us(us) + _jt("gus", only=True))
+                     + _top_us(us) + _jt("gus", only=True)
+                     + f'<h4>{T("美股：早期公司（近 4 季營收 < 2 億美元，長期題材）", "US: early-stage companies (revenue < $200m)")}</h4>'
+                     f'<p class="small muted">{T("長期投資看的是題材能不能撐到開花結果：「現金跑道」＝現金與短期投資 ÷ 近 4 季營業現金流出，代表照目前燒錢速度還能撐幾年（少於 2 年通常要增資或借錢，股本可能被稀釋）。", "Runway = cash & short-term investments ÷ trailing operating cash burn (years).")}</p>'
+                     + _jt("gearly"))
     else:
         parts.append(f'<p class="muted">{T("美股成長估值資料第一次建立中（需要全市場名單與 SEC 財報），稍後再來看。", "US data being built.")}</p>')
     if tw and tw.get("available"):
         parts.append(f'<h4>{T("台股：成長價值排名前段", "Taiwan: top of the growth-value ranking")}<span class="muted small">　{T("營收月份", "Revenue month")} {esc(tw.get("ym", ""))}・'
                      f'{T("合格", "ranked")} {tw.get("ranked", 0)} / {tw["n"]}</span></h4>' + _top_tw(tw) + _jt("gtw", only=True))
-    note = T("資料：SEC XBRL frames、Nasdaq（名單、市值、外國公司年報）、證交所與櫃買中心（月營收、本益比、股價淨值比、殖利率）。合格門檻：美股近 4 季營收 ≥ 2 億美元且年增 ≥ 15%；台股今年累計營收年增 ≥ 15%、本益比為正、月營收 ≥ 1 億元。"
-             "排名分數＝合格名單內百分位：成長 40%、成長調整估值 40%、毛利率（台股：單月年增）10%、40 法則（台股：股價淨值比）10%。不構成投資建議。",
+    note = T("資料：SEC XBRL frames、Nasdaq（名單、市值、外國公司年報）、證交所與櫃買中心（月營收、本益比、股價淨值比、殖利率）。合格門檻：美股營收年增 ≥ 15%（營收規模不限）；台股今年累計營收年增 ≥ 15%、本益比為正、月營收 ≥ 1 億元。"
+             "排名分數＝合格名單內百分位：成長 40%、估值÷成長 40%、毛利率（台股：單月年增）10%、40 法則（台股：股價淨值比）10%。成長率以 100% 為上限計分；商譽一年內大增（代表營收成長多半來自併購）的標「含併購」、不排名；能源、不動產、原物料、公用事業的營收常隨商品價格或併購大幅跳動，列出但不排名；同一家公司的其他股別只留一檔。不構成投資建議。",
              "Sources: SEC frames, Nasdaq, TWSE/TPEx. Thresholds and weights as described. Not advice.")
     return card("成長股估值篩選（美股＋台股）", "Growth at a reasonable price (US + Taiwan)", "".join(parts) + f'<p class="note">{note}</p>', "wide")
 
@@ -524,9 +528,11 @@ document.querySelectorAll('table.teb').forEach(function(t){t.querySelectorAll('t
  if(q)q.addEventListener('input',f);if(th)th.addEventListener('change',f);});
 var SPEC={tw:{src:'market/twrev.json',filt:'ind',sorts:[['yoy','年增率','y/y'],['rev','月營收','Revenue'],['cum_yoy','累計年增','YTD y/y'],['mom','月增','m/m'],['streak','連續年增月數','Streak']],
   cols:[['code','代號','Code'],['name','公司','Company'],['ind','產業','Industry'],['ym','月份','Month'],['rev','營收（億）','Rev (NT$100m)',2],['mom','月增','m/m',1,'%'],['yoy','年增','y/y',1,'%'],['cum_yoy','累計年增','YTD',1,'%'],['streak','連續年增','Streak']]},
- gus:{src:'market/growth_us.json',filt:'ind',only:'rank',sorts:[['score','排名分數','Score'],['psg','PSG（低→高）','PSG (low→high)','asc'],['g','營收年增','Growth'],['ps','本銷比（低→高）','P/S (low→high)','asc'],['mcap','市值','Market cap'],['r40','40 法則','Rule of 40']],
+ gus:{src:'market/growth_us.json',filt:'ind',only:'rank',sorts:[['score','排名分數','Score'],['gav','估值÷成長（低→高）','Value÷growth (low→high)','asc'],['psg','PSG（低→高）','PSG (low→high)','asc'],['g','營收年增','Growth'],['ps','本銷比（低→高）','P/S (low→high)','asc'],['mcap','市值','Market cap'],['r40','40 法則','Rule of 40']],
   cols:[['rank','#','#'],['sym','代號','Ticker'],['name','公司','Company'],['ind','產業','Sector'],['per','期間','Period'],['mcap','市值（十億）','Cap ($bn)',1,'',1e9],['ttm','近4季營收（十億）','TTM rev ($bn)',2,'',1e9],
-   ['g','營收年增','Growth',1,'%'],['q_yoy','最新季年增','Qtr y/y',1,'%'],['accel','加速','Accel',1,'pp'],['gm','毛利率','GM',1,'%'],['om','營益率','OM',1,'%'],['r40','40法則','R40',0],['ps','P/S','P/S',1],['psg','PSG','PSG',2],['pe','本益比','P/E',1],['score','分數','Score',0],['st','技術面','Technical']]},
+   ['g','營收年增','Growth',1,'%'],['q_yoy','最新季年增','Qtr y/y',1,'%'],['accel','加速','Accel',1,'pp'],['gm','毛利率','GM',1,'%'],['om','營益率','OM',1,'%'],['r40','40法則','R40',0],['ps','P/S','P/S',1],['psg','PSG','PSG',2],['pe','本益比','P/E',1],['gav','估值÷成長','Val÷g',3],['basis','基準','Basis'],['score','分數','Score',0],['st','技術面','Technical']]},
+ gearly:{src:'market/growth_us.json',filt:'ind',pre:function(o){return o.ttm!=null&&o.ttm<2e8;},sorts:[['mcap','市值','Market cap'],['runway','現金跑道（長→短）','Runway'],['g','營收年增','Growth'],['cash','現金','Cash']],
+  cols:[['sym','代號','Ticker'],['name','公司','Company'],['ind','產業','Sector'],['sub','子產業','Industry'],['mcap','市值（十億）','Cap ($bn)',1,'',1e9],['ttm','近4季營收（百萬）','TTM rev ($m)',1,'',1e6],['g','營收年增','Growth',0,'%'],['ps','P/S','P/S',0],['cash','現金（百萬）','Cash ($m)',0,'',1e6],['burn','年燒錢（百萬）','Burn ($m/yr)',0,'',1e6],['runway','現金跑道（年）','Runway (yrs)',1],['rank','成長排名','Growth rank'],['st','技術面','Technical']]},
  gtw:{src:'market/growth_tw.json',filt:'ind',only:'rank',sorts:[['score','排名分數','Score'],['peg','PEG（低→高）','PEG (low→high)','asc'],['cum_yoy','累計營收年增','YTD growth'],['yoy','單月年增','Month y/y'],['pe','本益比（低→高）','P/E (low→high)','asc'],['rev','月營收','Revenue']],
   cols:[['rank','#','#'],['code','代號','Code'],['name','公司','Company'],['ind','產業','Industry'],['ym','月份','Month'],['rev','月營收（億）','Rev (NT$100m)',1],['cum_yoy','累計年增','YTD y/y',1,'%'],['yoy','單月年增','Month y/y',1,'%'],
    ['streak','連續年增','Streak'],['pe','本益比','P/E',1],['pb','淨值比','P/B',2],['dy','殖利率','Yield',1,'%'],['peg','PEG','PEG',2],['score','分數','Score',0],['st','技術面','Technical']]},
@@ -540,14 +546,14 @@ document.querySelectorAll('.jt').forEach(function(w){var sp=SPEC[w.dataset.kind]
  function fm(v,c){if(v==null||v==='')return '—';if(typeof v==='boolean')return v?'★':'';if(c[3]==null)return String(v);var x=+v/(c[5]||1);return x.toLocaleString(undefined,{minimumFractionDigits:c[3],maximumFractionDigits:c[3]})+(c[4]||'');}
  function render(){body.textContent='';if(!data)return;var s=(q.value||'').toLowerCase(),f=fs.value,k=ss.value;
   var oc=w.querySelector('.jto'),only=sp.only&&oc&&oc.checked&&!s,asc=((sp.sorts.filter(function(x){return x[0]===k;})[0])||[])[3]==='asc';
-  var its=data.items.filter(function(o){return (!f||o[sp.filt]===f)&&(!s||(String(o.code||o.sym)+' '+o.name).toLowerCase().indexOf(s)>=0)&&(!only||o[sp.only]!=null);});
+  var its=data.items.filter(function(o){return (!f||o[sp.filt]===f)&&(!s||(String(o.code||o.sym)+' '+o.name).toLowerCase().indexOf(s)>=0)&&(!only||o[sp.only]!=null)&&(!sp.pre||sp.pre(o));});
   its.sort(function(a,b){var x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return asc?x-y:y-x;});st.textContent=' '+its.length+(en()?' rows':' 筆');
   var sc=el('div','scroll'),t=el('table','mini'),hr=el('tr');sp.cols.forEach(function(c){hr.appendChild(el('th',null,en()?c[2]:c[1]));});var th=el('thead');th.appendChild(hr);t.appendChild(th);
   var tb=el('tbody');its.slice(0,shown).forEach(function(o){var tr=el('tr');sp.cols.forEach(function(c){var v=o[c[0]],td=el('td',(c[3]!=null?'r ':'')+(c[4]==='%'||c[4]==='pp'?(v>0?'up':v<0?'dn':''):''),fm(v,c));
-   if(c[0]==='name'&&o.cur)td.appendChild(el('span','pill','精選'));if(c[0]==='name'&&o.small)td.appendChild(el('span','pill',en()?'tiny revenue':'營收太小'));tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
+   if(c[0]==='name'&&o.cur)td.appendChild(el('span','pill','精選'));if(c[0]==='name'&&o.small)td.appendChild(el('span','pill',en()?'early stage':'營收尚小'));if(c[0]==='name'&&o.odd&&!o.small)td.appendChild(el('span','pill',en()?'small base':'基期小'));if(c[0]==='name'&&o.ma)td.appendChild(el('span','pill',en()?'acquisition':'含併購'));tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
   if(its.length>shown){var m=el('button','btn',en()?'Show 100 more':'再顯示 100 筆');m.type='button';m.addEventListener('click',function(){shown+=100;render();});body.appendChild(m);}}
  function go(){btn.style.display='none';st.textContent=en()?'Loading…':'載入中…';fetch(sp.src,{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
-  d.items=d.rows.map(function(a){var o={};d.cols.forEach(function(k,i){o[k]=a[i];});return o;});data=d;var cnt={};d.items.forEach(function(o){var v=o[sp.filt];if(v)cnt[v]=(cnt[v]||0)+1;});
+  d.items=d.rows.map(function(a){var o={};d.cols.forEach(function(k,i){o[k]=a[i];});return o;});data=d;var cnt={};d.items.forEach(function(o){if(sp.pre&&!sp.pre(o))return;var v=o[sp.filt];if(v)cnt[v]=(cnt[v]||0)+1;});
   Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];}).forEach(function(v){var o=el('option',null,v+' ('+cnt[v]+')');o.value=v;fs.appendChild(o);});render();})
   .catch(function(){st.textContent=en()?'Data not available yet.':'資料尚未建立。';});}
  btn.addEventListener('click',go);[q].forEach(function(x){x.addEventListener('input',function(){if(!data)go();else{shown=100;render();}});});

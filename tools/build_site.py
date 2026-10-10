@@ -27,6 +27,7 @@ import pandas as pd
 from wsb.config import SETTINGS
 from tools import site_sections as S2
 from tools import site_econ as S3
+from tools import site_intel as S4
 from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
                            tick_label)
 
@@ -960,13 +961,15 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S3.sec_econ_mini, S2.sec_scores_mini, sec_trends]),
+    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, None, S3.sec_econ_mini, S4.sec_fg_mini, S2.sec_scores_mini, sec_trends]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
-            ("signals", "買點訊號", "Entry signals", [S2.sec_signals, lambda e: S2.sec_fullmarket(e, "signal")]),
+            ("signals", "買點訊號", "Entry signals", [S2.sec_signals, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
+            ("intel", "個股情報", "Stock intel", [S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
-            ("growth", "成長估值", "Growth value", [S3.sec_growth]),
-            ("themes", "族群", "Themes", [S2.sec_themes]),
+            ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
+            ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
+            ("mood", "情緒與警報", "Mood & alarms", [S4.sec_fg, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
@@ -975,9 +978,10 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("crisis", "歷史危機", "Past crises", [sec_crisis]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
-            ("taiwan", "台股", "Taiwan", [sec_taiwan_trends, sec_taiwan]),
+            ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
+            ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators])]
     nav, panels = [], []
     for i, (key, zh, en, fs) in enumerate(tabs):
@@ -1001,14 +1005,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{S2.SECTION_CSS}{S3.CSS}</style></head><body>
+<style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
 <div id="tip" role="status"></div>
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1166,8 +1170,17 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.info("growth screen TW: %s rows, %s ranked", r.get("n"), r.get("ranked"))
     except Exception:  # noqa: BLE001
         log.exception("TW revenue / growth table failed")
+    from wsb.analytics import siteextra as SX
+    try:
+        log.info("site extras refreshed: %s", await SX.refresh(eng))
+    except Exception:  # noqa: BLE001
+        log.exception("site extras refresh failed")
     ai_text, ai_engine = "", ""
     if use_ai:
+        try:
+            log.info("AI bull/bear notes written: %d", await SX.generate_debates())
+        except Exception as e:  # noqa: BLE001
+            log.warning("AI bull/bear notes skipped: %s", e)
         try:
             ai_text, ai_engine = await ai_commentary(eng)
         except Exception as e:  # noqa: BLE001
@@ -1183,6 +1196,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         econ_ai.attach(eng)
     except Exception:  # noqa: BLE001
         log.exception("econ AI attach failed")
+    try:
+        eng.sx = SX.build(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("site extras build failed")
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render(eng, ai_text, ai_engine), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")

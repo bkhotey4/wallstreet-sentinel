@@ -22,7 +22,7 @@ from . import stockscore as SS
 
 log = logging.getLogger(__name__)
 COLS = ["sym", "code", "name", "ind", "board", "tech", "rank", "r1d", "r1m", "r6", "rsi", "st", "stl", "why", "when",
-        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier"]
+        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex"]
 BENCH = {"us": "^GSPC", "tw": "^TWII", "hk": "^HSI"}
 LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
@@ -86,6 +86,18 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
                 young = "（上市未滿一年：還沒有 200 日線，只檢查突破、收斂突破與超賣）" if df0["ma200"].isna().iloc[-1] else ""
                 row.update({"st": st["status"], "stl": st["label"], "why": st["why"] + young, "when": SG.trigger_text(st["status"], df0)[0],
                             "str": _r(st["base"] + 0.25 * (t - 50), 1)})
+                wp = SG.watch_plan(st["status"], df0)
+                if wp:                                               # reference zone for adding (no signal yet)
+                    row.update({"zlo": _r(wp["zone_lo"], 3), "zhi": _r(wp["zone_hi"], 3), "inv": _r(wp["inv"], 3),
+                                "risk": _r(wp["risk_pct"], 1), "inz": bool(wp["in_zone"]), "zb": wp["basis_label"]})
+            try:
+                from . import patterns as PT
+                tg_ = PT.tags(c, v)
+                ex_ = PT.exhaustion(c, v)
+                row["tg"] = "、".join(PT.TAGS[k][0] for k in tg_) or None
+                row["ex"] = PT.exh_text(ex_) if ex_["n"] >= 2 else None
+            except Exception:  # noqa: BLE001
+                log.exception("full-market patterns %s", s)
         else:
             row.update({"st": "nodata", "stl": "資料不足", "why": "上市未滿約三個月，資料太少", "str": 0})
         rows.append(row)

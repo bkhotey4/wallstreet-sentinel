@@ -211,15 +211,36 @@ def main():
                                       {"end": "2025-12-31", "rev": 15.9e9, "gp": None, "op": 3e9, "ni": 2.8e9}]}}
     items = [{"sym": "FAST", "name": "Fast Co", "ind": "科技", "mcap": 4e9}, {"sym": "SLOW", "name": "Slow Co", "ind": "科技", "mcap": 4e9},
              {"sym": "SMR", "name": "NuScale", "ind": "工業", "mcap": 8e9}, {"sym": "NU", "name": "Nu Holdings", "ind": "金融", "mcap": 70e9}]
-    rows = GR.us_rows(ed, items, {"FAST": {"cik": 1}, "SLOW": {"cik": 2}, "SMR": {"cik": 3}}, {"FAST": {"stl": "有買點訊號"}}, TODAY)
+    ed.frames["Goodwill/" + qs[1] + "I"] = {"ts": 0, "v": {"2": 900e6}}                  # SLOW bought something big this year
+    ed.frames["Goodwill/" + qs[5] + "I"] = {"ts": 0, "v": {"2": 100e6}}
+    for per in qs[1:6]:                                              # a pre-revenue company: only losses, cash and cash burn
+        ed.frames.setdefault(f"NetIncomeLoss/{per}", {"ts": 0, "v": {}})["v"]["4"] = -50e6
+        ed.frames.setdefault(f"NetCashProvidedByUsedInOperatingActivities/{per}", {"ts": 0, "v": {}})["v"]["4"] = -150e6
+    ed.frames[f"CashAndCashEquivalentsAtCarryingValue/{qs[1]}I"] = {"ts": 0, "v": {"4": 1.0e9}}
+    ed.frames[f"ShortTermInvestments/{qs[1]}I"] = {"ts": 0, "v": {"4": 0.2e9}}
+    rows = GR.us_rows(ed, items + [{"sym": "SLOWB", "name": "Slow Co class B", "ind": "科技", "mcap": 1e9},
+                                   {"sym": "OKLO", "name": "Oklo", "ind": "公用事業", "mcap": 9e9}],
+                      {"FAST": {"cik": 1}, "SLOW": {"cik": 2}, "SLOWB": {"cik": 2}, "SMR": {"cik": 3}, "OKLO": {"cik": 4}}, {"FAST": {"stl": "有買點訊號"}}, TODAY)
+    assert not any(r["sym"] == "SLOWB" for r in rows), "one row per company (share classes de-duplicated)"
+    assert next(r for r in rows if r["sym"] == "SLOW")["ma"] and not next(r for r in rows if r["sym"] == "FAST")["ma"]
     by = {r["sym"]: r for r in rows}
     assert abs(by["FAST"]["g"] - ((1.1 ** 4) - 1) * 100) < 0.5 and abs(by["SLOW"]["g"] - ((1.03 ** 4) - 1) * 100) < 0.5, by["FAST"]["g"]
     assert by["FAST"]["gm"] == 60.0 and abs(by["FAST"]["om"] - 10) < 1e-6 and by["FAST"]["st"] == "有買點訊號"
     assert by["NU"]["src"] == "Nasdaq 年報" and abs(by["NU"]["g"] - (15.9 / 11.57 - 1) * 100) < 0.01 and abs(by["NU"]["ps"] - 70 / 15.9) < 1e-6
-    rows = GR.score_us(rows, 2e8, 15)
+    pre = next(r for r in rows if r["sym"] == "OKLO")
+    assert pre["ttm"] == 0 and pre["g"] is None and abs(pre["runway"] - 2.0) < 1e-9 and pre["cash"] == 1.2e9, pre
+    rows = GR.score_us(rows, 0, 15)
     by = {r["sym"]: r for r in rows}
-    assert by["SMR"]["small"] and by["SMR"]["score"] is None, "pre-revenue: shown, never ranked"
-    assert by["SLOW"]["score"] is None and by["FAST"]["rank"] in (1, 2) and by["NU"]["rank"] in (1, 2)
+    assert by["SMR"]["small"] and by["SMR"]["score"] is not None, "small revenue is ranked too (long-term investing)"
+    assert by["OKLO"]["score"] is None, "no revenue → no growth rank, but listed (early-stage list)"
+    assert by["SLOW"]["score"] is None and by["FAST"]["rank"] in (1, 2, 3) and by["NU"]["rank"] in (1, 2, 3)
+    odd = GR.score_us([{"sym": "ODD", "ttm": 5e8, "g": 5000.0, "base": 9e6, "psg": 0.001, "gm": 50, "r40": 99, "mcap": 1e9}] +
+                      [dict(r) for r in rows], 2e8, 15)
+    o = next(r for r in odd if r["sym"] == "ODD")
+    assert o["score"] is not None and o["odd"], "small-base jump: ranked, growth capped at 100% for the score"
+    rd = ED.FrameReader({"Revenues/CY2026Q1": {"v": {"9": 1.0}}, "RevenueFromContractWithCustomerExcludingAssessedTax/CY2026Q1": {"v": {"9": 100.0}},
+                         "RevenueFromContractWithCustomerExcludingAssessedTax/CY2025Q1": {"v": {"9": 80.0}}}, ["CY2026Q1", "CY2025Q1"])
+    assert rd.val("rev", "9", "CY2026Q1") == 100.0 and rd.val("rev", "9", "CY2025Q1") == 80.0, "one tag per company, never mixed"
     us_pack = GR.pack(rows, GR.US_COLS, asof="2026-10-09", listed=4, ranked=2)
     GR.OUT_US.write_text(json.dumps(us_pack, ensure_ascii=False), encoding="utf-8")
     ed.twpe = {"ts": time.time(), "v": {**ED.parse_twpe([{"Code": "2330", "Name": "台積電", "PEratio": "25.0", "DividendYield": "1.5", "PBratio": "7.0"},
@@ -255,7 +276,7 @@ def main():
     page = (out / "index.html").read_text(encoding="utf-8")
     for s in ("財經日曆", "科技財報", "FOMC 聯準會利率決議", "本週重要經濟數據", "美國經濟日曆", "美股財報日曆", "科技／半導體財報分析",
               "台股電子業月營收", "美股全市場科技股", 'id="ev-cpi-2026-10-14"', "若高於預期", "過去同類數據公布當天", "class=\"qchart\"",
-              "接下來的重要經濟數據", "成長股估值篩選", 'data-kind="gus"', 'data-kind="gtw"', "Nu Holdings"):
+              "接下來的重要經濟數據", "成長股估值篩選", 'data-kind="gus"', 'data-kind="gtw"', 'data-kind="gearly"', "Nu Holdings", "現金跑道"):
         assert s in page, s
     assert "建議買進" not in page
     assert (out / "market" / "twrev.json").exists() and (out / "market" / "growth_us.json").exists() and (out / "market" / "growth_tw.json").exists()

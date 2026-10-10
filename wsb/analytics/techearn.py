@@ -249,20 +249,7 @@ def ustech(ed, items: List[Dict], tmap: Dict[str, Dict], today: Optional[date] =
     """Latest calendar quarter per company from SEC frames; Q4 derived from the calendar-year frame minus Q1–Q3."""
     today = today or us_today()
     qs = ED.cy_quarters(today, 7)
-    fr = ed.frames or {}
-
-    def val(k: str, cik: str, per: str) -> Optional[float]:
-        for tag in ED.FRAME_TAGS[k]:
-            v = ((fr.get(f"{tag}/{per}") or {}).get("v") or {}).get(cik)
-            if v is not None:
-                return v
-        if per.endswith("Q4"):                         # Q4 = calendar year − Q1..Q3
-            y = per[:6]
-            yv = val(k, cik, y) if len(per) > 6 else None
-            parts = [val(k, cik, f"{y}Q{i}") for i in (1, 2, 3)]
-            if yv is not None and all(p is not None for p in parts):
-                return yv - sum(parts)
-        return None
+    val = ED.FrameReader(ed.frames or {}, qs).val
 
     cols = ["sym", "name", "sub", "mcap", "q", "rev", "yoy", "qoq", "gm", "gm_yoy", "om", "nm", "eps", "eps_yoy"]
     out = []

@@ -1252,7 +1252,9 @@ def register_commands(bot: Sentinel) -> None:
                                                     + (f"\n▶ 上方壓力：52 週高 {pl['target']:.2f}（+{pl['target_pct']:.0f}%）" if pl.get("target") else ""))[:1024],
                         inline=False)
         elif st:
-            e.add_field(name="目前狀態", value=f"{st.get('label')}：{st.get('why', '')}\n▶ 何時才算買點：{st.get('when') or '—'}"[:1024], inline=False)
+            wp = st.get("plan") or {}
+            ref = (f"\n▶ 加碼參考區（尚無訊號）：{wp['zone']}；{wp['where']}\n▶ 參考失效線：{wp['inv']:.2f}" if wp else "")
+            e.add_field(name="目前狀態", value=f"{st.get('label')}：{st.get('why', '')}\n▶ 何時才算買點：{st.get('when') or '—'}{ref}"[:1024], inline=False)
         e.add_field(name="報酬", value=f"今日 {r['r1d'] or 0:+.1f}%｜1 月 {r['r1m'] or 0:+.1f}%｜6 月 {r['r6'] or 0:+.0f}%｜RSI {r['rsi'] or 0:.0f}", inline=False)
         e.set_footer(text="規則化量化篩選，不是買賣建議")
         await it.followup.send(embed=e)

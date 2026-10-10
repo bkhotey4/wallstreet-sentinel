@@ -312,7 +312,8 @@ async def refresh_facts(syms: List[str], reported: Dict[str, str], budget_s: flo
 
 # ============================================================ SEC frames (whole-market US tech, latest quarter)
 FRAME_TAGS = {"rev": REV_TAGS[:3], "gp": ("GrossProfit",), "op": ("OperatingIncomeLoss",), "ni": ("NetIncomeLoss",),
-              "eps": ("EarningsPerShareDiluted",)}
+              "eps": ("EarningsPerShareDiluted",), "ocf": ("NetCashProvidedByUsedInOperatingActivities",)}
+INSTANT_TAGS = ("Goodwill", "CashAndCashEquivalentsAtCarryingValue", "ShortTermInvestments")
 
 
 def cy_quarters(today: date, n: int = 6) -> List[str]:
@@ -326,6 +327,38 @@ def cy_quarters(today: date, n: int = 6) -> List[str]:
     return out
 
 
+class FrameReader:
+    """Values of one company from the cached frames, always from ONE tag per concept (the tag with the most quarters),
+    so a company that switched revenue tags never mixes two definitions; CY Q4 = calendar year − Q1..Q3 of that tag."""
+
+    def __init__(self, frames: Dict[str, Dict], pers: List[str]):
+        self.fr, self.pers, self._best = frames or {}, pers, {}
+
+    def _raw(self, tag: str, cik: str, per: str) -> Optional[float]:
+        return ((self.fr.get(f"{tag}/{per}") or {}).get("v") or {}).get(cik)
+
+    def tag_val(self, tag: str, cik: str, per: str) -> Optional[float]:
+        v = self._raw(tag, cik, per)
+        if v is None and per.endswith("Q4") and len(per) == 8:
+            yv = self._raw(tag, cik, per[:6])
+            parts = [self._raw(tag, cik, f"{per[:6]}Q{i}") for i in (1, 2, 3)]
+            if yv is not None and all(p is not None for p in parts):
+                v = yv - sum(parts)
+        return v
+
+    def best(self, k: str, cik: str) -> Optional[str]:
+        key = (k, cik)
+        if key not in self._best:
+            score = [(sum(1 for p in self.pers if self.tag_val(t, cik, p) is not None), -i, t) for i, t in enumerate(FRAME_TAGS[k])]
+            n, _i, t = max(score)
+            self._best[key] = t if n else None
+        return self._best[key]
+
+    def val(self, k: str, cik: str, per: str) -> Optional[float]:
+        t = self.best(k, cik)
+        return self.tag_val(t, cik, per) if t else None
+
+
 def parse_frame(js: Dict) -> Dict[str, float]:
     return {str(int(r["cik"])): float(r["val"]) for r in (js or {}).get("data") or [] if r.get("val") is not None}
 
@@ -336,10 +369,12 @@ async def refresh_frames(budget_s: float = 150) -> Dict[str, Dict]:
     qs = cy_quarters(today, int(cfg().get("frame_quarters", 10)))
     years = sorted({f"CY{int(q[2:6])}" for q in qs})[:-1] or [f"CY{today.year - 1}"]
     t0, ok = time.time(), 0
-    for k, tags in FRAME_TAGS.items():
+    inst = [q + "I" for q in qs[:7]]                 # goodwill at quarter ends: a jump flags acquisition-driven growth
+    plan = [(k, tag, qs + years) for k, tags in FRAME_TAGS.items() for tag in tags] + [("i", t, inst) for t in INSTANT_TAGS]
+    for k, tag, pers in plan:
         unit = "USD-per-shares" if k == "eps" else "USD"
-        for tag in tags:
-            for i, per in enumerate(qs + years):
+        if True:
+            for i, per in enumerate(pers):
                 key = f"{tag}/{per}"
                 rec = cache.get(key) or {}
                 fresh = 20 * 3600 if (i < 3 or per in years[-1:]) else 7 * 86400
@@ -358,7 +393,7 @@ async def refresh_frames(budget_s: float = 150) -> Dict[str, Dict]:
                     else:
                         log.info("frame %s: %s", key, e)
                 await asyncio.sleep(0.2)
-    keep = {f"{t}/{p}" for ts in FRAME_TAGS.values() for t in ts for p in qs + years}
+    keep = {f"{t}/{p}" for ts in FRAME_TAGS.values() for t in ts for p in qs + years} | {f"{t}/{p}" for t in INSTANT_TAGS for p in inst}
     cache = {k: v for k, v in cache.items() if k in keep}
     if ok:
         _save(F_FRAMES, cache)

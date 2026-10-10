@@ -146,6 +146,19 @@ def test_signal_patterns():
     assert d5["macd"]["flag"].sum() > 0 and SG.detect(c4.iloc[:250], v)["macd"]["flag"].sum() == 0
     # ATR-scaled zone: a volatile stock gets a wider zone than the 3% floor, a calm one keeps 3%
     assert abs(SG.zone_width(100, 0.03, 1.0) - 3.0) < 1e-9 and SG.zone_width(100, 0.03, 6.0) == 6.0 and SG.zone_width(100, 0.03, 20) == 10.0
+    # add-on reference zone for stocks WITHOUT a signal: always a zone above a support level and a give-up line below it
+    for k in ("near_pullback", "uptrend", "extended", "range", "near_breakout", "near_golden", "downtrend", "near_oversold"):
+        for df_ in (d["pullback"], SG.detect(c4, v)["golden"], SG.detect(c3, v)["oversold"]):
+            wp = SG.watch_plan(k, df_)
+            assert wp and wp["inv"] < wp["zone_lo"] < wp["zone_hi"] and wp["risk_pct"] > 0, (k, wp)
+            assert wp["zone_hi"] <= wp["level"] * 1.1 + 1e-9 and wp["basis_label"] in wp["zone"]
+    wd = SG.watch_plan("downtrend", SG.detect(c4.iloc[:250], v)["golden"])
+    assert wd["basis"] == "reclaim" and wd["pending"] and "站回 200 日線" in wd["where"], wd
+    wu = SG.watch_plan("uptrend", d["pullback"])
+    assert wu["basis"] in ("ma20", "ma50", "ma200") and wu["level"] <= float(c.iloc[-1]) * 1.005
+    young = SG.detect(c5.iloc[-150:], v.iloc[-150:])["pullback"]
+    assert young["ma200"].isna().iloc[-1] and SG.watch_plan("near_breakout", young)["basis"] in ("ma20", "break")
+    assert SG.watch_plan("nodata", d["pullback"]) is None
     pl = SG.plan("vcp", d6["vcp"], idx[-1], float(d6["vcp"]["inv"].iloc[-1]))
     assert pl["zone_lo"] < pl["zone_hi"] and "收斂區上緣" in pl["zone"]
     print("  signal patterns ok")
@@ -191,6 +204,8 @@ def test_fullmarket(eng):
     sig = [r for r in rows if r["st"] == "signal"]
     assert all(r["zlo"] <= r["zhi"] and r["inv"] < r["px"] for r in sig)
     assert all(r["when"] for r in rows if r["st"] not in ("signal", "nodata"))
+    ref = [r for r in rows if r["st"] not in ("signal", "nodata")]
+    assert ref and all(r["zlo"] is not None and r["inv"] < r["zlo"] <= r["zhi"] and r["zb"] for r in ref), "every watch row gets a reference zone"
     assert all(r["st"] == "signal" and r["inz"] and r["pat"] != "oversold" for r in rows if r.get("pk"))
     assert sorted(r["pk"] for r in rows if r.get("pk")) == list(range(1, 1 + sum(1 for r in rows if r.get("pk"))))
     # run(): lists come from the (patched) list loader, JSON is written and later published under site/market/
@@ -331,7 +346,7 @@ def main():
     assert "波克夏（巴菲特）" in page and "賣權（看空）" in page and "可能已停止申報" in page
     assert "內部人買賣（Form 4）" in page and "美債專區" in page and 'id="c_curve"' in page and "偏弱" in page
     assert "類股輪動與市場寬度" in page and 'id="c_rot"' in page and 'id="c_br0"' in page
-    assert (out / "market" / "us.json").exists() and "全市場排行" in page and "全市場買點訊號" in page and 'id="stockQfm"' in page
+    assert (out / "market" / "us.json").exists() and "全市場排行" in page and "全市場個股・進場／加碼參考區" in page and "fmq" in page and 'id="stockQfm"' in page
     for k in ("signals", "themes"):
         assert f'id="p-{k}"' in page, k
     assert "何時買（規則參考）" in page and "何時才算買點" in page and "進場參考區" in page and 'id="sigQ"' in page and 'id="stockQ"' in page
@@ -341,6 +356,11 @@ def main():
     assert all(r["status"].get("when") for m in eng.signals["markets"].values() for r in m["all"]
                if not r["signal"] and r["status"]["status"] != "nodata")
     assert "技術面買點訊號" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
+    for m in eng.signals["markets"].values():               # every stock with history has an entry or add-on reference zone
+        for r in m["all"]:
+            if not r.get("signal") and r["status"]["status"] != "nodata":
+                assert r["status"].get("plan") and r["status"]["plan"]["zone_lo"] > r["status"]["plan"]["inv"], r["sym"]
+    assert "加碼參考區" in page and 'class="refz"' in page
     assert 'class="btn thf"' in page and 'data-th="半導體"' in page and 'class="sgp' in page and 'class="sm"' in page and 'class="sd"' in page
     assert "時光機" in page and 'id="tmSel"' in page and 'rel="manifest"' in page and "serviceWorker" in page
     assert "不是買賣建議" in page or "not investment advice" in page
