@@ -64,8 +64,12 @@ def main():
     assert "<script>alert" not in page and "&lt;script&gt;" in page, "untrusted headline must be escaped"
     assert 'href="javascript:' not in page, "non-http links must be neutralised"
     assert "https://example.com/a?b=1&amp;c=2" in page
+    # no holdings analytics on the public page.  Link URLs are stripped first: Google News links carry random base64
+    # tokens that can contain e.g. "ENB" and made this guard fail at random.
+    import re as _re
+    visible = _re.sub(r'(?:href|src)="[^"]*"', "", page)
     for word in ("持倉總值", "未實現", "VaR99", "ENB"):
-        assert word not in page, word
+        assert not _re.search(rf"(?<![A-Za-z0-9]){_re.escape(word)}(?![A-Za-z0-9])", visible), word
     assert not re.search(r"https?://(?!example\.com)[^\"' ]+\.(js|css)", page), "page must not load external scripts/styles"
     import json
     d = json.loads((out / "data.json").read_text(encoding="utf-8"))

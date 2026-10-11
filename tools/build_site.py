@@ -30,6 +30,7 @@ from tools import site_sections as S2
 from tools import site_econ as S3
 from tools import site_intel as S4
 from tools import site_outlook as SO
+from tools import site_portfolio as SP
 from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
                            tick_label)
 
@@ -986,6 +987,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
+            ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
@@ -1029,14 +1031,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}</style></head><body>
+<style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
 <div id="tip" role="status"></div>
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
