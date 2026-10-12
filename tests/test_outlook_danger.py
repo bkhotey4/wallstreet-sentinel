@@ -74,7 +74,8 @@ def main():
     assert d["valuation"]["score"] == 96.0 and d["valuation"]["label"] == "高"
     assert d["earnings"]["score"] == 50.0 and any("好消息不漲" in e for e in d["earnings"]["evidence"])   # (85-75)*2+20 = 40, +10 beats-but-falls
     assert d["sectors"]["score"] > 55 and any("防禦類股" in e for e in d["sectors"]["evidence"])
-    assert d["news"]["score"] is None and o["coverage"] < 1                       # missing pillar excluded, not zero
+    assert d["news"]["score"] is None and d["news"]["excluded"] and d["news"]["label"] == "背景"
+    assert o["coverage"] == 1 and "news" not in o["top"]                           # unscored news ≠ missing data
     w = {k: v for k, v in o["weights"].items() if d[k]["score"] is not None}
     exp = sum(w[k] * d[k]["score"] for k in w) / sum(w.values())
     assert abs(o["score"] - round(exp, 1)) < 0.11

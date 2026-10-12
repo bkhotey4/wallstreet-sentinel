@@ -76,7 +76,7 @@ def sec_outlook_hero(eng) -> str:
              "probability is the NY Fed yield-curve model (10y minus 3m). The chart shows that model over 10 years — readings above 30% "
              "preceded past recessions, with false alarms too (e.g. the 2022–24 inversion).")
     return f'''<section class="card wide"><h2>{T("全方位風險展望", "Integrated risk outlook")}</h2>
-<p class="sub">{T("總經 × 金融海嘯 × 信用 × 銀行 × 估值 × 財報 × 產業 × 新聞，一頁看完", "Macro × crisis × credit × banks × valuation × earnings × sectors × news, on one page")}</p>
+<p class="sub">{T("總經 × 金融海嘯 × 信用 × 銀行 × 估值 × 財報 × 產業，一頁看完（新聞僅作背景，不計分）", "Macro × crisis × credit × banks × valuation × earnings × sectors on one page (news is context only, unscored)")}</p>
 <div class="olh"><div class="olbig" style="--lv:{col}">{o["score"]:.0f}</div><div>
 <div class="lvl"><i class="sw" style="background:{col}"></i>{T("綜合風險：" + o["label"], "Overall: " + o["label_en"])}</div>
 <div class="small muted">{T(f"資料涵蓋 {o['coverage'] * 100:.0f}% 的面向", f"{o['coverage'] * 100:.0f}% of dimensions available")}</div>

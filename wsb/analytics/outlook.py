@@ -285,6 +285,7 @@ def build(engine) -> Dict:
     for d in dims:
         if w.get(d["key"], 0) <= 0:
             d["excluded"] = True
+            d["label"], d["label_en"] = "背景", "Context"
             d["note"] = "背景參考，不計入風險分數（新聞標題可能誇大）"
     have = [d for d in dims if d["score"] is not None and not d.get("excluded")]
     if not have:
@@ -308,7 +309,8 @@ def build(engine) -> Dict:
     headline = (f"全方位風險 {lz}（{comp:.0f}/100）｜最大風險："
                 + "、".join(f"{d['zh']} {d['score']:.0f}" for d in top))
     return {"available": True, "score": round(comp, 1), "label": lz, "label_en": le, "dims": dims, "top": [d["key"] for d in top],
-            "horizons": horizons, "weights": w, "headline": headline, "coverage": len(have) / len(dims),
+            "horizons": horizons, "weights": w, "headline": headline,
+            "coverage": len(have) / max(1, sum(1 for d in dims if not d.get("excluded"))),   # over scored dimensions only
             "note": "綜合分數是透明的加權平均（權重可在 settings.yaml 調整），不是預測模型；預測只來自有實證紀錄的模型。"}
 
 
