@@ -91,9 +91,9 @@ def sec_outlook_dims(eng) -> str:
     if not o.get("available"):
         return ""
     cards = []
-    for d in sorted(o["dims"], key=lambda d: -(d["score"] if d["score"] is not None else -1)):
-        col = LV_COL.get(d["label"], "#6b7280")
-        sc = "—" if d["score"] is None else f'{d["score"]:.0f}'
+    for d in sorted(o["dims"], key=lambda d: (bool(d.get("excluded")), -(d["score"] if d["score"] is not None else -1))):
+        col = "#6b7280" if d.get("excluded") else LV_COL.get(d["label"], "#6b7280")
+        sc = "—" if d["score"] is None or d.get("excluded") else f'{d["score"]:.0f}'
         ev = "".join(f"<li>{esc(e)}</li>" for e in d["evidence"][:5])
         fc = ""
         f = d.get("forecast") or {}
@@ -135,7 +135,7 @@ def sec_intel(eng) -> str:
     lead = next((r for r in itl.get("channels", []) if r["state"] != "平靜"), None)
     lead_txt = (T(f"主軸：{lead['channel']}［{lead['state']}］", f"Lead path: {lead['channel']} [{ST_EN.get(lead['state'], lead['state'])}]")
                 if lead else T("六條傳導路徑皆平靜", "All six paths calm"))
-    return card("新聞情報 × 價格確認", "News intelligence × price confirmation",
+    return card("新聞背景（不計入風險分數）", "News context (not part of the risk score)",
                 f'<p class="small muted">{lead_txt} · {ai}</p><table class="olt"><thead><tr><th>{T("傳導路徑", "Path")}</th>'
                 f'<th>{T("狀態", "State")}</th><th>{T("市場點火", "Ignition")}</th><th>{T("新聞熱度", "News heat")}</th><th>{T("融合", "Fused")}</th>'
                 f'</tr></thead><tbody>{"".join(rows)}</tbody></table><p class="note">{note}</p>', "wide")

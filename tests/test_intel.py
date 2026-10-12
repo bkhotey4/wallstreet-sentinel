@@ -118,8 +118,12 @@ def main():
     v = out["verdict"]
     assert v["available"] and 0 <= v["score"] <= 100 and v["confidence"] in ("高", "中", "低")
     assert set(v["pillars"]) == {"量化", "總經", "情報"} and v["pillars"]["量化"] == st.score
-    assert any("基準仍在累積" in c for c in v["caveats"])                               # fresh DB → warm-up caveat
-    assert v["weights"]["情報"] == 0.125                                                 # news pillar half-weighted in warm-up
+    # policy (2026-10-12): headlines are context, never risk evidence → news pillar unweighted, no confirm bonus
+    assert v["weights"]["情報"] == 0 and v["bonus"] == 0
+    qm = {k: x for k, x in v["pillars"].items() if k in ("量化", "總經") and x is not None}
+    assert abs(v["base"] - sum(v["weights"][k] * x for k, x in qm.items()) / sum(v["weights"][k] for k in qm)) < 1e-9
+    assert not __import__("re").search(r"情報 \d", v["headline"]) and not any("基準仍在累積" in c for c in v["caveats"])
+    assert all(e["pillar"] != "情報" for e in v["ledger"])                              # headline lines shown as 背景
     exp = sum(v["weights"][k] * x for k, x in v["pillars"].items() if x is not None) / \
         sum(v["weights"][k] for k, x in v["pillars"].items() if x is not None)
     assert abs(v["base"] - exp) < 1e-9 and abs(v["score"] - min(100, exp + v["bonus"])) < 1e-9

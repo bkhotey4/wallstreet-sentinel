@@ -21,7 +21,7 @@ CFG = SETTINGS.get("outlook", {}) or {}
 NYFED_A, NYFED_B = -0.5333, -0.6330
 LEVELS = [(70, "高", "High"), (55, "偏高", "Elevated"), (40, "中性", "Moderate"), (0, "低", "Low")]
 WEIGHTS = {"recession": 0.16, "crisis": 0.18, "credit": 0.15, "banking": 0.12, "valuation": 0.1,
-           "earnings": 0.09, "sectors": 0.08, "macro": 0.07, "news": 0.05}
+           "earnings": 0.09, "sectors": 0.08, "macro": 0.07, "news": 0.0}   # news: background only, never scored
 
 
 def _phi(x: float) -> float:
@@ -282,7 +282,11 @@ def build(engine) -> Dict:
             macro(getattr(engine, "regime", None) or {}), news(getattr(engine, "intel", None) or {})]
     w = dict(WEIGHTS)
     w.update(CFG.get("weights") or {})
-    have = [d for d in dims if d["score"] is not None]
+    for d in dims:
+        if w.get(d["key"], 0) <= 0:
+            d["excluded"] = True
+            d["note"] = "背景參考，不計入風險分數（新聞標題可能誇大）"
+    have = [d for d in dims if d["score"] is not None and not d.get("excluded")]
     if not have:
         return {"available": False, "dims": dims}
     tot = sum(w.get(d["key"], 0) for d in have)
@@ -312,7 +316,7 @@ def summary_lines(o: Dict) -> List[str]:
     if not (o or {}).get("available"):
         return []
     out = [o["headline"]]
-    for d in sorted([d for d in o["dims"] if d["score"] is not None], key=lambda d: -d["score"]):
+    for d in sorted([d for d in o["dims"] if d["score"] is not None and not d.get("excluded")], key=lambda d: -d["score"]):
         out.append(f"{d['zh']} {d['score']:.0f}［{d['label']}］：" + "；".join(d["evidence"][:2]))
     for h in o["horizons"]:
         out.append(f"預測｜{h['zh']}：{h['prob']:.1f}%" + (f"（平常 {h['base']:.1f}%）" if h.get("base") is not None else "")

@@ -287,7 +287,8 @@ def watchlist(rg: Dict, fused: List[Dict]) -> List[str]:
 
 
 def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dict:
-    w = {"量化": 0.5, "總經": 0.25, "情報": 0.25}
+    # headlines are context, not evidence: by default the news pillar has NO weight (settings intel.weights can change it)
+    w = {"量化": 0.65, "總經": 0.35, "情報": 0.0}
     w.update(_cfg("weights", {}) or {})
     ledger: List[Dict] = []
     pillars: Dict[str, Optional[float]] = {}
@@ -323,37 +324,43 @@ def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dic
     warm = any(r["warmup"] for r in fused)
     if warm and pillars.get("情報") is not None:
         w = dict(w, 情報=w["情報"] * float(_M.get("warmup_news_weight", 0.5)))
-    avail = {k: v for k, v in pillars.items() if v is not None}
+    avail = {k: v for k, v in pillars.items() if v is not None and w.get(k, 0) > 0}     # only pillars that are scored
     if not avail:
         return {"available": False, "pillars": pillars, "ledger": ledger}
     tot_w = sum(w[k] for k in avail)
     base = sum(w[k] * v for k, v in avail.items()) / tot_w
     confirmed = [r["channel"] for r in fused if r["state"] == "確認"]
-    bonus = min(float(_cfg("confirm_bonus", 4)) * len(confirmed), float(_cfg("confirm_bonus_cap", 8)))
+    bonus = min(float(_cfg("confirm_bonus", 0)) * len(confirmed), float(_cfg("confirm_bonus_cap", 0)))
     if bonus:
         ledger.append({"pillar": "融合", "pts": bonus, "dir": "+",
                        "text": f"新聞與價格同時確認：{'、'.join(confirmed)}（+{bonus:.0f}）"})
     score = max(0.0, min(100.0, base + bonus))
+    if w.get("情報", 0) <= 0:                                      # headline entries are context, not risk evidence
+        for e in ledger:
+            if e["pillar"] == "情報":
+                e["pillar"], e["dir"] = "背景", "·"
 
     side = {k: ("警戒" if v >= _SIDE[0] else "平穩" if v <= _SIDE[1] else "中性") for k, v in avail.items()}
     vals = list(side.values())
     agree = max(vals.count(x) for x in vals)
     # deterministic tie-break: the more cautious reading wins
     top_side = next(x for x in ("警戒", "中性", "平穩") if vals.count(x) == agree)
-    conf = "高" if agree == 3 else "中" if agree >= 2 else "低"
+    conf = "高" if agree == len(avail) and agree >= 2 else "中" if agree >= 2 else "低"
     if agree >= 2:
         consensus = f"{agree}/{len(avail)} 個支柱判斷「{top_side}」"
     else:
         consensus = "支柱看法分歧（" + "、".join(f"{k}{v}" for k, v in side.items()) + "）"
     caveats = []
-    if warm:
+    if warm and w.get("情報", 0) > 0:
         caveats.append("新聞熱度基準仍在累積（不足 1 天歷史），情報分數以絕對熱度估計，權重暫時減半")
         conf = {"高": "中", "中": "低"}.get(conf, conf)
     if st is not None and st.coverage < 0.9:
         caveats.append(f"SSI 資料覆蓋僅 {st.coverage * 100:.0f}%")
         conf = {"高": "中", "中": "低"}.get(conf, conf)
     if len(avail) < 3:
-        caveats.append("缺少：" + "、".join(k for k in pillars if pillars[k] is None))
+        missing = [k for k in pillars if pillars[k] is None and w.get(k, 0) > 0]   # unweighted pillars are not "missing"
+        if missing:
+            caveats.append("缺少：" + "、".join(missing))
     label, emoji = level_of(score)
     lead = fused[0] if fused and fused[0]["state"] != "平靜" else None
     headline = (f"情報融合指數 {emoji}{label}（{score:.0f}）｜" + " / ".join(f"{k} {v:.0f}" for k, v in avail.items())

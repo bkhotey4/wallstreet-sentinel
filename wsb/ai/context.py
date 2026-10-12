@@ -205,7 +205,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     v = itl.get("verdict") or {}
     if v.get("available"):
         L.append("## 情報融合（量化 × 總經 × 新聞情報 → 情報融合指數；與『全方位風險展望』不同，重點是新聞是否被價格確認）")
-        L.append(f"{v['headline']}；三方一致度 {v['consensus']}，信心 {v['confidence']}"
+        L.append(f"{v['headline']}；支柱一致度 {v['consensus']}，信心 {v['confidence']}"
                  + (f"；限制：{'；'.join(v['caveats'])}" if v["caveats"] else ""))
         for r in itl.get("channels", []):
             L.append(f"{r['channel']}［{r['state']}］融合 {r['fused']:.0f}：市場點火 {f(r['ignition'], 0)}({r['market_state'] or 'NA'}) "
@@ -268,7 +268,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     if engine.calendar.events:
         L.append("## 未來14天事件 " + "; ".join(f"{e['date']} {e['event']}" for e in engine.calendar.upcoming(14)[:20]))
     if engine.news.items:
-        L.append("## 新聞(風險分數排序)")
+        L.append("## 新聞標題（僅供理解行情背景；可能誇大，不得作為風險高低的依據）")
         for n in engine.news.top(18):
             L.append(f"[{n.score}] {n.source}: {n.title}")
     if engine.sec.recent:

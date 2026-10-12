@@ -108,8 +108,8 @@ def macro_context(engine) -> List[str]:
     rg = getattr(engine, "regime", None) or {}
     if rg.get("quadrant"):
         out.append(f"總經象限：{rg['quadrant']}；{rg.get('liquidity_mode', '')}")
-    itl = getattr(engine, "intel", None) or {}
-    conf = [r["channel"] for r in itl.get("channels", []) if r.get("state") == "確認"]
-    if conf:
-        out.append("新聞＋價格已確認的衝擊路徑：" + "、".join(conf))
+    sk = getattr(engine, "shock", None) or {}
+    hot = [p["name"] for p in sk.get("paths", []) if p.get("state") in ("高度警戒", "留意")]
+    if hot:
+        out.append("價格模型顯示升溫的衝擊路徑：" + "、".join(hot))        # from the shock radar (prices), not headlines
     return out

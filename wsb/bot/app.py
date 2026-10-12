@@ -225,6 +225,8 @@ class Sentinel(commands.Bot):
             await eng.crypto.refresh()
 
         async def news_alerts(fresh):
+            if not A.get("news_alerts", False):            # headlines can exaggerate: no push alerts from news by default
+                return
             recent = time.time() - 6 * 3600                  # only genuinely new stories (not old ones seen late)
             await self._run_alerts([
                 Alert(f"news:{n.uid}", "⚠️ WARNING" if n.score < A["news_score"] + 4 else "🚨 CRITICAL",
@@ -650,7 +652,7 @@ class Sentinel(commands.Bot):
         store.kv_set("intel_states", cur)
         if prev is not None:
             for r in itl.get("channels", []):
-                if r["state"] == "確認" and prev.get(r["channel"]) != "確認":
+                if cfg.get("alert_confirm", False) and r["state"] == "確認" and prev.get(r["channel"]) != "確認":
                     head = f"\n頭條（{r['top'][0]['source']}）：{r['top'][0]['title'][:160]}" if r["top"] else ""
                     out.append(Alert(f"intel:confirm:{r['channel']}:{day}", "⚠️ WARNING",
                                      f"情報確認：{r['channel']}——新聞與價格同時示警（融合 {r['fused']:.0f}）",

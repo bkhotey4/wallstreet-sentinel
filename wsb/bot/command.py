@@ -640,7 +640,7 @@ def embed_outlook(engine) -> discord.Embed:
                    for h in o["horizons"])
     if hz:
         e.add_field(name="預測（依時間長度）", value=hz[:1024], inline=False)
-    for d in sorted([d for d in o["dims"] if d["score"] is not None], key=lambda d: -d["score"])[:8]:
+    for d in sorted([d for d in o["dims"] if d["score"] is not None and not d.get("excluded")], key=lambda d: -d["score"])[:8]:
         e.add_field(name=f"{OL_EMOJI.get(d['label'], '')} {d['zh']} {d['score']:.0f}",
                     value=_zh("；".join(d["evidence"][:2]))[:1024] or "—", inline=False)
     e.set_footer(text="綜合分數是透明加權平均；1–6 個月機率＝壓力指數歷史條件頻率，12 個月衰退＝紐約聯準會殖利率曲線模型。非投資建議。")

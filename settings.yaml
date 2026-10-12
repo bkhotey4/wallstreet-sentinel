@@ -292,7 +292,8 @@ alerts:
   sigma_move_key_only: false       # true=只看 key_assets
   key_assets: ["^GSPC", "^NDX", "^VIX", "^TNX", "HYG", "JPY=X", "DX-Y.NYB", "BTC-USD", "GC=F", "BZ=F", "^N225", "^TWII", "^HSI", "KRE"]
   vix_backwardation: true          # VIX > VIX3M 期限結構倒掛
-  news_score: 8                    # 新聞風險分數 >= N 即推播
+  news_alerts: false               # 新聞標題警報（預設關閉：媒體可能誇大，風險警報只看模型數據）
+  news_score: 8                    # 若開啟 news_alerts：新聞關鍵字分數 >= N 才推播
   portfolio_drawdown_pct: 3.0      # 持倉單日跌幅 >= N%
   gamma_flip: true                 # SPX 跌破零 gamma 翻轉點
 
@@ -498,7 +499,7 @@ xray:
 
 # ---------- 情報融合（新聞情報 × 市場價格 × 總經象限） ----------
 intel:
-  weights: {量化: 0.5, 總經: 0.25, 情報: 0.25}   # 綜合風險的支柱權重（缺資料的支柱自動排除並重新正規化）
+  weights: {量化: 0.65, 總經: 0.35, 情報: 0}   # 新聞（情報）不計分；只用量化與總經
   market_weight: 0.65          # 每條傳導路徑的融合分數：價格(衝擊雷達點火) 65% + 新聞熱度 35%
   half_life_hours: 12          # 新聞衰減半衰期
   baseline_days: 30            # 新聞熱度和自身多少天的歷史比較
@@ -508,11 +509,12 @@ intel:
   news_warm_count: 5           # ≥5 則風險新聞至少算「溫」（不會被判成新聞安靜）
   news_hot: 80                 # 新聞熱度 ≥80（且 ≥2 則）= 熱
   news_warm: 60
-  confirm_bonus: 4             # 每條『確認』路徑加分（新聞與價格同時示警）
-  confirm_bonus_cap: 8
+  confirm_bonus: 0             # 新聞＋價格『確認』不加分（風險只看模型數據）
+  confirm_bonus_cap: 0
   quadrant_edge_z: 0.3         # 成長/通膨 z 在 ±0.3 內 → 觀察清單提示象限可能轉換
   alert_min_label: 高          # 綜合風險升到這一級才推播
   alert_quadrant_change: true
+  alert_confirm: false         # 『新聞＋價格確認』不推播（新聞不作警報依據）
   min_confirm_news: 2          # 『確認』至少要 2 則風險新聞（單一則只算個案）
   ai_classifier:               # AI 新聞判讀：有 ANTHROPIC_API_KEY 用 Claude Haiku，否則用 Gemini；都沒有就退回關鍵字
     enabled: true
@@ -911,7 +913,7 @@ exposure:
 # ---------- 全方位風險展望（/outlook、網站「全方位風險」分頁） ----------
 outlook:
   # 綜合分數權重（缺資料的面向自動排除並重新正規化）
-  weights: {recession: 0.16, crisis: 0.18, credit: 0.15, banking: 0.12, valuation: 0.10, earnings: 0.09, sectors: 0.08, macro: 0.07, news: 0.05}
+  weights: {recession: 0.16, crisis: 0.18, credit: 0.15, banking: 0.12, valuation: 0.10, earnings: 0.09, sectors: 0.08, macro: 0.07, news: 0}
 
 # ---------- 盤中大盤危險訊號（美股 09:30–16:00 紐約、台股 09:00–13:30 台北） ----------
 danger:
