@@ -34,6 +34,7 @@ from .. import store
 from ..site_trigger import TRIGGER as SITE
 from ..analytics import hedge as HG
 from ..analytics import playbook as PB
+from ..analytics import portfolio as PF
 from ..analytics import scorecard as SC
 from ..analytics import watch as WATCH
 from ..data import fomc as FOMC
@@ -156,6 +157,12 @@ class Sentinel(commands.Bot):
             log.warning("cannot open DM with owner: %s", e)
             return None
 
+    @staticmethod
+    def _all_dm(targets) -> bool:
+        """True when every destination is a private message (then holdings may be included)."""
+        return bool(targets) and all(isinstance(t, discord.DMChannel) or getattr(t, "recipient", None) is not None
+                                     or isinstance(t, discord.Interaction) and t.guild is None for t in targets)
+
     async def _targets(self, kind: str, critical: bool = False) -> List[discord.abc.Messageable]:
         """Where to deliver: the configured channel and/or the owner's private messages."""
         D = SETTINGS.get("delivery", {})
@@ -266,7 +273,7 @@ class Sentinel(commands.Bot):
                 store.kv_set(f"earn_try:{f['acc']}", tries + 1)
                 try:
                     txt = await ER.analyze_release(eng, f)
-                    for t in await self._targets("briefings"):
+                    for t in [d for d in [await self._owner_dm()] if d]:
                         await P.deliver(t, text=txt, title=f"{f['ticker']} 財報快評")
                     store.kv_set(f"earn_done:{f['acc']}", True)   # mark done only after it was analysed and sent
                     pend = [x for x in pend if x.get("acc") != f["acc"]]
@@ -288,7 +295,7 @@ class Sentinel(commands.Bot):
             await self._run_alerts(self._liquidity_alerts())
             for rec in await ER.upcoming_previews(eng, days=2):
                 txt = await ER.preview_text(eng, rec)
-                for t in await self._targets("briefings"):
+                for t in [d for d in [await self._owner_dm()] if d]:
                     await P.deliver(t, slides=lambda r=rec: P.v_earnings_preview(eng, r),
                                     embeds=lambda r=rec: E.earnings_preview(eng, r),
                                     text=txt, title=f"{rec['ticker']} 財報前預告")
@@ -850,6 +857,21 @@ class Sentinel(commands.Bot):
         fire = [a for a in alerts if store.alert_allowed(a.key, ONE_SHOT_S if ":" in a.key else cooldown)]
         if not fire:
             return
+        priv = [a for a in fire if store.is_private_alert(a.key)]       # holdings-derived: owner DM only
+        if priv:
+            dm = await self._owner_dm()
+            fire = [a for a in fire if not store.is_private_alert(a.key)]
+            if dm:
+                for a in priv:
+                    store.alert_mark(a.key, a.severity, a.title, kind=_alert_kind(a.key),
+                                     spx=(self.engine.market.q("^GSPC") or {}).get("price"),
+                                     ssi=self.engine.stress.score if self.engine.stress else None)
+                e_ = discord.Embed(title="🔒 持倉警報（僅你可見）", color=0xE67E22, timestamp=datetime.now(timezone.utc))
+                for a in priv[:10]:
+                    e_.add_field(name=f"{a.severity} {a.title}"[:256], value=a.detail[:1024] or "—", inline=False)
+                await self._safe_send(dm, embed=e_)
+            if not fire:
+                return
         crit = any(a.severity.startswith("🚨") for a in fire)
         targets = await self._targets("alerts", crit)
         e = discord.Embed(title=("🚨 緊急風險警報" if crit else "⚠️ 市場警報"),
@@ -880,7 +902,7 @@ class Sentinel(commands.Bot):
             self.spawn(self._alert_ai(fire, targets), "alert_ai")          # never block the quotes loop
 
     async def _alert_ai(self, fire: List[Alert], targets) -> None:
-        pack = context.build(self.engine, "full")
+        pack = context.build(self.engine, "full", private=self._all_dm(targets))
         txt, eng_name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.ALERT.format(
             alerts="\n".join(f"- {a.title}: {a.detail}" for a in fire)), 1500)
         for t in targets:
@@ -982,7 +1004,7 @@ class Sentinel(commands.Bot):
             return None
         df = FOMC.diff(prev, new)
         eng = self.engine
-        pack = context.build(eng, "full")
+        pack = context.build(eng, "full", private=self._all_dm(targets or []))
         fmt_ = lambda xs: "\n".join(f"- {x}" for x in xs) or "（無）"          # noqa: E731
         txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.FOMC_TONE.format(
             date=d.isoformat(), prev_date=pd_.isoformat(), removed=fmt_(df["removed"][:12]), added=fmt_(df["added"][:12])), 2200)
@@ -999,7 +1021,11 @@ class Sentinel(commands.Bot):
         eng = self.engine
         sc = SC.evaluate(store.tracked_alerts(365), eng.market.series("^GSPC"))
         f = WK.facts(eng, None if sc.get("error") else sc)
-        pack = context.build(eng, "full")
+        priv = self._all_dm(targets)
+        if not priv:                                           # channel copy: no portfolio attribution
+            for k in ("pf_week", "pf_contrib"):
+                f.pop(k, None)
+        pack = context.build(eng, "full", private=priv)
         txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.WEEKLY.format(facts=WK.facts_text(f)), 3000)
         self._ai_gate(name)
         for t in targets:
@@ -1009,7 +1035,7 @@ class Sentinel(commands.Bot):
 
     async def send_morning(self, targets, title: str, session: str) -> None:
         eng = self.engine
-        facts, txt, name = await MO.morning_call(eng, title, session)
+        facts, txt, name = await MO.morning_call(eng, title, session, private=self._all_dm(targets))
         self._ai_gate(name)
         theme = MO.first_section(txt)
         for t in targets:
@@ -1018,7 +1044,7 @@ class Sentinel(commands.Bot):
 
     async def send_earnings_board(self, targets, private: bool = True) -> None:
         eng = self.engine
-        board, txt, name = await MO.earnings_board(eng, private=private)
+        board, txt, name = await MO.earnings_board(eng, private=private and self._all_dm(targets))
         self._ai_gate(name)
         for t in targets:
             await P.deliver(t, slides=lambda: _S().deck_earnings_board(board), text=txt,
@@ -1028,7 +1054,7 @@ class Sentinel(commands.Bot):
         eng = self.engine
         if not eng.taiwan.flows and not eng.taiwan.futures:
             await eng.taiwan.refresh()
-        pack = context.build(eng, "asia")
+        pack = context.build(eng, "asia", private=self._all_dm(targets))
         txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.TAIWAN.format(
             title=title, extra="\n".join(eng.taiwan.summary_lines())), 2500)
         self._ai_gate(name)
@@ -1048,7 +1074,7 @@ class Sentinel(commands.Bot):
             return
         focus = {"us_close": "us", "us_pre": "us", "asia_open": "asia", "europe": "europe",
                  "weekend": "full"}.get(kind, "full")
-        pack = context.build(self.engine, focus)
+        pack = context.build(self.engine, focus, private=self._all_dm(targets))
         txt, eng_name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.FULL_BRIEF.format(title=title), 6000)
         self._ai_gate(eng_name)
         from . import slides as S
@@ -1413,7 +1439,8 @@ def register_commands(bot: Sentinel) -> None:
     @tree.command(name="calendar", description="未來 14 天：FOMC、CPI/非農等總經數據、持股財報")
     async def calendar(it: discord.Interaction):
         await it.response.defer(thinking=True)
-        await P.deliver(it, slides=lambda: P.v_calendar(eng), embeds=lambda: E.calendar(eng))
+        own = is_owner(it)
+        await P.deliver(it, slides=lambda: P.v_calendar(eng, own), embeds=lambda: E.calendar(eng, own))
 
     @tree.command(name="quote", description="任一標的機構級快速診斷（全球代號，如 NVDA、2330.TW、^N225、BTC-USD）")
     @app_commands.describe(ticker="Yahoo Finance 代號", ai="是否加上 AI 研判")
@@ -1684,6 +1711,83 @@ def register_commands(bot: Sentinel) -> None:
     async def style_cmd(it: discord.Interaction, mode: app_commands.Choice[str]):
         store.kv_set("style", mode.value)
         await it.response.send_message(f"✅ 之後改用：**{mode.name}**", ephemeral=True)
+
+    HOLD_FILE = DATA_DIR / "holdings.json"
+
+    def _holdings_doc() -> dict:
+        if HOLD_FILE.exists():
+            try:
+                return json.loads(HOLD_FILE.read_text(encoding="utf-8"))
+            except Exception:  # noqa: BLE001
+                pass
+        # first edit: start from whatever the engine currently holds (e.g. the legacy sim_trading.json)
+        return {"holdings": [{"sym": s, "name": h.get("name", s), "shares": h["shares"], "cost": h["cost"],
+                              "currency": h.get("currency", "USD")} for s, h in (eng.holdings or {}).items()]}
+
+    def _holdings_save(doc: dict) -> None:
+        doc["last_updated"] = datetime.now(E.TZ).isoformat(timespec="minutes")
+        tmp = HOLD_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(HOLD_FILE)
+
+    def _holdings_table() -> str:
+        pf = eng.portfolio or {}
+        if not eng.holdings:
+            return "（目前沒有持股）"
+        rows = []
+        pos = {p["sym"]: p for p in pf.get("positions", []) if "value_usd" in p}
+        for s, h in sorted(eng.holdings.items(), key=lambda kv: -(pos.get(kv[0], {}).get("value_usd") or 0)):
+            p = pos.get(s)
+            rows.append(f"`{s:<9}` {h['shares']:>9,.0f} 股 @ {h['cost']:,.2f} {h.get('currency', 'USD')}"
+                        + (f" → ${p['value_usd']:,.0f}（{p['pnl_pct']:+.1f}%，今日 {p['d1_pct']:+.2f}%）" if p else " → 報價待更新"))
+        tot = f"\n**總市值 ${pf['total_value_usd']:,.0f}，未實現 {pf['pnl_pct']:+.1f}%，今日 ${pf['day_pnl_usd']:+,.0f}**" if pf.get("total_value_usd") else ""
+        return "\n".join(rows) + tot
+
+    holdings_grp = app_commands.Group(name="holdings", description="我的持股（只有你看得到；存在本機 data_cache/holdings.json）")
+
+    @holdings_grp.command(name="list", description="列出持股與即時損益（只私下回覆你）")
+    async def holdings_list(it: discord.Interaction):
+        if not is_owner(it):
+            await it.response.send_message("🔒 僅限擁有者", ephemeral=True)
+            return
+        on = SETTINGS.get("portfolio", {}).get("enabled", False)
+        await it.response.send_message(("" if on else "⚠️ settings.local.yaml 未開啟 portfolio.enabled，持倉分析停用中\n")
+                                       + _holdings_table(), ephemeral=True)
+
+    @holdings_grp.command(name="set", description="新增或更新一檔：代號、股數、每股成本（0 股 = 刪除）")
+    @app_commands.describe(ticker="Yahoo 代號：NVDA、2330.TW、0700.HK", shares="股數（0 = 刪除）", cost="每股成本（選填，沿用舊值）",
+                           name="顯示名稱（選填）")
+    async def holdings_set(it: discord.Interaction, ticker: str, shares: float, cost: Optional[float] = None,
+                           name: Optional[str] = None):
+        if not is_owner(it):
+            await it.response.send_message("🔒 僅限擁有者", ephemeral=True)
+            return
+        t = ticker.strip().upper()
+        if t.isdigit():
+            t += ".TW"
+        doc = _holdings_doc()
+        rows = [h for h in doc["holdings"] if h["sym"] != t]
+        old = next((h for h in doc["holdings"] if h["sym"] == t), None)
+        if shares > 0:
+            c = cost if cost is not None else (old or {}).get("cost", 0)
+            if not c or c <= 0:
+                await it.response.send_message("請給每股成本（第一次新增必填）", ephemeral=True)
+                return
+            cur = "TWD" if t.endswith((".TW", ".TWO")) else "HKD" if t.endswith(".HK") else "USD"
+            rows.append({"sym": t, "name": name or (old or {}).get("name", t), "shares": shares, "cost": c, "currency": cur})
+        doc["holdings"] = rows
+        _holdings_save(doc)
+        await it.response.defer(ephemeral=True, thinking=True)
+        eng.holdings = PF.load_holdings()
+        await eng.market.refresh_quotes(eng.holding_tickers())
+        await eng.recompute()
+        await it.followup.send(("🗑️ 已刪除 " if shares <= 0 else "✅ 已儲存 ") + t + "\n" + _holdings_table(), ephemeral=True)
+
+    @holdings_grp.command(name="remove", description="刪除一檔持股")
+    async def holdings_remove(it: discord.Interaction, ticker: str):
+        await holdings_set.callback(it, ticker, 0.0, None, None)
+
+    tree.add_command(holdings_grp)
 
     @tree.command(name="rebuild", description="立即重建公開網站（擁有者）：fast=True 跳過全市場掃描，約 5 分鐘")
     @app_commands.describe(fast="快速建置（不做全市場掃描）")

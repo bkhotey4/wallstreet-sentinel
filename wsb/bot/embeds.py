@@ -225,10 +225,11 @@ def news(engine, query: str | None = None, latest: bool = False) -> discord.Embe
     return footer(e, engine)
 
 
-def calendar(engine) -> discord.Embed:
+def calendar(engine, show_holdings: bool = False) -> discord.Embed:
     e = discord.Embed(title="🗓️ 未來 14 天關鍵事件", color=0x16A085)
     icons = {"fomc": "🏦", "macro": "📊", "earnings": "💼", "liquidity": "💧"}
-    lines = [f"{icons.get(ev['type'],'•')} `{ev['date']}` {ev['event']}" for ev in engine.calendar.upcoming(14)]
+    lines = [f"{icons.get(ev['type'],'•')} `{ev['date']}` {ev['event']}" for ev in engine.calendar.upcoming(14)
+             if show_holdings or ev.get("type") != "earnings"]
     e.description = "\n".join(lines)[:4000] or "暫無事件（FRED 行事曆需 FRED_API_KEY）"
     return footer(e, engine)
 

@@ -266,14 +266,15 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         L.append("## 台灣籌碼（證交所/期交所）")
         L += tw.summary_lines()
     if engine.calendar.events:
-        L.append("## 未來14天事件 " + "; ".join(f"{e['date']} {e['event']}" for e in engine.calendar.upcoming(14)[:20]))
+        L.append("## 未來14天事件 " + "; ".join(f"{e['date']} {e['event']}" for e in
+                                                   [x for x in engine.calendar.upcoming(14) if private or x.get("type") != "earnings"][:20]))
     if engine.news.items:
         L.append("## 新聞標題（僅供理解行情背景；可能誇大，不得作為風險高低的依據）")
         for n in engine.news.top(18):
             L.append(f"[{n.score}] {n.source}: {n.title}")
     if engine.sec.recent:
         L.append("## SEC 持股公告 " + "; ".join(f"{s['date']} {s['ticker']} {s['form']}({s['label']})" for s in engine.sec.recent[:10]))
-    al = store.recent_alerts(24)
+    al = store.recent_alerts(24, include_private=private)
     if al:
         L.append("## 過去24h警報 " + "; ".join(t for _, _, t in al[:10]))
     L.append(f"## 資料健康 {HEALTH.summary()}")

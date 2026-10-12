@@ -11,3 +11,6 @@ portfolio_holdings.json
 sim_trading.json
 knowledge_base/
 _data/
+
+# private per-machine overrides (holdings on/off, file paths)
+settings.local.yaml

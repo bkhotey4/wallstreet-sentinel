@@ -11,6 +11,10 @@ import math
 from typing import Dict
 
 from tools.sitekit import T, esc
+try:
+    from wsb.config import SETTINGS
+except Exception:  # noqa: BLE001
+    SETTINGS = {}
 
 HKD_PEG = 7.8          # HKD is pegged to the USD inside 7.75–7.85
 
@@ -42,12 +46,15 @@ def _quotes(eng) -> Dict[str, list]:
 
 
 def sec_portfolio(eng) -> str:
-    data = json.dumps({"fx": _fx(eng), "q": _quotes(eng)}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    priv = T("持股與現金只存在「這台裝置的這個瀏覽器」（localStorage），不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
-             "換手機或電腦請用「匯出」存成檔案，再到另一台「匯入」。清除瀏覽器資料會一併刪除，建議定期匯出備份。",
-             "Holdings and cash live only in THIS browser on THIS device (localStorage) — never uploaded, not in the code or on "
-             "GitHub; nobody else opening the URL can see them. Use Export / Import to move them to another device. "
-             "Clearing browser data deletes them, so export a backup now and then.")
+    gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
+    data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid}, ensure_ascii=False,
+                      separators=(",", ":")).replace("</", "<\\/")
+    priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
+             "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
+             "這個網站的伺服器（GitHub）從頭到尾碰不到你的持股。也可以用「匯出／匯入」手動搬。",
+             "Holdings and cash stay in THIS browser by default — never uploaded, not in the code or on GitHub; nobody else opening the "
+             "URL can see them. 'Sync with Google' stores them in a hidden app-only folder of YOUR Google Drive, so every device signed "
+             "in to the same Google account stays in sync; GitHub never sees them. Export / Import still works for manual moves.")
     note = T("價格跟著本站每小時更新（免費報價約延遲 15 分鐘，非逐筆即時）；今日損益＝股數 ×（現價 − 昨收）。台股輸入數字代號即可（例 2330），"
              "港股請寫 0700.HK；美股直接輸入代號。新台幣合計用網站的美元兌台幣匯率，港幣以聯繫匯率 7.8 估算。找不到報價的代號可以手動輸入價格。",
              "Prices follow the hourly site build (~15 min delayed, not tick-by-tick); today's P&L = shares × (price − previous close). "
@@ -55,6 +62,7 @@ def sec_portfolio(eng) -> str:
              "7.8 peg (approximate). If a ticker has no price you can type one in manually.")
     return f'''<section class="card wide" id="pfbox"><h2>{T("我的持股與總資產", "My holdings & total assets")}</h2>
 <p class="sub">{priv}</p>
+<div class="pfsync" id="pfsync"></div>
 <div class="pfsum" id="pfsum"></div>
 <div class="pfwrap"><table class="pft" id="pft"><thead><tr>
 <th>{T("代號", "Ticker")}</th><th>{T("名稱", "Name")}</th><th class="r">{T("股數", "Shares")}</th><th class="r">{T("現價", "Price")}</th>
@@ -93,6 +101,8 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 .pfrow input,.pfrow select,.pfbulk textarea{background:var(--card2);border:1px solid var(--bd);color:var(--tx);border-radius:6px;padding:6px 8px;font:inherit;font-size:14px}
 .pfrow input{width:150px}.pfbulk textarea{width:100%;max-width:520px;display:block;margin:6px 0}.pfx{background:none;border:0;color:var(--mu);cursor:pointer;font-size:15px}
 .pfx:hover{color:var(--dn)}.pfwarn{color:var(--warn)}
+.pfsync{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px;font-size:13px}.pfsync .ok{color:var(--up)}.pfsync .err{color:var(--dn)}
+.btn.g{border-color:var(--ac);color:var(--ac)}
 """
 
 JS = r"""
@@ -122,6 +132,39 @@ function price(h,fm){var n=norm(h.s);if(!n)return null;for(var i=0;i<n.cands.len
  if(h.p>0)return {sym:n.key,px:h.p,ch:null,asof:'',name:'',src:'manual'};return null;}
 function ph(){var P={n:['股數','Shares'],c:['每股成本（選填）','Cost per share (optional)'],a:['金額（0 = 刪除）','Amount (0 = delete)']};
  ['pfadd','pfcash'].forEach(function(id){var f=document.getElementById(id);Object.keys(P).forEach(function(k){if(f[k])f[k].placeholder=P[k][en()?1:0];});});}
+// ---------------------------------------------------------------- Google Drive sync (appDataFolder: only this page + this account can read it)
+var G={cid:PUB.gcid||'',tok:null,exp:0,fid:null,busy:false,on:false,email:''};
+var GKEY='wss_portfolio_gsync';
+function gmsg(zh,e,cls){var s=document.getElementById('pfsync');if(!s)return;var st=s.querySelector('.st');if(!st){st=el('span','st');s.appendChild(st);}st.className='st '+(cls||'');st.textContent='';st.appendChild(L(zh,e));}
+function gbar(){var s=document.getElementById('pfsync');if(!s)return;s.textContent='';if(!G.cid){s.appendChild(L('（跨裝置 Google 同步尚未設定：請在 settings.yaml 的 site.google_client_id 填入 OAuth 用戶端 ID）','(Google sync not configured: set site.google_client_id in settings.yaml)'));s.firstChild.className='muted';return;}
+ var b=el('button','btn g');b.type='button';b.appendChild(L(G.on?'立即同步':'用 Google 同步','Sync now'));b.addEventListener('click',function(){gauth(true).then(function(ok){if(ok)gsync();});});s.appendChild(b);
+ if(G.on){var o=el('button','btn');o.type='button';o.appendChild(L('停用同步','Stop syncing'));o.addEventListener('click',function(){G.on=false;G.tok=null;try{localStorage.removeItem(GKEY);}catch(e){}gbar();});s.appendChild(o);}
+ var st=el('span','st');s.appendChild(st);if(G.on)gmsg('已啟用 Google 同步','Google sync on','ok');}
+function gload(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();var sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.onload=res;sc.onerror=function(){rej(new Error('gsi'));};document.head.appendChild(sc);});}
+function gauth(interactive){if(!G.cid)return Promise.resolve(false);if(G.tok&&Date.now()<G.exp-60000)return Promise.resolve(true);
+ return gload().then(function(){return new Promise(function(res){var tc=google.accounts.oauth2.initTokenClient({client_id:G.cid,scope:'https://www.googleapis.com/auth/drive.appdata',
+  callback:function(r){if(r&&r.access_token){G.tok=r.access_token;G.exp=Date.now()+(r.expires_in||3600)*1000;G.on=true;try{localStorage.setItem(GKEY,'1');}catch(e){}gbar();res(true);}else{gmsg('Google 登入未完成','Google sign-in not completed','err');res(false);}},
+  error_callback:function(e){gmsg('Google 登入失敗：'+(e&&e.type||''),'Google sign-in failed: '+(e&&e.type||''),'err');res(false);}});
+  tc.requestAccessToken({prompt:interactive?'':''});});}).catch(function(){gmsg('無法載入 Google 登入元件（可能被封鎖）','Cannot load Google sign-in','err');return false;});}
+function gfetch(url,opt){opt=opt||{};opt.headers=Object.assign({},opt.headers||{},{Authorization:'Bearer '+G.tok});return fetch(url,opt).then(function(r){if(r.status===401){G.tok=null;throw new Error('401');}if(!r.ok)throw new Error('HTTP '+r.status);return r;});}
+function gfind(){return gfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name,modifiedTime)&q='+encodeURIComponent("name='wss_holdings.json'")).then(function(r){return r.json();}).then(function(j){var f=(j.files||[])[0];G.fid=f?f.id:null;return f||null;});}
+function gread(){return gfetch('https://www.googleapis.com/drive/v3/files/'+G.fid+'?alt=media').then(function(r){return r.json();});}
+function gwrite(d){var body=JSON.stringify(d);if(G.fid)return gfetch('https://www.googleapis.com/upload/drive/v3/files/'+G.fid+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body:body});
+ var bd='-------wss'+Date.now(),meta=JSON.stringify({name:'wss_holdings.json',parents:['appDataFolder']});
+ var mp='--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+bd+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+bd+'--';
+ return gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+bd},body:mp}).then(function(r){return r.json();}).then(function(j){G.fid=j.id;});}
+function gsync(){if(G.busy||!G.on)return;G.busy=true;gmsg('同步中…','Syncing…');
+ var local=get();local.updated=local.updated||0;
+ gfind().then(function(f){if(!f)return gwrite(local).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});
+  return gread().then(function(remote){remote=remote&&Array.isArray(remote.h)?remote:{v:1,h:[],cash:[],updated:0};
+   if((remote.updated||0)>(local.updated||0)){put(remote);render();gmsg('已從 Google 雲端硬碟載入 '+new Date(remote.updated).toLocaleString(),'Loaded from Google Drive '+new Date(remote.updated).toLocaleString(),'ok');}
+   else if((local.updated||0)>(remote.updated||0)){return gwrite(local).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});}
+   else gmsg('已同步（無變更）','In sync','ok');});})
+ .catch(function(e){gmsg('同步失敗：'+e.message,'Sync failed: '+e.message,'err');if(e.message==='401')G.tok=null;})
+ .then(function(){G.busy=false;});}
+var _put=put;put=function(d){d.updated=Date.now();var ok=_put(d);if(ok&&G.on){clearTimeout(G._t);G._t=setTimeout(function(){gauth(false).then(function(ok2){if(ok2)gsync();});},800);}return ok;};
+try{G.on=!!G.cid&&localStorage.getItem(GKEY)==='1';}catch(e){}
+gbar();if(G.on)gauth(false).then(function(ok){if(ok)gsync();});
 function render(){ph();var d=get(),need={};d.h.forEach(function(h){var n=norm(h.s);if(n)need[n.mk]=1;});
  var mks=Object.keys(need);Promise.all(mks.map(loadMk)).then(function(res){var FM={};mks.forEach(function(m,i){FM[m]=res[i];});draw(d,FM);});
  if(mks.length&&!document.getElementById('pft').tBodies[0].rows.length)msg(['載入價格中…','Loading prices…']);}

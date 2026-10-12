@@ -72,10 +72,24 @@ class Settings:
         return sorted(tickers)
 
 
-def load_settings(path: Path | None = None) -> Settings:
+def _deep_merge(base: Dict[str, Any], over: Dict[str, Any]) -> Dict[str, Any]:
+    out = dict(base)
+    for k, v in (over or {}).items():
+        out[k] = _deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
+def load_settings(path: Path | None = None, local: Path | None = None) -> Settings:
+    """settings.yaml (public, committed) + settings.local.yaml (private, git-ignored, never copied to the site repo):
+    the local file is where personal things live, e.g. portfolio.enabled / the holdings file path."""
     p = path or ROOT / "settings.yaml"
     with open(p, encoding="utf-8") as fh:
-        return Settings(yaml.safe_load(fh) or {})
+        raw = yaml.safe_load(fh) or {}
+    lp = local or (p.parent / "settings.local.yaml")
+    if lp.exists():
+        with open(lp, encoding="utf-8") as fh:
+            raw = _deep_merge(raw, yaml.safe_load(fh) or {})
+    return Settings(raw)
 
 
 SETTINGS = load_settings()

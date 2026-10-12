@@ -152,12 +152,12 @@ def v_news(engine, query=None, latest=False) -> List[bytes]:
     return S.deck_text("全球金融情報流" + (f"：{query}" if query else ""), md)
 
 
-def v_calendar(engine) -> List[bytes]:
+def v_calendar(engine, show_holdings: bool = False) -> List[bytes]:
     from . import slides as S
     kind = {"fomc": ("FOMC 利率決議", S.RED), "macro": ("總經數據", S.YELLOW), "earnings": ("持股財報", S.ACCENT),
             "liquidity": ("流動性事件", S.PURPLE)}
     rows = [[(ev["date"], S.TEXT), (kind.get(ev["type"], ("", S.TEXT))[0], kind.get(ev["type"], ("", S.TEXT))[1]),
-             (ev["event"], S.TEXT)] for ev in engine.calendar.upcoming(14)]
+             (ev["event"], S.TEXT)] for ev in engine.calendar.upcoming(14) if show_holdings or ev.get("type") != "earnings"]
     if not rows:
         rows = [[("—", S.MUTED), ("—", S.MUTED), ("暫無事件（總經行事曆需要 FRED 金鑰）", S.MUTED)]]
     return S.deck_table("未來 14 天關鍵事件", ["日期", "類型", "事件"], rows, [0.2, 0.22, 0.58], size=38, per_page=10)

@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true
+        && get(/databases/$(database)/documents/wssAllowedUsers/$(uid)).data.enabled == true;
+    }
+    function valid(data) {
+      return data.keys().hasAll(['document', 'version', 'updated_at'])
+        && data.keys().hasOnly(['document', 'version', 'updated_at'])
+        && data.version is int && data.version > 0 && data.version < 9007199254740991
+        && data.updated_at == request.time
+        && data.document is map
+        && data.document.keys().hasAll(['v', 'h', 'cash'])
+        && data.document.keys().hasOnly(['v', 'h', 'cash'])
+        && data.document.v == 1
+        && data.document.h is list && data.document.h.size() <= 2000
+        && data.document.cash is list && data.document.cash.size() <= 3;
+    }
+    function hasRevision(uid, data) {
+      let revision = getAfter(/databases/$(database)/documents/wssPortfolios/$(uid)/revisions/$(string(data.version)));
+      return revision.data == data;
+    }
+    // Administrators create the allowlist in the Firebase console. No client can grant access.
+    match /wssAllowedUsers/{uid} { allow read, write: if false; }
+    match /wssPortfolios/{uid} {
+      allow get: if owner(uid);
+      allow create: if owner(uid) && valid(request.resource.data)
+        && request.resource.data.version == 1 && hasRevision(uid, request.resource.data);
+      allow update: if owner(uid) && valid(request.resource.data)
+        && request.resource.data.version == resource.data.version + 1 && hasRevision(uid, request.resource.data);
+      allow list, delete: if false;
+      match /revisions/{version} {
+        allow get, list: if owner(uid);
+        allow create: if owner(uid) && valid(request.resource.data)
+          && version == string(request.resource.data.version)
+          && getAfter(/databases/$(database)/documents/wssPortfolios/$(uid)).data == request.resource.data;
+        allow update, delete: if false;
+      }
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

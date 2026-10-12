@@ -24,6 +24,20 @@ AI 市場評論使用獨立的公開提示詞，只描述市場、不給任何�
    - `SEC_USER_AGENT`（可不填）：送給 SEC 的聯絡字串，格式「名稱 email」；含 github.com 字樣會被 SEC 拒絕
 3. Actions 分頁 → 「更新情報站」→ Run workflow，第一次約需 5–10 分鐘（之後有快取會快很多）
 
+## 「我的持股」跨裝置同步（Google 登入）
+持股預設只存在瀏覽器；按「用 Google 同步」後會存到使用者**自己的** Google 雲端硬碟的隱藏應用程式資料夾（`drive.appdata`，只有本網頁與該帳號能讀），
+手機／電腦登入同一個 Google 帳號即自動同步。GitHub 從頭到尾看不到持股。一次性設定（約 10 分鐘，免費）：
+1. https://console.cloud.google.com → 建立專案（名稱隨意）
+2. 「API 和服務」→「程式庫」→ 啟用 **Google Drive API**
+3. 「OAuth 同意畫面」→ External → 填應用程式名稱與你的 email → 範圍不用加 → 測試使用者加入你自己的 Gmail → 完成後按「發布應用程式」（`drive.appdata` 屬非敏感範圍，不需審核）
+4. 「憑證」→「建立憑證」→「OAuth 用戶端 ID」→ 類型 **網頁應用程式** → 已授權的 JavaScript 來源加入 `https://bkhotey4.github.io`（本機測試另加 `http://127.0.0.1:8799`）→ 建立
+5. 複製「用戶端 ID」（xxxx.apps.googleusercontent.com）貼到 `settings.yaml` 的 `site.google_client_id`，推送後網站重建即可使用。用戶端 ID 本來就是公開資訊，不是密碼。
+
+## 即時更新（由 bot 觸發）
+GitHub 的排程只是「盡力而為」，實測平日每天只跑 3–5 次。所以 `wallstreet_bot` 會主動觸發建置：
+每小時一次完整建置，**風險警報一發出（壓力指數跨級、盤中危險訊號、風險劇本升階、VIX 倒掛…）就立刻快速建置**（跳過全市場掃描，約 5 分鐘），
+Discord `/rebuild` 也能手動觸發。需在 bot 的 `.env` 填 `GITHUB_SITE_TOKEN`（fine-grained token：只授權本 repo、Actions: Read and write）。
+
 ## 更新程式
 改好本資料夾的檔案後，雙擊 `update_github.bat`：它會用一般提交推送到 GitHub（不會重寫歷史），GitHub 收到後約 3 分鐘重新發布網站。
 

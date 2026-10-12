@@ -82,6 +82,7 @@ jobs:
 
       - name: 產生網站
         env:
+          WSS_FIREBASE_CONFIG: ${{ vars.WSS_FIREBASE_CONFIG }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

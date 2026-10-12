@@ -22,14 +22,20 @@ def main():
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data
-    assert set(data) == {"fx", "q"}
+    assert set(data) == {"fx", "q", "gcid"}                               # fx, public quotes, Google client id (public)
+    assert data["gcid"] == "" or data["gcid"].endswith(".apps.googleusercontent.com")
     assert data["fx"]["USD"] == 32.0 and abs(data["fx"]["HKD"] - 32.0 / 7.8) < 1e-9
     assert "SPY" in data["q"] and "BAD" not in data["q"]                 # NaN prices skipped
     assert "</script>" not in m.group(1)                                 # cannot break out of the JSON block
     assert "NVDA" not in m.group(1) and "15" not in json.dumps(data["fx"])  # engine holdings never embedded
     assert "localStorage" in SP.JS and "fetch('market/'" in SP.JS
     # the only network calls are GETs of the public price files — no POST/beacon/query strings carrying holdings
-    assert not re.search(r"method\s*:\s*['\"]POST|sendBeacon|XMLHttpRequest|fetch\([^)]*\?", SP.JS)
+    # the page may talk to exactly two hosts: the site itself (relative URLs) and Google (the user's own Drive app
+    # folder + the sign-in script); never anything else, never beacons / XHR
+    hosts = {re.match(r"https?://([^/'\"]+)", u).group(1) for u in re.findall(r"https?://[^'\"\s]+", SP.JS)}
+    assert hosts == {"www.googleapis.com", "accounts.google.com"}, hosts
+    assert not re.search(r"sendBeacon|XMLHttpRequest", SP.JS)
+    assert "drive.appdata" in SP.JS and "appDataFolder" in SP.JS                  # app-private Drive folder only
     assert "innerHTML" not in SP.JS                                      # names from data are set via textContent
     from tools import build_site as B
     src = open(B.__file__, encoding="utf-8").read()

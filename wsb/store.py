@@ -80,12 +80,20 @@ def tracked_alerts(days: float = 365) -> List[Tuple]:
                           (time.time() - days * 86400,)).fetchall()
 
 
-def recent_alerts(hours: float = 24) -> List[Tuple[float, str, str]]:
+PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:")      # holdings-derived → owner DM only, never listed publicly
+
+
+def is_private_alert(key: str) -> bool:
+    return str(key).startswith(PRIVATE_ALERT_PREFIXES)
+
+
+def recent_alerts(hours: float = 24, include_private: bool = False) -> List[Tuple[float, str, str]]:
     with _LOCK:
-        return _C.execute(
-            "SELECT ts, severity, title FROM alert_log WHERE ts>? ORDER BY ts DESC LIMIT 30",
+        rows = _C.execute(
+            "SELECT ts, severity, title, key FROM alert_log WHERE ts>? ORDER BY ts DESC LIMIT 60",
             (time.time() - hours * 3600,),
         ).fetchall()
+    return [(ts, sev, t) for ts, sev, t, k in rows if include_private or not is_private_alert(k)][:30]
 
 
 def alerts_since(hours: float = 168) -> List[Tuple[float, str, str, str]]:

@@ -933,3 +933,7 @@ site_trigger:
   min_gap_minutes: 20          # 兩次觸發至少間隔
   skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發
   # 需要 .env 的 GITHUB_SITE_TOKEN（fine-grained token，只授權 wallstreet-sentinel，權限 Actions: Read and write）
+
+# ---------- 網站「我的持股」跨裝置同步（Google 登入 → 存到使用者自己的 Google 雲端硬碟隱藏資料夾） ----------
+site:
+  google_client_id: ""   # Google Cloud Console → OAuth 用戶端 ID（Web application）。用戶端 ID 本來就是公開資訊；留空＝只用本機瀏覽器儲存

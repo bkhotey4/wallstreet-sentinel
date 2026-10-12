@@ -31,6 +31,9 @@ class _Tree:
         self.on_error = f
         return f
 
+    def add_command(self, grp):
+        self.cmds[grp.name] = grp
+
     async def sync(self, **k):
         return []
 
@@ -119,6 +122,17 @@ def install():
     ac.Range = type("Range", (), {"__class_getitem__": classmethod(lambda c, i: int)})
     ac.AppCommandContext = lambda **k: None
     ac.AppInstallationType = lambda **k: None
+    class Group:                                   # slash-command group (/holdings …): records subcommands like _Tree
+        def __init__(self, name=None, description=None, **k):
+            self.name, self.cmds = name, {}
+
+        def command(self, name=None, description=None, **k):
+            def deco(f):
+                self.cmds[name] = f
+                f.callback = f
+                return f
+            return deco
+    ac.Group = Group
     ac.AppCommandError = type("AppCommandError", (Exception,), {})
     ac.CheckFailure = type("CheckFailure", (ac.AppCommandError,), {})
     d.app_commands = ac

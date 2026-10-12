@@ -39,7 +39,7 @@ def sectors(engine) -> List[Dict]:
     return sorted(rows, key=lambda r: -(r.get("d1") or -99))
 
 
-async def morning_call(engine, title: str, session: str) -> Tuple[Dict, str, str]:
+async def morning_call(engine, title: str, session: str, private: bool = True) -> Tuple[Dict, str, str]:
     d = street.ny_trade_date()
     try:
         er = street.important(await street.earnings_on(d), engine.holding_tickers())[:10]
@@ -58,7 +58,7 @@ async def morning_call(engine, title: str, session: str) -> Tuple[Dict, str, str
     extra += ["今日/明日總經事件：" + ("; ".join(f"{e['date']} {e['event']}" for e in today_macro) or "無（或需 FRED 金鑰）")]
     extra += ["最大異動（σ）：" + "; ".join(f"{m['name']}({m['ticker']}) {m['chg']:+.2f}% {m['sigma']:+.1f}σ" for m in mv[:8])]
     extra += ["板塊 1 日：" + "; ".join(f"{s['name']} {s.get('d1') or 0:+.2f}%" for s in facts["sectors"])]
-    pack = context.build(engine, "us")
+    pack = context.build(engine, "us", private=private)
     txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.MORNING_CALL.format(
         title=title, session=session, extra="\n".join(extra)), 3500)
     return facts, txt, name
