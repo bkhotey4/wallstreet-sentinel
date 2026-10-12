@@ -57,6 +57,41 @@ class SiteTrigger:
                 return True
         return False
 
+    # ------------------------------------------------------------------ token expiry (GitHub sends the date in a header)
+    @staticmethod
+    def parse_expiry(header: Optional[str]) -> Optional[datetime]:
+        """'2027-10-12 15:34:56 UTC' → aware datetime; None when absent (token without expiration) or unparsable."""
+        if not header:
+            return None
+        for fmt in ("%Y-%m-%d %H:%M:%S UTC", "%Y-%m-%d %H:%M:%S %z", "%Y-%m-%dT%H:%M:%SZ"):
+            try:
+                d = datetime.strptime(header.strip(), fmt)
+                return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+        return None
+
+    @staticmethod
+    def expiry_stage(days_left: float) -> Optional[str]:
+        """Which reminder applies: 'expired' | '1d' | '7d' | '14d' | '30d' | None (nothing yet)."""
+        if days_left < 0:
+            return "expired"
+        for t in (1, 7, 14, 30):
+            if days_left <= t:
+                return f"{t}d"
+        return None
+
+    async def token_expiry(self) -> Tuple[Optional[datetime], Optional[str]]:
+        """(expiry, error).  expiry None with no error = token never expires."""
+        try:
+            s = await http.session()
+            async with s.get(f"{API}/user", headers=self._headers(), timeout=20) as r:
+                if r.status == 401:
+                    return None, "HTTP 401（token 無效或已過期）"
+                return self.parse_expiry(r.headers.get("github-authentication-token-expiration")), None
+        except Exception as e:  # noqa: BLE001
+            return None, f"連線失敗：{e}"
+
     # ------------------------------------------------------------------ GitHub calls
     async def in_progress(self) -> list:
         try:

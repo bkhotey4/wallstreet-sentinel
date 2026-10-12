@@ -323,7 +323,42 @@ class Sentinel(commands.Bot):
                 ok, m = await SITE.dispatch("hourly", fast=False)
                 log.info("site hourly: %s", m)
 
+        async def site_token_check():
+            """DM the owner before the GitHub token expires (30/14/7/1 days, once each) and when it has failed."""
+            if not SITE.token:
+                return
+            exp, err = await SITE.token_expiry()
+            if err:
+                key = f"site_token:fail:{datetime.now(timezone.utc):%Y%m%d}"
+                if "401" in err and not store.kv_get(key):
+                    store.kv_set(key, True)
+                    dm = await self._owner_dm()
+                    if dm:
+                        await self._safe_send(dm, content="⚠️ 網站重建用的 GitHub token 已失效（HTTP 401）。網站退回 GitHub 自己的排程（每天僅 3–5 次）。"
+                                              "請到 GitHub → Settings → Developer settings → Fine-grained tokens 重新產生，貼到 wallstreet_bot\\.env 的 GITHUB_SITE_TOKEN，再 /restart。")
+                return
+            if exp is None:
+                HEALTH.ok("site_token", 1, every=86400)         # no expiration
+                return
+            days = (exp - datetime.now(timezone.utc)).total_seconds() / 86400
+            HEALTH.ok("site_token", int(max(days, 0)), every=86400)
+            stage = SITE.expiry_stage(days)
+            if not stage:
+                return
+            key = f"site_token:{exp:%Y%m%d}:{stage}"
+            if store.kv_get(key):
+                return
+            store.kv_set(key, True)
+            dm = await self._owner_dm()
+            if dm:
+                when = "已於" if stage == "expired" else f"將於 {days:.0f} 天後（"
+                await self._safe_send(dm, content=f"🔑 網站重建用的 GitHub token {when}{exp.astimezone(E.TZ):%Y-%m-%d %H:%M}{'' if stage == 'expired' else '）'}到期。"
+                                      "到期後網站只剩 GitHub 自己的排程（每天 3–5 次）。\n"
+                                      "續期 3 分鐘：GitHub → Settings → Developer settings → Fine-grained tokens → 該 token → Regenerate token，"
+                                      "把新值貼到 wallstreet_bot\\.env 的 GITHUB_SITE_TOKEN，再 /restart。")
+
         loops = [
+            ("site_token", 24 * 3600, site_token_check, 240),
             ("site_build", int(SETTINGS.get("site_trigger", {}).get("hourly_minutes", 60)) * 60, site_hourly, 180),
             ("backup", 6 * 3600, backup, 120),
             ("econ", 60, econ, 180),                  # 財經數據公布前提醒／公布後解讀／科技財報結果

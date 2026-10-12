@@ -91,6 +91,11 @@ def main():
         okx, mx = asyncio.run(tr.dispatch("hourly"))
         assert not okx and word in mx, (code, mx)
 
+    # token expiry: header parsing + reminder stages
+    exp = ST.SiteTrigger.parse_expiry("2027-10-12 15:34:56 UTC")
+    assert exp == datetime(2027, 10, 12, 15, 34, 56, tzinfo=timezone.utc)
+    assert ST.SiteTrigger.parse_expiry(None) is None and ST.SiteTrigger.parse_expiry("garbage") is None
+    assert [ST.SiteTrigger.expiry_stage(d) for d in (200, 30, 20, 14, 10, 7, 3, 1, 0.5, -1)] ==         [None, "30d", "30d", "14d", "14d", "7d", "7d", "1d", "1d", "expired"]
     # only RISK alerts (not info / news) kick a rebuild
     from wsb.bot.app import _alert_kind
     assert _alert_kind("danger:us:2026-10-12:2") == "risk" and _alert_kind("ssi_level_3") == "risk"
