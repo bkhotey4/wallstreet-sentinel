@@ -31,6 +31,7 @@ from .. import earnings as ER
 from .. import morning as MO
 from .. import weekly as WK
 from .. import store
+from ..site_trigger import TRIGGER as SITE
 from ..analytics import hedge as HG
 from ..analytics import playbook as PB
 from ..analytics import scorecard as SC
@@ -317,7 +318,13 @@ class Sentinel(commands.Bot):
         except Exception:  # noqa: BLE001
             log.exception("web dashboard failed to start")
 
+        async def site_hourly():
+            if SITE.enabled:
+                ok, m = await SITE.dispatch("hourly", fast=False)
+                log.info("site hourly: %s", m)
+
         loops = [
+            ("site_build", int(SETTINGS.get("site_trigger", {}).get("hourly_minutes", 60)) * 60, site_hourly, 180),
             ("backup", 6 * 3600, backup, 120),
             ("econ", 60, econ, 180),                  # 財經數據公布前提醒／公布後解讀／科技財報結果
             ("extras", 3600, extras, 900),            # 個股評分／美債標售／13F／內部人／暗池（各自依設定間隔才真的重抓）
@@ -830,6 +837,9 @@ class Sentinel(commands.Bot):
         for t in targets:
             await P.deliver(t, slides=lambda: S.deck_alert("緊急風險警報" if crit else "市場警報", rows, ssi),
                             embeds=lambda: e, content=link_txt if P.style() == "slides" else None)
+        risk_fired = [a for a in fire if _alert_kind(a.key) == "risk" and not a.severity.startswith("ℹ️")]
+        if risk_fired and SITE.enabled and SETTINGS.get("site_trigger", {}).get("on_risk_alert", True):
+            self.spawn(SITE.dispatch("alert:" + risk_fired[0].key, fast=True), "site_build")   # page must not lag a selloff
         market_crit = [a for a in fire if a.severity.startswith("🚨") and not a.key.startswith("news:")]
         if market_crit and targets:
             self.spawn(self._alert_ai(fire, targets), "alert_ai")          # never block the quotes loop
@@ -1639,6 +1649,13 @@ def register_commands(bot: Sentinel) -> None:
     async def style_cmd(it: discord.Interaction, mode: app_commands.Choice[str]):
         store.kv_set("style", mode.value)
         await it.response.send_message(f"✅ 之後改用：**{mode.name}**", ephemeral=True)
+
+    @tree.command(name="rebuild", description="立即重建公開網站（擁有者）：fast=True 跳過全市場掃描，約 5 分鐘")
+    @app_commands.describe(fast="快速建置（不做全市場掃描）")
+    async def rebuild(it: discord.Interaction, fast: bool = True):
+        await it.response.defer(thinking=True, ephemeral=True)
+        ok, m = await SITE.dispatch(f"manual:{it.user.id}", fast=fast, force=True)
+        await it.followup.send(("✅ " if ok else "⚠️ ") + m, ephemeral=True)
 
     @tree.command(name="restart", description="重新啟動 bot（套用新設定/程式碼）")
     async def restart(it: discord.Interaction):

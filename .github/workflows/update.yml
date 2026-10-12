@@ -13,6 +13,10 @@ on:
         description: "跳過 AI 研判（省 API 額度）"
         type: boolean
         default: false
+      fast:
+        description: "快速建置：跳過全市場掃描（沿用快取的個股資料），約 5 分鐘"
+        type: boolean
+        default: false
 
 concurrency:
   group: intel-station
@@ -84,7 +88,8 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
-          python -m tools.build_site --out site --snapdir _data/snap --fullmarket $FLAG
+          FM="--fullmarket"; if [ "${{ inputs.fast }}" = "true" ]; then FM=""; fi
+          python -m tools.build_site --out site --snapdir _data/snap $FM $FLAG
 
       - name: 儲存新快照
         if: success()

@@ -921,3 +921,15 @@ danger:
   level_points: [3, 6, 9]      # 累積分數 ≥3 注意、≥6 警戒、≥9 危險（同一交易日只在升級時通知）
   crash_pct: {us: -4.0, tw: -5.0}   # 大盤單日跌幅達此值直接列為「危險」
   # us_rules / tw_rules 可覆寫各標的門檻：[ticker, 名稱, 群組, 方向(-1跌為壞/+1漲為壞), [[門檻%, 分數], ...]]
+
+# ---------- 由 bot 觸發公開網站重建（GitHub 排程不準時：實測平日只跑 3–5 次／天） ----------
+site_trigger:
+  enabled: true
+  repo: bkhotey4/wallstreet-sentinel
+  workflow: update.yml
+  ref: main
+  hourly_minutes: 60           # 定時完整建置（含全市場掃描，約 15–20 分鐘）
+  on_risk_alert: true          # 風險警報（SSI 跨級、盤中危險、劇本升階、VIX 倒掛…）一發出就快速重建（約 5 分鐘）
+  min_gap_minutes: 20          # 兩次觸發至少間隔
+  skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發
+  # 需要 .env 的 GITHUB_SITE_TOKEN（fine-grained token，只授權 wallstreet-sentinel，權限 Actions: Read and write）
