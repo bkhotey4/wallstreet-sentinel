@@ -936,4 +936,4 @@ site_trigger:
 
 # ---------- 網站「我的持股」跨裝置同步（Google 登入 → 存到使用者自己的 Google 雲端硬碟隱藏資料夾） ----------
 site:
-  google_client_id: ""   # Google Cloud Console → OAuth 用戶端 ID（Web application）。用戶端 ID 本來就是公開資訊；留空＝只用本機瀏覽器儲存
+  google_client_id: "402042061508-8b7fbpqmpub69qmaj87v39c0r7j2pkdd.apps.googleusercontent.com"   # Google Cloud Console → OAuth 用戶端 ID（Web application）。用戶端 ID 本來就是公開資訊；留空＝只用本機瀏覽器儲存
