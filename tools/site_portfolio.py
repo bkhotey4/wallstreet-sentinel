@@ -86,6 +86,7 @@ def sec_portfolio(eng) -> str:
 <label class="btn" for="pfimp">{T("匯入", "Import")}</label><input id="pfimp" type="file" accept="application/json,.json" hidden>
 <button class="btn" type="button" id="pfclr">{T("清除全部", "Clear all")}</button><span class="small muted" id="pfmsg" role="status"></span></div>
 </div>
+<div class="pfdx" id="pfdx" style="display:none"></div>
 <p class="note">{note}</p>
 <script type="application/json" id="pf-data">{data}</script></section>'''
 
@@ -103,6 +104,26 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 .pfx:hover{color:var(--dn)}.pfwarn{color:var(--warn)}
 .pfsync{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px;font-size:13px}.pfsync .ok{color:var(--up)}.pfsync .err{color:var(--dn)}
 .btn.g{border-color:var(--ac);color:var(--ac)}
+.pfdx{margin-top:16px;border-top:1px dashed var(--bd);padding-top:14px}
+.pfdx h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:6px}
+.pfdx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.pfdx-k{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+.pfdx-k .lbl{font-size:11px;color:var(--mu);margin-bottom:2px}
+.pfdx-k .val{font-size:17px;font-weight:700}
+.pfdx-k .sub{font-size:11px;color:var(--mu);margin-top:2px}
+.pfdx-sec{margin:10px 0}
+.pfdx-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--card2);margin:6px 0;border:1px solid var(--bd)}
+.pfdx-bar-seg{height:100%}
+.pfdx-tags{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin:4px 0 10px}
+.pfdx-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;background:var(--card2);border:1px solid var(--bd)}
+.pfdx-tag .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.pfdx-items{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.pfdx-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:6px;background:var(--card2);border:1px solid var(--bd);font-size:12px;line-height:1.45}
+.pfdx-item.bad{border-left:3px solid var(--dn)}
+.pfdx-item.warn{border-left:3px solid var(--warn)}
+.pfdx-item.ok{border-left:3px solid var(--up)}
+.pfdx-item.act{border-left:3px solid var(--ac)}
+.pfdx-item .ico{font-size:13px;flex-shrink:0}
 """
 
 JS = r"""
@@ -195,16 +216,177 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  if(totCost)k('帳面損益（有填成本者）','Unrealized (with cost)','NT$ '+sgn(costV-totCost,0),sgn((costV-totCost)/totCost*100,2,true),cl(costV-totCost));
  var dl=Object.keys(dates).map(function(c){return c+' '+dates[c];}).join(' · ');
  msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+num(FX.USD,3),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+num(FX.USD,3)]
-  :['尚未輸入持股：在下方新增，或用「一次貼上多筆」','No holdings yet — add some below or paste many at once']);}
+  :['尚未輸入持股：在下方新增，或用「一次貼上多筆」','No holdings yet — add some below or paste many at once']);
+  renderDx(rows, tot, totV, cashT);}
+function renderDx(rows, tot, totV, cashT){
+ var x = document.getElementById('pfdx');
+ if(!x) return;
+ x.textContent = '';
+ if(!rows.length && !cashT){ x.style.display = 'none'; return; }
+ x.style.display = 'block';
+ if(!tot) tot = 1;
+ var SECS = [
+  { k: 'semi', zh: '半導體設備', en: 'Semiconductors', c: '#00d2ff', b: 1.65,
+    syms: ['KLAC','TSM','NVDA','ASML','AMAT','LRCX','INTC','AMD','AVGO','QCOM','MU','TXN','MRVL','ON','MPWR','2330','2454','3034','2379','3443','3661','6415','SMH','SOXX'] },
+  { k: 'tech', zh: '科技與雲端', en: 'Tech & Cloud', c: '#3a86ff', b: 1.25,
+    syms: ['GOOG','GOOGL','MSFT','AAPL','AMZN','META','ORCL','CRM','ADBE','NOW','UBER','NFLX','QQQ','SPY'] },
+  { k: 'fin', zh: '金融數位', en: 'FinTech & Banks', c: '#06d6a0', b: 1.35,
+    syms: ['NU','JPM','BAC','WFC','C','GS','MS','V','MA','PYPL','COIN','SOFI','KRE','XLF','2881','2882','2891'] },
+  { k: 'front', zh: '前沿與能源', en: 'Frontier & Energy', c: '#ffbe0b', b: 2.10,
+    syms: ['SPCX','OKLO','SMR','CCJ','PLTR','TSLA','RIVN','LCID','QS','ENVX','IONQ','RGTI'] },
+  { k: 'def', zh: '防禦民生', en: 'Defensive & Value', c: '#8338ec', b: 0.75,
+    syms: ['JNJ','PG','KO','PEP','MCD','WMT','COST','XOM','CVX','TLT','IEF','SHY','BND','LQD'] }
+ ];
+ var secW = {}, pfBeta = 0;
+ SECS.forEach(function(s){ secW[s.k] = 0; });
+ secW.other = 0;
+ secW.cash = cashT / tot;
+ rows.forEach(function(r){
+  var sym = ((r.p && r.p.sym) || r.h.s || '').toUpperCase();
+  var key = sym.replace(/\.(TW|TWO)$/,'');
+  var found = null;
+  for(var i=0; i<SECS.length; i++){
+   if(SECS[i].syms.indexOf(key) >= 0 || SECS[i].syms.indexOf(sym) >= 0){ found = SECS[i]; break; }
+  }
+  var w = (r.vt || 0) / tot;
+  if(found){ secW[found.k] += w; pfBeta += w * found.b; }
+  else { secW.other += w; pfBeta += w * 1.1; }
+ });
+ var top1 = rows[0] ? (rows[0].vt / tot * 100) : 0;
+ var top1Sym = rows[0] ? ((rows[0].p && rows[0].p.sym) || rows[0].h.s) : '—';
+ var top3 = 0;
+ for(var i=0; i<Math.min(3, rows.length); i++){ top3 += (rows[i].vt / tot * 100); }
+ var cashPct = cashT / tot * 100;
+ var semiTechPct = ((secW.semi || 0) + (secW.tech || 0)) * 100;
+
+ var hd = el('h3', '');
+ hd.appendChild(L('持倉健康度診斷與再平衡建議', 'Portfolio Diagnostics & Rebalancing'));
+ x.appendChild(hd);
+
+ var grid = el('div', 'pfdx-grid');
+
+ var k1 = el('div', 'pfdx-k');
+ k1.appendChild(el('div', 'lbl')).appendChild(L('組合風險屬性', 'Risk Profile'));
+ var isAgg = pfBeta >= 1.35 || semiTechPct >= 50;
+ var isBal = cashPct >= 15 && top1 <= 25 && pfBeta < 1.15;
+ var val1 = k1.appendChild(el('div', 'val ' + (isAgg ? 'dn' : (isBal ? 'up' : 'warn'))));
+ val1.appendChild(isAgg ? L('高波動進攻型', 'Aggressive Growth') : (isBal ? L('穩健平衡型', 'Balanced Defensive') : L('成長型', 'Moderate Growth')));
+ k1.appendChild(el('div', 'sub')).appendChild(L('預估整體 Beta: ' + num(pfBeta, 2), 'Estimated Beta: ' + num(pfBeta, 2)));
+ grid.appendChild(k1);
+
+ var k2 = el('div', 'pfdx-k');
+ k2.appendChild(el('div', 'lbl')).appendChild(L('壓力情境推估', 'Stress Scenario'));
+ var val2 = k2.appendChild(el('div', 'val dn', '-' + num(pfBeta * 5, 1) + '%'));
+ k2.appendChild(el('div', 'sub')).appendChild(L('大盤若跌 5% 預估回撤', 'Expected drop if SPX -5%'));
+ grid.appendChild(k2);
+
+ var k3 = el('div', 'pfdx-k');
+ k3.appendChild(el('div', 'lbl')).appendChild(L('前三大持股集中度', 'Top 3 Concentration'));
+ var val3 = k3.appendChild(el('div', 'val ' + (top3 >= 60 ? 'dn' : (top3 >= 45 ? 'warn' : 'up')), num(top3, 1) + '%'));
+ k3.appendChild(el('div', 'sub')).appendChild(L('最大單一: ' + top1Sym + ' (' + num(top1, 1) + '%)', 'Top holding: ' + top1Sym + ' (' + num(top1, 1) + '%)'));
+ grid.appendChild(k3);
+
+ var k4 = el('div', 'pfdx-k');
+ k4.appendChild(el('div', 'lbl')).appendChild(L('防守現金水位', 'Cash Buffer'));
+ var val4 = k4.appendChild(el('div', 'val ' + (cashPct < 5 ? 'dn' : (cashPct < 15 ? 'warn' : 'up')), num(cashPct, 1) + '%'));
+ k4.appendChild(el('div', 'sub')).appendChild(L(cashPct < 5 ? '無防守緩衝 ⚠️' : (cashPct < 15 ? '緩衝適中' : '充裕'), cashPct < 5 ? 'Low liquidity' : 'Adequate'));
+ grid.appendChild(k4);
+ x.appendChild(grid);
+
+ var secBox = el('div', 'pfdx-sec');
+ secBox.appendChild(el('div', 'lbl')).appendChild(L('產業族群曝險分布', 'Sector Exposure Breakdown'));
+ var bar = el('div', 'pfdx-bar');
+ var tags = el('div', 'pfdx-tags');
+ function addSeg(pct, c, zh, en_){
+  if(pct < 0.005) return;
+  var seg = el('div', 'pfdx-bar-seg');
+  seg.style.width = (pct * 100) + '%';
+  seg.style.background = c;
+  bar.appendChild(seg);
+  var tag = el('span', 'pfdx-tag');
+  var dot = el('span', 'dot');
+  dot.style.background = c;
+  tag.appendChild(dot);
+  tag.appendChild(L(zh + ' ' + num(pct * 100, 1) + '%', en_ + ' ' + num(pct * 100, 1) + '%'));
+  tags.appendChild(tag);
+ }
+ SECS.forEach(function(s){ addSeg(secW[s.k], s.c, s.zh, s.en); });
+ addSeg(secW.other, '#9e9e9e', '其他標的', 'Others');
+ addSeg(secW.cash, '#4caf50', '現金', 'Cash');
+ secBox.appendChild(bar);
+ secBox.appendChild(tags);
+ x.appendChild(secBox);
+
+ var list = el('div', 'pfdx-items');
+ function addItem(cls, ico, zh, en_){
+  var item = el('div', 'pfdx-item ' + cls);
+  item.appendChild(el('span', 'ico', ico));
+  var desc = el('div', 'desc');
+  desc.appendChild(L(zh, en_));
+  item.appendChild(desc);
+  list.appendChild(item);
+ }
+ if(top1 > 25){
+  addItem('bad', '🔴',
+   '【單一持股過度集中】' + top1Sym + ' 佔比高達 ' + num(top1, 1) + '%（警戒線 25%）。單一個股遭遇黑天鵝或財報暴跌將重創總淨值。',
+   '[High Concentration] ' + top1Sym + ' takes ' + num(top1, 1) + '% of total assets (>25% threshold). A single-stock shock will severely impact NAV.');
+ }
+ if(semiTechPct > 50){
+  addItem('bad', '🔴',
+   '【產業高度同質性風險】半導體與科技族群合計高達 ' + num(semiTechPct, 1) + '%。持股高度同向連動，實質分散風險效果有限，回檔時防禦力偏弱。',
+   '[Sector Risk] Semis and Tech total ' + num(semiTechPct, 1) + '%. Highly correlated exposure limits true diversification.');
+ }
+ if(cashPct < 5){
+  addItem('warn', '🟡',
+   '【流動性緩衝匱乏】現金水位僅 ' + num(cashPct, 1) + '%（全額滿水位進攻）。缺乏抗震緩衝與市場大回檔時逢低加碼之籌碼，建議保有 5%~15% 現金。',
+   '[Zero Cash Buffer] Cash is only ' + num(cashPct, 1) + '%. No dry powder to buy market dips.');
+ }
+ var deepLoss = rows.filter(function(r){ return r.ret != null && r.ret <= -15; });
+ if(deepLoss.length){
+  var names = deepLoss.map(function(r){ return ((r.p && r.p.sym) || r.h.s) + ' (' + sgn(r.ret, 1, true) + ')'; }).join('、');
+  addItem('warn', '🟠',
+   '【高波動持股回撤檢視】' + names + ' 帳面跌幅已超 15%。若屬小型主題投機部位，建議設定明確停損點防守，避免虧損持續擴大。',
+   '[Drawdown Warning] Deep unrealized loss in ' + names + '. Re-evaluate thesis and enforce strict risk stops.');
+ }
+ if(top1 > 25){
+  var trimTwd = Math.round((top1 - 22) / 100 * tot);
+  addItem('act', '🎯',
+   '【再平衡建議：分批鎖利降權】建議趁目前處於獲利保護傘，分批減碼 ' + top1Sym + ' 至 22% 左右（約需減碼 NT$ ' + num(trimTwd, 0) + '），降低單一個股黑天鵝衝擊。',
+   '[Action: Profit-taking] Consider trimming ' + top1Sym + ' down to ~22% (approx NT$ ' + num(trimTwd, 0) + ') to lock in gains and de-risk.');
+ }
+ if(cashPct < 10){
+  var targetCash = Math.round(tot * 0.1);
+  addItem('act', '🎯',
+   '【再平衡建議：建立 10% 現金儲備】建議將獲利了結資金保留為現金，建立約 NT$ ' + num(targetCash, 0) + '（10%）的流動性防守墊，提升投資組合抗震力。',
+   '[Action: Build Cash] Retain trim proceeds as cash to build a ~NT$ ' + num(targetCash, 0) + ' (10%) liquidity buffer.');
+ }
+ if(semiTechPct > 50){
+  addItem('act', '🎯',
+   '【再平衡建議：引進低相關資產】未來新增資金建議避開半導體，優先配置大盤 ETF（如 SPY / 0050）、高股息或公債，平滑整體波動。',
+   '[Action: Diversify] Allocate new capital into non-tech defensive assets (broad market ETFs, high dividend, Treasuries) to reduce portfolio Beta.');
+ }
+ x.appendChild(list);
+}
 function upsert(d,s,n,c){var k=norm(s);if(!k||!(n>=0))return false;var key=k.key,i=d.h.findIndex(function(h){var x=norm(h.s);return x&&x.key===key;});
  if(n===0){if(i>=0)d.h.splice(i,1);return true;}var row={s:key,n:n,c:(c>0?c:0),p:0};if(i>=0){row.p=d.h[i].p||0;if(!(c>0))row.c=d.h[i].c||0;d.h[i]=row;}else d.h.push(row);return true;}
 document.getElementById('pfadd').addEventListener('submit',function(e){e.preventDefault();var f=e.target,d=get();
  if(upsert(d,f.s.value,parseFloat(f.n.value),parseFloat(f.c.value))){put(d);f.reset();render();}else msg(['代號或股數格式不對','Check the ticker / shares']);});
 document.getElementById('pfcash').addEventListener('submit',function(e){e.preventDefault();var f=e.target,d=get(),a=parseFloat(f.a.value);if(!isFinite(a))return;
  d.cash=(d.cash||[]).filter(function(c){return c.cur!==f.cur.value;});if(a)d.cash.push({cur:f.cur.value,a:a});put(d);f.a.value='';render();});
-document.getElementById('pfpastebtn').addEventListener('click',function(){var d=get(),ok=0,bad=0;
+document.getElementById('pfpastebtn').addEventListener('click',function(){var d=get(),ok=0,bad=0,agg={};
  document.getElementById('pfpaste').value.split(/\r?\n/).forEach(function(line){var p=line.trim().split(/[\s,，\t]+/);if(!p[0])return;
-  if(upsert(d,p[0],parseFloat(p[1]),parseFloat(p[2])))ok++;else bad++;});put(d);document.getElementById('pfpaste').value='';render();
+  var s=p[0],n=parseFloat(p[1]),c=parseFloat(String(p[2]||'').replace(/\.+/g,'.'));
+  var k=norm(s);if(!k||!(n>=0)){bad++;return;}
+  var key=k.key;
+  if(!agg[key])agg[key]={n:0,cost:0,hasC:false};
+  agg[key].n+=n;
+  if(c>0){agg[key].cost+=n*c;agg[key].hasC=true;}
+  ok++;});
+ Object.keys(agg).forEach(function(key){
+  var item=agg[key],avgC=item.hasC&&(item.n>0)?(item.cost/item.n):0;
+  upsert(d,key,item.n,avgC);
+ });
+ put(d);document.getElementById('pfpaste').value='';render();
  setTimeout(function(){msg(['已加入 '+ok+' 筆'+(bad?'，'+bad+' 行格式不對':''),'Added '+ok+(bad?', '+bad+' lines skipped':'')]);},50);});
 document.getElementById('pfexp').addEventListener('click',function(){var b=new Blob([JSON.stringify(get(),null,1)],{type:'application/json'}),a=document.createElement('a');
  a.href=URL.createObjectURL(b);a.download='my_holdings_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);});
