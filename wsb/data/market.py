@@ -194,10 +194,12 @@ class MarketData:
             return False
 
     async def refresh_quotes(self, extra: Optional[List[str]] = None) -> None:
-        tickers = sorted(set(self.tickers + (extra or [])))
+        from . import taiwan_quotes as TQ
+        tickers = sorted(t for t in set(self.tickers + (extra or [])) if not TQ.is_taiwan(t))
+        official_task = asyncio.create_task(TQ.refresh())
         every = SETTINGS["refresh"]["quotes"]
         try:
-            df = await asyncio.to_thread(_download, tickers, period="7d", interval="1d")
+            df = await asyncio.to_thread(_download, tickers, period="7d", interval="1d") if tickers else pd.DataFrame()
             if df.empty:
                 raise RuntimeError("empty quote download")
             # Yahoo throttles bursts: re-request the tickers that came back empty, once, after a short pause
@@ -252,6 +254,22 @@ class MarketData:
         except Exception as e:  # noqa: BLE001
             log.exception("quote refresh failed")
             HEALTH.fail("yahoo_quotes", e, every=every)
+        finally:
+            # Yahoo outages must never prevent official Taiwan prices from being applied.
+            try:
+                official = await official_task
+                self.quotes = {**self.quotes, **official}
+                if official:
+                    self.quotes_ts = time.time()
+                index = TQ.index_frame(official)
+                if not index.empty:
+                    # Index levels are unadjusted on both sources; equity cash prices stay separate.
+                    current = self.series("^TWII")
+                    if not current.empty:
+                        index = index[index.index >= current.index.max()]
+                    self.history = self._merge(index) if not self.history.empty else index
+            except Exception as e:
+                log.warning("Official Taiwan quote application failed: %s", e)
 
     def _merge(self, recent: pd.DataFrame) -> pd.DataFrame:
         h = self.history.copy()

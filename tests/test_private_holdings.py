@@ -65,7 +65,7 @@ def main():
     assert "NVDA 財報" in context.build(full, "full") and "NVDA 財報" not in context.build(full, "full", private=False)
     from wsb.bot import embeds as E
     assert "NVDA 財報" in E.calendar(full, True).description and "NVDA 財報" not in E.calendar(full, False).description
-    print("PRIVATE HOLDINGS TESTS PASSED ✅")
+    print("PRIVATE HOLDINGS TESTS PASSED [OK]")
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ from . import stockscore as SS
 
 log = logging.getLogger(__name__)
 COLS = ["sym", "code", "name", "ind", "board", "tech", "rank", "r1d", "r1m", "r6", "rsi", "st", "stl", "why", "when",
-        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex"]
+        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex", "history_asof"]
 BENCH = {"us": "^GSPC", "tw": "^TWII", "hk": "^HSI"}
 LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
@@ -65,7 +65,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
         t = tech[s][0]
         row = {"sym": s, "code": it["code"], "name": zh_names.get(s) or it.get("name") or it["code"], "ind": it.get("ind", ""),
                "board": it.get("board", ""), "tech": _r(t, 1), "r1d": _r(f["r1d"], 1), "r1m": _r(f["r1m"], 1), "r6": _r(f["r6"], 0),
-               "rsi": _r(f["rsi"], 0), "px": _r(f["price"], 3)}
+               "rsi": _r(f["rsi"], 0), "px": _r(f["price"], 3), "history_asof": f["asof"]}
         if len(c) >= 60:
             try:
                 pats = SG.detect(c, v)
@@ -164,8 +164,13 @@ async def run(eng, budget_s: Optional[float] = None) -> Dict[str, Dict]:
 
 def published(mk: str) -> Optional[Dict]:
     try:
-        if _out(mk).exists():
-            return json.loads(_out(mk).read_text(encoding="utf-8"))
+        result = json.loads(_out(mk).read_text(encoding="utf-8")) if _out(mk).exists() else None
+        if mk == "tw":
+            from ..data import taiwan_quotes as TQ
+            quotes = TQ.cached()["quotes"]
+            if quotes:
+                return TQ.overlay_published(result, quotes)
+        return result
     except Exception:  # noqa: BLE001
         pass
     return None

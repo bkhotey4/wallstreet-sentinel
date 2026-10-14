@@ -45,13 +45,38 @@ def _quotes(eng) -> Dict[str, list]:
         px, ch = q.get("price"), q.get("chg_pct")
         if px is None or (isinstance(px, float) and math.isnan(px)):
             continue
-        out[t] = [round(float(px), 4), None if ch is None or ch != ch else round(float(ch), 3), q.get("asof") or "", names.get(t, t)]
+        out[t] = [round(float(px), 4), None if ch is None or ch != ch else round(float(ch), 3), q.get("asof") or "", names.get(t, q.get("name") or t), q.get("source") or "Yahoo", q.get("prev")]
     return out
+
+
+def _hist_30d(eng) -> dict:
+    """Historical daily close series (last 30 trading days) for public tracked assets."""
+    try:
+        import pandas as pd
+        h = getattr(eng.market, "history", None)
+        if h is None or h.empty:
+            return {"dates": [], "closes": {}}
+        spx = h["^GSPC"].dropna() if "^GSPC" in h.columns else (h["TWD=X"].dropna() if "TWD=X" in h.columns else h.iloc[:, 0].dropna())
+        if len(spx) < 5:
+            return {"dates": [], "closes": {}}
+        dates = [idx.strftime("%Y-%m-%d") for idx in spx.tail(30).index]
+        dt_idx = pd.to_datetime(dates)
+
+        sub = h.reindex(dt_idx).ffill().bfill()
+        closes = {}
+        for col in sub.columns:
+            ser = sub[col]
+            if ser.notna().any():
+                closes[col] = [round(float(v), 2) if (v is not None and v == v) else None for v in ser]
+
+        return {"dates": dates, "closes": closes}
+    except Exception:
+        return {"dates": [], "closes": {}}
 
 
 def sec_portfolio(eng) -> str:
     gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
-    data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid}, ensure_ascii=False,
+    data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng)}, ensure_ascii=False,
                       separators=(",", ":")).replace("</", "<\\/")
     priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
              "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
@@ -136,11 +161,16 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 /* Feature 4: NAV Chart */
 .pfnav-box{background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin:12px 0}
 .pfnav-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.pfnav-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+.pfnav-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pfnav-stats{display:flex;gap:12px;flex-wrap:wrap;font-size:12px}
 .pfnav-stat b{font-weight:700}
+.pfnav-pills{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:2px;gap:2px}
+.pfnav-pill{background:none;border:0;color:var(--mu);padding:2px 8px;font-size:11px;border-radius:4px;cursor:pointer;font-weight:600}
+.pfnav-pill.on{background:var(--ac);color:#fff}
+.pfnav-hint{font-size:11px;color:var(--mu);margin-bottom:6px;line-height:1.4}
+.pfrefresh-btn{display:inline-flex;align-items:center;gap:4px}
 .pfnav-svg-wrap{width:100%;height:130px;position:relative}
-.pfnav-svg{width:100%;height:100%;display:block;overflow:visible}
+.pfnav-svg{width:100%;height:100%;display:block;overflow:visible;cursor:crosshair}
 
 /* Feature 3: Dynamic Stop & Target line badge in table */
 .pft-stop{font-size:11px;display:flex;flex-direction:column;gap:2px}
@@ -218,10 +248,11 @@ function norm(raw){var x=String(raw||'').trim().toUpperCase().replace(/\s+/g,'')
 function cur(mk){return mk==='tw'?'TWD':(mk==='hk'?'HKD':'USD');}
 function loadMk(mk){if(MK[mk]!==undefined)return MK[mk];MK[mk]=fetch('market/'+mk+'.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();})
  .then(function(d){var c=d.cols,iS=c.indexOf('sym'),iN=c.indexOf('name'),iP=c.indexOf('px'),iR=c.indexOf('r1d'),map={};
-  d.rows.forEach(function(a){map[a[iS]]={px:a[iP],ch:a[iR],name:a[iN],asof:d.asof};});return {asof:d.asof,map:map};}).catch(function(){return null;});return MK[mk];}
+  var iD=c.indexOf('quote_asof'),iH=c.indexOf('history_asof'),iSrc=c.indexOf('source');
+  d.rows.forEach(function(a){map[a[iS]]={px:a[iP],ch:a[iR],name:a[iN],asof:(iD>=0&&a[iD])||(iH>=0&&a[iH])||d.asof,source:(iSrc>=0&&a[iSrc])||'Yahoo'};});return {asof:d.asof,map:map};}).catch(function(){return null;});return MK[mk];}
 function price(h,fm){var n=norm(h.s);if(!n)return null;for(var i=0;i<n.cands.length;i++){var s=n.cands[i],q=Q[s],f=fm&&fm.map[s];
-  if(q&&q[0]!=null&&(!f||(q[2]||'')>=(f.asof||'')))return {sym:s,px:q[0],ch:q[1],asof:q[2],name:q[3],src:'q'};
-  if(f&&f.px!=null)return {sym:s,px:f.px,ch:f.ch,asof:f.asof,name:f.name,src:'fm'};}
+  if(q&&q[0]!=null&&(!f||(q[2]||'')>=(f.asof||'')))return {sym:s,px:q[0],ch:q[1],prev:q[5],asof:q[2],name:q[3],source:q[4],src:'q'};
+  if(f&&f.px!=null)return {sym:s,px:f.px,ch:f.ch,asof:f.asof,name:f.name,source:f.source,src:'fm'};}
  if(h.p>0)return {sym:n.key,px:h.p,ch:null,asof:'',name:'',src:'manual'};return null;}
 function ph(){var P={n:['股數','Shares'],c:['每股成本（選填）','Cost per share (optional)'],a:['金額（0 = 刪除）','Amount (0 = delete)']};
  ['pfadd','pfcash'].forEach(function(id){var f=document.getElementById(id);Object.keys(P).forEach(function(k){if(f[k])f[k].placeholder=P[k][en()?1:0];});});}
@@ -244,10 +275,66 @@ var SECS = [
 var G={cid:PUB.gcid||'',tok:null,exp:0,fid:null,busy:false,on:false,email:''};
 var GKEY='wss_portfolio_gsync';
 function gmsg(zh,e,cls){var s=document.getElementById('pfsync');if(!s)return;var st=s.querySelector('.st');if(!st){st=el('span','st');s.appendChild(st);}st.className='st '+(cls||'');st.textContent='';st.appendChild(L(zh,e));}
-function gbar(){var s=document.getElementById('pfsync');if(!s)return;s.textContent='';if(!G.cid){s.appendChild(L('（跨裝置 Google 同步尚未設定：請在 settings.yaml 的 site.google_client_id 填入 OAuth 用端 ID）','(Google sync not configured: set site.google_client_id in settings.yaml)'));s.firstChild.className='muted';return;}
+var HIST = PUB.hist || { dates: [], closes: {} };
+window._navMode = window._navMode || 'auto';
+
+function addRefreshBtn(s){
+ var ref = el('button', 'btn pfrefresh-btn');
+ ref.id = 'pfrefresh';
+ ref.type = 'button';
+ ref.appendChild(L('🔄 重新整理行情', '🔄 Refresh quotes'));
+ ref.addEventListener('click', refreshQuotes);
+ s.appendChild(ref);
+}
+
+function refreshQuotes(){
+ var btn = document.getElementById('pfrefresh');
+ if(btn){ btn.disabled = true; btn.textContent = en() ? 'Refreshing…' : '🔄 抓取中…'; }
+ MK = {};
+ var d = get(), need = {};
+ d.h.forEach(function(h){ var n = norm(h.s); if(n) need[n.mk] = 1; });
+ var mks = Object.keys(need);
+ if(mks.indexOf('us') < 0) mks.push('us');
+ Promise.all(mks.map(function(mk){
+  return fetch('market/' + mk + '.json?t=' + Date.now(), { cache: 'no-store' })
+   .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+   .then(function(data){
+    var c = data.cols, iS = c.indexOf('sym'), iN = c.indexOf('name'), iP = c.indexOf('px'), iR = c.indexOf('r1d'), map = {};
+    var iD = c.indexOf('quote_asof'), iH = c.indexOf('history_asof'), iSrc = c.indexOf('source');
+    data.rows.forEach(function(a){
+     map[a[iS]] = { px: a[iP], ch: a[iR], name: a[iN], asof: (iD >= 0 && a[iD]) || (iH >= 0 && a[iH]) || data.asof, source: (iSrc >= 0 && a[iSrc]) || 'Yahoo' };
+    });
+    return { asof: data.asof, map: map };
+   }).catch(function(){ return null; });
+ })).then(function(res){
+  gFM = {};
+  mks.forEach(function(m, i){ gFM[m] = res[i]; });
+  draw(d, gFM);
+  var timeStr = new Date().toLocaleTimeString();
+  gmsg('已重新載入最新行情 (' + timeStr + ')', 'Quotes refreshed (' + timeStr + ')', 'ok');
+  if(btn){
+   btn.disabled = false;
+   btn.textContent = '';
+   btn.appendChild(L('🔄 重新整理行情', '🔄 Refresh quotes'));
+  }
+ });
+}
+
+function gbar(){
+ var s=document.getElementById('pfsync');
+ if(!s)return;
+ s.textContent='';
+ addRefreshBtn(s);
+ if(!G.cid){
+  var m=el('span','muted');
+  m.appendChild(L('（跨裝置 Google 同步尚未設定：請在 settings.yaml 的 site.google_client_id 填入 OAuth 用端 ID）','(Google sync not configured: set site.google_client_id in settings.yaml)'));
+  s.appendChild(m);
+  return;
+ }
  var b=el('button','btn g');b.type='button';b.appendChild(L(G.on?'立即同步':'用 Google 同步','Sync now'));b.addEventListener('click',function(){gauth(true).then(function(ok){if(ok)gsync();});});s.appendChild(b);
  if(G.on){var o=el('button','btn');o.type='button';o.appendChild(L('停用同步','Stop syncing'));o.addEventListener('click',function(){G.on=false;G.tok=null;try{localStorage.removeItem(GKEY);}catch(e){}gbar();});s.appendChild(o);}
- var st=el('span','st');s.appendChild(st);if(G.on)gmsg('已啟用 Google 同步','Google sync on','ok');}
+ var st=el('span','st');s.appendChild(st);if(G.on)gmsg('已啟用 Google 同步','Google sync on','ok');
+}
 function gload(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();var sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.onload=res;sc.onerror=function(){rej(new Error('gsi'));};document.head.appendChild(sc);});}
 function gauth(interactive){if(!G.cid)return Promise.resolve(false);if(G.tok&&Date.now()<G.exp-60000)return Promise.resolve(true);
  return gload().then(function(){return new Promise(function(res){var tc=google.accounts.oauth2.initTokenClient({client_id:G.cid,scope:'https://www.googleapis.com/auth/drive.appdata',
@@ -279,13 +366,64 @@ function render(){ph();var d=get(),need={};d.h.forEach(function(h){var n=norm(h.
  Promise.all(mks.map(loadMk)).then(function(res){gFM={};mks.forEach(function(m,i){gFM[m]=res[i];});draw(d,gFM);});
  if(mks.length&&!document.getElementById('pft').tBodies[0].rows.length)msg(['載入價格中…','Loading prices…']);}
 
+function calcBackcastNav(d, tot, FM){
+ if(!HIST.dates || HIST.dates.length < 3) return null;
+ var dates = HIST.dates;
+ var twdRates = HIST.closes['TWD=X'] || [];
+ var liveFxUsd = fxv('USD') || 31.9;
+ var rows = [];
+ d.h.forEach(function(h){
+  var n = norm(h.s);
+  if(!n) return;
+  var s = n.cands[0];
+  var series = HIST.closes[s] || HIST.closes[n.key];
+  if(!series){
+   for(var i=0; i<n.cands.length; i++){
+    if(HIST.closes[n.cands[i]]){ series = HIST.closes[n.cands[i]]; break; }
+   }
+  }
+  rows.push({ h: h, n: h.n, series: series, sym: s, mk: n.mk });
+ });
+
+ var cashT = 0;
+ (d.cash || []).forEach(function(c){
+  var f = fxv(c.cur);
+  if(f != null && c.a > 0) cashT += c.a * f;
+ });
+
+ var pts = [];
+ for(var t=0; t<dates.length; t++){
+  var dayTot = cashT;
+  var dayFx = (twdRates[t] != null && twdRates[t] > 0) ? twdRates[t] : liveFxUsd;
+  rows.forEach(function(r){
+   var px = (r.series && r.series[t] != null) ? r.series[t] : null;
+   if(px == null){
+    var p = price(r.h, FM && FM[r.mk]);
+    if(p && p.px != null) px = p.px;
+   }
+   if(px != null){
+    var rate = (r.mk === 'tw') ? 1.0 : dayFx;
+    dayTot += r.n * px * rate;
+   }
+  });
+  pts.push({ d: dates[t], v: Math.round(dayTot), mode: 'backcast' });
+ }
+
+ var todayStr = new Date().toISOString().slice(0, 10);
+ if(dates[dates.length - 1] !== todayStr && tot > 0){
+  pts.push({ d: todayStr, v: Math.round(tot), mode: 'live' });
+ }
+ return pts;
+}
+
 // ---------------------------------------------------------------- Feature 4: NAV Chart & HWM Drawdown
-function renderNav(d, tot){
+function renderNav(d, tot, FM){
  var x = document.getElementById('pfnavbox');
  if(!x) return;
  x.textContent = '';
  if(!tot || tot <= 0){ x.style.display = 'none'; return; }
  x.style.display = 'block';
+
  d.nav = Array.isArray(d.nav) ? d.nav : [];
  var today = new Date().toISOString().slice(0, 10);
  var last = d.nav[d.nav.length - 1];
@@ -300,8 +438,19 @@ function renderNav(d, tot){
  if(d.nav.length > 180){ d.nav = d.nav.slice(-180); changed = true; }
  if(changed){ _put(d); }
 
+ var backcastPts = calcBackcastNav(d, tot, FM);
+ var hasBackcast = !!(backcastPts && backcastPts.length >= 5);
+ 
+ var curMode = window._navMode;
+ if(!curMode || curMode === 'auto'){
+  curMode = (d.nav.length <= 2 && hasBackcast) ? 'backcast' : 'live';
+ }
+
+ var pts = (curMode === 'backcast' && hasBackcast) ? backcastPts : d.nav.slice();
+ if(pts.length === 1){ pts = [{d: pts[0].d, v: pts[0].v}, {d: today, v: pts[0].v}]; }
+
  var hwm = tot, mdd = 0, peak = 0;
- d.nav.forEach(function(pt){
+ pts.forEach(function(pt){
   if(pt.v > hwm) hwm = pt.v;
   if(pt.v > peak) peak = pt.v;
   var curDd = peak > 0 ? (pt.v - peak) / peak * 100 : 0;
@@ -312,6 +461,28 @@ function renderNav(d, tot){
  var head = el('div', 'pfnav-head');
  var tit = el('div', 'pfnav-title');
  tit.appendChild(L('📈 個人資產淨值走勢與回撤追蹤', 'NAV & Drawdown Tracker'));
+
+ if(hasBackcast){
+  var pills = el('div', 'pfnav-pills');
+  var pBack = el('button', 'pfnav-pill' + (curMode === 'backcast' ? ' on' : ''));
+  pBack.type = 'button';
+  pBack.appendChild(L('30天回溯走勢', '30D Backcast'));
+  pBack.addEventListener('click', function(){
+   window._navMode = 'backcast';
+   renderNav(d, tot, FM);
+  });
+  pills.appendChild(pBack);
+
+  var pLive = el('button', 'pfnav-pill' + (curMode === 'live' ? ' on' : ''));
+  pLive.type = 'button';
+  pLive.appendChild(L('實盤記錄 (' + d.nav.length + '天)', 'Live (' + d.nav.length + 'd)'));
+  pLive.addEventListener('click', function(){
+   window._navMode = 'live';
+   renderNav(d, tot, FM);
+  });
+  pills.appendChild(pLive);
+  tit.appendChild(pills);
+ }
  head.appendChild(tit);
 
  var stats = el('div', 'pfnav-stats');
@@ -325,9 +496,19 @@ function renderNav(d, tot){
  addStat('歷史最高 (HWM)', 'High Water Mark', 'NT$ ' + num(hwm, 0));
  addStat('距高點回撤', 'Drawdown', (curDd >= -0.05 ? '0.0% 🏆 新高' : sgn(curDd, 1, true)), cl(curDd));
  addStat('最大回撤 (MDD)', 'Max Drawdown', (mdd < 0 ? sgn(mdd, 1, true) : '0.0%'), 'dn');
- addStat('記錄天數', 'Tracked Days', d.nav.length + (en()?' Days':' 天'));
+ addStat('資料週期', 'Period', curMode === 'backcast' ? (en() ? '30D Backcast' : '過去 30 交易日') : (d.nav.length + (en()?' Days':' 天')));
  head.appendChild(stats);
  x.appendChild(head);
+
+ var hint = el('div', 'pfnav-hint');
+ if(curMode === 'backcast'){
+  hint.appendChild(L('💡 模式：依當前持股與每日收盤價自動回溯過去 30 個交易日真實淨值走勢；每天造訪將自動累計實盤記錄。',
+                     'Simulated 30-day NAV history based on current holdings. Live records accumulate automatically over time.'));
+ } else {
+  hint.appendChild(L('💡 模式：實盤每日造訪自動累計記錄（已記錄 ' + d.nav.length + ' 天）；點擊【30天回溯走勢】可查看長週期波動。',
+                     'Live tracking logged on daily visits (' + d.nav.length + ' days). Switch to 30D Backcast for full history.'));
+ }
+ x.appendChild(hint);
 
  var wrap = el('div', 'pfnav-svg-wrap');
  var svg = svgEl('svg', { viewBox: '0 0 600 120', class: 'pfnav-svg', preserveAspectRatio: 'none' });
@@ -339,8 +520,6 @@ function renderNav(d, tot){
  defs.appendChild(grad);
  svg.appendChild(defs);
 
- var pts = d.nav.slice();
- if(pts.length === 1){ pts = [{d: pts[0].d, v: pts[0].v}, {d: today, v: pts[0].v}]; }
  var minV = Infinity, maxV = -Infinity;
  pts.forEach(function(p){ if(p.v < minV) minV = p.v; if(p.v > maxV) maxV = p.v; });
  if(hwm > maxV) maxV = hwm;
@@ -351,7 +530,7 @@ function renderNav(d, tot){
  }
  var W = 600, H = 120, pL = 20, pR = 20, pT = 20, pB = 22;
  var coords = pts.map(function(pt, idx){
-  var cx = pL + (idx / (pts.length - 1)) * (W - pL - pR);
+  var cx = pL + (idx / Math.max(1, pts.length - 1)) * (W - pL - pR);
   var cy = H - pB - ((pt.v - minV) / (maxV - minV)) * (H - pT - pB);
   return { x: cx, y: cy, v: pt.v, d: pt.d };
  });
@@ -381,6 +560,25 @@ function renderNav(d, tot){
  dtEnd.textContent = pts[pts.length - 1].d;
  svg.appendChild(dtEnd);
 
+ // Interactive hover tooltip
+ svg.addEventListener('mousemove', function(ev){
+  var rect = svg.getBoundingClientRect();
+  var mouseX = (ev.clientX - rect.left) / rect.width * W;
+  var bestPt = coords[0], bestDist = Infinity;
+  coords.forEach(function(c){
+   var dist = Math.abs(c.x - mouseX);
+   if(dist < bestDist){ bestDist = dist; bestPt = c; }
+  });
+  if(bestPt && window.tip){
+   var ddFromHwm = hwm > 0 ? ((bestPt.v - hwm) / hwm * 100) : 0;
+   var htmlTip = '<b>' + bestPt.d + '</b><br>' +
+                 L('資產淨值: NT$ ', 'NAV: NT$ ') + num(bestPt.v, 0) + '<br>' +
+                 L('距最高點: ', 'Drawdown: ') + (ddFromHwm >= -0.05 ? '🏆 歷史新高' : sgn(ddFromHwm, 1, true));
+   tip(ev, htmlTip);
+  }
+ });
+ svg.addEventListener('mouseleave', function(){ if(window.hideTip) hideTip(); });
+
  wrap.appendChild(svg);
  x.appendChild(wrap);
 }
@@ -389,7 +587,7 @@ function renderNav(d, tot){
 function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textContent='';var tf=document.getElementById('pft').tFoot;if(tf)tf.remove();
  var rows=[],totV=0,totDay=0,totPrev=0,totCost=0,costV=0,miss=0,dates={};
  d.h.forEach(function(h,i){var n=norm(h.s),mk=n?n.mk:'us',p=price(h,FM[mk]),c=cur(mk),fx=fxv(c),r={h:h,i:i,mk:mk,cur:c,p:p};
-  if(p){r.v=h.n*p.px;r.vt=fx!=null?r.v*fx:null;var prev=(p.ch!=null)?p.px/(1+p.ch/100):null;r.day=(prev!=null&&fx!=null)?h.n*(p.px-prev)*fx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
+  if(p){r.v=h.n*p.px;r.vt=fx!=null?r.v*fx:null;var prev=p.prev>0?p.prev:((p.ch!=null)?p.px/(1+p.ch/100):null);r.day=(prev!=null&&fx!=null)?h.n*(p.px-prev)*fx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
    if(r.vt!=null)totV+=r.vt;if(r.day!=null){totDay+=r.day;totPrev+=r.vt-r.day;}if(h.c>0){r.cost=h.n*h.c;r.un=r.v-r.cost;r.ret=r.un/r.cost*100;if(fx!=null){totCost+=r.cost*fx;costV+=r.vt;}}
    if(p.asof)dates[c]=(dates[c]&&dates[c]>p.asof)?dates[c]:p.asof;}else miss++;rows.push(r);});
  rows.sort(function(a,b){return (b.vt||0)-(a.vt||0);});
@@ -397,7 +595,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  rows.forEach(function(r){var tr=document.createElement('tr'),h=r.h,p=r.p;
   function td(x,c){var t=el('td',c||'r');if(x instanceof Node)t.appendChild(x);else t.textContent=x;tr.appendChild(t);return t;}
   td((p&&p.sym)||h.s,'');td(p?(p.name||''):'','');td(num(h.n,h.n%1?2:0));
-  if(p){td(num(p.px,2)+' '+r.cur+(p.src==='manual'?' ✎':''));td(sgn(p.ch,2,true),'r '+cl(p.ch));td(r.dayc!=null?sgn(r.dayc,0):'—','r '+cl(r.dayc));
+  if(p){var pxcell=td(num(p.px,2)+' '+r.cur+(p.src==='manual'?' ✎':''));if(p.source)pxcell.appendChild(el('div','small muted',p.source+' '+(p.asof||'—')));td(sgn(p.ch,2,true),'r '+cl(p.ch));td(r.dayc!=null?sgn(r.dayc,0):'—','r '+cl(r.dayc));
    td(num(r.v,0));td(r.vt!=null?num(r.vt,0):'—');td(h.c>0?num(r.cost,0):'—');td(r.un!=null?sgn(r.un,0):'—','r '+cl(r.un));td(r.ret!=null?sgn(r.ret,1,true):'—','r '+cl(r.ret));
    
    // Feature 3: Dynamic Stop & Profit Targets column
@@ -453,7 +651,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+(FXOK?num(FX.USD,3)+'（'+(FX.asof||'日期不明')+'）':'匯率缺'),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+(FXOK?num(FX.USD,3)+' ('+(FX.asof||'date n/a')+')':'unavailable')]
   :['尚未輸入持股：在下方新增，或用「一次貼上多筆」','No holdings yet — add some below or paste many at once']);
 
- renderNav(d, tot);
+ renderNav(d, tot, FM);
  renderDx(rows, tot, totV, cashT);
 }
 

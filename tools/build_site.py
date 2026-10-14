@@ -1332,9 +1332,9 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     from wsb.analytics import fullscan as FS
     (out / "market").mkdir(exist_ok=True)
     for mk in ("us", "tw", "hk"):
-        src = FS._out(mk)
-        if src.exists():
-            (out / "market" / f"{mk}.json").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        published = FS.published(mk)
+        if published:
+            (out / "market" / f"{mk}.json").write_text(json.dumps(published, ensure_ascii=False), encoding="utf-8")
     for src, name in ((TE.OUT_US, "ustech.json"), (TE.OUT_TW, "twrev.json"), (GR.OUT_US, "growth_us.json"), (GR.OUT_TW, "growth_tw.json")):
         if src.exists():
             (out / "market" / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")

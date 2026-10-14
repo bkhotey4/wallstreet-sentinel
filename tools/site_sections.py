@@ -107,7 +107,9 @@ def _score_table(m: Dict) -> str:
             f'<td>{_bar(r["score"], _score_color(r["score"]))}</td>'
             f'<td class="r opt">{num(r["tech"], 0)}</td><td class="r opt">{num(r.get("intel"), 0)}</td>'
             f'<td class="r opt {cls(chg)}">{num(chg, 1, sign=True)}</td>'
-            f'<td class="r {cls(r.get("r1d"))}">{num(r.get("r1d"), 1, sign=True, pct=True)}</td>'
+            f'<td class="r {cls((r.get("quote") or {}).get("chg_pct", r.get("r1d")))}">'
+            f'{num((r.get("quote") or {}).get("chg_pct", r.get("r1d")), 1, sign=True, pct=True)}'
+            f'<small class="muted"> {esc((r.get("quote") or {}).get("source", ""))} {esc((r.get("quote") or {}).get("asof", r.get("asof", "")))}</small></td>'
             f'<td class="r opt {cls(r.get("r1m"))}">{num(r.get("r1m"), 1, sign=True, pct=True)}</td>'
             f'<td class="r {cls(r.get("r6"))}">{num(r.get("r6"), 0, sign=True, pct=True)}</td>'
             f'<td class="r opt">{num(r.get("rsi"), 0)}</td></tr>'
@@ -795,6 +797,7 @@ function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');if(tag(o))h.appe
  h.appendChild(el('span','thc',lbl+(o.board?' '+o.board:'')+' · '+(o.ind||'')));d.appendChild(h);
  d.appendChild(el('div','small',(en()?'Tech score ':'技術分數 ')+f(o.tech,0)+(en()?' — rank ':'（全市場第 ')+o.rank+' / '+o.N+(en()?'':' 名）')
   +'　1M '+sg(o.r1m,1)+'　6M '+sg(o.r6,0)+'　RSI '+f(o.rsi,0)+'　'+(en()?'Price ':'現價 ')+f(o.px,2)));
+ if(o.source)d.appendChild(el('div','small muted',o.source+' '+(o.quote_asof||'—')+' · '+(en()?'Technical data: ':'技術資料：')+(o.history_asof||'—')));
  var st=el('div','small');st.appendChild(el('b','act',(o.stl||'—')+(o.patl?'：'+o.patl:'')+' '));d.appendChild(st);
  if(o.st==='signal'){d.appendChild(el('div','small','▶ '+(en()?'Entry zone ':'何時買（規則參考）：進場參考區 ')+f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' (in zone)':'（現價在區內）'):(en()?' (outside)':'（現價在區外）'))));
   d.appendChild(el('div','small','▶ '+(en()?'Give up below ':'何時放棄：收盤跌破 ')+f(o.inv,2)+'（-'+f(o.risk,1)+'%）'+(o.tgt?('　▶ '+(en()?'Overhead ':'上方壓力 52 週高 ')+f(o.tgt,2)+'（+'+f(o.tgtp,0)+'%）'):'')));}
@@ -828,7 +831,8 @@ document.querySelectorAll('.fm').forEach(function(w){var mode=w.dataset.mode,mk=
    :['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Pattern / status':'型態／狀態',en()?'Strength':'強度',en()?'Price':'現價',en()?'Entry / add-on zone':'進場／加碼參考區',en()?'Give-up':'失效線'])
    .forEach(function(x){th.appendChild(el('th',null,x));});var hd=el('thead');hd.appendChild(th);t.appendChild(hd);var tbd=el('tbody');
   its.slice(0,shown).forEach(function(o,i){var tr=el('tr');if(o.pk&&mode!=='score')tr.className='pickrow';var nm=el('td','nw');if(tag(o)&&mode!=='score')nm.appendChild(tb(tag(o)));nm.appendChild(el('b',null,o.name+' '));nm.appendChild(el('span','tk',o.code));
-   var cells=mode==='score'?[String(o.rank),nm,o.ind||'',f(o.tech,0),sg(o.r1m,1),sg(o.r6,0),f(o.rsi,0),o.stl||'']
+   if(o.source)nm.appendChild(el('div','small muted',o.source+' '+(o.quote_asof||'—')));
+   var cells=mode==='score'?[o.rank==null?'—':String(o.rank),nm,o.ind||'',f(o.tech,0),sg(o.r1m,1),sg(o.r6,0),f(o.rsi,0),o.stl||'']
     :[String(i+1),nm,o.ind||'',o.patl||o.stl||'',f(o.str,0),f(o.px,2),o.zlo==null?'—':(f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' ✓':' 區內'):'')+(o.st!=='signal'?(en()?' (ref)':'（參考）'):'')),o.inv==null?'—':(f(o.inv,2)+'（-'+f(o.risk,1)+'%）')];
    cells.forEach(function(c){if(typeof c==='string'){tr.appendChild(el('td',null,c));}else tr.appendChild(c);});
    tr.style.cursor='pointer';tr.title=en()?'Click for details':'點一下看何時買／何時放棄';

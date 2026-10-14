@@ -245,6 +245,7 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
             zh, en = m["symbols"][sym]
             p5 = _prev_score(prev.get(mk) or {}, sym, 5, max(x["asof"] for x in feats.values()))
             rows.append({"sym": sym, "code": sym.split(".")[0], "name": zh, "name_en": en, "theme": m["themes"].get(sym, "其他"),
+                         "quote": (getattr(eng, "market", None).q(sym) if mk == "tw" and getattr(eng, "market", None) else None),
                          "score": round(float(score), 1),
                          "tech": round(tech, 1), "intel": None if intel is None else round(float(intel), 1),
                          "chg5": None if p5 is None else round(float(score) - p5, 1),

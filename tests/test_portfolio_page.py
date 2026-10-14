@@ -22,7 +22,7 @@ def main():
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data
-    assert set(data) == {"fx", "q", "gcid"}                               # fx, public quotes, Google client id (public)
+    assert set(data) == {"fx", "q", "gcid", "hist"}                      # fx, public quotes, Google client id (public), 30d history
     assert data["gcid"] == "" or data["gcid"].endswith(".apps.googleusercontent.com")
     assert data["fx"]["USD"] == 32.0 and abs(data["fx"]["HKD"] - 32.0 / 7.8) < 1e-9
     assert "SPY" in data["q"] and "BAD" not in data["q"]                 # NaN prices skipped
@@ -46,7 +46,7 @@ def main():
     from tools import build_site as B
     src = open(B.__file__, encoding="utf-8").read()
     assert '("portfolio", "我的持股", "My holdings", [SP.sec_portfolio])' in src and "{SP.JS}" in src and "{SP.CSS}" in src
-    print("PORTFOLIO PAGE TESTS PASSED ✅")
+    print("PORTFOLIO PAGE TESTS PASSED [OK]")
 
 
 if __name__ == "__main__":
