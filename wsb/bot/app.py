@@ -160,9 +160,10 @@ class Sentinel(commands.Bot):
 
     @staticmethod
     def _all_dm(targets) -> bool:
-        """True when every destination is a private message (then holdings may be included)."""
-        return bool(targets) and all(isinstance(t, discord.DMChannel) or getattr(t, "recipient", None) is not None
-                                     or isinstance(t, discord.Interaction) and t.guild is None for t in targets)
+        dm_cls = getattr(discord, "DMChannel", ())
+        it_cls = getattr(discord, "Interaction", ())
+        return bool(targets) and all((isinstance(t, dm_cls) if dm_cls else False) or getattr(t, "recipient", None) is not None
+                                     or ((isinstance(t, it_cls) and t.guild is None) if it_cls else False) for t in targets)
 
     async def _targets(self, kind: str, critical: bool = False) -> List[discord.abc.Messageable]:
         """Where to deliver: the configured channel and/or the owner's private messages."""

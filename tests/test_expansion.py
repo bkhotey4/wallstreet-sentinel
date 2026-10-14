@@ -1,6 +1,14 @@
-"""2026-10 expansion: stock scoring board, 13F / Form 4, Treasury zone, sector rotation, time machine, PWA.
-Offline (synthetic data + saved SEC/TreasuryDirect/TWSE response shapes).   python -m tests.test_expansion"""
 from __future__ import annotations
+
+import os
+import sys
+import tempfile
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wss_exp_"))
 
 import asyncio
 import json
@@ -338,7 +346,9 @@ def main():
     test_fullmarket(eng)
     out, snap = tmp / "site", tmp / "snapdir"
     B.update_snapshots.__globals__["SETTINGS"].raw.setdefault("snapshots", {})["min_hour"] = 0
-    p = asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
+    from unittest.mock import AsyncMock, patch
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})):
+        p = asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
     page = p.read_text(encoding="utf-8")
     for k in ("scores", "gurus", "bonds", "rotation", "history"):
         assert f'id="p-{k}"' in page and f'href="#{k}"' in page, k
@@ -403,10 +413,12 @@ def main():
     bf = WK.board_facts(eng)
     assert len(bf["board"]) == 3 and bf["board"][0]["top"] and any("13F 新申報" in x for x in bf["board_lines"])
     png = CMD._w_board(bf, "1/1").png()
-    Path("/tmp/wsb_expansion/weekly_board.png").write_bytes(png)
+    p_exp = Path(tempfile.gettempdir()) / "wsb_expansion" / "weekly_board.png"
+    p_exp.parent.mkdir(parents=True, exist_ok=True)
+    p_exp.write_bytes(png)
     assert len(png) > 5000
     print(f"  site {len(page) / 1024:.0f} KB · US #1 {us[0]['name']} {us[0]['score']:.0f} · breadth US {rot['breadth']['us']['now']:.0f}%")
-    print("EXPANSION TESTS PASSED ✅")
+    print("EXPANSION TESTS PASSED")
 
 
 if __name__ == "__main__":

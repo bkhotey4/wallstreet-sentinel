@@ -110,7 +110,7 @@ def main():
     assert _alert_kind("danger:us:2026-10-12:2") == "risk" and _alert_kind("ssi_level_3") == "risk"
     assert _alert_kind("playbook:2:20261012") == "risk" and _alert_kind("news:abc") != "risk"
     assert _alert_kind("evt:opex:2026-10-16") is None
-    print("SITE TRIGGER TESTS PASSED ✅")
+    print("SITE TRIGGER TESTS PASSED [OK]")
 
 
 if __name__ == "__main__":

@@ -63,10 +63,33 @@ class OfficialQuoteTests(unittest.TestCase):
                     "^TWII": dict(price=20200, asof="2026-10-13", bars={"2026-10-13": 20200})}
         with patch.object(M, "_download", side_effect=OSError("Yahoo down")) as download, patch.object(TQ, "refresh", AsyncMock(return_value=official)):
             asyncio.run(market.refresh_quotes())
-        self.assertEqual(download.call_args.args[0], ["SPY"])
+        self.assertEqual(download.call_args.args[0], ["2330.TW", "SPY", "^TWII"])   # Yahoo stays the intraday source
         self.assertEqual(market.q("2330.TW")["price"], 1000)
         self.assertEqual(market.series("2330.TW").iloc[-1], 101)
         self.assertEqual(market.series("^TWII").iloc[-1], 20200)
+
+    def test_late_official_file_never_overwrites_newer_yahoo_or_scan(self):
+        # TWSE OpenAPI often still serves yesterday at night: it must not roll quotes or scan rows back a day
+        market = M.MarketData()
+        market.tickers = ["2330.TW", "^TWII"]
+        yahoo = pd.DataFrame({"2330.TW": [2440.0, 2450.0], "^TWII": [27000.0, 27100.0]},
+                             index=pd.to_datetime(["2026-10-13", "2026-10-14"]))
+        official = {"2330.TW": dict(price=2490, prev=2500, asof="2026-10-13", source="TWSE"),
+                    "1101.TW": dict(price=30, asof="2026-10-14", source="TWSE")}
+        with patch.object(M, "_download", return_value=yahoo), patch.object(TQ, "refresh", AsyncMock(return_value=official)):
+            asyncio.run(market.refresh_quotes())
+        q = market.q("2330.TW")
+        self.assertEqual(q["price"], 2450.0)            # Yahoo 10-14 kept; official 10-13 ignored
+        self.assertNotEqual(q.get("source"), "TWSE")
+        self.assertIsNone(market.q("1101.TW"))  # untracked official symbols never enter the bot's quote set
+        cols = ["sym", "px", "st", "zlo", "history_asof"]
+        scan = dict(cols=cols, rows=[["2330.TW", 2450, "signal", 2400, "2026-10-14"]], asof="2026-10-14")
+        data = TQ.overlay_published(scan, {"2330.TW": official["2330.TW"], "0050.TW": dict(price=60, asof="2026-10-13", source="TWSE")})
+        rows = {r[0]: dict(zip(data["cols"], r)) for r in data["rows"]}
+        self.assertEqual(rows["2330.TW"]["st"], "signal")
+        self.assertEqual(rows["2330.TW"]["px"], 2450)
+        self.assertEqual(rows["2330.TW"]["zlo"], 2400)
+        self.assertEqual(rows["0050.TW"]["st"], "quote_only")
 
     def test_published_quotes_hide_outdated_signals_keep_dates_and_add_etfs(self):
         cols = ["sym", "px", "st", "zlo", "inz", "pk", "history_asof"]

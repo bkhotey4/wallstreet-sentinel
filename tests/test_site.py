@@ -1,8 +1,17 @@
 """Intel-station site: renders from a synthetic engine, contains no holdings, escapes untrusted text."""
 import asyncio
+import os
 import re
+import sys
+import tempfile
 import time
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 import tests.test_offline as T
 from wsb.analytics.stress import StressEngine
@@ -14,6 +23,7 @@ from tools import build_site as B
 
 def main():
     eng = Engine()
+    eng.site_mode = True
     eng.market, eng.fred = T.m, T.fr
     eng.stress_engine = StressEngine(T.m, T.fr)
     eng.news.items = [NewsItem("Bloomberg", "Fed <script>alert(1)</script> signals pause", "javascript:alert(1)", time.time(), 9),
@@ -29,10 +39,13 @@ def main():
                             "DRCCLACBS": pd.Series(3 + rng.normal(0, 0.4, len(q)), index=q),
                             "BAA10Y": pd.Series(2 + rng.normal(0, 0.3, 5000), index=pd.bdate_range("2006-01-02", periods=5000))})
     HEALTH.ok("yahoo_quotes", 90, every=300)
-    asyncio.run(eng.recompute())
+    asyncio.run(eng.recompute(skip_quality=True))
     assert not eng.holdings and eng.portfolio.get("error"), "holdings must be disabled in intel-station mode"
-    out = Path("/tmp/wsb_site_test")
-    p = asyncio.run(B.build(out, use_ai=False, engine=eng))
+    out = Path(tempfile.gettempdir()) / "wsb_site_test"
+    from unittest.mock import AsyncMock, patch
+    eng.refresh_earnings = AsyncMock()
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})):
+        p = asyncio.run(B.build(out, use_ai=False, engine=eng))
     page = p.read_text(encoding="utf-8")
     # trading-desk layout: strip, hoverable charts, radar, bilingual labels, theme + language toggles
     assert 'class="strip"' in page and 'id="c_ssi"' in page and 'id="c_radar"' in page and 'id="c_t0"' in page
@@ -49,6 +62,12 @@ def main():
     assert eng.valuation["available"] and any(i["key"] == "buffett" and i["estimate"] is not None
                                               for g in eng.valuation["groups"] for i in g["items"])
     assert "行情資料日" in page
+    # quant cards: no hard-coded tables / placeholder scores (removed 2026-10-15)
+    for bad in ("Copilot 訂閱", "3491.58", "$1.82 兆", "7勝 3負", "DOI) 上升至 98 天", "fcf_burn", "38%~60%", "|| 31.9", "sm_base = 42", "retail_score = 68"):
+        assert bad not in page, bad
+    import tools.site_sections as S2
+    for gone in ("sec_hyperscaler_capex_fcf", "sec_bull_year5_analog", "sec_equity_net_supply"):
+        assert not hasattr(S2, gone), gone
     # tabbed layout: every page exists, overview shown first
     for k in ("overview", "risk", "flows", "crisis", "valuation", "markets", "taiwan", "news", "inputs"):
         assert f'id="p-{k}"' in page and f'href="#{k}"' in page, k
@@ -75,7 +94,7 @@ def main():
     d = json.loads((out / "data.json").read_text(encoding="utf-8"))
     assert d["ssi"]["score"] > 0 and "portfolio" not in json.dumps(d).lower()
     print(f"  site: {len(page) / 1024:.0f} KB, ssi {d['ssi']['score']:.1f} {d['ssi']['label']}")
-    print("SITE TESTS PASSED ✅")
+    print("SITE TESTS PASSED")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,19 @@
 """Tests for weekly report / FOMC diff / per-rule scorecard / portfolio X-ray / hedge structures / TW extras."""
+import os
+import sys
+import tempfile
 import time
 import types
 from datetime import date, datetime, timedelta
+from pathlib import Path
+
+_ROOT = str(Path(__file__).resolve().parent.parent)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+os.environ["WSB_DATA_DIR"] = tempfile.mkdtemp(prefix="wsb_test_extras_")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 import numpy as np
 import pandas as pd
@@ -268,7 +280,7 @@ def main():
     test_weekly()
     test_xray()
     test_hedge_structures()
-    print("EXTRAS TESTS PASSED ✅")
+    print("EXTRAS TESTS PASSED [OK]")
 
 
 if __name__ == "__main__":

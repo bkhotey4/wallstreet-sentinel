@@ -195,7 +195,10 @@ class MarketData:
 
     async def refresh_quotes(self, extra: Optional[List[str]] = None) -> None:
         from . import taiwan_quotes as TQ
-        tickers = sorted(t for t in set(self.tickers + (extra or [])) if not TQ.is_taiwan(t))
+        tracked = set(self.tickers + (extra or []))
+        # Yahoo stays the intraday source for Taiwan too: the TWSE/TPEx OpenAPI files are end-of-day only and often
+        # publish a day late, so dropping Yahoo froze 台股 quotes at yesterday and silenced the intraday danger check.
+        tickers = sorted(tracked)
         official_task = asyncio.create_task(TQ.refresh())
         every = SETTINGS["refresh"]["quotes"]
         try:
@@ -258,9 +261,11 @@ class MarketData:
             # Yahoo outages must never prevent official Taiwan prices from being applied.
             try:
                 official = await official_task
-                self.quotes = {**self.quotes, **official}
-                if official:
-                    self.quotes_ts = time.time()
+                # only tracked tickers (the official file has ~2,300 symbols), and only when the official bar is
+                # newer than — or the same day as — what Yahoo already gave us
+                fresh = {s: q for s, q in official.items()
+                         if s in tracked and q.get("asof", "") >= (self.quotes.get(s) or {}).get("asof", "")}
+                self.quotes = {**self.quotes, **fresh}
                 index = TQ.index_frame(official)
                 if not index.empty:
                     # Index levels are unadjusted on both sources; equity cash prices stay separate.

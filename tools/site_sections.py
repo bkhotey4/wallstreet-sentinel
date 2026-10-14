@@ -782,7 +782,7 @@ def sec_smart_retail_divergence(eng) -> str:
         skew_s = eng.market.series("^SKEW").dropna()
         skew_val = float(skew_s.iloc[-1]) if len(skew_s) else None
 
-    op = getattr(eng, "options", None) and (eng.options.spx or {})
+    op = getattr(getattr(eng, "options", None), "spx", None) or {}
     pc_vol = op.get("put_call_volume")
     pc_oi = op.get("put_call_oi")
 
@@ -794,12 +794,12 @@ def sec_smart_retail_divergence(eng) -> str:
     elif dpi_pctile is not None:
         sm_base = float(dpi_pctile)
     else:
-        sm_base = 42.0
-
-    if fg_score is not None:
-        retail_score = float(fg_score)
-    else:
-        retail_score = 68.0
+        sm_base = None
+    retail_score = float(fg_score) if fg_score is not None else None
+    if sm_base is None or retail_score is None:          # no invented placeholder scores
+        miss = "、".join(x for x, v in (("暗池 DPI", sm_base), ("恐懼貪婪指數", retail_score)) if v is None)
+        return card("散戶情緒 vs 聰明錢背離雷達", "Smart Money vs Retail Divergence",
+                    f'<p class="muted">{T("資料缺：" + miss + "，本卡暫不判斷。", "Data unavailable — no reading.")}</p>', "wide")
 
     div_delta = retail_score - sm_base
 
@@ -835,7 +835,7 @@ def sec_smart_retail_divergence(eng) -> str:
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
           <span>{T("散戶狂熱指數 (Retail FOMO Index)", "Retail FOMO Index")}</span>
-          <b style="color:var(--dn);">{retail_score:.0f} / 100 ({T("極度貪婪", "Extreme Greed") if retail_score >= 70 else T("貪婪追多", "Greed")})</b>
+          <b style="color:var(--dn);">{retail_score:.0f} / 100 ({T("極度貪婪", "Extreme greed") if retail_score >= 75 else T("貪婪", "Greed") if retail_score >= 55 else T("中性", "Neutral") if retail_score > 45 else T("恐懼", "Fear") if retail_score > 25 else T("極度恐懼", "Extreme fear")})</b>
         </div>
         <div class="sbar" title="Retail"><i style="width:{ret_w}%;background:var(--dn);"></i><b>{retail_score:.0f}</b></div>
       </div>
@@ -861,17 +861,17 @@ def sec_smart_retail_divergence(eng) -> str:
         <span class="pill" style="border-color:{div_badge_color};color:{div_badge_color};font-weight:700;">{T(risk_alert, risk_alert_en)}</span>
       </div>
       <p style="margin:6px 0 0;font-size:12px;color:var(--tx2);line-height:1.5;">
-        {T("【牛市第 5 年典型特徵】散戶在指數創歷史新高時最勇敢（看空者陸續繳械翻多、融資餘額與槓桿 ETF 買氣激增），然而大額機構資金透過暗池悄悄分批派發、並大舉加碼深度價外 Put 避險（SKEW 升高）。當背離差距 > +20 時，市場進入極度脆弱區。",
-           "Late-cycle bull markets typically see retail investors turn hyper-bullish chasing all-time highs while institutions quietly distribute via dark pools and aggressively buy tail put protection (SKEW spikes). Spread > +20 signals fragile market micro-structure.")}
+        {T("怎麼讀：差值 = 恐懼貪婪分數 − 暗池買盤分數。差值大代表情緒比機構買盤熱；差值為負代表情緒冷但暗池在買。門檻（+10／+25／−15）是參考框架，未經回測，不列入壓力指數或警報。",
+           "Spread = Fear &amp; Greed minus dark-pool buying score. Thresholds (+10/+25/−15) are a framework, not backtested, and feed no risk score or alert.")}
       </p>
     </div>'''
 
-    note = T("資料：FINRA Reg SHO 暗池成交比例、CBOE SKEW 黑天鵝避險指數、CNN/Sentix/自研情緒模型。數值經正規化為 0–100 分位；背離差值越大代表散戶與聰明錢步調越脫節。",
+    note = T("資料：FINRA Reg SHO 暗池放空成交比例（DPI 5 日均，30–55% 線性換成 0–100）、本站恐懼貪婪指數、CBOE SKEW、SPX 選擇權 Put/Call。",
              "Sources: FINRA Reg SHO Dark Pool short volume, CBOE SKEW Tail Risk Index, retail positioning models. Divergence spread = Retail FOMO minus Smart Money Flow.")
 
-    return card("【籌碼極端背離】散戶 FOMO vs 聰明錢背離雷達", "Smart Money vs Retail FOMO Divergence Radar",
+    return card("散戶情緒 vs 聰明錢背離雷達", "Smart Money vs Retail Divergence",
                 kv + meters + status_card + f'<p class="note">{note}</p>', "wide",
-                sub=T("牛市第 5 年大佬減碼、散戶越漲越買的微觀籌碼全景", "Retail frenzy chasing ATH while institutions build downside tail hedges"))
+                sub=T("情緒分數與暗池買盤是否同步", "Is sentiment running ahead of dark-pool buying?"))
 
 
 # ----------------------------------------------------------------- Video Module 2: 市場廣度極化與掉隊分布
@@ -895,11 +895,9 @@ def sec_breadth_polarization(eng) -> str:
                         zh = lab[0] if isinstance(lab, (list, tuple)) else str(lab)
                         drawdowns.append((sym, zh, px, hi, dd))
 
-    if len(drawdowns) < 5:
-        b1_pct, b2_pct, b3_pct, b4_pct = 38.0, 24.0, 22.0, 16.0
-        n1, n2, n3, n4 = 19, 12, 11, 8
-        top_lead = [("NVDA", "輝達", -2.1), ("AAPL", "蘋果", -3.4), ("MSFT", "微軟", -4.2)]
-        top_lag = [("INTC", "英特爾", -52.4), ("NKE", "耐吉", -43.1), ("BA", "波音", -38.6)]
+    if len(drawdowns) < 5:                               # no invented buckets / names
+        return card("市場廣度：距 52 週高點回撤分布", "Breadth: drawdown from 52-week high",
+                    f'<p class="muted">{T("資料缺：個股收盤價不足，本卡暫不顯示。", "Data unavailable.")}</p>', "wide")
     else:
         total_n = len(drawdowns)
         b1 = [d for d in drawdowns if d[4] > -5.0]
@@ -916,6 +914,18 @@ def sec_breadth_polarization(eng) -> str:
         top_lag = [(s[0], s[1], s[4]) for s in sorted_dd[-3:]]
 
     lag_total_pct = b3_pct + b4_pct
+    total_n = len(drawdowns)
+    asof = max((str(sp.close[d[0]].dropna().index[-1].date()) for d in drawdowns), default="—")
+    gs = eng.market.series("^GSPC").dropna()
+    idx_dd = (float(gs.iloc[-1]) / float(gs.tail(252).max()) - 1) * 100 if len(gs) >= 20 else None
+    if idx_dd is not None and idx_dd > -5 and lag_total_pct >= 40:
+        pol, pol_en, pol_c = "撕裂（指數近高點、多數個股回檔）", "Polarised (index near high, most names down)", "var(--warn)"
+    elif lag_total_pct >= 50:
+        pol, pol_en, pol_c = "普遍回檔", "Broad pullback", "var(--dn)"
+    elif lag_total_pct >= 30:
+        pol, pol_en, pol_c = "分歧", "Mixed", "var(--warn)"
+    else:
+        pol, pol_en, pol_c = "健康", "Healthy", "var(--up)"
 
     rsp = eng.market.series("RSP").dropna()
     spy = eng.market.series("SPY").dropna()
@@ -955,7 +965,9 @@ def sec_breadth_polarization(eng) -> str:
       <div><span class="muted">{T("掉隊成分股合計 (回撤≥10%)", "Total Lagging (DD ≥10%)")}</span><b class="dn">{lag_total_pct:.1f}%</b></div>
       <div><span class="muted">{T("技術熊市名單 (回撤≥20%)", "In Bear Market (DD ≥20%)")}</span><b style="color:var(--dn);">{b4_pct:.1f}%</b></div>
       <div><span class="muted">{T("等權 RSP / 市值 SPY (3M)", "RSP/SPY Ratio (3M)")}</span><b class="{rsp_trend_cls}">{rsp_spy_stat}</b></div>
-      <div><span class="muted">{T("市場廣度極化判定", "Breadth Polarization")}</span><b style="color:var(--warn);">{T("高度撕裂 (權值撐盤)", "Extreme Divergence")}</b></div>
+      <div><span class="muted">{T("標普 500 距 52 週高點", "S&amp;P 500 vs 52w high")}</span><b>{num(idx_dd, 1, sign=True)}%</b></div>
+      <div><span class="muted">{T("廣度判定", "Breadth")}</span><b style="color:{pol_c};">{T(pol, pol_en)}</b></div>
+      <div><span class="muted">{T("資料日", "As of")}</span><b class="small">{esc(asof)}</b></div>
     </div>'''
 
     details = f'''<div class="g2" style="margin-top:12px;">
@@ -970,292 +982,16 @@ def sec_breadth_polarization(eng) -> str:
     </div>'''
 
     warn_box = f'''<div style="background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:var(--tx2);line-height:1.5;">
-      <b>{T("影片核心論點驗證", "Video Key Insight")}:</b> {T("標普 500 指數看似創新高，但內部已有高達 38%~60% 的成分股深陷技術回檔或熊市區。這種『指數繁榮、多數失血』的虛假強勢，是牛市第 5 年最具欺騙性的廣度背離信號，一旦少數權值股補跌，缺乏底層支撐的指數將加速修正。",
-      "While the headline S&P 500 index reaches new highs, 38%-60% of components are already in technical corrections or bear markets. This breadth breakdown is a classic late-cycle hallmark where a handful of mega-caps mask broad underlying weakness.")}
+      <b>{T("本期數據", "This reading")}:</b> {T(f"本站追蹤的 {total_n} 檔美股中，{lag_total_pct:.0f}% 距 52 週高點回撤 ≥10%、{b4_pct:.0f}% 回撤 ≥20%。判定門檻（指數距高點 &gt; −5% 且 ≥40% 個股回撤 ≥10% 才算「撕裂」）是參考框架，未經回測。",
+      f"Of {total_n} tracked US stocks, {lag_total_pct:.0f}% are ≥10% and {b4_pct:.0f}% ≥20% below their 52-week high. Thresholds are a framework, not backtested.")}
     </div>'''
 
     note = T("資料：本站美股 Universe 每日收盤價距 252 交易日（52 週）最高點回撤幅度，標普等權重 ETF (RSP) 相對市值加權 (SPY) 3 個月強弱。",
              "Source: Drawdown from 252-day peak across universe, plus 3M RSP/SPY relative performance.")
 
-    return card("【市場廣度極化】標普 500「60% 掉隊成分股」回撤分布圖", "S&P 500 Breadth Polarization & 52-Week High Drawdown Distribution",
+    return card("市場廣度：距 52 週高點回撤分布", "Breadth: drawdown from 52-week high",
                 kv + bar + details + warn_box + f'<p class="note">{note}</p>', "wide",
-                sub=T("少數巨頭撐指數，底層多數在失血的廣度背離全景", "Drawdown buckets and equal-weight RSP/SPY breadth divergence"))
-
-
-# ----------------------------------------------------------------- Video Module 3: 雲端巨頭 Capex vs FCF 壓力鐘
-def sec_hyperscaler_capex_fcf(eng) -> str:
-    """Video Feature 3: Big Tech AI Capex vs Free Cash Flow Pressure Clock & Semiconductor Transmission.
-    Monitors MSFT, GOOGL, META, AMZN Capex intensity, FCF exhaustion, and cyclical transmission to semis."""
-    hyperscalers = [
-        {"sym": "MSFT", "name": "微軟", "capex": 68.5, "ocf": 125.8, "fcf": 57.3, "fcf_burn": 119.5, "stage": "Copilot 訂閱、Azure AI 雲端營收轉化", "stage_en": "Copilot subscriptions & Azure AI monetization"},
-        {"sym": "GOOGL", "name": "Alphabet", "capex": 52.3, "ocf": 110.2, "fcf": 57.9, "fcf_burn": 90.3, "stage": "Gemini 企業 API、搜尋與廣告效率優化", "stage_en": "Gemini enterprise APIs & search/ad efficiency"},
-        {"sym": "META", "name": "Meta", "capex": 40.2, "ocf": 75.4, "fcf": 35.2, "fcf_burn": 114.2, "stage": "Llama 開源生態、算力集群推進", "stage_en": "Llama ecosystem & GPU compute clusters"},
-        {"sym": "AMZN", "name": "亞馬遜", "capex": 75.0, "ocf": 115.0, "fcf": 40.0, "fcf_burn": 187.5, "stage": "AWS 基礎設施、自研晶片 Trainium 部署", "stage_en": "AWS data centers & Trainium chip deployment"},
-    ]
-
-    tot_capex = sum(h["capex"] for h in hyperscalers)
-    tot_ocf = sum(h["ocf"] for h in hyperscalers)
-    tot_fcf = sum(h["fcf"] for h in hyperscalers)
-    tot_ratio = tot_capex / tot_ocf * 100
-    tot_fcf_ratio = tot_capex / tot_fcf * 100
-
-    rows = "".join(
-        f'''<tr>
-          <td class="nw"><b>{esc(h["name"])}</b> <small class="tk">{esc(h["sym"])}</small></td>
-          <td class="r">${h["capex"]:.1f}B</td>
-          <td class="r">${h["ocf"]:.1f}B</td>
-          <td class="r"><b>{h["capex"]/h["ocf"]*100:.1f}%</b></td>
-          <td class="r" style="color:var(--dn);">${h["fcf"]:.1f}B</td>
-          <td class="r"><span class="pill" style="border-color:{"var(--dn)" if h["fcf_burn"]>100 else "var(--warn)"};color:{"var(--dn)" if h["fcf_burn"]>100 else "var(--warn)"};">{h["fcf_burn"]:.0f}%</span></td>
-          <td class="small muted">{T(h["stage"], h["stage_en"])}</td>
-        </tr>''' for h in hyperscalers
-    )
-
-    kv = f'''<div class="kv">
-      <div><span class="muted">{T("四大巨頭年度 Capex 總額", "Combined Hyperscalers Capex")}</span><b>${tot_capex:,.0f}B / 年</b></div>
-      <div><span class="muted">{T("Capex 佔營運現金流比", "Capex / Operating Cash Flow")}</span><b style="color:var(--warn);">{tot_ratio:.1f}%</b> <span class="small muted">({T("歷史均值 28%", "Hist. avg 28%")})</span></div>
-      <div><span class="muted">{T("Capex / 自由現金流侵蝕率", "Capex / FCF Ratio")}</span><b style="color:var(--dn);">{tot_fcf_ratio:.0f}%</b></div>
-      <div><span class="muted">{T("AI 變現承壓等級", "Monetization Pressure")}</span><b style="color:var(--dn);">{T("高位緊繃警戒 (82/100)", "High Stress (82/100)")}</b></div>
-    </div>'''
-
-    table = f'''<div class="scroll" style="margin:12px 0;"><table class="mini">
-      <thead><tr>
-        <th>{T("雲端巨頭", "Hyperscaler")}</th>
-        <th class="r">{T("年化 Capex", "Annual Capex")}</th>
-        <th class="r">{T("營運現金流 OCF", "OCF")}</th>
-        <th class="r">{T("Capex/OCF", "Capex/OCF")}</th>
-        <th class="r">{T("自由現金流 FCF", "FCF")}</th>
-        <th class="r">{T("Capex/FCF", "Capex/FCF")}</th>
-        <th>{T("AI 變現進展與商業模式", "AI Monetization Status")}</th>
-      </tr></thead>
-      <tbody>{rows}</tbody>
-    </table></div>'''
-
-    semi_box = f'''<div class="g2" style="margin-top:10px;">
-      <div style="background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;">
-        <h4 style="margin:0 0 6px;color:var(--tx);">{T("半導體傳導鏈條：庫存天數與交期敏感度", "Semiconductor Transmission & Lead Times")}</h4>
-        <p style="margin:0 0 6px;font-size:12px;color:var(--tx2);line-height:1.5;">
-          {T("晶片製造商（台積電、輝達、博通）目前營收高度仰賴四大巨頭的資本支出擴張。當前先進封裝與 GPU 交期自前期的 40+ 週逐步收斂至 12–16 週，半導體整體庫存天數 (DOI) 上升至 98 天。這意味著『缺貨搶購期』已過，市場正邁入實質變現檢驗期。",
-             "Semiconductor leaders (TSMC, Nvidia, Broadcom) rely heavily on Big 4 Capex. GPU lead times have compressed from 40+ weeks to 12-16 weeks, and industry Days of Inventory (DOI) has risen to 98 days, transitioning from supply shortage to real ROI validation.")}
-        </p>
-      </div>
-      <div style="background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;">
-        <h4 style="margin:0 0 6px;color:var(--warn);">{T("黑天鵝觸發條件：ROI 遞延引發的砍單週期", "Risk Scenario: ROI Delay & Capex Digestion")}</h4>
-        <p style="margin:0 0 6px;font-size:12px;color:var(--tx2);line-height:1.5;">
-          {T("【敏感度推演】巨頭資本支出每放緩 10%，供應鏈利潤恐遭槓桿放大衝擊 25%~35%。若 2026/2027 年 AI 終端軟體營收未顯著爆發，巨頭管理層面臨股東利潤壓力時將啟動 Capex 縮減，這也是牛市第 5 年常見的『基本面隱形殺手』。",
-             "Sensitivity analysis: Every 10% reduction in Big Tech Capex translates to a 25%-35% leveraged impact on semiconductor supply-chain earnings. If software monetization lags in 2026/2027, Capex digestion will trigger a sharp inventory cycle.")}
-        </p>
-      </div>
-    </div>'''
-
-    note = T("資料：SEC 10-K/10-Q 官方財報年化資本支出（Capex）與營運現金流（OCF）；半導體交期與庫存天數（DOI）彙整自 Bloomberg/Gartner 供應鏈追蹤。",
-             "Sources: SEC EDGAR 10-K/10-Q annualized Capex & OCF filings; Semiconductor DOI & lead times from supply-chain intelligence.")
-
-    return card("【AI 基本面隱形殺手】雲端巨頭 Capex 資本支出 vs 自由現金流 (FCF) 壓力鐘", "Hyperscalers Capex vs FCF Monetization Pressure Clock",
-                kv + table + semi_box + f'<p class="note">{note}</p>', "wide",
-                sub=T("追蹤微軟、谷歌、Meta、亞馬遜資本支出對現金流的極限消耗與半導體週期傳導", "Monitoring Big 4 AI infrastructure spending vs cash flow cushions"))
-
-
-# ----------------------------------------------------------------- Video Module 4: 歷史牛市第 5 年走勢分布與回撤
-def sec_bull_year5_analog(eng) -> str:
-    """Video Feature 4: Post-WWII Bull Market Year 5 Paths, Win Rates & Drawdown Distribution.
-    Compares 10 historical cycles entering Year 5 with the current 2022-2026/2027 cycle."""
-    cycles = [
-        {"era": "1949–1953", "y5": "1953", "ret": 1.2, "mdd": -14.8, "outcome": "溫和修正，韓戰後經濟調整", "outcome_en": "Mild correction, post-Korean war adjustment"},
-        {"era": "1957–1961", "y5": "1961", "ret": 23.1, "mdd": -4.4, "outcome": "延續強勢，進入低通膨擴張", "outcome_en": "Continued expansion, low inflation"},
-        {"era": "1962–1966", "y5": "1966", "ret": -13.1, "mdd": -22.2, "outcome": "見頂結束，轉入熊市與越戰緊縮", "outcome_en": "Cycle peak, bear market & Vietnam tightening"},
-        {"era": "1974–1978", "y5": "1978", "ret": 1.1, "mdd": -14.4, "outcome": "高通膨震盪，聯準會大幅升息前夕", "outcome_en": "Stagflation chop before Volcker tightening"},
-        {"era": "1982–1987", "y5": "1987", "ret": 2.0, "mdd": -33.5, "outcome": "上半年暴漲 +36%，10月黑色星期一崩盤", "outcome_en": "H1 soared +36%, Black Monday crash in Oct"},
-        {"era": "1990–1995", "y5": "1995", "ret": 34.1, "mdd": -2.5, "outcome": "葛林斯潘經典軟著陸，生產力爆發", "outcome_en": "Greenspan soft landing & productivity boom"},
-        {"era": "1995–1999", "y5": "1999", "ret": 19.5, "mdd": -12.1, "outcome": "網路泡沫最後瘋狂衝頂，隔年崩潰", "outcome_en": "Dot-com final melt-up, burst in 2000"},
-        {"era": "2002–2007", "y5": "2007", "ret": 3.5, "mdd": -10.1, "outcome": "10月創歷史新高，次貸海嘯前夕", "outcome_en": "ATH in Oct, eve of Great Financial Crisis"},
-        {"era": "2009–2014", "y5": "2014", "ret": 11.4, "mdd": -7.4, "outcome": "QE3 支撐，進入長牛下半場", "outcome_en": "QE3 support, long expansion"},
-        {"era": "2016–2020", "y5": "2020", "ret": 16.3, "mdd": -33.9, "outcome": "疫情閃崩 -34% 後由無限 QE 暴力 V 轉", "outcome_en": "Covid crash -34% then unlimited QE V-reversal"},
-    ]
-
-    avg_ret = sum(c["ret"] for c in cycles) / len(cycles)
-    avg_mdd = sum(c["mdd"] for c in cycles) / len(cycles)
-    win_cnt = sum(1 for c in cycles if c["ret"] > 0)
-    win_rate = win_cnt / len(cycles) * 100
-
-    spx_s = eng.market.series("^GSPC").dropna()
-    if spx_s.empty:
-        spx_s = eng.market.series("SPY").dropna()
-    cur_px = float(spx_s.iloc[-1]) if len(spx_s) else 5900.0
-    spx_gain_pct = (cur_px / 3491.58 - 1) * 100
-
-    w, h = 640, 260
-    pl, pr, pt, pb = 110, 30, 20, 20
-    W, H = w - pl - pr, h - pt - pb
-    n = len(cycles)
-    row_h = H / n
-    x_zero = pl + W * 0.5
-    scale_x = W * 0.5 / 40.0
-
-    svg_parts = [
-        f'<line x1="{x_zero}" x2="{x_zero}" y1="{pt}" y2="{pt+H}" stroke="var(--axis)" stroke-width="1.5"/>',
-        f'<text x="{x_zero}" y="{pt-6}" class="axis" text-anchor="middle">0%</text>',
-        f'<text x="{x_zero - 20 * scale_x}" y="{pt-6}" class="axis" text-anchor="middle">-20%</text>',
-        f'<text x="{x_zero + 20 * scale_x}" y="{pt-6}" class="axis" text-anchor="middle">+20%</text>',
-    ]
-
-    for i, c in enumerate(cycles):
-        cy = pt + i * row_h + row_h / 2
-        r = c["ret"]
-        r_w = abs(r) * scale_x
-        rx = x_zero if r >= 0 else x_zero - r_w
-        r_col = "var(--up)" if r >= 0 else "var(--dn)"
-        mdd_x = x_zero + c["mdd"] * scale_x
-
-        svg_parts.append(f'<text x="{pl-8}" y="{cy+4:.1f}" class="axis" text-anchor="end" font-weight="600">{c["era"]} ({c["y5"]})</text>')
-        svg_parts.append(f'<rect x="{rx:.1f}" y="{cy-5:.1f}" width="{max(r_w, 1):.1f}" height="10" fill="{r_col}" rx="2" opacity="0.85"/>')
-        svg_parts.append(f'<circle cx="{mdd_x:.1f}" cy="{cy:.1f}" r="3.5" fill="var(--dn)" stroke="var(--card)" stroke-width="1"/>')
-        svg_parts.append(f'<text x="{x_zero + 38 * scale_x}" y="{cy+4:.1f}" class="small" text-anchor="start" fill="{r_col}">{r:+.1f}% <span style="color:var(--dn);font-size:10px;">(MDD {c["mdd"]:.1f}%)</span></text>')
-
-    svg_chart = f'<svg viewBox="0 0 {w} {h}" class="chart" style="width:100%;height:auto;max-height:280px;" role="img" aria-label="Year 5 Bull Market Comparison">{"".join(svg_parts)}</svg>'
-
-    table_rows = "".join(
-        f'''<tr>
-          <td class="nw"><b>{c["era"]}</b> <small class="tk">({c["y5"]})</small></td>
-          <td class="r {cls(c["ret"])}"><b>{c["ret"]:+.1f}%</b></td>
-          <td class="r dn"><b>{c["mdd"]:.1f}%</b></td>
-          <td class="small muted">{T(c["outcome"], c["outcome_en"])}</td>
-        </tr>''' for c in cycles
-    )
-
-    kv = f'''<div class="kv">
-      <div><span class="muted">{T("歷史第 5 年平均報酬", "Average Year 5 Return")}</span><b class="up">+{avg_ret:.1f}%</b></div>
-      <div><span class="muted">{T("第 5 年年內平均最大回撤", "Avg Max Drawdown in Y5")}</span><b class="dn">{avg_mdd:.1f}%</b> <span class="small muted">({T("前3年均值僅 -8.2%", "Y1-3 avg -8.2%")})</span></div>
-      <div><span class="muted">{T("正報酬勝率", "Positive Year 5 Win-Rate")}</span><b>{win_rate:.0f}%</b> <span class="small muted">(7勝 3負)</span></div>
-      <div><span class="muted">{T("本輪自 2022/10 低點累計", "Current Bull Since 2022/10")}</span><b class="up">+{spx_gain_pct:.1f}%</b></div>
-    </div>'''
-
-    cycle_stat_card = f'''<div class="g2" style="margin:12px 0;">
-      <div>
-        <h4 style="margin:0 0 6px;">{T("歷史第 5 年全年報酬 vs 最大回撤分布 (二戰以來)", "Historical Year 5 Return & Drawdown Spread")}</h4>
-        <div style="background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;">
-          {svg_chart}
-          <div style="font-size:11px;color:var(--mu);margin-top:4px;display:flex;gap:12px;justify-content:center;">
-            <span><i style="width:8px;height:8px;background:var(--up);display:inline-block;border-radius:2px;"></i> 全年報酬</span>
-            <span><i style="width:8px;height:8px;background:var(--dn);display:inline-block;border-radius:50%;"></i> 年內最大回撤點</span>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h4 style="margin:0 0 6px;">{T("歷次週期對照明細", "Historical Cycle Breakdown")}</h4>
-        <div class="scroll" style="max-height:280px;"><table class="mini">
-          <thead><tr>
-            <th>{T("週期 (第5年)", "Era (Y5)")}</th>
-            <th class="r">{T("年報酬", "Return")}</th>
-            <th class="r">{T("最大回撤", "Max DD")}</th>
-            <th>{T("歷史結局與宏觀背景", "Macro Outcome")}</th>
-          </tr></thead>
-          <tbody>{table_rows}</tbody>
-        </table></div>
-      </div>
-    </div>'''
-
-    takeaway = f'''<div style="background:color-mix(in srgb,var(--ac) 10%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:12px;color:var(--tx2);line-height:1.5;">
-      <b>{T("歷史週期規律啟示", "Cycle Takeaway")}:</b> {T("牛市第 5 年並非必然轉熊（勝率 64% 仍由多頭佔優），但【波動度與回撤深度會急劇放大】：年內最大回撤從前幾年的平均 -8% 劇增至 -14.6%（如 1987 年年中暴漲隨後崩跌 -33%、2020 年疫情劇震）。此時追高勝率驟降，投資人應從『積極進攻』轉為『鎖定勝果、配置下檔對衝』。",
-      "Bull market Year 5 is not automatically bearish (64% win rate), but volatility and drawdown depth expand drastically. Average max pullback expands from -8% to -14.6%. The historical strategy shift in Year 5 is from aggressive capital expansion to capital preservation and downside tail hedging.")}
-    </div>'''
-
-    note = T("資料：二戰後標普 500 歷次牛市（定義為自低點上漲 ≥20% 且未跌破前低）進入第 5 個年度（滿 48–60 個月）之年化全收益與年內盤中最大回撤統計。",
-             "Source: S&P 500 post-WWII bull markets entering Year 5 (months 48-60) total return and maximum intra-year drawdown.")
-
-    return card("【歷史週期沙盤】歷史牛市第 5 年走勢分布與回撤對照卡", "Year 5 Bull Market Historical Path & Drawdown Distribution",
-                kv + cycle_stat_card + takeaway + f'<p class="note">{note}</p>', "wide",
-                sub=T("二戰以來 10 次牛市第 5 年統計：平均報酬 +10.2%、年內最大回撤擴大至 -14.6%", "Historical win rates, drawdowns, and survival patterns in late-stage bulls"))
-
-
-# ----------------------------------------------------------------- Video Module 5: PTJ 2027 股權淨供給監控器
-def sec_equity_net_supply(eng) -> str:
-    """Video Feature 5: Paul Tudor Jones (PTJ) Net Equity Supply Monitor (Corporate Buybacks vs IPO Extraction).
-    Tracks corporate buybacks, IPO/secondary dilution, and the 2026/2027 corporate refinancing wall."""
-    years = [
-        {"yr": "2021", "bb": 881, "ipo": 335, "net": -546, "desc": "疫後狂熱，IPO 與 SPAC 融資高峰"},
-        {"yr": "2022", "bb": 922, "ipo": 95, "net": -827, "desc": "暴力升息，IPO 冰凍，企業回購支撐底部"},
-        {"yr": "2023", "bb": 795, "ipo": 115, "net": -680, "desc": "高利率持續，企業保守但維持巨額庫藏股"},
-        {"yr": "2024", "bb": 940, "ipo": 160, "net": -780, "desc": "科技巨頭獲利飆升，庫藏股回購逼近兆元"},
-        {"yr": "2025E", "bb": 980, "ipo": 240, "net": -740, "desc": "AI 獨角獸陸續啟動 IPO，吸水效應初顯"},
-        {"yr": "2026E", "bb": 930, "ipo": 380, "net": -550, "desc": "PE/VC 存續期滿大舉抽水，再融資利率重設"},
-    ]
-
-    cur = years[-2]
-    w, h = 600, 210
-    pl, pr, pt, pb = 50, 20, 20, 30
-    W, H = w - pl - pr, h - pt - pb
-    bw = W / len(years) - 18
-    scale_y = H / 1000.0
-
-    bars_svg = []
-    for i, d in enumerate(years):
-        bx = pl + i * (W / len(years)) + 9
-        bb_h = d["bb"] * scale_y
-        bb_y = pt + H - bb_h
-        ipo_h = d["ipo"] * scale_y
-        ipo_y = pt + H - ipo_h
-        bars_svg.append(f'<rect x="{bx:.1f}" y="{bb_y:.1f}" width="{bw/2:.1f}" height="{bb_h:.1f}" fill="var(--up)" opacity="0.85" rx="2"><title>回購 ${d["bb"]}B</title></rect>')
-        bars_svg.append(f'<rect x="{bx + bw/2 + 2:.1f}" y="{ipo_y:.1f}" width="{bw/2:.1f}" height="{ipo_h:.1f}" fill="var(--dn)" opacity="0.85" rx="2"><title>IPO融資 ${d["ipo"]}B</title></rect>')
-        bars_svg.append(f'<text x="{bx + bw/2:.1f}" y="{h - 10}" class="axis" text-anchor="middle">{d["yr"]}</text>')
-        bars_svg.append(f'<text x="{bx + bw/2:.1f}" y="{bb_y - 4:.1f}" font-size="10" fill="var(--tx2)" text-anchor="middle">{d["net"]:+d}B</text>')
-
-    bars_chart = f'''<svg viewBox="0 0 {w} {h}" class="chart" style="width:100%;height:auto;max-height:220px;" role="img" aria-label="Net Equity Supply Chart">
-      <line x1="{pl}" x2="{pl+W}" y1="{pt+H}" y2="{pt+H}" stroke="var(--axis)" stroke-width="1"/>
-      {"".join(bars_svg)}
-    </svg>'''
-
-    rows = "".join(
-        f'''<tr>
-          <td class="nw"><b>{y["yr"]}</b></td>
-          <td class="r up">${y["bb"]}B</td>
-          <td class="r dn">${y["ipo"]}B</td>
-          <td class="r"><b>{y["net"]:+d}B</b></td>
-          <td class="small muted">{esc(y["desc"])}</td>
-        </tr>''' for y in years
-    )
-
-    table = f'''<div class="scroll" style="margin:10px 0;"><table class="mini">
-      <thead><tr>
-        <th>{T("年度", "Year")}</th>
-        <th class="r">{T("庫藏股回購 (買盤吸收)", "Buybacks")}</th>
-        <th class="r">{T("IPO／增資 (抽水規模)", "IPOs & Dilution")}</th>
-        <th class="r">{T("股權淨供給 (淨縮股)", "Net Supply")}</th>
-        <th>{T("宏觀流動性格局", "Macro Liquidity Context")}</th>
-      </tr></thead>
-      <tbody>{rows}</tbody>
-    </table></div>'''
-
-    kv = f'''<div class="kv">
-      <div><span class="muted">{T("目前企業年回購買盤", "Annual Buybacks Run-Rate")}</span><b class="up">~${cur["bb"]}B / 年</b></div>
-      <div><span class="muted">{T("IPO 次級抽水預估", "IPO & Dilution Extraction")}</span><b class="dn">~${cur["ipo"]}B / 年</b></div>
-      <div><span class="muted">{T("年度股權淨供給赤字", "Net Equity Deficit (Shrinkage)")}</span><b style="color:var(--up);">{cur["net"]:+d}B</b> <span class="small muted">({T("縮股推升每股盈餘", "Shares retired")})</span></div>
-      <div><span class="muted">{T("2026/27 企業債到期牆", "Refinancing Wall 2026-27")}</span><b style="color:var(--warn);">$1.82 兆美元</b></div>
-    </div>'''
-
-    ptj_box = f'''<div class="g2" style="margin-top:10px;">
-      <div style="background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;">
-        <h4 style="margin:0 0 6px;color:var(--tx);">{T("PTJ 宏觀流動性天平：為何 2026/2027 是轉折年？", "PTJ Liquidity Scale: Why 2026/2027 is the Pivot?")}</h4>
-        <p style="margin:0;font-size:12px;color:var(--tx2);line-height:1.5;">
-          {T("傳奇宏觀對沖基金經理 Paul Tudor Jones (PTJ) 指出：過去 10 年美股最大也是最穩定的單一買盤，不是散戶也不是主權基金，而是『企業自身庫藏股』每年高達近 1 兆美元的淨註銷（縮股效應）。然而，大量累積的私募獨角獸（AI 新創、Stripe、SpaceX 等）即將在 2026/2027 面臨基金存續期滿的 IPO 變現潮，將大幅抽走二級市場數千億流動性。",
-             "Macro legend Paul Tudor Jones highlights that corporate buybacks (~$1T/year) have been the dominant buyer of US equities. However, private unicorns approaching PE fund expirations will unleash hundreds of billions in IPO liquidity extraction in 2026/2027.")}
-        </p>
-      </div>
-      <div style="background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;">
-        <h4 style="margin:0 0 6px;color:var(--warn);">{T("企業再融資到期牆 (The Refinancing Wall)", "The Corporate Refinancing Wall")}</h4>
-        <p style="margin:0;font-size:12px;color:var(--tx2);line-height:1.5;">
-          {T("2020–2021 年在 2%–3% 極低利率時期發行的企業債務，將在 2025–2027 年迎來高達 1.8 兆美元的到期高峰。企業被迫以 5.5%–6.5% 的當前高利率重新換約，激增的利息支出將嚴重擠壓原先用於執行庫藏股買回的自由現金。當『回購縮手』撞上『IPO 抽水』，美股最堅實的微觀流動性護城河將出現裂痕。",
-             "Over $1.8T in low-coupon corporate debt matures in 2025-2027. Refinancing at 5.5%-6.5% will significantly increase interest expenses and crowd out capital allocated for share buybacks, eroding the market's mechanical support.")}
-        </p>
-      </div>
-    </div>'''
-
-    note = T("資料：S&P Dow Jones Indices 標普 500 企業季報回購數據、Renaissance Capital 美國 IPO 募集統計、Fed Z.1 金融帳企業債務到期分佈統計。",
-             "Sources: S&P Dow Jones Indices corporate buyback filings, Renaissance Capital US IPO statistics, and Federal Reserve Z.1 debt maturity profile.")
-
-    return card("【流動性轉折】PTJ 2027 股權淨供給監控器（庫藏股回購 vs IPO 抽水）", "PTJ Net Equity Supply Monitor (Buybacks vs IPO Dilution)",
-                kv + bars_chart + table + ptj_box + f'<p class="note">{note}</p>', "wide",
-                sub=T("對沖基金巨頭 PTJ 示警：庫藏股被動買盤收斂與 2026/2027 IPO 抽水潮之流動性天平", "Tracking corporate buybacks versus equity dilution and the refinancing wall"))
+                sub=T("本站追蹤美股名單（非標普 500 全部成分股）", "Tracked US list (not the full S&amp;P 500)"))
 
 
 # ----------------------------------------------------------------- time machine

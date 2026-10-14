@@ -154,14 +154,19 @@ def overlay_published(data, quotes):
     for sym, q in quotes.items():
         if sym == "^TWII" or not is_taiwan(sym):
             continue
+        is_new = sym not in rows
         r = rows.get(sym, {"sym": sym, "code": sym.split(".")[0], "name": q.get("name", sym), "board": "上市" if sym.endswith(".TW") else "上櫃"})
         history_day = r.get("history_asof") or ""
+        if history_day and q["asof"] < history_day:
+            continue        # the official file lags the scan (TWSE OpenAPI is often a day late): keep the newer scan row
         r["history_asof"] = history_day
         # TW current-price display is always official, even if a historical vendor is ahead.
         historical_price = r.get("px")
         different_basis = historical_price and abs(q["price"] / historical_price - 1) > 0.005
         r.update(px=q["price"], r1d=q.get("chg_pct"), quote_asof=q["asof"], source=q["source"])
-        if not history_day or q["asof"] != history_day or different_basis:
+        if is_new:          # never scanned (ETFs, small caps): a price, not a stale signal
+            r.update(st="quote_only", stl="僅報價", why="未納入技術掃描，只提供官方收盤價", tier=None)
+        elif not history_day or q["asof"] != history_day or different_basis:
             r.update(st="stale", stl="技術資料待更新", why="報價與技術資料日期不同或技術日期不明，暫不顯示進場區間", tier=None)
             for key in ("pk", "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "when", "zb", "tg", "ex"):
                 r[key] = None

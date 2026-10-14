@@ -1,6 +1,14 @@
-"""財經日曆＋科技財報（2026-10）：Nasdaq / ForexFactory / Fed / SEC / TWSE 回應格式（tests/fixtures/econ_fixture.json 為實際抓到的
-回應裁切），事件分組、意外判定、歷史反應、背景、財報指標、分數、頁面與 AI 快取。     python -m tests.test_econ"""
 from __future__ import annotations
+
+import os
+import sys
+import tempfile
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wss_econ_"))
 
 import asyncio
 import json
@@ -465,7 +473,9 @@ def main():
     EA._FILE, LLM.complete = saved_file, fake_complete
     # site
     out = tmp / "site"
-    asyncio.run(B.build(out, use_ai=False, engine=eng))
+    from unittest.mock import AsyncMock, patch
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})):
+        asyncio.run(B.build(out, use_ai=False, engine=eng))
     page = (out / "index.html").read_text(encoding="utf-8")
     for s in ("財經日曆", "科技財報", "FOMC 聯準會利率決議", "本週重要經濟數據", "美國經濟日曆", "美股財報日曆", "科技／半導體財報分析",
               "台股電子業月營收", "美股全市場科技股", 'id="ev-cpi-2026-10-14"', "若高於預期", "過去同類數據公布當天", "class=\"qchart\"",
@@ -475,10 +485,12 @@ def main():
     assert (out / "market" / "twrev.json").exists() and (out / "market" / "growth_us.json").exists() and (out / "market" / "growth_tw.json").exists()
     js = json.loads((out / "market" / "twrev.json").read_text(encoding="utf-8"))
     assert js["cols"][0] == "code" and js["n"] > 10
-    Path("/tmp/wsb_econ/page.html").write_text(page, encoding="utf-8")
+    p_out = Path(tempfile.gettempdir()) / "wsb_econ" / "page.html"
+    p_out.parent.mkdir(parents=True, exist_ok=True)
+    p_out.write_text(page, encoding="utf-8")
     test_bot(eng)
     print(f"  econ events {len(ev['events'])} · tech rows {len(te['rows'])} · page {len(page) / 1024:.0f} KB")
-    print("ECON TESTS PASSED ✅")
+    print("ECON TESTS PASSED")
 
 
 def test_bot(eng):

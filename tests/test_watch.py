@@ -1,5 +1,12 @@
-"""Tests for the self-monitoring / risk-forecast modules.  Run: python -m tests.test_watch"""
 from __future__ import annotations
+
+import os
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 import time
 from datetime import date

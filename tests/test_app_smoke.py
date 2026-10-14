@@ -1,6 +1,14 @@
-"""Smoke test for the bot runtime logic (alerts, scheduling, permissions, delivery) with a fake discord module.
-Run: python -m tests.test_app_smoke"""
 from __future__ import annotations
+
+import os
+import sys
+import tempfile
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wss_smoke_"))
 
 import asyncio
 import sys
@@ -310,7 +318,7 @@ async def main():
     eng_.signals = {}
     assert {"dp", "val", "breadth", "13f", "insider", "auction"} <= keys, keys
     assert not [a for a in bot._extras_alerts() if a.key.split(":")[1] in ("dp", "val", "breadth", "13f", "insider")], "no repeats"
-    print("APP SMOKE TESTS PASSED ✅")
+    print("APP SMOKE TESTS PASSED")
 
 
 if __name__ == "__main__":

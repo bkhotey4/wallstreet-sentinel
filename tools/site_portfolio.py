@@ -370,7 +370,8 @@ function calcBackcastNav(d, tot, FM){
  if(!HIST.dates || HIST.dates.length < 3) return null;
  var dates = HIST.dates;
  var twdRates = HIST.closes['TWD=X'] || [];
- var liveFxUsd = fxv('USD') || 31.9;
+ var liveFxUsd = fxv('USD'), hkUsd = (FXOK && FX.HKD) ? FX.HKD / FX.USD : null;
+ if(liveFxUsd == null) return null;                       // no USD/TWD rate → no curve (never an invented rate)
  var rows = [];
  d.h.forEach(function(h){
   var n = norm(h.s);
@@ -384,6 +385,11 @@ function calcBackcastNav(d, tot, FM){
   }
   rows.push({ h: h, n: h.n, series: series, sym: s, mk: n.mk });
  });
+ // only draw when ≥90% of today's value has a real daily history; otherwise the "curve" is mostly today's price
+ var covV = 0, allV = 0;
+ rows.forEach(function(r){ var p = price(r.h, FM && FM[r.mk]), f = fxv(cur(r.mk)); if(!p || p.px == null || f == null) return;
+  var v = r.n * p.px * f; allV += v; if(r.series) covV += v; });
+ if(allV <= 0 || covV / allV < 0.9) return null;
 
  var cashT = 0;
  (d.cash || []).forEach(function(c){
@@ -402,7 +408,8 @@ function calcBackcastNav(d, tot, FM){
     if(p && p.px != null) px = p.px;
    }
    if(px != null){
-    var rate = (r.mk === 'tw') ? 1.0 : dayFx;
+    var rate = (r.mk === 'tw') ? 1.0 : (r.mk === 'hk' ? (hkUsd != null ? dayFx * hkUsd : null) : dayFx);
+    if(rate == null) return;
     dayTot += r.n * px * rate;
    }
   });
@@ -502,8 +509,8 @@ function renderNav(d, tot, FM){
 
  var hint = el('div', 'pfnav-hint');
  if(curMode === 'backcast'){
-  hint.appendChild(L('💡 模式：依當前持股與每日收盤價自動回溯過去 30 個交易日真實淨值走勢；每天造訪將自動累計實盤記錄。',
-                     'Simulated 30-day NAV history based on current holdings. Live records accumulate automatically over time.'));
+  hint.appendChild(L('💡 估算：假設目前持股與現金在過去 30 個交易日都沒變，用每日收盤價回推，不是實際交易紀錄。實際紀錄會隨每天造訪累積。',
+                     'Estimate: assumes today\'s holdings and cash were unchanged for 30 trading days. Not an actual record.'));
  } else {
   hint.appendChild(L('💡 模式：實盤每日造訪自動累計記錄（已記錄 ' + d.nav.length + ' 天）；點擊【30天回溯走勢】可查看長週期波動。',
                      'Live tracking logged on daily visits (' + d.nav.length + ' days). Switch to 30D Backcast for full history.'));

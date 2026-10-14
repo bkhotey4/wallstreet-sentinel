@@ -3,6 +3,16 @@ US→TW linkage, expected moves, geopolitical heat, 個股情報 assembly, AI bu
 Offline.   WSB_DATA_DIR=/tmp/x python -m tests.test_siteextra"""
 from __future__ import annotations
 
+import os
+import sys
+import tempfile
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wss_siteextra_"))
+
 import asyncio
 import json
 import shutil
@@ -364,7 +374,7 @@ def main():
     yc = SI._load(SI.F_YF)
     assert set(yc) == {"Z0", "Z1", "Z2"} and not any(v.get("ok_ts") for v in yc.values()), "pruned to the universe"
     print(f"  site {len(page) / 1024:.0f} KB")
-    print("SITE EXTRAS TESTS PASSED ✅")
+    print("SITE EXTRAS TESTS PASSED")
 
 
 if __name__ == "__main__":
