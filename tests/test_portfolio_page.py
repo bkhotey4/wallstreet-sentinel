@@ -22,7 +22,9 @@ def main():
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data
-    assert set(data) == {"fx", "q", "gcid", "hist"}                      # fx, public quotes, Google client id (public), 30d history
+    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta"}   # public data only
+    assert data["earn"] == [] and data["crisis"] == {} and data["beta"] == {}  # no data in this fixture → nothing invented
+    assert "b: 1.65" not in SP.JS and "Beta 0.15" not in SP.JS
     assert data["gcid"] == "" or data["gcid"].endswith(".apps.googleusercontent.com")
     assert data["fx"]["USD"] == 32.0 and abs(data["fx"]["HKD"] - 32.0 / 7.8) < 1e-9
     assert "SPY" in data["q"] and "BAD" not in data["q"]                 # NaN prices skipped
@@ -35,6 +37,26 @@ def main():
     d0 = json.loads(re.search(r'id="pf-data">(.*?)</script>', html0, re.S).group(1))
     assert d0["fx"]["USD"] is None and d0["fx"]["HKD"] is None and "31.5" not in html0
     assert "匯率缺" in SP.JS and "FXOK" in SP.JS
+    # earnings radar and crisis replay come from data, not hard-coded tables
+    assert "noteZh" not in SP.JS and "move: 6.5" not in SP.JS and "semi: 0.62" not in SP.JS
+    import pandas as pd
+    idx = pd.bdate_range("2007-01-01", "2025-01-01")
+    base = pd.Series(range(len(idx)), index=idx, dtype=float) + 100.0
+    crash = base.copy(); crash.loc["2020-02-20":"2020-03-23"] = base.loc["2020-02-19"] * 0.66
+    hist = types.SimpleNamespace(quotes={}, q=lambda t: None, series=lambda t: crash if t == "^GSPC" else pd.Series(dtype=float))
+    cr = SP._crisis(types.SimpleNamespace(market=hist))
+    import numpy as np
+    rng = np.random.default_rng(1)
+    mret = pd.Series(rng.normal(0, 0.01, len(idx)), index=idx)
+    spx = (1 + mret).cumprod() * 100
+    sox = (1 + 2 * mret).cumprod() * 100                                     # exactly twice the market's moves
+    bm = types.SimpleNamespace(series=lambda t: {"^GSPC": spx, "^SOX": sox}.get(t, pd.Series(dtype=float)))
+    be = SP._beta(types.SimpleNamespace(market=bm))
+    assert set(be) == {"semi"} and 1.8 < be["semi"] < 2.2, be
+    assert abs(cr["covid2020"]["shocks"]["other"] - 0.34) < 1e-3 and "semi" not in cr["covid2020"]["shocks"]
+    ev = SP._earn(types.SimpleNamespace(techearn={"calendar": {"up": [{"sym": "NVDA", "name": "Nvidia", "date": "2026-11-19", "time": "after"}]}},
+                                        sx={"earn": [{"sym": "NVDA", "date": "2026-11-19", "mv": 7.1, "avg": 6.0}]}))
+    assert ev == [{"sym": "NVDA", "name": "Nvidia", "date": "2026-11-19", "time": "after", "mv": 7.1, "avg": 6.0}]
     # the only network calls are GETs of the public price files — no POST/beacon/query strings carrying holdings
     # the page may talk to exactly two hosts: the site itself (relative URLs) and Google (the user's own Drive app
     # folder + the sign-in script); never anything else, never beacons / XHR

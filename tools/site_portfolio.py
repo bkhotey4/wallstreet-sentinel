@@ -74,9 +74,76 @@ def _hist_30d(eng) -> dict:
         return {"dates": [], "closes": {}}
 
 
+# Historical windows (event dates are facts; the depth of each fall is measured from price history below)
+CRISIS_WINDOWS = {"yen2024": ("2024-07-10", "2024-08-05"), "fed2022": ("2022-01-03", "2022-10-12"),
+                  "covid2020": ("2020-02-19", "2020-03-23"), "gfc2008": ("2007-10-09", "2009-03-09")}
+CRISIS_PROXY = {"semi": ["^SOX", "SMH"], "tech": ["XLK", "QQQ"], "front": ["ARKK", "XLE"], "fin": ["XLF"],
+                "def": ["XLP", "XLU"], "other": ["^GSPC"]}
+
+
+def _crisis(eng) -> Dict[str, dict]:
+    """Peak-to-trough fall of each category's proxy inside each crisis window (missing proxy → left out)."""
+    out = {}
+    for cid, (a, b) in CRISIS_WINDOWS.items():
+        sh, src = {}, {}
+        for k, cands in CRISIS_PROXY.items():
+            for t in cands:
+                try:
+                    x = eng.market.series(t).loc[a:b].dropna()
+                except Exception:  # noqa: BLE001
+                    continue
+                if len(x) >= 3:
+                    sh[k], src[k] = round(-float((x / x.cummax() - 1).min()), 3), t
+                    break
+        if "other" in sh:
+            out[cid] = {"shocks": sh, "src": src}
+    return out
+
+
+BETA_PROXY = {"semi": "^SOX", "tech": "XLK", "fin": "XLF", "front": "ARKK", "def": "XLP", "tlt": "TLT", "tw50": "^TWII"}
+
+
+def _beta(eng) -> Dict[str, float]:
+    """2-year weekly beta vs the S&P 500 (weekly, because Taiwan closes 13 hours before New York)."""
+    import pandas as pd
+    out = {}
+    try:
+        m = eng.market.series("^GSPC").dropna()
+    except Exception:  # noqa: BLE001
+        return out
+    for k, t in BETA_PROXY.items():
+        try:
+            x = pd.concat([eng.market.series(t), m], axis=1).dropna()
+            x = x[x.index >= x.index[-1] - pd.Timedelta(days=730)]
+            w = x.resample("W-FRI").last().pct_change(fill_method=None).dropna()
+            if len(w) >= 40 and w.iloc[:, 1].var() > 0:
+                out[k] = round(float(w.cov().iloc[0, 1] / w.iloc[:, 1].var()), 2)
+        except Exception:  # noqa: BLE001
+            continue
+    return out
+
+
+def _earn(eng) -> list:
+    """Upcoming reports (Nasdaq calendar) + options-implied move (CBOE straddle) where available."""
+    te = getattr(eng, "techearn", None)
+    up = ((te.get("calendar") or {}).get("up") or []) if isinstance(te, dict) else []
+    mv = {r.get("sym"): r for r in ((getattr(eng, "sx", None) or {}).get("earn") or []) if isinstance(r, dict)}
+    out, seen = [], set()
+    for x in list(up)[:300] + [m for k, m in mv.items() if k not in {u.get("sym") for u in up}]:
+        sym = x.get("sym")
+        if not sym or sym in seen or not x.get("date"):
+            continue
+        seen.add(sym)
+        m = mv.get(sym) or {}
+        out.append({"sym": sym, "name": x.get("name") or "", "date": x["date"], "time": x.get("time") or "",
+                    "mv": m.get("mv"), "avg": m.get("avg")})
+    return out
+
+
 def sec_portfolio(eng) -> str:
     gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
-    data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng)}, ensure_ascii=False,
+    data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng),
+                       "earn": _earn(eng), "crisis": _crisis(eng), "beta": _beta(eng)}, ensure_ascii=False,
                       separators=(",", ":")).replace("</", "<\\/")
     priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
              "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
@@ -257,17 +324,20 @@ function price(h,fm){var n=norm(h.s);if(!n)return null;for(var i=0;i<n.cands.len
 function ph(){var P={n:['股數','Shares'],c:['每股成本（選填）','Cost per share (optional)'],a:['金額（0 = 刪除）','Amount (0 = delete)']};
  ['pfadd','pfcash'].forEach(function(id){var f=document.getElementById(id);Object.keys(P).forEach(function(k){if(f[k])f[k].placeholder=P[k][en()?1:0];});});}
 
-// Sector categories for risk, beta, crisis shocks
+// Sector categories for risk, beta, crisis shocks.  b = measured 2y weekly beta of the proxy (server side);
+// a category without data is treated like the market (1.0)
+var PB = PUB.beta || {};
+function BETA(k){ return PB[k] != null ? PB[k] : 1.0; }
 var SECS = [
- { k: 'semi', zh: '半導體設備', en: 'Semiconductors', c: '#00d2ff', b: 1.65,
+ { k: 'semi', zh: '半導體設備', en: 'Semiconductors', c: '#00d2ff', b: BETA('semi'),
    syms: ['KLAC','TSM','NVDA','ASML','AMAT','LRCX','INTC','AMD','AVGO','QCOM','MU','TXN','MRVL','ON','MPWR','2330','2454','3034','2379','3443','3661','6415','SMH','SOXX'] },
- { k: 'tech', zh: '科技與雲端', en: 'Tech & Cloud', c: '#3a86ff', b: 1.25,
+ { k: 'tech', zh: '科技與雲端', en: 'Tech & Cloud', c: '#3a86ff', b: BETA('tech'),
    syms: ['GOOG','GOOGL','MSFT','AAPL','AMZN','META','ORCL','CRM','ADBE','NOW','UBER','NFLX','QQQ','SPY'] },
- { k: 'fin', zh: '金融數位', en: 'FinTech & Banks', c: '#06d6a0', b: 1.35,
+ { k: 'fin', zh: '金融數位', en: 'FinTech & Banks', c: '#06d6a0', b: BETA('fin'),
    syms: ['NU','JPM','BAC','WFC','C','GS','MS','V','MA','PYPL','COIN','SOFI','KRE','XLF','2881','2882','2891'] },
- { k: 'front', zh: '前沿與能源', en: 'Frontier & Energy', c: '#ffbe0b', b: 2.10,
+ { k: 'front', zh: '前沿與能源', en: 'Frontier & Energy', c: '#ffbe0b', b: BETA('front'),
    syms: ['SPCX','OKLO','SMR','CCJ','PLTR','TSLA','RIVN','LCID','QS','ENVX','IONQ','RGTI'] },
- { k: 'def', zh: '防禦民生', en: 'Defensive & Value', c: '#8338ec', b: 0.75,
+ { k: 'def', zh: '防禦民生', en: 'Defensive & Value', c: '#8338ec', b: BETA('def'),
    syms: ['JNJ','PG','KO','PEP','MCD','WMT','COST','XOM','CVX','TLT','IEF','SHY','BND','LQD'] }
 ];
 
@@ -813,48 +883,53 @@ function renderDx(rows, tot, totV, cashT){
 }
 
 // ---------------------------------------------------------------- Feature 1: Crisis Replay Simulator
-var curCrisisId = 'yen2024';
+var curCrisisId = 'yen2024', CS = PUB.crisis || {};
 var CRISES = [
  {
   id: 'yen2024',
   zh: '2024.08.05 日圓套息平倉股災', en: '2024 Yen Carry Unwind',
   descZh: '日銀突擊升息引發全球千億美元套息交易無差別踩踏撤離，半導體與高估值科技單週重挫。',
   descEn: 'BOJ surprise hike sparked mass unwind of carry trades; semis and high-beta tech crushed.',
-  shocks: { semi: 0.142, tech: 0.085, front: 0.185, fin: 0.075, def: 0.020, other: 0.061 }
+  shocks: (CS.yen2024 || {}).shocks
  },
  {
   id: 'fed2022',
   zh: '2022 激進升息科技熊市', en: '2022 Fed Tech Bear',
   descZh: '通膨破 9% 聯準會一年升息 17 碼，高本益比成長股、半導體與小型題材概念股全面腰斬。',
   descEn: 'Fed hiked 425bps in a single year against 9%+ inflation; high multiple growth wiped out.',
-  shocks: { semi: 0.440, tech: 0.356, front: 0.650, fin: 0.210, def: 0.080, other: 0.254 }
+  shocks: (CS.fed2022 || {}).shocks
  },
  {
   id: 'covid2020',
   zh: '2020 疫情流動性熔斷', en: '2020 COVID Liquidity Crash',
   descZh: '美股兩週內四度熔斷，全球流動性瞬間枯竭，避險黃金與債券一度同遭恐慌拋售變現。',
   descEn: 'US market triggered 4 circuit breakers in 10 days; global dash for cash overwhelmed safe havens.',
-  shocks: { semi: 0.350, tech: 0.280, front: 0.450, fin: 0.430, def: 0.150, other: 0.339 }
+  shocks: (CS.covid2020 || {}).shocks
  },
  {
   id: 'gfc2008',
   zh: '2008 次貸金融海嘯', en: '2008 Global Financial Crisis',
   descZh: '雷曼倒閉引發全球銀行信用體系凍結，百年一遇資產負債表大清算，股市持續崩跌一年半。',
   descEn: 'Lehman collapse froze global banking credit; multi-year secular bear market and wealth wipeout.',
-  shocks: { semi: 0.620, tech: 0.530, front: 0.700, fin: 0.780, def: 0.220, other: 0.568 }
+  shocks: (CS.gfc2008 || {}).shocks
  }
-];
+].filter(function(c){ return c.shocks && c.shocks.other != null; });   // measured from price history; no data → no scenario
+if(CRISES.length && !CRISES.some(function(c){ return c.id === curCrisisId; })) curCrisisId = CRISES[0].id;
 
 function renderCrisis(rows, tot, totV, cashT){
  var x = document.getElementById('pfcrisis');
  if(!x) return;
  x.textContent = '';
- if(!rows.length && !cashT){ x.style.display = 'none'; return; }
+ if((!rows.length && !cashT) || !CRISES.length){ x.style.display = 'none'; return; }
  x.style.display = 'block';
 
  var hd = el('h3', '');
  hd.appendChild(L('🌪️ 歷史危機持倉壓力測試重播器', 'Crisis Replay Simulator'));
  x.appendChild(hd);
+ var srcNote = el('p', 'muted small');
+ srcNote.appendChild(L('各類股跌幅＝該危機期間代表指數／ETF 的實際最大跌幅（半導體 ^SOX、科技 XLK、前沿 ARKK／能源 XLE、金融 XLF、防禦 XLP、其他 ^GSPC），用本站歷史收盤價計算；沒有資料的類別以大盤跌幅代替。',
+  'Category falls = actual peak-to-trough of proxy indices/ETFs in each window, from price history; missing categories use the S&P 500.'));
+ x.appendChild(srcNote);
  var sub = el('p', 'muted small');
  sub.appendChild(L('點選經典股災情境，以當前持股精準回放若歷史重演時的資產蒸發金額與各標的回撤衝擊',
                   'Simulate how your current portfolio would have performed during historical market crashes.'));
@@ -1012,8 +1087,8 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
  var TGTS = [
   { k: 'cash', b: 0.0, zh: '💵 現金防守墊 (Beta 0.0)', en: '💵 Cash Buffer (Beta 0.0)' },
   { k: 'spy', b: 1.0, zh: '📈 標普 500 (SPY - Beta 1.0)', en: '📈 S&P 500 (SPY - Beta 1.0)' },
-  { k: 'tlt', b: 0.15, zh: '🛡️ 美國長天期公債 (TLT - Beta 0.15)', en: '🛡️ 20+ Y Treasuries (TLT - Beta 0.15)' },
-  { k: 'tw50', b: 1.05, zh: '🇹🇼 台灣 50 (0050 - Beta 1.05)', en: '🇹🇼 Taiwan 50 (0050 - Beta 1.05)' }
+  { k: 'tlt', b: BETA('tlt'), zh: '🛡️ 美國長天期公債 (TLT - Beta ' + BETA('tlt').toFixed(2) + ')', en: '🛡️ 20+ Y Treasuries (TLT - Beta ' + BETA('tlt').toFixed(2) + ')' },
+  { k: 'tw50', b: BETA('tw50'), zh: '🇹🇼 台灣加權 (0050 代理 - Beta ' + BETA('tw50').toFixed(2) + ')', en: '🇹🇼 Taiwan (0050 proxy - Beta ' + BETA('tw50').toFixed(2) + ')' }
  ];
  TGTS.forEach(function(t){
   var opt = document.createElement('option');
@@ -1123,26 +1198,8 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
 }
 
 // ---------------------------------------------------------------- Feature 6: Earnings Radar
-var EARNINGS_CAL = [
- { sym: 'TSM', name: '台積電', date: '2026-10-15', move: 6.5, noteZh: '先進製程 2nm/3nm 稼動率與 2027 資本支出指引', noteEn: '2nm/3nm utilization & 2027 capex guidance' },
- { sym: '2330', name: '台積電', date: '2026-10-15', move: 6.5, noteZh: '先進製程 2nm/3nm 稼動率與 2027 資本支出指引', noteEn: '2nm/3nm utilization & 2027 capex guidance' },
- { sym: 'NVDA', name: '輝達', date: '2026-11-19', move: 8.2, noteZh: 'Blackwell 伺服器出貨放量進度與毛利率走向', noteEn: 'Blackwell server shipments & gross margin trajectory' },
- { sym: 'GOOG', name: '谷歌 (Alphabet)', date: '2026-10-22', move: 5.5, noteZh: 'Google Cloud 營業利益率與 Gemini 生成式 AI 變現速度', noteEn: 'Cloud operating margin & Gemini AI monetization' },
- { sym: 'GOOGL', name: '谷歌 (Alphabet)', date: '2026-10-22', move: 5.5, noteZh: 'Google Cloud 營業利益率與 Gemini 生成式 AI 變現速度', noteEn: 'Cloud operating margin & Gemini AI monetization' },
- { sym: 'KLAC', name: '科磊', date: '2026-10-29', move: 7.2, noteZh: '先進晶圓檢測機台訂單與非中國區先進封裝動能', noteEn: 'Wafer inspection orders & advanced packaging momentum' },
- { sym: 'ORCL', name: '甲骨文', date: '2026-12-08', move: 7.0, noteZh: 'OCI 雲端合約殘存履約價值 (RPO) 與多雲串接營收', noteEn: 'OCI Remaining Performance Obligations (RPO) growth' },
- { sym: 'NU', name: 'Nu Holdings', date: '2026-11-12', move: 9.5, noteZh: '墨西哥/哥倫比亞新戶開戶數與淨利差 (NIM) 擴張', noteEn: 'Mexico/Colombia expansion and NIM trajectory' },
- { sym: 'OKLO', name: 'Oklo', date: '2026-11-10', move: 18.0, noteZh: '核能監管委員會 (NRC) 審查進度與科技大廠 PPA 購電協議', noteEn: 'NRC licensing progress & AI hyperscaler power agreements' },
- { sym: 'SMR', name: 'NuScale Power', date: '2026-11-06', move: 16.5, noteZh: '小型核反應爐商轉現金消耗率與合作夥伴投資落地', noteEn: 'SMR commercialization cash burn & partner capital' },
- { sym: 'SPCX', name: 'SPAC ETF', date: '2026-11-20', move: 4.0, noteZh: '成分股合併進度與併購套利溢價走勢', noteEn: 'De-SPAC completion & arbitrage spreads' },
- { sym: 'AAPL', name: '蘋果', date: '2026-10-31', move: 4.8, noteZh: 'Apple Intelligence 換機潮與服務營收年增率', noteEn: 'Apple Intelligence upgrade cycle & Services growth' },
- { sym: 'MSFT', name: '微軟', date: '2026-10-24', move: 5.0, noteZh: 'Azure AI 算力營收貢獻與 Copilot 商業席次數', noteEn: 'Azure AI contribution & Copilot enterprise seats' },
- { sym: 'AMZN', name: '亞馬遜', date: '2026-10-29', move: 6.2, noteZh: 'AWS 成長再加速與零售北美營業利益率', noteEn: 'AWS re-acceleration & North America operating margins' },
- { sym: 'META', name: 'Meta', date: '2026-10-23', move: 7.5, noteZh: '廣告曝光單價年增率與 2026 基礎設施資本支出', noteEn: 'Ad impression pricing & infrastructure capex guidance' },
- { sym: 'AMD', name: '超微', date: '2026-10-29', move: 8.0, noteZh: 'MI325X / MI350 AI 晶片出貨量與營收指引', noteEn: 'MI325X/MI350 GPU shipments & data center guidance' },
- { sym: 'ASML', name: '艾司摩爾', date: '2026-10-16', move: 7.0, noteZh: 'High-NA EUV 訂單簽約量與 2026 全年展望', noteEn: 'High-NA EUV net bookings & full-year guidance' },
- { sym: 'PLTR', name: 'Palantir', date: '2026-11-04', move: 12.0, noteZh: '美國商業市場 AIP 訓練營轉化合約數', noteEn: 'US commercial AIP bootcamps conversion & revenue' }
-];
+var ADR = {'2330': 'TSM', '2303': 'UMC', '3711': 'ASX', '2412': 'CHT'};   // Taiwan names reporting as US ADRs
+var EARNINGS_CAL = PUB.earn || [];             // Nasdaq earnings calendar + CBOE implied move (built server-side)
 
 function renderEarnings(rows, tot){
  var x = document.getElementById('pfearn');
@@ -1155,23 +1212,24 @@ function renderEarnings(rows, tot){
  rows.forEach(function(r){
   var sym = ((r.p && r.p.sym) || r.h.s || '').toUpperCase();
   var key = sym.replace(/\.(TW|TWO)$/,'');
-  var item = EARNINGS_CAL.find(function(c){ return c.sym === key || c.sym === sym; });
+  var item = EARNINGS_CAL.find(function(c){ return c.sym === key || c.sym === sym || c.sym === ADR[key]; });
   if(item){
    var t = new Date(item.date).getTime();
    var days = Math.ceil((t - now) / (86400 * 1000));
-   var dollarImp = (r.vt || 0) * (item.move / 100);
-   var navPct = tot > 0 ? (dollarImp / tot * 100) : 0;
+   var mv = item.mv != null ? item.mv : null;
+   var dollarImp = mv != null ? (r.vt || 0) * (mv / 100) : null;
+   var navPct = (dollarImp != null && tot > 0) ? (dollarImp / tot * 100) : null;
    matched.push({
     sym: sym,
     name: (r.p && r.p.name) || item.name,
     date: item.date,
     days: days,
-    move: item.move,
+    move: mv,
+    time: item.time,
     vt: r.vt || 0,
     dollarImp: dollarImp,
     navPct: navPct,
-    noteZh: item.noteZh,
-    noteEn: item.noteEn
+    avg: item.avg
    });
   }
  });
@@ -1212,12 +1270,15 @@ function renderEarnings(rows, tot){
    card.appendChild(r);
   }
   addRow('預計發布日期', 'Date', m.date);
-  addRow('選擇權隱含跳空', 'Implied Move', '±' + num(m.move, 1) + '%', 'warn');
+  addRow('選擇權隱含跳空', 'Implied Move', m.move != null ? '±' + num(m.move, 1) + '%' : '—', m.move != null ? 'warn' : '');
+  if(m.avg != null) addRow('過去 4 次平均反應', 'Avg past reaction', num(m.avg, 1) + '%');
   addRow('持股總市值', 'Holding Value', 'NT$ ' + num(m.vt, 0));
-  addRow('跳空對淨值衝擊', 'NAV Impact', '±NT$ ' + num(m.dollarImp, 0) + ' (±' + num(m.navPct, 1) + '%)', m.navPct >= 3 ? 'dn' : '');
+  addRow('跳空對淨值衝擊', 'NAV Impact', m.dollarImp != null ? '±NT$ ' + num(m.dollarImp, 0) + ' (±' + num(m.navPct, 1) + '%)' : '—', m.navPct >= 3 ? 'dn' : '');
 
   var desc = el('div', 'pfearn-desc');
-  desc.appendChild(L('🔍 觀察重點：' + m.noteZh, 'Focus: ' + m.noteEn));
+  var tz = m.time === 'pre' ? ['盤前', 'pre-market'] : (m.time === 'after' ? ['盤後', 'after close'] : ['時間未定', 'time n/a']);
+  desc.appendChild(L('美東日期，' + tz[0] + '。資料：Nasdaq 財報日曆；隱含波動＝CBOE 選擇權跨式價' + (m.move == null ? '（目前無資料）' : ''),
+                     'US Eastern date, ' + tz[1] + '. Nasdaq calendar; implied move from CBOE straddles' + (m.move == null ? ' (n/a)' : '')));
   card.appendChild(desc);
 
   grid.appendChild(card);
