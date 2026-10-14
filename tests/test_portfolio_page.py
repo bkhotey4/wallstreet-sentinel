@@ -29,6 +29,12 @@ def main():
     assert "</script>" not in m.group(1)                                 # cannot break out of the JSON block
     assert "NVDA" not in m.group(1) and "15" not in json.dumps(data["fx"])  # engine holdings never embedded
     assert "localStorage" in SP.JS and "fetch('market/'" in SP.JS
+    # no USD/TWD quote anywhere → no invented rate: fx is None and the page says 匯率缺
+    nofx = types.SimpleNamespace(quotes={}, q=lambda t: None, series=lambda t: __import__("pandas").Series(dtype=float))
+    html0 = SP.sec_portfolio(types.SimpleNamespace(market=nofx, holdings={}, portfolio={}))
+    d0 = json.loads(re.search(r'id="pf-data">(.*?)</script>', html0, re.S).group(1))
+    assert d0["fx"]["USD"] is None and d0["fx"]["HKD"] is None and "31.5" not in html0
+    assert "匯率缺" in SP.JS and "FXOK" in SP.JS
     # the only network calls are GETs of the public price files — no POST/beacon/query strings carrying holdings
     # the page may talk to exactly two hosts: the site itself (relative URLs) and Google (the user's own Drive app
     # folder + the sign-in script); never anything else, never beacons / XHR

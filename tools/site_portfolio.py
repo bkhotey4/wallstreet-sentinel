@@ -22,10 +22,14 @@ HKD_PEG = 7.8          # HKD is pegged to the USD inside 7.75–7.85
 def _fx(eng) -> Dict[str, float]:
     q = eng.market.q("TWD=X") or {}
     usdtwd = q.get("price") if q.get("price") and q["price"] == q["price"] else None
+    asof = q.get("asof") or ""
     if not usdtwd:
         s = eng.market.series("TWD=X")
-        usdtwd = float(s.iloc[-1]) if len(s) else 31.5
-    return {"TWD": 1.0, "USD": float(usdtwd), "HKD": float(usdtwd) / HKD_PEG, "asof": q.get("asof") or ""}
+        if len(s):
+            usdtwd, asof = float(s.iloc[-1]), s.index[-1].strftime("%Y-%m-%d")
+    if not usdtwd:                        # no quote at all → the page says 匯率缺 instead of inventing a rate
+        return {"TWD": 1.0, "USD": None, "HKD": None, "asof": ""}
+    return {"TWD": 1.0, "USD": float(usdtwd), "HKD": float(usdtwd) / HKD_PEG, "asof": asof}
 
 
 def _quotes(eng) -> Dict[str, list]:
@@ -194,6 +198,7 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 JS = r"""
 (function(){var box=document.getElementById('pfbox');if(!box)return;
 var KEY='wss_portfolio_v1',PUB=JSON.parse(document.getElementById('pf-data').textContent),FX=PUB.fx,Q=PUB.q,MK={},gFM={};
+var FXOK=!!(FX&&FX.USD);function fxv(c){return c==='TWD'?1:(FXOK?FX[c]:null);}
 var en=function(){return document.documentElement.lang==='en';};
 function L(zh,e){var s=document.createElement('span');s.dataset.en=e;s.dataset.zh=zh;s.textContent=en()?e:zh;return s;}
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
@@ -383,9 +388,9 @@ function renderNav(d, tot){
 // ---------------------------------------------------------------- Main Draw
 function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textContent='';var tf=document.getElementById('pft').tFoot;if(tf)tf.remove();
  var rows=[],totV=0,totDay=0,totPrev=0,totCost=0,costV=0,miss=0,dates={};
- d.h.forEach(function(h,i){var n=norm(h.s),mk=n?n.mk:'us',p=price(h,FM[mk]),c=cur(mk),fx=FX[c]||1,r={h:h,i:i,mk:mk,cur:c,p:p};
-  if(p){r.v=h.n*p.px;r.vt=r.v*fx;var prev=(p.ch!=null)?p.px/(1+p.ch/100):null;r.day=prev!=null?h.n*(p.px-prev)*fx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
-   totV+=r.vt;if(r.day!=null){totDay+=r.day;totPrev+=r.vt-r.day;}if(h.c>0){r.cost=h.n*h.c;r.un=r.v-r.cost;r.ret=r.un/r.cost*100;totCost+=r.cost*fx;costV+=r.vt;}
+ d.h.forEach(function(h,i){var n=norm(h.s),mk=n?n.mk:'us',p=price(h,FM[mk]),c=cur(mk),fx=fxv(c),r={h:h,i:i,mk:mk,cur:c,p:p};
+  if(p){r.v=h.n*p.px;r.vt=fx!=null?r.v*fx:null;var prev=(p.ch!=null)?p.px/(1+p.ch/100):null;r.day=(prev!=null&&fx!=null)?h.n*(p.px-prev)*fx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
+   if(r.vt!=null)totV+=r.vt;if(r.day!=null){totDay+=r.day;totPrev+=r.vt-r.day;}if(h.c>0){r.cost=h.n*h.c;r.un=r.v-r.cost;r.ret=r.un/r.cost*100;if(fx!=null){totCost+=r.cost*fx;costV+=r.vt;}}
    if(p.asof)dates[c]=(dates[c]&&dates[c]>p.asof)?dates[c]:p.asof;}else miss++;rows.push(r);});
  rows.sort(function(a,b){return (b.vt||0)-(a.vt||0);});
 
@@ -393,7 +398,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
   function td(x,c){var t=el('td',c||'r');if(x instanceof Node)t.appendChild(x);else t.textContent=x;tr.appendChild(t);return t;}
   td((p&&p.sym)||h.s,'');td(p?(p.name||''):'','');td(num(h.n,h.n%1?2:0));
   if(p){td(num(p.px,2)+' '+r.cur+(p.src==='manual'?' ✎':''));td(sgn(p.ch,2,true),'r '+cl(p.ch));td(r.dayc!=null?sgn(r.dayc,0):'—','r '+cl(r.dayc));
-   td(num(r.v,0));td(num(r.vt,0));td(h.c>0?num(r.cost,0):'—');td(r.un!=null?sgn(r.un,0):'—','r '+cl(r.un));td(r.ret!=null?sgn(r.ret,1,true):'—','r '+cl(r.ret));
+   td(num(r.v,0));td(r.vt!=null?num(r.vt,0):'—');td(h.c>0?num(r.cost,0):'—');td(r.un!=null?sgn(r.un,0):'—','r '+cl(r.un));td(r.ret!=null?sgn(r.ret,1,true):'—','r '+cl(r.ret));
    
    // Feature 3: Dynamic Stop & Profit Targets column
    var stopTd = td('', 'r');
@@ -430,21 +435,22 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
    }
    stopTd.appendChild(box);
 
-   td(totV?num(r.vt/totV*100,1)+'%':'—');}
+   td(totV&&r.vt!=null?num(r.vt/totV*100,1)+'%':'—');}
   else{var t=td('','r pfwarn');t.colSpan=10;t.appendChild(L('找不到報價，請手動輸入價格：','No price found — enter one: '));var inp=el('input');inp.type='number';inp.step='any';inp.min='0';inp.setAttribute('aria-label','manual price');
    inp.addEventListener('change',function(){var dd=get();dd.h[r.i].p=parseFloat(inp.value)||0;put(dd);render();});t.appendChild(inp);}
   var del=el('button','pfx','✕');del.type='button';del.title=en()?'Remove':'刪除';del.addEventListener('click',function(){var dd=get();dd.h.splice(r.i,1);put(dd);render();});td(del,'');
   tb.appendChild(tr);});
- var cashT=0;(d.cash||[]).forEach(function(c){cashT+=c.a*(FX[c.cur]||1);});var tot=totV+cashT,usd=FX.USD||1;
+ var cashT=0,cashMiss=false;(d.cash||[]).forEach(function(c){var f=fxv(c.cur);if(f==null)cashMiss=true;else cashT+=c.a*f;});var tot=totV+cashT,usd=FXOK?FX.USD:null;
  var S=document.getElementById('pfsum');S.textContent='';
  function k(zh,en_,v,sub,c,big){var x=el('div','pfk'+(big?' big':''));x.appendChild(el('div','s')).appendChild(L(zh,en_));var vv=el('div','v '+(c||''),v);x.appendChild(vv);if(sub)x.appendChild(el('div','s',sub));S.appendChild(x);}
- k('總資產（新台幣）','Total assets (TWD)','NT$ '+num(tot,0),'≈ US$ '+num(tot/usd,0),'',true);
+ if(!FXOK)k('總資產（新台幣）','Total assets (TWD)','—',en()?'USD/TWD rate unavailable':'美元兌台幣匯率暫缺，無法換算','pfwarn',true);
+ else k('總資產（新台幣）','Total assets (TWD)','NT$ '+num(tot,0),'≈ US$ '+num(tot/usd,0),'',true);
  k('今日損益','Today P&L','NT$ '+sgn(totDay,0),totPrev?sgn(totDay/totPrev*100,2,true):'',cl(totDay));
  k('股票市值','Stocks','NT$ '+num(totV,0),tot?num(totV/tot*100,1)+'%':'');
  k('現金','Cash','NT$ '+num(cashT,0),(d.cash||[]).map(function(c){return c.cur+' '+num(c.a,0);}).join(' · '));
  if(totCost)k('帳面損益（有填成本者）','Unrealized (with cost)','NT$ '+sgn(costV-totCost,0),sgn((costV-totCost)/totCost*100,2,true),cl(costV-totCost));
  var dl=Object.keys(dates).map(function(c){return c+' '+dates[c];}).join(' · ');
- msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+num(FX.USD,3),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+num(FX.USD,3)]
+ msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+(FXOK?num(FX.USD,3)+'（'+(FX.asof||'日期不明')+'）':'匯率缺'),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+(FXOK?num(FX.USD,3)+' ('+(FX.asof||'date n/a')+')':'unavailable')]
   :['尚未輸入持股：在下方新增，或用「一次貼上多筆」','No holdings yet — add some below or paste many at once']);
 
  renderNav(d, tot);

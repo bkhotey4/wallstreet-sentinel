@@ -160,8 +160,9 @@ def _passed(d: str, tm: str, now: datetime) -> bool:
 
 async def tick(bot, now: Optional[datetime] = None) -> None:
     eng = bot.engine
-    if not getattr(eng, "full_ready", False):
-        return
+    import time as _clock                              # (not `_t`: that name is the time-parse helper below)
+    if not getattr(eng, "full_ready", False) and _clock.time() - getattr(bot, "_started", _clock.time()) < 900:
+        return                                            # phase 2 still loading right after a restart (15-min cap)
     c = EC.cfg()
     ev = getattr(eng, "econ_view", None) or {}
     now = now or datetime.now(timezone.utc)

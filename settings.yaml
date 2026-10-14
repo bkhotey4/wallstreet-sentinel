@@ -521,6 +521,7 @@ intel:
     model: claude-haiku-5-5
     effort: low
     max_per_call: 80           # 每次新聞更新最多判讀幾則「還沒判讀過」的標題
+    timeout_s: 120             # 單次 AI 呼叫上限（避免連線半開時卡住整個啟動流程）
     bootstrap_batches: 4       # 啟動／網站建置時最多連續判讀幾批（每批 80 則），讓新聞幾乎全部由 AI 判讀
   model:                        # 情報融合的計分常數（改這裡即可，不必動程式）
     quadrant_risk: {金髮女孩: 30, 再通膨: 45, 通縮衰退: 65, 停滯性通膨: 75}   # 各總經象限的基準風險分
@@ -932,6 +933,7 @@ site_trigger:
   on_risk_alert: true          # 風險警報（SSI 跨級、盤中危險、劇本升階、VIX 倒掛…）一發出就快速重建（約 5 分鐘）
   min_gap_minutes: 20          # 兩次觸發至少間隔
   skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發
+  protect_full_minutes: 25     # 完整建置（含全市場掃描）開始後 N 分鐘內不被快速建置取消
   # 需要 .env 的 GITHUB_SITE_TOKEN（fine-grained token，只授權 wallstreet-sentinel，權限 Actions: Read and write）
 
 # ---------- 網站「我的持股」跨裝置同步（Google 登入 → 存到使用者自己的 Google 雲端硬碟隱藏資料夾） ----------

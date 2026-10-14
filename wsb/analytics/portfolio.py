@@ -16,6 +16,18 @@ from ..config import ROOT, SETTINGS, env
 log = logging.getLogger(__name__)
 
 
+def _raw_holdings(data, acct: str):
+    """{sym: entry} from either file format; raises on malformed entries (caller logs and skips the file)."""
+    if isinstance(data, dict) and isinstance(data.get("holdings"), list):         # portfolio_holdings.json
+        return {h["sym"]: h for h in data["holdings"]}
+    if isinstance(data, dict):                                                    # sim_trading.json
+        accounts = [data.get(acct)] if acct and acct in data else list(data.values())
+        for a in accounts:
+            if isinstance(a, dict) and isinstance(a.get("holdings"), dict):
+                return a["holdings"]
+    return None
+
+
 def load_holdings() -> Dict[str, dict]:
     cfg = SETTINGS.get("portfolio", {})
     if not cfg.get("enabled", True):                    # 情報站模式：完全不讀取任何持倉
@@ -30,15 +42,11 @@ def load_holdings() -> Dict[str, dict]:
         except Exception as e:  # noqa: BLE001
             log.warning("holdings file %s unreadable: %s", p, e)
             continue
-        raw = None
-        if isinstance(data, dict) and isinstance(data.get("holdings"), list):     # portfolio_holdings.json
-            raw = {h["sym"]: h for h in data["holdings"]}
-        elif isinstance(data, dict):                                              # sim_trading.json
-            accounts = [data.get(acct)] if acct and acct in data else list(data.values())
-            for a in accounts:
-                if isinstance(a, dict) and isinstance(a.get("holdings"), dict):
-                    raw = a["holdings"]
-                    break
+        try:
+            raw = _raw_holdings(data, acct)
+        except Exception as e:  # noqa: BLE001  (one malformed entry must not stop the engine from becoming ready)
+            log.warning("holdings file %s malformed: %s", p, e)
+            continue
         if not raw:
             continue
         out = {}

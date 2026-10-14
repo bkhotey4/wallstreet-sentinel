@@ -62,6 +62,8 @@ def sec_outlook_hero(eng) -> str:
         tick = f'<i style="left:{min(base, 100):.0f}%"></i>' if base is not None else ""
         sub = (T(f"平常 {base:.1f}%", f"usual {base:.1f}%") if base is not None else
                T(f"一個月前 {h['prev']:.0f}%", f"1m ago {h['prev']:.0f}%") if h.get("prev") is not None else "")
+        if h.get("asof"):
+            sub += f' · {T("資料至", "data to")} {esc(h["asof"])}'
         hz.append(f'<div class="olhzc" style="--lv:{lv}"><div class="small muted">{T(h["zh"], h["en"])}</div>'
                   f'<div class="p" style="color:{lv}">{p:.1f}%</div><div class="olbar"><b style="width:{min(p, 100):.0f}%"></b>{tick}</div>'
                   f'<div class="small muted">{sub} · {T(h["model_zh"], h["model_en"])}</div></div>')

@@ -52,6 +52,7 @@ A = SETTINGS["alerts"]
 ONE_SHOT_S = 10 * 365 * 86400      # 'never again' cooldown for event-keyed alerts
 JOB_RETRY_S = 300                  # a failed scheduled job is retried at most every 5 minutes …
 JOB_MAX_TRIES = 4                  # … and the last try delivers even if the AI is still down
+JOB_TIMEOUT_S = 900                # hard cap per attempt (LLM budget 480 s + rendering + Discord uploads)
 JOB_FINAL = contextvars.ContextVar("job_final", default=True)   # False while a scheduled job may still be retried
 
 
@@ -182,7 +183,7 @@ class Sentinel(commands.Bot):
     async def _every(self, name: str, seconds: float, fn: Callable[[], Awaitable[None]],
                      first_delay: float = 0) -> None:
         await asyncio.sleep(first_delay)
-        limit = max(5 * seconds, 600)                 # a hung round must not freeze this loop forever
+        limit = min(max(2 * seconds, 300), 1800)      # a hung round must not freeze this loop (5–30 min cap)
         while not self.is_closed():
             t0 = time.time()
             try:
@@ -877,12 +878,8 @@ class Sentinel(commands.Bot):
         e = discord.Embed(title=("🚨 緊急風險警報" if crit else "⚠️ 市場警報"),
                           color=0xE74C3C if crit else 0xE67E22, timestamp=datetime.now(timezone.utc))
         spx = self.engine.market.q("^GSPC")
-        for i, a in enumerate(fire):
-            if i < 10:
-                e.add_field(name=f"{a.severity} {a.title}"[:256], value=a.detail[:1024] or "—", inline=False)
-            store.alert_mark(a.key, a.severity, a.title, kind=_alert_kind(a.key),
-                             spx=spx["price"] if spx else None,
-                             ssi=self.engine.stress.score if self.engine.stress else None)
+        for i, a in enumerate(fire[:10]):
+            e.add_field(name=f"{a.severity} {a.title}"[:256], value=a.detail[:1024] or "—", inline=False)
         if self.engine.stress:
             st = self.engine.stress
             e.set_footer(text=f"SSI {st.score:.1f} {st.label} · /risk 看完整儀表")
@@ -891,9 +888,17 @@ class Sentinel(commands.Bot):
         rows = [(a.severity, a.title, a.detail) for a in fire]
         links = [ln for a in fire for ln in a.detail.split("\n") if ln.startswith("http")]
         link_txt = ("🔗 " + "\n🔗 ".join(dict.fromkeys(links)))[:1900] if links else None
+        delivered = False
         for t in targets:
-            await P.deliver(t, slides=lambda: S.deck_alert("緊急風險警報" if crit else "市場警報", rows, ssi),
-                            embeds=lambda: e, content=link_txt if P.style() == "slides" else None)
+            delivered = bool(await P.deliver(t, slides=lambda: S.deck_alert("緊急風險警報" if crit else "市場警報", rows, ssi),
+                                             embeds=lambda: e, content=link_txt if P.style() == "slides" else None)) or delivered
+        if not delivered:                                   # nothing went out → keys stay unmarked and fire again next round
+            log.warning("alerts not delivered (no reachable target); will retry: %s", ", ".join(a.key for a in fire)[:300])
+            return
+        for a in fire:
+            store.alert_mark(a.key, a.severity, a.title, kind=_alert_kind(a.key),
+                             spx=spx["price"] if spx else None,
+                             ssi=self.engine.stress.score if self.engine.stress else None)
         risk_fired = [a for a in fire if _alert_kind(a.key) == "risk" and not a.severity.startswith("ℹ️")]
         if risk_fired and SITE.enabled and SETTINGS.get("site_trigger", {}).get("on_risk_alert", True):
             self.spawn(SITE.dispatch("alert:" + risk_fired[0].key, fast=True), "site_build")   # page must not lag a selloff
@@ -934,12 +939,16 @@ class Sentinel(commands.Bot):
             coro.close()                                  # not yet time to retry; never leave the coroutine un-awaited
             return
         attempts[key] = (n + 1, time.time())
+        for k in [k for k, (_, t) in attempts.items() if time.time() - t > 6 * 3600]:
+            attempts.pop(k, None)                         # yesterday's keys
         tok = JOB_FINAL.set(n + 1 >= JOB_MAX_TRIES)
         self._sending.add(key)
         try:
-            await coro
+            await asyncio.wait_for(coro, JOB_TIMEOUT_S)     # a hung send must not block the key for the whole window
             store.kv_set(key, True)
             attempts.pop(key, None)
+        except asyncio.TimeoutError:
+            log.warning("scheduled job %s timed out after %ds (will retry)", key, JOB_TIMEOUT_S)
         except AIUnavailable:
             log.warning("scheduled job %s: AI unavailable (try %d/%d) -> retry in %ds", key, n + 1, JOB_MAX_TRIES, JOB_RETRY_S)
         except Exception:  # noqa: BLE001

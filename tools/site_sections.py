@@ -611,8 +611,10 @@ def sec_bonds(eng) -> str:
     if not b.get("available"):
         return card("美債專區", "US Treasuries", f'<p class="muted">{T("殖利率與標售資料暫時取不到", "Treasury data unavailable right now")}</p>', "wide")
     now = {c["sid"]: c["yield"] for c in b["curves"].get("now", [])}
+    ndate = max((c.get("date") or "" for c in b["curves"].get("now", [])), default="")
     sp, tp, mv = b.get("spreads", {}), b.get("term_premium"), b.get("move")
-    kv = "".join(f'<div><span class="muted">{T(zh, en)}</span><b>{num(now.get(sid), 2)}%</b></div>'
+    kv = (f'<div><span class="muted">{T("資料日", "As of")}</span><b class="small">{esc(ndate or "—")}</b></div>' if ndate else "")
+    kv += "".join(f'<div><span class="muted">{T(zh, en)}</span><b>{num(now.get(sid), 2)}%</b></div>'
                  for sid, zh, en in (("DGS3MO", "3 個月", "3M"), ("DGS2", "2 年", "2Y"), ("DGS10", "10 年", "10Y"), ("DGS30", "30 年", "30Y"))
                  if sid in now)
     for k, zh, en in (("10y2y", "10年−2年利差", "10Y−2Y"), ("10y3m", "10年−3月利差", "10Y−3M")):

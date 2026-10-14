@@ -24,6 +24,17 @@ def main():
     assert m["enabled"] is True and m["file"] == "data_cache/holdings.json" and m["benchmark"] == "SPY"
     assert C.load_settings(d / "settings.yaml").get("alerts")["sigma_move"] == 3
 
+    # ---------------------------------------------------------------- a malformed holdings entry never raises
+    from wsb.analytics import portfolio as PF
+    assert PF._raw_holdings({"holdings": [{"sym": "NVDA", "shares": 1, "cost": 1}]}, "")["NVDA"]["shares"] == 1
+    try:
+        PF._raw_holdings({"holdings": [{"shares": 1}]}, "")
+        raise AssertionError("expected KeyError")
+    except KeyError:
+        pass
+    assert PF._raw_holdings({"548": {"holdings": {"TSM": {"shares": 2}}}}, "548") == {"TSM": {"shares": 2}}
+    assert PF._raw_holdings([], "") is None
+
     # ---------------------------------------------------------------- holdings alerts never show in public lists
     store.alert_mark("pf_dd:2026-10-13", "🚨 CRITICAL", "持倉單日回撤 -3.2%（$-12,345）", kind="risk")
     store.alert_mark("ssi_level_3", "⚠️ WARNING", "系統性壓力升級", kind="risk")

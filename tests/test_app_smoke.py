@@ -81,6 +81,7 @@ class FakeDest:
 
     async def send(self, content=None, **kw):
         FakeDest.sent.append((self.name, content, sorted(kw)))
+        return types.SimpleNamespace(id=len(FakeDest.sent))      # like discord: a Message object on success
 
 
 class Embed:

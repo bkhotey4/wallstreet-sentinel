@@ -355,7 +355,7 @@ def sec_macro(eng) -> str:
         if x:
             dg = 0 if abs(x["value"]) >= 1000 else 3
             rows += (f'<tr><td>{T(name, sid)}</td><td class="r">{num(x["value"], dg)}</td><td class="r {cls(x.get("chg_1m"))}">{num(x.get("chg_1m"), dg, sign=True)}</td>'
-                     f'<td class="r muted">{num(x.get("pctile_3y"), 0)}</td></tr>')
+                     f'<td class="r muted">{num(x.get("pctile_3y"), 0)}</td><td class="r muted small">{esc(str(x.get("date") or "—"))}</td></tr>')
     reg = ""
     if rg:
         reg = (f'<div class="kv"><div><span class="muted">{T("總經象限", "Macro quadrant")}</span><b>{esc(str(rg.get("quadrant", "—")))}</b></div>'
@@ -364,7 +364,7 @@ def sec_macro(eng) -> str:
     if not rows and not reg:
         return ""
     tbl = (f'<div class="scroll"><table><thead><tr><th>{T("指標", "Series")}</th><th class="r">{T("最新", "Last")}</th><th class="r">{T("1月", "1M")}</th>'
-           f'<th class="r">{T("3年百分位", "3Y pct")}</th></tr></thead><tbody>{rows}</tbody></table></div>') if rows else ""
+           f'<th class="r">{T("3年百分位", "3Y pct")}</th><th class="r">{T("資料日", "As of")}</th></tr></thead><tbody>{rows}</tbody></table></div>') if rows else ""
     return card("總經與流動性", "Macro & liquidity", reg + tbl, "span4")
 
 
@@ -597,10 +597,11 @@ def sec_taiwan(eng) -> str:
         f0 = fl[0]
         fg = f0.get("foreign")
         tot_5d = sum(x.get("foreign", 0) for x in fl)
+        fd = f0.get("date") or "—"
         cls_fg = "up" if (fg or 0) > 0 else "dn"
         fl_box = (f'<div><span>{T("外資現貨單日買賣超", "Foreign Cash Net Buying")}</span>'
                   f'<b class="{cls_fg}">{fg:+,.1f} 億</b>'
-                  f'<span class="muted small">{T(f"近 5 日合計 {tot_5d:+.1f} 億", f"5D sum: {tot_5d:+.1f}B")}</span></div>')
+                  f'<span class="muted small">{T(f"近 {len(fl)} 日合計 {tot_5d:+.1f} 億（至 {fd}）", f"{len(fl)}D sum: {tot_5d:+.1f}B (to {fd})")}</span></div>')
 
     kvs = f'<div class="kv">{oi_box}{mg_box}{pcr_box}{fl_box}</div>' if (oi_box or mg_box) else ''
     lis = "".join(f"<li>{esc(x)}</li>" for x in tw.summary_lines())

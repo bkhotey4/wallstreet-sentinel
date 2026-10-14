@@ -91,6 +91,15 @@ def main():
         okx, mx = asyncio.run(tr.dispatch("hourly"))
         assert not okx and word in mx, (code, mx)
 
+    # a FULL build in progress is protected from fast dispatches for protect_full_minutes
+    store.kv_set("site_trigger_last", {"ts": time.time() - 22 * 60, "reason": "hourly", "fast": False})   # gap passed, still protected
+    tr.in_progress = no_runs
+    fake.status = 204
+    okp, mp = asyncio.run(tr.dispatch("alert:danger:us", fast=True))
+    assert not okp and "完整建置" in mp, mp
+    store.kv_set("site_trigger_last", {"ts": time.time() - 30 * 60, "reason": "hourly", "fast": False})
+    okp2, _ = asyncio.run(tr.dispatch("alert:danger:us", fast=True))
+    assert okp2
     # token expiry: header parsing + reminder stages
     exp = ST.SiteTrigger.parse_expiry("2027-10-12 15:34:56 UTC")
     assert exp == datetime(2027, 10, 12, 15, 34, 56, tzinfo=timezone.utc)

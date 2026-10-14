@@ -36,25 +36,29 @@ async def _send(dest, content: Optional[str] = None, **kw):
                 except Exception:  # noqa: BLE001
                     pass
     try:
-        return await dest.send(content=content, **kw)
+        return await dest.send(content=content, **kw)       # a Message on success; None when the send failed
     except discord.Forbidden:
         log.warning("no permission to send to %s", dest)
     except Exception as e:  # noqa: BLE001
         log.warning("send failed to %s: %s", dest, e)
+    return None
 
 
-async def send_pngs(dest, pngs: Sequence[bytes], content: Optional[str] = None) -> None:
+async def send_pngs(dest, pngs: Sequence[bytes], content: Optional[str] = None) -> bool:
+    ok = False
     for i in range(0, len(pngs), 10):
         files = [discord.File(io.BytesIO(b), filename=f"sentinel_{i + j + 1:02d}.png")
                  for j, b in enumerate(pngs[i:i + 10])]
-        await _send(dest, content if i == 0 else None, files=files)
+        ok = bool(await _send(dest, content if i == 0 else None, files=files)) or ok
+    return ok
 
 
 async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
                   embeds: Optional[Callable[[], Union[discord.Embed, List[discord.Embed]]]] = None,
                   text: Optional[str] = None, title: str = "AI 研判", engine_name: str = "",
-                  content: Optional[str] = None) -> None:
-    """Render and send. `text` = AI markdown (becomes slides, or chunked text in classic mode)."""
+                  content: Optional[str] = None) -> bool:
+    """Render and send. `text` = AI markdown (becomes slides, or chunked text in classic mode).
+    Returns True when at least one message was actually delivered."""
     if style() == "slides" and (slides or text):
         try:
             from . import slides as S
@@ -64,24 +68,25 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
             if text:
                 pngs += await asyncio.to_thread(S.deck_text, title, text, engine_name)
             if pngs:
-                await send_pngs(dest, pngs, content)
-                return
+                return await send_pngs(dest, pngs, content)
         except Exception:  # noqa: BLE001
             log.exception("slide rendering failed → falling back to embeds")
+    sent = False
     if embeds:
         em = embeds()
         em = em if isinstance(em, list) else [em]
         for i in range(0, len(em), 10):
-            await _send(dest, content if i == 0 else None, embeds=em[i:i + 10])
+            sent = bool(await _send(dest, content if i == 0 else None, embeds=em[i:i + 10])) or sent
         content = None
     if text:
         head = f"**🧠 {title}**（{engine_name}）\n" if engine_name else ""
         if content:                                          # never glue content onto a 1900-char chunk
-            await _send(dest, content[:2000])
+            sent = bool(await _send(dest, content[:2000])) or sent
         for part in E.chunks(head + text):
-            await _send(dest, part)
+            sent = bool(await _send(dest, part)) or sent
     elif content and not embeds:
-        await _send(dest, content)
+        sent = bool(await _send(dest, content)) or sent
+    return sent
 
 
 # ---------------------------------------------------------------- extra view decks

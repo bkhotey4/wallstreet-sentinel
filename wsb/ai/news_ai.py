@@ -7,6 +7,7 @@ the call fails, the intelligence-fusion layer silently falls back to keyword mat
 Engine order: Claude (ANTHROPIC_API_KEY) -> the configured Gemini models (GEMINI_API_KEY); the first that answers wins."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -173,16 +174,20 @@ class NewsClassifier:
             if _cooldown.get(f"gemini:{m}", 0) > time.time():
                 continue
             try:
-                r = await self._gem.aio.models.generate_content(
+                r = await asyncio.wait_for(self._gem.aio.models.generate_content(
                     model=m, contents=user,
                     config=types.GenerateContentConfig(system_instruction=SYSTEM, temperature=0.0,
                                                        response_mime_type="application/json",
                                                        response_json_schema=GEMINI_SCHEMA,
-                                                       automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)))
+                                                       automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))),
+                    float(CFG.get("timeout_s", 120)))
             except Exception as e:  # noqa: BLE001  (google-genai raises its own error classes per transport)
-                log.warning("news AI (gemini:%s) failed: %s", m, str(e)[:160])
-                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                msg = str(e)
+                log.warning("news AI (gemini:%s) failed: %s", m, msg[:160] or type(e).__name__)
+                if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
                     _cooldown[f"gemini:{m}"] = time.time() + 600
+                elif "404" in msg or "NOT_FOUND" in msg:                    # retired model: stop asking for 6 h
+                    _cooldown[f"gemini:{m}"] = time.time() + 6 * 3600
                 continue
             rows = self._parse(r.text or "", f"gemini:{m}")
             if rows is not None:

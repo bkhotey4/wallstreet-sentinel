@@ -63,7 +63,9 @@ def recession(fred) -> Dict:
     if len(sp) >= 30:
         prob = nyfed_probability(float(sp.iloc[-21:].mean()))
         prob_1m = nyfed_probability(float(sp.iloc[-42:-21].mean()))
-        ev.append(f"10年-3個月利差（近一月均值）{sp.iloc[-21:].mean():+.2f}%，紐約聯準會模型 12 個月衰退機率 {prob:.0f}%")
+        age = (pd.Timestamp.today().normalize() - sp.index[-1].normalize()).days
+        ev.append(f"10年-3個月利差（近一月均值）{sp.iloc[-21:].mean():+.2f}%，紐約聯準會模型 12 個月衰退機率 {prob:.0f}%"
+                  f"（資料至 {sp.index[-1]:%Y-%m-%d}" + (f"，已 {age} 天未更新" if age > 14 else "") + "）")
         last2y = sp[sp.index >= sp.index[-1] - pd.Timedelta(days=730)]
         if (last2y < 0).any() and sp.iloc[-1] > 0:
             uninvert = True
@@ -88,6 +90,7 @@ def recession(fred) -> Dict:
     if score is not None and uninvert:
         score = _clip(score + 15)                    # re-steepening after an inversion: the classic recession-onset window
     fc = {"horizon_zh": "12 個月", "horizon_en": "12 months", "prob": prob, "prev": prob_1m,
+          "asof": sp.index[-1].strftime("%Y-%m-%d") if len(sp) else None,
           "what_zh": "美國陷入衰退", "what_en": "US recession",
           "model_zh": "紐約聯準會殖利率曲線 probit 模型", "model_en": "NY Fed yield-curve probit"} if prob is not None else None
     return _dim("recession", "總經衰退", "Recession", score, ev, fc)
@@ -124,7 +127,7 @@ def credit(fred) -> Dict:
     phase = None
     if hy:
         lvl, chg = hy.get("pctile_3y"), (hy.get("chg_3m") or 0.0) * 100
-        ev.append(f"高收益債利差 {hy['value']:.2f}%（3 年百分位 {lvl or 0:.0f}%，3 個月 {chg:+.0f}bp）")
+        ev.append(f"高收益債利差 {hy['value']:.2f}%（3 年百分位 {lvl or 0:.0f}%，3 個月 {chg:+.0f}bp；資料至 {hy.get('date', '—')}）")
         if lvl is not None:
             parts.append(lvl)
         parts.append(_clip(50 + chg / 150 * 50))       # +150bp in 3 months → 100
@@ -167,7 +170,7 @@ def banking(st, fred) -> Dict:
             parts.append(70.0)
     nf = fred.latest("NFCI")
     if nf:
-        ev.append(f"芝加哥金融狀況指數 NFCI {nf['value']:+.2f}（>0 代表比平常緊）")
+        ev.append(f"芝加哥金融狀況指數 NFCI {nf['value']:+.2f}（>0 代表比平常緊；資料至 {nf.get('date', '—')}）")
     return _dim("banking", "銀行與資金市場", "Banks & funding", float(np.mean(parts)) if parts else None, ev)
 
 
@@ -305,7 +308,8 @@ def build(engine) -> Dict:
     rec = next((d["forecast"] for d in dims if d["key"] == "recession" and d["forecast"]), None)
     if rec:
         horizons.append({"months": 12, "zh": "12 個月內美國衰退", "en": "US recession within 12m", "prob": rec["prob"],
-                         "base": None, "prev": rec["prev"], "model_zh": rec["model_zh"], "model_en": rec["model_en"]})
+                         "base": None, "prev": rec["prev"], "asof": rec.get("asof"),
+                         "model_zh": rec["model_zh"], "model_en": rec["model_en"]})
     headline = (f"全方位風險 {lz}（{comp:.0f}/100）｜最大風險："
                 + "、".join(f"{d['zh']} {d['score']:.0f}" for d in top))
     return {"available": True, "score": round(comp, 1), "label": lz, "label_en": le, "dims": dims, "top": [d["key"] for d in top],
