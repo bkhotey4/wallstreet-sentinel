@@ -525,9 +525,88 @@ def sec_taiwan(eng) -> str:
     tw = eng.taiwan
     if not (tw.flows or tw.futures):
         return ""
+    fu = tw.futures or {}
+    mg = tw.margin or {}
+    fl = tw.flows or []
+
+    # KPI 1: Foreign Futures Net OI
+    oi = fu.get("oi_foreign")
+    oi_box = ""
+    if oi is not None:
+        oi_chg = fu.get("oi_foreign_chg")
+        chg_txt = f" (日變化 {oi_chg:+,.0f})" if oi_chg is not None else ""
+        if oi < -40000:
+            badge = T("🔴 歷史級巨額空單警戒", "🔴 Extreme Bear Alert (< -40k)")
+            cls_oi = "dn"
+        elif oi < -20000:
+            badge = T("🟠 偏空防守格局", "🟠 Bearish Lean")
+            cls_oi = "warn"
+        elif oi <= 10000:
+            badge = T("🟡 中性區間震盪", "🟡 Neutral Range")
+            cls_oi = ""
+        else:
+            badge = T("🟢 多方主力控盤", "🟢 Bullish Dominance")
+            cls_oi = "up"
+        oi_box = (f'<div><span>{T("外資台指期未平倉", "Foreign Net Futures OI")}</span>'
+                  f'<b class="{cls_oi}">{oi:+,.0f} 口</b>'
+                  f'<span class="muted small">{badge}{chg_txt}</span></div>')
+
+    # KPI 2: Margin Balance & Washout Temp
+    mg_box = ""
+    if mg and mg.get("bal_bn") is not None:
+        bal = mg["bal_bn"]
+        c1 = mg.get("chg_pct")
+        c1_str = f"{c1:+.2f}%" if c1 is not None else "—"
+        if c1 is not None and c1 <= -2.0:
+            m_badge = T("⚠️ 融資斷頭清洗中（多殺多）", "⚠️ Margin Washout / Panic")
+            cls_m = "dn"
+        elif c1 is not None and c1 >= 1.5:
+            m_badge = T("⚠️ 融資暴增／散戶浮額急增", "⚠️ Margin Spike")
+            cls_m = "warn"
+        else:
+            m_badge = T("🟢 籌碼安定", "🟢 Stable Float")
+            cls_m = "up"
+        mg_box = (f'<div><span>{T("散戶融資餘額與清洗計", "Margin Balance & Liquidation")}</span>'
+                  f'<b class="{cls_m}">{bal:,.0f} 億 ({c1_str})</b>'
+                  f'<span class="muted small">{m_badge}</span></div>')
+
+    # KPI 3: Options Put/Call Ratio
+    pcr_box = ""
+    pcr_list = fu.get("pcr") or []
+    if pcr_list and pcr_list[0].get("oi") is not None:
+        pcr_val = pcr_list[0]["oi"]
+        if pcr_val < 80:
+            p_badge = T("🔴 空方重壓 (<80%)", "🔴 Strong Put Pressure")
+            cls_p = "dn"
+        elif pcr_val < 100:
+            p_badge = T("🟠 偏空弱勢震盪", "🟠 Bearish Lean")
+            cls_p = "warn"
+        elif pcr_val < 120:
+            p_badge = T("🟡 中性格局", "🟡 Neutral")
+            cls_p = ""
+        else:
+            p_badge = T("🟢 多方強勁支撐 (>120%)", "🟢 Bullish Support")
+            cls_p = "up"
+        pcr_box = (f'<div><span>{T("選擇權 Put/Call 未平倉比", "Options Put/Call OI Ratio")}</span>'
+                   f'<b class="{cls_p}">{pcr_val:.1f}%</b>'
+                   f'<span class="muted small">{p_badge}</span></div>')
+
+    # KPI 4: Foreign Cash Buying
+    fl_box = ""
+    if fl:
+        f0 = fl[0]
+        fg = f0.get("foreign")
+        tot_5d = sum(x.get("foreign", 0) for x in fl)
+        cls_fg = "up" if (fg or 0) > 0 else "dn"
+        fl_box = (f'<div><span>{T("外資現貨單日買賣超", "Foreign Cash Net Buying")}</span>'
+                  f'<b class="{cls_fg}">{fg:+,.1f} 億</b>'
+                  f'<span class="muted small">{T(f"近 5 日合計 {tot_5d:+.1f} 億", f"5D sum: {tot_5d:+.1f}B")}</span></div>')
+
+    kvs = f'<div class="kv">{oi_box}{mg_box}{pcr_box}{fl_box}</div>' if (oi_box or mg_box) else ''
     lis = "".join(f"<li>{esc(x)}</li>" for x in tw.summary_lines())
-    return card("台灣籌碼", "Taiwan flows", f'<ul class="lines">{lis}</ul>', "span4",
-                sub=T("證交所／期交所官方資料（僅中文）", "TWSE / TAIFEX official data (Chinese only)"))
+    return card("台股籌碼風向計與斷頭警戒", "Taiwan sentiment & liquidation radar",
+                f'{kvs}<ul class="lines">{lis}</ul>', "span8",
+                sub=T("證交所／期交所官方資料與警戒儀表板", "TWSE / TAIFEX official data & sentiment gauges"))
 
 
 def sec_calendar(eng) -> str:
