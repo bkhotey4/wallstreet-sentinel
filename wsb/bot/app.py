@@ -553,6 +553,27 @@ class Sentinel(commands.Bot):
                     await asyncio.sleep(0.5)
 
     # ------------------------------------------------------------ alert rules
+    def _canary_alerts(self) -> List[Alert]:
+        """One alert when a light ENTERS red.  It re-arms only after the light is back to green (not just yellow),
+        so a light hovering around the red line, or staying red for weeks, does not repeat every day."""
+        out = []
+        if not A.get("canary_alerts", True):
+            return out
+        for r in (getattr(self.engine, "canary", None) or {}).get("rows", []):
+            st, k = r.get("state"), f"canary_armed:{r['id']}"
+            if st not in ("ok", "watch", "alert"):
+                continue                                   # no data / warming up → leave the arming as it is
+            armed = store.kv_get(k)
+            armed = True if armed is None else bool(armed)
+            if st == "alert" and armed:
+                out.append(Alert(f"canary:{r['id']}:{r.get('asof') or 'na'}", "⚠️ WARNING", f"🐤 金絲雀紅燈：{r['zh']}",
+                                 (r.get("value_txt") or (f"分數 {r['score']:.0f}／100" if r.get("score") is not None else ""))
+                                 + "｜" + (r.get("rule") or r.get("why") or "")[:300]))
+                store.kv_set(k, False)
+            elif st == "ok" and not armed:
+                store.kv_set(k, True)
+        return out
+
     def _market_alerts(self) -> List[Alert]:
         eng, out = self.engine, []
         st = eng.stress
@@ -592,11 +613,7 @@ class Sentinel(commands.Bot):
             out.append(Alert(f"sigma:{t}:{q['asof']}:{int(np.sign(sg))}", sev,
                              f"異常波動：{names.get(t, t)} ({t}) {q['chg_pct']:+.2f}%（{sg:+.1f}σ）",
                              f"現價 {q['price']:.4g} · 自身60日波動的 {abs(sg):.1f} 倍"))
-        for r in (getattr(eng, "canary", None) or {}).get("rows", []):
-            if r.get("state") == "alert" and A.get("canary_alerts", True):
-                out.append(Alert(f"canary:{r['id']}:{r.get('asof') or 'na'}", "⚠️ WARNING", f"🐤 金絲雀紅燈：{r['zh']}",
-                                 (r.get("value_txt") or (f"分數 {r['score']:.0f}／100" if r.get("score") is not None else ""))
-                                 + "｜" + (r.get("rule") or r.get("why") or "")[:300]))
+        out += self._canary_alerts()
         vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
         inverted = bool(vix and v3 and vix["price"] > v3["price"])
         was = store.kv_get("vix_inverted")

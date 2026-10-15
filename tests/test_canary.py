@@ -151,6 +151,16 @@ def test_site_and_alerts():
     assert "US$9.97B" in html
     from wsb.bot.app import _alert_kind
     assert _alert_kind("canary:ccc_bb:2026-10-14") == "risk"
+    # alerts: once on entering red; yellow does not re-arm, green does
+    from wsb.bot.app import Sentinel
+    bot = types.SimpleNamespace(engine=types.SimpleNamespace(canary={"rows": []}))
+    rows = bot.engine.canary["rows"]
+    def run(state, asof):
+        rows[:] = [{"id": "ccc_bb", "zh": "CCC − BB", "state": state, "asof": asof, "score": 99.0}]
+        return Sentinel._canary_alerts(bot)
+    assert len(run("alert", "2026-10-14")) == 1
+    assert run("alert", "2026-10-15") == [] and run("watch", "2026-10-16") == [] and run("alert", "2026-10-17") == []
+    assert run("ok", "2026-10-18") == [] and len(run("alert", "2026-10-19")) == 1
 
 
 def test_score_lights_on_engine():
