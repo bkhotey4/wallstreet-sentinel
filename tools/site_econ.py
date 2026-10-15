@@ -96,6 +96,63 @@ def _fed_proxy(eng, rate: Optional[float]) -> str:
     return f'<p class="small">{txt}<span class="muted">{T("（粗估，不是聯邦基金期貨機率）", " (rough proxy)")}</span></p>'
 
 
+def _pct(p: Optional[float]) -> str:
+    return "—" if p is None else f"{p * 100:.0f}%"
+
+
+def _fw_probs(probs: Dict[str, float]) -> str:
+    from wsb.data.fedwatch import outcome_label
+    items = sorted(((int(k), v) for k, v in probs.items()), key=lambda kv: -kv[1])
+    return "、".join(f"{outcome_label(k)[0]} {_pct(v)}" for k, v in items)
+
+
+def _fw_block(eng, cons: Optional[float], rate: Optional[float]) -> str:
+    """Futures-implied outcomes for the coming meetings + what each outcome did in the past."""
+    from wsb.data.fedwatch import outcome_label
+    fv = getattr(eng, "fedwatch_view", None) or {}
+    if not fv.get("available"):
+        return ""
+    ms = fv["meetings"]
+    nx = ms[0]
+    ev = getattr(eng, "econ_view", None) or {}
+    by = (((ev.get("stats") or {}).get("fomc") or {}).get("by") or {})
+    items = sorted(((int(k), v) for k, v in nx["probs"].items()), key=lambda kv: -kv[1])
+    likely = items[0][0]
+    # an outcome is "hawkish / in line / dovish" relative to what is expected: the consensus when Nasdaq has one,
+    # otherwise the futures' most likely outcome
+    base = round((cons - rate) * 400) * 25 if (cons is not None and rate is not None) else likely
+    rows = ""
+    for k, v in sorted(items):
+        d = "inline" if k == base else ("hot" if k > base else "cool")
+        h = by.get(d) or {}
+        f20 = ((h.get("fwd") or {}).get("f20") or {}).get("^NDX")
+        rows += (f'<tr><td><b>{T(*outcome_label(k))}</b></td><td class="r"><b>{_pct(v)}</b></td>'
+                 f'<td><span class="pill {DIR_CLS[d]}">{T(*{"hot": ("偏鷹", "hawkish"), "inline": ("符合預期", "in line"), "cool": ("偏鴿", "dovish")}[d])}</span></td>'
+                 f'<td class="r {cls(h.get("^NDX"))}">{num(h.get("^NDX"), 2, sign=True, pct=True)}</td>'
+                 f'<td class="r {cls(h.get("^TNX"))}">{num(h.get("^TNX"), 1, sign=True)}{"bp" if h.get("^TNX") is not None else ""}</td>'
+                 f'<td class="r {cls(f20)}">{num(f20, 1, sign=True, pct=True)}</td><td class="r muted">{h.get("n", 0)}</td></tr>')
+    wk = nx.get("week_ago")
+    wk_txt = (T(f"一週前（{wk['asof']}）：{_fw_probs(wk['probs'])}", f"A week ago: {_fw_probs(wk['probs'])}") if wk else "")
+    path = "".join(f'<tr><td class="nw">{esc(m["date"][5:])}{"＊" if m.get("sep") else ""}</td><td class="r">{m["rate_after"]:.2f}%</td>'
+                   f'<td class="r {cls(m["chg_bp"])}">{m["chg_bp"]:+.0f}bp</td><td class="r {cls(m["cum_bp"])}">{m["cum_bp"]:+.0f}bp</td>'
+                   f'<td class="small">{esc(_fw_probs(m["probs"]))}</td></tr>' for m in ms[:6])
+    note = T(f"資料：芝加哥期交所 30 天聯邦基金期貨（{fv['contracts']} 個月份合約，Yahoo 延遲報價，{fv['asof']}）＋聯邦基金有效利率 "
+             f"{fv['r0']:.2f}%（FRED，{fv['r0_date']}）。算法與 CME FedWatch 相同：合約價＝100−該月平均利率，逐次會議拆出會後利率，"
+             "再依 25bp 一級換成機率。這是期貨定價，不是預測；「偏鷹／偏鴿」是相對共識（無共識時相對期貨最可能結果）。"
+             "歷史反應是快取中過去 FOMC 的平均，樣本少只是參考。",
+             "Source: CBOT 30-day fed funds futures + EFFR; CME FedWatch arithmetic. Pricing, not a forecast.")
+    nd = nx["date"][5:]
+    return (f'<h4>{T(f"市場怎麼押 {nd} 這次會議", "What futures price for the next meeting")}</h4>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("可能結果", "Outcome")}</th><th class="r">{T("期貨隱含機率", "Probability")}</th>'
+            f'<th>{T("相對預期", "vs expected")}</th><th class="r">{T("過去當天那指", "Past day NDX")}</th><th class="r">{T("過去當天 10 年", "Past day 10y")}</th>'
+            f'<th class="r">{T("過去之後 20 日那指", "Past +20d NDX")}</th><th class="r">{T("次數", "n")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            + (f'<p class="small muted">{wk_txt}</p>' if wk_txt else "")
+            + f'<details class="hist"><summary class="small">{T("之後幾次會議的隱含利率路徑", "Implied path for later meetings")}</summary>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("會議", "Meeting")}</th><th class="r">{T("會後隱含利率", "Implied rate")}</th>'
+            f'<th class="r">{T("該次變動", "Change")}</th><th class="r">{T("累計（對今天）", "Cumulative")}</th><th>{T("該次機率", "Probabilities")}</th></tr></thead>'
+            f'<tbody>{path}</tbody></table></div></details><p class="note">{note}</p>')
+
+
 def sec_fomc(eng) -> str:
     ev = getattr(eng, "econ_view", None) or {}
     ec = getattr(eng, "econ", None)
@@ -126,7 +183,8 @@ def sec_fomc(eng) -> str:
                      f'・<b>{T(f"還有 {dd} 天", f"in {dd} days")}</b>'
                      + (f' <span class="pill">{T("有經濟預測與點陣圖", "SEP + dot plot")}</span>' if nx.get("sep") else "") + "</div>"
                      f'<div>{T("目前政策利率上限", "Current upper bound")} <b>{num(rate, 2)}%</b>　{exp}</div></div>')
-    parts.append(_fed_proxy(eng, rate))
+    fwb = _fw_block(eng, _prim(nx).get("c") if nx else None, rate)
+    parts.append(fwb or _fed_proxy(eng, rate))
     meets = [m for m in (getattr(ec, "fomc", None) or []) if m["date"] >= today][:8]
     if meets:
         parts.append('<p class="small">' + T("之後的會議：", "Upcoming meetings: ") + "、".join(
@@ -164,9 +222,14 @@ def _hist_block(st: Dict) -> str:
     from wsb.analytics.macro_events import REACT
     by = st.get("by") or {}
     lab = {"hot": ("高於預期／偏鷹", "Hot / hawkish"), "inline": ("符合預期", "In line"), "cool": ("低於預期／偏鴿", "Cool / dovish")}
-    rows = "".join(f'<tr><td>{T(*lab[d])}</td><td class="r">{by[d]["n"]}</td>' + "".join(_mv(by[d].get(t), k) for t, _z, _e, k in REACT) + "</tr>"
+    def fw(d, key):
+        f = by[d].get("fwd") or {}
+        return f.get("tw") if key == "tw" else (f.get(key) or {}).get("^NDX")
+    rows = "".join(f'<tr><td>{T(*lab[d])}</td><td class="r">{by[d]["n"]}</td>' + "".join(_mv(by[d].get(t), k) for t, _z, _e, k in REACT)
+                   + _mv(fw(d, "tw"), "pct") + _mv(fw(d, "f5"), "pct") + _mv(fw(d, "f20"), "pct") + "</tr>"
                    for d in ("hot", "inline", "cool") if d in by)
-    head = "".join(f'<th class="r">{T(z, e)}</th>' for _t, z, e, _k in REACT)
+    head = ("".join(f'<th class="r">{T(z, e)}</th>' for _t, z, e, _k in REACT)
+            + f'<th class="r">{T("台股隔日", "TAIEX next")}</th><th class="r">{T("之後 5 日那指", "NDX +5d")}</th><th class="r">{T("之後 20 日那指", "NDX +20d")}</th>')
     ratio = (T(f"這類數據公布當天，那指 100 平均波動是平常的 {st['absratio']:.1f} 倍（平均 ±{st['abs_ndx']:.2f}%）。",
                f"Release-day Nasdaq-100 moves average {st['absratio']:.1f}× a normal day.") if st.get("absratio") else "")
     last = "".join(f'<li>{esc(x["date"])}：{esc((x.get("row") or {}).get("actual", ""))}（{T("預期", "cons.")} {esc((x.get("row") or {}).get("cons", "") or "—")}）'
@@ -197,7 +260,15 @@ def _ev_row(e: Dict, today: str) -> str:
         ai = (f'<div class="ainote"><b>{T("AI 解讀", "AI read")}</b><span class="muted small">（{esc(e["ai"].get("engine", ""))}）</span>'
               f'<p>{esc(e["ai"]["text"]).replace(chr(10), "<br>")}</p></div>')
     ctx = f'<p class="small"><b>{T("目前背景", "Backdrop")}：</b>{esc(e["ctx"])}</p>' if e.get("ctx") else ""
-    body = tbl + mvl + ai + ctx + (_scen_block(e["key"], e["scen"], e.get("dir")) if e.get("scen") else "") + (_hist_block(e["stats"]) if e.get("stats") else "")
+    concl = ""
+    if e.get("conclusion"):
+        pre = ""
+        if e.get("fw_pre"):
+            fp = e["fw_pre"]
+            pre = T(f"會前期貨隱含（{fp['asof']}）：{_fw_probs(fp['probs'])}。", f"Priced beforehand: {_fw_probs(fp['probs'])}. ")
+        concl = (f'<div class="concl"><b>{T("結論", "Conclusion")}</b><p>{T(e["conclusion"]["zh"], e["conclusion"]["en"])}{pre}</p>'
+                 f'<p class="small muted">{T("由數據組成：結果對預期、當天收盤、台股隔日、過去同類結果之後的平均走勢。不是預測。", "Built from data only. Not a forecast.")}</p></div>')
+    body = concl + tbl + mvl + ai + ctx + (_scen_block(e["key"], e["scen"], e.get("dir")) if e.get("scen") else "") + (_hist_block(e["stats"]) if e.get("stats") else "")
     dd = _days_to(e["date"], today)
     st = (_dir_badge(e) if e["released"] and e.get("dir") else
           f'<span class="pill">{T("已公布", "Out")}</span>' if e["released"] else
@@ -232,6 +303,47 @@ def sec_econ_list(eng) -> str:
              f"不是預測——實際反應取決於市場事先定價了什麼。歷史反應用快取中的 {ev.get('n_hist', 0)} 筆過去公布（自 {ev.get('hist_from') or '—'} 起）計算。"
              "本頁不構成投資建議。", "Sources: Nasdaq, ForexFactory, federalreserve.gov. Scenarios are a framework, not forecasts. Not advice.")
     return card("美國經濟日曆（未來約 45 天）", "US economic calendar (next ~45 days)", ctl + f'<div class="evlist">{"".join(days)}</div><p class="note">{note}</p>', "wide")
+
+
+def sec_earn_verdict(eng) -> str:
+    v = getattr(eng, "earn_verdict", None) or {}
+    if not v.get("available"):
+        return ""
+    from wsb.analytics.earn_verdict import RES
+    tm = {"pre": ("盤前", "pre-mkt"), "after": ("盤後", "after close")}
+    cards = []
+    for r in v["rows"][:24]:
+        res = r.get("result")
+        badge = (f'<span class="pill {DIR_CLS[{"beat": "hot", "inline": "inline", "miss": "cool"}[res]]}">{T(*RES[res])}</span>' if res
+                 else f'<span class="pill">{T("今天公布", "today")}</span>')
+        kv = []
+        if r.get("react") is not None:
+            kv.append(f'{T("兩日股價", "2-day")} <b class="{cls(r["react"])}">{num(r["react"], 1, sign=True, pct=True)}</b>')
+        if r.get("mv"):
+            kv.append(f'{T("事前預期", "Implied")} <b>±{num(r["mv"], 1)}%</b>')
+        if r.get("peers"):
+            kv.append(f'{T("同族群", "Peers")} <b class="{cls(r["peers"]["avg"])}">{num(r["peers"]["avg"], 1, sign=True, pct=True)}</b>')
+        if r.get("tw") and r["tw"].get("move") is not None:
+            kv.append(f'{T("台股隔日", "TW next")} <b class="{cls(r["tw"]["move"])}">{num(r["tw"]["move"], 1, sign=True, pct=True)}</b>')
+        peers = ""
+        if r.get("peers"):
+            peers = ('<p class="small muted">' + T("族群內波動最大：", "Biggest peer moves: ") + "、".join(
+                f'{esc(n)} <span class="{cls(x)}">{x:+.1f}%</span>' for _s, n, x in r["peers"]["top"]) + "</p>")
+        news = ""
+        if r.get("news"):
+            news = (f'<details class="hist"><summary class="small">{T("相關新聞標題（僅供參考，未列入結論）", "Headlines (context only)")}</summary><ul class="small lines">'
+                    + "".join(f'<li><a href="{esc(n["l"])}" target="_blank" rel="noopener noreferrer">{esc(n["t"])}</a> <span class="muted">{esc(n["src"])}</span></li>'
+                              for n in r["news"] if str(n.get("l", "")).startswith("http")) + "</ul></details>")
+        cards.append(f'<div class="ecard"><div class="ech"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["sym"])}</span> '
+                     f'<span class="muted small">{esc(r["date"][5:])} {_wd(r["date"])} {T(*tm.get(r["time"], ("", "")))}</span> {badge}</div>'
+                     f'<p class="small">{T(r["verdict"]["zh"], r["verdict"]["en"])}</p>'
+                     + (f'<div class="small eck">{"　".join(kv)}</div>' if kv else "") + peers + news + "</div>")
+    note = T("每股盈餘與預期來自 Nasdaq（Zacks 彙整）；兩日股價＝財報前一個交易日收盤到之後第一個交易日收盤；事前預期＝財報前最後一次記錄的選擇權跨式價；"
+             "同族群＝本站同主題個股同期平均；之後 20 日＝過去財報後的走勢。營收指引、毛利率等法說會內容不在這些數據裡，結論不會替它們下判斷。不構成投資建議。",
+             "Nasdaq EPS; 2-session price move; implied move saved before the report; peers = same theme. Guidance is not in the data. Not advice.")
+    return card("財報結論（最近 7 天）", "Earnings verdicts (last 7 days)",
+                f'<div class="egrid">{"".join(cards)}</div><p class="note">{note}</p>', "wide",
+                sub=T("公布後：數字對預期、股價怎麼反應、有沒有擴散到族群與台股", "After the report: numbers vs estimates, reaction, spill-over"))
 
 
 def sec_earn_cal(eng) -> str:
@@ -502,6 +614,8 @@ details.ev summary::-webkit-details-marker{display:none}details.ev summary::befo
 details.ev .tm{min-width:74px;font-variant-numeric:tabular-nums}.evn{min-width:150px}.evv{flex:1;min-width:220px}.evb{padding:6px 0 8px 18px}
 .evday h4{margin:12px 0 2px;border-bottom:1px solid var(--bd);padding-bottom:3px}.evday.today h4{color:var(--ac)}.evday.past{opacity:.85}
 .evday.past.hide,.ev.hide{display:none}details.hist{margin:6px 0}details.hist summary{cursor:pointer;color:var(--ac)}
+.concl{background:color-mix(in srgb,var(--warn) 9%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px}.concl p{margin:3px 0}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}.ecard{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}.ecard p{margin:5px 0}.ech{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.eck b{margin-right:4px}
 .ainote{background:color-mix(in srgb,var(--ac) 9%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px}
 .ainote p{margin:4px 0 0}.ecal tr.hide{display:none}
 table.teb tr.tm{cursor:pointer}table.teb tr.det{display:none}table.teb tr.det.open{display:table-row}table.teb tr.det td{background:var(--card2)}

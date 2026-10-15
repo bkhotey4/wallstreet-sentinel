@@ -23,6 +23,8 @@ from .analytics import stockscore as ss
 from .analytics import breadth as bd
 from .analytics import signals as sg
 from .analytics import macro_events as me
+from .analytics import earn_verdict as ev
+from .data import fedwatch as fw
 from .analytics import techearn as te
 from .analytics.stress import StressEngine, StressResult
 from .config import SETTINGS
@@ -79,6 +81,10 @@ class Engine:
         self.rotation: Dict = {}          # 類股輪動與市場寬度
         self.signals: Dict = {}           # 技術面買點訊號（規則篩選）
         self.econ_view: Dict = {}         # 財經日曆（FOMC、CPI、PPI…＋影響劇本）
+        from .data.fedwatch import FedWatch
+        self.fedwatch = FedWatch()        # 聯邦基金期貨 → FOMC 結果機率
+        self.fedwatch_view: Dict = {}
+        self.earn_verdict: Dict = {}      # 財報結論
         self.techearn: Dict = {}          # 科技／半導體財報分析
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
@@ -123,7 +129,8 @@ class Engine:
                  ("sec", self.sec.refresh([t for t in extra if "." not in t])),
                  ("taiwan", self.taiwan.refresh()), ("darkpool", self.darkpool.refresh(self.market)),
                  ("stocks", self.stockprices.refresh()), ("stocknews", self.stocknews.refresh()),
-                 ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()))
+                 ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()),
+                 ("fedwatch", self.fedwatch.refresh()))
         # each feed gets its own timeout: one hung source can't hold phase 2 (and the bot's loops) forever
         res = await asyncio.gather(*(asyncio.wait_for(c, tmo) for _, c in feeds), return_exceptions=True)
         if not self.site_mode:                           # the site build forces its own (frames) earnings refresh later
@@ -167,8 +174,9 @@ class Engine:
     async def refresh_extras(self) -> None:
         """Slow feeds behind the stock board / bond zone (each one skips itself until its own refresh interval)."""
         res = await asyncio.gather(self.stockprices.refresh(), self.stocknews.refresh(), self.treasury.refresh(),
-                                   self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(), return_exceptions=True)
-        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ"), res):
+                                   self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
+                                   self.fedwatch.refresh(), return_exceptions=True)
+        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
         try:
@@ -228,7 +236,9 @@ class Engine:
                 log.exception("valuation failed")
             for attr, fn, label in (("scores", ss.build, "stock scores"), ("bonds", tsy.build, "treasury"),
                                     ("rotation", bd.build, "breadth"), ("signals", sg.build, "signals"),
-                                    ("econ_view", me.build, "econ calendar"), ("techearn", te.build, "tech earnings")):
+                                    ("fedwatch_view", fw.view, "fedwatch"),
+                                    ("econ_view", me.build, "econ calendar"), ("techearn", te.build, "tech earnings"),
+                                    ("earn_verdict", ev.build, "earnings verdicts")):
                 try:
                     setattr(self, attr, await asyncio.to_thread(fn, self))
                 except Exception:  # noqa: BLE001

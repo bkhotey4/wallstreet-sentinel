@@ -1071,7 +1071,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_cal]),
+            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
@@ -1324,6 +1324,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         eng.sx = SX.build(eng)
     except Exception:  # noqa: BLE001
         log.exception("site extras build failed")
+    try:                                   # after sx: saves the options-implied move of today's / upcoming reports
+        from wsb.analytics import earn_verdict as EVD
+        eng.earn_verdict = EVD.build(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("earnings verdicts failed")
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render(eng, ai_text, ai_engine), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")

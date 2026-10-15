@@ -126,6 +126,9 @@ fred_series:
   T10Y3M: 10年-3個月利差
   T10Y2Y: 10年-2年利差
   DGS2: 2年期殖利率
+  EFFR: 聯邦基金有效利率
+  DFEDTARU: 聯邦基金目標利率上限
+  DFEDTARL: 聯邦基金目標利率下限
   DGS10: 10年期殖利率
   DFII10: 10年實質利率
   T10YIE: 10年通膨預期

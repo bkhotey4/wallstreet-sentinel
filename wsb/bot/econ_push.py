@@ -54,10 +54,32 @@ def _hist_txt(e: Dict, d: Optional[str] = None) -> str:
     return ("過去約兩年當天平均：\n" + "\n".join(L)) if L else ""
 
 
+def _fw_txt(m: Optional[Dict]) -> str:
+    """'維持不變 70%、升息 1 碼 30%' from a FedWatch meeting row."""
+    if not m:
+        return ""
+    from ..data.fedwatch import outcome_label
+    items = sorted(((int(k), v) for k, v in m["probs"].items()), key=lambda kv: -kv[1])
+    return "、".join(f"{outcome_label(k)[0]} {v * 100:.0f}%" for k, v in items) + f"（會後隱含利率 {m['rate_after']:.2f}%）"
+
+
+def _fwd_txt(e: Dict, d: Optional[str]) -> str:
+    """What followed past releases with the same outcome (Nasdaq-100 +5 / +20 sessions, Taiwan next session)."""
+    x = (((e.get("stats") or {}).get("by") or {}).get(d) or {}).get("fwd") or {}
+    f = lambda v, n=1: "—" if v is None else f"{v:+.{n}f}%"  # noqa: E731
+    f5, f20 = (x.get("f5") or {}).get("^NDX"), (x.get("f20") or {}).get("^NDX")
+    if f5 is None and f20 is None and x.get("tw") is None:
+        return ""
+    return (f"台股隔日平均 {f(x.get('tw'), 2)}；那指之後 5 個交易日平均 {f(f5)}、20 個交易日平均 {f(f20)}"
+            f"（{x.get('n20', 0)} 次，樣本少只是參考）")
+
+
 def reminder_embed(e: Dict) -> discord.Embed:
     em = discord.Embed(title=f"⏰ {e['zh']}：台北 {e.get('tpe', '')} 公布", color=0x3498DB,
                        description=f"美東 {e['date']} {e.get('et', '')}｜重要度 {'★' * e['imp']}" + ("｜含點陣圖" if e.get("sep") else ""))
     em.add_field(name="預期與前值", value=_rows_txt(e, False)[:1024], inline=False)
+    if e.get("fw"):
+        em.add_field(name="期貨隱含機率（CME FedWatch 算法）", value=_fw_txt(e["fw"])[:1024], inline=False)
     sc = e.get("scen") or {}
     if sc:
         em.add_field(name="為什麼重要", value=sc["why"]["zh"][:1024], inline=False)
@@ -89,6 +111,11 @@ def result_embed(e: Dict, quotes: Dict, ai: Optional[str]) -> discord.Embed:
     h = _hist_txt(e, d)
     if h:
         em.add_field(name="過去同類結果", value=h[:1024], inline=False)
+    fw = _fwd_txt(e, d)
+    if fw:
+        em.add_field(name="過去同類結果之後", value=fw[:1024], inline=False)
+    if e.get("fw_pre"):
+        em.add_field(name="會前期貨隱含", value=_fw_txt(e["fw_pre"])[:1024], inline=False)
     if ai:
         em.add_field(name="🧠 AI 解讀", value=ai[:1024], inline=False)
     if sc:
@@ -113,6 +140,20 @@ def earnings_embed(row: Dict, tr: Optional[Dict]) -> discord.Embed:
             em.add_field(name=f"上一份季報（季末 {tr.get('end')}）", value=tr.get("verdict", "")[:1024], inline=False)
     em.add_field(name="接下來", value="營收、毛利率等細節會在 SEC 季報（10-Q）出來後自動更新到網站「科技財報」頁；股價反應用 /stock 查。", inline=False)
     em.set_footer(text="資料：Nasdaq（Zacks 彙整預期）｜EPS 口徑可能與公司公布的調整後 EPS 不同｜不構成投資建議")
+    return em
+
+
+def verdict_embed(r: Dict) -> discord.Embed:
+    """財報結論 — sent once the two-session price window has closed."""
+    from ..analytics.earn_verdict import RES
+    res = r.get("result")
+    color = 0x2FBF71 if (r.get("react") or 0) > 0 else 0xE74C3C if (r.get("react") or 0) < 0 else 0x95A5A6
+    em = discord.Embed(title=f"🧾 {r['name']}（{r['sym']}）財報結論：{RES[res][0] if res else '—'}，兩日股價 {r['react']:+.1f}%",
+                       color=color, description=r["verdict"]["zh"][:2000])
+    pe = r.get("peers")
+    if pe:
+        em.add_field(name=f"同族群（{pe['theme']}）波動最大", value="、".join(f"{n} {x:+.1f}%" for _s, n, x in pe["top"])[:1024], inline=False)
+    em.set_footer(text="由數據組成：EPS 對預期、兩日股價、選擇權事前預期、族群與台股、過去財報後走勢｜指引不在數據內｜不構成投資建議")
     return em
 
 
@@ -249,6 +290,14 @@ async def earnings_tick(bot, now: datetime) -> None:
                     ed.surprise = await ED.refresh_surprises([r["sym"]], {r["sym"]: d}, 20)
                 except Exception:  # noqa: BLE001
                     pass
+    # the two-session reaction window closed → one 財報結論 per report (curated tech names, last 3 US days only)
+    lo = (today - timedelta(days=3)).isoformat()
+    for r in (getattr(eng, "earn_verdict", None) or {}).get("rows", []):
+        if r["sym"] not in tech or r.get("status") != "reported" or r.get("react") is None or r["date"] < lo:
+            continue
+        k = f"earn_concl:{r['sym']}:{r['date']}"
+        if not store.kv_get(k) and await _send(bot, verdict_embed(r)):
+            store.kv_set(k, True)
     # SEC quarterly numbers arrived for a curated tech name → one detail push per new quarter
     for s, r in rows_by.items():
         end = r.get("end")

@@ -332,6 +332,37 @@ def reaction(hist: pd.DataFrame, day: str) -> Dict[str, Optional[float]]:
     return out
 
 
+FWD = [("^NDX", "pct"), ("^TNX", "bp")]
+
+
+def forward(hist: pd.DataFrame, day: str, n: int) -> Dict[str, Optional[float]]:
+    """From the release-day close to n sessions later (what happened AFTER the first reaction)."""
+    out = {}
+    d = pd.Timestamp(day)
+    for t, kind in FWD:
+        s = hist[t].dropna() if hist is not None and t in hist.columns else pd.Series(dtype=float)
+        if d not in s.index:
+            out[t] = None
+            continue
+        i = s.index.get_loc(d)
+        if i + n >= len(s):
+            out[t] = None
+            continue
+        a, b = float(s.iloc[i + n]), float(s.iloc[i])
+        out[t] = (a - b) * 100 if kind == "bp" else (a / b - 1) * 100
+    return out
+
+
+def tw_next(hist: pd.DataFrame, day: str) -> Optional[float]:
+    """Taiwan's next session after a US release (TAIEX close on/before the US date → first close after it)."""
+    if hist is None or "^TWII" not in hist.columns:
+        return None
+    s = hist["^TWII"].dropna()
+    t = pd.Timestamp(day)
+    a, b = s[s.index <= t], s[s.index > t]
+    return (float(b.iloc[0]) / float(a.iloc[-1]) - 1) * 100 if len(a) and len(b) else None
+
+
 def history_stats(past: List[Dict], hist: pd.DataFrame) -> Dict[str, Dict]:
     """Per event key: n releases, and the average market move on the day split by surprise direction."""
     base = {}
@@ -352,6 +383,13 @@ def history_stats(past: List[Dict], hist: pd.DataFrame) -> Dict[str, Dict]:
             if not sub:
                 continue
             rec["by"][dname] = {"n": len(sub), **{t: _avg([m[t] for m in sub]) for t, *_ in REACT}}
+            ids = [e for e in evs if e["dir"] == dname]
+            f5 = [forward(hist, e["date"], 5) for e in ids]
+            f20 = [forward(hist, e["date"], 20) for e in ids]
+            rec["by"][dname]["fwd"] = {"f5": {t: _avg([m[t] for m in f5]) for t, _k in FWD},
+                                       "f20": {t: _avg([m[t] for m in f20]) for t, _k in FWD},
+                                       "n20": sum(1 for m in f20 if m.get("^NDX") is not None),
+                                       "tw": _avg([tw_next(hist, e["date"]) for e in ids])}
         nd = [abs(m["^NDX"]) for m in moves.values() if m.get("^NDX") is not None]
         if nd and base.get("^NDX"):
             rec["absratio"] = float(np.mean(nd)) / base["^NDX"]
@@ -487,6 +525,8 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
     for e in window:
         if e["key"] == "fomc":
             e["sep"] = e.get("sep") or seps.get(e["date"], False)
+            fv = getattr(eng, "fedwatch_view", None) or {}
+            e["fw"] = next((m for m in fv.get("meetings", []) if m["date"] == e["date"]), None) if not e["released"] else None
         e["et"], e["tpe"] = _fmt_times(e.get("utc"))
         e["dir_label"] = dir_label(e["key"], e["dir"]) if e.get("dir") else None
         e["scen"] = SCEN.get(e["key"])
@@ -494,12 +534,49 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
         e["ctx"] = "；".join(x for x in (ctx.get(k) for k in CTX_FOR.get(e["key"], ())) if x)
         if e["released"] and e["date"] >= (today - timedelta(days=3)).isoformat():
             e["move"] = reaction(hist, e["date"])
+            e["tw_next"] = tw_next(hist, e["date"])
+            e["conclusion"] = conclusion(e)
+            if e["key"] == "fomc":
+                from ..data import fedwatch as FW
+                e["fw_pre"] = FW.priced_before(eng, e["date"])
     window.sort(key=lambda e: (e["date"], e.get("utc") or "", -e["imp"]))
     nxt_fomc = next((e for e in upcoming if e["key"] == "fomc"), None)
     wk_end = (today + timedelta(days=7)).isoformat()
     return {"available": True, "asof": today.isoformat(), "events": window, "stats": stats, "context": ctx,
             "next_fomc": nxt_fomc, "week": [e["id"] for e in window if today.isoformat() <= e["date"] <= wk_end and e["imp"] >= 2],
             "n_hist": len(past), "hist_from": min((e["date"] for e in past), default=None)}
+
+
+def conclusion(e: Dict) -> Optional[Dict[str, str]]:
+    """One measured paragraph for a released event: outcome, today's reaction vs the past average for that outcome,
+    Taiwan's next session, and what followed in the past.  No forecast — past averages with their sample size."""
+    d = e.get("dir")
+    if not d:
+        return None
+    lab = dir_label(e["key"], d)
+    mv, by = e.get("move") or {}, ((e.get("stats") or {}).get("by") or {}).get(d) or {}
+    zh, en = [f"這次：{lab[0]}"], [f"Outcome: {lab[1]}"]
+    nd, tn = mv.get("^NDX"), mv.get("^TNX")
+    if nd is not None:
+        s = f"公布當天那指 {nd:+.2f}%" + (f"、10 年殖利率 {tn:+.1f}bp" if tn is not None else "")
+        if by.get("^NDX") is not None:
+            s += f"（過去 {by['n']} 次同類結果當天平均 {by['^NDX']:+.2f}%）"
+        zh.append(s)
+        en.append(f"Nasdaq-100 {nd:+.2f}% on the day")
+    else:
+        zh.append("公布當天收盤反應：等美股收盤")
+    tw = e.get("tw_next")
+    if tw is not None:
+        zh.append(f"台股隔日 {tw:+.2f}%")
+    elif by.get("fwd", {}).get("tw") is not None:
+        zh.append(f"台股隔日：尚未收盤（過去同類結果平均 {by['fwd']['tw']:+.2f}%）")
+    fw = by.get("fwd") or {}
+    f5, f20 = (fw.get("f5") or {}).get("^NDX"), (fw.get("f20") or {}).get("^NDX")
+    if f5 is not None or f20 is not None:
+        zh.append("過去同類結果之後：那指 5 個交易日平均 " + (f"{f5:+.1f}%" if f5 is not None else "—")
+                  + "、20 個交易日平均 " + (f"{f20:+.1f}%" if f20 is not None else "—") + f"（{fw.get('n20', 0)} 次，樣本少只是參考）")
+        en.append(f"after past similar outcomes: +5d {f5 if f5 is not None else float('nan'):+.1f}%, +20d {f20 if f20 is not None else float('nan'):+.1f}%")
+    return {"zh": "；".join(zh) + "。", "en": "; ".join(en) + "."}
 
 
 def summary_lines(res: Dict, days: int = 7) -> List[str]:
