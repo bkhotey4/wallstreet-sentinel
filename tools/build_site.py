@@ -1071,7 +1071,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_earn_cal]),
+            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
@@ -1300,6 +1300,12 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.warning("build already took %.0f min (> %.0f min soft budget): skipping AI steps this run",
                     (time.time() - t_start) / 60, SOFT_BUDGET_S / 60)
         use_ai = False
+    try:                                   # company filings (8-K / 6-K) for this week's + each curated name's latest report
+        from wsb.analytics import earn_verdict as EVD
+        from wsb.data import earn_release as ER
+        log.info("SEC earnings releases parsed: %d", await ER.refresh(eng, EVD.release_targets(eng), budget_s=150))
+    except Exception:  # noqa: BLE001
+        log.exception("SEC earnings releases failed")
     if use_ai:
         try:
             log.info("AI bull/bear notes written: %d", await SX.generate_debates())
@@ -1327,6 +1333,9 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     try:                                   # after sx: saves the options-implied move of today's / upcoming reports
         from wsb.analytics import earn_verdict as EVD
         eng.earn_verdict = EVD.build(eng)
+        eng.latest_reports = EVD.latest_reports(eng)
+        from wsb.ai import econ_ai
+        econ_ai.attach(eng)                # AI 重點整理 onto the verdict / latest-report rows
     except Exception:  # noqa: BLE001
         log.exception("earnings verdicts failed")
     out.mkdir(parents=True, exist_ok=True)

@@ -150,6 +150,13 @@ def verdict_embed(r: Dict) -> discord.Embed:
     color = 0x2FBF71 if (r.get("react") or 0) > 0 else 0xE74C3C if (r.get("react") or 0) < 0 else 0x95A5A6
     em = discord.Embed(title=f"🧾 {r['name']}（{r['sym']}）財報結論：{RES[res][0] if res else '—'}，兩日股價 {r['react']:+.1f}%",
                        color=color, description=r["verdict"]["zh"][:2000])
+    rel = r.get("release") or {}
+    if rel.get("lines"):
+        em.add_field(name="財報重點（公司 SEC 文件）", value="\n".join(rel["lines"])[:1024], inline=False)
+    if (rel.get("ai") or {}).get("text"):
+        em.add_field(name="🧠 AI 重點整理（只讀財報原文）", value=rel["ai"]["text"][:1024], inline=False)
+    if r.get("impact"):
+        em.add_field(name="歷史影響統計", value="\n".join(r["impact"])[:1024], inline=False)
     pe = r.get("peers")
     if pe:
         em.add_field(name=f"同族群（{pe['theme']}）波動最大", value="、".join(f"{n} {x:+.1f}%" for _s, n, x in pe["top"])[:1024], inline=False)
@@ -290,6 +297,17 @@ async def earnings_tick(bot, now: datetime) -> None:
                     ed.surprise = await ED.refresh_surprises([r["sym"]], {r["sym"]: d}, 20)
                 except Exception:  # noqa: BLE001
                     pass
+    if time.time() - float(store.kv_get("earn_rel_poll", 0) or 0) > 1200:
+        store.kv_set("earn_rel_poll", time.time())
+        try:
+            from ..analytics import earn_verdict as EVD
+            from ..data import earn_release as ER
+            lo3 = (today - timedelta(days=3)).isoformat()
+            want = [(s, d) for s, d in EVD.release_targets(eng) if d >= lo3]
+            if want and await ER.refresh(eng, want, budget_s=60):
+                eng.earn_verdict = await asyncio.to_thread(EVD.build, eng)
+        except Exception:  # noqa: BLE001
+            log.exception("earnings release refresh failed")
     # the two-session reaction window closed → one 財報結論 per report (curated tech names, last 3 US days only)
     lo = (today - timedelta(days=3)).isoformat()
     for r in (getattr(eng, "earn_verdict", None) or {}).get("rows", []):

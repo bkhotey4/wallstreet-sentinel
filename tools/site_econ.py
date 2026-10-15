@@ -315,6 +315,7 @@ def sec_earn_verdict(eng) -> str:
     for r in v["rows"][:24]:
         res = r.get("result")
         badge = (f'<span class="pill {DIR_CLS[{"beat": "hot", "inline": "inline", "miss": "cool"}[res]]}">{T(*RES[res])}</span>' if res
+                 else f'<span class="pill">{T("已公布", "reported")}</span>' if r.get("status") == "reported"
                  else f'<span class="pill">{T("今天公布", "today")}</span>')
         kv = []
         if r.get("react") is not None:
@@ -325,6 +326,20 @@ def sec_earn_verdict(eng) -> str:
             kv.append(f'{T("同族群", "Peers")} <b class="{cls(r["peers"]["avg"])}">{num(r["peers"]["avg"], 1, sign=True, pct=True)}</b>')
         if r.get("tw") and r["tw"].get("move") is not None:
             kv.append(f'{T("台股隔日", "TW next")} <b class="{cls(r["tw"]["move"])}">{num(r["tw"]["move"], 1, sign=True, pct=True)}</b>')
+        rel = r.get("release") or {}
+        relb = ""
+        if rel.get("lines"):
+            relb = (f'<div class="relb"><b>{T("財報重點（公司向 SEC 申報的文件）", "Key numbers (company SEC filing)")}</b><ul class="small lines">'
+                    + "".join(f"<li>{esc(x)}</li>" for x in rel["lines"]) + "</ul>"
+                    + (f'<p class="small muted"><a href="{esc(rel["url"])}" target="_blank" rel="noopener noreferrer">{T("原始文件", "Filing")} {esc(rel.get("form") or "")}</a></p>'
+                       if str(rel.get("url", "")).startswith("https://www.sec.gov/") else "") + "</div>")
+        if (rel.get("ai") or {}).get("text"):
+            relb += (f'<div class="ainote"><b>{T("AI 重點整理（只讀財報原文）", "AI summary (filing text only)")}</b>'
+                     f'<span class="muted small">（{esc(rel["ai"].get("engine", ""))}）</span><p>{esc(rel["ai"]["text"]).replace(chr(10), "<br>")}</p></div>')
+        imp = ""
+        if r.get("impact"):
+            imp = (f'<details class="hist"><summary class="small">{T("預估影響（歷史統計與選擇權定價）", "Expected impact (history & options)")}</summary>'
+                   '<ul class="small lines">' + "".join(f"<li>{esc(x)}</li>" for x in r["impact"]) + "</ul></details>")
         peers = ""
         if r.get("peers"):
             peers = ('<p class="small muted">' + T("族群內波動最大：", "Biggest peer moves: ") + "、".join(
@@ -337,13 +352,42 @@ def sec_earn_verdict(eng) -> str:
         cards.append(f'<div class="ecard"><div class="ech"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["sym"])}</span> '
                      f'<span class="muted small">{esc(r["date"][5:])} {_wd(r["date"])} {T(*tm.get(r["time"], ("", "")))}</span> {badge}</div>'
                      f'<p class="small">{T(r["verdict"]["zh"], r["verdict"]["en"])}</p>'
-                     + (f'<div class="small eck">{"　".join(kv)}</div>' if kv else "") + peers + news + "</div>")
+                     + (f'<div class="small eck">{"　".join(kv)}</div>' if kv else "") + relb + imp + peers + news + "</div>")
     note = T("每股盈餘與預期來自 Nasdaq（Zacks 彙整）；兩日股價＝財報前一個交易日收盤到之後第一個交易日收盤；事前預期＝財報前最後一次記錄的選擇權跨式價；"
              "同族群＝本站同主題個股同期平均；之後 20 日＝過去財報後的走勢。營收指引、毛利率等法說會內容不在這些數據裡，結論不會替它們下判斷。不構成投資建議。",
              "Nasdaq EPS; 2-session price move; implied move saved before the report; peers = same theme. Guidance is not in the data. Not advice.")
     return card("財報結論（最近 7 天）", "Earnings verdicts (last 7 days)",
                 f'<div class="egrid">{"".join(cards)}</div><p class="note">{note}</p>', "wide",
                 sub=T("公布後：數字對預期、股價怎麼反應、有沒有擴散到族群與台股", "After the report: numbers vs estimates, reaction, spill-over"))
+
+
+def sec_latest_reports(eng) -> str:
+    v = getattr(eng, "latest_reports", None) or {}
+    if not v.get("available"):
+        return ""
+    cards = []
+    for r in v["rows"][:40]:
+        lines = "".join(f"<li>{esc(x)}</li>" for x in r["lines"]) or f'<li class="muted">{T("文件裡沒有抽到可比較的數字", "No comparable numbers found")}</li>'
+        mv = (f'　{T("財報後兩日股價", "2-day move")} <b class="{cls(r["react"])}">{num(r["react"], 1, sign=True, pct=True)}</b>' if r.get("react") is not None else "")
+        if r.get("tw") and r["tw"].get("move") is not None:
+            mv += f'　{T("台股隔日", "TW next")} {esc(r["tw"]["name"])} <b class="{cls(r["tw"]["move"])}">{num(r["tw"]["move"], 1, sign=True, pct=True)}</b>'
+        ai = (f'<details class="hist"><summary class="small">{T("AI 重點整理（只讀財報原文）", "AI summary")}</summary>'
+              f'<p class="small">{esc(r["ai"]["text"]).replace(chr(10), "<br>")}</p></details>' if (r.get("ai") or {}).get("text") else "")
+        link = (f'<a class="small muted" href="{esc(r["url"])}" target="_blank" rel="noopener noreferrer">SEC {esc(r.get("form") or "")}</a>'
+                if str(r.get("url", "")).startswith("https://www.sec.gov/") else "")
+        cards.append(f'<div class="ecard" data-q="{esc((r["sym"] + " " + r["name"]).lower())}"><div class="ech"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["sym"])}</span>'
+                     f'<span class="thc">{esc(r["theme"])}</span> <span class="muted small">{esc(r["date"])}</span> {link}</div>'
+                     f'<ul class="small lines">{lines}</ul><div class="small">{mv}</div>{ai}</div>')
+    ctl = f'<div class="fmctl"><input type="search" class="btn lrq" placeholder="搜尋公司，例如 TSM、輝達" aria-label="search"></div>'
+    js = ("<script>(function(){var q=document.querySelector('.lrq');if(!q)return;q.addEventListener('input',function(){var v=q.value.trim().toLowerCase();"
+          "document.querySelectorAll('.lrgrid .ecard').forEach(function(c){c.style.display=!v||c.dataset.q.indexOf(v)>=0?'':'none';});});})();</script>")
+    note = T("數字由程式從公司向美國 SEC 申報的財報新聞稿、CFO 說明與法說簡報（8-K 2.02／6-K）抽出，每個數字都對得回原文；"
+             "「對照上次指引」用的是公司上一份財報給的下季指引。華爾街對營收、毛利率的預期不在免費數據裡，所以只和公司自己的指引比。"
+             "資本支出取自現金流量表第一欄（本期）。AI 重點整理只讀原文，可能有誤，以原始文件為準。不構成投資建議。",
+             "Numbers parsed from the company's own SEC filings; compared with its previous guidance. Not advice.")
+    return card("各公司最新財報重點", "Latest reports by company",
+                ctl + f'<div class="egrid lrgrid">{"".join(cards)}</div><p class="note">{note}</p>' + js, "wide",
+                sub=T("營收、毛利率、營益率、對照上次指引、下季與全年指引、資本支出", "Revenue, margins, vs prior guidance, outlook, capex"))
 
 
 def sec_earn_cal(eng) -> str:
@@ -615,6 +659,7 @@ details.ev .tm{min-width:74px;font-variant-numeric:tabular-nums}.evn{min-width:1
 .evday h4{margin:12px 0 2px;border-bottom:1px solid var(--bd);padding-bottom:3px}.evday.today h4{color:var(--ac)}.evday.past{opacity:.85}
 .evday.past.hide,.ev.hide{display:none}details.hist{margin:6px 0}details.hist summary{cursor:pointer;color:var(--ac)}
 .concl{background:color-mix(in srgb,var(--warn) 9%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px}.concl p{margin:3px 0}
+.relb{background:var(--card);border:1px solid var(--bd);border-radius:7px;padding:5px 8px;margin:6px 0}.relb ul{margin:3px 0}
 .egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}.ecard{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}.ecard p{margin:5px 0}.ech{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.eck b{margin-right:4px}
 .ainote{background:color-mix(in srgb,var(--ac) 9%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px}
 .ainote p{margin:4px 0 0}.ecal tr.hide{display:none}

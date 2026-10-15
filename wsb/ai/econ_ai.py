@@ -121,6 +121,16 @@ def season_prompt(res: Dict) -> str:
     return "\n".join(L)
 
 
+def release_prompt(rec: Dict) -> str:
+    from ..data.earn_release import summary_lines
+    nums = "\n".join(summary_lines(rec)) or "（程式沒有抽到數字）"
+    return (f"以下是 {rec['sym']} 在 {rec['date']} 向美國 SEC 申報的財報新聞稿／簡報原文（{rec.get('form')}），以及程式從原文抽出的數字。\n"
+            "請用台灣繁體中文寫 3–5 點「財報重點整理」，每點一句，只能根據原文：本季成績、和上次指引相比、下季或全年指引、資本支出或產能、"
+            "管理層強調的需求或風險。原文沒寫的不要提；不要預測股價；不要任何操作建議。最後一行寫「接下來要看：」加一句原文提到的觀察重點。\n\n"
+            "程式抽出的數字只是輔助，可能抽錯；和原文不一致時一律以原文為準，原文找不到的數字不要寫。\n\n"
+            f"【程式抽出的數字】\n{nums}\n\n【原文（節錄）】\n{rec.get('excerpt', '')[:9000]}")
+
+
 async def _gen(key: str, prompt: str, cache: Dict[str, Dict], max_tokens: int = 900) -> Optional[Tuple[str, str]]:
     from . import llm
     text, name = await llm.complete(SYSTEM, prompt, max_tokens)
@@ -171,6 +181,16 @@ async def generate(eng, limit: int = 6, deadline_s: float = 150) -> int:
             continue
         if await gen(k, earnings_prompt(r)):
             n += 1
+    from ..data import earn_release as ER
+    rels = ER.load()
+    for rec in sorted((v for v in rels.values() if v.get("acc")), key=lambda v: v["date"], reverse=True)[:12]:
+        if n >= limit or time.monotonic() >= t_end:
+            break
+        k = f"rel:{rec['acc']}"
+        if k in cache or not rec.get("excerpt"):
+            continue
+        if await gen(k, release_prompt(rec), 900):
+            n += 1
     if te.get("available") and te["season"].get("n") and time.monotonic() < t_end:
         k = f"season:{te['asof']}"
         if k not in cache and await gen(k, season_prompt(te), 1400):
@@ -188,6 +208,16 @@ def attach(eng) -> None:
     te = getattr(eng, "techearn", None) or {}
     for r in te.get("rows") or []:
         k = f"earn:{r['sym']}:{r['s'].get('last_date')}"
+        if (cache.get(k) or {}).get("text"):
+            r["ai"] = cache[k]
+    ver = getattr(eng, "earn_verdict", None) or {}
+    for r in ver.get("rows") or []:
+        rel = r.get("release") or {}
+        k = f"rel:{rel.get('acc')}"
+        if rel and (cache.get(k) or {}).get("text"):
+            rel["ai"] = cache[k]
+    for r in (getattr(eng, "latest_reports", None) or {}).get("rows") or []:
+        k = f"rel:{r.get('acc')}"
         if (cache.get(k) or {}).get("text"):
             r["ai"] = cache[k]
     if te.get("asof"):

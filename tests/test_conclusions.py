@@ -91,16 +91,25 @@ def test_earnings():
         sx={"earn": [{"sym": "TSM", "date": "2026-10-15", "time": "pre", "mv": 5.5, "asof": "2026-10-14 20:10 UTC"},
                      {"sym": "SCHW", "date": "2026-10-15", "time": "pre", "mv": 3.8, "asof": "2026-10-15 11:56 UTC"},   # after the report
                      {"sym": "NFLX", "date": "2026-10-15", "time": "after", "mv": 8.0, "asof": "2026-10-15 15:00 UTC"}]})
+    from wsb.data import earn_release as R
+    R.save({"NVDA|2026-10-15": {**R.build_record("NVDA", "2026-10-15", {"acc": "n1", "form": "8-K", "date": "2026-10-15", "url": "https://www.sec.gov/x/",
+                                                                         "docs": [], "text": NVDA}, None)}})
     out = EV.build(eng, now=pd.Timestamp("2026-10-15").date())
     rows = {r["sym"]: r for r in out["rows"]}
     t = rows["TSM"]
     assert t["result"] == "beat" and abs(t["surp"] - 3.4) < 0.05 and t["mv"] == 5.5 and t["tw"]["sym"] == "2330.TW"
     assert t["tw"]["move"] is not None and [n["t"] for n in t["news"]] == ["TSMC beats"]
     assert t["peers"]["theme"] if "peers" in t else True
-    assert rows["NVDA"]["status"] == "pending" and "今天公布" in rows["NVDA"]["verdict"]["zh"]
+    nv = rows["NVDA"]                                   # the 8-K is out before Nasdaq's EPS field → a verdict from the filing
+    assert nv["status"] == "reported" and any("下季指引" in x for x in nv["release"]["lines"])
+    assert "今天公布" not in nv["verdict"]["zh"] and nv["release"]["acc"] == "n1"
     snap = EV._load_implied()
     assert snap["TSM|2026-10-15"]["mv"] == 5.5 and snap["NFLX|2026-10-15"]["mv"] == 8.0   # saved for afterwards
     assert "SCHW|2026-10-15" not in snap                       # a quote taken after a pre-market report is not "beforehand"
+    import json as _json
+    EV.IMPLIED.write_text(_json.dumps({**snap, "AMD|2026-10-15": {"mv": 6.0, "asof": "2026-10-15 11:56 UTC"}}), encoding="utf-8")
+    eng.sx = {"earn": []}
+    assert "AMD|2026-10-15" not in EV.remember_implied(eng)     # a same-day snapshot from before this rule is purged
     return eng, out
 
 
@@ -118,6 +127,15 @@ def test_site(eng, out):
     fb = SE._fw_block(eng, None, 4.0)
     assert "70%" in fb and "30%" in fb and "升息 1 碼" in fb and "偏鷹" in fb and "符合預期" in fb and "-1.10%" in fb
     assert "CME FedWatch" in fb
+    # 各公司最新財報重點 + a verdict that only has the company's filing so far (Nasdaq EPS not updated yet)
+    eng.latest_reports = {"available": True, "rows": [
+        {"sym": "TSM", "name": "台積電 ADR", "theme": "半導體", "date": "2026-10-15", "acc": "a1", "form": "6-K",
+         "url": "https://www.sec.gov/Archives/edgar/data/1046179/x/", "lines": ["本季：營收 US$46.72B", "下季指引：營收 US$52.30B–54.30B"],
+         "react": None, "tw": {"sym": "2330.TW", "name": "台積電", "move": -1.2}, "ai": {"text": "重點<b>", "engine": "t"}},
+        {"sym": "X", "name": "Evil", "theme": "", "date": "2026-10-14", "acc": "a2", "form": "8-K", "url": "javascript:alert(1)", "lines": [], "react": 1.0, "tw": None}]}
+    lr = SE.sec_latest_reports(eng)
+    assert "各公司最新財報重點" in lr and "US$52.30B" in lr and "台股隔日" in lr and "重點&lt;b&gt;" in lr
+    assert "javascript:" not in lr and "https://www.sec.gov/Archives/edgar/data/1046179/x/" in lr
 
 
 def test_discord():
@@ -132,7 +150,91 @@ def test_discord():
     assert "優於預期" in em.title and "+3.2%" in em.title and em.description == "測試結論。"
 
 
+TSMC = ("In US dollars, third quarter revenue was $46.72 billion, which increased 41.2% year-over-year. Gross margin for the quarter was 66.4%, "
+        "operating margin was 58.7%, and net profit margin was 51.1%. Based on the Company's current business outlook, management expects the "
+        "overall performance for fourth quarter 2026 to be as follows: • Revenue is expected to be between US$52.3 billion and US$54.3 billion; "
+        "And, based on the exchange rate assumption of 1 US dollar to 31.8 NT dollars, • Gross profit margin is expected to be between 65% and 67%; "
+        "• Operating profit margin is expected to be between 56.5% and 58.5%. Cash Flows (In NT$ billions) 3Q26 2Q26 3Q25 Cash from operating "
+        "activities 919.77 783.36 426.83 Capital expenditures (443.21) (496.00) (287.45) Future Outlook Based on our current business outlook, "
+        "management expects: ▪ 2026 revenue to increase by around 44% in US dollar terms Unleash Innovation")
+NVDA = ("Outlook NVIDIA's outlook for the third quarter of fiscal 2027 is as follows: • Revenue is expected to be $108.0 billion, plus or minus 2%. "
+        "• GAAP and non-GAAP gross margins are expected to be 74.0%, plus or minus 50 basis points. • GAAP and non-GAAP operating expenses are "
+        "expected to be approximately $9.2 billion and $9.0 billion, respectively. Revenue $96,221 $81,615 Capital expenditures 7 1 - - 8")
+ASML = ("ASML reports €11.7 billion total net sales and €5.0 billion net income in Q3 2026 Full-year 2026 total net sales expected to be between "
+        "€44 billion and €45 billion, with a gross margin around 56% VELDHOVEN • Q3 total net sales of €11.7 billion, gross margin of 57.5%, net "
+        "income of €5.0 billion • ASML expects Q4 2026 total net sales between €14.2 billion and €15.2 billion, and a gross margin around 57%")
+
+
+def test_release_parser():
+    from wsb.data import earn_release as R
+    p = R.parse(TSMC)
+    a, g = p["actual"], {(x["metric"], x["period"]): x for x in p["guide"]}
+    assert a["revenue"]["USD"]["v"] == 46.72 and a["gross_margin"]["v"] == 66.4 and a["op_margin"]["v"] == 58.7
+    assert a["capex"]["v"] == 443.21 and a["capex"]["cur"] == "TWD"
+    assert (g[("revenue", "next_q")]["lo"], g[("revenue", "next_q")]["hi"], g[("revenue", "next_q")]["cur"]) == (52.3, 54.3, "USD")
+    assert (g[("gross_margin", "next_q")]["lo"], g[("gross_margin", "next_q")]["hi"]) == (65.0, 67.0)
+    assert (g[("op_margin", "next_q")]["lo"], g[("op_margin", "next_q")]["hi"]) == (56.5, 58.5)
+    assert g[("revenue_growth", "year")]["mid"] == 44.0 and g[("revenue_growth", "year")]["unit"] == "%"     # bullet after "expects:"
+    ov = {x["metric"]: x for x in R.outlook_vs_now(a, p["guide"])}
+    assert abs(ov["revenue"]["chg"] - 14.08) < 0.01 and abs(ov["gross_margin"]["chg"] + 0.4) < 1e-9
+    n = R.parse(NVDA)
+    gn = {(x["metric"], x["period"]): x for x in n["guide"]}
+    assert abs(gn[("revenue", "next_q")]["lo"] - 105.84) < 1e-6 and abs(gn[("revenue", "next_q")]["hi"] - 110.16) < 1e-6
+    assert (gn[("gross_margin", "next_q")]["lo"], gn[("gross_margin", "next_q")]["hi"]) == (73.5, 74.5)
+    assert gn[("opex", "next_q")]["single"] and gn[("opex", "next_q")]["lo"] == 9.2         # "X and Y, respectively" ≠ a range
+    assert "capex" not in n["actual"]                                  # an unrelated "Capital expenditures 7 1" row is not capex
+    s = R.parse(ASML)
+    gs = {(x["metric"], x["period"]): x for x in s["guide"]}
+    assert (gs[("revenue", "year")]["lo"], gs[("revenue", "year")]["hi"]) == (44.0, 45.0)      # not the €11.7B / €5.0B headline
+    assert (gs[("revenue", "next_q")]["lo"], gs[("revenue", "next_q")]["hi"]) == (14.2, 15.2)  # "Q4 2026 total net sales" is a quarter
+    assert gs[("gross_margin", "next_q")]["mid"] == 57.0 and gs[("gross_margin", "year")]["mid"] == 56.0
+    assert s["actual"]["revenue"]["EUR"]["v"] == 11.7 and s["actual"]["gross_margin"]["v"] == 57.5
+    # compare with last time's guidance: range position, point tolerance, GAAP/non-GAAP basis, wrong-period guard
+    prev = R.guidance("• Revenue is expected to be between US$44.6 billion and US$45.8 billion; • Gross profit margin is expected to be between 65% and 67%")
+    cmp_ = {x["metric"]: x for x in R.compare(a, prev)}
+    assert cmp_["revenue"]["pos"] == "above" and cmp_["gross_margin"]["pos"] == "within"
+    amd_act = R.actuals("Gross margin was 54%, operating income was $1.2 billion. Non-GAAP gross margin was 56%. Revenue was $11.5 billion.")
+    amd_prev = R.guidance("For the second quarter of 2026, AMD expects revenue to be approximately $11.2 billion. Non-GAAP gross margin is expected to be approximately 56%.")
+    c2 = {x["metric"]: x for x in R.compare(amd_act, amd_prev)}
+    assert c2["gross_margin"]["basis"] == "ng" and c2["gross_margin"]["actual"] == 56.0 and c2["gross_margin"]["pos"] == "within"
+    assert c2["revenue"]["pos"] == "above"
+    assert R.compare(s["actual"], [{"metric": "revenue", "period": "next_q", "lo": 43, "hi": 45, "mid": 44, "unit": "B", "cur": "EUR"}]) == []
+    # sanity: a segment revenue far from the XBRL reference is dropped; an annual figure is not next quarter
+    act, gd = R.sanitize({"revenue": {"USD": {"v": 27.5}}}, [{"metric": "revenue", "period": "next_q", "lo": 197, "hi": 202, "mid": 199.5,
+                                                             "unit": "B", "cur": "USD"}], 200.6, "8-K")
+    assert "revenue" not in act and gd[0]["period"] == "next_q"
+    _a2, gd2 = R.sanitize({"revenue": {"USD": {"v": 1.58}}}, [{"metric": "revenue", "period": "next_q", "lo": 6.0, "hi": 6.1, "mid": 6.05,
+                                                              "unit": "B", "cur": "USD"}], 1.47, "8-K")
+    assert gd2[0]["period"] == "year"
+    assert R.sanitize({"revenue": {"USD": {"v": 7.75}}}, [], None, "8-K")[0] == {}       # no reference → an 8-K revenue is not shown
+    # rounding: "$3.3 billion" vs guidance $3.345–3.355B is not "below guidance"
+    rnd = R.actuals("Revenue was $3.3 billion, up 15%.")
+    c3 = R.compare(rnd, [{"metric": "revenue", "period": "next_q", "lo": 3.345, "hi": 3.355, "mid": 3.35, "unit": "B", "cur": "USD"}])
+    assert c3[0]["pos"] == "within", c3
+    # an outlook bullet is never this quarter's actual (Palo Alto style: "Total revenue in the range of …")
+    pa = R.actuals("Fiscal first quarter 2027 guidance: • Total revenue in the range of $3.300 billion to $3.310 billion. "
+                   "• Non-GAAP operating margin in the range of 29.5% to 29.8%.")
+    assert "revenue" not in pa and "op_margin" not in pa and "op_margin_ng" not in pa, pa
+    panw = ("Fourth quarter revenue grew 16% to $2.6 billion. For the fiscal first quarter 2027, we expect: • Total revenue in the range of "
+            "$3.300 billion to $3.310 billion, representing growth of 33% to 34%. • Diluted non-GAAP net income per share in the range of $1.0. "
+            "For the fiscal year 2027, we expect: • Total revenue in the range of $14.10 billion to $14.20 billion, representing growth of 23%. "
+            "• Non-GAAP operating margin of 29.5%. • Diluted non-GAAP net income per share in the range of $4.0.")
+    pg = {(x["metric"], x["period"]): x for x in R.guidance(panw)}
+    assert pg[("revenue", "next_q")]["lo"] == 3.3 and pg[("revenue", "year")]["lo"] == 14.1 and pg[("op_margin", "year")]["mid"] == 29.5, pg.keys()
+    assert ("op_margin", "next_q") not in pg
+    pact = R.actuals(panw)
+    assert "op_margin_ng" not in pact and "op_margin" not in pact, pact            # the FY guidance bullet is not an actual
+    # quarterly opex guidance stays next quarter; capex guidance is annual unless a quarter is named
+    gm = {(x["metric"], x["period"]) for x in R.guidance("For the third quarter, we expect non-GAAP operating expenses of approximately $1.01 billion. "
+                                                          "We expect 2026 capital expenditures to be in the range of $130 billion to $145 billion.")}
+    assert ("opex", "next_q") in gm and ("capex", "year") in gm, gm
+    lines = R.summary_lines({**R.parse(TSMC), "vs_prev_guide": R.compare(a, prev), "outlook_vs_now": R.outlook_vs_now(a, p["guide"])})
+    j = "\n".join(lines)
+    assert "營收 US$46.72B" in j and "高於指引上緣" in j and "下季指引" in j and "+14.1%" in j and "NT$443.21B" in j and "+44.0%" in j
+
+
 def main():
+    test_release_parser()
     test_discord()
     test_fedwatch()
     test_macro()

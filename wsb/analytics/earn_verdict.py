@@ -72,8 +72,14 @@ def remember_implied(eng) -> Dict[str, Dict]:
             continue
         k = f'{r["sym"]}|{r["date"]}'
         if (snap.get(k) or {}).get("mv") != r["mv"]:
-            snap[k] = {"mv": r["mv"], "exp": r.get("exp"), "asof": r.get("asof")}
+            snap[k] = {"mv": r["mv"], "exp": r.get("exp"), "asof": r.get("asof"), "time": r.get("time", "")}
             changed = True
+    # drop snapshots that were not taken before the report (older entries were saved before this rule existed)
+    for k in [k for k, v in snap.items()
+              if not (str(v.get("asof") or "")[:10] < k.split("|")[-1]
+                      or (str(v.get("asof") or "")[:10] == k.split("|")[-1] and v.get("time") == "after"))]:
+        snap.pop(k)
+        changed = True
     cutoff = (date.today() - timedelta(days=90)).isoformat()
     for k in [k for k in snap if k.split("|")[-1] < cutoff]:
         snap.pop(k)
@@ -126,6 +132,18 @@ def verdict(r: Dict) -> Dict[str, str]:
             en.append(f"options priced ±{mv:.1f}%; actual {ratio:.1f}×")
         elif r.get("avg_past"):
             zh.append(f"過去 4 次財報平均波動 ±{r['avg_past']:.1f}%")
+    rel = r.get("release") or {}
+    for x in rel.get("vs_prev_guide") or []:
+        if x["metric"] in ("revenue", "gross_margin"):
+            from ..data.earn_release import LABEL, POS
+            zh.append(f"{LABEL[x['metric']][0]}{POS[x['pos']]}（公司上一季給的指引）")
+    for x in rel.get("outlook_vs_now") or []:
+        if x["metric"] == "gross_margin" and x["chg"] <= -0.5:
+            zh.append(f"下季毛利率指引中值比本季低 {abs(x['chg']):.1f} 個百分點")
+        elif x["metric"] == "gross_margin" and x["chg"] >= 0.5:
+            zh.append(f"下季毛利率指引中值比本季高 {x['chg']:.1f} 個百分點")
+        if x["metric"] == "revenue":
+            zh.append(f"下季營收指引中值較本季 {x['chg']:+.1f}%")
     pe = r.get("peers") or {}
     if pe.get("avg") is not None and rc is not None:
         same = (pe["avg"] > 0) == (rc > 0) and abs(pe["avg"]) >= 1
@@ -141,6 +159,79 @@ def verdict(r: Dict) -> Dict[str, str]:
     return {"zh": "；".join(zh) + "。", "en": "; ".join(en) + "."}
 
 
+def release_targets(eng, days: int = 120) -> List[tuple]:
+    """(symbol, US report date) pairs whose SEC filing we want: this week's reports + every curated tech name's latest."""
+    from .techearn import us_today
+    today = us_today()
+    lo = (today - timedelta(days=days)).isoformat()
+    te = getattr(eng, "techearn", None) or {}
+    cal = (te.get("calendar") or {}) if isinstance(te, dict) else {}
+    out = []
+    for x in cal.get("past", []) + [x for x in cal.get("up", []) if x["date"] <= today.isoformat()]:
+        if x.get("cur") or (x.get("mcap") or 0) >= 1e11:
+            out.append((x["sym"], x["date"]))
+    ed = getattr(eng, "earnings", None)
+    surp = (getattr(ed, "surprise", None) or {}) if ed is not None else {}
+    tech = list(eng.tech_symbols()) if hasattr(eng, "tech_symbols") else []
+    for s in tech:
+        rows = (surp.get(s) or {}).get("rows") or []
+        if rows and rows[0].get("date") and rows[0]["date"] >= lo:
+            out.append((s, rows[0]["date"]))
+    seen, uniq = set(), []
+    for k in sorted(out, key=lambda kv: kv[1], reverse=True):
+        if k not in seen:
+            seen.add(k)
+            uniq.append(k)
+    return uniq
+
+
+def latest_reports(eng) -> Dict:
+    """各公司最新財報重點: the newest parsed SEC release per curated tech company (+ ADRs), newest first."""
+    from ..data import earn_release as ER
+    uni = universe().get("us") or {}
+    names, themes = uni.get("symbols", {}), uni.get("themes", {})
+    cache = ER.load()
+    best: Dict[str, Dict] = {}
+    for v in cache.values():
+        if v.get("acc") and (v["sym"] in names) and (v["sym"] not in best or v["date"] > best[v["sym"]]["date"]):
+            best[v["sym"]] = v
+    rows = []
+    for s, v in best.items():
+        px = _series(eng, s)
+        rows.append({"sym": s, "name": names[s][0], "theme": themes.get(s, ""), "date": v["date"], "acc": v["acc"], "url": v["url"],
+                     "form": v.get("form"), "lines": ER.summary_lines(v), "react": reaction(px, v["date"]),
+                     "tw": ({"sym": ADR_TW[s][0], "name": ADR_TW[s][1], "move": next_session(_series(eng, ADR_TW[s][0]), v["date"])}
+                            if s in ADR_TW else None)})
+    rows.sort(key=lambda r: r["date"], reverse=True)
+    return {"available": bool(rows), "rows": rows}
+
+
+def impact(r: Dict) -> List[str]:
+    """預估影響 — what the data says to expect around a report (before) or what history says about the spill-over."""
+    L = []
+    if r.get("mv"):
+        L.append(f"選擇權事前預期兩日波動 ±{r['mv']:.1f}%" + (f"（過去 4 次實際平均 ±{r['avg_past']:.1f}%）" if r.get("avg_past") else ""))
+    elif r.get("avg_past"):
+        L.append(f"過去 4 次財報兩日平均波動 ±{r['avg_past']:.1f}%")
+    ph = r.get("peer_hist") or {}
+    if ph.get("n"):
+        s = f"過去 {ph['n']} 次財報期間，同族群（{ph['theme']}）："
+        if ph.get("up_avg") is not None:
+            s += f"公司上漲時族群平均 {ph['up_avg']:+.1f}%（{ph['n_up']} 次）"
+        if ph.get("dn_avg") is not None:
+            s += ("、" if ph.get("up_avg") is not None else "") + f"公司下跌時族群平均 {ph['dn_avg']:+.1f}%（{ph['n_dn']} 次）"
+        L.append(s)
+    th = r.get("tw_hist") or {}
+    if th.get("n"):
+        L.append(f"台股 {ADR_TW[r['sym']][1]} 過去 {th['n']} 次財報後下一個交易日平均波動 ±{th['avg_abs']:.1f}%（{th['up']} 次上漲）")
+    dr = r.get("drift") or {}
+    if dr.get("n") and r.get("status") == "pending":
+        L.append(f"過去 {dr['n']} 次財報後 20 個交易日平均 {dr['avg']:+.1f}%")
+    if L:
+        L.append("以上是歷史統計與選擇權定價，樣本少，不是預測")
+    return L
+
+
 def build(eng, now: Optional[date] = None) -> Dict:
     te = getattr(eng, "techearn", None) or {}
     cal = (te.get("calendar") or {}) if isinstance(te, dict) else {}
@@ -152,6 +243,8 @@ def build(eng, now: Optional[date] = None) -> Dict:
     uni = universe().get("us") or {}
     names, themes = uni.get("symbols", {}), uni.get("themes", {})
     implied = remember_implied(eng)
+    from ..data import earn_release as ER
+    rels = ER.load()
     ed = getattr(eng, "earnings", None)
     surp = (getattr(ed, "surprise", None) or {}) if ed is not None else {}
     news = (getattr(getattr(eng, "stocknews", None), "items", None) or {})
@@ -190,12 +283,40 @@ def build(eng, now: Optional[date] = None) -> Dict:
         if s in ADR_TW:
             tsym, tname = ADR_TW[s]
             r["tw"] = {"sym": tsym, "name": tname, "move": next_session(_series(eng, tsym), d)}
+        # 預估影響（歷史）: on this company's past report dates, how its group and Taiwan moved
+        if th:
+            hist = []
+            for q in past_dates[-6:]:
+                own = reaction(px, q)
+                pm = [v for v in (reaction(_series(eng, p), q) for p in names if p != s and themes.get(p) == th) if v is not None]
+                if own is not None and pm:
+                    hist.append((own, float(np.mean(pm))))
+            if hist:
+                up = [p for o, p in hist if o > 0]
+                dn = [p for o, p in hist if o <= 0]
+                r["peer_hist"] = {"n": len(hist), "theme": th, "up_avg": round(float(np.mean(up)), 1) if up else None, "n_up": len(up),
+                                  "dn_avg": round(float(np.mean(dn)), 1) if dn else None, "n_dn": len(dn)}
+        if s in ADR_TW:
+            tp = _series(eng, ADR_TW[s][0])
+            tw_past = [v for v in (next_session(tp, q) for q in past_dates[-6:]) if v is not None]
+            if tw_past:
+                r["tw_hist"] = {"n": len(tw_past), "avg_abs": round(float(np.mean(np.abs(tw_past))), 1),
+                                "up": sum(1 for v in tw_past if v > 0)}
         dd = [v for v in (drift(px, q) for q in past_dates[-8:]) if v is not None]
         if dd:
             r["drift"] = {"n": len(dd), "avg": round(float(np.mean(dd)), 1), "up": sum(1 for v in dd if v > 0)}
         t0 = pd.Timestamp(d).timestamp() - 86400
         r["news"] = [{"t": n["t"], "l": n["l"], "src": n.get("src", ""), "ts": n["ts"]}
                      for n in sorted(news.get(s, []), key=lambda n: -n.get("ts", 0)) if n.get("ts", 0) >= t0][:4]
+        rec = rels.get(f"{s}|{d}")
+        if rec and rec.get("acc") and r["status"] == "pending":
+            r["status"] = "reported"                       # the filing is out before Nasdaq updates its EPS field
+        if rec and rec.get("acc"):
+            from ..data.earn_release import summary_lines
+            r["release"] = {k: rec.get(k) for k in ("acc", "form", "url", "date", "actual", "guide", "vs_prev_guide",
+                                                     "outlook_vs_now", "prev_date", "ai")}
+            r["release"]["lines"] = summary_lines(rec)
+        r["impact"] = impact(r)
         r["verdict"] = verdict(r) if r["status"] == "reported" else {
             "zh": "今天公布；每股盈餘等 Nasdaq 更新後才有結論" + (f"。選擇權事前預期 ±{r['mv']:.1f}%" if r.get("mv") else "") + "。",
             "en": "Reporting today; waiting for the numbers."}
