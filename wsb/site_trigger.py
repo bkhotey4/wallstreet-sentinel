@@ -93,6 +93,21 @@ class SiteTrigger:
             return None, f"連線失敗：{e}"
 
     # ------------------------------------------------------------------ GitHub calls
+    async def recent_runs(self) -> list:
+        """The latest few runs of any kind (scheduled, pushed, dispatched), newest first."""
+        try:
+            d = await http.get(f"{API}/repos/{self.repo}/actions/runs", headers=self._headers(),
+                               params={"per_page": 5}, retries=0, timeout=20)
+            return list((d or {}).get("workflow_runs", []))
+        except Exception as e:  # noqa: BLE001
+            log.debug("site trigger: cannot list runs: %s", e)
+            return []
+
+    async def started_recently(self, minutes: float) -> bool:
+        """True when any build (e.g. GitHub's own half-hourly schedule) started within `minutes` — the bot's
+        scheduled build is then redundant and would only cancel it."""
+        return self.running_is_fresh(await self.recent_runs(), minutes)
+
     async def in_progress(self) -> list:
         try:
             d = await http.get(f"{API}/repos/{self.repo}/actions/runs", headers=self._headers(),

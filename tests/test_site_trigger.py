@@ -100,6 +100,17 @@ def main():
     store.kv_set("site_trigger_last", {"ts": time.time() - 30 * 60, "reason": "hourly", "fast": False})
     okp2, _ = asyncio.run(tr.dispatch("alert:danger:us", fast=True))
     assert okp2
+    # the bot's scheduled build defers to a build that started recently (GitHub's own half-hourly cron)
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    iso = lambda m: (_dt.now(_tz.utc) - _td(minutes=m)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    async def recent_10():
+        return [{"created_at": iso(10), "event": "schedule"}]
+    async def recent_40():
+        return [{"created_at": iso(40), "event": "schedule"}]
+    tr.recent_runs = recent_10
+    assert asyncio.run(tr.started_recently(25)) is True
+    tr.recent_runs = recent_40
+    assert asyncio.run(tr.started_recently(25)) is False
     # token expiry: header parsing + reminder stages
     exp = ST.SiteTrigger.parse_expiry("2027-10-12 15:34:56 UTC")
     assert exp == datetime(2027, 10, 12, 15, 34, 56, tzinfo=timezone.utc)

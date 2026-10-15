@@ -932,7 +932,8 @@ site_trigger:
   repo: bkhotey4/wallstreet-sentinel
   workflow: update.yml
   ref: main
-  hourly_minutes: 60           # 定時完整建置（含全市場掃描，約 15–20 分鐘）
+  hourly_minutes: 30           # 定時完整建置（含全市場掃描，約 15–20 分鐘）；GitHub 本身也有平日每 30 分鐘的排程
+  scheduled_skip_if_started_minutes: 25   # 25 分鐘內已有任何建置開始 → bot 的定時建置略過（避免兩邊互相取消）
   on_risk_alert: true          # 風險警報（SSI 跨級、盤中危險、劇本升階、VIX 倒掛…）一發出就快速重建（約 5 分鐘）
   min_gap_minutes: 20          # 兩次觸發至少間隔
   skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發

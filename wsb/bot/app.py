@@ -328,9 +328,15 @@ class Sentinel(commands.Bot):
             log.exception("web dashboard failed to start")
 
         async def site_hourly():
+            """Backup for GitHub's own half-hourly schedule (which also runs while this PC is off): dispatch only
+            when no build has started recently, so the two never cancel each other."""
             if SITE.enabled:
-                ok, m = await SITE.dispatch("hourly", fast=False)
-                log.info("site hourly: %s", m)
+                skip = float(SETTINGS.get("site_trigger", {}).get("scheduled_skip_if_started_minutes", 25))
+                if await SITE.started_recently(skip):
+                    log.info("site scheduled: a build started within %.0f min, skipped", skip)
+                    return
+                ok, m = await SITE.dispatch("scheduled", fast=False)
+                log.info("site scheduled: %s", m)
 
         async def site_token_check():
             """DM the owner before the GitHub token expires (30/14/7/1 days, once each) and when it has failed."""
