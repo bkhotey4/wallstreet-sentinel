@@ -93,6 +93,19 @@ def main():
     import json
     d = json.loads((out / "data.json").read_text(encoding="utf-8"))
     assert d["ssi"]["score"] > 0 and "portfolio" not in json.dumps(d).lower()
+    # AI market note: reused for 55 min, rewritten sooner when the stress index jumps
+    calls = []
+    async def fake_ai(e):
+        calls.append(1)
+        return f"note {len(calls)}", "test"
+    with patch.object(B, "ai_commentary", fake_ai):
+        B._commentary_cache().unlink(missing_ok=True)
+        t0 = time.time()
+        assert asyncio.run(B.ai_commentary_cached(eng, now=t0)) == ("note 1", "test")
+        assert asyncio.run(B.ai_commentary_cached(eng, now=t0 + 20 * 60)) == ("note 1", "test") and len(calls) == 1
+        assert asyncio.run(B.ai_commentary_cached(eng, now=t0 + 56 * 60))[0] == "note 2" and len(calls) == 2
+        eng.stress.score += 5
+        assert asyncio.run(B.ai_commentary_cached(eng, now=t0 + 60 * 60))[0] == "note 3"
     print(f"  site: {len(page) / 1024:.0f} KB, ssi {d['ssi']['score']:.1f} {d['ssi']['label']}")
     print("SITE TESTS PASSED")
 

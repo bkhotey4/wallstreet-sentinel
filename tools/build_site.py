@@ -1246,6 +1246,39 @@ async def ai_commentary(eng) -> Tuple[str, str]:
     return scrub_advice(text), name
 
 
+def _commentary_cache():
+    from wsb.config import DATA_DIR
+    return DATA_DIR / "econ_commentary.json"           # econ_* is kept by the site workflow's cache
+
+
+async def ai_commentary_cached(eng, now: Optional[float] = None) -> Tuple[str, str]:
+    """The page rebuilds every 20 minutes; the AI market note is rewritten at most every `ai_commentary_minutes`
+    (default 55) — sooner when the stress index has moved ≥ `ai_commentary_ssi_jump` points since it was written."""
+    cfg = SETTINGS.get("site", {}) or {}
+    ttl = float(cfg.get("ai_commentary_minutes", 55)) * 60
+    jump = float(cfg.get("ai_commentary_ssi_jump", 3))
+    ssi = getattr(getattr(eng, "stress", None), "score", None)
+    now = now or time.time()
+    p = _commentary_cache()
+    try:
+        c = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        c = {}
+    fresh = c.get("text") and now - float(c.get("ts", 0)) < ttl
+    moved = ssi is not None and c.get("ssi") is not None and abs(float(ssi) - float(c["ssi"])) >= jump
+    if fresh and not moved:
+        log.info("AI commentary reused (%.0f min old)", (now - float(c["ts"])) / 60)
+        return c["text"], c.get("engine", "")
+    text, name = await ai_commentary(eng)
+    if text:
+        try:
+            p.write_text(json.dumps({"ts": now, "text": text, "engine": name, "ssi": ssi}, ensure_ascii=False), encoding="utf-8")
+        except OSError as e:
+            log.warning("AI commentary cache not saved: %s", e)
+        return text, name
+    return (c.get("text", ""), c.get("engine", "")) if c.get("text") and now - float(c.get("ts", 0)) < 3 * ttl else ("", "")
+
+
 SOFT_BUDGET_S = 30 * 60      # Actions job times out at 40 min: past this, skip the (slow, optional) AI steps so the site still ships
 
 
@@ -1312,7 +1345,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         except Exception as e:  # noqa: BLE001
             log.warning("AI bull/bear notes skipped: %s", e)
         try:
-            ai_text, ai_engine = await ai_commentary(eng)
+            ai_text, ai_engine = await ai_commentary_cached(eng)
         except Exception as e:  # noqa: BLE001
             log.warning("AI commentary skipped: %s", e)
         try:

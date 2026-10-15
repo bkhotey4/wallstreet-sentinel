@@ -932,8 +932,8 @@ site_trigger:
   repo: bkhotey4/wallstreet-sentinel
   workflow: update.yml
   ref: main
-  hourly_minutes: 30           # 定時完整建置（含全市場掃描，約 15–20 分鐘）；GitHub 本身也有平日每 30 分鐘的排程
-  scheduled_skip_if_started_minutes: 25   # 25 分鐘內已有任何建置開始 → bot 的定時建置略過（避免兩邊互相取消）
+  hourly_minutes: 20           # bot 的備援檢查間隔；GitHub 本身平日每 20 分鐘建置一次（完整建置實測約 5–11 分鐘）
+  scheduled_skip_if_started_minutes: 25   # 25 分鐘內已有任何建置開始 → bot 不補觸發（GitHub 排程正常時 bot 不會多跑）
   on_risk_alert: true          # 風險警報（SSI 跨級、盤中危險、劇本升階、VIX 倒掛…）一發出就快速重建（約 5 分鐘）
   min_gap_minutes: 20          # 兩次觸發至少間隔
   skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發
@@ -942,4 +942,6 @@ site_trigger:
 
 # ---------- 網站「我的持股」跨裝置同步（Google 登入 → 存到使用者自己的 Google 雲端硬碟隱藏資料夾） ----------
 site:
+  ai_commentary_minutes: 55    # 網頁每 20 分鐘重建，但 AI 市場評論最多每 55 分鐘重寫一次（省 API 額度）
+  ai_commentary_ssi_jump: 3    # …壓力指數變動 ≥ 3 點時立刻重寫
   google_client_id: "402042061508-8b7fbpqmpub69qmaj87v39c0r7j2pkdd.apps.googleusercontent.com"   # Google Cloud Console → OAuth 用戶端 ID（Web application）。用戶端 ID 本來就是公開資訊；留空＝只用本機瀏覽器儲存
