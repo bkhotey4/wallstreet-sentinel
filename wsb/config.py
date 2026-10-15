@@ -62,7 +62,7 @@ class Settings:
             if comp["series"] != "sectors":
                 tickers.add(comp["series"])
             kind = str(comp.get("kind", ""))
-            m = re.match(r"(rel:\d+:|ratio:)(.+)$", kind)
+            m = re.match(r"(rel:\d+:|ratio:|pcorr:\d+:)(.+)$", kind)
             if m:
                 tickers.add(m.group(2))
         tickers.add(self.raw.get("crash_odds", {}).get("benchmark", "^GSPC"))

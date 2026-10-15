@@ -25,11 +25,13 @@ _erf = np.vectorize(math.erf)
 
 # FRED publication lag (business days between the observation date and its release)
 PUB_LAG = {"NFCI": 5, "STLFSI4": 5, "WALCL": 1, "WTREGEN": 1, "WRESBAL": 1, "ICSA": 5, "SAHMREALTIME": 25,
-           "BAMLH0A0HYM2": 1, "BAMLH0A3HYC": 1, "BAMLC0A0CM": 1}
+           "BAMLH0A0HYM2": 1, "BAMLH0A3HYC": 1, "BAMLC0A0CM": 1, "BAMLH0A1HYBB": 1,
+           "WLCFLPCL": 1, "DPSACBW027SBOG": 8}               # H.8 deposits: week ending Wednesday, published ~9 days later
 # forward-fill reach (business days) between prints: monthly series must bridge a whole month
 FFILL_LIMIT = {"SAHMREALTIME": 45}
 # how old a real observation may be before the component is excluded as stale (calendar days)
-STALE_DAYS = {"NFCI": 14, "STLFSI4": 14, "WALCL": 12, "WTREGEN": 12, "WRESBAL": 12, "ICSA": 14, "SAHMREALTIME": 75}   # monthly series dated on the 1st: up to ~65 days old before the next print
+STALE_DAYS = {"NFCI": 14, "STLFSI4": 14, "WALCL": 12, "WTREGEN": 12, "WRESBAL": 12, "ICSA": 14, "SAHMREALTIME": 75,
+              "WLCFLPCL": 12, "DPSACBW027SBOG": 20}   # monthly series dated on the 1st: up to ~65 days old before the next print
 
 
 def _slog(x):
@@ -132,6 +134,17 @@ class StressEngine:
         s = s[~s.index.duplicated(keep="last")]                    # Fri+Sat both roll to Monday → keep the newest value
         return s.reindex(s.index.union(idx)).ffill(limit=FFILL_LIMIT.get(sid, 10)).reindex(idx)
 
+    def _other_fred(self, spec: str) -> pd.Series:
+        """'IORB|IOER' → IORB, extended back in time with IOER (its predecessor)."""
+        parts = [self.fred.get(x) for x in spec.split("|")]
+        parts = [p for p in parts if p is not None and not p.empty]
+        if not parts:
+            return pd.Series(dtype=float)
+        s = parts[0]
+        for p in parts[1:]:
+            s = s.combine_first(p)
+        return s.sort_index()
+
     def source_last_date(self, comp: dict) -> Optional[pd.Timestamp]:
         """Date of the newest *real* observation behind a component (before any forward-fill)."""
         src, series, kind = comp["src"], comp["series"], str(comp["kind"])
@@ -145,10 +158,14 @@ class StressEngine:
         s = self.market.series(series) if src == "px" else self.fred.get(series)
         if not s.empty:
             dates.append(s.index.max())
-        m = re.match(r"(rel:\d+:|ratio:)(.+)$", kind)
+        m = re.match(r"(rel:\d+:|ratio:|pcorr:\d+:)(.+)$", kind)
         if m:
             b = self.market.series(m.group(2))
             dates.append(b.index.max() if not b.empty else None)
+        m = re.match(r"spread:([^:]+)", kind)
+        if m:
+            o = self._other_fred(m.group(1))
+            dates.append(o.index.max() if not o.empty else None)
         return None if not dates or any(d is None for d in dates) else min(dates)
 
     def raw_series(self, comp: dict, idx) -> pd.Series:
@@ -171,6 +188,23 @@ class StressEngine:
         s = self._px(series, idx) if src == "px" else self._fr(series, idx)
         if kind == "level":
             return s
+        if kind == "log":                                 # skewed, spiky levels (e.g. discount-window borrowing)
+            return np.log1p(s.clip(lower=0))
+        m = re.match(r"spread:([^:]+)(?::ma(\d+))?$", kind)
+        if m:                                             # this FRED series minus another (IORB|IOER = spliced)
+            o = self._other_fred(m.group(1))
+            if o.empty:
+                return pd.Series(index=idx, dtype=float)
+            o = o.copy()
+            o.index = o.index + pd.offsets.BDay(PUB_LAG.get(m.group(1).split("|")[0], 1))
+            o = o[~o.index.duplicated(keep="last")]
+            o = o.reindex(o.index.union(idx)).ffill(limit=10).reindex(idx)
+            d = s - o
+            return d.rolling(int(m.group(2)), min_periods=max(1, int(m.group(2)) // 2)).mean() if m.group(2) else d
+        m = re.match(r"pcorr:(\d+):(.+)$", kind)
+        if m:                                             # rolling correlation of daily returns with another asset
+            n, b = int(m.group(1)), self._px(m.group(2), idx)
+            return s.pct_change(fill_method=None).rolling(n, min_periods=int(n * 0.8)).corr(b.pct_change(fill_method=None))
         m = re.match(r"ret:(\d+)$", kind)
         if m:
             return s.pct_change(int(m.group(1)), fill_method=None)

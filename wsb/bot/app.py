@@ -592,6 +592,11 @@ class Sentinel(commands.Bot):
             out.append(Alert(f"sigma:{t}:{q['asof']}:{int(np.sign(sg))}", sev,
                              f"異常波動：{names.get(t, t)} ({t}) {q['chg_pct']:+.2f}%（{sg:+.1f}σ）",
                              f"現價 {q['price']:.4g} · 自身60日波動的 {abs(sg):.1f} 倍"))
+        for r in (getattr(eng, "canary", None) or {}).get("rows", []):
+            if r.get("state") == "alert" and A.get("canary_alerts", True):
+                out.append(Alert(f"canary:{r['id']}:{r.get('asof') or 'na'}", "⚠️ WARNING", f"🐤 金絲雀紅燈：{r['zh']}",
+                                 (r.get("value_txt") or (f"分數 {r['score']:.0f}／100" if r.get("score") is not None else ""))
+                                 + "｜" + (r.get("rule") or r.get("why") or "")[:300]))
         vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
         inverted = bool(vix and v3 and vix["price"] > v3["price"])
         was = store.kv_get("vix_inverted")
@@ -1113,7 +1118,7 @@ SAFE_HAVEN_FX = {"JPY=X", "CHF=X"}   # USD/JPY falling = yen strength = risk-off
 def _alert_kind(key: str) -> Optional[str]:
     """Classify an alert for the scorecard: 'risk' (should precede weakness), 'news', or None (info)."""
     if key.startswith(("ssi_level", "ssi_jump", "vix_backwardation", "gamma_flip", "pf_dd", "playbook:", "shock:", "regime:",
-                       "intel:confirm:", "intel:level:", "danger:")):
+                       "intel:confirm:", "intel:level:", "danger:", "canary:")):
         return "risk"
     if key.startswith("news:"):
         return "news"

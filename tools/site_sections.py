@@ -994,6 +994,51 @@ def sec_breadth_polarization(eng) -> str:
                 sub=T("本站追蹤美股名單（非標普 500 全部成分股）", "Tracked US list (not the full S&amp;P 500)"))
 
 
+# ----------------------------------------------------------------- 金絲雀 (early-warning lights)
+_CN_STATE = {"alert": ("🔴", "紅燈", "Alert", "var(--dn)"), "watch": ("🟡", "黃燈", "Watch", "var(--warn)"),
+             "ok": ("🟢", "正常", "OK", "var(--up)"), "warmup": ("⚪", "累積中", "Warming up", "var(--mu)"),
+             "stale": ("⚪", "資料過期", "Stale", "var(--mu)"), "na": ("⚪", "無資料", "n/a", "var(--mu)")}
+
+
+def sec_canary(eng) -> str:
+    cv = getattr(eng, "canary", None) or {}
+    if not cv.get("available"):
+        return ""
+    cards = []
+    for r in cv["rows"]:
+        ico, zh, en, col = _CN_STATE.get(r["state"], _CN_STATE["na"])
+        if r.get("kind") == "score":
+            u = r.get("unit") or ""
+            val = ("—" if r.get("value") is None else f'US${num(r["value"], 2)}B' if u == "$B" else f'{num(r["value"], 2)}{esc(u)}')
+            sc = r.get("score")
+            bar = _bar(sc, col) if sc is not None else ""
+            meta = (f'{T("分數", "Score")} <b>{num(sc, 0)}</b>/100' + (f'　{T("3 個月變化", "3m")} {num(r.get("chg_3m"), 0, sign=True)}' if r.get("chg_3m") is not None else "")
+                    + (f'　{T("歷史上 ≥90 分的時間", "time ≥90")} {num(r.get("rate"), 0)}%（{esc(r.get("since") or "")} 起）' if r.get("rate") is not None else ""))
+            rule = T("用自身近 3 年歷史換算成 0–100 分：≥ 90 黃燈、≥ 97.5 紅燈（和壓力指數同一套算法，已納入壓力指數）。",
+                     "Own 3-year history → 0–100: ≥90 watch, ≥97.5 alert (same as the SSI; included in it).")
+            body = f'<div class="cnv"><b>{val}</b></div>{bar}<div class="small muted">{meta}</div>'
+        else:
+            body = f'<div class="cnv small">{esc(r.get("value_txt") or r.get("note") or "—")}</div>'
+            rule = esc(r.get("rule") or "")
+        hist = r.get("history") or []
+        hb = (f'<details class="hist"><summary class="small">{T("歷史表現（由資料計算）", "Track record (computed)")}</summary>'
+              f'<ul class="small lines">' + "".join(f"<li>{esc(x)}</li>" for x in hist) + "</ul></details>") if hist else ""
+        cards.append(f'<div class="cncard" style="border-left-color:{col}"><div class="cnh"><span class="cng">{esc(r["group"])}</span>'
+                     f'<b>{T(r["zh"], r["en"])}</b><span class="pill" style="border-color:{col};color:{col}">{ico} {T(zh, en)}</span></div>'
+                     f'{body}<p class="small">{esc(r.get("why") or "")}</p><p class="small muted">{T("規則", "Rule")}：{rule}</p>'
+                     f'<p class="small muted">{T("資料日", "As of")} {esc(str(r.get("asof") or "—"))}</p>{hb}</div>')
+    head = (f'<div class="kv"><div><span class="muted">{T("紅燈", "Alerts")}</span><b style="color:var(--dn)">{cv.get("n_alert", 0)}</b></div>'
+            f'<div><span class="muted">{T("黃燈", "Watch")}</span><b style="color:var(--warn)">{cv.get("n_watch", 0)}</b></div>'
+            f'<div><span class="muted">{T("燈號總數", "Lights")}</span><b>{len(cv["rows"])}</b></div></div>')
+    note = T("資料：FRED（SOFR、IORB／IOER、貼現窗口、商業本票、國庫券、H.8 銀行存款、ICE BofA 利差、逆回購、準備金）、FINRA 融資餘額、"
+             "本站行情與美股全市場股價、Nasdaq 獲利預估快照。ICE 利差在 FRED 只開放近 3 年，CCC−BB 的歷史比較短。"
+             "所有燈號都只用模型數據，新聞不會影響任何燈號。紅燈會推 Discord。這是預警，不是預測，也不是投資建議。",
+             "FRED, FINRA, market prices, Nasdaq estimate snapshots. Model data only. Early warning, not a forecast.")
+    return card("金絲雀：危機的早期警訊", "Canaries: early-warning lights",
+                head + f'<div class="cngrid">{"".join(cards)}</div><p class="note">{note}</p>', "wide",
+                sub=T("資金市場、信用品質、銀行存款、槓桿、避險失效、市場內部、景氣類股", "Funding, credit quality, deposits, leverage, hedges, breadth, cyclicals"))
+
+
 # ----------------------------------------------------------------- time machine
 def sec_timemachine(eng) -> str:
     note = T("每天美股收盤後（台北時間早上）自動存一份當天的重點數據快照：壓力指數、風險階段、Gamma、暗池、估值分級、各市場評分前段班與 AI 評論。"

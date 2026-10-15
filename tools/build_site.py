@@ -71,6 +71,11 @@ STRIP = [("^GSPC", "標普500", 0), ("^NDX", "那指100", 0), ("^TWII", "台股�
 TRENDS = [("^GSPC", "標普500", 0), ("^TWII", "台股加權", 0), ("^VIX", "VIX 恐慌指數", 2), ("^TNX", "美債10年殖利率", 3)]
 
 COMP_LABELS = {
+    "sofr_iorb": ("SOFR − IORB（資金市場）", "SOFR − IORB"), "discount_window": ("聯準會貼現窗口借款", "Discount window"),
+    "cp_tbill": ("商業本票 − 國庫券", "CP − T-bill"), "ccc_bb": ("CCC − BB 利差", "CCC − BB"),
+    "bank_deposits": ("銀行存款 4 週變化", "Bank deposits 4w"), "stock_bond_corr": ("股債 60 日相關性", "Stock–bond corr 60d"),
+    "transports": ("運輸股 vs 大盤", "Transports vs SPY"), "discretionary_staples": ("非必需 vs 必需消費", "XLY vs XLP"),
+    "homebuilders": ("房屋建商 vs 大盤", "Homebuilders vs SPY"),
     "hy_oas": ("高收益債利差 OAS", "HY OAS"), "baa_spread": ("Baa 公司債利差（長歷史）", "Baa − 10Y spread"), "ccc_oas": ("CCC 級利差", "CCC OAS"), "ig_oas": ("投資級利差 OAS", "IG OAS"),
     "hyg_ief": ("高收益債 vs 公債（20日）", "HYG vs IEF 20d"), "kre": ("區域銀行 vs 大盤（20日）", "Regional banks vs SPY"),
     "bizd": ("私募信貸 BDC vs 大盤", "BDCs vs SPY"), "loans": ("槓桿貸款 vs 公債", "Leveraged loans vs IEF"),
@@ -352,6 +357,8 @@ def sec_macro(eng) -> str:
     rows = ""
     for sid, name in SETTINGS.get("fred_series", {}).items():
         x = eng.fred.latest(sid)
+        if x and str(x.get("date") or "9999") < (pd.Timestamp.today() - pd.Timedelta(days=400)).strftime("%Y-%m-%d"):
+            continue                         # discontinued series kept only to extend history (e.g. IOER before IORB)
         if x:
             dg = 0 if abs(x["value"]) >= 1000 else 3
             rows += (f'<tr><td>{T(name, sid)}</td><td class="r">{num(x["value"], dg)}</td><td class="r {cls(x.get("chg_1m"))}">{num(x.get("chg_1m"), dg, sign=True)}</td>'
@@ -1076,7 +1083,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("mood", "情緒與警報", "Mood & alarms", [S4.sec_fg, S4.sec_em, S4.sec_rules, S4.sec_geo]),
-            ("risk", "風險模型", "Risk model", [sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
+            ("risk", "風險模型", "Risk model", [S2.sec_canary, sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("bonds", "美債", "Treasuries", [S2.sec_bonds]),
@@ -1333,6 +1340,12 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.warning("build already took %.0f min (> %.0f min soft budget): skipping AI steps this run",
                     (time.time() - t_start) / 60, SOFT_BUDGET_S / 60)
         use_ai = False
+    try:                                   # 金絲雀 (the split-market light needs the whole-market prices only the site has)
+        from wsb.analytics import canary as CN
+        from wsb.data import fullmarket as FMK
+        eng.canary = CN.build(eng, FMK.load_prices("us")[0])
+    except Exception:  # noqa: BLE001
+        log.exception("canary lights failed")
     try:                                   # company filings (8-K / 6-K) for this week's + each curated name's latest report
         from wsb.analytics import earn_verdict as EVD
         from wsb.data import earn_release as ER

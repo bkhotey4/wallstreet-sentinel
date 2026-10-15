@@ -659,6 +659,7 @@ details.ev .tm{min-width:74px;font-variant-numeric:tabular-nums}.evn{min-width:1
 .evday h4{margin:12px 0 2px;border-bottom:1px solid var(--bd);padding-bottom:3px}.evday.today h4{color:var(--ac)}.evday.past{opacity:.85}
 .evday.past.hide,.ev.hide{display:none}details.hist{margin:6px 0}details.hist summary{cursor:pointer;color:var(--ac)}
 .concl{background:color-mix(in srgb,var(--warn) 9%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px}.concl p{margin:3px 0}
+.cngrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}.cncard{background:var(--card2);border:1px solid var(--bd);border-left:4px solid var(--mu);border-radius:8px;padding:8px 10px}.cncard p{margin:4px 0}.cnh{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.cng{font-size:11px;color:var(--mu)}.cnh .pill{margin-left:auto}.cnv{margin:4px 0;font-size:15px}
 .relb{background:var(--card);border:1px solid var(--bd);border-radius:7px;padding:5px 8px;margin:6px 0}.relb ul{margin:3px 0}
 .egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}.ecard{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}.ecard p{margin:5px 0}.ech{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.eck b{margin-right:4px}
 .ainote{background:color-mix(in srgb,var(--ac) 9%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px}
