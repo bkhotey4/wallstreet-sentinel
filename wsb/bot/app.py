@@ -583,29 +583,41 @@ class Sentinel(commands.Bot):
         dz = getattr(self.engine, "distress", None) or {}
         if not A.get("distress_alerts", True) or not dz.get("available"):
             return out
-        first = store.kv_get("distress_baseline") is None
+        first = store.kv_get("distress_baseline_v2") is None      # v2: + first-sighting tracking
+        fresh_cut = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+        new_red = []
         for r in dz["rows"]:
             k = f"distress_armed:{r['sym']}"
             armed = store.kv_get(k)
             armed = True if armed is None else bool(armed)
+            new = store.kv_get(f"distress_seen:{r['sym']}") is None     # first time this company is on the radar
+            if new:
+                store.kv_set(f"distress_seen:{r['sym']}", dz.get("asof") or True)
             bad = [s for s in r["signals"] if s["state"] != "ok"]
             for s in bad:
                 if s.get("hard"):
                     fk = f"distress_filing:{r['sym']}:{s['id']}:{s['txt'][:10]}"
-                    if first:
+                    if first or s["txt"][:10] < fresh_cut:              # only filings from the last week are news
                         store.kv_set(fk, True)
                     elif not store.kv_get(fk) and not store.alert_sent(fk):
                         out.append(Alert(fk, "🚨 CRITICAL", f"🏚️ SEC 警訊申報：{r['zh']}（{r['sym']}）", s["txt"] + (f"｜{s['url']}" if s.get("url") else "")))
             key = f"distress:{r['sym']}:{r.get('bs_end') or 'na'}"
-            if r["state"] == "alert" and armed and (first or store.alert_sent(key)):
+            if r["state"] == "alert" and armed and new and not first:
+                store.kv_set(k, False)                     # newly discovered and already red → one digest, not one alert each
+                new_red.append(r)
+            elif r["state"] == "alert" and armed and (first or store.alert_sent(key)):
                 store.kv_set(k, False)                     # delivered (or baseline) → disarm until the light is off again
             elif r["state"] == "alert" and armed:
                 out.append(Alert(key, "⚠️ WARNING", f"🏚️ 企業危機雷達紅燈：{r['zh']}（{r['sym']}）",
                                  "；".join(f"{s['zh']} {s['txt']}" for s in bad[:5])[:900]))
             elif r["state"] == "ok" and not armed:
                 store.kv_set(k, True)
+        if new_red:
+            out.append(Alert(f"distress_new:{dz.get('asof')}:{len(new_red)}", "⚠️ WARNING",
+                             f"🏚️ 企業危機雷達新加入 {len(new_red)} 家紅燈公司",
+                             "；".join(f"{r['zh']}（{r['sym']}）{('：' + r['why']) if r.get('why') else ''}" for r in new_red[:12])[:900]))
         if first:
-            store.kv_set("distress_baseline", dz.get("asof") or True)
+            store.kv_set("distress_baseline_v2", dz.get("asof") or True)
         return out
 
     def _market_alerts(self) -> List[Alert]:

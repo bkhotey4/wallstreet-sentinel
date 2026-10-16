@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import time
 from datetime import date, timedelta
 from typing import Dict, List, Optional, Tuple
@@ -270,3 +271,242 @@ async def refresh(syms: List[str], budget_s: Optional[float] = None) -> Dict[str
     (HEALTH.fail("sec_distress", RuntimeError("SEC distress data failed"), every=86400) if err and not ok
      else HEALTH.ok("sec_distress", ok, every=86400))
     return cache
+
+
+# ============================================================ automatic discovery (keeps the watch list current)
+F_SCAN = DATA_DIR / "earn_distress_scan.json"        # market-wide red-flag filings (SEC full-text search)
+F_SCREEN = DATA_DIR / "earn_distress_screen.json"    # market-wide balance-sheet screen (SEC frames)
+F_AUTO = DATA_DIR / "earn_distress_auto.json"        # companies the radar added by itself
+EFTS = "https://efts.sec.gov/LATEST/search-index"
+SCAN_ITEMS = ("1.03", "2.04", "4.02")          # 3.01 is left out: most are routine (merger / exchange transfer)
+SCAN_FORMS = ("NT 10-K", "NT 10-Q")
+SCREEN_TAGS = {"assets": ("Assets", True), "liab": ("Liabilities", True), "equity": ("StockholdersEquity", True),
+               "deposits": ("Deposits", True), "aoci": ("AccumulatedOtherComprehensiveIncomeLossNetOfTax", True),
+               "htm_loss": ("HeldToMaturitySecuritiesAccumulatedUnrecognizedHoldingLoss", True),
+               "cash": ("CashAndCashEquivalentsAtCarryingValue", True), "ltd": ("LongTermDebt", True),
+               "ltd_nc": ("LongTermDebtNoncurrent", True),
+               # flows: summed over the last four quarters (one quarter's write-off must not flag a company)
+               "ebit": ("OperatingIncomeLoss", False), "interest": ("InterestExpense", False),
+               "interest2": ("InterestExpenseNonoperating", False)}
+
+
+def _jload(p, default):
+    try:
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else default
+    except Exception as e:  # noqa: BLE001
+        log.warning("%s unreadable: %s", p.name, e)
+        return default
+
+
+def _jsave(p, d) -> None:
+    tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, p)
+
+
+_TICK = re.compile(r"\(([A-Z0-9.\-]{1,7})(?:,\s*[A-Z0-9.\-]+)*\)\s+\(CIK")
+
+
+def parse_efts(js: Dict) -> List[Dict]:
+    """SEC full-text search hits → {cik, ticker, name, form, date, items, adsh}."""
+    out = []
+    for h in ((js or {}).get("hits") or {}).get("hits") or []:
+        s = h.get("_source") or {}
+        dn = (s.get("display_names") or [""])[0]
+        m = _TICK.search(dn)
+        cik = (s.get("ciks") or [None])[0]
+        if not cik:
+            continue
+        out.append({"cik": int(cik), "ticker": m.group(1) if m else None, "name": re.sub(r"\s*\(.*$", "", dn).strip(),
+                    "form": s.get("form") or (s.get("root_forms") or [""])[0], "date": s.get("file_date"),
+                    "items": [str(i) for i in (s.get("items") or [])], "adsh": str(h.get("_id", "")).split(":")[0]})
+    return out
+
+
+async def _efts_all(params: Dict, pages: int = 3) -> List[Dict]:
+    out: List[Dict] = []
+    for p in range(pages):
+        js = await http.get(EFTS, params={**params, "from": p * 100}, headers=SEC_HDR, timeout=30, retries=1)
+        got = parse_efts(js)
+        out += got
+        total = (((js or {}).get("hits") or {}).get("total") or {}).get("value") or 0
+        if len(got) < 100 or (p + 1) * 100 >= total:
+            break
+        await asyncio.sleep(0.2)
+    return out
+
+
+async def scan(today: Optional[date] = None, force: bool = False) -> Dict:
+    """Every red-flag filing in the whole US market over the last `scan_days` days (cached `scan_ttl_h`)."""
+    old = _jload(F_SCAN, {})
+    if not force and time.time() - float(old.get("ts", 0)) < float(cfg().get("scan_ttl_h", 6)) * 3600:
+        return old
+    today = today or us_today()
+    lo = (today - timedelta(days=int(cfg().get("scan_days", 30)))).isoformat()
+    rng = {"dateRange": "custom", "startdt": lo, "enddt": today.isoformat()}
+    hits: List[Dict] = []
+    try:
+        for code in SCAN_ITEMS:
+            got = await _efts_all({"q": f'"Item {code}"', "forms": "8-K", **rng})
+            hits += [{**g, "code": code} for g in got if code in g["items"]]     # the text match alone is not enough
+            await asyncio.sleep(0.2)
+        for form in SCAN_FORMS:
+            hits += [{**g, "code": form} for g in await _efts_all({"forms": form, **rng})]
+            await asyncio.sleep(0.2)
+    except Exception as e:  # noqa: BLE001
+        log.warning("distress filing scan failed: %s", e)
+        HEALTH.fail("sec_scan", e, every=86400)
+        return old
+    res = {"ts": time.time(), "from": lo, "hits": hits}
+    _jsave(F_SCAN, res)
+    HEALTH.ok("sec_scan", len(hits), every=86400)
+    return res
+
+
+def screen_period(today: date) -> str:
+    """Latest calendar quarter that ended at least 75 days ago (by then nearly every 10-Q is filed)."""
+    d = today - timedelta(days=75)
+    q = (d.month - 1) // 3                     # quarters fully ended before d's quarter
+    return f"CY{d.year - 1}Q4" if q == 0 else f"CY{d.year}Q{q}"
+
+
+def ttm_frames(per: str) -> Tuple[List[str], List[str]]:
+    """Frames whose sum gives the trailing four quarters ending at `per`: (added, subtracted).
+    Most companies never file a stand-alone Q4, so TTM = last calendar year + this year's quarters − the same
+    quarters a year earlier (CY2026Q2 → CY2025 + 26Q1 + 26Q2 − 25Q1 − 25Q2)."""
+    y, q = int(per[2:6]), int(per[7])
+    if q == 4:
+        return [f"CY{y}"], []
+    return [f"CY{y - 1}"] + [f"CY{y}Q{i}" for i in range(1, q + 1)], [f"CY{y - 1}Q{i}" for i in range(1, q + 1)]
+
+
+def screen_candidates(fr: Dict[str, Dict[int, float]], names: Dict[int, Tuple[str, str]]) -> List[Dict]:
+    """Balance-sheet screen over every filer of one quarter (the radar's own red lines, labelled on the site):
+      corporate  assets ≥ min and quarterly operating income below quarterly interest, or a loss with negative equity
+      bank       deposits ≥ 40 % of assets, assets ≥ bank min, securities losses ≤ −25 % of equity or equity < 7 % of assets"""
+    c = cfg()
+    min_a, min_bank = float(c.get("screen_min_assets", 2e9)), float(c.get("screen_min_bank_assets", 10e9))
+    out = []
+    for cik, ta in (fr.get("assets") or {}).items():
+        if cik not in names or ta < min_a:
+            continue
+        sym, title = names[cik]
+        eq, dep = fr.get("equity", {}).get(cik), fr.get("deposits", {}).get(cik)
+        why = None
+        if dep and dep / ta >= 0.4:
+            if ta < min_bank or eq is None or eq <= 0:
+                continue
+            loss = (fr.get("aoci", {}).get(cik) or 0.0) - (fr.get("htm_loss", {}).get(cik) or 0.0)
+            if loss / eq <= -0.25:
+                why = f"證券評價損失達股東權益的 {loss / eq * 100:.0f}%"
+            elif eq / ta < 0.07:
+                why = f"股東權益只有資產的 {eq / ta * 100:.1f}%"
+            kind = "bank"
+        else:
+            ebit = fr.get("ebit", {}).get(cik)
+            intr = fr.get("interest", {}).get(cik) or fr.get("interest2", {}).get(cik)
+            liab = fr.get("liab", {}).get(cik)
+            debt = fr.get("ltd", {}).get(cik) or fr.get("ltd_nc", {}).get(cik)
+            cash = fr.get("cash", {}).get(cik)
+            if debt is not None and cash is not None and cash >= debt:
+                continue                                       # more cash than debt: losses can't force a default
+            if ebit is not None and intr and intr > 0 and ebit < intr and (liab is None or liab / ta > 0.5):
+                why = f"近四季營業利益 {ebit / 1e6:,.0f}M 不夠付利息 {intr / 1e6:,.0f}M"
+            elif ebit is not None and ebit <= 0 and eq is not None and eq < 0:
+                why = "近四季虧損且股東權益為負"
+            kind = "auto"
+        if why:
+            out.append({"sym": sym, "cik": cik, "zh": title, "kind": kind, "why": why, "assets": ta})
+    out.sort(key=lambda x: -x["assets"])
+    return out[: int(c.get("auto_max", 40))]
+
+
+def _names_by_cik(tmap: Dict[str, Dict]) -> Dict[int, Tuple[str, str]]:
+    """CIK → (primary ticker, title): company_tickers.json lists the primary listing first."""
+    out: Dict[int, Tuple[str, str]] = {}
+    for t, v in tmap.items():
+        out.setdefault(int(v["cik"]), (t, v.get("title") or t))
+    return out
+
+
+async def screen(tmap: Dict[str, Dict], today: Optional[date] = None, force: bool = False) -> Dict:
+    old = _jload(F_SCREEN, {})
+    per = screen_period(today or us_today())
+    if not force and old.get("period") == per and time.time() - float(old.get("ts", 0)) < float(cfg().get("screen_ttl_h", 72)) * 3600:
+        return old
+    fr: Dict[str, Dict[int, float]] = {}
+
+    async def frame(tag, p):
+        js = await http.get(f"https://data.sec.gov/api/xbrl/frames/us-gaap/{tag}/USD/{p}.json", headers=SEC_HDR, timeout=60, retries=1)
+        await asyncio.sleep(0.2)
+        return {int(r["cik"]): float(r["val"]) for r in (js or {}).get("data", []) if r.get("val") is not None}
+
+    try:
+        for k, (tag, inst) in SCREEN_TAGS.items():
+            if inst:
+                fr[k] = await frame(tag, per + "I")
+                continue
+            add, sub = ttm_frames(per)
+            fa = [await frame(tag, p) for p in add]
+            fs = [await frame(tag, p) for p in sub]
+            fr[k] = {c: sum(f[c] for f in fa) - sum(f[c] for f in fs) for c in fa[0] if all(c in f for f in fa + fs)}
+    except Exception as e:  # noqa: BLE001
+        log.warning("distress frames screen failed: %s", e)
+        HEALTH.fail("sec_screen", e, every=86400)
+        return old
+    if len(fr.get("assets", {})) < 1000:                     # the quarter is barely filed yet → keep the previous screen
+        return old
+    res = {"ts": time.time(), "period": per, "cands": screen_candidates(fr, _names_by_cik(tmap)),
+           "assets": {str(k): v for k, v in fr["assets"].items()}}
+    _jsave(F_SCREEN, res)
+    HEALTH.ok("sec_screen", len(res["cands"]), every=86400)
+    return res
+
+
+def update_auto(scn: Dict, scr: Dict, tmap: Dict[str, Dict], fixed: set, today: date) -> Dict[str, Dict]:
+    """Merge today's discoveries into the auto list; drop entries that stopped qualifying `auto_keep_days` ago."""
+    auto = _jload(F_AUTO, {})
+    names = _names_by_cik(tmap)
+    assets = {int(k): v for k, v in (scr.get("assets") or {}).items()}
+    min_scan = float(cfg().get("scan_min_assets", 1e9))
+    td = today.isoformat()
+
+    def hit(sym, zh, kind, why, src):
+        if sym in fixed:
+            return
+        r = auto.get(sym) or {"added": td}
+        r.update({"zh": r.get("zh") or zh, "kind": kind, "why": why, "src": src, "last_hit": td})
+        auto[sym] = r
+
+    for c in scr.get("cands") or []:
+        hit(c["sym"], c["zh"], c["kind"], c["why"], "screen")
+    for h in sorted(scn.get("hits") or [], key=lambda x: x.get("date") or ""):
+        nm = names.get(h["cik"])
+        if not nm or assets.get(h["cik"], 0) < min_scan:       # unlisted or small filers are skipped
+            continue
+        _lv, txt = RED_ITEMS.get(h["code"]) or LATE_FORMS.get(h["code"]) or ("watch", h["code"])
+        hit(nm[0], nm[1], "auto", f"{h['date']} {txt}", "filing")
+    keep = int(cfg().get("auto_keep_days", 30))
+    for s in [s for s, r in auto.items() if s in fixed or (today - date.fromisoformat(r["last_hit"])).days > keep]:
+        auto.pop(s)
+    _jsave(F_AUTO, auto)
+    return auto
+
+
+def load_auto() -> Dict[str, Dict]:
+    return _jload(F_AUTO, {})
+
+
+async def discover(fixed: set) -> Dict[str, Dict]:
+    """Market-wide scan + screen → the auto list (each step falls back to its cached result on failure)."""
+    from .edgar_holdings import ticker_map
+    if not cfg().get("auto_discover", True):
+        return load_auto()
+    try:
+        tmap = await ticker_map()
+    except Exception as e:  # noqa: BLE001
+        log.warning("SEC ticker map unavailable: %s", e)
+        return load_auto()
+    scn = await scan()
+    scr = await screen(tmap)
+    return update_auto(scn, scr, tmap, fixed, us_today())

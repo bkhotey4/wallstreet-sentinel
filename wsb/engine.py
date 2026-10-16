@@ -176,6 +176,8 @@ class Engine:
 
     async def refresh_distress(self) -> None:
         from .data import distress_data
+        await distress_data.discover(set(dz.fixed_list()))         # market-wide SEC scan + screen → auto list
+        await asyncio.to_thread(dz.prune, self.stockprices)        # names with no prices for 30 days leave the radar
         await distress_data.refresh(list(dz.watchlist()))
 
     async def refresh_earnings(self, force: bool = False, frames: bool = False) -> None:

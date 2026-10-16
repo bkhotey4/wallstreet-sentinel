@@ -566,10 +566,21 @@ intel:
 #       bank＝銀行指標（未實現損失/權益、權益/資產、存款變化、相對 KRE）　credit＝BDC／私募信貸（負債/淨值）
 distress:
   enabled: true
-  budget_s: 90                # 每次更新最多花幾秒抓 SEC（抓不完下次接著抓，最久沒更新的優先）
+  budget_s: 120               # 每次更新最多花幾秒抓 SEC（抓不完下次接著抓，最久沒更新的優先）
   balance_ttl_h: 168          # 資產負債表多久重抓（有新 10-Q／10-K 時會提早）
   filings_ttl_h: 12           # SEC 申報警訊多久重抓
   filing_days: 120            # 8-K 警訊看最近幾天（破產 1.03 固定看一年）
+  # 自動維護名單：全市場 SEC 警訊申報＋全市場財報篩選，自動加入；30 天不再符合就自動移出
+  auto_discover: true
+  scan_days: 30               # 全市場 8-K 1.03/2.04/4.02/3.01、NT 10-K/10-Q 看最近幾天
+  scan_ttl_h: 6               # 全市場申報多久重新掃一次
+  scan_min_assets: 1.0e9      # 申報警訊的公司，總資產至少這麼大才加入（排除微型股）
+  screen_ttl_h: 72            # 全市場財報篩選多久重做（新一季資料出來時會換季）
+  screen_min_assets: 2.0e9    # 企業篩選：總資產門檻
+  screen_min_bank_assets: 1.0e10   # 銀行篩選：總資產門檻
+  auto_max: 40                # 財報篩選最多自動加入幾家（依資產規模排序）
+  auto_keep_days: 30          # 自動加入的公司，連續幾天不再符合條件就移出
+  remove_after_days: 30       # 任何公司超過幾天沒有股價就移出雷達（下市、併購、改代號），原因會列在網站上
   watch:
     tech:
       CRWV: CoreWeave

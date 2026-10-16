@@ -1049,6 +1049,49 @@ _DZ_KIND = {"tech": ("科技", "Tech"), "corp": ("企業", "Corp"), "bank": ("�
             "credit": ("私募信貸", "Private credit")}
 
 
+def _ago_zh(h) -> str:
+    return "—" if h is None else f"{h:.0f} 小時前" if h < 48 else f"{h / 24:.0f} 天前"
+
+
+def _ago_en(h) -> str:
+    return "—" if h is None else f"{h:.0f}h ago" if h < 48 else f"{h / 24:.0f}d ago"
+
+
+def _ago(h) -> str:
+    return T(_ago_zh(h), _ago_en(h))
+
+
+def _age(r) -> str:
+    warn = "color:var(--warn)"
+    sec = f'SEC {_ago(r.get("sec_age_h"))}'
+    px = f'{T("股價", "Price")} {esc(r.get("px_last") or "—")}'
+    return (f'<span class="small" style="{warn if r.get("sec_stale") else ""}">{"⚠️ " if r.get("sec_stale") else ""}{sec}</span><br>'
+            f'<span class="small" style="{warn if r.get("px_stale") else ""}">{"⚠️ " if r.get("px_stale") else ""}{px}</span>')
+
+
+def _dz_health(dz) -> str:
+    """Warning banner when the SEC side stops refreshing (the card would otherwise keep showing an old cache)."""
+    msgs = []
+    tot = max(1, int(dz.get("total") or 0))
+    if (dz.get("n_sec_stale") or 0) / tot > 0.2:
+        msgs.append(f"{dz['n_sec_stale']} 家公司的 SEC 資料超過 2 天沒有更新成功")
+    if (dz.get("n_px_stale") or 0) / tot > 0.2:
+        msgs.append(f"{dz['n_px_stale']} 家公司的股價超過 5 個交易日沒有更新")
+    for k, zh in (("scan_age_h", "全市場申報掃描"), ("screen_age_h", "全市場財報篩選")):
+        lim = 48 if k == "scan_age_h" else 24 * 10
+        if dz.get(k) is None or dz[k] > lim:
+            msgs.append(f"{zh}{'尚未完成' if dz.get(k) is None else '已 ' + _ago_zh(dz[k]).replace('前', '沒更新')}")
+    for k, (st, err) in (dz.get("health") or {}).items():
+        if st in ("down", "degraded"):
+            msgs.append(f"{k} 抓取失敗：{err[:80]}")
+    per = dz.get("screen_period") or "—"
+    info = T(f"全市場申報掃描：{_ago_zh(dz.get('scan_age_h'))}；財報篩選：{per}（{_ago_zh(dz.get('screen_age_h'))}）",
+             f"Filing scan {_ago_en(dz.get('scan_age_h'))}; screen {per} ({_ago_en(dz.get('screen_age_h'))})")
+    warn = (f'<p class="small" style="color:var(--warn)">⚠️ {T("資料更新異常", "Data warning")}：{T("；".join(msgs), "SEC / price data are stale")}</p>'
+            if msgs else "")
+    return warn + f'<p class="small muted">{info}</p>'
+
+
 def sec_distress(eng) -> str:
     dz = getattr(eng, "distress", None) or {}
     if not dz.get("available"):
@@ -1071,22 +1114,34 @@ def sec_distress(eng) -> str:
         more = (f'<details><summary class="small muted">{T("其他指標", "Other metrics")}（{len(good)}）</summary>'
                 f'<ul class="small lines">{"".join(sig_html(s) for s in good)}</ul></details>') if good and full else ""
         bs = esc(r.get("bs_end") or "—") + (f' <span class="muted">{T("（較舊）", "(old)")}</span>' if r.get("bs_old") else "")
-        return (f'<tr><td><b>{esc(r["sym"])}</b><br><span class="small muted">{esc(r["zh"])}</span></td>'
+        bs += "<br>" + _age(r)
+        src = (f'<br><span class="small" style="color:var(--warn)">{T("自動加入", "Auto-added")}：{esc(r.get("why") or "")}</span>'
+               if r.get("src") == "auto" else "")
+        return (f'<tr><td><b>{esc(r["sym"])}</b><br><span class="small muted">{esc(r["zh"])}</span>{src}</td>'
                 f'<td class="small">{T(kz, ke)}</td><td><span class="pill" style="border-color:{col};color:{col}">{ico} {T(zh, en)}</span>'
                 f'<br><span class="small muted">{r["points"]} {T("點", "pts")}</span></td>'
                 f'<td><ul class="small lines">{lst}</ul>{more}</td><td class="small">{bs}</td></tr>')
 
     hdr = (f'<thead><tr><th>{T("公司", "Company")}</th><th>{T("類型", "Type")}</th><th>{T("燈號", "Light")}</th>'
-           f'<th>{T("警訊", "Flags")}</th><th>{T("財報期", "Balance sheet")}</th></tr></thead>')
+           f'<th>{T("警訊", "Flags")}</th><th>{T("財報期／資料時間", "Balance sheet / data age")}</th></tr></thead>')
     flagged = [r for r in dz["rows"] if r["state"] != "ok"]
     calm = [r for r in dz["rows"] if r["state"] == "ok"]
     top = (f'<div class="scroll"><table class="mini">{hdr}<tbody>{"".join(row(r, True) for r in flagged)}</tbody></table></div>'
            if flagged else f'<p>{T("目前沒有公司亮燈。", "No company is flagged right now.")}</p>')
     rest = (f'<details><summary class="small">{T("其他公司（無燈號）", "Other companies (no light)")}（{len(calm)}）</summary>'
             f'<div class="scroll"><table class="mini">{hdr}<tbody>{"".join(row(r, False) for r in calm)}</tbody></table></div></details>') if calm else ""
+    sc = dz.get("src_counts") or {}
     head = (f'<div class="kv"><div><span class="muted">{T("紅燈", "Alerts")}</span><b style="color:var(--dn)">{n.get("alert", 0)}</b></div>'
             f'<div><span class="muted">{T("黃燈", "Watch")}</span><b style="color:var(--warn)">{n.get("watch", 0)}</b></div>'
-            f'<div><span class="muted">{T("掃描公司", "Companies")}</span><b>{dz.get("total", 0)}</b></div></div>')
+            f'<div><span class="muted">{T("掃描公司", "Companies")}</span><b>{dz.get("total", 0)}</b></div>'
+            f'<div><span class="muted">{T("自動加入", "Auto-added")}</span><b>{sc.get("auto", 0)}</b></div></div>'
+            + _dz_health(dz))
+    gone = dz.get("removed") or {}
+    rest += (f'<details><summary class="small">{T("已移出雷達", "Removed from the radar")}（{len(gone)}）</summary><ul class="small lines">'
+             + "".join(f'<li><b>{esc(s)}</b> {esc(r.get("zh") or "")}：{esc(r.get("why") or "")}'
+                       f'（{T("移出日", "removed")} {esc(r.get("date") or "")}，{T("最後股價日", "last price")} {esc(r.get("last_px") or "—")}）</li>'
+                       for s, r in sorted(gone.items(), key=lambda kv: kv[1].get("date") or "", reverse=True))
+             + "</ul></details>") if gone else ""
     rule = T("每個指標分正常／黃（1 點）／紅（2 點）。合計 ≥ 5 點紅燈、≥ 3 點黃燈；單一比率不好不會亮燈"
              "（很多健康的公司會因為大量買回庫藏股或輕資產模式而某一項偏低）。"
              "出現 8-K 1.03 破產、2.04 債務加速到期、4.02 財報不可依賴、NT 10-K 年報逾期，直接紅燈。"
@@ -1102,11 +1157,21 @@ def sec_distress(eng) -> str:
               "只有股價訊號抓得到）。門檻來自學術文獻與信用分析慣例，未在本系統做完整回測。",
               "Point-in-time check: SVB's year-end-2022 unrealised losses were −107% of equity (alert); Zions −64% (alert). PacWest looked normal "
               "(its run came later). Thresholds are from the literature, not fitted here.")
-    note = T("資料：SEC XBRL 財報（companyfacts）、SEC 申報清單（submissions）、本站股價。財報一季才更新一次，"
+    auto_rule = T("名單自動維護：(1) 每 6 小時掃一次全美國 SEC 申報，近 30 天申報 8-K 1.03 破產、2.04 債務加速到期、"
+                  "4.02 財報不可依賴，或 NT 10-K／10-Q 逾期申報、總資產 ≥ 10 億美元的上市公司自動加入；"
+                  "(2) 每季用 SEC 全市場財報篩選：總資產 ≥ 20 億美元、近四季營業利益付不起利息（現金多於負債者除外），"
+                  "或虧損且股東權益為負的企業；總資產 ≥ 100 億美元、證券評價損失 ≤ −25% 股東權益或權益 < 7% 資產的銀行，"
+                  "依規模最多 40 家；(3) 自動加入的公司連續 30 天不再符合就移出；(4) 任何公司超過 30 天沒有股價"
+                  "（下市、被併購、改代號）就移出雷達，原因列在「已移出雷達」。8-K 3.01 下市通知大多是併購或換交易所，"
+                  "所以不用來自動加入。",
+                  "The list maintains itself: market-wide SEC red-flag filings and a quarterly balance-sheet screen add names; "
+                  "they leave after 30 days of not qualifying; names with no prices for 30 days are removed (reason shown).")
+    note = T("資料：SEC XBRL 財報（companyfacts、frames）、SEC 申報清單與全文檢索、本站股價。財報一季才更新一次，"
              "股價與 8-K 申報每天更新。不用新聞，也不用分析師評等。公司進入紅燈會推 Discord。這是財務體質的警訊，不是破產預測，也不是投資建議。",
              "SEC XBRL, SEC filings, prices. No news. A financial-health warning, not a bankruptcy forecast or investment advice.")
     return card("企業危機雷達：破產與財務危機警訊", "Corporate distress radar",
-                head + top + rest + f'<p class="small muted">{T("規則", "Rule")}：{rule}</p><p class="small muted">{check}</p><p class="note">{note}</p>',
+                head + top + rest + f'<p class="small muted">{T("規則", "Rule")}：{rule}</p><p class="small muted">{auto_rule}</p>'
+                f'<p class="small muted">{check}</p><p class="note">{note}</p>',
                 "wide", sub=T("科技（AI 基礎建設舉債）、銀行、私募信貸：財報、股價、SEC 申報", "Tech, banks, private credit: filings, prices, SEC"))
 
 

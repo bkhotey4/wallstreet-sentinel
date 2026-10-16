@@ -133,10 +133,61 @@ def test_assess_and_build(b):
     return out
 
 
+def test_discovery():
+    # SEC full-text search hits
+    js = {"hits": {"total": {"value": 2}, "hits": [
+        {"_id": "0001-26-1:a.htm", "_source": {"ciks": ["0000000101"], "display_names": ["Big Co Inc.  (BIGC)  (CIK 0000000101)"],
+                                               "form": "8-K", "file_date": "2026-10-14", "items": ["1.03", "9.01"]}},
+        {"_id": "0001-26-2:b.htm", "_source": {"ciks": ["0000000102"], "display_names": ["Tiny Corp  (CIK 0000000102)"],
+                                               "form": "NT 10-Q", "file_date": "2026-10-10", "items": []}}]}}
+    hits = DD.parse_efts(js)
+    assert hits[0]["ticker"] == "BIGC" and hits[0]["cik"] == 101 and hits[1]["ticker"] is None
+    assert DD.screen_period(date(2026, 10, 17)) == "CY2026Q2" and DD.screen_period(date(2026, 2, 1)) == "CY2025Q3"
+    assert DD.ttm_frames("CY2026Q2") == (["CY2025", "CY2026Q1", "CY2026Q2"], ["CY2025Q1", "CY2025Q2"])
+    assert DD.ttm_frames("CY2025Q4") == (["CY2025"], [])
+    # balance-sheet screen
+    names = {1: ("LEVD", "Levered Co"), 2: ("CASH", "Cash Rich"), 3: ("BNKX", "Bank X"), 4: ("SMOL", "Small"), 5: ("FINE", "Fine Co")}
+    fr = {"assets": {1: 10e9, 2: 10e9, 3: 50e9, 4: 1e9, 5: 10e9}, "liab": {1: 8e9, 2: 3e9, 3: 46e9, 5: 5e9},
+          "equity": {1: 2e9, 2: 7e9, 3: 4e9, 5: 5e9}, "deposits": {3: 40e9}, "aoci": {3: -1.5e9}, "htm_loss": {3: 0.5e9},
+          "cash": {1: 0.5e9, 2: 5e9, 5: 1e9}, "ltd": {1: 6e9, 2: 1e9, 5: 2e9},
+          "ebit": {1: 0.3e9, 2: -1e9, 4: -1e9, 5: 2e9}, "interest": {1: 0.5e9, 2: 0.05e9, 4: 0.1e9, 5: 0.1e9}}
+    c = {x["sym"]: x for x in DD.screen_candidates(fr, names)}
+    assert set(c) == {"LEVD", "BNKX"}, c                       # net-cash loss-maker, small and healthy ones are not flagged
+    assert c["BNKX"]["kind"] == "bank" and "-50%" in c["BNKX"]["why"]
+    # auto list: add, skip fixed names and small filers, expire after auto_keep_days
+    DD._jsave(DD.F_AUTO, {"OLDX": {"zh": "Old", "kind": "auto", "why": "x", "src": "screen", "added": "2026-08-01", "last_hit": "2026-09-01"}})
+    tmap = {"BIGC": {"cik": 101, "title": "Big Co"}, "TINY": {"cik": 102, "title": "Tiny"}, "LEVD": {"cik": 1, "title": "Levered"},
+            "BNKX": {"cik": 3, "title": "Bank X"}, "JPM": {"cik": 19617, "title": "JPMorgan"}}
+    scn = {"hits": [{**hits[0], "code": "1.03"}, {**hits[1], "code": "NT 10-Q"}]}
+    scr = {"cands": list(c.values()) + [{"sym": "JPM", "cik": 19617, "zh": "JPM", "kind": "bank", "why": "x", "assets": 1}],
+           "assets": {"101": 5e9, "102": 1e8, "1": 10e9, "3": 50e9}}
+    auto = DD.update_auto(scn, scr, tmap, {"JPM"}, date(2026, 10, 17))
+    assert set(auto) == {"BIGC", "LEVD", "BNKX"}, auto
+    assert auto["BIGC"]["src"] == "filing" and "破產" in auto["BIGC"]["why"]
+    wl = DZ.watchlist()
+    assert wl["BIGC"]["src"] == "auto" and wl["JPM"]["src"] == "universe" and "BIGC" in DZ.extra_symbols()
+    # pruning: no prices for 30 days → removed with the reason; prices back → restored
+    idx_old = pd.bdate_range(end="2026-08-20", periods=200)
+    close = {"BIGC": pd.Series(1.0, index=idx_old), "LEVD": _px()}
+    sp = types.SimpleNamespace(series=lambda s_: close.get(s_, pd.Series(dtype=float)))
+    cache = {"BIGC": {"flags": [{"code": "1.03", "date": "2026-10-14", "level": "alert", "zh": "破產"}]}}
+    st = DZ.prune(sp, cache, date(2026, 10, 17))
+    assert "BIGC" in st["removed"] and "破產" in st["removed"]["BIGC"]["why"] and "LEVD" not in st["removed"]
+    assert "BIGC" not in DZ.watchlist() and "BIGC" in DZ.watchlist(include_removed=True)
+    close["BIGC"] = _px()
+    assert "BIGC" not in DZ.prune(sp, cache, date(2026, 10, 17))["removed"]
+    DD._jsave(DD.F_AUTO, {})
+    DZ._save_state({})
+
+
 def test_site_and_alerts(out):
     from tools import site_sections as S2
     html = S2.sec_distress(types.SimpleNamespace(distress=out))
     assert "企業危機雷達" in html and "CRWV" in html and "Altman" in html and "紅燈" in html
+    assert "SEC" in html and "股價" in html and "名單自動維護" in html
+    stale = {**out, "n_sec_stale": out["total"], "removed": {"ZZZ": {"date": "2026-10-01", "zh": "Gone", "why": "超過 30 天沒有股價", "last_px": "2026-08-20"}}}
+    h2 = S2.sec_distress(types.SimpleNamespace(distress=stale))
+    assert "資料更新異常" in h2 and "已移出雷達" in h2 and "ZZZ" in h2
     assert S2.sec_distress(types.SimpleNamespace(distress={})) == ""
     from wsb import store
     from wsb.bot.app import Sentinel
@@ -144,6 +195,13 @@ def test_site_and_alerts(out):
            "signals": [DZ._sig("altman", "Altman Z''", "alert", "-1.09")]}
     bot = types.SimpleNamespace(engine=types.SimpleNamespace(distress={"available": True, "asof": "2026-10-16", "rows": [row]}))
     assert Sentinel._distress_alerts(bot) == []                                # first run = silent baseline
+    # a company discovered later that is already red → one digest (not one alert per company)
+    nr = {"sym": "NEWX", "zh": "New X", "state": "alert", "bs_end": "2026-06-30", "why": "近四季營業利益不夠付利息",
+          "signals": [DZ._sig("altman", "Z", "alert", "0.1")]}
+    bot.engine.distress["rows"] = [row, nr]
+    a = Sentinel._distress_alerts(bot)
+    assert len(a) == 1 and "新加入 1 家" in a[0].title and "NEWX" in a[0].detail
+    bot.engine.distress["rows"] = [row]
     row["state"] = "ok"
     assert Sentinel._distress_alerts(bot) == []                                # back to no light → re-armed
     row["state"] = "alert"
@@ -151,9 +209,13 @@ def test_site_and_alerts(out):
     assert len(a) == 1 and "CoreWeave" in a[0].title
     store.alert_mark(a[0].key, a[0].severity, a[0].title)
     assert Sentinel._distress_alerts(bot) == []                                # delivered → once
-    row["signals"].append({**DZ._sig("sec_1_03", "SEC 申報", "alert", "2026-10-15 破產或接管（8-K 1.03）"), "hard": True, "url": "u"})
+    from datetime import datetime as _dt, timedelta as _td
+    d = (_dt.utcnow() - _td(days=1)).strftime("%Y-%m-%d")
+    row["signals"].append({**DZ._sig("sec_1_03", "SEC 申報", "alert", f"{d} 破產或接管（8-K 1.03）"), "hard": True, "url": "u"})
+    row["signals"].append({**DZ._sig("sec_4_02", "SEC 申報", "alert", "2026-06-01 先前財報不可再依賴（8-K 4.02）"), "hard": True})
     a = Sentinel._distress_alerts(bot)
-    assert len(a) == 1 and a[0].severity.startswith("🚨") and "1.03" in a[0].detail   # a new hard filing alerts even while red
+    assert len(a) == 1 and a[0].severity.startswith("🚨") and "1.03" in a[0].detail   # fresh hard filing alerts even while red;
+                                                                                      # a months-old one does not
 
 
 def main():
@@ -161,6 +223,7 @@ def main():
     b = test_parse_balance_and_flags()
     test_metrics(b)
     out = test_assess_and_build(b)
+    test_discovery()
     test_site_and_alerts(out)
     print("distress OK")
 

@@ -10,18 +10,22 @@ Thresholds come from the academic literature (Altman 1995 Z''; Bharath & Shumway
 credit-analysis conventions; they are NOT fitted or backtested in this system and are labelled as such on the site."""
 from __future__ import annotations
 
+import json
 import math
-from datetime import timedelta
+import os
+import time
+from datetime import date, timedelta
 from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
-from ..config import SETTINGS
+from ..config import DATA_DIR, SETTINGS
 from ..data import distress_data as DD
 from ..data.econcal import us_today
 
 PTS = {"ok": 0, "watch": 1, "alert": 2}
+STALE_SEC_H, STALE_PX_BDAYS = 48, 5           # older than this → the row shows a data-age warning
 ALERT_PTS, WATCH_PTS = 5, 3
 SKIP_THEMES = ("電信公用",)          # regulated utilities / telcos: high leverage is their normal business model
 
@@ -30,8 +34,24 @@ def cfg() -> Dict:
     return SETTINGS.get("distress", {}) or {}
 
 
-def watchlist() -> Dict[str, Dict]:
-    """symbol → {zh, kind}: the configured watch list plus the US stock-scoring universe."""
+F_STATE = DATA_DIR / "earn_distress_state.json"      # first-seen dates + names removed for lack of data
+
+
+def _state() -> Dict:
+    try:
+        return json.loads(F_STATE.read_text(encoding="utf-8")) if F_STATE.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _save_state(st: Dict) -> None:
+    tmp = F_STATE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, F_STATE)
+
+
+def fixed_list() -> Dict[str, Dict]:
+    """The US stock-scoring universe (minus utilities / telcos) plus the hand-picked watch list in settings."""
     from ..data.stocks import universe
     out: Dict[str, Dict] = {}
     us = universe().get("us") or {}
@@ -39,16 +59,60 @@ def watchlist() -> Dict[str, Dict]:
         th = us.get("themes", {}).get(s, "")
         if th in SKIP_THEMES:
             continue
-        out[s] = {"zh": zh, "kind": "fin" if th == "金融" else "corp", "theme": th}
+        out[s] = {"zh": zh, "kind": "fin" if th == "金融" else "corp", "theme": th, "src": "universe"}
     for kind, syms in (cfg().get("watch") or {}).items():
         for s, zh in (syms or {}).items():
-            out[str(s)] = {"zh": str(zh), "kind": str(kind), "theme": "觀察名單"}
+            out[str(s)] = {"zh": str(zh), "kind": str(kind), "theme": "觀察名單", "src": "manual"}
+    return out
+
+
+def watchlist(include_removed: bool = False) -> Dict[str, Dict]:
+    """symbol → {zh, kind, src, why}: fixed list + names the radar discovered by itself (SEC scan / screen),
+    minus names removed for lack of data (unless include_removed)."""
+    out = fixed_list()
+    for s, r in DD.load_auto().items():
+        out.setdefault(s, {"zh": r.get("zh") or s, "kind": r.get("kind", "auto"), "theme": "自動加入", "src": "auto",
+                           "why": r.get("why"), "added": r.get("added")})
+    if not include_removed:
+        gone = _state().get("removed") or {}
+        out = {s: m for s, m in out.items() if s not in gone}
     return out
 
 
 def extra_symbols() -> List[str]:
-    """Watch-list names outside the stock universe (their prices are downloaded with it)."""
-    return [str(s) for syms in (cfg().get("watch") or {}).values() for s in (syms or {})]
+    """Radar names outside the stock universe (their prices are downloaded with it).  Removed names are kept here so a
+    ticker that comes back (e.g. a feed outage) is picked up again."""
+    out = [str(s) for syms in (cfg().get("watch") or {}).values() for s in (syms or {})]
+    return list(dict.fromkeys(out + list(DD.load_auto())))
+
+
+def prune(sp, cache: Optional[Dict] = None, today: Optional[date] = None) -> Dict:
+    """Drop names with no price for `remove_after_days` (delisted, acquired, renamed) and restore them if prices return.
+    The reason is kept for the site (a company that filed for bankruptcy and then vanished is still shown)."""
+    today = today or us_today()
+    cache = DD.load() if cache is None else cache
+    st = _state()
+    seen, gone = st.setdefault("first_seen", {}), st.setdefault("removed", {})
+    lim = int(cfg().get("remove_after_days", 30))
+    for sym, meta in watchlist(include_removed=True).items():
+        seen.setdefault(sym, today.isoformat())
+        px = sp.series(sym) if sp is not None else pd.Series(dtype=float)
+        last = px.index[-1].date() if len(px) else None
+        ref = last or date.fromisoformat(seen[sym])
+        quiet = (today - ref).days > lim
+        if quiet and sym not in gone:
+            flags = (cache.get(sym) or {}).get("flags") or []
+            bk = next((f for f in flags if f["code"] == "1.03"), None)
+            why = (f"已申報破產（{bk['date']}），之後 {lim} 天以上沒有股價" if bk else
+                   f"超過 {lim} 天沒有股價（可能已下市、被併購或改代號）")
+            gone[sym] = {"date": today.isoformat(), "zh": meta["zh"], "why": why, "last_px": last.isoformat() if last else None,
+                         "src": meta.get("src")}
+        elif not quiet and sym in gone:
+            gone.pop(sym)                                    # prices are back → on the radar again
+    cut = (today - timedelta(days=180)).isoformat()
+    st["removed"] = {s: r for s, r in gone.items() if r["date"] >= cut}
+    _save_state(st)
+    return st
 
 
 def _ncdf(x: float) -> float:
@@ -222,8 +286,9 @@ def overall(sigs: List[Dict]) -> str:
 def assess(sym: str, meta: Dict, rec: Dict, px: pd.Series, bench: pd.Series, today) -> Dict:
     b = (rec or {}).get("bs") or {}
     kind = meta["kind"]
-    if kind == "fin":
-        kind = "bank" if b.get("deposits") and b.get("assets") and b["deposits"] / b["assets"] > 0.4 else "fin"
+    if kind in ("fin", "auto"):
+        is_bank = bool(b.get("deposits") and b.get("assets") and b["deposits"] / b["assets"] > 0.4)
+        kind = "bank" if is_bank else "fin" if kind == "fin" else "corp"
     sigs: List[Dict] = []
     old = bool(b.get("end")) and (today - pd.Timestamp(b["end"]).date()).days > 200
     fresh = bool(b) and (today - pd.Timestamp(b["end"]).date()).days <= 400 if b.get("end") else False
@@ -237,10 +302,19 @@ def assess(sym: str, meta: Dict, rec: Dict, px: pd.Series, bench: pd.Series, tod
     sigs += _market(px, bench, kind)
     sigs += _filing_sigs((rec or {}).get("flags"), today)
     st = overall(sigs)
+    now = time.time()
+    fl_ts, bs_ts = float((rec or {}).get("fl_ts") or 0), float((rec or {}).get("bs_ts") or 0)
+    px_last = px.index[-1].date() if len(px) else None
     return {"sym": sym, "zh": meta["zh"], "kind": kind, "theme": meta.get("theme"), "state": st,
             "points": sum(PTS.get(s["state"], 0) for s in sigs), "signals": sigs,
-            "bs_end": b.get("end"), "bs_old": old, "has_bs": fresh,
-            "price": float(px.iloc[-1]) if len(px) else None}
+            "bs_end": b.get("end"), "bs_old": old, "has_bs": fresh, "src": meta.get("src"), "why": meta.get("why"),
+            "added": meta.get("added"), "price": float(px.iloc[-1]) if len(px) else None,
+            # data age: when SEC was last read successfully, and the last price bar
+            "sec_age_h": round((now - fl_ts) / 3600, 1) if fl_ts else None,
+            "bs_age_h": round((now - bs_ts) / 3600, 1) if bs_ts else None,
+            "px_last": px_last.isoformat() if px_last else None,
+            "sec_stale": bool((rec or {}).get("cik")) and (not fl_ts or now - fl_ts > STALE_SEC_H * 3600),
+            "px_stale": px_last is None or np.busday_count(px_last, today) > STALE_PX_BDAYS}
 
 
 def build(eng) -> Dict:
@@ -264,4 +338,14 @@ def build(eng) -> Dict:
     order = {"alert": 0, "watch": 1, "ok": 2}
     rows.sort(key=lambda r: (order[r["state"]], -r["points"], r["sym"]))
     n = {k: sum(r["state"] == k for r in rows) for k in order}
-    return {"available": True, "asof": today.isoformat(), "rows": rows, "counts": n, "total": len(rows)}
+    from ..health import HEALTH
+    hs = {k: (HEALTH.sources[k].state, HEALTH.sources[k].error) for k in ("sec_distress", "sec_scan", "sec_screen")
+          if k in HEALTH.sources}
+    scr, scn = DD._jload(DD.F_SCREEN, {}), DD._jload(DD.F_SCAN, {})
+    return {"available": True, "asof": today.isoformat(), "rows": rows, "counts": n, "total": len(rows),
+            "src_counts": {k: sum(r.get("src") == k for r in rows) for k in ("universe", "manual", "auto")},
+            "n_sec_stale": sum(r["sec_stale"] for r in rows), "n_px_stale": sum(r["px_stale"] for r in rows),
+            "removed": _state().get("removed") or {}, "health": hs,
+            "scan_age_h": round((time.time() - float(scn["ts"])) / 3600, 1) if scn.get("ts") else None,
+            "screen_period": scr.get("period"),
+            "screen_age_h": round((time.time() - float(scr["ts"])) / 3600, 1) if scr.get("ts") else None}
