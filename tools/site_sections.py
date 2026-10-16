@@ -1044,6 +1044,72 @@ def sec_canary(eng) -> str:
                 sub=T("資金市場、信用品質、銀行存款、槓桿、避險失效、市場內部、景氣類股", "Funding, credit quality, deposits, leverage, hedges, breadth, cyclicals"))
 
 
+# ----------------------------------------------------------------- corporate distress radar
+_DZ_KIND = {"tech": ("科技", "Tech"), "corp": ("企業", "Corp"), "bank": ("銀行", "Bank"), "fin": ("金融", "Financial"),
+            "credit": ("私募信貸", "Private credit")}
+
+
+def sec_distress(eng) -> str:
+    dz = getattr(eng, "distress", None) or {}
+    if not dz.get("available"):
+        return ""
+    n = dz.get("counts") or {}
+
+    def sig_html(s):
+        ico, _zh, _en, col = _CN_STATE.get(s["state"], _CN_STATE["na"])
+        t = esc(f'{s["zh"]} {s["txt"]}')
+        if s.get("url"):
+            t = f'<a href="{esc(s["url"])}" target="_blank" rel="noopener">{t}</a>'
+        return f'<li><span style="color:{col}">{ico}</span> {t}</li>'
+
+    def row(r, full):
+        ico, zh, en, col = _CN_STATE.get(r["state"], _CN_STATE["na"])
+        kz, ke = _DZ_KIND.get(r["kind"], ("", ""))
+        bad = [s for s in r["signals"] if s["state"] != "ok"]
+        good = [s for s in r["signals"] if s["state"] == "ok"]
+        lst = "".join(sig_html(s) for s in bad) or f'<li class="muted">{T("沒有警訊", "No flags")}</li>'
+        more = (f'<details><summary class="small muted">{T("其他指標", "Other metrics")}（{len(good)}）</summary>'
+                f'<ul class="small lines">{"".join(sig_html(s) for s in good)}</ul></details>') if good and full else ""
+        bs = esc(r.get("bs_end") or "—") + (f' <span class="muted">{T("（較舊）", "(old)")}</span>' if r.get("bs_old") else "")
+        return (f'<tr><td><b>{esc(r["sym"])}</b><br><span class="small muted">{esc(r["zh"])}</span></td>'
+                f'<td class="small">{T(kz, ke)}</td><td><span class="pill" style="border-color:{col};color:{col}">{ico} {T(zh, en)}</span>'
+                f'<br><span class="small muted">{r["points"]} {T("點", "pts")}</span></td>'
+                f'<td><ul class="small lines">{lst}</ul>{more}</td><td class="small">{bs}</td></tr>')
+
+    hdr = (f'<thead><tr><th>{T("公司", "Company")}</th><th>{T("類型", "Type")}</th><th>{T("燈號", "Light")}</th>'
+           f'<th>{T("警訊", "Flags")}</th><th>{T("財報期", "Balance sheet")}</th></tr></thead>')
+    flagged = [r for r in dz["rows"] if r["state"] != "ok"]
+    calm = [r for r in dz["rows"] if r["state"] == "ok"]
+    top = (f'<div class="scroll"><table class="mini">{hdr}<tbody>{"".join(row(r, True) for r in flagged)}</tbody></table></div>'
+           if flagged else f'<p>{T("目前沒有公司亮燈。", "No company is flagged right now.")}</p>')
+    rest = (f'<details><summary class="small">{T("其他公司（無燈號）", "Other companies (no light)")}（{len(calm)}）</summary>'
+            f'<div class="scroll"><table class="mini">{hdr}<tbody>{"".join(row(r, False) for r in calm)}</tbody></table></div></details>') if calm else ""
+    head = (f'<div class="kv"><div><span class="muted">{T("紅燈", "Alerts")}</span><b style="color:var(--dn)">{n.get("alert", 0)}</b></div>'
+            f'<div><span class="muted">{T("黃燈", "Watch")}</span><b style="color:var(--warn)">{n.get("watch", 0)}</b></div>'
+            f'<div><span class="muted">{T("掃描公司", "Companies")}</span><b>{dz.get("total", 0)}</b></div></div>')
+    rule = T("每個指標分正常／黃（1 點）／紅（2 點）。合計 ≥ 5 點紅燈、≥ 3 點黃燈；單一比率不好不會亮燈"
+             "（很多健康的公司會因為大量買回庫藏股或輕資產模式而某一項偏低）。"
+             "出現 8-K 1.03 破產、2.04 債務加速到期、4.02 財報不可依賴、NT 10-K 年報逾期，直接紅燈。"
+             "企業：Altman Z''（1995 非製造業版，<1.1 危險、1.1–2.6 灰色）、利息保障倍數（<1 紅、<2 黃）、"
+             "現金可撐月數（自由現金流為負時，<12 紅、<24 黃）、負債／EBITDA（>6 紅、>4 黃）、長期負債年增 >100%（黃）、"
+             "Merton 一年違約機率（Bharath–Shumway 2008 簡化版，≥20% 紅、≥5% 黃）；現金多於負債的公司不看利息與槓桿。"
+             "銀行：證券評價損失（AOCI 加上持有到期債券的帳外損失）／股東權益（≤ −40% 紅、≤ −25% 黃）、"
+             "股東權益／總資產（<5% 紅、<7% 黃）、存款季減（≥10% 紅、≥5% 黃）、3 個月相對區域銀行 ETF KRE（≤ −35 紅、≤ −20 黃）。"
+             "私募信貸 BDC：負債／淨值（>1.75 紅、>1.25 黃）。全部：距 52 週高點跌幅（≥70% 紅、≥50% 黃）。",
+             "Each metric is ok / watch (1 pt) / alert (2 pts); ≥5 pts alert, ≥3 watch. Hard SEC filings (8-K 1.03, 2.04, 4.02, NT 10-K) alert directly.")
+    check = T("歷史驗證（用當時已公布的財報）：2022 年底的數字裡，矽谷銀行 SVB 的證券評價損失是股東權益的 −107%（紅），"
+              "Zions 是 −64%（紅），兩者都在 2023 年 3 月銀行危機中重挫或倒閉；PacWest 的財報指標仍正常（它是之後的存款擠兌，財報來不及反映，"
+              "只有股價訊號抓得到）。門檻來自學術文獻與信用分析慣例，未在本系統做完整回測。",
+              "Point-in-time check: SVB's year-end-2022 unrealised losses were −107% of equity (alert); Zions −64% (alert). PacWest looked normal "
+              "(its run came later). Thresholds are from the literature, not fitted here.")
+    note = T("資料：SEC XBRL 財報（companyfacts）、SEC 申報清單（submissions）、本站股價。財報一季才更新一次，"
+             "股價與 8-K 申報每天更新。不用新聞，也不用分析師評等。公司進入紅燈會推 Discord。這是財務體質的警訊，不是破產預測，也不是投資建議。",
+             "SEC XBRL, SEC filings, prices. No news. A financial-health warning, not a bankruptcy forecast or investment advice.")
+    return card("企業危機雷達：破產與財務危機警訊", "Corporate distress radar",
+                head + top + rest + f'<p class="small muted">{T("規則", "Rule")}：{rule}</p><p class="small muted">{check}</p><p class="note">{note}</p>',
+                "wide", sub=T("科技（AI 基礎建設舉債）、銀行、私募信貸：財報、股價、SEC 申報", "Tech, banks, private credit: filings, prices, SEC"))
+
+
 # ----------------------------------------------------------------- time machine
 def sec_timemachine(eng) -> str:
     note = T("每天美股收盤後（台北時間早上）自動存一份當天的重點數據快照：壓力指數、風險階段、Gamma、暗池、估值分級、各市場評分前段班與 AI 評論。"

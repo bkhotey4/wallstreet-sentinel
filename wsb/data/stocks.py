@@ -43,7 +43,9 @@ def theme_names() -> Dict[str, str]:
 
 def all_symbols() -> List[str]:
     u = universe()
-    return list(dict.fromkeys([s for m in u.values() for s in m["symbols"]] + [m["bench"] for m in u.values() if m.get("bench")]))
+    from ..analytics.distress import extra_symbols          # 企業危機雷達觀察名單：只抓價格，不進個股評分
+    return list(dict.fromkeys([s for m in u.values() for s in m["symbols"]] + [m["bench"] for m in u.values() if m.get("bench")]
+                              + extra_symbols()))
 
 
 def _extract(df: pd.DataFrame, field: str, tickers: List[str]) -> pd.DataFrame:

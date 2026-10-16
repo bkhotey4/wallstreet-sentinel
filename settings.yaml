@@ -560,6 +560,46 @@ intel:
     warmup_news_weight: 0.5     # 新聞基準不足時，情報支柱權重打折
   # channels: 可覆寫各傳導路徑的關鍵字 {路徑名: {risk: [...], relief: [...]}}，路徑名需與衝擊雷達一致
 
+# ---------- 企業危機雷達（財報＋股價＋SEC 申報；不用新聞） ----------
+# 個股評分池的美股（公用事業／電信除外）會自動納入；下面是額外觀察的名單（只抓價格與 SEC 資料，不進個股評分）
+# kind：tech＝一般企業指標（Altman Z''、利息保障、現金可撐、負債/EBITDA、Merton 違約機率）
+#       bank＝銀行指標（未實現損失/權益、權益/資產、存款變化、相對 KRE）　credit＝BDC／私募信貸（負債/淨值）
+distress:
+  enabled: true
+  budget_s: 90                # 每次更新最多花幾秒抓 SEC（抓不完下次接著抓，最久沒更新的優先）
+  balance_ttl_h: 168          # 資產負債表多久重抓（有新 10-Q／10-K 時會提早）
+  filings_ttl_h: 12           # SEC 申報警訊多久重抓
+  filing_days: 120            # 8-K 警訊看最近幾天（破產 1.03 固定看一年）
+  watch:
+    tech:
+      CRWV: CoreWeave
+      NBIS: Nebius
+      APLD: Applied Digital
+      IREN: IREN
+      CIFR: Cipher Mining
+      WULF: TeraWulf
+    bank:
+      ZION: Zions
+      WAL: Western Alliance
+      KEY: KeyCorp
+      CFG: Citizens Financial
+      FITB: Fifth Third
+      HBAN: Huntington
+      RF: Regions
+      TFC: Truist
+      USB: U.S. Bancorp
+      PNC: PNC
+      FLG: Flagstar
+      EWBC: East West Bancorp
+      VLY: Valley National
+      BKU: BankUnited
+      FHN: First Horizon
+    credit:
+      ARCC: Ares Capital
+      OBDC: Blue Owl Capital
+      BXSL: Blackstone Secured Lending
+      FSK: FS KKR Capital
+
 # ---------- 個股評分表（技術面＋情報面；量化篩選，不是買賣建議） ----------
 stockscore:
   enabled: true

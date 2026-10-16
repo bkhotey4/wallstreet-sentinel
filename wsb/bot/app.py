@@ -576,6 +576,38 @@ class Sentinel(commands.Bot):
                 store.kv_set(k, True)
         return out
 
+    def _distress_alerts(self) -> List[Alert]:
+        """Corporate distress radar: one alert when a company ENTERS red (re-armed only once it is back to no light),
+        plus every new hard SEC red-flag filing.  The first run only records a baseline (no burst on deploy)."""
+        out = []
+        dz = getattr(self.engine, "distress", None) or {}
+        if not A.get("distress_alerts", True) or not dz.get("available"):
+            return out
+        first = store.kv_get("distress_baseline") is None
+        for r in dz["rows"]:
+            k = f"distress_armed:{r['sym']}"
+            armed = store.kv_get(k)
+            armed = True if armed is None else bool(armed)
+            bad = [s for s in r["signals"] if s["state"] != "ok"]
+            for s in bad:
+                if s.get("hard"):
+                    fk = f"distress_filing:{r['sym']}:{s['id']}:{s['txt'][:10]}"
+                    if first:
+                        store.kv_set(fk, True)
+                    elif not store.kv_get(fk) and not store.alert_sent(fk):
+                        out.append(Alert(fk, "🚨 CRITICAL", f"🏚️ SEC 警訊申報：{r['zh']}（{r['sym']}）", s["txt"] + (f"｜{s['url']}" if s.get("url") else "")))
+            key = f"distress:{r['sym']}:{r.get('bs_end') or 'na'}"
+            if r["state"] == "alert" and armed and (first or store.alert_sent(key)):
+                store.kv_set(k, False)                     # delivered (or baseline) → disarm until the light is off again
+            elif r["state"] == "alert" and armed:
+                out.append(Alert(key, "⚠️ WARNING", f"🏚️ 企業危機雷達紅燈：{r['zh']}（{r['sym']}）",
+                                 "；".join(f"{s['zh']} {s['txt']}" for s in bad[:5])[:900]))
+            elif r["state"] == "ok" and not armed:
+                store.kv_set(k, True)
+        if first:
+            store.kv_set("distress_baseline", dz.get("asof") or True)
+        return out
+
     def _market_alerts(self) -> List[Alert]:
         eng, out = self.engine, []
         st = eng.stress
@@ -616,6 +648,7 @@ class Sentinel(commands.Bot):
                              f"異常波動：{names.get(t, t)} ({t}) {q['chg_pct']:+.2f}%（{sg:+.1f}σ）",
                              f"現價 {q['price']:.4g} · 自身60日波動的 {abs(sg):.1f} 倍"))
         out += self._canary_alerts()
+        out += self._distress_alerts()
         vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
         inverted = bool(vix and v3 and vix["price"] > v3["price"])
         was = store.kv_get("vix_inverted")

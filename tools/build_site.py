@@ -1095,7 +1095,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("mood", "情緒與警報", "Mood & alarms", [S4.sec_fg, S4.sec_em, S4.sec_rules, S4.sec_geo]),
-            ("risk", "風險模型", "Risk model", [S2.sec_canary, sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
+            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("bonds", "美債", "Treasuries", [S2.sec_bonds]),
