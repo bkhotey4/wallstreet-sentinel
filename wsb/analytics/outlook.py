@@ -81,9 +81,10 @@ def recession(fred) -> Dict:
     if len(ic) >= 60:
         ma4 = ic.rolling(4).mean().dropna()
         low52 = ma4.iloc[-52:].min()
-        rise = (ma4.iloc[-1] / low52 - 1) * 100 if low52 else 0.0
-        s_claims = _clip(rise / 20 * 70)             # +20% above the 52-week low has preceded past recessions
-        ev.append(f"初領失業金 4 週均 {ma4.iloc[-1] / 1000:.0f}K，比一年低點 {rise:+.0f}%（≥+20% 為歷史警訊）")
+        rise = (ma4.iloc[-1] / low52 - 1) * 100 if low52 else None
+        s_claims = _clip(rise / 20 * 70) if rise is not None else None   # rule: +20% above the 52-week low → 70
+        ev.append(f"初領失業金 4 週均 {ma4.iloc[-1] / 1000:.0f}K，比一年低點 " + (f"{rise:+.0f}%" if rise is not None else "—")
+                  + "（本模型以 ≥ +20% 為警示門檻，規則參數）")
     parts = [(0.5, prob), (0.3, s_sahm), (0.2, s_claims)]
     parts = [(w, v) for w, v in parts if v is not None]
     score = sum(w * v for w, v in parts) / sum(w for w, _ in parts) if parts else None
@@ -100,7 +101,8 @@ def recession(fred) -> Dict:
 def crisis(st, odds: Dict) -> Dict:
     if st is None:
         return _dim("crisis", "金融海嘯／崩跌", "Crisis & crash", None, ["壓力指數尚未計算"])
-    ev = [f"系統性壓力指數 SSI {st.score:.0f}/100（{st.label}），歷史百分位 {st.pctile_all or 0:.0f}%，20 日 {st.chg_20d or 0:+.1f}"]
+    ev = [f"系統性壓力指數 SSI {st.score:.0f}/100（{st.label}），歷史百分位 "
+          + (f"{st.pctile_all:.0f}%" if st.pctile_all is not None else "—") + "，20 日 " + (f"{st.chg_20d:+.1f}" if st.chg_20d is not None else "—")]
     fcs = []
     for h in (odds or {}).get("horizons", []):
         p = h.get("adjusted") if h.get("adjusted") is not None else h.get("conditional")
@@ -126,12 +128,15 @@ def credit(fred) -> Dict:
     hy = fred.latest("BAMLH0A0HYM2")
     phase = None
     if hy:
-        lvl, chg = hy.get("pctile_3y"), (hy.get("chg_3m") or 0.0) * 100
-        ev.append(f"高收益債利差 {hy['value']:.2f}%（3 年百分位 {lvl or 0:.0f}%，3 個月 {chg:+.0f}bp；資料至 {hy.get('date', '—')}）")
+        lvl = hy.get("pctile_3y")
+        chg = hy["chg_3m"] * 100 if hy.get("chg_3m") is not None else None
+        ev.append(f"高收益債利差 {hy['value']:.2f}%（3 年百分位 " + (f"{lvl:.0f}%" if lvl is not None else "—")
+                  + "，3 個月 " + (f"{chg:+.0f}bp" if chg is not None else "—") + f"；資料至 {hy.get('date', '—')}）")
         if lvl is not None:
             parts.append(lvl)
-        parts.append(_clip(50 + chg / 150 * 50))       # +150bp in 3 months → 100
-        rising = chg > 25
+        if chg is not None:
+            parts.append(_clip(50 + chg / 150 * 50))   # rule: +150bp in 3 months → 100 (missing → not scored)
+        rising = chg is not None and chg > 25
         if lvl is not None:
             phase = ("收縮（利差高且擴大）" if lvl >= 60 and rising else "修復（利差高但收斂）" if lvl >= 60 else
                      "轉折（利差從低檔擴大）" if rising else "過熱（利差極低，風險被低估）" if lvl <= 10 else "擴張（利差低且穩定）")
@@ -192,7 +197,8 @@ def earnings(te: Dict) -> Dict:
     if not se.get("n"):
         return _dim("earnings", "財報循環", "Earnings cycle", None, ["近 45 天財報樣本不足"])
     beat = se["beats"] / se["n"] * 100
-    ev = [f"近 45 天 {se['n']} 家科技／成長公司財報，{beat:.0f}% 超預期，平均驚喜 {se.get('avg_surp') or 0:+.1f}%"]
+    ev = [f"近 45 天 {se['n']} 家科技／成長公司財報，{beat:.0f}% 超預期，平均驚喜 "
+          + (f"{se['avg_surp']:+.1f}%" if se.get("avg_surp") is not None else "—")]
     score = _clip((85 - beat) * 2 + 20)               # 85% beat → 20 (healthy), 60% → 70 (deteriorating)
     react = se.get("avg_react")
     if react is not None:

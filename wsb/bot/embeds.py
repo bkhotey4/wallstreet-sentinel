@@ -158,7 +158,8 @@ def options(engine) -> discord.Embed:
     if not op:
         e.description = "CBOE 資料載入中或失敗"
         return footer(e, engine)
-    regime = "正 Gamma：造市商逆勢避險，波動被壓抑" if (op.get("gex_usd_bn_per_1pct") or 0) > 0 else "負 Gamma：造市商順勢追殺，波動被放大 ⚠️"
+    gx = op.get("gex_usd_bn_per_1pct")
+    regime = ("Gamma 資料缺" if gx is None else "正 Gamma：造市商逆勢避險，波動被壓抑" if gx > 0 else "負 Gamma：造市商順勢追殺，波動被放大 ⚠️")
     e.description = (f"SPX `{f(op['spot'],0)}` · 零Gamma翻轉點 **{f(op.get('zero_gamma'),0)}**（現價相對 {f(op.get('spot_vs_flip_pct'),2,sign=True,pct=True)}）\n"
                      f"GEX **{f(op.get('gex_usd_bn_per_1pct'),2,sign=True)} bn/1%** → {regime}\n"
                      f"Call Wall {f(op.get('call_wall'),0)} · Put Wall {f(op.get('put_wall'),0)}\n"

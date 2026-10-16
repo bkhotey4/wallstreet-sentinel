@@ -127,6 +127,42 @@ def _beta(eng) -> Dict[str, float]:
     return out
 
 
+def _sym_stats(eng) -> Dict[str, Dict[str, float]]:
+    """Per-symbol 2-year weekly beta vs the S&P 500 and 60-day daily volatility (%), from price history."""
+    import numpy as np
+    import pandas as pd
+    out_b, out_v = {}, {}
+    try:
+        h = getattr(eng.market, "history", None)
+        frames = [h] if h is not None and not h.empty else []
+        sp = getattr(getattr(eng, "stockprices", None), "close", None)
+        if sp is not None and not sp.empty:
+            frames.append(sp)
+        if not frames:
+            return {"beta": {}, "vol": {}}
+        allp = pd.concat(frames, axis=1)
+        allp = allp.loc[:, ~allp.columns.duplicated()]
+        m = eng.market.series("^GSPC").dropna()
+        if not len(m):
+            return {"beta": {}, "vol": {}}
+        cut = m.index[-1] - pd.Timedelta(days=730)
+        mw = m[m.index >= cut].resample("W-FRI").last().pct_change(fill_method=None)
+        for c in allp.columns:
+            x = allp[c].dropna()
+            if len(x) < 70 or str(c).startswith("^") or "=" in str(c):
+                continue
+            r = x.pct_change(fill_method=None).dropna().iloc[-60:]
+            if len(r) >= 40:
+                out_v[c] = round(float(r.std() * 100), 3)
+            w = x[x.index >= cut].resample("W-FRI").last().pct_change(fill_method=None)
+            j = pd.concat([w, mw], axis=1).dropna()
+            if len(j) >= 40 and j.iloc[:, 1].var() > 0:
+                out_b[c] = round(float(j.cov().iloc[0, 1] / j.iloc[:, 1].var()), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    return {"beta": out_b, "vol": out_v}
+
+
 def _earn(eng) -> list:
     """Upcoming reports (Nasdaq calendar) + options-implied move (CBOE straddle) where available."""
     te = getattr(eng, "techearn", None)
@@ -147,7 +183,8 @@ def _earn(eng) -> list:
 def sec_portfolio(eng) -> str:
     gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
     data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng),
-                       "earn": _earn(eng), "crisis": _crisis(eng), "beta": _beta(eng)}, ensure_ascii=False,
+                       "earn": _earn(eng), "crisis": _crisis(eng), "beta": _beta(eng),
+                       "sym": _sym_stats(eng)}, ensure_ascii=False,
                       separators=(",", ":")).replace("</", "<\\/")
     priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
              "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
@@ -331,12 +368,17 @@ function ph(){var P={n:['股數','Shares'],c:['每股成本（選填）','Cost p
 // Sector categories for risk, beta, crisis shocks.  b = measured 2y weekly beta of the proxy (server side);
 // a category without data is treated like the market (1.0)
 var PB = PUB.beta || {};
-function BETA(k){ return PB[k] != null ? PB[k] : 1.0; }
+function BETA(k){ return PB[k] != null ? PB[k] : null; }   // no measured beta → null (shown as —, never a guess)
+var SB = (PUB.sym || {}).beta || {}, SV = (PUB.sym || {}).vol || {};
+function _symLookup(map, sym){ var n = norm(sym); var c = n ? n.cands.concat([n.key]) : [String(sym || '').toUpperCase()];
+ for(var i = 0; i < c.length; i++){ if(map[c[i]] != null) return map[c[i]]; } return null; }
+function symBeta(sym){ return _symLookup(SB, sym); }
+function symVol(sym){ return _symLookup(SV, sym); }
 var SECS = [
  { k: 'semi', zh: '半導體設備', en: 'Semiconductors', c: '#00d2ff', b: BETA('semi'),
    syms: ['KLAC','TSM','NVDA','ASML','AMAT','LRCX','INTC','AMD','AVGO','QCOM','MU','TXN','MRVL','ON','MPWR','2330','2454','3034','2379','3443','3661','6415','SMH','SOXX'] },
  { k: 'tech', zh: '科技與雲端', en: 'Tech & Cloud', c: '#3a86ff', b: BETA('tech'),
-   syms: ['GOOG','GOOGL','MSFT','AAPL','AMZN','META','ORCL','CRM','ADBE','NOW','UBER','NFLX','QQQ','SPY'] },
+   syms: ['GOOG','GOOGL','MSFT','AAPL','AMZN','META','ORCL','CRM','ADBE','NOW','UBER','NFLX','QQQ'] },
  { k: 'fin', zh: '金融數位', en: 'FinTech & Banks', c: '#06d6a0', b: BETA('fin'),
    syms: ['NU','JPM','BAC','WFC','C','GS','MS','V','MA','PYPL','COIN','SOFI','KRE','XLF','2881','2882','2891'] },
  { k: 'front', zh: '前沿與能源', en: 'Frontier & Energy', c: '#ffbe0b', b: BETA('front'),
@@ -426,7 +468,8 @@ function gsync(){if(G.busy||!G.on)return;G.busy=true;gmsg('同步中…','Syncin
  var local=get();local.updated=local.updated||0;
  gfind().then(function(f){if(!f)return gwrite(local).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});
   return gread().then(function(remote){remote=remote&&Array.isArray(remote.h)?remote:{v:1,h:[],cash:[],nav:[],updated:0};
-   if((remote.updated||0)>(local.updated||0)){put(remote);render();gmsg('已從 Google 雲端硬碟載入 '+new Date(remote.updated).toLocaleString(),'Loaded from Google Drive '+new Date(remote.updated).toLocaleString(),'ok');}
+   if((remote.updated||0)>(local.updated||0)){var nv={};(remote.nav||[]).concat(local.nav||[]).forEach(function(p){if(p&&p.d)nv[p.d]=p;});
+    remote.nav=Object.keys(nv).sort().map(function(k){return nv[k];}).slice(-400);put(remote);render();gmsg('已從 Google 雲端硬碟載入 '+new Date(remote.updated).toLocaleString(),'Loaded from Google Drive '+new Date(remote.updated).toLocaleString(),'ok');}
    else if((local.updated||0)>(remote.updated||0)){return gwrite(local).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});}
    else gmsg('已同步（無變更）','In sync','ok');});})
  .catch(function(e){gmsg('同步失敗：'+e.message,'Sync failed: '+e.message,'err');if(e.message==='401')G.tok=null;})
@@ -468,7 +511,7 @@ function calcBackcastNav(d, tot, FM){
  var cashT = 0;
  (d.cash || []).forEach(function(c){
   var f = fxv(c.cur);
-  if(f != null && c.a > 0) cashT += c.a * f;
+  if(f != null) cashT += c.a * f;                 // same as the live total (negative = borrowing)
  });
 
  var pts = [];
@@ -502,7 +545,7 @@ function calcBackcastNav(d, tot, FM){
 function _mktDay(){ try{ return new Date().toLocaleDateString('en-CA', {timeZone: 'America/New_York'}); }catch(e){ return new Date().toISOString().slice(0, 10); } }
 function _dms(s){ return Date.parse(s + 'T00:00:00Z'); }
 function _addDays(s, n){ return new Date(_dms(s) + n * 86400000).toISOString().slice(0, 10); }
-function renderNav(d, tot, FM){
+function renderNav(d, tot, FM, complete){
  var x = document.getElementById('pfnavbox');
  if(!x) return;
  x.textContent = '';
@@ -514,8 +557,11 @@ function renderNav(d, tot, FM){
  var today = _mktDay();
  var last = d.nav[d.nav.length - 1];
  var changed = false;
- if(!last || last.d !== today){ d.nav.push({d: today, v: Math.round(tot)}); changed = true; }
- else if(Math.abs((last.v || 0) - tot) >= 1){ last.v = Math.round(tot); changed = true; }
+ // only a complete total (every holding priced, FX available) becomes a daily record — a partial one would look like a crash
+ if(complete !== false){
+  if(!last || last.d !== today){ d.nav.push({d: today, v: Math.round(tot)}); changed = true; }
+  else if(Math.abs((last.v || 0) - tot) >= 1){ last.v = Math.round(tot); changed = true; }
+ }
  if(d.nav.length > 400){ d.nav = d.nav.slice(-400); changed = true; }
  if(changed){ _put(d); }
 
@@ -541,7 +587,7 @@ function renderNav(d, tot, FM){
   var b = el('button', 'pfnav-pill' + (rng === o[0] ? ' on' : ''));
   b.type = 'button';
   b.appendChild(L(o[1], o[2]));
-  b.addEventListener('click', function(){ window._navRange = o[0]; renderNav(d, tot, FM); });
+  b.addEventListener('click', function(){ window._navRange = o[0]; renderNav(d, tot, FM, complete); });
   pills.appendChild(b);
  });
  tit.appendChild(pills);
@@ -569,6 +615,7 @@ function renderNav(d, tot, FM){
  x.appendChild(head);
 
  var hint = el('div', 'pfnav-hint');
+ if(complete === false){ var hw = el('div', 'pfwarn small'); hw.appendChild(L('⚠️ 今天的總資產不完整（有持股缺報價或匯率），沒有寫入每日紀錄。', '⚠️ Today\'s total is incomplete (missing price/FX); not recorded.')); x.appendChild(hw); }
  if(nEst){
   hint.appendChild(L('💡 實心點＝實際每日紀錄（' + nLive + ' 天）；空心點＝估算：假設目前持股與現金在那幾天都沒變，用當天收盤價回推，不是實際交易紀錄。',
                      'Filled = actual daily record (' + nLive + '); hollow = estimate assuming today\'s holdings were unchanged.'));
@@ -672,12 +719,11 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
    // Feature 3: Dynamic Stop & Profit Targets column
    var stopTd = td('', 'r');
    var box = el('div', 'pft-stop');
-   var symKey = ((p && p.sym) || h.s || '').toUpperCase().replace(/\.(TW|TWO)$/,'');
-   var stopPct = 0.10, tgtPct = 0.18;
-   if(['SPCX','OKLO','SMR','PLTR','IONQ'].indexOf(symKey)>=0){ stopPct = 0.15; tgtPct = 0.30; }
-   else if(['KLAC','TSM','NVDA','ASML','AMAT','AMD','AVGO','2330','SMH'].indexOf(symKey)>=0){ stopPct = 0.12; tgtPct = 0.22; }
-   else if(['JNJ','PG','KO','MCD','TLT','BND'].indexOf(symKey)>=0){ stopPct = 0.08; tgtPct = 0.12; }
-   if(h.c > 0){
+   // rule: stop distance = 2.5 × the stock's 60-day daily volatility × √10 (≈ a 2-week 2.5σ move), target = 2 × that
+   var sv = symVol((p && p.sym) || h.s);
+   var stopPct = sv != null ? Math.min(0.35, Math.max(0.03, 2.5 * sv / 100 * Math.sqrt(10))) : null, tgtPct = stopPct != null ? 2 * stopPct : null;
+   if(stopPct == null){ box.appendChild(el('span', 'muted', '—')); }
+   else if(h.c > 0){
     var cost = h.c;
     var stopPx = p.px >= cost ? Math.max(cost, p.px * (1 - stopPct)) : (cost * (1 - stopPct));
     var tgtPx = cost * (1 + tgtPct);
@@ -699,7 +745,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
    } else {
     var stopPx2 = p.px * (1 - stopPct);
     var stpLine2 = el('span', 's-stp');
-    stpLine2.appendChild(L('防 ' + num(stopPx2, 1) + ' (-' + Math.round(stopPct*100) + '%)', 'Stp ' + num(stopPx2, 1)));
+    stpLine2.appendChild(L('防 ' + num(stopPx2, 1) + ' (-' + Math.round(stopPct*100) + '%)', 'Stp ' + num(stopPx2, 1) + ' (-' + Math.round(stopPct*100) + '%)'));
     box.appendChild(stpLine2);
    }
    stopTd.appendChild(box);
@@ -722,7 +768,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+(FXOK?num(FX.USD,3)+'（'+(FX.asof||'日期不明')+'）':'匯率缺'),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+(FXOK?num(FX.USD,3)+' ('+(FX.asof||'date n/a')+')':'unavailable')]
   :['尚未輸入持股：在下方新增，或用「一次貼上多筆」','No holdings yet — add some below or paste many at once']);
 
- renderNav(d, tot, FM);
+ renderNav(d, tot, FM, miss === 0 && !cashMiss && rows.every(function(r){ return r.vt != null; }));
  renderDx(rows, tot, totV, cashT);
 }
 
@@ -741,7 +787,7 @@ function renderDx(rows, tot, totV, cashT){
  x.style.display = 'block';
  if(!tot) tot = 1;
 
- var secW = {}, pfBeta = 0;
+ var secW = {}, pfBeta = 0, covB = 0;
  SECS.forEach(function(s){ secW[s.k] = 0; });
  secW.other = 0;
  secW.cash = cashT / tot;
@@ -753,13 +799,16 @@ function renderDx(rows, tot, totV, cashT){
    if(SECS[i].syms.indexOf(key) >= 0 || SECS[i].syms.indexOf(sym) >= 0){ found = SECS[i]; break; }
   }
   var w = (r.vt || 0) / tot;
-  if(found){ secW[found.k] += w; pfBeta += w * found.b; }
-  else { secW.other += w; pfBeta += w * 1.1; }
+  if(found){ secW[found.k] += w; } else { secW.other += w; }
+  var b = symBeta(sym); if(b == null && found) b = found.b;
+  if(b != null){ pfBeta += w * b; covB += w; }
  });
- var top1 = rows[0] ? (rows[0].vt / tot * 100) : 0;
+ covB += secW.cash;                                        // cash: beta 0, known
+ pfBeta = covB >= 0.5 ? pfBeta / covB : null;             // beta of the part we can measure; too little → none
+ var top1 = rows[0] ? ((rows[0].vt || 0) / tot * 100) : 0;
  var top1Sym = rows[0] ? ((rows[0].p && rows[0].p.sym) || rows[0].h.s) : '—';
  var top3 = 0;
- for(var i=0; i<Math.min(3, rows.length); i++){ top3 += (rows[i].vt / tot * 100); }
+ for(var i=0; i<Math.min(3, rows.length); i++){ top3 += ((rows[i].vt || 0) / tot * 100); }
  var cashPct = cashT / tot * 100;
  var semiTechPct = ((secW.semi || 0) + (secW.tech || 0)) * 100;
 
@@ -771,16 +820,17 @@ function renderDx(rows, tot, totV, cashT){
 
  var k1 = el('div', 'pfdx-k');
  k1.appendChild(el('div', 'lbl')).appendChild(L('組合風險屬性', 'Risk Profile'));
- var isAgg = pfBeta >= 1.35 || semiTechPct >= 50;
- var isBal = cashPct >= 15 && top1 <= 25 && pfBeta < 1.15;
+ var isAgg = (pfBeta != null && pfBeta >= 1.35) || semiTechPct >= 50;
+ var isBal = cashPct >= 15 && top1 <= 25 && pfBeta != null && pfBeta < 1.15;
  var val1 = k1.appendChild(el('div', 'val ' + (isAgg ? 'dn' : (isBal ? 'up' : 'warn'))));
  val1.appendChild(isAgg ? L('高波動進攻型', 'Aggressive Growth') : (isBal ? L('穩健平衡型', 'Balanced Defensive') : L('成長型', 'Moderate Growth')));
- k1.appendChild(el('div', 'sub')).appendChild(L('預估整體 Beta: ' + num(pfBeta, 2), 'Estimated Beta: ' + num(pfBeta, 2)));
+ k1.appendChild(el('div', 'sub')).appendChild(L('預估整體 Beta: ' + (pfBeta != null ? num(pfBeta, 2) + '（涵蓋 ' + num(covB * 100, 0) + '% 資產）' : '—（可量測的持股不足一半）'),
+                                                'Estimated Beta: ' + (pfBeta != null ? num(pfBeta, 2) + ' (covers ' + num(covB * 100, 0) + '%)' : '— (too few measurable holdings)')));
  grid.appendChild(k1);
 
  var k2 = el('div', 'pfdx-k');
  k2.appendChild(el('div', 'lbl')).appendChild(L('壓力情境推估', 'Stress Scenario'));
- var val2 = k2.appendChild(el('div', 'val dn', '-' + num(pfBeta * 5, 1) + '%'));
+ var val2 = k2.appendChild(el('div', 'val dn', pfBeta != null ? '-' + num(pfBeta * 5, 1) + '%' : '—'));
  k2.appendChild(el('div', 'sub')).appendChild(L('大盤若跌 5% 預估回撤', 'Expected drop if SPX -5%'));
  grid.appendChild(k2);
 
@@ -832,43 +882,28 @@ function renderDx(rows, tot, totV, cashT){
  }
  if(top1 > 25){
   addItem('bad', '🔴',
-   '【單一持股過度集中】' + top1Sym + ' 佔比高達 ' + num(top1, 1) + '%（警戒線 25%）。單一個股遭遇黑天鵝或財報暴跌將重創總淨值。',
-   '[High Concentration] ' + top1Sym + ' takes ' + num(top1, 1) + '% of total assets (>25% threshold). A single-stock shock will severely impact NAV.');
+   '【單一持股集中】' + top1Sym + ' 佔總資產 ' + num(top1, 1) + '%，高於本頁的 25% 參考線（固定規則，非統計）。這檔股價每變動 10%，總資產約變動 ' + num(top1 / 10, 1) + '%。',
+   '[Concentration] ' + top1Sym + ' is ' + num(top1, 1) + '% of assets, above this page\'s 25% reference line. A 10% move in it moves the total by ~' + num(top1 / 10, 1) + '%.');
  }
  if(semiTechPct > 50){
   addItem('bad', '🔴',
-   '【產業高度同質性風險】半導體與科技族群合計高達 ' + num(semiTechPct, 1) + '%。持股高度同向連動，實質分散風險效果有限，回檔時防禦力偏弱。',
-   '[Sector Risk] Semis and Tech total ' + num(semiTechPct, 1) + '%. Highly correlated exposure limits true diversification.');
+   '【產業集中】半導體與科技合計 ' + num(semiTechPct, 1) + '%，高於本頁的 50% 參考線。同一族群的股票通常同向漲跌。',
+   '[Sector concentration] Semis + tech = ' + num(semiTechPct, 1) + '%, above this page\'s 50% reference line; same-sector stocks tend to move together.');
  }
  if(cashPct < 5){
   addItem('warn', '🟡',
-   '【流動性緩衝匱乏】現金水位僅 ' + num(cashPct, 1) + '%（全額滿水位進攻）。缺乏抗震緩衝與市場大回檔時逢低加碼之籌碼，建議保有 5%~15% 現金。',
-   '[Zero Cash Buffer] Cash is only ' + num(cashPct, 1) + '%. No dry powder to buy market dips.');
+   '【現金比例】現金 ' + num(cashPct, 1) + '%，低於本頁的 5% 參考線。',
+   '[Cash] Cash is ' + num(cashPct, 1) + '%, below this page\'s 5% reference line.');
  }
  var deepLoss = rows.filter(function(r){ return r.ret != null && r.ret <= -15; });
  if(deepLoss.length){
   var names = deepLoss.map(function(r){ return ((r.p && r.p.sym) || r.h.s) + ' (' + sgn(r.ret, 1, true) + ')'; }).join('、');
   addItem('warn', '🟠',
-   '【高波動持股回撤檢視】' + names + ' 帳面跌幅已超 15%。若屬小型主題投機部位，建議設定明確停損點防守，避免虧損持續擴大。',
-   '[Drawdown Warning] Deep unrealized loss in ' + names + '. Re-evaluate thesis and enforce strict risk stops.');
+   '【帳面虧損超過 15%】' + names + '。',
+   '[Unrealized loss over 15%] ' + names + '.');
  }
- if(top1 > 25){
-  var trimTwd = Math.round((top1 - 22) / 100 * tot);
-  addItem('act', '🎯',
-   '【再平衡建議：分批鎖利降權】建議趁目前處於獲利保護傘，分批減碼 ' + top1Sym + ' 至 22% 左右（約需減碼 NT$ ' + num(trimTwd, 0) + '），降低單一個股黑天鵝衝擊。',
-   '[Action: Profit-taking] Consider trimming ' + top1Sym + ' down to ~22% (approx NT$ ' + num(trimTwd, 0) + ') to lock in gains and de-risk.');
- }
- if(cashPct < 10){
-  var targetCash = Math.round(tot * 0.1);
-  addItem('act', '🎯',
-   '【再平衡建議：建立 10% 現金儲備】建議將獲利了結資金保留為現金，建立約 NT$ ' + num(targetCash, 0) + '（10%）的流動性防守墊，提升投資組合抗震力。',
-   '[Action: Build Cash] Retain trim proceeds as cash to build a ~NT$ ' + num(targetCash, 0) + ' (10%) liquidity buffer.');
- }
- if(semiTechPct > 50){
-  addItem('act', '🎯',
-   '【再平衡建議：引進低相關資產】未來新增資金建議避開半導體，優先配置大盤 ETF（如 SPY / 0050）、高股息或公債，平滑整體波動。',
-   '[Action: Diversify] Allocate new capital into non-tech defensive assets (broad market ETFs, high dividend, Treasuries) to reduce portfolio Beta.');
- }
+ addItem('act', 'ℹ️', '以上是依固定參考線的描述，不是買賣建議；要怎麼調整由你自己決定，或與持牌理財顧問討論。下方 What-if 只做試算，不會動到帳戶。',
+         'Descriptions against fixed reference lines, not advice. The What-if below is a calculation only.');
  x.appendChild(list);
 
  renderCrisis(rows, tot, totV, cashT);
@@ -882,29 +917,29 @@ var CRISES = [
  {
   id: 'yen2024',
   zh: '2024.08.05 日圓套息平倉股災', en: '2024 Yen Carry Unwind',
-  descZh: '日銀突擊升息引發全球千億美元套息交易無差別踩踏撤離，半導體與高估值科技單週重挫。',
-  descEn: 'BOJ surprise hike sparked mass unwind of carry trades; semis and high-beta tech crushed.',
+  descZh: '日銀 7 月底升息、日圓急升，引發日圓套利交易平倉；8 月 5 日日經單日重挫逾 12%，半導體與高估值科技跌幅最深。',
+  descEn: 'BOJ hike and a sharp yen rally triggered a carry-trade unwind; the Nikkei fell over 12% on Aug 5.',
   shocks: (CS.yen2024 || {}).shocks
  },
  {
   id: 'fed2022',
   zh: '2022 激進升息科技熊市', en: '2022 Fed Tech Bear',
-  descZh: '通膨破 9% 聯準會一年升息 17 碼，高本益比成長股、半導體與小型題材概念股全面腰斬。',
-  descEn: 'Fed hiked 425bps in a single year against 9%+ inflation; high multiple growth wiped out.',
+  descZh: '美國 CPI 年增率 2022 年 6 月達 9.1%，聯準會 2022 年全年升息 425bp。跌幅統計期間為 2022-01-03 至 2022-10-12。',
+  descEn: 'US CPI peaked at 9.1% (Jun-2022); the Fed hiked 425bp during 2022. Window: 2022-01-03 to 2022-10-12.',
   shocks: (CS.fed2022 || {}).shocks
  },
  {
   id: 'covid2020',
   zh: '2020 疫情流動性熔斷', en: '2020 COVID Liquidity Crash',
-  descZh: '美股兩週內四度熔斷，全球流動性瞬間枯竭，避險黃金與債券一度同遭恐慌拋售變現。',
-  descEn: 'US market triggered 4 circuit breakers in 10 days; global dash for cash overwhelmed safe havens.',
+  descZh: '美股 2020 年 3 月 9、12、16、18 日四度觸發熔斷；3 月中黃金與長債也一度和股票同步下跌。',
+  descEn: 'US circuit breakers tripped on Mar 9, 12, 16 and 18, 2020; gold and long bonds also fell with stocks in mid-March.',
   shocks: (CS.covid2020 || {}).shocks
  },
  {
   id: 'gfc2008',
   zh: '2008 次貸金融海嘯', en: '2008 Global Financial Crisis',
-  descZh: '雷曼倒閉引發全球銀行信用體系凍結，百年一遇資產負債表大清算，股市持續崩跌一年半。',
-  descEn: 'Lehman collapse froze global banking credit; multi-year secular bear market and wealth wipeout.',
+  descZh: '2008 年 9 月雷曼倒閉後全球信用凍結；標普從 2007-10 高點跌到 2009-03 低點，約 17 個月。',
+  descEn: 'Credit froze after Lehman (Sep-2008); the S&P fell from its Oct-2007 high to the Mar-2009 low, about 17 months.',
   shocks: (CS.gfc2008 || {}).shocks
  }
 ].filter(function(c){ return c.shocks && c.shocks.other != null; });   // measured from price history; no data → no scenario
@@ -1014,8 +1049,11 @@ function renderCrisis(rows, tot, totV, cashT){
  tip.style.marginTop = '10px';
  tip.appendChild(el('span', 'ico', '💡'));
  var tipDesc = el('div', 'desc');
- tipDesc.appendChild(L('防禦指引：此情境下因高 Beta 科技／半導體權重集中，跌幅擴大約為大盤的 ' + num(dropPct / (crisis.shocks.other * 100 || 1), 1) + ' 倍。可透過下方【What-if 模擬器】調節前兩大重傷標的，降低下檔風險。',
-                       'Action Guide: Concentrated tech/semi exposure amplifies drawdown to ' + num(dropPct / (crisis.shocks.other * 100 || 1), 1) + 'x of broad market. Test rebalancing below.'));
+ var mult = crisis.shocks.other ? dropPct / (crisis.shocks.other * 100) : null;
+ tipDesc.appendChild(L(mult == null ? '這個情境沒有大盤跌幅可比較。' :
+   '此情境下估計跌幅是大盤（標普 ' + num(crisis.shocks.other * 100, 1) + '%）的 ' + num(mult, 1) + ' 倍' +
+   (mult > 1.1 ? '，主要因為下方跌幅較大的類別占比較高。' : (mult < 0.9 ? '，比大盤溫和。' : '，和大盤差不多。')) + '各類別跌幅是當時代表指數的實際最大跌幅。',
+   mult == null ? 'No market drop to compare.' : 'Estimated drop is ' + num(mult, 1) + 'x the S&P\'s in this scenario.'));
  tip.appendChild(tipDesc);
  res.appendChild(tip);
 
@@ -1081,8 +1119,8 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
  var TGTS = [
   { k: 'cash', b: 0.0, zh: '💵 現金防守墊 (Beta 0.0)', en: '💵 Cash Buffer (Beta 0.0)' },
   { k: 'spy', b: 1.0, zh: '📈 標普 500 (SPY - Beta 1.0)', en: '📈 S&P 500 (SPY - Beta 1.0)' },
-  { k: 'tlt', b: BETA('tlt'), zh: '🛡️ 美國長天期公債 (TLT - Beta ' + BETA('tlt').toFixed(2) + ')', en: '🛡️ 20+ Y Treasuries (TLT - Beta ' + BETA('tlt').toFixed(2) + ')' },
-  { k: 'tw50', b: BETA('tw50'), zh: '🇹🇼 台灣加權 (0050 代理 - Beta ' + BETA('tw50').toFixed(2) + ')', en: '🇹🇼 Taiwan (0050 proxy - Beta ' + BETA('tw50').toFixed(2) + ')' }
+  { k: 'tlt', b: symBeta('TLT') != null ? symBeta('TLT') : BETA('tlt'), zh: '🛡️ 美國長天期公債 (TLT - Beta ' + num(symBeta('TLT') != null ? symBeta('TLT') : BETA('tlt'), 2) + ')', en: '🛡️ 20+ Y Treasuries (TLT - Beta ' + num(symBeta('TLT') != null ? symBeta('TLT') : BETA('tlt'), 2) + ')' },
+  { k: 'tw50', b: symBeta('0050') != null ? symBeta('0050') : BETA('tw50'), zh: '🇹🇼 元大台灣 50 (0050 - Beta ' + num(symBeta('0050') != null ? symBeta('0050') : BETA('tw50'), 2) + (symBeta('0050') != null ? '' : '，以加權指數代理') + ')', en: '🇹🇼 Taiwan 50 (0050 - Beta ' + num(symBeta('0050') != null ? symBeta('0050') : BETA('tw50'), 2) + ')' }
  ];
  TGTS.forEach(function(t){
   var opt = document.createElement('option');
@@ -1107,22 +1145,23 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
  for(var i=0; i<SECS.length; i++){
   if(SECS[i].syms.indexOf(selKey) >= 0 || SECS[i].syms.indexOf(selSym) >= 0){ found = SECS[i]; break; }
  }
- var stockBeta = found ? found.b : 1.1;
+ var stockBeta = symBeta(selSym); if(stockBeta == null && found) stockBeta = found.b;
  var tgtObj = TGTS.find(function(t){ return t.k === wiState.target; }) || TGTS[0];
  var targetBeta = tgtObj.b;
 
  var weightShift = tot > 0 ? (trimTwd / tot) : 0;
  var curBeta = pfBeta;
- var newBeta = Math.max(0, curBeta - weightShift * stockBeta + weightShift * targetBeta);
- var betaDiff = newBeta - curBeta;
+ var betaOk = curBeta != null && stockBeta != null && targetBeta != null;
+ var newBeta = betaOk ? Math.max(0, curBeta - weightShift * stockBeta + weightShift * targetBeta) : null;
+ var betaDiff = betaOk ? newBeta - curBeta : 0;
 
  var curTechSemi = ((secW.semi || 0) + (secW.tech || 0)) * 100;
  var isTechSemi = found && (found.k === 'semi' || found.k === 'tech');
  var newTechSemi = isTechSemi ? Math.max(0, curTechSemi - weightShift * 100) : curTechSemi;
 
- var curDrop5 = curBeta * 5;
- var newDrop5 = newBeta * 5;
- var savedLossTwd = Math.max(0, (curDrop5 - newDrop5) / 100 * tot);
+ var curDrop5 = betaOk ? curBeta * 5 : null;
+ var newDrop5 = betaOk ? newBeta * 5 : null;
+ var savedLossTwd = betaOk ? Math.max(0, (curDrop5 - newDrop5) / 100 * tot) : 0;
 
  var comp = el('div', 'pfwhatif-comp');
 
@@ -1138,11 +1177,12 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
   comp.appendChild(c);
  }
 
+ if(!betaOk){ var nb = el('p', 'small muted'); nb.appendChild(L('缺少可量測的 Beta（這檔、目標或整體持股），Beta 與回撤試算顯示為 —。', 'Beta unavailable for this trade; Beta-based figures show —.')); x.appendChild(nb); }
  addCompCard('整體投資組合 Beta', 'Portfolio Beta', num(curBeta, 2), num(newBeta, 2),
              (betaDiff < 0 ? '🟢 降 ' + num(Math.abs(betaDiff), 2) + ' (波動減 ' + num(Math.abs(betaDiff) / (curBeta || 1) * 100, 0) + '%)' : ''), 'up');
  addCompCard('科技與半導體集中度', 'Tech & Semi Exposure', num(curTechSemi, 1) + '%', num(newTechSemi, 1) + '%',
              (newTechSemi < curTechSemi ? '🟢 降 ' + num(curTechSemi - newTechSemi, 1) + '%' : '無變更'), 'up');
- addCompCard('大盤跌 5% 預估回撤', 'Drop if SPX -5%', '-' + num(curDrop5, 1) + '%', '-' + num(newDrop5, 1) + '%',
+ addCompCard('大盤跌 5% 預估回撤', 'Drop if SPX -5%', curDrop5 != null ? '-' + num(curDrop5, 1) + '%' : '—', newDrop5 != null ? '-' + num(newDrop5, 1) + '%' : '—',
              (savedLossTwd > 0 ? '🛡️ 少虧 NT$ ' + num(savedLossTwd, 0) : ''), 'up');
  addCompCard('釋出／轉移資金', 'Reallocated Capital', 'NT$ ' + num(trimTwd, 0), num(weightShift * 100, 1) + '%',
              '佔總資產比率', '');
@@ -1178,8 +1218,12 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
    var mapTicker = { spy: 'SPY', tlt: 'TLT', tw50: '0050' };
    var addSym = mapTicker[tgtObj.k] || 'SPY';
    var tgtP = price({ s: addSym, p: 0 }, gFM[norm(addSym).mk]);
-   var px = tgtP ? tgtP.px : (addSym==='SPY'?600:(addSym==='TLT'?95:180));
-   var fx = FX[cur(norm(addSym).mk)] || 1;
+   var fx = fxv(cur(norm(addSym).mk));
+   if(!tgtP || !(tgtP.px > 0) || fx == null){                // never invent a price or an exchange rate
+    msg(['找不到 ' + addSym + ' 的報價或匯率，無法換算股數；持股沒有變更。', 'No price / FX for ' + addSym + '; nothing was changed.']);
+    return;
+   }
+   var px = tgtP.px;
    var addShares = Math.round((trimTwd / (px * fx)) * 100) / 100;
    upsert(d, addSym, addShares, px);
   }
@@ -1318,7 +1362,7 @@ document.getElementById('pfimp').addEventListener('change',function(e){var f=e.t
   (d.cash||[]).forEach(function(c){if(c&&['TWD','USD','HKD'].indexOf(c.cur)>=0&&isFinite(+c.a))clean.cash.push({cur:c.cur,a:+c.a});});
   if(Array.isArray(d.nav))clean.nav=d.nav;
   put(clean);render();setTimeout(function(){msg(['已匯入 '+clean.h.length+' 檔持股','Imported '+clean.h.length+' holdings']);},50);}catch(x){msg(['檔案格式不對','Invalid file']);}};rd.readAsText(f);e.target.value='';});
-document.getElementById('pfclr').addEventListener('click',function(){if(confirm(en()?'Delete all holdings and cash stored in this browser?':'確定刪除這個瀏覽器裡的所有持股與現金？（建議先匯出備份）')){try{localStorage.removeItem(KEY);}catch(e){}render();}});
+document.getElementById('pfclr').addEventListener('click',function(){if(confirm(en()?'Delete all holdings and cash stored in this browser?':'確定刪除這個瀏覽器裡的所有持股與現金？（建議先匯出備份）')){put({v:1,h:[],cash:[],nav:[]});render();}});   // saved as a newer, empty portfolio so sync cannot restore it
 document.getElementById('langBtn')&&document.getElementById('langBtn').addEventListener('click',function(){setTimeout(render,0);});
 render();})();
 """

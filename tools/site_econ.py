@@ -120,7 +120,7 @@ def _fw_block(eng, cons: Optional[float], rate: Optional[float]) -> str:
     likely = items[0][0]
     # an outcome is "hawkish / in line / dovish" relative to what is expected: the consensus when Nasdaq has one,
     # otherwise the futures' most likely outcome
-    base = round((cons - rate) * 400) * 25 if (cons is not None and rate is not None) else likely
+    base = round((cons - rate) * 4) * 25 if (cons is not None and rate is not None) else likely   # % → 25bp steps → bp
     rows = ""
     for k, v in sorted(items):
         d = "inline" if k == base else ("hot" if k > base else "cool")

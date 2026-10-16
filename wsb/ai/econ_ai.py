@@ -42,7 +42,9 @@ def load() -> Dict[str, Dict]:
 def _save(d: Dict[str, Dict]) -> None:
     try:
         keep = dict(sorted(d.items(), key=lambda kv: kv[1].get("ts", 0))[-400:])
-        _FILE.write_text(json.dumps(keep, ensure_ascii=False), encoding="utf-8")
+        tmp = _FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(keep, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(_FILE)
     except Exception as e:  # noqa: BLE001
         log.warning("econ AI cache not saved: %s", e)
 
@@ -92,7 +94,7 @@ def event_prompt(e: Dict) -> str:
 def earnings_prompt(r: Dict) -> str:
     s = r["s"]
     L = [f"公司：{r['name']}（{r['sym']}，族群 {r['theme']}），最新一季（季末 {r.get('end', '—')}）"]
-    L.append(f"營收 {_fmt((r.get('rev') or 0) / 1e9, 2)} 十億美元，年增 {_fmt(r.get('rev_yoy'), 1)}%，較上季年增率變化 {_fmt(r.get('accel'), 1, True)}pp，"
+    L.append(f"營收 {_fmt(r['rev'] / 1e9 if r.get('rev') is not None else None, 2)} 十億美元，年增 {_fmt(r.get('rev_yoy'), 1)}%，較上季年增率變化 {_fmt(r.get('accel'), 1, True)}pp，"
              f"季增 {_fmt(r.get('rev_qoq'), 1)}%")
     L.append(f"毛利率 {_fmt(r.get('gm'), 1)}%（年變化 {_fmt(r.get('gm_yoy'), 1, True)}pp）、營益率 {_fmt(r.get('om'), 1)}%（年變化 {_fmt(r.get('om_yoy'), 1, True)}pp）、"
              f"淨利率 {_fmt(r.get('nm'), 1)}%、EPS {_fmt(r.get('eps'), 2)}（年增 {_fmt(r.get('eps_yoy'), 1)}%）、研發占營收 {_fmt(r.get('rnd'), 1)}%")

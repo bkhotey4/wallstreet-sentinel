@@ -100,6 +100,10 @@ def main():
     store.kv_set("site_trigger_last", {"ts": time.time() - 30 * 60, "reason": "hourly", "fast": False})
     okp2, _ = asyncio.run(tr.dispatch("alert:danger:us", fast=True))
     assert okp2
+    # the protection is against FAST builds only: the next scheduled FULL build 20 min later is allowed
+    store.kv_set("site_trigger_last", {"ts": time.time() - 20 * 60, "reason": "scheduled", "fast": False})
+    okf, mf = asyncio.run(tr.dispatch("scheduled", fast=False))
+    assert okf, mf
     # the bot's scheduled build defers to a build that started recently (GitHub's own half-hourly cron)
     from datetime import datetime as _dt, timedelta as _td, timezone as _tz
     iso = lambda m: (_dt.now(_tz.utc) - _td(minutes=m)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731

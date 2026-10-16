@@ -94,7 +94,13 @@ def test_earnings():
     from wsb.data import earn_release as R
     R.save({"NVDA|2026-10-15": {**R.build_record("NVDA", "2026-10-15", {"acc": "n1", "form": "8-K", "date": "2026-10-15", "url": "https://www.sec.gov/x/",
                                                                          "docs": [], "text": NVDA}, None)}})
-    out = EV.build(eng, now=pd.Timestamp("2026-10-15").date())
+    import wsb.analytics.sessions as SS
+    _real = SS.completed
+    SS.completed = lambda px, sym="", now=None: px          # fixture dates run past "today": treat every bar as closed
+    try:
+        out = EV.build(eng, now=pd.Timestamp("2026-10-15").date())
+    finally:
+        SS.completed = _real
     rows = {r["sym"]: r for r in out["rows"]}
     t = rows["TSM"]
     assert t["result"] == "beat" and abs(t["surp"] - 3.4) < 0.05 and t["mv"] == 5.5 and t["tw"]["sym"] == "2330.TW"
@@ -124,6 +130,14 @@ def test_site(eng, out):
                          "meetings": FW.implied(["2026-10-28", "2026-12-09"], {(2026, 10): 96.115, (2026, 11): 96.045, (2026, 12): 95.89, (2027, 1): 95.815}, 3.88)}
     eng.econ_view = {"stats": {"fomc": {"by": {"inline": {"n": 4, "^NDX": 0.3, "^TNX": -2.0, "fwd": {"f20": {"^NDX": 1.5}}},
                                                "hot": {"n": 2, "^NDX": -1.1, "^TNX": 6.0, "fwd": {"f20": {"^NDX": -2.0}}}}}}}
+    cut = {"available": True, "asof": "2026-10-15", "r0": 3.88, "r0_date": "2026-10-13", "contracts": 6,
+           "meetings": [{"date": "2026-10-28", "rate_after": 3.70, "chg_bp": -18, "cum_bp": -18, "probs": {"-25": 0.7, "0": 0.3}}]}
+    keep = eng.fedwatch_view
+    eng.fedwatch_view = cut
+    fc = SE._fw_block(eng, 3.75, 4.0)                                       # consensus: cut to 3.75 → −25 is "in line"
+    row = fc[fc.index("降息 1 碼"):fc.index("降息 1 碼") + 400]
+    assert "符合預期" in row and "偏鷹" in fc[fc.index("維持不變"):fc.index("維持不變") + 400]
+    eng.fedwatch_view = keep
     fb = SE._fw_block(eng, None, 4.0)
     assert "70%" in fb and "30%" in fb and "升息 1 碼" in fb and "偏鷹" in fb and "符合預期" in fb and "-1.10%" in fb
     assert "CME FedWatch" in fb
@@ -136,6 +150,30 @@ def test_site(eng, out):
     lr = SE.sec_latest_reports(eng)
     assert "各公司最新財報重點" in lr and "US$52.30B" in lr and "台股隔日" in lr and "重點&lt;b&gt;" in lr
     assert "javascript:" not in lr and "https://www.sec.gov/Archives/edgar/data/1046179/x/" in lr
+
+
+def test_logic_fixes():
+    from datetime import datetime, timezone
+    from wsb.analytics.sessions import completed
+    idx = pd.to_datetime(["2026-10-14", "2026-10-15", "2026-10-16"])
+    px = pd.Series([1.0, 2.0, 3.0], index=idx)
+    open_ = datetime(2026, 10, 16, 15, 0, tzinfo=timezone.utc)            # 11:00 ET → session running
+    closed = datetime(2026, 10, 16, 21, 0, tzinfo=timezone.utc)           # 17:00 ET
+    assert len(completed(px, "NVDA", open_)) == 2 and len(completed(px, "NVDA", closed)) == 3
+    assert len(completed(px, "2330.TW", datetime(2026, 10, 16, 3, 0, tzinfo=timezone.utc))) == 2    # 11:00 Taipei
+    assert len(completed(px, "2330.TW", datetime(2026, 10, 16, 7, 0, tzinfo=timezone.utc))) == 3    # 15:00 Taipei
+    from wsb.data import earn_release as R
+    assert R.fmt_range({"metric": "revenue_growth", "single": True, "lo": -5, "hi": -5, "mid": -5.0, "unit": "%"}) == "約 -5.0%"
+    # FedWatch: EFFR still shows the pre-decision rate → r0 follows the target change
+    fw = FW.FedWatch()
+    fw.quotes = {"ZQX26.CBT": [96.37, "2026-10-29"], "ZQZ26.CBT": [96.37, "2026-10-29"], "ZQF27.CBT": [96.37, "2026-10-29"]}
+    ser = {"EFFR": pd.Series([3.88], index=pd.to_datetime(["2026-10-28"])),
+           "DFEDTARU": pd.Series([4.00, 3.75], index=pd.to_datetime(["2026-10-28", "2026-10-29"])),
+           "DFEDTARL": pd.Series([3.75, 3.50], index=pd.to_datetime(["2026-10-28", "2026-10-29"]))}
+    fred = types.SimpleNamespace(series=ser, get=lambda sid: ser.get(sid))
+    ec = types.SimpleNamespace(fomc=[{"date": "2026-12-09", "sep": True}])
+    v = FW.view(types.SimpleNamespace(fedwatch=fw, fred=fred, econ=ec))
+    assert abs(v["r0"] - 3.63) < 1e-9 and v["meetings"][0]["probs"] == {"0": 1.0}, v      # no fake cut at the next meeting
 
 
 def test_discord():
@@ -242,6 +280,7 @@ def main():
     test_macro()
     eng, out = test_earnings()
     test_site(eng, out)
+    test_logic_fixes()                       # last: it records FedWatch snapshots in the shared cache
     print("CONCLUSIONS TESTS PASSED [OK]")
 
 

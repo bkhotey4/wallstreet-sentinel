@@ -29,7 +29,8 @@ def _series(eng, s: str) -> pd.Series:
     x = sp.series(s) if sp is not None else pd.Series(dtype=float)
     if (x is None or not len(x)) and getattr(eng, "market", None) is not None:
         x = eng.market.series(s)
-    return x.dropna() if x is not None else pd.Series(dtype=float)
+    from .sessions import completed
+    return completed(x.dropna(), s) if x is not None else pd.Series(dtype=float)
 
 
 def next_session(px: pd.Series, d: str) -> Optional[float]:

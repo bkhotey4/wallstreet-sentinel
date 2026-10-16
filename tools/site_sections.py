@@ -805,7 +805,7 @@ def sec_smart_retail_divergence(eng) -> str:
 
     if div_delta >= 25:
         div_state = "極端頂部背離（散戶狂熱追多，聰明錢高位離場／加碼尾部避險）"
-        div_state_en = "Extreme Top Divergence (Retail FOMO chasing ATH vs Smart Money distribution/hedging)"
+        div_state_en = "Strong divergence (sentiment far above dark-pool buying)"
         div_badge_color = "var(--warn)"
         risk_alert = "高度預警"
         risk_alert_en = "High Alert"
@@ -834,7 +834,7 @@ def sec_smart_retail_divergence(eng) -> str:
     meters = f'''<div class="div-meters" style="margin:12px 0;">
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
-          <span>{T("散戶狂熱指數 (Retail FOMO Index)", "Retail FOMO Index")}</span>
+          <span>{T("市場情緒（本站恐懼貪婪分數）", "Sentiment (site Fear & Greed score)")}</span>
           <b style="color:var(--dn);">{retail_score:.0f} / 100 ({T("極度貪婪", "Extreme greed") if retail_score >= 75 else T("貪婪", "Greed") if retail_score >= 55 else T("中性", "Neutral") if retail_score > 45 else T("恐懼", "Fear") if retail_score > 25 else T("極度恐懼", "Extreme fear")})</b>
         </div>
         <div class="sbar" title="Retail"><i style="width:{ret_w}%;background:var(--dn);"></i><b>{retail_score:.0f}</b></div>
@@ -842,7 +842,7 @@ def sec_smart_retail_divergence(eng) -> str:
       <div>
         <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
           <span>{T("聰明錢流向指數 (Smart Money Flow / Dark Pool)", "Smart Money Flow Index")}</span>
-          <b style="color:var(--ac);">{sm_base:.0f} / 100 ({T("暗池主力減速／觀望", "Distribution / Cautious") if sm_base < 45 else T("主力低吸", "Accumulation")})</b>
+          <b style="color:var(--ac);">{sm_base:.0f} / 100 ({T("暗池買盤偏低", "Below middle") if sm_base < 45 else T("暗池買盤偏高", "Above middle")})</b>
         </div>
         <div class="sbar" title="Smart Money"><i style="width:{sm_w}%;background:var(--ac);"></i><b>{sm_base:.0f}</b></div>
       </div>
@@ -851,7 +851,7 @@ def sec_smart_retail_divergence(eng) -> str:
     kv = f'''<div class="kv">
       <div><span class="muted">{T("籌碼背離差值", "Divergence Spread")}</span><b style="color:{div_badge_color};">{div_delta:+.0f}</b></div>
       <div><span class="muted">{T("暗池放空比例 DPI (5日)", "Dark Pool DPI (5d)")}</span><b>{num(dpi_5d, 1)}%</b></div>
-      <div><span class="muted">{T("CBOE SKEW 尾部風險", "CBOE SKEW Index")}</span><b>{num(skew_val, 1)}</b> <span class="small muted">{T("歷史高位" if (skew_val or 0) > 135 else "正常區間", "High hedge" if (skew_val or 0) > 135 else "Normal")}</span></div>
+      <div><span class="muted">{T("CBOE SKEW 尾部風險", "CBOE SKEW Index")}</span><b>{num(skew_val, 1)}</b> <span class="small muted">{T("≥ 135（本卡門檻）" if (skew_val or 0) > 135 else "低於 135（本卡門檻）間", "High hedge" if (skew_val or 0) > 135 else "Normal")}</span></div>
       <div><span class="muted">{T("SPX 選擇權 P/C (OI/量)", "SPX Put/Call (OI/Vol)")}</span><b>{num(pc_oi, 2)} / {num(pc_vol, 2)}</b></div>
     </div>'''
 
@@ -867,7 +867,7 @@ def sec_smart_retail_divergence(eng) -> str:
     </div>'''
 
     note = T("資料：FINRA Reg SHO 暗池放空成交比例（DPI 5 日均，30–55% 線性換成 0–100）、本站恐懼貪婪指數、CBOE SKEW、SPX 選擇權 Put/Call。",
-             "Sources: FINRA Reg SHO Dark Pool short volume, CBOE SKEW Tail Risk Index, retail positioning models. Divergence spread = Retail FOMO minus Smart Money Flow.")
+             "Sources: FINRA Reg SHO dark-pool short volume, the site's Fear & Greed score, CBOE SKEW, SPX put/call. Spread = sentiment minus dark-pool score.")
 
     return card("散戶情緒 vs 聰明錢背離雷達", "Smart Money vs Retail Divergence",
                 kv + meters + status_card + f'<p class="note">{note}</p>', "wide",

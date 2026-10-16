@@ -319,7 +319,8 @@ def reaction(hist: pd.DataFrame, day: str) -> Dict[str, Optional[float]]:
         if hist is None or t not in hist.columns:
             out[t] = None
             continue
-        s = hist[t].dropna()
+        from .sessions import completed
+        s = completed(hist[t].dropna(), t)          # a release-day "close" must be a finished session
         if d not in s.index:
             out[t] = None
             continue
@@ -340,7 +341,8 @@ def forward(hist: pd.DataFrame, day: str, n: int) -> Dict[str, Optional[float]]:
     out = {}
     d = pd.Timestamp(day)
     for t, kind in FWD:
-        s = hist[t].dropna() if hist is not None and t in hist.columns else pd.Series(dtype=float)
+        from .sessions import completed
+        s = completed(hist[t].dropna(), t) if hist is not None and t in hist.columns else pd.Series(dtype=float)
         if d not in s.index:
             out[t] = None
             continue
@@ -357,7 +359,8 @@ def tw_next(hist: pd.DataFrame, day: str) -> Optional[float]:
     """Taiwan's next session after a US release (TAIEX close on/before the US date → first close after it)."""
     if hist is None or "^TWII" not in hist.columns:
         return None
-    s = hist["^TWII"].dropna()
+    from .sessions import completed
+    s = completed(hist["^TWII"].dropna(), "^TWII")
     t = pd.Timestamp(day)
     a, b = s[s.index <= t], s[s.index > t]
     return (float(b.iloc[0]) / float(a.iloc[-1]) - 1) * 100 if len(a) and len(b) else None

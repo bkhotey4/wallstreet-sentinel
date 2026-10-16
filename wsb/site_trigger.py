@@ -130,7 +130,7 @@ class SiteTrigger:
             return False, "已有建置在進行中（剛開始不久），略過"
         # a FULL build (whole-market scan, 15–20 min) must not be cancelled by a fast build: GitHub's
         # cancel-in-progress would otherwise starve the hourly build during a volatile session
-        if not force and last and not last.get("fast", True) and \
+        if not force and fast and last and not last.get("fast", True) and \
                 time.time() - float(last.get("ts", 0)) < float(CFG.get("protect_full_minutes", 25)) * 60:
             return False, "完整建置進行中（保護 25 分鐘），略過"
         url = f"{API}/repos/{self.repo}/actions/workflows/{self.workflow}/dispatches"

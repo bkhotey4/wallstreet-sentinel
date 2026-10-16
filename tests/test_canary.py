@@ -158,7 +158,12 @@ def test_site_and_alerts():
     def run(state, asof):
         rows[:] = [{"id": "ccc_bb", "zh": "CCC − BB", "state": state, "asof": asof, "score": 99.0}]
         return Sentinel._canary_alerts(bot)
-    assert len(run("alert", "2026-10-14")) == 1
+    from wsb import store
+    first = run("alert", "2026-10-14")
+    assert len(first) == 1
+    assert len(run("alert", "2026-10-14")) == 1            # not delivered yet → still offered (a failed send is retried)
+    store.alert_mark(first[0].key, first[0].severity, first[0].title)
+    assert run("alert", "2026-10-14") == []                # delivered → disarmed
     assert run("alert", "2026-10-15") == [] and run("watch", "2026-10-16") == [] and run("alert", "2026-10-17") == []
     assert run("ok", "2026-10-18") == [] and len(run("alert", "2026-10-19")) == 1
 

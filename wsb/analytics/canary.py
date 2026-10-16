@@ -231,7 +231,9 @@ def record_revisions(eng, today: Optional[date] = None) -> Dict:
     cut = (today - timedelta(days=10)).isoformat()
     snap = {k: v for k, v in snap.items() if k.split("|")[1] >= cut}
     try:
-        REV_FILE.write_text(json.dumps(snap), encoding="utf-8")
+        tmp = REV_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(snap), encoding="utf-8")
+        tmp.replace(REV_FILE)
     except OSError as e:
         log.warning("revision snapshots not saved: %s", e)
     return snap

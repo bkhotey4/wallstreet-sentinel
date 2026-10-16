@@ -565,11 +565,13 @@ class Sentinel(commands.Bot):
                 continue                                   # no data / warming up → leave the arming as it is
             armed = store.kv_get(k)
             armed = True if armed is None else bool(armed)
-            if st == "alert" and armed:
-                out.append(Alert(f"canary:{r['id']}:{r.get('asof') or 'na'}", "⚠️ WARNING", f"🐤 金絲雀紅燈：{r['zh']}",
+            key = f"canary:{r['id']}:{r.get('asof') or 'na'}"
+            if st == "alert" and armed and store.alert_sent(key):
+                store.kv_set(k, False)                     # delivered → disarm until the light is green again
+            elif st == "alert" and armed:
+                out.append(Alert(key, "⚠️ WARNING", f"🐤 金絲雀紅燈：{r['zh']}",
                                  (r.get("value_txt") or (f"分數 {r['score']:.0f}／100" if r.get("score") is not None else ""))
                                  + "｜" + (r.get("rule") or r.get("why") or "")[:300]))
-                store.kv_set(k, False)
             elif st == "ok" and not armed:
                 store.kv_set(k, True)
         return out
@@ -892,14 +894,14 @@ class Sentinel(commands.Bot):
             dm = await self._owner_dm()
             fire = [a for a in fire if not store.is_private_alert(a.key)]
             if dm:
-                for a in priv:
-                    store.alert_mark(a.key, a.severity, a.title, kind=_alert_kind(a.key),
-                                     spx=(self.engine.market.q("^GSPC") or {}).get("price"),
-                                     ssi=self.engine.stress.score if self.engine.stress else None)
                 e_ = discord.Embed(title="🔒 持倉警報（僅你可見）", color=0xE67E22, timestamp=datetime.now(timezone.utc))
                 for a in priv[:10]:
                     e_.add_field(name=f"{a.severity} {a.title}"[:256], value=a.detail[:1024] or "—", inline=False)
-                await self._safe_send(dm, embed=e_)
+                if await self._safe_send(dm, embed=e_):          # not delivered → not marked → retried next round
+                    for a in priv:
+                        store.alert_mark(a.key, a.severity, a.title, kind=_alert_kind(a.key),
+                                         spx=(self.engine.market.q("^GSPC") or {}).get("price"),
+                                         ssi=self.engine.stress.score if self.engine.stress else None)
             if not fire:
                 return
         crit = any(a.severity.startswith("🚨") for a in fire)
@@ -942,14 +944,16 @@ class Sentinel(commands.Bot):
         for t in targets:
             await P.deliver(t, text=txt, title="AI 緊急研判", engine_name=eng_name)
 
-    async def _safe_send(self, target, **kw) -> None:
+    async def _safe_send(self, target, **kw) -> bool:
         try:
             await target.send(**kw)
             log.info("sent to %s", getattr(target, "recipient", None) or getattr(target, "name", target))
+            return True
         except discord.Forbidden:
             log.warning("no permission to send to %s (DM closed or missing channel perms)", target)
         except Exception as e:  # noqa: BLE001
             log.warning("send failed to %s: %s", target, e)
+        return False
 
     # ------------------------------------------------------------ briefings
     def _due(self, now: datetime, hhmm: str, weekdays, key: str, window_min: int = 60) -> bool:
@@ -1323,7 +1327,8 @@ def register_commands(bot: Sentinel) -> None:
                              + (f"／情報 {r['intel']:.0f}" if r.get("intel") is not None else "") + f"）\n└ {why[:120]}")
             e.add_field(name=f"第 {chunk + 1}–{chunk + len(lines)} 名", value="\n".join(lines)[:1024], inline=False)
         br = m.get("breadth") or {}
-        e.set_footer(text=f"評分池 {br.get('n')} 檔｜站上 200 日線 {br.get('above200') or 0:.0f}%｜完整表與理由：情報站網頁「個股評分」分頁")
+        a200 = br.get("above200")
+        e.set_footer(text=f"評分池 {br.get('n')} 檔｜站上 200 日線 " + (f"{a200:.0f}%" if a200 is not None else "—") + "｜完整表與理由：情報站網頁「個股評分」分頁")
         await it.followup.send(embed=e)
 
     @tree.command(name="signals", description="技術面買點訊號：多頭回檔／帶量突破／黃金交叉／超賣反彈，由強到弱（規則篩選，非建議）")
@@ -1422,7 +1427,8 @@ def register_commands(bot: Sentinel) -> None:
             wp = st.get("plan") or {}
             ref = (f"\n▶ 加碼參考區（尚無訊號）：{wp['zone']}；{wp['where']}\n▶ 參考失效線：{wp['inv']:.2f}" if wp else "")
             e.add_field(name="目前狀態", value=f"{st.get('label')}：{st.get('why', '')}\n▶ 何時才算買點：{st.get('when') or '—'}{ref}"[:1024], inline=False)
-        e.add_field(name="報酬", value=f"今日 {r['r1d'] or 0:+.1f}%｜1 月 {r['r1m'] or 0:+.1f}%｜6 月 {r['r6'] or 0:+.0f}%｜RSI {r['rsi'] or 0:.0f}", inline=False)
+        g = lambda v, f: "—" if v is None else format(v, f)  # noqa: E731
+        e.add_field(name="報酬", value=f"今日 {g(r['r1d'], '+.1f')}%｜1 月 {g(r['r1m'], '+.1f')}%｜6 月 {g(r['r6'], '+.0f')}%｜RSI {g(r['rsi'], '.0f')}", inline=False)
         e.set_footer(text="規則化量化篩選，不是買賣建議")
         await it.followup.send(embed=e)
 

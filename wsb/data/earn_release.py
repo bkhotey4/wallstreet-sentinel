@@ -349,7 +349,7 @@ _SUBS: Dict[str, Tuple[float, List[Dict]]] = {}
 async def filings(sec, sym: str) -> List[Dict]:
     """All recent 8-K / 6-K filings of a company (the full 'recent' list, not just the last 25 of any form)."""
     hit = _SUBS.get(sym)
-    if hit and time.time() - hit[0] < 1800:
+    if hit and time.time() - hit[0] < 600:
         return hit[1]
     await sec._load_map()
     cik = sec.cik.get(sym.upper().replace(".", "-"))
@@ -499,7 +499,8 @@ async def refresh(eng, want: List[Tuple[str, str]], budget_s: float = 120) -> in
         c = cache.get(k) or {}
         if c.get("acc"):
             continue
-        if c.get("missing") and (time.time() - c.get("ts", 0) < 7200 or (date.today() - date.fromisoformat(d)).days > 5):
+        age_d = (date.today() - date.fromisoformat(d)).days
+        if c.get("missing") and (time.time() - c.get("ts", 0) < (1200 if age_d <= 2 else 7200) or age_d > 5):
             continue
         try:
             rel = await find_release(sec, sym, d)
@@ -532,7 +533,9 @@ def fmt_val(metric: str, v: float, cur: Optional[str] = None) -> str:
 
 def fmt_range(g: Dict) -> str:
     if g.get("single") or abs(g["hi"] - g["lo"]) < 1e-9:
-        return ("約 " if g["metric"] != "revenue_growth" else "約 +") + fmt_val(g["metric"], g["mid"], g.get("cur"))
+        if g["metric"] == "revenue_growth":
+            return f"約 {g['mid']:+.1f}%"
+        return "約 " + fmt_val(g["metric"], g["mid"], g.get("cur"))
     if g["unit"] == "%":
         return f"{g['lo']:.1f}%–{g['hi']:.1f}%"
     return f"{fmt_val(g['metric'], g['lo'], g.get('cur'))}–{g['hi']:,.2f}B"

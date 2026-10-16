@@ -273,16 +273,17 @@ def debate_prompt(r: Dict, info: Dict) -> str:
     def f(k, n=1, suf=""):
         v = r.get(k)
         return "—" if v is None else (f"{v:.{n}f}{suf}" if isinstance(v, (int, float)) else str(v))
+    b = lambda k, n=2: "資料缺" if r.get(k) is None else f"{r[k] / 1e9:.{n}f} 十億美元"  # noqa: E731
     L = [f"公司：{r.get('name')}（{r.get('sym')}），產業：{r.get('ind') or '—'} {r.get('sub') or ''}",
-         f"市值：{(r.get('mcap') or 0) / 1e9:.1f} 十億美元；近四季營收：{(r.get('ttm') or 0) / 1e9:.2f} 十億美元",
+         f"市值：{b('mcap', 1)}；近四季營收：{b('ttm')}",
          f"營收年增（近四季）：{f('g', 0, '%')}；最近一季年增：{f('q_yoy', 0, '%')}；成長加速（百分點）：{f('accel', 0)}",
          f"毛利率：{f('gm', 0, '%')}；營業利益率：{f('om', 0, '%')}；40 法則：{f('r40', 0)}",
          f"估值：P/S {f('ps', 1)}；P/E {f('pe', 1)}；估值÷成長 {f('gav', 3)}（基準 {r.get('basis') or '—'}）",
-         f"現金：{(r.get('cash') or 0) / 1e9:.2f} 十億美元；每年燒錢：{(r.get('burn') or 0) / 1e9:.2f} 十億美元；可撐年數：{f('runway', 1)}",
+         f"現金：{b('cash')}；每年燒錢：{b('burn')}；可撐年數：{f('runway', 1)}",
          f"營收含併購（商譽大增）：{'是' if r.get('ma') else '否'}；營收規模尚小：{'是' if r.get('small') else '否'}",
          f"技術面狀態：{r.get('st') or '—'}"]
     if info.get("tm"):
-        L.append(f"分析師平均目標價距現價：{(info['up'] if info.get('up') is not None else 0):+.0f}%（{info.get('n') or '—'} 位分析師）")
+        L.append("分析師平均目標價距現價：" + (f"{info['up']:+.0f}%" if info.get("up") is not None else "資料缺") + f"（{info.get('n') or '—'} 位分析師）")
     return "\n".join(L)
 
 

@@ -1106,7 +1106,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     strip = sec_strip(eng)
     asof, stale = data_asof(eng)
     data = json.dumps(_CHARTS, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    foot = T("資料來源：Yahoo Finance、FRED、CBOE、FINRA、SEC EDGAR、TreasuryDirect、證交所／期交所、公開新聞 RSS 與 Google 新聞。平日每小時、週末每 4 小時自動更新。"
+    foot = T("資料來源：Yahoo Finance、FRED、CBOE、FINRA、SEC EDGAR、TreasuryDirect、證交所／期交所、公開新聞 RSS 與 Google 新聞。平日約每 20 分鐘、週末每 4 小時自動更新；市場轉差時立即重建。"
              "所有數字由程式自動計算；崩跌機率是歷史頻率而非預測，個股評分是量化篩選而非推薦。本站僅提供市場資訊，不構成任何投資建議。"
              "手機：Android 按「加到主畫面」；iPhone 用 Safari 開啟 → 分享 → 加入主畫面，就能像 App 一樣使用。",
              "Sources: Yahoo Finance, FRED, CBOE, FINRA, SEC EDGAR, TreasuryDirect, TWSE/TAIFEX, public news RSS and Google News. Updated hourly "

@@ -28,6 +28,7 @@ def _expiry(root: str, ymd: str) -> datetime:
 
 
 def _bs_gamma(S: np.ndarray, K: np.ndarray, T: np.ndarray, iv: np.ndarray, r: float = 0.04) -> np.ndarray:
+    # r only shifts d1 by r·T; for options weeks from expiry its effect on gamma is negligible, so a fixed rate is kept
     with np.errstate(divide="ignore", invalid="ignore"):
         d1 = (np.log(S / K) + (r + 0.5 * iv ** 2) * T) / (iv * np.sqrt(T))
         g = np.exp(-0.5 * d1 ** 2) / np.sqrt(2 * np.pi) / (S * iv * np.sqrt(T))
@@ -57,7 +58,7 @@ def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
     sign = np.where(typ == "C", 1.0, -1.0)   # convention: dealers long calls / short puts
 
     def gex_at(S: float) -> float:
-        g = _bs_gamma(np.full_like(K, S), K, T, np.where(iv > 0, iv, 0.2))
+        g = _bs_gamma(np.full_like(K, S), K, T, np.where(iv > 0, iv, np.nan))   # no IV → contract left out (gamma 0), never a guessed IV
         return float(np.sum(sign * g * oi * 100 * S * S * 0.01))
 
     gex_now = float(np.sum(sign * gam * oi * 100 * spot * spot * 0.01)) if gam.any() else gex_at(spot)
@@ -83,7 +84,7 @@ def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
         return float(uniq[np.argmax(tot)])
 
     # net dealer gamma by strike (CBOE gamma at today's spot), ±8% around spot → the "Gamma radar" bar chart
-    g_now = np.where(gam > 0, gam, _bs_gamma(np.full_like(K, spot), K, T, np.where(iv > 0, iv, 0.2)))
+    g_now = np.where(gam > 0, gam, _bs_gamma(np.full_like(K, spot), K, T, np.where(iv > 0, iv, np.nan)))
     contrib = sign * g_now * oi * 100 * spot * spot * 0.01 / 1e9
     band = np.abs(K / spot - 1) <= 0.08
     by_strike = []

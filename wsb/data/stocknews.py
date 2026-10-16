@@ -67,7 +67,9 @@ class StockNews:
             if m:
                 src, title = m.group(1).strip(), title[:m.start()].strip()
             st = e.get("published_parsed") or e.get("updated_parsed")
-            out.append((title, e.get("link", ""), calendar.timegm(st) if st else time.time(), src))
+            if not st:
+                continue                                # undated → not counted as fresh
+            out.append((title, e.get("link", ""), calendar.timegm(st), src))
         return out
 
     async def refresh(self, force: bool = False) -> None:

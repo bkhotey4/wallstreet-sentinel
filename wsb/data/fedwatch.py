@@ -15,7 +15,7 @@ import json
 import logging
 import math
 import time
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from ..config import DATA_DIR
@@ -128,7 +128,7 @@ class FedWatch:
                 lst.append({"asof": asof, "probs": m["probs"], "rate_after": m["rate_after"], "chg_bp": m["chg_bp"]})
                 del lst[:-30]
                 changed = True
-        cutoff = date.today().replace(year=date.today().year - 2).isoformat()
+        cutoff = (date.today() - timedelta(days=730)).isoformat()
         for k in [k for k in self.snap if k < cutoff]:
             self.snap.pop(k)
             changed = True
@@ -161,9 +161,17 @@ def view(eng) -> Dict:
     if r0 is None:
         return {"available": False, "why": "no effective fed funds rate (FRED EFFR)"}
     lo, _ = _last(getattr(eng, "fred", None), "DFEDTARL")
-    hi, _ = _last(getattr(eng, "fred", None), "DFEDTARU")
+    hi, hi_date = _last(getattr(eng, "fred", None), "DFEDTARU")
+    # a decision already made but not yet in EFFR (FRED publishes it a day or two later): move r0 by the target change
+    tu = (getattr(getattr(eng, "fred", None), "get", lambda _x: None)("DFEDTARU"))
+    if tu is not None and r0_date and hi_date and hi_date > r0_date:
+        tu = tu.dropna()
+        before = tu[tu.index <= r0_date]
+        if len(before):
+            r0 = r0 + (float(tu.iloc[-1]) - float(before.iloc[-1]))
     asof = max(v[1] for v in fw.quotes.values())
-    today = date.today().isoformat()
+    from .econcal import us_today
+    today = us_today().isoformat()                       # meetings are US dates; the decision is at 14:00 ET
     meets = [m["date"] for m in (getattr(ec, "fomc", None) or []) if m["date"] >= today]
     fut = {}
     for t, (px, _d) in fw.quotes.items():

@@ -955,7 +955,7 @@ def deck_morning(engine, facts: dict, theme: str, title: str, session: str) -> L
         y = s.paragraph(f"{e['date'][5:]}  {e['event']}", M + 36, y, 610, size=34) + 6
     er = facts.get("earnings", [])
     rows = [[(r["when"], MUTED), (r["symbol"], TEXT), (r["name"][:14], TEXT), (fmt(r["eps_fc"], 2), TEXT),
-             (f"{(r['mcap'] or 0)/1e9:,.0f}B", MUTED)] for r in er[:10]]
+             (f"{r['mcap'] / 1e9:,.0f}B" if r.get('mcap') else "—", MUTED)] for r in er[:10]]
     if rows:
         x0 = 750                                # table in the right column
         s.d.text((x0, 225), "重要財報（依市值）", font=font(40, True), fill=ACCENT, anchor="lm")
@@ -987,7 +987,7 @@ def deck_earnings_board(board: dict) -> List[bytes]:
         wd = _WD[datetime.fromisoformat(d).weekday()]
         for r in lst:
             rows.append([(f"{d[5:]}（{wd}）", TEXT), (r["when"], MUTED), (r["symbol"], ACCENT), (r["name"][:18], TEXT),
-                         (fmt(r["eps_fc"], 2), TEXT), (fmt(r["eps_ly"], 2), MUTED), (f"{(r['mcap'] or 0)/1e9:,.0f}B", MUTED)])
+                         (fmt(r["eps_fc"], 2), TEXT), (fmt(r["eps_ly"], 2), MUTED), (f"{r['mcap'] / 1e9:,.0f}B" if r.get('mcap') else "—", MUTED)])
     if not rows:
         rows = [[("—", MUTED)] * 7]
     out += deck_table("本週華爾街重要財報", ["日期", "時段", "代號", "公司", "EPS 預估", "去年同期", "市值"], rows,

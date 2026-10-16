@@ -22,7 +22,10 @@ def main():
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data
-    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta"}   # public data only
+    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta", "sym"}   # public data only
+    assert set(data["sym"]) == {"beta", "vol"}
+    for bad in ("600:(addSym", "w * 1.1", "found.b : 1.1", "stopPct = 0.10", "建議分批減碼", "千億美元", ": 1.0; }"):
+        assert bad not in SP.JS, bad                                   # no invented prices / betas / advice
     assert data["earn"] == [] and data["crisis"] == {} and data["beta"] == {}  # no data in this fixture → nothing invented
     assert "b: 1.65" not in SP.JS and "Beta 0.15" not in SP.JS
     assert data["gcid"] == "" or data["gcid"].endswith(".apps.googleusercontent.com")

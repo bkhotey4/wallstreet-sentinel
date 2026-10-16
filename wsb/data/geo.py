@@ -133,7 +133,9 @@ async def _feed(url: str) -> List[Dict]:
         if not title:
             continue
         st = e.get("published_parsed") or e.get("updated_parsed")
-        out.append({"t": title, "link": e.get("link", ""), "ts": calendar.timegm(st) if st else time.time()})
+        if not st:
+            continue                                    # no date → cannot tell if it is fresh; never counted as "now"
+        out.append({"t": title, "link": e.get("link", ""), "ts": calendar.timegm(st)})
     return out
 
 

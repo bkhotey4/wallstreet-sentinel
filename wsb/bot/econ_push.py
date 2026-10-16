@@ -353,7 +353,7 @@ def tech_embed(r: Dict) -> discord.Embed:
     em = discord.Embed(title=f"🧾 {r['name']}（{r['sym']}）財報分析", color=0x8E44AD, description=r.get("verdict", "")[:2000] or "財報數字尚未取得")
     f = lambda v, n=1, suf="": "—" if v is None else f"{v:,.{n}f}{suf}"  # noqa: E731
     em.add_field(name=f"最新一季（季末 {r.get('end') or '—'}）",
-                 value=(f"營收 {f((r.get('rev') or 0) / 1e9, 2)} 十億美元｜年增 {f(r.get('rev_yoy'), 1, '%')}｜季增 {f(r.get('rev_qoq'), 1, '%')}\n"
+                 value=(f"營收 {f(r['rev'] / 1e9 if r.get('rev') is not None else None, 2)} 十億美元｜年增 {f(r.get('rev_yoy'), 1, '%')}｜季增 {f(r.get('rev_qoq'), 1, '%')}\n"
                         f"毛利率 {f(r.get('gm'), 1, '%')}（年變化 {f(r.get('gm_yoy'), 1, 'pp')}）｜營益率 {f(r.get('om'), 1, '%')}\n"
                         f"EPS {f(r.get('eps'), 2)}（年增 {f(r.get('eps_yoy'), 1, '%')}）｜研發占營收 {f(r.get('rnd'), 1, '%')}"), inline=False)
     su = r["s"]

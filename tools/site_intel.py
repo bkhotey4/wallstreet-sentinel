@@ -229,7 +229,7 @@ def sec_fg(eng) -> str:
                  for b in fg["buckets"])
     note = T(f"七個分項各自和自己過去兩年比較，換成 0～100 的百分位再平均（≥ 3 項才計分）；50 附近＝和近兩年的平常差不多。"
              f"下表是 {fg['since']} 年以來各區間之後 20 個交易日標普 500 的表現；全部日子平均 {num(fg.get('base_avg'), 1, sign=True)}%、上漲比例 {num(fg.get('base_win'), 0)}%。"
-             "極度恐慌之後平均報酬常常反而較好，但波動也大；這是歷史統計，不是預測。",
+             "各區間的表現請直接和全部日子的平均比較；這是歷史統計，不是預測。",
              "Seven factors, each a percentile vs its own last two years, averaged. Forward 20-day S&P 500 returns by zone since inception.")
     body = (_fg_gauge(fg) + f'<div class="g2"><div><h3>{T("分項（0＝極度恐慌，100＝極度貪婪）", "Factors (0 fear – 100 greed)")}</h3>'
             f'<table class="mini">{comps}</table></div><div><h3>{T("近一年走勢", "Last 12 months")}</h3>{ch}</div></div>'
@@ -288,7 +288,7 @@ def sec_rules(eng) -> str:
         f'<td class="small muted nw">{esc(r["last"] or "—")}</td></tr>' for r in rb["rows"] if r["n"] > 0)
     note = T(f"每條規則從 {rb['since']} 年起重跑：觸發日收盤之後標普 500 的表現（同一波 {rb['cooldown']} 個交易日內只算一次）。"
              f"比較基準＝任何一天：5 日平均 {b['avg5']:+.2f}%、20 日平均 {b['avg20']:+.2f}%、20 日上漲比例 {b['win20']:.0f}%、20 日內再跌 5% 的機率 {b['dd5']:.0f}%。"
-             "「有預警力」＝再跌 5% 的機率至少是基準的 1.5 倍；「常是短線低點」＝之後 20 日平均反而比平常好。急跌後常見反彈，所以多數盤中急跌警報其實沒有預警力。",
+             "「有預警力」＝再跌 5% 的機率至少是基準的 1.5 倍；「常是短線低點」＝之後 20 日平均反而比平常好。每條規則屬於哪一種，以上表的計算結果為準。",
              "Each alarm rule re-run on history: what the S&P 500 did next, vs any day.")
     return card("大盤警報規則回測", "Do the sell-off alarms work?",
                 f'<p class="small muted">{note}</p><div class="scroll"><table class="mini"><thead><tr><th>{T("規則", "Rule")}</th><th class="r">{T("次數", "n")}</th>'

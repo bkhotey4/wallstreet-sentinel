@@ -58,7 +58,9 @@ class MarginDebt:
             raw = await http.get(URL, kind="bytes", timeout=40, retries=1, headers={"User-Agent": "Mozilla/5.0"})
             s = parse(raw)
             self.series, self.ts = s, time.time()
-            FILE.write_text(json.dumps({"ts": self.ts, "data": {k.strftime("%Y-%m-%d"): v for k, v in s.items()}}), encoding="utf-8")
+            tmp = FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"ts": self.ts, "data": {k.strftime("%Y-%m-%d"): v for k, v in s.items()}}), encoding="utf-8")
+            tmp.replace(FILE)
             HEALTH.ok("finra_margin", len(s), every=86400)
         except Exception as e:  # noqa: BLE001
             log.warning("FINRA margin statistics failed: %s", e)

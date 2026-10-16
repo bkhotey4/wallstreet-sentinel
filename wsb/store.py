@@ -63,6 +63,12 @@ def alert_allowed(key: str, cooldown_s: float) -> bool:
     return not row or now - row[0] >= cooldown_s
 
 
+def alert_sent(key: str) -> bool:
+    """True when an alert with this key has been delivered (and marked) before."""
+    with _LOCK:
+        return _C.execute("SELECT 1 FROM alerts WHERE key=?", (key,)).fetchone() is not None
+
+
 def alert_mark(key: str, severity: str, title: str, kind: str | None = None,
                spx: float | None = None, ssi: float | None = None) -> None:
     now = time.time()
