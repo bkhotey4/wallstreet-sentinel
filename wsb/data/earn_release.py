@@ -27,6 +27,7 @@ _CUR = r"(US\$|NT\$|\$|€|£|¥)"
 _UNIT = r"\s*(billion|million|bn)\b"
 MONEY_RANGE = re.compile(_CUR + r"\s?" + _NUM + r"(?:" + _UNIT + r")?\s*(?:and|to|-)\s*" + _CUR + r"?\s?" + _NUM + _UNIT, re.I)
 MONEY_PM = re.compile(_CUR + r"\s?" + _NUM + _UNIT + r",?\s*plus or minus\s*" + _NUM + r"\s*%", re.I)
+MONEY_PM_ABS = re.compile(_CUR + r"\s?" + _NUM + _UNIT + r",?\s*plus or minus\s*" + _CUR + r"?\s?" + _NUM + _UNIT, re.I)
 MONEY_ONE = re.compile(r"(?:around|approximately|about|of|be|at)?\s*" + _CUR + r"\s?" + _NUM + _UNIT, re.I)
 PCT_RANGE = re.compile(_NUM + r"\s*(?:%|percent)?\s*(?:and|to|-)\s*" + _NUM + r"\s*(?:%|percent)", re.I)
 PCT_PM = re.compile(_NUM + r"\s*%,?\s*plus or minus\s*" + _NUM + r"\s*(basis points|bps|%)", re.I)
@@ -76,6 +77,10 @@ def _money(s: str) -> Optional[Dict]:
         if lo > hi * 1.0001:                           # "approximately $9.2 billion and $9.0 billion, respectively"
             return {"lo": lo, "hi": lo, "cur": _cur(m.group(1)), "single": True, "m": m}
         return {"lo": lo, "hi": hi, "cur": _cur(m.group(1)), "m": m}
+    m = MONEY_PM_ABS.search(s)
+    if m:                                      # "$13 billion, plus or minus $300 million"
+        v, w = _scale(_f(m.group(2)), m.group(3)), _scale(_f(m.group(5)), m.group(6))
+        return {"lo": v - w, "hi": v + w, "cur": _cur(m.group(1)), "m": m}
     m = MONEY_PM.search(s)
     if m:
         v, p = _scale(_f(m.group(2)), m.group(3)), _f(m.group(4)) / 100

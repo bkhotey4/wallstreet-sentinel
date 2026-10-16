@@ -198,6 +198,8 @@ def test_release_parser():
     c2 = {x["metric"]: x for x in R.compare(amd_act, amd_prev)}
     assert c2["gross_margin"]["basis"] == "ng" and c2["gross_margin"]["actual"] == 56.0 and c2["gross_margin"]["pos"] == "within"
     assert c2["revenue"]["pos"] == "above"
+    pm = {x["metric"]: x for x in R.guidance("For the third quarter of 2026, AMD expects revenue to be approximately $13 billion, plus or minus $300 million.")}
+    assert (round(pm["revenue"]["lo"], 2), round(pm["revenue"]["hi"], 2)) == (12.7, 13.3) and not pm["revenue"]["single"]
     assert R.compare(s["actual"], [{"metric": "revenue", "period": "next_q", "lo": 43, "hi": 45, "mid": 44, "unit": "B", "cur": "EUR"}]) == []
     # sanity: a segment revenue far from the XBRL reference is dropped; an annual figure is not next quarter
     act, gd = R.sanitize({"revenue": {"USD": {"v": 27.5}}}, [{"metric": "revenue", "period": "next_q", "lo": 197, "hi": 202, "mid": 199.5,

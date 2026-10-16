@@ -62,6 +62,10 @@ def _hist_30d(eng) -> dict:
         dates = [idx.strftime("%Y-%m-%d") for idx in spx.tail(30).index]
         dt_idx = pd.to_datetime(dates)
 
+        sp = getattr(getattr(eng, "stockprices", None), "close", None)
+        if sp is not None and not sp.empty:                # individual stocks (KLAC, ORCL, 2330.TW …) live here, not in history
+            extra = sp[[c for c in sp.columns if c not in h.columns]]
+            h = h.join(extra, how="outer") if len(extra.columns) else h
         sub = h.reindex(dt_idx).ffill().bfill()
         closes = {}
         for col in sub.columns:
@@ -458,7 +462,7 @@ function calcBackcastNav(d, tot, FM){
  // only draw when ≥90% of today's value has a real daily history; otherwise the "curve" is mostly today's price
  var covV = 0, allV = 0;
  rows.forEach(function(r){ var p = price(r.h, FM && FM[r.mk]), f = fxv(cur(r.mk)); if(!p || p.px == null || f == null) return;
-  var v = r.n * p.px * f; allV += v; if(r.series) covV += v; });
+  r.priced = true; var v = r.n * p.px * f; allV += v; if(r.series) covV += v; });
  if(allV <= 0 || covV / allV < 0.9) return null;
 
  var cashT = 0;
@@ -472,6 +476,7 @@ function calcBackcastNav(d, tot, FM){
   var dayTot = cashT;
   var dayFx = (twdRates[t] != null && twdRates[t] > 0) ? twdRates[t] : liveFxUsd;
   rows.forEach(function(r){
+   if(!r.priced) return;                      // same set as today's total: a holding without a current price is left out
    var px = (r.series && r.series[t] != null) ? r.series[t] : null;
    if(px == null){
     var p = price(r.h, FM && FM[r.mk]);
@@ -494,6 +499,9 @@ function calcBackcastNav(d, tot, FM){
 }
 
 // ---------------------------------------------------------------- Feature 4: NAV Chart & HWM Drawdown
+function _mktDay(){ try{ return new Date().toLocaleDateString('en-CA', {timeZone: 'America/New_York'}); }catch(e){ return new Date().toISOString().slice(0, 10); } }
+function _dms(s){ return Date.parse(s + 'T00:00:00Z'); }
+function _addDays(s, n){ return new Date(_dms(s) + n * 86400000).toISOString().slice(0, 10); }
 function renderNav(d, tot, FM){
  var x = document.getElementById('pfnavbox');
  if(!x) return;
@@ -501,95 +509,82 @@ function renderNav(d, tot, FM){
  if(!tot || tot <= 0){ x.style.display = 'none'; return; }
  x.style.display = 'block';
 
+ // one record per US trading date (the same calendar the price history uses)
  d.nav = Array.isArray(d.nav) ? d.nav : [];
- var today = new Date().toISOString().slice(0, 10);
+ var today = _mktDay();
  var last = d.nav[d.nav.length - 1];
  var changed = false;
- if(!last || last.d !== today){
-  d.nav.push({d: today, v: Math.round(tot)});
-  changed = true;
- } else if(Math.abs((last.v || 0) - tot) >= 1){
-  last.v = Math.round(tot);
-  changed = true;
- }
- if(d.nav.length > 180){ d.nav = d.nav.slice(-180); changed = true; }
+ if(!last || last.d !== today){ d.nav.push({d: today, v: Math.round(tot)}); changed = true; }
+ else if(Math.abs((last.v || 0) - tot) >= 1){ last.v = Math.round(tot); changed = true; }
+ if(d.nav.length > 400){ d.nav = d.nav.slice(-400); changed = true; }
  if(changed){ _put(d); }
 
- var backcastPts = calcBackcastNav(d, tot, FM);
- var hasBackcast = !!(backcastPts && backcastPts.length >= 5);
- 
- var curMode = window._navMode;
- if(!curMode || curMode === 'auto'){
-  curMode = (d.nav.length <= 2 && hasBackcast) ? 'backcast' : 'live';
- }
-
- var pts = (curMode === 'backcast' && hasBackcast) ? backcastPts : d.nav.slice();
- if(pts.length === 1){ pts = [{d: pts[0].d, v: pts[0].v}, {d: today, v: pts[0].v}]; }
-
- var hwm = tot, mdd = 0, peak = 0;
- pts.forEach(function(pt){
-  if(pt.v > hwm) hwm = pt.v;
-  if(pt.v > peak) peak = pt.v;
-  var curDd = peak > 0 ? (pt.v - peak) / peak * 100 : 0;
-  if(curDd < mdd) mdd = curDd;
+ var rng = (window._navRange === 30 || window._navRange === 0) ? window._navRange : 7;
+ var est = calcBackcastNav(d, tot, FM) || [];
+ var estBy = {}, liveBy = {};
+ est.forEach(function(p){ if(p.mode === 'backcast') estBy[p.d] = p.v; });
+ d.nav.forEach(function(p){ liveBy[p.d] = p.v; });
+ var start = rng ? _addDays(today, -(rng - 1)) : (d.nav.length ? d.nav[0].d : today);
+ var days = {};
+ Object.keys(liveBy).forEach(function(k){ if(k >= start && k <= today) days[k] = 1; });
+ if(rng){ Object.keys(estBy).forEach(function(k){ if(k >= start && k <= today) days[k] = 1; }); }
+ var pts = Object.keys(days).sort().map(function(k){
+  return liveBy[k] != null ? {d: k, v: liveBy[k], m: 'live'} : {d: k, v: estBy[k], m: 'est'};
  });
- var curDd = hwm > 0 ? ((tot - hwm) / hwm * 100) : 0;
+ var nLive = pts.filter(function(p){ return p.m === 'live'; }).length, nEst = pts.length - nLive;
 
  var head = el('div', 'pfnav-head');
  var tit = el('div', 'pfnav-title');
  tit.appendChild(L('📈 個人資產淨值走勢與回撤追蹤', 'NAV & Drawdown Tracker'));
-
- if(hasBackcast){
-  var pills = el('div', 'pfnav-pills');
-  var pBack = el('button', 'pfnav-pill' + (curMode === 'backcast' ? ' on' : ''));
-  pBack.type = 'button';
-  pBack.appendChild(L('30天回溯走勢', '30D Backcast'));
-  pBack.addEventListener('click', function(){
-   window._navMode = 'backcast';
-   renderNav(d, tot, FM);
-  });
-  pills.appendChild(pBack);
-
-  var pLive = el('button', 'pfnav-pill' + (curMode === 'live' ? ' on' : ''));
-  pLive.type = 'button';
-  pLive.appendChild(L('實盤記錄 (' + d.nav.length + '天)', 'Live (' + d.nav.length + 'd)'));
-  pLive.addEventListener('click', function(){
-   window._navMode = 'live';
-   renderNav(d, tot, FM);
-  });
-  pills.appendChild(pLive);
-  tit.appendChild(pills);
- }
+ var pills = el('div', 'pfnav-pills');
+ [[7, '7 天', '7D'], [30, '30 天', '30D'], [0, '全部紀錄（' + d.nav.length + ' 天）', 'All records (' + d.nav.length + 'd)']].forEach(function(o){
+  var b = el('button', 'pfnav-pill' + (rng === o[0] ? ' on' : ''));
+  b.type = 'button';
+  b.appendChild(L(o[1], o[2]));
+  b.addEventListener('click', function(){ window._navRange = o[0]; renderNav(d, tot, FM); });
+  pills.appendChild(b);
+ });
+ tit.appendChild(pills);
  head.appendChild(tit);
 
+ var hwm = 0, mdd = 0, peak = 0;
+ pts.forEach(function(pt){
+  if(pt.v > hwm) hwm = pt.v;
+  if(pt.v > peak) peak = pt.v;
+  var dd = peak > 0 ? (pt.v - peak) / peak * 100 : 0;
+  if(dd < mdd) mdd = dd;
+ });
+ var curDd = hwm > 0 ? ((tot - hwm) / hwm * 100) : 0;
  var stats = el('div', 'pfnav-stats');
  function addStat(lblZh, lblEn, valText, valCls){
-  var s = el('div', 'pfnav-stat');
-  s.appendChild(L(lblZh + ': ', lblEn + ': '));
-  var b = el('b', valCls || '', valText);
-  s.appendChild(b);
-  stats.appendChild(s);
+  var s2 = el('div', 'pfnav-stat');
+  s2.appendChild(L(lblZh + ': ', lblEn + ': '));
+  s2.appendChild(el('b', valCls || '', valText));
+  stats.appendChild(s2);
  }
- addStat('歷史最高 (HWM)', 'High Water Mark', 'NT$ ' + num(hwm, 0));
- addStat('距高點回撤', 'Drawdown', (curDd >= -0.05 ? '0.0% 🏆 新高' : sgn(curDd, 1, true)), cl(curDd));
- addStat('最大回撤 (MDD)', 'Max Drawdown', (mdd < 0 ? sgn(mdd, 1, true) : '0.0%'), 'dn');
- addStat('資料週期', 'Period', curMode === 'backcast' ? (en() ? '30D Backcast' : '過去 30 交易日') : (d.nav.length + (en()?' Days':' 天')));
+ addStat('區間最高', 'Period high', 'NT$ ' + num(hwm, 0));
+ addStat('距區間高點', 'From high', (curDd >= -0.05 ? '0.0% 🏆' : sgn(curDd, 1, true)), cl(curDd));
+ addStat('區間最大回撤', 'Max drawdown', (mdd < 0 ? sgn(mdd, 1, true) : '0.0%'), 'dn');
  head.appendChild(stats);
  x.appendChild(head);
 
  var hint = el('div', 'pfnav-hint');
- if(curMode === 'backcast'){
-  hint.appendChild(L('💡 估算：假設目前持股與現金在過去 30 個交易日都沒變，用每日收盤價回推，不是實際交易紀錄。實際紀錄會隨每天造訪累積。',
-                     'Estimate: assumes today\'s holdings and cash were unchanged for 30 trading days. Not an actual record.'));
+ if(nEst){
+  hint.appendChild(L('💡 實心點＝實際每日紀錄（' + nLive + ' 天）；空心點＝估算：假設目前持股與現金在那幾天都沒變，用當天收盤價回推，不是實際交易紀錄。',
+                     'Filled = actual daily record (' + nLive + '); hollow = estimate assuming today\'s holdings were unchanged.'));
+ } else if(rng){
+  hint.appendChild(L('💡 目前只有實際紀錄（' + nLive + ' 天）。估算需要九成以上持股市值有每日歷史價；不足時只畫實際紀錄，每天造訪會自動累積。',
+                     'Actual records only (' + nLive + 'd); estimates need daily price history for ≥90% of the holdings.'));
  } else {
-  hint.appendChild(L('💡 模式：實盤每日造訪自動累計記錄（已記錄 ' + d.nav.length + ' 天）；點擊【30天回溯走勢】可查看長週期波動。',
-                     'Live tracking logged on daily visits (' + d.nav.length + ' days). Switch to 30D Backcast for full history.'));
+  hint.appendChild(L('💡 全部實際紀錄（' + nLive + ' 天），每天造訪自動累積。', 'All actual records (' + nLive + 'd).'));
  }
  x.appendChild(hint);
+ if(!pts.length){ return; }
 
  var wrap = el('div', 'pfnav-svg-wrap');
- var svg = svgEl('svg', { viewBox: '0 0 600 120', class: 'pfnav-svg', preserveAspectRatio: 'none' });
-
+ wrap.style.position = 'relative';
+ var W = 600, H = 130, pL = 20, pR = 20, pT = 20, pB = 26;
+ var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'pfnav-svg', preserveAspectRatio: 'none' });
  var defs = svgEl('defs');
  var grad = svgEl('linearGradient', { id: 'navGrad', x1: '0', y1: '0', x2: '0', y2: '1' });
  grad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': '#3a86ff', 'stop-opacity': '0.35' }));
@@ -599,67 +594,66 @@ function renderNav(d, tot, FM){
 
  var minV = Infinity, maxV = -Infinity;
  pts.forEach(function(p){ if(p.v < minV) minV = p.v; if(p.v > maxV) maxV = p.v; });
- if(hwm > maxV) maxV = hwm;
- if(minV === maxV){ minV *= 0.95; maxV *= 1.05; }
- else {
-  var pad = (maxV - minV) * 0.15;
-  minV -= pad; maxV += pad;
- }
- var W = 600, H = 120, pL = 20, pR = 20, pT = 20, pB = 22;
- var coords = pts.map(function(pt, idx){
-  var cx = pL + (idx / Math.max(1, pts.length - 1)) * (W - pL - pR);
-  var cy = H - pB - ((pt.v - minV) / (maxV - minV)) * (H - pT - pB);
-  return { x: cx, y: cy, v: pt.v, d: pt.d };
- });
+ if(minV === maxV){ minV *= 0.98; maxV *= 1.02; } else { var pad = (maxV - minV) * 0.15; minV -= pad; maxV += pad; }
+ // x axis = real dates: the whole selected window, even where there is no point yet
+ var t0 = _dms(rng ? start : pts[0].d), t1 = _dms(today);
+ if(t1 <= t0) t1 = t0 + 86400000;
+ function X(dstr){ return pL + (_dms(dstr) - t0) / (t1 - t0) * (W - pL - pR); }
+ function Y(v){ return H - pB - ((v - minV) / (maxV - minV)) * (H - pT - pB); }
+ var coords = pts.map(function(p){ return {x: X(p.d), y: Y(p.v), v: p.v, d: p.d, m: p.m}; });
 
- var hwmY = H - pB - ((hwm - minV) / (maxV - minV)) * (H - pT - pB);
+ // day ticks: every day for 7D, ~6 labels otherwise
+ var nDays = Math.round((t1 - t0) / 86400000);
+ var step = nDays <= 8 ? 1 : Math.ceil(nDays / 6);
+ for(var k = 0; k <= nDays; k += step){
+  var ds = _addDays(rng ? start : pts[0].d, k), tx = X(ds);
+  svg.appendChild(svgEl('line', { x1: tx, y1: pT, x2: tx, y2: H - pB, stroke: '#888', 'stroke-opacity': '0.15', 'stroke-width': '1' }));
+  var tl = svgEl('text', { x: tx, y: H - 8, 'text-anchor': k === 0 ? 'start' : (k + step > nDays ? 'end' : 'middle'), fill: '#888', 'font-size': '10' });
+  tl.textContent = ds.slice(5);
+  svg.appendChild(tl);
+ }
+ var hwmY = Y(hwm);
  svg.appendChild(svgEl('line', { x1: pL, y1: hwmY, x2: W - pR, y2: hwmY, stroke: '#f59e0b', 'stroke-dasharray': '4 4', 'stroke-width': '1', opacity: '0.8' }));
  var hwmTxt = svgEl('text', { x: W - pR - 4, y: Math.max(12, hwmY - 4), 'text-anchor': 'end', fill: '#f59e0b', 'font-size': '10', 'font-weight': '600' });
- hwmTxt.textContent = 'HWM NT$' + num(hwm, 0);
+ hwmTxt.textContent = (en() ? 'High NT$' : '區間高點 NT$') + num(hwm, 0);
  svg.appendChild(hwmTxt);
+ if(coords.length > 1){
+  var dArea = 'M ' + coords[0].x.toFixed(1) + ' ' + (H - pB);
+  coords.forEach(function(c){ dArea += ' L ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1); });
+  dArea += ' L ' + coords[coords.length - 1].x.toFixed(1) + ' ' + (H - pB) + ' Z';
+  svg.appendChild(svgEl('path', { d: dArea, fill: 'url(#navGrad)' }));
+  for(var q = 1; q < coords.length; q++){                       // dashed where an estimate is involved
+   var a0 = coords[q - 1], a1 = coords[q];
+   var seg = { x1: a0.x.toFixed(1), y1: a0.y.toFixed(1), x2: a1.x.toFixed(1), y2: a1.y.toFixed(1), stroke: '#3a86ff', 'stroke-width': '2.2', 'stroke-linecap': 'round' };
+   if(a0.m === 'est' || a1.m === 'est') seg['stroke-dasharray'] = '5 4';
+   svg.appendChild(svgEl('line', seg));
+  }
+ }
+ coords.forEach(function(c){
+  svg.appendChild(svgEl('circle', { cx: c.x.toFixed(1), cy: c.y.toFixed(1), r: c.m === 'live' ? '3.6' : '3',
+                                    fill: c.m === 'live' ? '#3a86ff' : 'var(--card)', stroke: '#3a86ff', 'stroke-width': '1.5' }));
+ });
 
- var dArea = 'M ' + coords[0].x.toFixed(1) + ' ' + (H - pB);
- coords.forEach(function(c){ dArea += ' L ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1); });
- dArea += ' L ' + coords[coords.length - 1].x.toFixed(1) + ' ' + (H - pB) + ' Z';
- svg.appendChild(svgEl('path', { d: dArea, fill: 'url(#navGrad)' }));
-
- var dLine = 'M ' + coords[0].x.toFixed(1) + ' ' + coords[0].y.toFixed(1);
- for(var i=1; i<coords.length; i++){ dLine += ' L ' + coords[i].x.toFixed(1) + ' ' + coords[i].y.toFixed(1); }
- svg.appendChild(svgEl('path', { d: dLine, fill: 'none', stroke: '#3a86ff', 'stroke-width': '2.2', 'stroke-linecap': 'round' }));
-
- var lastC = coords[coords.length - 1];
- svg.appendChild(svgEl('circle', { cx: lastC.x.toFixed(1), cy: lastC.y.toFixed(1), r: '4', fill: '#3a86ff', stroke: '#ffffff', 'stroke-width': '1.5' }));
-
- var dtStart = svgEl('text', { x: pL, y: H - 4, fill: '#888', 'font-size': '10' });
- dtStart.textContent = pts[0].d;
- svg.appendChild(dtStart);
- var dtEnd = svgEl('text', { x: W - pR, y: H - 4, 'text-anchor': 'end', fill: '#888', 'font-size': '10' });
- dtEnd.textContent = pts[pts.length - 1].d;
- svg.appendChild(dtEnd);
-
- // Interactive hover tooltip
+ var tipEl = el('div', 'pfnav-tip');
+ tipEl.style.cssText = 'position:absolute;display:none;pointer-events:none;background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:4px 7px;font-size:11px;white-space:nowrap;z-index:5';
  svg.addEventListener('mousemove', function(ev){
   var rect = svg.getBoundingClientRect();
-  var mouseX = (ev.clientX - rect.left) / rect.width * W;
-  var bestPt = coords[0], bestDist = Infinity;
-  coords.forEach(function(c){
-   var dist = Math.abs(c.x - mouseX);
-   if(dist < bestDist){ bestDist = dist; bestPt = c; }
-  });
-  if(bestPt && window.tip){
-   var ddFromHwm = hwm > 0 ? ((bestPt.v - hwm) / hwm * 100) : 0;
-   var htmlTip = '<b>' + bestPt.d + '</b><br>' +
-                 L('資產淨值: NT$ ', 'NAV: NT$ ') + num(bestPt.v, 0) + '<br>' +
-                 L('距最高點: ', 'Drawdown: ') + (ddFromHwm >= -0.05 ? '🏆 歷史新高' : sgn(ddFromHwm, 1, true));
-   tip(ev, htmlTip);
-  }
+  var mx = (ev.clientX - rect.left) / rect.width * W;
+  var best = coords[0];
+  coords.forEach(function(c){ if(Math.abs(c.x - mx) < Math.abs(best.x - mx)) best = c; });
+  var dd = hwm > 0 ? (best.v - hwm) / hwm * 100 : 0;
+  tipEl.textContent = best.d + (best.m === 'est' ? (en() ? ' (estimate)' : '（估算）') : (en() ? ' (actual)' : '（實際）')) +
+                      '  NT$ ' + num(best.v, 0) + '  ' + (en() ? 'from high ' : '距高點 ') + (dd >= -0.05 ? '0.0%' : sgn(dd, 1, true));
+  tipEl.style.display = 'block';
+  var left = best.x / W * rect.width + 10;
+  tipEl.style.left = Math.min(left, rect.width - 190) + 'px';
+  tipEl.style.top = Math.max(0, best.y / H * rect.height - 30) + 'px';
  });
- svg.addEventListener('mouseleave', function(){ if(window.hideTip) hideTip(); });
-
+ svg.addEventListener('mouseleave', function(){ tipEl.style.display = 'none'; });
  wrap.appendChild(svg);
+ wrap.appendChild(tipEl);
  x.appendChild(wrap);
 }
-
 // ---------------------------------------------------------------- Main Draw
 function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textContent='';var tf=document.getElementById('pft').tFoot;if(tf)tf.remove();
  var rows=[],totV=0,totDay=0,totPrev=0,totCost=0,costV=0,miss=0,dates={};
