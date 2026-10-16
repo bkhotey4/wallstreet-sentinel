@@ -35,7 +35,13 @@ def test_ttm():
          _dur("2025-01-01", "2025-06-30", 40.0, "2025-08-01"), _dur("2026-04-01", "2026-06-30", 38.0)]
     assert DD.ttm(f) == ("2026-06-30", 130.0)
     assert DD.ttm([_dur("2025-01-01", "2025-12-31", 90.0)]) == ("2025-12-31", 90.0)
-    assert DD.ttm([_dur("2026-01-01", "2026-06-30", 70.0)]) is None             # no prior year → no made-up TTM
+    assert DD.ttm([_dur("2026-01-01", "2026-06-30", 70.0)]) is None             # no prior year → no strict TTM
+    # recent IPO: year-to-date annualized (flagged); four back-to-back quarters summed (not flagged)
+    e, v, ann = DD.ttm_ex([_dur("2026-01-01", "2026-06-30", 70.0), _dur("2026-04-01", "2026-06-30", 40.0)])
+    assert e == "2026-06-30" and abs(v - 70.0 * 365 / 180) < 1e-9 and ann
+    qs = [_dur("2025-07-01", "2025-09-30", 1.0), _dur("2025-10-01", "2025-12-31", 2.0), _dur("2026-01-01", "2026-03-31", 3.0),
+          _dur("2026-04-01", "2026-06-30", 4.0)]
+    assert DD.ttm_ex(qs) == ("2026-06-30", 10.0, False)
     # a restated value (later filing) wins
     assert DD.instants([_ins("2026-06-30", 5.0, "2026-08-01"), _ins("2026-06-30", 6.0, "2026-09-01")]) == {"2026-06-30": 6.0}
 

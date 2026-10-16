@@ -123,6 +123,39 @@ def ttm(facts: List[Dict]) -> Optional[Tuple[str, float]]:
     return None
 
 
+def ttm_ex(facts: List[Dict]) -> Optional[Tuple[str, float, bool]]:
+    """(end, value, annualized).  Like ttm(), but a company without a comparable prior year (a recent IPO: its first
+    10-Qs carry no full prior fiscal year) still gets a figure: four discrete quarters if it has them, otherwise this
+    year's year-to-date scaled to twelve months (flagged, because seasonal businesses distort it)."""
+    r = ttm(facts)
+    if r:
+        return r[0], r[1], False
+    per, filed = {}, {}
+    for f in facts:
+        if f.get("val") is None or not f.get("start") or "end" not in f:
+            continue
+        k = (f["start"], f["end"])
+        if f.get("filed", "") >= filed.get(k, ""):
+            per[k], filed[k] = float(f["val"]), f.get("filed", "")
+    if not per:
+        return None
+    end = max(e for _s, e in per)
+    qs = sorted([(s_, e, v) for (s_, e), v in per.items() if 80 <= (_d(e) - _d(s_)).days <= 100], key=lambda x: x[1])
+    chain = [q for q in qs if q[1] == end]
+    while chain and len(chain) < 4:                      # walk back through back-to-back quarters
+        prev = [q for q in qs if abs((_d(chain[-1][0]) - timedelta(days=1) - _d(q[1])).days) <= 5]
+        if not prev:
+            break
+        chain.append(prev[-1])
+    if len(chain) == 4:
+        return end, sum(q[2] for q in chain), False
+    ytd = [((_d(e) - _d(s_)).days, v) for (s_, e), v in per.items() if e == end and 80 <= (_d(e) - _d(s_)).days <= 300]
+    if ytd:
+        n, v = max(ytd)
+        return end, v * 365.0 / n, True
+    return None
+
+
 def _pick_instant(cf: Dict, tags: Tuple[str, ...], at: str, back_days: int = 100) -> Optional[float]:
     best = None
     for tag in tags:
@@ -150,13 +183,17 @@ def parse_balance(cf: Dict) -> Optional[Dict]:
     out: Dict = {"end": at}
     for k, tags in INSTANT.items():
         out[k] = _pick_instant(cf, tags, at)
+    ann = []
     for k, tags in FLOWS.items():
         best = None
         for tag in tags:
-            r = ttm(_facts(cf, tag))
-            if r and (_d(at) - _d(r[0])).days <= 100 and (best is None or r[0] > best[0]):
+            r = ttm_ex(_facts(cf, tag))
+            if r and (_d(at) - _d(r[0])).days <= 100 and (best is None or r[0] > best[0] or (r[0] == best[0] and best[2] and not r[2])):
                 best = r
         out[k + "_ttm"] = best[1] if best else None
+        if best and best[2]:
+            ann.append(k)
+    out["annualized"] = ann                                   # flows scaled up from year-to-date (recent IPO)
     dep = {}
     for tag in INSTANT["deposits"]:
         dep = instants(_facts(cf, tag)) or dep
@@ -252,7 +289,7 @@ async def refresh(syms: List[str], budget_s: Optional[float] = None) -> Dict[str
                     rec["bs_ts"] = 0
                 rec["fl_ts"] = time.time()
                 await asyncio.sleep(0.15)
-            if time.time() - float(rec.get("bs_ts", 0)) > bs_ttl:
+            if time.time() - float(rec.get("bs_ts", 0)) > bs_ttl or (rec.get("bs") and "annualized" not in rec["bs"]):  # parser upgrade
                 cf = await http.get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(cik):010d}.json", headers=SEC_HDR, timeout=40, retries=1)
                 rec["bs"] = parse_balance(cf)
                 rec["bs_ts"] = time.time()

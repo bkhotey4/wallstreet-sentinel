@@ -204,10 +204,12 @@ def _filing_sigs(flags: List[Dict], today) -> List[Dict]:
 
 def _corp(b: Dict, px: pd.Series) -> List[Dict]:
     out = []
+    ann = set(b.get("annualized") or [])
+    note = lambda *ks: "（今年累計年化：上市未滿一年，缺去年同期數字）" if ann & set(ks) else ""  # noqa: E731
     z = altman(b)
     if z is not None:
         st = "alert" if z < 1.1 else "watch" if z < 2.6 else "ok"
-        out.append(_sig("altman", "Altman Z''", st, f"{z:.2f}（<1.1 危險、1.1–2.6 灰色）"))
+        out.append(_sig("altman", "Altman Z''", st, f"{z:.2f}（<1.1 危險、1.1–2.6 灰色）{note('ebit')}"))
     ebit, intr, rev = b.get("ebit_ttm"), b.get("interest_ttm"), b.get("rev_ttm")
     debt, cash = _debt(b), b.get("cash")
     if debt is not None and cash is not None and cash >= debt:
@@ -217,14 +219,14 @@ def _corp(b: Dict, px: pd.Series) -> List[Dict]:
     elif ebit is not None and intr and intr > 0 and (not rev or intr / abs(rev) > 0.005):
         cov = ebit / intr
         st = "alert" if cov < 1 else "watch" if cov < 2 else "ok"
-        out.append(_sig("coverage", "利息保障倍數", st, f"{cov:.1f} 倍（營業利益÷利息）"))
+        out.append(_sig("coverage", "利息保障倍數", st, f"{cov:.1f} 倍（營業利益÷利息）{note('ebit', 'interest')}"))
     ocf, capex = b.get("ocf_ttm"), b.get("capex_ttm")
     if ocf is not None and cash is not None:
         fcf = ocf - (capex or 0.0)
         if fcf < 0:
             m = cash / (-fcf / 12)
             st = "alert" if m < 12 else "watch" if m < 24 else "ok"
-            out.append(_sig("runway", "現金可撐", st, f"{math.floor(m)} 個月（自由現金流 {fcf / 1e9:+.1f}B／年，不再融資的話）"))
+            out.append(_sig("runway", "現金可撐", st, f"{math.floor(m)} 個月（自由現金流 {fcf / 1e9:+.1f}B／年，不再融資的話）{note('ocf', 'capex')}"))
     if debt is not None and debt > 0:
         ebitda = (ebit or 0.0) + (b.get("da_ttm") or 0.0) if ebit is not None else None
         if ebitda is not None:
@@ -233,7 +235,7 @@ def _corp(b: Dict, px: pd.Series) -> List[Dict]:
             else:
                 lev = debt / ebitda
                 st = "alert" if lev > 6 else "watch" if lev > 4 else "ok"
-                out.append(_sig("leverage", "負債／EBITDA", st, f"{lev:.1f} 倍（負債 {debt / 1e9:.1f}B）"))
+                out.append(_sig("leverage", "負債／EBITDA", st, f"{lev:.1f} 倍（負債 {debt / 1e9:.1f}B）{note('ebit', 'da')}"))
         if b.get("ltd") and b.get("ltd_yago") and b["ltd_yago"] > 0:
             g = b["ltd"] / b["ltd_yago"] - 1
             out.append(_sig("debt_growth", "長期負債年增", "watch" if g > 1.0 else "ok", f"{g * 100:+.0f}%"))
