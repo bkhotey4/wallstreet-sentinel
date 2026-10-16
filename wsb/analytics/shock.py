@@ -56,7 +56,7 @@ def auc(score: pd.Series, y: pd.Series) -> Optional[float]:
 def _verdict(a: Optional[float]) -> str:
     if a is None:
         return "樣本不足"
-    return "有鑑別力" if a >= 0.65 else ("鑑別力偏弱" if a >= 0.55 else "接近隨機")
+    return "有鑑別力" if a >= 0.65 else ("鑑別力偏弱" if a >= 0.55 else ("接近隨機" if a >= 0.45 else "反向（比隨機差）"))
 
 
 # ---------------------------------------------------------------- 1) block radar

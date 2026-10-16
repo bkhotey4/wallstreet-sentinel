@@ -275,6 +275,7 @@ class StressEngine:
 
         S = pd.DataFrame(scores)
         W = pd.Series(weights)
+        self.scores, self.weights, self.blocks = S, W, blocks      # kept for the indicator-validation lab
         excluded = {r.id: r.status for r in results if r.score is None}
         if excluded != getattr(self, "_last_excluded", None):          # log only when the excluded set changes
             self._last_excluded = excluded

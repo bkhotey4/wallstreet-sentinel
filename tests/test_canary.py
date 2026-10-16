@@ -177,7 +177,21 @@ def test_score_lights_on_engine():
     assert {r["id"] for r in rows} == {x[0] for x in CN.SCORE_LIGHTS}
     assert all(r["state"] in ("ok", "watch", "alert", "warmup", "stale", "na") for r in rows)
     out = CN.build(eng)
-    assert out["available"] and len(out["rows"]) == len(CN.SCORE_LIGHTS) + 5
+    assert out["available"] and len(out["rows"]) == len(CN.SCORE_LIGHTS) + 6
+    from wsb.config import SETTINGS
+    ssi_ids = {c["id"] for c in SETTINGS.get("stress_components", [])}
+    assert not ({"sofr_iorb", "cp_tbill", "stock_bond_corr"} & ssi_ids)          # validated wrong-way → out of the SSI
+    rows = {r["id"]: r for r in rows}
+    assert rows["stock_bond_corr"]["in_ssi"] is False and rows["move" if "move" in rows else "transports"]["in_ssi"] is True
+    # rate-hike pricing light
+    fv = {"available": True, "asof": "2026-10-16", "meetings": [
+        {"date": "2026-10-28", "rate_after": 3.95, "cum_bp": 7}, {"date": "2026-12-09", "rate_after": 4.17, "cum_bp": 29},
+        {"date": "2027-01-27", "rate_after": 4.28, "cum_bp": 40, "week_ago": {"rate_after": 4.20}}]}
+    h = CN.hike_light(types.SimpleNamespace(fedwatch_view=fv))
+    assert h["state"] == "watch" and "+40bp" in h["value_txt"] and "+8bp" in h["value_txt"], h
+    fv["meetings"][2]["week_ago"] = {"rate_after": 4.05}
+    assert CN.hike_light(types.SimpleNamespace(fedwatch_view=fv))["state"] == "alert"      # +23bp in a week
+    assert CN.hike_light(types.SimpleNamespace(fedwatch_view={}))["state"] == "na"
 
 
 def main():

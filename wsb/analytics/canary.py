@@ -51,7 +51,41 @@ SCORE_LIGHTS = [
 
 
 def _comp(cid: str) -> Optional[dict]:
-    return next((c for c in SETTINGS.get("stress_components", []) if c["id"] == cid), None)
+    return next((c for c in SETTINGS.get("stress_components", []) + SETTINGS.get("canary_components", []) if c["id"] == cid), None)
+
+
+def _in_ssi(cid: str) -> bool:
+    return any(c["id"] == cid for c in SETTINGS.get("stress_components", []))
+
+
+def _auc63(sc: pd.Series, close: pd.Series) -> Optional[float]:
+    """Predictive power of the light's score for a ≥10% S&P fall within 63 sessions (AUC, 0.5 = random)."""
+    try:
+        from .lab import _labels
+        from .shock import auc
+        hit, valid = _labels(close, 63, 0.10)
+        j = pd.concat([sc.rename("x"), hit.rename("y"), valid.rename("v")], axis=1).dropna()
+        j = j[j["v"].astype(bool)]
+        if len(j) < 500 or j["y"].sum() < 15:
+            return None
+        return round(float(auc(j["x"], j["y"])), 2)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+class _Own:
+    """Current reading of a canary-only component (not part of the SSI), with the SSI's own staleness rule."""
+    def __init__(self, se, c, raw, sc):
+        from .stress import STALE_DAYS, _today
+        lv = raw.last_valid_index()
+        src_last = se.source_last_date(c)
+        max_age = STALE_DAYS.get(c["series"], 7) if c["src"] == "fred" else 7
+        stale = lv is None or src_last is None or (_today() - pd.Timestamp(src_last).normalize()).days > max_age
+        self.raw = None if lv is None else float(raw.loc[lv])
+        self.asof = None if lv is None else lv.strftime("%Y-%m-%d")
+        self.score = None if stale or pd.isna(sc.iloc[-1]) else float(sc.iloc[-1])
+        self.status = "no_data" if lv is None else (f"stale(最新資料 {pd.Timestamp(src_last).strftime('%Y-%m-%d') if src_last is not None else '—'})"
+                                                    if stale else "ok")
 
 
 def _event_history(sc: pd.Series) -> List[str]:
@@ -95,7 +129,7 @@ def score_lights(eng) -> List[Dict]:
             continue
         z = rolling_z(raw, win, minp) * float(c.get("direction", 1))
         sc = pd.Series(norm_cdf(z.clip(-6, 6)) * 100, index=idx).where(z.notna())
-        comp = live.get(cid)
+        comp = live.get(cid) if _in_ssi(cid) else _Own(se, c, raw, sc)
         cur = comp.score if comp else None
         v = comp.raw if comp else None
         if cid == "discount_window" and v is not None:
@@ -112,6 +146,7 @@ def score_lights(eng) -> List[Dict]:
                      "rate": round(float((s_ok >= WATCH).mean() * 100), 1) if len(s_ok) else None,
                      "since": s_ok.index[0].strftime("%Y-%m") if len(s_ok) else None,
                      "chg_3m": round(float(s_ok.iloc[-1] - s_ok.iloc[-64]), 1) if len(s_ok) > 64 else None,
+                     "in_ssi": _in_ssi(cid), "auc63": _auc63(sc, eng.market.series("^GSPC").dropna()),
                      "history": _event_history(sc)})
     return rows
 
@@ -266,10 +301,28 @@ def revision_light(eng, snap: Optional[Dict] = None, today: Optional[date] = Non
             "value_txt": f"{n} 家中上修 {up}、下修 {dn}，淨上修比例 {net:+.0f}%"}
 
 
+def hike_light(eng) -> Dict:
+    row = {"id": "hike_pricing", "group": "資金市場", "zh": "升息定價（聯邦基金期貨）", "en": "Rate-hike pricing (fed funds futures)", "kind": "rule",
+           "why": "期貨押注聯準會在高利率下繼續升息時，最弱的借款人與高估值資產壓力最大。",
+           "rule": "看第三次會議後的隱含利率比目前高多少：≥ +25bp（至少一碼）黃燈；≥ +50bp，或一週內再增加 ≥ 15bp 紅燈。期貨歷史從 2026-10 起累積，尚未回測。"}
+    fv = getattr(eng, "fedwatch_view", None) or {}
+    ms = fv.get("meetings") or []
+    if not fv.get("available") or len(ms) < 1:
+        return {**row, "state": "na", "note": "期貨資料不足"}
+    m3 = ms[min(2, len(ms) - 1)]
+    cum = m3["cum_bp"]
+    wk = (m3.get("week_ago") or {})
+    d1w = (m3["rate_after"] - wk["rate_after"]) * 100 if wk.get("rate_after") is not None else None
+    state = "alert" if cum >= 50 or (d1w is not None and d1w >= 15) else "watch" if cum >= 25 else "ok"
+    return {**row, "state": state, "asof": fv.get("asof"),
+            "value_txt": f"{m3['date']} 會後隱含利率 {m3['rate_after']:.2f}%，比目前 {cum:+.0f}bp"
+                         + (f"；一週變化 {d1w:+.0f}bp" if d1w is not None else "；一週變化：快照累積中")}
+
+
 def build(eng, close: Optional[pd.DataFrame] = None) -> Dict:
     rows = []
     for fn in (lambda: score_lights(eng), lambda: [rrp_light(eng)], lambda: [margin_light(eng)], lambda: [cash_dash_light(eng)],
-               lambda: [split_light(eng, close)], lambda: [revision_light(eng)]):
+               lambda: [split_light(eng, close)], lambda: [revision_light(eng)], lambda: [hike_light(eng)]):
         try:
             rows += fn()
         except Exception:  # noqa: BLE001

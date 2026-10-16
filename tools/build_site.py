@@ -245,14 +245,22 @@ def sec_odds(eng) -> str:
         lbl = T(f"{d} 日內跌 ≥ {dd:.0f}%", f"Fall ≥{dd:.0f}% within {d}d")
         rows.append(f'<div class="odd"><div class="ol">{lbl}</div>'
                     f'<div class="ob"><div class="obar" style="width:{(adj or 0) / mx * 100:.1f}%"></div><i class="obase" style="left:{(base or 0) / mx * 100:.1f}%"></i></div>'
-                    f'<div class="ov"><b>{num(adj, 1)}%</b> <span class="muted">{T("基準", "base")} {num(base, 1)}%</span> <span class="{lc}">{num(lift, 2)}×</span></div></div>')
+                    f'<div class="ov"><b>{num(adj, 1)}%</b> <span class="muted">{T("基準", "base")} {num(base, 1)}%</span> <span class="{lc}">{num(lift, 2)}×</span>'
+                    + (f' <span class="muted small">{T("（舊分區間法", "(old bucket method")} {num(h.get("bucket_adjusted"), 1)}%）</span>' if h.get("method") == "logit" else "")
+                    + '</div></div>')
     mom = o.get("momentum") or {}
     bucket, since, state = o.get("bucket"), o.get("sample_start"), mom.get("state") or "—"
-    legend = (f'<div class="legend"><span><i class="lk bar"></i>{T("目前機率（含升溫速度）", "Current odds (with momentum)")}</span>'
+    logit = any(h.get("method") == "logit" for h in hs)
+    legend = (f'<div class="legend"><span><i class="lk bar"></i>{T("目前機率", "Current odds")}</span>'
               f'<span><i class="lk tick"></i>{T("歷史平常基準", "Historical base rate")}</span></div>')
-    note = T(f"SSI 落在「{bucket}」區間時標普 500 之後大跌的歷史頻率（樣本自 {since}），升溫狀態：{state}。倍數 > 1 代表比平常危險；這是歷史頻率，不是預測。",
-             f"Historical frequency of S&P 500 drawdowns when SSI sat in the {bucket} zone (since {since}). Multiple > 1 = riskier than usual. Not a forecast.")
-    return card("經驗崩跌機率", "Empirical crash odds", legend + "".join(rows) + f'<p class="note">{note}</p>', "span3")
+    aucs = "／".join(num(h.get("model_auc_oos"), 2) for h in hs if h.get("model_auc_oos") is not None)
+    note = (T(f"機率來自邏輯迴歸：用壓力指數預測之後是否大跌，逐年只用當時已有的資料估計，再依樣本外結果校準（樣本自 {since}）。"
+              f"逐年樣本外 AUC {aucs}（0.5＝隨機）。原本的「分區間頻率」法樣本外只有 0.53／0.50／0.23，僅列作參考。倍數 > 1 代表比平常危險；這是統計估計，不是預測。",
+              f"Logistic model on the stress index, walk-forward fitted and calibrated (OOS AUC {aucs}). The old bucket frequency is shown for reference. Not a forecast.")
+            if logit else
+            T(f"SSI 落在「{bucket}」區間時標普 500 之後大跌的歷史頻率（樣本自 {since}），升溫狀態：{state}。倍數 > 1 代表比平常危險；這是歷史頻率，不是預測。",
+              f"Historical frequency of S&P 500 drawdowns when SSI sat in the {bucket} zone (since {since}). Not a forecast."))
+    return card("崩跌機率", "Crash odds", legend + "".join(rows) + f'<p class="note">{note}</p>', "span3")
 
 
 def sec_trends(eng) -> str:
@@ -840,8 +848,11 @@ def sec_quality(eng) -> str:
     for w in ql.get("walk_forward", []):
         if w.get("n_test"):
             d, dd = w["days"], w["drawdown_pct"]
+            lg = next((hz.get("base_model") for hz in (eng.lab or {}).get("horizons", []) if int(hz.get("days", 0)) == int(d) and hz.get("base_model")), None)
+            from wsb.analytics.shock import _verdict
             rows += (f'<tr><td>{T(f"{d} 日跌 ≥ {dd:.0f}%", f"{d}d fall ≥{dd:.0f}%")}</td>'
-                     f'<td class="r">{num(w.get("auc_oos"), 2)}</td><td>{esc(str(w.get("verdict")))}</td></tr>')
+                     f'<td class="r">{num(lg.get("auc_oos") if lg else None, 2)}</td><td>{esc(_verdict(lg.get("auc_oos")) if lg and lg.get("auc_oos") is not None else "—")}</td>'
+                     f'<td class="r muted">{num(w.get("auc_oos"), 2)}</td><td class="muted">{esc(str(w.get("verdict")))}</td></tr>')
     lines = []
     for hz in (eng.lab or {}).get("horizons", []):
         if not hz.get("baseline"):
@@ -855,10 +866,11 @@ def sec_quality(eng) -> str:
     bad = [s.name for s in HEALTH.sources.values() if s.state != "ok"]
     badh = f'<span class="muted">（{T("異常", "issues")}：{esc(", ".join(bad[:6]))}）</span>' if bad else ""
     lis = "".join(f"<li>{x}</li>" for x in lines)
-    note = T("AUC 0.5 ＝ 隨機、1.0 ＝ 完美；≥0.65 有鑑別力、0.55–0.65 偏弱、<0.55 接近隨機。請把本站當風險溫度計，而不是預測器。",
+    note = T("AUC 0.5 ＝ 隨機、1.0 ＝ 完美；≥0.65 有鑑別力、0.55–0.65 偏弱、0.45–0.55 接近隨機、<0.45 反向（比隨機差）。請把本站當風險溫度計，而不是預測器。",
              "AUC 0.5 = random, 1.0 = perfect; ≥0.65 useful, 0.55–0.65 weak, <0.55 near random. Treat this as a risk thermometer, not a forecaster.")
-    body = (f'<div class="scroll"><table><thead><tr><th>{T("情境", "Horizon")}</th><th class="r">{T("樣本外 AUC", "OOS AUC")}</th>'
-            f'<th>{T("鑑別力", "Verdict")}</th></tr></thead><tbody>{rows}</tbody></table></div><ul class="lines">{lis}</ul>'
+    body = (f'<div class="scroll"><table><thead><tr><th>{T("情境", "Horizon")}</th><th class="r">{T("現用模型 AUC", "Model AUC")}</th>'
+            f'<th>{T("鑑別力", "Verdict")}</th><th class="r">{T("舊分區間法", "Old bucket")}</th><th>{T("鑑別力", "Verdict")}</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div><ul class="lines">{lis}</ul>'
             f'<p>{T("資料源", "Data sources")} <b>{ok}/{len(HEALTH.sources)}</b> {T("正常", "OK")}{badh}</p><p class="note">{note}</p>')
     return card("模型可信度與資料健康", "Model credibility & data health", body, "wide")
 

@@ -1014,8 +1014,13 @@ def sec_canary(eng) -> str:
             bar = _bar(sc, col) if sc is not None else ""
             meta = (f'{T("分數", "Score")} <b>{num(sc, 0)}</b>/100' + (f'　{T("3 個月變化", "3m")} {num(r.get("chg_3m"), 0, sign=True)}' if r.get("chg_3m") is not None else "")
                     + (f'　{T("歷史上 ≥90 分的時間", "time ≥90")} {num(r.get("rate"), 0)}%（{esc(r.get("since") or "")} 起）' if r.get("rate") is not None else ""))
-            rule = T("用自身近 3 年歷史換算成 0–100 分：≥ 90 黃燈、≥ 97.5 紅燈（和壓力指數同一套算法，已納入壓力指數）。",
-                     "Own 3-year history → 0–100: ≥90 watch, ≥97.5 alert (same as the SSI; included in it).")
+            a63 = r.get("auc63")
+            pw = (f"；對「63 日內跌 10%」的歷史預測力 AUC {a63:.2f}（0.5＝隨機）" if a63 is not None else "")
+            rule = (T("用自身近 3 年歷史換算成 0–100 分：≥ 90 黃燈、≥ 97.5 紅燈；已納入壓力指數" + pw + "。",
+                      "Own 3-year history → 0–100: ≥90 watch, ≥97.5 alert; included in the SSI.")
+                    if r.get("in_ssi", True) else
+                    T("用自身近 3 年歷史換算成 0–100 分：≥ 90 黃燈、≥ 97.5 紅燈；不計入壓力指數（回測顯示它對股市下跌沒有預測力" + pw + "），只作為這類風險本身的警訊。",
+                      "Own 3-year history → 0–100: ≥90 watch, ≥97.5 alert; NOT in the SSI (no predictive power for equity falls)."))
             body = f'<div class="cnv"><b>{val}</b></div>{bar}<div class="small muted">{meta}</div>'
         else:
             body = f'<div class="cnv small">{esc(r.get("value_txt") or r.get("note") or "—")}</div>'

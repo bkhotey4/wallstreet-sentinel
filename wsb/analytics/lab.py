@@ -63,7 +63,7 @@ def _ret(h: pd.DataFrame, t: str, n: int) -> Optional[pd.Series]:
     return h[t].ffill().pct_change(n, fill_method=None) if t in h.columns else None
 
 
-def candidates(h: pd.DataFrame) -> Dict[str, Dict]:
+def candidates(h: pd.DataFrame, fred=None) -> Dict[str, Dict]:
     """name -> {'label', 'series'}.  Only features whose inputs exist are returned."""
     out: Dict[str, Dict] = {}
 
@@ -100,6 +100,17 @@ def candidates(h: pd.DataFrame) -> Dict[str, Dict]:
         add("rvol", "標普實現波動率（20日／1年均值）", r.rolling(20).std() / r.rolling(252, min_periods=120).std())
         add("dist_ma200", "標普距200日線（低=差）", -(c / c.rolling(200, min_periods=150).mean() - 1))
         add("dd_now", "標普目前回檔幅度", 1 - c / c.rolling(252, min_periods=120).max())
+    # 2026-10 candidates: momentum crowding / unwinding, and the NY Fed Weekly Economic Index
+    if "MTUM" in h and "USMV" in h:
+        rel = lambda n: h["MTUM"].ffill().pct_change(n, fill_method=None) - h["USMV"].ffill().pct_change(n, fill_method=None)  # noqa: E731
+        add("mom_crowd", "動能擁擠度（MTUM 相對 USMV，60日，高=擁擠）", rel(60))
+        add("mom_unwind", "動能反轉（MTUM 相對 USMV，20日，低=正在反轉）", -rel(20))
+    wei = fred.get("WEI") if fred is not None else None
+    if wei is not None and not wei.dropna().empty and c is not None:
+        w = wei.dropna().copy()
+        w.index = w.index + pd.offsets.BDay(5)                 # published about a week after the reference week
+        w = w[~w.index.duplicated(keep="last")].reindex(c.index, method="ffill", limit=10)
+        add("wei_drop", "即時景氣 WEI 13 週變化（低=景氣轉弱）", -(w - w.shift(65)))
     return out
 
 
@@ -190,6 +201,14 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
     if not base.get("n") or base.get("auc") is None:
         return out
     out["baseline"] = {"auc": base["auc"], "skill": base["skill"], "n": base["n"]}
+    # the SSI-only logistic model, fitted on all history, with an isotonic map learned from its OUT-OF-SAMPLE
+    # predictions: crash_odds.apply_model turns today's SSI into a probability with it on every recompute
+    Db = base_F.join(hit.rename("_y")).join(valid.rename("_v")).dropna()
+    Db = Db[Db["_v"].astype(bool)]
+    wb_all = fit_logit(Db[["ssi"]].values, Db["_y"].values)
+    cal_b = isotonic(base["p"], base["y"])
+    out["base_model"] = {"w": [float(x) for x in wb_all], "cal": [[float(x) for x in cal_b[0]], [float(x) for x in cal_b[1]]],
+                         "auc_oos": base["auc"], "skill": base["skill"], "n": base["n"]}
     base_full = base
     feats = []
     def same_rows_base(mask):
@@ -265,14 +284,14 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
     return out
 
 
-def run(history: pd.DataFrame, ssi: pd.Series, close: pd.Series) -> Dict:
+def run(history: pd.DataFrame, ssi: pd.Series, close: pd.Series, fred=None) -> Dict:
     """Full lab report for each configured crash horizon."""
     t0 = time.time()
     hz = SETTINGS.get("crash_odds", {}).get("horizons", [])
     # features are built on the benchmark's trading days: the shared history also has crypto weekend rows, which
     # made every rolling window NaN (and "20 days" mean ~14 trading days)
     history = history.loc[history.index.isin(close.dropna().index)]
-    cands = candidates(history)
+    cands = candidates(history, fred)
     reps = [run_horizon(history, ssi, close, int(x["days"]), float(x["drawdown"]), cands) for x in hz]
     return {"horizons": reps, "n_candidates": len(cands), "seconds": time.time() - t0, "ts": time.time(),
             "caveat": "特徵選擇與檢驗用同一段歷史，樣本外增益可能略為樂觀。"}

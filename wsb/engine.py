@@ -211,9 +211,11 @@ class Engine:
                         self._quality = await asyncio.to_thread(sk.model_quality, self.stress.history, close)
                         self._quality_ts = time.time()
                         try:
-                            self.lab = await asyncio.to_thread(lb.run, self.market.history, self.stress.history, close)
+                            self.lab = await asyncio.to_thread(lb.run, self.market.history, self.stress.history, close, self.fred)
                         except Exception:  # noqa: BLE001
                             log.exception("feature lab failed")
+                    if self.lab and self.odds:                # validated logistic probability for today's SSI
+                        self.odds = co.apply_model(self.odds, self.lab, self.stress.score)
                     self.shock = await asyncio.to_thread(sk.build, self.stress, close, self._quality)
             except Exception:  # noqa: BLE001
                 log.exception("shock radar failed")

@@ -176,6 +176,20 @@ def test_logic_fixes():
     assert abs(v["r0"] - 3.63) < 1e-9 and v["meetings"][0]["probs"] == {"0": 1.0}, v      # no fake cut at the next meeting
 
 
+def test_logit_odds():
+    import numpy as np
+    from wsb.analytics import crash_odds as CO
+    lab = {"horizons": [{"days": 21, "base_model": {"w": [-2.0, 0.8], "cal": [[0.0, 1.0], [0.0, 1.0]], "auc_oos": 0.67}}]}
+    odds = {"horizons": [{"days": 21, "drawdown_pct": 5, "base_rate": 17.0, "adjusted": 22.0}]}
+    out = CO.apply_model(odds, lab, 60.0)
+    h = out["horizons"][0]
+    exp = 100 / (1 + np.exp(-(-2.0 + 0.8 * 0.5)))
+    assert abs(h["adjusted"] - exp) < 1e-6 and h["bucket_adjusted"] == 22.0 and h["method"] == "logit"
+    assert CO.apply_model(out, lab, 60.0)["horizons"][0]["bucket_adjusted"] == 22.0           # idempotent
+    from wsb.analytics.shock import _verdict
+    assert _verdict(0.23).startswith("反向") and _verdict(0.5) == "接近隨機"
+
+
 def test_discord():
     from wsb.bot import econ_push as EP
     m = {"probs": {"0": 0.7, "25": 0.3}, "rate_after": 3.955}
@@ -274,6 +288,7 @@ def test_release_parser():
 
 
 def main():
+    test_logit_odds()
     test_release_parser()
     test_discord()
     test_fedwatch()

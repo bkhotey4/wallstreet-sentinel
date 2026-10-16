@@ -149,12 +149,20 @@ fred_series:
   DPSACBW027SBOG: 商業銀行存款（週）
   BAMLH0A1HYBB: BB級利差
   ICSA: 初領失業金
+  WEI: 紐約聯準會每週經濟指數 WEI
   UNRATE: 失業率
   SAHMREALTIME: 薩姆衰退指標
   CPIAUCSL: CPI
   DTWEXBGS: 廣義美元指數
   IRLTLT01JPM156N: 日本10年期公債(月)
   IRLTLT01DEM156N: 德國10年期公債(月)
+
+# ---------- 金絲雀專用指標（不計入壓力指數）----------
+# 2026-10 驗證：這三項對「之後股市大跌」的預測力為反向（AUC < 0.5），只作資金市場／避險失效的警訊燈號
+canary_components:
+  - {id: sofr_iorb,   block: 流動性,    src: fred, series: SOFR,        kind: "spread:IORB|IOER:ma5", direction: 1,  weight: 0.6}
+  - {id: cp_tbill,    block: 流動性,    src: fred, series: DCPF3M,      kind: "spread:DTB3:ma5",       direction: 1,  weight: 0.6}
+  - {id: stock_bond_corr, block: 股市結構, src: px, series: SPY,        kind: "pcorr:60:TLT",          direction: 1,  weight: 0.6}
 
 # ---------- 系統性壓力指數 (SSI) 組成 ----------
 # kind:
@@ -214,12 +222,9 @@ stress_components:
   - {id: ai_leaders,  block: 股市結構,  src: px,   series: SMH,     kind: "rel:20:SPY",       direction: -1, weight: 0.6}
   - {id: krw,         block: 全球新興,  src: px,   series: "KRW=X", kind: "ret:20",           direction: 1,  weight: 0.5}
   # ---- 金絲雀（2026-10）：資金市場、信用品質、銀行存款、避險失效、景氣類股
-  - {id: sofr_iorb,   block: 流動性,    src: fred, series: SOFR,        kind: "spread:IORB|IOER:ma5", direction: 1,  weight: 0.6}
   - {id: discount_window, block: 流動性, src: fred, series: WLCFLPCL,   kind: log,                    direction: 1,  weight: 0.5}
-  - {id: cp_tbill,    block: 流動性,    src: fred, series: DCPF3M,      kind: "spread:DTB3:ma5",       direction: 1,  weight: 0.6}
   - {id: ccc_bb,      block: 信用,      src: fred, series: BAMLH0A3HYC, kind: "spread:BAMLH0A1HYBB",   direction: 1,  weight: 0.8}
   - {id: bank_deposits, block: 信用,    src: fred, series: DPSACBW027SBOG, kind: "ret:20",             direction: -1, weight: 0.5}
-  - {id: stock_bond_corr, block: 股市結構, src: px, series: SPY,        kind: "pcorr:60:TLT",          direction: 1,  weight: 0.6}
   - {id: transports,  block: 景氣就業,  src: px,   series: IYT,         kind: "rel:60:SPY",            direction: -1, weight: 0.5}
   - {id: discretionary_staples, block: 景氣就業, src: px, series: XLY,  kind: "rel:60:XLP",            direction: -1, weight: 0.5}
   - {id: homebuilders, block: 景氣就業, src: px,   series: XHB,         kind: "rel:60:SPY",            direction: -1, weight: 0.4}

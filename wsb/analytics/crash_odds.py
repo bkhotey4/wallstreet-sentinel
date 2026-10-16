@@ -43,6 +43,31 @@ def lift_text(lift) -> str:
     return f"{'高於' if lift > 1 else '低於'}基準 {lift:.2f} 倍"
 
 
+def apply_model(odds: Dict, lab: Dict, current: float) -> Dict:
+    """Replace the bucket-frequency probability with the lab's walk-forward-validated logistic model for today's SSI.
+    The old number is kept as `bucket_adjusted` (shown as reference).  Out-of-sample AUC (2003+): the bucket model
+    scored 0.53 / 0.50 / 0.23 on the 21 / 63 / 126-day horizons, the logistic model 0.66 / 0.69 / 0.63."""
+    import numpy as np
+    from .lab import apply_iso, predict
+    if not odds or not lab or current is None:
+        return odds
+    models = {int(h["days"]): h.get("base_model") for h in lab.get("horizons", []) if h.get("base_model")}
+    for h in odds.get("horizons", []):
+        mdl = models.get(int(h["days"]))
+        if not mdl or h.get("method") == "logit":
+            continue
+        raw = float(predict(np.array(mdl["w"]), np.array([[(current - 50) / 20.0]]))[0])
+        p = float(apply_iso((np.array(mdl["cal"][0]), np.array(mdl["cal"][1])), raw)) * 100
+        base = h.get("base_rate") or 0
+        h["bucket_adjusted"] = h.get("adjusted")
+        h["adjusted"] = p
+        h["lift_adj"] = (p / base) if base > 0 else None
+        h["lift_adj_text"] = lift_text(h["lift_adj"])
+        h["method"] = "logit"
+        h["model_auc_oos"] = mdl.get("auc_oos")
+    return odds
+
+
 def crash_odds(stress_hist: pd.Series, close: pd.Series, current: float, chg20: float | None = None) -> Dict:
     cfg = SETTINGS.get("crash_odds", {})
     edges = cfg.get("buckets", [0, 35, 55, 70, 85, 101])
