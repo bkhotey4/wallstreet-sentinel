@@ -17,7 +17,7 @@ _anthropic = None
 _gemini = None
 
 GEMINI_MODELS = [m for m in dict.fromkeys(
-    [GEMINI_MODEL] + [x.strip() for x in env("GEMINI_FALLBACK_MODELS", "gemini-3.1-flash-lite,gemini-2.5-flash,gemini-2.0-flash").split(",")]) if m]
+    [GEMINI_MODEL] + [x.strip() for x in env("GEMINI_FALLBACK_MODELS", "gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-flash-lite-latest").split(",")]) if m]
 OPENAI_API_KEY = env("OPENAI_API_KEY")
 OPENAI_MODEL = env("OPENAI_MODEL", "gpt-4o")
 
