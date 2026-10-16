@@ -186,11 +186,32 @@ def test_discovery():
     DZ._save_state({})
 
 
+def test_bankruptcy_model(b):
+    from wsb.analytics import bankruptcy as BK
+    m = BK.model()
+    assert m and len(m["w"]) == len(BK.FEATS) + 1 and m["oos"]["auc"] > m["oos"]["auc_z"]          # shipped model beat Z''
+    p_bad = BK.prob(b, TODAY)                                                  # CoreWeave-like sheet
+    good = {**b, "cur_assets": 60e9, "cur_liab": 10e9, "re": 40e9, "equity": 60e9, "liab": 17e9, "ebit_ttm": 20e9,
+            "ocf_ttm": 25e9, "capex_ttm": 5e9, "ltd": 2e9, "ltd_yago": 2e9, "cash": 20e9}
+    p_good = BK.prob(good, TODAY)
+    assert 0 <= p_good < p_bad <= 1, (p_good, p_bad)
+    assert BK.prob({**b, "deposits": 70e9}, TODAY) is None                     # banks are outside the model
+    # live features == training features (same function on the same row)
+    X = BK.features(pd.DataFrame([BK.row(b, 108)]))
+    assert list(X.columns) == BK.FEATS and X.notna().sum(axis=1).iloc[0] >= 15
+    sig = DZ.bk_signal(0.12)
+    assert sig["state"] == "alert" and sig["no_pts"] and DZ.points([sig]) == 0 and DZ.overall([sig]) == "ok"
+    r = DZ.assess("XX", {"zh": "x", "kind": "tech"}, {"bs": b, "flags": [{"code": "1.03", "date": "2026-10-01", "level": "alert",
+                                                                           "zh": "破產", "url": None}]}, _px(), pd.Series(dtype=float), TODAY)
+    assert r["bk_prob"] is None                                                # already filed → no probability
+
+
 def test_site_and_alerts(out):
     from tools import site_sections as S2
     html = S2.sec_distress(types.SimpleNamespace(distress=out))
     assert "企業危機雷達" in html and "CRWV" in html and "Altman" in html and "紅燈" in html
     assert "SEC" in html and "股價" in html and "名單自動維護" in html
+    assert "破產的機率最高" in html and "AUC" in html
     stale = {**out, "n_sec_stale": out["total"], "removed": {"ZZZ": {"date": "2026-10-01", "zh": "Gone", "why": "超過 30 天沒有股價", "last_px": "2026-08-20"}}}
     h2 = S2.sec_distress(types.SimpleNamespace(distress=stale))
     assert "資料更新異常" in h2 and "已移出雷達" in h2 and "ZZZ" in h2
@@ -201,6 +222,13 @@ def test_site_and_alerts(out):
            "signals": [DZ._sig("altman", "Altman Z''", "alert", "-1.09")]}
     bot = types.SimpleNamespace(engine=types.SimpleNamespace(distress={"available": True, "asof": "2026-10-16", "rows": [row]}))
     assert Sentinel._distress_alerts(bot) == []                                # first run = silent baseline
+    # model alert (its baseline was taken by the call above): once per company + balance sheet in the top ~1 %
+    row["bk_prob"], row["bs_end"] = 0.15, "2026-09-30"
+    a2 = [x for x in Sentinel._distress_alerts(bot) if "破產機率模型" in x.title]
+    assert len(a2) == 1 and "15.0%" in a2[0].title
+    store.alert_mark(a2[0].key, a2[0].severity, a2[0].title)
+    assert all("破產機率模型" not in x.title for x in Sentinel._distress_alerts(bot))
+    row["bk_prob"], row["bs_end"] = None, "2026-06-30"
     # a company discovered later that is already red → one digest (not one alert per company)
     nr = {"sym": "NEWX", "zh": "New X", "state": "alert", "bs_end": "2026-06-30", "why": "近四季營業利益不夠付利息",
           "signals": [DZ._sig("altman", "Z", "alert", "0.1")]}
@@ -230,6 +258,7 @@ def main():
     test_metrics(b)
     out = test_assess_and_build(b)
     test_discovery()
+    test_bankruptcy_model(b)
     test_site_and_alerts(out)
     print("distress OK")
 

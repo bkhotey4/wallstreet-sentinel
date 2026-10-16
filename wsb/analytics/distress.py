@@ -22,9 +22,11 @@ import pandas as pd
 
 from ..config import DATA_DIR, SETTINGS
 from ..data import distress_data as DD
+from . import bankruptcy as BK
 from ..data.econcal import us_today
 
 PTS = {"ok": 0, "watch": 1, "alert": 2}
+BK_ALERT, BK_WATCH = 0.10, 0.02   # model probability: ≈ top 1 % / top 10 % of companies out of sample (2015-2025)
 STALE_SEC_H, STALE_PX_BDAYS = 48, 5           # older than this → the row shows a data-age warning
 ALERT_PTS, WATCH_PTS = 5, 3
 SKIP_THEMES = ("電信公用",)          # regulated utilities / telcos: high leverage is their normal business model
@@ -276,12 +278,25 @@ def _credit(b: Dict) -> List[Dict]:
     return [_sig("bdc_lev", "負債／淨值", st, f"{r:.2f} 倍（法定上限約 2 倍）")]
 
 
+def points(sigs: List[Dict]) -> int:
+    """The model probability is shown as a signal but not counted: it is built from the same ratios (no double count)."""
+    return sum(PTS.get(s["state"], 0) for s in sigs if not s.get("no_pts"))
+
+
+def bk_signal(p: float) -> Dict:
+    m = BK.model() or {}
+    base = (m.get("oos") or {}).get("base_rate_pct")
+    st = "alert" if p >= BK_ALERT else "watch" if p >= BK_WATCH else "ok"
+    return {**_sig("bk_model", "12 個月破產機率（模型）", st,
+                   f"{p * 100:.1f}%" + (f"（一般公司約 {base:.1f}%）" if base else "")), "no_pts": True, "p": p}
+
+
 def overall(sigs: List[Dict]) -> str:
     """Any hard SEC red flag → alert.  Otherwise points (watch 1, alert 2): ≥ 5 alert, ≥ 3 watch — one bad ratio alone
     never lights a company up (many healthy asset-light or buyback-heavy firms fail a single ratio such as Z'')."""
     if any(s.get("hard") for s in sigs):
         return "alert"
-    p = sum(PTS.get(s["state"], 0) for s in sigs)
+    p = points(sigs)
     return "alert" if p >= ALERT_PTS else "watch" if p >= WATCH_PTS else "ok"
 
 
@@ -301,6 +316,10 @@ def assess(sym: str, meta: Dict, rec: Dict, px: pd.Series, bench: pd.Series, tod
             sigs += _bank(b)
         elif kind == "credit":
             sigs += _credit(b)
+    filed = [f for f in (rec or {}).get("flags") or [] if f["code"] == "1.03"]
+    p_bk = BK.prob(b, today) if fresh and kind != "bank" and not filed else None    # already filed → no "probability of filing"
+    if p_bk is not None:
+        sigs.append(bk_signal(p_bk))
     sigs += _market(px, bench, kind)
     sigs += _filing_sigs((rec or {}).get("flags"), today)
     st = overall(sigs)
@@ -308,7 +327,7 @@ def assess(sym: str, meta: Dict, rec: Dict, px: pd.Series, bench: pd.Series, tod
     fl_ts, bs_ts = float((rec or {}).get("fl_ts") or 0), float((rec or {}).get("bs_ts") or 0)
     px_last = px.index[-1].date() if len(px) else None
     return {"sym": sym, "zh": meta["zh"], "kind": kind, "theme": meta.get("theme"), "state": st,
-            "points": sum(PTS.get(s["state"], 0) for s in sigs), "signals": sigs,
+            "points": points(sigs), "signals": sigs, "bk_prob": p_bk,
             "bs_end": b.get("end"), "bs_old": old, "has_bs": fresh, "src": meta.get("src"), "why": meta.get("why"),
             "added": meta.get("added"), "price": float(px.iloc[-1]) if len(px) else None,
             # data age: when SEC was last read successfully, and the last price bar
@@ -348,6 +367,9 @@ def build(eng) -> Dict:
             "src_counts": {k: sum(r.get("src") == k for r in rows) for k in ("universe", "manual", "auto")},
             "n_sec_stale": sum(r["sec_stale"] for r in rows), "n_px_stale": sum(r["px_stale"] for r in rows),
             "removed": _state().get("removed") or {}, "health": hs,
+            "bk_top": [r["sym"] for r in sorted([r for r in rows if r.get("bk_prob") is not None], key=lambda r: -r["bk_prob"])[:15]],
+            "bk_model": {k: (BK.model() or {}).get(k) for k in ("trained", "sample", "rows", "bankruptcies", "oos", "eval_years")},
+            "bk_model_age_d": BK.model_age_days(today),
             "scan_age_h": round((time.time() - float(scn["ts"])) / 3600, 1) if scn.get("ts") else None,
             "screen_period": scr.get("period"),
             "screen_age_h": round((time.time() - float(scr["ts"])) / 3600, 1) if scr.get("ts") else None}

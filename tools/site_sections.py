@@ -1092,6 +1092,41 @@ def _dz_health(dz) -> str:
     return warn + f'<p class="small muted">{info}</p>'
 
 
+def _bk_table(dz) -> str:
+    """Model ranking: highest 12-month bankruptcy probability, whatever the rule-based light says."""
+    m = dz.get("bk_model") or {}
+    o = m.get("oos") or {}
+    by = {r["sym"]: r for r in dz["rows"]}
+    rows = [by[s] for s in dz.get("bk_top") or [] if s in by]
+    if not rows or not o:
+        return ""
+    body = ""
+    for r in rows:
+        p = r["bk_prob"]
+        col = "var(--dn)" if p >= 0.10 else "var(--warn)" if p >= 0.02 else "var(--mu)"
+        ico, zh, en, lcol = _CN_STATE.get(r["state"], _CN_STATE["na"])
+        body += (f'<tr><td><b>{esc(r["sym"])}</b> <span class="small muted">{esc(r["zh"])}</span></td>'
+                 f'<td class="r"><b style="color:{col}">{p * 100:.1f}%</b></td>'
+                 f'<td><span class="small" style="color:{lcol}">{ico} {T(zh, en)}</span></td><td class="small">{esc(r.get("bs_end") or "—")}</td></tr>')
+    age = dz.get("bk_model_age_d")
+    old = (f'<p class="small" style="color:var(--warn)">⚠️ {T(f"模型已 {age} 天沒有重新訓練", f"Model is {age} days old")}</p>'
+           if age is not None and age > 540 else "")
+    how = T(f"機率來自 logistic 破產模型：用 SEC 財報（{m.get('sample', '')}，{m.get('rows', 0):,} 筆公司×半年快照，"
+            f"其中 {m.get('bankruptcies', 0)} 筆在一年內申報 8-K 1.03 破產）逐年訓練，每次只用當時已公布的數字。"
+            f"樣本外驗證（2015–2025）：AUC {o.get('auc', 0):.2f}，Altman Z'' 為 {o.get('auc_z', 0):.2f}、雷達點數 {o.get('auc_pts', 0):.2f}，"
+            f"11 年中模型 {o.get('beats_z_years', '')} 年較好。機率最高的 5% 公司抓到 {o.get('top5_recall', 0) * 100:.0f}% 的破產案"
+            f"（Z'' 只抓到 {o.get('top5_recall_z', 0) * 100:.0f}%），但這 5% 裡只有約 {o.get('top5_precision', 0) * 100:.0f}% 真的在一年內破產："
+            f"多數高機率公司最後並沒有破產。一般公司的一年破產率約 {o.get('base_rate_pct', 0):.1f}%。"
+            f"限制：沒有用股價（已下市公司沒有股價資料），銀行不適用，2013–14 年訓練資料太少時模型失效（AUC {o.get('auc_all_years', 0):.2f} 是含那兩年的整體值），"
+            "財報一季才更新。≥ 10%（約前 1%）紅、≥ 2%（約前 10%）黃；機率顯示在每家公司的警訊裡，但不計入燈號點數（同一批財報比率，避免重複計算）。",
+            f"Logistic bankruptcy model on SEC filings ({m.get('sample', '')}); out-of-sample AUC {o.get('auc', 0):.2f} vs Altman Z'' "
+            f"{o.get('auc_z', 0):.2f}. Top 5% catches {o.get('top5_recall', 0) * 100:.0f}% of bankruptcies; most high-probability firms do not fail.")
+    return (f'<h3>{T("模型：12 個月內申報破產的機率最高", "Model: highest 12-month bankruptcy probability")}</h3>{old}'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("公司", "Company")}</th><th class="r">{T("破產機率", "Probability")}</th>'
+            f'<th>{T("雷達燈號", "Radar light")}</th><th>{T("財報期", "Balance sheet")}</th></tr></thead><tbody>{body}</tbody></table></div>'
+            f'<p class="small muted">{how}</p>')
+
+
 def sec_distress(eng) -> str:
     dz = getattr(eng, "distress", None) or {}
     if not dz.get("available"):
@@ -1130,6 +1165,7 @@ def sec_distress(eng) -> str:
            if flagged else f'<p>{T("目前沒有公司亮燈。", "No company is flagged right now.")}</p>')
     rest = (f'<details><summary class="small">{T("其他公司（無燈號）", "Other companies (no light)")}（{len(calm)}）</summary>'
             f'<div class="scroll"><table class="mini">{hdr}<tbody>{"".join(row(r, False) for r in calm)}</tbody></table></div></details>') if calm else ""
+    top += _bk_table(dz)
     sc = dz.get("src_counts") or {}
     head = (f'<div class="kv"><div><span class="muted">{T("紅燈", "Alerts")}</span><b style="color:var(--dn)">{n.get("alert", 0)}</b></div>'
             f'<div><span class="muted">{T("黃燈", "Watch")}</span><b style="color:var(--warn)">{n.get("watch", 0)}</b></div>'

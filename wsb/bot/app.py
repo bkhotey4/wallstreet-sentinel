@@ -612,6 +612,21 @@ class Sentinel(commands.Bot):
                                  "；".join(f"{s['zh']} {s['txt']}" for s in bad[:5])[:900]))
             elif r["state"] == "ok" and not armed:
                 store.kv_set(k, True)
+        # bankruptcy model: once per company and balance sheet when it enters the top ~1 % (silent baseline on first run)
+        bk_first = store.kv_get("distress_bk_baseline") is None
+        for r in dz["rows"]:
+            p = r.get("bk_prob")
+            if p is None or p < 0.10:
+                continue
+            bk = f"distress_bk:{r['sym']}:{r.get('bs_end') or 'na'}"
+            if bk_first or new_red and r in new_red:
+                store.kv_set(bk, True)
+            elif not store.kv_get(bk) and not store.alert_sent(bk):
+                out.append(Alert(bk, "⚠️ WARNING", f"🏚️ 破產機率模型：{r['zh']}（{r['sym']}）{p * 100:.1f}%",
+                                 f"12 個月內申報破產的模型機率進入最高約 1%（財報 {r.get('bs_end') or '—'}）。"
+                                 "多數高機率公司最後並未破產；這是統計估計，不是預測。"))
+        if bk_first:
+            store.kv_set("distress_bk_baseline", dz.get("asof") or True)
         if new_red:
             out.append(Alert(f"distress_new:{dz.get('asof')}:{len(new_red)}", "⚠️ WARNING",
                              f"🏚️ 企業危機雷達新加入 {len(new_red)} 家紅燈公司",
