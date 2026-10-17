@@ -22,7 +22,7 @@ from . import stockscore as SS
 
 log = logging.getLogger(__name__)
 COLS = ["sym", "code", "name", "ind", "board", "tech", "rank", "r1d", "r1m", "r6", "rsi", "st", "stl", "why", "when",
-        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex", "history_asof"]
+        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex", "history_asof", "ma2", "m121", "hi52", "rel6"]
 BENCH = {"us": "^GSPC", "tw": "^TWII", "hk": "^HSI"}
 LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
@@ -63,7 +63,14 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
     for s, f in feats.items():
         it, (c, v) = meta[s], series[s]
         t = tech[s][0]
-        row = {"sym": s, "code": it["code"], "name": zh_names.get(s) or it.get("name") or it["code"], "ind": it.get("ind", ""),
+        try:                                          # inputs of the holdings rule check (my rule check) for ANY listed stock
+            from .rulebook import price_stats
+            rs = price_stats(c, bench)
+        except Exception:  # noqa: BLE001
+            rs = {}
+        row = {"ma2": _r(rs.get("ma200"), 3), "m121": _r(rs.get("mom_12_1"), 1), "hi52": _r(rs.get("high_52w"), 3),
+               "rel6": _r(rs.get("rel_6m"), 1),
+               "sym": s, "code": it["code"], "name": zh_names.get(s) or it.get("name") or it["code"], "ind": it.get("ind", ""),
                "board": it.get("board", ""), "tech": _r(t, 1), "r1d": _r(f["r1d"], 1), "r1m": _r(f["r1m"], 1), "r6": _r(f["r6"], 0),
                "rsi": _r(f["rsi"], 0), "px": _r(f["price"], 3), "history_asof": f["asof"]}
         if len(c) >= 60:

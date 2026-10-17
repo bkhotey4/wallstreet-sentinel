@@ -193,6 +193,25 @@ class MarketData:
             log.warning("history rebuild failed %d time(s) in a row: next attempt in %.1f h", self._hist_fails, wait / 3600)
             return False
 
+    async def add_history(self, syms: List[str]) -> List[str]:
+        """Fetch the full history of tickers the cache doesn't have yet (a newly added holding) and merge it in."""
+        new = [s for s in dict.fromkeys(syms) if s and (self.history.empty or s not in self.history.columns
+                                                        or self.history[s].notna().sum() == 0)]
+        if not new:
+            return []
+        try:
+            df = await asyncio.to_thread(_download, new, start=history_start().isoformat(), interval="1d")
+        except Exception as e:  # noqa: BLE001
+            log.warning("history for new tickers %s failed: %s", new, e)
+            return []
+        got = [s for s in new if s in df.columns and df[s].notna().sum() > 0]
+        if got:
+            base = self.history.drop(columns=[c for c in got if c in self.history.columns]) if not self.history.empty else self.history
+            self.history = (base.join(df[got], how="outer") if not base.empty else df[got]).sort_index()
+            await asyncio.to_thread(self._save)
+            log.info("history added for %s", ", ".join(got))
+        return got
+
     async def refresh_quotes(self, extra: Optional[List[str]] = None) -> None:
         from . import taiwan_quotes as TQ
         tracked = set(self.tickers + (extra or []))

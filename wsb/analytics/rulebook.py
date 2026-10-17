@@ -28,16 +28,48 @@ SOURCES = {
 }
 
 
+# The one place the default thresholds live (settings.yaml rulebook: overrides any of them; the website receives the
+# merged values, so the browser never carries numbers of its own).
+DEFAULTS = {"bk_exit_pct": 5, "stop_loss_pct": 25, "trend_lag_pp": 15, "trailing_pct": 30, "max_weight_pct": 15,
+            "max_theme_pct": 30, "max_risk_contrib_pct": 25, "bk_add_max_pct": 2, "add_max_ssi": 60, "add_min_known": 4}
+BENCH = {"us": ("^GSPC", "標普 500"), "tw": ("^TWII", "加權指數"), "hk": ("^HSI", "恆生指數")}
+
+
 def cfg() -> Dict:
-    return SETTINGS.get("rulebook", {}) or {}
+    return {**DEFAULTS, **(SETTINGS.get("rulebook", {}) or {})}
 
 
-def _theme(sym: str) -> str:
+def market_of(sym: str) -> str:
+    return "tw" if sym.endswith((".TW", ".TWO")) else "hk" if sym.endswith(".HK") else "us"
+
+
+def _theme(sym: str) -> Optional[str]:
+    """The scoring universe's theme, else the exchange-listed industry from the whole-market list; None if unknown
+    (unknown names are never lumped into one made-up group for the concentration check)."""
     from ..data.stocks import universe
     for m in universe().values():
         if sym in m.get("themes", {}):
             return m["themes"][sym]
-    return "其他"
+    try:                                              # another share class of the same company (GOOG ↔ GOOGL): same SEC CIK
+        import json as _json
+        from ..data.edgar_holdings import _MAP_FILE
+        tm = _json.loads(_MAP_FILE.read_text(encoding="utf-8")) if _MAP_FILE.exists() else {}
+        cik = (tm.get(sym) or {}).get("cik")
+        if cik:
+            for m in universe().values():
+                for s2, th in m.get("themes", {}).items():
+                    if (tm.get(s2) or {}).get("cik") == cik:
+                        return th
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from ..data import fullmarket as FMK
+        for it in (FMK._load_json(FMK._LISTS).get(market_of(sym)) or []):
+            if it.get("sym") == sym and it.get("ind"):
+                return "產業：" + str(it["ind"])
+    except Exception:  # noqa: BLE001
+        pass
+    return None
 
 
 def _chk(group: str, rid: str, zh: str, met: Optional[bool], txt: str, src: str) -> Dict:
@@ -67,7 +99,7 @@ def price_stats(px: pd.Series, bench: pd.Series) -> Dict:
 
 
 def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: Optional[Dict], guide_below: Optional[bool],
-          theme_w: float, ssi: Optional[float]) -> List[Dict]:
+          theme_w: Optional[float], ssi: Optional[float], theme: Optional[str] = None, bench_name: str = "大盤") -> List[Dict]:
     c = cfg()
     out: List[Dict] = []
     w = float(pos.get("weight") or 0)
@@ -78,7 +110,7 @@ def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: O
     if dz is None:
         out.append(_chk("exit", "distress", "論點：財務體質", None, "沒有 SEC 財報（非美國公司或資料未到）", SOURCES["thesis"]))
     else:
-        bad = st == "alert" or (bk is not None and bk * 100 >= float(c.get("bk_exit_pct", 5)))
+        bad = st == "alert" or (bk is not None and bk * 100 >= float(c["bk_exit_pct"]))
         txt = f"危機雷達{ {'alert': '紅燈', 'watch': '黃燈', 'ok': '無燈號'}.get(st, '—') }" + (f"，破產機率 {bk * 100:.1f}%" if bk is not None else "")
         out.append(_chk("exit", "distress", "論點：財務體質", bool(bad), txt, SOURCES["thesis"]))
     if surp is None and guide_below is None:
@@ -89,26 +121,31 @@ def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: O
         if guide_below:
             txt += "；營收低於上次指引"
         out.append(_chk("exit", "earnings", "論點：最近財報", miss or bool(guide_below), txt, SOURCES["thesis"]))
+    lim = float(c["stop_loss_pct"])
     if price and cost:
         dd = (price / cost - 1) * 100
-        lim = float(c.get("stop_loss_pct", 25))
         out.append(_chk("exit", "stop", f"停損：低於成本 {lim:.0f}%", dd <= -lim, f"相對成本 {dd:+.1f}%", SOURCES["stop"]))
+    else:
+        out.append(_chk("exit", "stop", f"停損：低於成本 {lim:.0f}%", None, "沒有成本或價格", SOURCES["stop"]))
     if ps.get("ma200") is not None and ps.get("mom_12_1") is not None and ps.get("rel_6m") is not None:
-        lag = float(c.get("trend_lag_pp", 15))
+        lag = float(c["trend_lag_pp"])
         brk = price < ps["ma200"] and ps["mom_12_1"] < 0 and ps["rel_6m"] <= -lag
         out.append(_chk("exit", "trend", "趨勢破壞（三項同時）", brk,
-                        f"{'低於' if price < ps['ma200'] else '高於'} 200 日線 {ps['ma200']:.2f}｜12-1 動能 {ps['mom_12_1']:+.0f}%｜6 個月相對大盤 {ps['rel_6m']:+.0f} 個百分點",
+                        f"{'低於' if price < ps['ma200'] else '高於'} 200 日線 {ps['ma200']:.2f}｜12-1 動能 {ps['mom_12_1']:+.0f}%｜6 個月相對{bench_name} {ps['rel_6m']:+.0f} 個百分點",
                         SOURCES["trend"]))
     else:
         out.append(_chk("exit", "trend", "趨勢破壞（三項同時）", None, "歷史股價不足一年", SOURCES["trend"]))
-    if ps.get("high_52w"):
+    lim = float(c["trailing_pct"])
+    if ps.get("high_52w") and price:
         tr = (price / ps["high_52w"] - 1) * 100
-        lim = float(c.get("trailing_pct", 30))
         out.append(_chk("exit", "trail", f"移動停損：距 52 週高點 {lim:.0f}%", tr <= -lim, f"距高點 {tr:+.0f}%", SOURCES["trail"]))
+    else:
+        out.append(_chk("exit", "trail", f"移動停損：距 52 週高點 {lim:.0f}%", None, "歷史股價不足一年", SOURCES["trail"]))
     # ---------------- 減碼檢查
-    cap, tcap, rcap = float(c.get("max_weight_pct", 15)), float(c.get("max_theme_pct", 30)), float(c.get("max_risk_contrib_pct", 25))
+    cap, tcap, rcap = float(c["max_weight_pct"]), float(c["max_theme_pct"]), float(c["max_risk_contrib_pct"])
     out.append(_chk("trim", "weight", f"單一持股 > {cap:.0f}%", w > cap, f"佔比 {w:.1f}%", SOURCES["size"]))
-    out.append(_chk("trim", "theme", f"同主題 > {tcap:.0f}%", theme_w > tcap, f"主題「{_theme(sym)}」合計 {theme_w:.1f}%", SOURCES["size"]))
+    out.append(_chk("trim", "theme", f"同主題 > {tcap:.0f}%", None if theme is None or theme_w is None else theme_w > tcap,
+                    "沒有族群／產業資料" if theme is None or theme_w is None else f"「{theme}」合計 {theme_w:.1f}%", SOURCES["size"]))
     rc = pos.get("risk_contrib_pct")
     out.append(_chk("trim", "risk", f"風險貢獻 > {rcap:.0f}%", None if rc is None else rc > rcap,
                     "—" if rc is None else f"佔組合風險 {rc:.1f}%（佔比 {w:.1f}%）", SOURCES["size"]))
@@ -119,14 +156,14 @@ def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: O
     out.append(_chk("add", "mom", "12-1 動能為正", None if ps.get("mom_12_1") is None else ps["mom_12_1"] > 0,
                     "—" if ps.get("mom_12_1") is None else f"{ps['mom_12_1']:+.0f}%", SOURCES["trend"]))
     if dz is not None:
-        ok = st == "ok" and (bk is None or bk * 100 < float(c.get("bk_add_max_pct", 2)))
+        ok = st == "ok" and (bk is None or bk * 100 < float(c["bk_add_max_pct"]))
         out.append(_chk("add", "quality", "財務體質無警訊", ok, f"危機雷達{'無燈號' if st == 'ok' else '有燈號'}" +
                         (f"，破產機率 {bk * 100:.1f}%" if bk is not None else ""), SOURCES["thesis"]))
     else:
         out.append(_chk("add", "quality", "財務體質無警訊", None, "沒有 SEC 財報", SOURCES["thesis"]))
     out.append(_chk("add", "beat", "最近財報不低於預期", None if not surp or surp.get("surp") is None else surp["surp"] >= 0,
                     "—" if not surp or surp.get("surp") is None else f"EPS 驚喜 {surp['surp']:+.1f}%", SOURCES["thesis"]))
-    lim = float(c.get("add_max_ssi", 60))
+    lim = float(c["add_max_ssi"])
     out.append(_chk("add", "macro", f"壓力指數 < {lim:.0f}", None if ssi is None else ssi < lim,
                     "—" if ssi is None else f"壓力指數 {ssi:.0f}", SOURCES["macro"]))
     return out
@@ -139,7 +176,7 @@ def summarize(checks: List[Dict]) -> Dict:
     n_ex, n_tr = sum(x["met"] is True for x in ex), sum(x["met"] is True for x in tr)
     ad_known = [x for x in ad if x["met"] is not None]
     n_ad = sum(x["met"] is True for x in ad_known)
-    all_add = bool(ad_known) and n_ad == len(ad_known) and len(ad_known) >= 4
+    all_add = bool(ad_known) and n_ad == len(ad_known) and len(ad_known) >= int(cfg()["add_min_known"])  # enough known
     if n_ex >= 2:
         st, zh = "exit2", f"出場檢查：{n_ex} 項觸發"
     elif n_ex == 1:
@@ -177,17 +214,19 @@ def build(eng) -> Dict:
         rel = {}
     ssi = eng.stress.score if getattr(eng, "stress", None) else None
     pos = {p["sym"]: p for p in pf.get("positions", []) if not p.get("error")}
+    themes = {s: _theme(s) for s in pos}
     theme_w: Dict[str, float] = {}
     for s, p in pos.items():
-        theme_w[_theme(s)] = theme_w.get(_theme(s), 0.0) + float(p.get("weight") or 0)
+        if themes[s]:
+            theme_w[themes[s]] = theme_w.get(themes[s], 0.0) + float(p.get("weight") or 0)
     rows = []
     for s, p in pos.items():
-        tw = s.endswith((".TW", ".TWO"))
+        bsym, bname = BENCH[market_of(s)]
         px = completed(eng.market.series(s).dropna(), s)
-        bench = completed(eng.market.series("^TWII" if tw else "^GSPC").dropna(), "^TWII" if tw else "^GSPC")
+        bench = completed(eng.market.series(bsym).dropna(), bsym)
         ps = price_stats(px, bench)
-        if not ps:
-            continue
+        if not ps:                                     # no history yet (a holding just added): price from the portfolio,
+            ps = {"price": p.get("price"), "asof": None}  # every price rule shows "no data" instead of the row vanishing
         dz = None
         rec = cache.get(s) or {}
         if rec.get("bs"):
@@ -199,8 +238,8 @@ def build(eng) -> Dict:
         if keys:
             vp = rel[keys[-1]].get("vs_prev_guide") or []
             gb = any(x["metric"] == "revenue" and x["pos"] == "below" for x in vp) if vp else None
-        ch = check(s, p, holds.get(s, {}), ps, dz, sr, gb, theme_w.get(_theme(s), 0.0), ssi)
+        ch = check(s, p, holds.get(s, {}), ps, dz, sr, gb, theme_w.get(themes[s]) if themes[s] else None, ssi, themes[s], bname)
         rows.append({"sym": s, "name": p.get("name") or s, "weight": p.get("weight"), "pnl_pct": p.get("pnl_pct"),
                      "price": ps.get("price"), "asof": ps.get("asof"), "vol": ps.get("vol"), "checks": ch, **summarize(ch)})
     rows.sort(key=lambda r: (ORDER[r["state"]], -(r["weight"] or 0)))
-    return {"available": bool(rows), "asof": max((r["asof"] for r in rows), default=None), "rows": rows, "ssi": ssi}
+    return {"available": bool(rows), "asof": max((r["asof"] for r in rows if r["asof"]), default=None), "rows": rows, "ssi": ssi}

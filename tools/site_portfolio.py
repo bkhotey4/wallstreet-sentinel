@@ -189,6 +189,7 @@ def _rules(eng) -> dict:
     from wsb.analytics import rulebook as RB
     from wsb.data.stocks import universe
     out = {"cfg": {k: v for k, v in RB.cfg().items() if isinstance(v, (int, float)) and not isinstance(v, bool)},
+           "bench": {k: v[1] for k, v in RB.BENCH.items()}, "surpc": {},
            "ssi": round(float(eng.stress.score), 1) if getattr(eng, "stress", None) else None, "sym": {}, "dz": {}, "surp": {}, "gb": {}}
     try:
         h = eng.market.history
@@ -197,7 +198,7 @@ def _rules(eng) -> dict:
         allp = pd.concat(frames, axis=1)
         allp = allp.loc[:, ~allp.columns.duplicated()]
         themes = {s_: th for m in universe().values() for s_, th in m.get("themes", {}).items()}
-        bench = {k: eng.market.series(t).dropna() for k, t in (("us", "^GSPC"), ("tw", "^TWII"), ("hk", "^HSI"))}
+        bench = {k: eng.market.series(t).dropna() for k, (t, _n) in RB.BENCH.items()}
         for c in allp.columns:
             c = str(c)
             if c.startswith("^") or "=" in c:
@@ -207,7 +208,7 @@ def _rules(eng) -> dict:
             if not st:
                 continue
             r2 = lambda v: None if v is None else round(float(v), 2)  # noqa: E731
-            out["sym"][c] = [r2(st.get("ma200")), r2(st.get("mom_12_1")), r2(st.get("high_52w")), r2(st.get("rel_6m")), themes.get(c, "其他")]
+            out["sym"][c] = [r2(st.get("ma200")), r2(st.get("mom_12_1")), r2(st.get("high_52w")), r2(st.get("rel_6m")), themes.get(c)]
     except Exception:  # noqa: BLE001
         pass
     for r in (getattr(eng, "distress", None) or {}).get("rows", []):
@@ -225,6 +226,20 @@ def _rules(eng) -> dict:
         row = ((rec or {}).get("rows") or [None])[0]
         if row and row.get("surp") is not None:
             out["surp"][s_] = [row.get("eps"), row.get("cons"), row["surp"]]
+    # every US company's latest reported EPS vs the consensus, from the public whole-market Nasdaq earnings calendar
+    try:
+        import json as _json
+        from datetime import date as _date, timedelta as _td
+        from wsb.data import earnings_data as ED
+        cal = _json.loads(ED.F_DAYS.read_text(encoding="utf-8")) if ED.F_DAYS.exists() else {}
+        today, lo = _date.today().isoformat(), (_date.today() - _td(days=130)).isoformat()
+        for d in sorted(k for k in cal if lo <= k <= today):
+            for r in (cal[d] or {}).get("rows") or []:
+                eps, est = r.get("eps"), r.get("eps_f")
+                if eps is not None and est not in (None, 0):
+                    out["surpc"][r["sym"]] = [eps, est, round((eps - est) / abs(est) * 100, 1)]
+    except Exception:  # noqa: BLE001
+        pass
     try:
         from wsb.data import earn_release as ER
         last = {}
@@ -424,7 +439,9 @@ function cur(mk){return mk==='tw'?'TWD':(mk==='hk'?'HKD':'USD');}
 function loadMk(mk){if(MK[mk]!==undefined)return MK[mk];MK[mk]=fetch('market/'+mk+'.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();})
  .then(function(d){var c=d.cols,iS=c.indexOf('sym'),iN=c.indexOf('name'),iP=c.indexOf('px'),iR=c.indexOf('r1d'),map={};
   var iD=c.indexOf('quote_asof'),iH=c.indexOf('history_asof'),iSrc=c.indexOf('source');
-  d.rows.forEach(function(a){map[a[iS]]={px:a[iP],ch:a[iR],name:a[iN],asof:(iD>=0&&a[iD])||(iH>=0&&a[iH])||d.asof,source:(iSrc>=0&&a[iSrc])||'Yahoo'};});return {asof:d.asof,map:map};}).catch(function(){return null;});return MK[mk];}
+  var iMa=c.indexOf('ma2'),iMo=c.indexOf('m121'),iHi=c.indexOf('hi52'),iRe=c.indexOf('rel6'),iInd=c.indexOf('ind');
+  d.rows.forEach(function(a){map[a[iS]]={px:a[iP],ch:a[iR],name:a[iN],asof:(iD>=0&&a[iD])||(iH>=0&&a[iH])||d.asof,source:(iSrc>=0&&a[iSrc])||'Yahoo',
+   rb:iMa>=0?[a[iMa],a[iMo],a[iHi],a[iRe],(iInd>=0&&a[iInd])?'產業：'+a[iInd]:null]:null};});return {asof:d.asof,map:map};}).catch(function(){return null;});return MK[mk];}
 function price(h,fm){var n=norm(h.s);if(!n)return null;for(var i=0;i<n.cands.length;i++){var s=n.cands[i],q=Q[s],f=fm&&fm.map[s];
   if(q&&q[0]!=null&&(!f||(q[2]||'')>=(f.asof||'')))return {sym:s,px:q[0],ch:q[1],prev:q[5],asof:q[2],name:q[3],source:q[4],src:'q'};
   if(f&&f.px!=null)return {sym:s,px:f.px,ch:f.ch,asof:f.asof,name:f.name,source:f.source,src:'fm'};}
@@ -884,11 +901,13 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
 
 // ---------------------------------------------------------------- 我的規則檢查（same rules as Discord /holdings rules）
 var RBK = PUB.rules || {};
+function rbStats(sym, h, mk){var s=rbLook(RBK.sym,sym,h);if(s&&s[0]!=null)return s;
+ var n=norm(h.s),fm=gFM[mk],c=[sym].concat(n?n.cands:[]);for(var i=0;i<c.length;i++){var f=fm&&fm.map[c[i]];if(f&&f.rb&&f.rb[0]!=null)return f.rb;}return s||null;}
 function rbLook(map, sym, h){var n=norm(h.s),c=[sym].concat(n?n.cands:[]);for(var i=0;i<c.length;i++){if(map&&map[c[i]]!==undefined)return map[c[i]];}return undefined;}
-function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi){
+function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi, bname){
  var o=[];function ck(g,zh,met,txt){o.push({g:g,zh:zh,met:met,txt:txt});}
- C=C||{};var cap=+C.max_weight_pct||15,tcap=+C.max_theme_pct||30,stopL=+C.stop_loss_pct||25,lag=+C.trend_lag_pp||15,trail=+C.trailing_pct||30,
-  bkx=(+C.bk_exit_pct||5)/100,bka=(+C.bk_add_max_pct||2)/100,smax=+C.add_max_ssi||60;
+ C=C||{};var cap=C.max_weight_pct,tcap=C.max_theme_pct,stopL=C.stop_loss_pct,lag=C.trend_lag_pp,trail=C.trailing_pct,
+  bkx=C.bk_exit_pct/100,bka=C.bk_add_max_pct/100,smax=C.add_max_ssi;bname=bname||'大盤';
  var ma=S?S[0]:null,mom=S?S[1]:null,hi=S?S[2]:null,rel=S?S[3]:null;
  if(!Z)ck('exit','論點：財務體質',null,'不在危機雷達的掃描名單（或非美國公司）');
  else ck('exit','論點：財務體質',Z[0]==='alert'||(Z[1]!=null&&Z[1]>=bkx),'危機雷達'+({alert:'紅燈',watch:'黃燈',ok:'無燈號'}[Z[0]]||'—')+(Z[1]!=null?'，破產機率 '+(Z[1]*100).toFixed(1)+'%':''));
@@ -896,11 +915,11 @@ function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi){
  else ck('exit','論點：最近財報',!!((E&&E[2]<0)||GB),(E?'EPS '+E[0]+' vs 預期 '+E[1]+'（'+(E[2]>=0?'+':'')+(+E[2]).toFixed(1)+'%）':'EPS 無資料')+(GB?'；營收低於上次指引':''));
  if(px>0&&cost>0){var dd=(px/cost-1)*100;ck('exit','停損：低於成本 '+stopL+'%',dd<=-stopL,'相對成本 '+(dd>=0?'+':'')+dd.toFixed(1)+'%');}
  else ck('exit','停損：低於成本 '+stopL+'%',null,'沒有填成本');
- if(ma!=null&&mom!=null&&rel!=null)ck('exit','趨勢破壞（三項同時）',px<ma&&mom<0&&rel<=-lag,(px<ma?'低於':'高於')+' 200 日線 '+ma.toFixed(2)+'｜12-1 動能 '+(mom>=0?'+':'')+Math.round(mom)+'%｜6 個月相對大盤 '+(rel>=0?'+':'')+Math.round(rel)+' 個百分點');
+ if(ma!=null&&mom!=null&&rel!=null)ck('exit','趨勢破壞（三項同時）',px<ma&&mom<0&&rel<=-lag,(px<ma?'低於':'高於')+' 200 日線 '+ma.toFixed(2)+'｜12-1 動能 '+(mom>=0?'+':'')+Math.round(mom)+'%｜6 個月相對'+bname+' '+(rel>=0?'+':'')+Math.round(rel)+' 個百分點');
  else ck('exit','趨勢破壞（三項同時）',null,'歷史股價不足一年或不在本站資料');
  if(hi){var tr=(px/hi-1)*100;ck('exit','移動停損：距 52 週高點 '+trail+'%',tr<=-trail,'距高點 '+Math.round(tr)+'%');}
  ck('trim','單一持股 > '+cap+'%',w>cap,'佔比 '+w.toFixed(1)+'%');
- ck('trim','同主題 > '+tcap+'%',themeW>tcap,'主題「'+(S?S[4]:'其他')+'」合計 '+themeW.toFixed(1)+'%');
+ var th=S?S[4]:null;ck('trim','同主題 > '+tcap+'%',th&&themeW!=null?themeW>tcap:null,th&&themeW!=null?'「'+th+'」合計 '+themeW.toFixed(1)+'%':'沒有族群／產業資料');
  ck('trim','風險貢獻上限',null,'網站版不計算（Discord /holdings rules 有）');
  ck('add','部位還在上限內',w<cap,'佔比 '+w.toFixed(1)+'%（上限 '+cap+'%）');
  ck('add','站上 200 日線',ma==null?null:px>ma,ma==null?'—':px.toFixed(2)+' vs '+ma.toFixed(2));
@@ -910,9 +929,9 @@ function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi){
  ck('add','最近財報不低於預期',E?E[2]>=0:null,E?'EPS 驚喜 '+(E[2]>=0?'+':'')+(+E[2]).toFixed(1)+'%':'—');
  ck('add','壓力指數 < '+smax,ssi==null?null:ssi<smax,ssi==null?'—':'壓力指數 '+Math.round(ssi));
  return o;}
-function rbSum(ch){var ex=ch.filter(function(c){return c.g==='exit';}),tr=ch.filter(function(c){return c.g==='trim';}),ad=ch.filter(function(c){return c.g==='add'&&c.met!==null;});
+function rbSum(ch, minKnown){var ex=ch.filter(function(c){return c.g==='exit';}),tr=ch.filter(function(c){return c.g==='trim';}),ad=ch.filter(function(c){return c.g==='add'&&c.met!==null;});
  var nx=ex.filter(function(c){return c.met===true;}).length,nt=tr.filter(function(c){return c.met===true;}).length,na=ad.filter(function(c){return c.met===true;}).length;
- var all=ad.length>=4&&na===ad.length,st=nx>=2?'exit2':nx===1?'exit1':nt?'trim':all?'add':'hold';
+ var all=ad.length>=(minKnown||0)&&ad.length>0&&na===ad.length,st=nx>=2?'exit2':nx===1?'exit1':nt?'trim':all?'add':'hold';
  var zh={exit2:'出場檢查：'+nx+' 項觸發',exit1:'出場檢查：1 項觸發',trim:'減碼檢查：'+nt+' 項觸發',add:'加碼條件：全部成立',hold:'沒有規則觸發'}[st];
  return {st:st,zh:zh,nx:nx,nex:ex.length,nt:nt,ntr:tr.length,na:na,nad:ad.length};}
 function renderRules(rows, totV){
@@ -924,10 +943,11 @@ function renderRules(rows, totV){
  var sub=el('p','small muted');sub.appendChild(L('用華爾街常用的進出場紀律（論點停損、停損、趨勢、移動停損、部位上限）當作你的規則，逐檔檢查哪些條件成立；門檻和 Discord「/holdings rules」相同（settings.yaml 的 rulebook）。只在你的瀏覽器裡計算，不會上傳。這是規則檢查，不是買賣指令。',
   'Wall Street entry / exit discipline as your own rules, checked per holding in your browser only. A rule check, not a buy / sell instruction.'));x.appendChild(sub);
  var themeW={},items=[];
- live.forEach(function(r){var S=rbLook(RBK.sym,(r.p&&r.p.sym)||r.h.s,r.h);var th=S?S[4]:'其他';r._w=r.vt/totV*100;r._S=S;themeW[th]=(themeW[th]||0)+r._w;});
+ live.forEach(function(r){var S=rbStats((r.p&&r.p.sym)||r.h.s,r.h,r.mk);r._w=r.vt/totV*100;r._S=S;if(S&&S[4])themeW[S[4]]=(themeW[S[4]]||0)+r._w;});
  live.forEach(function(r){var sym=(r.p&&r.p.sym)||r.h.s,S=r._S;
-  var ch=rbCheck(r.p.px,r.h.c>0?r.h.c:0,r._w,themeW[S?S[4]:'其他']||0,S,rbLook(RBK.dz,sym,r.h),rbLook(RBK.surp,sym,r.h),rbLook(RBK.gb,sym,r.h),RBK.cfg,RBK.ssi);
-  items.push({sym:sym,name:(r.p&&r.p.name)||'',w:r._w,ch:ch,s:rbSum(ch)});});
+  var E=rbLook(RBK.surp,sym,r.h);if(E===undefined)E=rbLook(RBK.surpc,sym,r.h);
+  var ch=rbCheck(r.p.px,r.h.c>0?r.h.c:0,r._w,S&&S[4]?themeW[S[4]]:null,S,rbLook(RBK.dz,sym,r.h),E,rbLook(RBK.gb,sym,r.h),RBK.cfg,RBK.ssi,(RBK.bench||{})[r.mk]);
+  items.push({sym:sym,name:(r.p&&r.p.name)||'',w:r._w,ch:ch,s:rbSum(ch,(RBK.cfg||{}).add_min_known)});});
  var ord={exit2:0,exit1:1,trim:2,add:3,hold:4},ico={exit2:'🔴',exit1:'🟠',trim:'🟡',add:'🟢',hold:'⚪'},col={exit2:'var(--dn)',exit1:'#ec835a',trim:'var(--warn)',add:'var(--up)',hold:'var(--mu)'};
  items.sort(function(a,b){return ord[a.s.st]-ord[b.s.st]||b.w-a.w;});
  items.forEach(function(it){var d=document.createElement('details');d.className='pfrl';var sm=document.createElement('summary');

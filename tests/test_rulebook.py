@@ -31,13 +31,13 @@ def test_rules():
     assert strong["price"] > strong["ma200"] and strong["mom_12_1"] > 0
     # broken thesis + below cost + trend break + far from the high → several exit checks
     ch = RB.check("AAA", {"weight": 20.0, "risk_contrib_pct": 30.0}, {"cost": 200.0}, weak, {"state": "alert", "bk_prob": 0.06},
-                  {"eps": 1.0, "cons": 1.2, "surp": -16.7}, True, 40.0, 63.0)
+                  {"eps": 1.0, "cons": 1.2, "surp": -16.7}, True, 40.0, 63.0, "半導體", "標普 500")
     s = RB.summarize(ch)
     assert s["state"] == "exit2" and s["exit_hits"] == 5 and s["trim_hits"] == 3, s
     assert not any(c["met"] for c in ch if c["group"] == "add" and c["id"] in ("room", "ma200", "mom", "quality", "beat", "macro"))
     # healthy, small, rising, beat, calm market → all add conditions
     ch = RB.check("BBB", {"weight": 5.0, "risk_contrib_pct": 6.0}, {"cost": 100.0}, strong, {"state": "ok", "bk_prob": 0.002},
-                  {"eps": 1.2, "cons": 1.0, "surp": 20.0}, False, 10.0, 45.0)
+                  {"eps": 1.2, "cons": 1.0, "surp": 20.0}, False, 10.0, 45.0, "半導體")
     s = RB.summarize(ch)
     assert s["state"] == "add" and s["add_met"] == s["add_n"] == 6, s
     # no SEC data / no earnings → 'unknown', never counted as met
@@ -45,10 +45,20 @@ def test_rules():
     unk = [c for c in ch if c["met"] is None]
     assert {c["id"] for c in unk} >= {"distress", "earnings", "quality", "beat", "risk"}
     assert RB.summarize(ch)["state"] in ("hold", "add")
+    # unknown theme → the concentration check is 'no data', never a made-up group; no history → price rules 'no data'
+    ch = RB.check("NEWX", {"weight": 5.0}, {"cost": 10.0}, {"price": 12.0}, None, None, None, None, 45.0)
+    assert {c["id"]: c["met"] for c in ch}["theme"] is None and {c["id"]: c["met"] for c in ch}["trend"] is None
+    assert {c["id"]: c["met"] for c in ch}["trail"] is None and RB.summarize(ch)["state"] == "hold"
+    assert "標普 500" in next(c["txt"] for c in RB.check("AAA", {"weight": 5.0}, {"cost": 1.0}, weak, None, None, None, 5.0, 40.0, "x", "標普 500") if c["id"] == "trend")
+    assert set(RB.DEFAULTS) <= set(RB.cfg())
     # thresholds come from settings
-    RB.cfg()["max_weight_pct"] = 4
-    assert RB.summarize(RB.check("CCC", {"weight": 5.0}, {"cost": 1.0}, strong, None, None, None, 5.0, 40.0))["state"] == "trim"
-    RB.cfg()["max_weight_pct"] = 15
+    user = RB.SETTINGS.get("rulebook")                      # settings.yaml overrides the defaults
+    old = user.get("max_weight_pct")
+    user["max_weight_pct"] = 4
+    try:
+        assert RB.summarize(RB.check("CCC", {"weight": 5.0}, {"cost": 1.0}, strong, None, None, None, 5.0, 40.0))["state"] == "trim"
+    finally:
+        user["max_weight_pct"] = old
 
 
 def test_bot():

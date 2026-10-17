@@ -1946,6 +1946,13 @@ def register_commands(bot: Sentinel) -> None:
         await it.response.defer(ephemeral=True, thinking=True)
         eng.holdings = PF.load_holdings()
         await eng.market.refresh_quotes(eng.holding_tickers())
+        if shares > 0:                                     # the rule check needs a year of prices, the balance sheet and EPS
+            await eng.market.add_history([t])
+            for job in (eng.refresh_distress(), eng.refresh_earnings(force=True)):
+                try:
+                    await asyncio.wait_for(job, 120)
+                except Exception as e:  # noqa: BLE001
+                    log.info("holdings set %s: background refresh %s", t, e)
         await eng.recompute()
         await it.followup.send(("🗑️ 已刪除 " if shares <= 0 else "✅ 已儲存 ") + t + "\n" + _holdings_table(), ephemeral=True)
 
