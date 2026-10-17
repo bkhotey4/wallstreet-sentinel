@@ -457,7 +457,7 @@ function grestoreBar(s){
  if(bak&&_n(bak)&&!_n(get())){var b1=el('button','btn');b1.type='button';
   b1.appendChild(L('還原這台裝置的上一份（'+bak.h.length+' 檔）','Restore previous on this device ('+bak.h.length+')'));
   b1.addEventListener('click',function(){if(confirm(en()?'Restore the previous portfolio saved in this browser?':'要還原這台裝置上一份持股（'+bak.h.length+' 檔）嗎？')){put(bak);render();gbar();}});s.appendChild(b1);}
- if(G.on){var b2=el('button','btn');b2.type='button';b2.appendChild(L('從雲端歷史版本還原','Restore from Drive history'));
+ if(G.cid){var b2=el('button','btn');b2.type='button';b2.appendChild(L('從雲端歷史版本還原','Restore from Drive history'));   // shown even with sync off: it signs in first
   b2.addEventListener('click',function(){gauth(true).then(function(ok){if(ok)grestore();});});s.appendChild(b2);}
 }
 function grestore(){gmsg('搜尋雲端歷史版本…','Searching Drive history…');
