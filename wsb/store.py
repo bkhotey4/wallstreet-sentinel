@@ -86,7 +86,7 @@ def tracked_alerts(days: float = 365) -> List[Tuple]:
                           (time.time() - days * 86400,)).fetchall()
 
 
-PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:")      # holdings-derived → owner DM only, never listed publicly
+PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:", "rules:")      # holdings-derived → owner DM only, never listed publicly
 
 
 def is_private_alert(key: str) -> bool:

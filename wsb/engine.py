@@ -26,6 +26,7 @@ from .analytics import macro_events as me
 from .analytics import earn_verdict as ev
 from .analytics import canary as cn
 from .analytics import distress as dz
+from .analytics import rulebook as rb
 from .data import fedwatch as fw
 from .analytics import techearn as te
 from .analytics.stress import StressEngine, StressResult
@@ -91,6 +92,7 @@ class Engine:
         self.margin_debt = MarginDebt()   # FINRA 融資餘額（月）
         self.canary: Dict = {}            # 金絲雀燈號
         self.distress: Dict = {}          # 企業危機雷達
+        self.rulebook: Dict = {}          # 我的持股規則檢查（私人）
         self.techearn: Dict = {}          # 科技／半導體財報分析
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
@@ -178,11 +180,14 @@ class Engine:
         from .data import distress_data
         await distress_data.discover(set(dz.fixed_list()))         # market-wide SEC scan + screen → auto list
         await asyncio.to_thread(dz.prune, self.stockprices)        # names with no prices for 30 days leave the radar
-        await distress_data.refresh(list(dz.watchlist()))
+        # US holdings are checked too (rulebook); they stay in this machine's cache and never join the public radar
+        mine = [h for h in self.holding_tickers() if "." not in h]
+        await distress_data.refresh(list(dict.fromkeys(list(dz.watchlist()) + mine)))
 
     async def refresh_earnings(self, force: bool = False, frames: bool = False) -> None:
         """frames (whole-market US tech via SEC frames) is only needed by the website build."""
-        await self.earnings.refresh(self.tech_symbols(), force=force, frames=frames)
+        mine = [h for h in self.holding_tickers() if "." not in h]          # EPS surprises for the rulebook too
+        await self.earnings.refresh(list(dict.fromkeys(self.tech_symbols() + mine)), force=force, frames=frames)
 
     async def refresh_extras(self) -> None:
         """Slow feeds behind the stock board / bond zone (each one skips itself until its own refresh interval)."""
@@ -254,7 +259,7 @@ class Engine:
                                     ("fedwatch_view", fw.view, "fedwatch"),
                                     ("econ_view", me.build, "econ calendar"), ("techearn", te.build, "tech earnings"),
                                     ("earn_verdict", ev.build, "earnings verdicts"), ("canary", cn.build, "canary lights"),
-                                    ("distress", dz.build, "distress radar")):
+                                    ("distress", dz.build, "distress radar"), ("rulebook", rb.build, "holdings rulebook")):
                 try:
                     setattr(self, attr, await asyncio.to_thread(fn, self))
                 except Exception:  # noqa: BLE001

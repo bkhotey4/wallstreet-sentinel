@@ -12,7 +12,8 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Awaitable, Callable, List, Optional
+from typing import Awaitable, Callable, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 import discord
 import numpy as np
@@ -202,6 +203,7 @@ class Sentinel(commands.Bot):
         self._tasks.append(asyncio.create_task(self._every("heartbeat", 60, self._heartbeat, 0)))
         # scheduler starts immediately (it waits for engine.ready itself) so a restart never skips a briefing
         self._tasks.append(asyncio.create_task(self._every("briefings", 30, self._briefing_tick, 10)))
+        self._tasks.append(asyncio.create_task(self._every("rules_daily", 300, self._rules_daily, 120)))
         log.info("bootstrapping data engine…")
         try:
             await self.engine.bootstrap()
@@ -690,6 +692,7 @@ class Sentinel(commands.Bot):
         out += self._intel_alerts()
         out += self._danger_alerts()
         out += self._stop_alerts()
+        out += self._rule_alerts()
         pf = eng.portfolio
         if pf and not pf.get("error") and pf.get("total_value_usd"):
             dd = pf["day_pnl_usd"] / pf["total_value_usd"] * 100
@@ -904,6 +907,42 @@ class Sentinel(commands.Bot):
                                  f"｜綜合分數 {r['score'] if r.get('score') is None else format(r['score'], '.0f')}\n"
                                  "規則篩選，不是買賣建議；收盤跌破失效線代表型態失敗（/signals 看全部）"))
         return out
+
+    def _rule_alerts(self) -> List[Alert]:
+        """Holdings rulebook, edge-triggered (owner DM only via the 'rules:' prefix): a holding whose exit checks reach two,
+        a new trim trigger, or all add conditions becoming true.  The first sighting of a holding only records its state."""
+        out = []
+        rbk = getattr(self.engine, "rulebook", None) or {}
+        if not rbk.get("available"):
+            return out
+        for r in rbk["rows"]:
+            k = f"rules_state:{r['sym']}"
+            prev = store.kv_get(k)
+            store.kv_set(k, r["state"])
+            if prev is None or prev == r["state"] or r["state"] == "hold":
+                continue
+            hit = [c for c in r["checks"] if c["met"] is True and c["group"] == {"exit2": "exit", "exit1": "exit", "trim": "trim", "add": "add"}[r["state"]]]
+            if r["state"] == "exit1" and prev == "exit2":
+                continue                                   # easing from two exit hits to one is not news
+            sev = "⚠️ WARNING" if r["state"] in ("exit2", "trim") else "ℹ️ INFO"
+            out.append(Alert(f"rules:{r['sym']}:{r['state']}:{r['asof']}", sev, f"📋 你的規則：{r['sym']} {r['zh']}",
+                             "；".join(f"{c['zh']}（{c['txt']}）" for c in hit)[:900]
+                             + "｜這是你設定的規則檢查結果，不是買賣指令（/holdings rules 看全部）"))
+        return out
+
+    async def _rules_daily(self) -> None:
+        """Once a day after the US close (rulebook.daily_dm, Taipei time, Tue–Sat): the full check of every holding, DM only."""
+        rbk = getattr(self.engine, "rulebook", None) or {}
+        hhmm = str(SETTINGS.get("rulebook", {}).get("daily_dm", "07:40"))
+        now = datetime.now(ZoneInfo("Asia/Taipei"))
+        if not rbk.get("available") or not hhmm or now.weekday() not in (1, 2, 3, 4, 5) or now.strftime("%H:%M") < hhmm:
+            return
+        day = now.strftime("%Y-%m-%d")
+        if store.kv_get("rules_daily") == day:
+            return
+        dm = await self._owner_dm()
+        if dm and await self._safe_send(dm, embed=rules_embed(rbk)):
+            store.kv_set("rules_daily", day)
 
     def _stop_alerts(self) -> List[Alert]:
         """Edge-triggered: a meaningful position closes below its volatility stop (alert once per breach)."""
@@ -1249,6 +1288,29 @@ def _ticker_stats(s: pd.Series, spy: pd.Series) -> dict:
 # commands anyone in the server may use; everything else (holdings, AI briefs, control) is owner-only
 PUBLIC_COMMANDS = {"dashboard", "risk", "crash", "market", "macro", "gamma", "news", "calendar", "quote",
                    "scorecard", "earnings_week", "shock", "intel", "outlook", "alert", "alerts", "alert_remove", "status"}
+
+
+_RB_ICON = {"exit2": "🔴", "exit1": "🟠", "trim": "🟡", "add": "🟢", "hold": "⚪"}
+
+
+def rules_embed(rbk: Dict) -> "discord.Embed":
+    """The holdings rulebook as one private embed: per holding, which of the user's rules are met."""
+    e = discord.Embed(title="📋 我的持股規則檢查（僅你可見）", color=0x5865F2, timestamp=datetime.now(timezone.utc),
+                      description=(f"資料日 {rbk.get('asof') or '—'}｜壓力指數 {rbk['ssi']:.0f}" if rbk.get("ssi") is not None else ""))
+    for r in rbk.get("rows", [])[:24]:
+        lines = []
+        for grp, lab in (("exit", "出場檢查"), ("trim", "減碼檢查")):
+            hit = [c for c in r["checks"] if c["group"] == grp and c["met"] is True]
+            n = sum(c["group"] == grp for c in r["checks"])
+            lines.append(f"{lab} {len(hit)}/{n}" + ("：" + "、".join(f"{c['zh']}（{c['txt']}）" for c in hit) if hit else ""))
+        miss = [c["zh"] for c in r["checks"] if c["group"] == "add" and c["met"] is False]
+        lines.append(f"加碼條件 {r['add_met']}/{r['add_n']}" + ("（未成立：" + "、".join(miss) + "）" if miss else ""))
+        pnl = f"｜損益 {r['pnl_pct']:+.0f}%" if r.get("pnl_pct") is not None else ""
+        e.add_field(name=f"{_RB_ICON[r['state']]} {r['sym']} {r['name']}｜佔比 {r['weight']:.1f}%{pnl}｜{r['zh']}"[:256],
+                    value="\n".join(lines)[:1024], inline=False)
+    e.set_footer(text="依 settings.yaml 的 rulebook 規則逐項檢查（華爾街常用的論點停損、趨勢、部位上限紀律），不是買賣指令。"
+                      "自問：如果今天手上是現金，會用現在的價格買這麼多嗎？")
+    return e
 
 
 def _owner_id() -> str:
@@ -1886,6 +1948,17 @@ def register_commands(bot: Sentinel) -> None:
         await eng.market.refresh_quotes(eng.holding_tickers())
         await eng.recompute()
         await it.followup.send(("🗑️ 已刪除 " if shares <= 0 else "✅ 已儲存 ") + t + "\n" + _holdings_table(), ephemeral=True)
+
+    @holdings_grp.command(name="rules", description="依你的規則逐檔檢查：出場／減碼／加碼條件（只私下回覆你）")
+    async def holdings_rules(it: discord.Interaction):
+        if not is_owner(it):
+            await it.response.send_message("🔒 僅限擁有者", ephemeral=True)
+            return
+        rbk = getattr(eng, "rulebook", None) or {}
+        if not rbk.get("available"):
+            await it.response.send_message("規則檢查還沒有結果（持股、報價或歷史股價尚未載入）", ephemeral=True)
+            return
+        await it.response.send_message(embed=rules_embed(rbk), ephemeral=True)
 
     @holdings_grp.command(name="remove", description="刪除一檔持股")
     async def holdings_remove(it: discord.Interaction, ticker: str):

@@ -611,6 +611,24 @@ distress:
       BXSL: Blackstone Secured Lending
       FSK: FS KKR Capital
 
+# ---------- 我的持股規則檢查（私人：只私訊給你、/holdings rules；不會出現在網站） ----------
+# 華爾街常用的進出場紀律，門檻是「你的規則」，可以自行修改。結果只說哪些條件成立，不是買賣指令。
+rulebook:
+  enabled: true
+  daily_dm: "07:40"           # 台北時間，週二到週六（美股收盤後）私訊完整檢查；留空 = 不發
+  # 出場檢查（論點／停損／趨勢）
+  bk_exit_pct: 5              # 財報型破產機率 ≥ 5%，或危機雷達紅燈 → 論點檢查觸發
+  stop_loss_pct: 25           # 低於成本 25%（長線基金常用 20–25%；短線紀律如 CANSLIM 用 7–8%）
+  trend_lag_pp: 15            # 趨勢破壞：低於 200 日線、12-1 動能為負、6 個月落後大盤 ≥ 15 個百分點，三項同時
+  trailing_pct: 30            # 移動停損：距 52 週高點跌 30%
+  # 減碼檢查（部位大小）
+  max_weight_pct: 15          # 單一持股上限
+  max_theme_pct: 30           # 同主題（例如半導體、AI 伺服器）合計上限
+  max_risk_contrib_pct: 25    # 單一持股佔組合風險上限
+  # 加碼條件（全部成立）：部位在上限內、站上 200 日線、12-1 動能為正、財務體質無警訊、最近財報不低於預期、壓力指數低於下列門檻
+  bk_add_max_pct: 2
+  add_max_ssi: 60
+
 # ---------- 個股評分表（技術面＋情報面；量化篩選，不是買賣建議） ----------
 stockscore:
   enabled: true
