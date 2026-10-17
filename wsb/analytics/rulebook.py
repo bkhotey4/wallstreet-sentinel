@@ -113,7 +113,7 @@ def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: O
     out.append(_chk("trim", "risk", f"風險貢獻 > {rcap:.0f}%", None if rc is None else rc > rcap,
                     "—" if rc is None else f"佔組合風險 {rc:.1f}%（佔比 {w:.1f}%）", SOURCES["size"]))
     # ---------------- 加碼條件（全部成立）
-    out.append(_chk("add", "room", "部位還在上限內", w < cap, f"佔比 {w:.1f}% < {cap:.0f}%", SOURCES["size"]))
+    out.append(_chk("add", "room", "部位還在上限內", w < cap, f"佔比 {w:.1f}%（上限 {cap:.0f}%）", SOURCES["size"]))
     out.append(_chk("add", "ma200", "站上 200 日線", None if ps.get("ma200") is None else price > ps["ma200"],
                     "—" if ps.get("ma200") is None else f"{price:.2f} vs {ps['ma200']:.2f}", SOURCES["trend"]))
     out.append(_chk("add", "mom", "12-1 動能為正", None if ps.get("mom_12_1") is None else ps["mom_12_1"] > 0,

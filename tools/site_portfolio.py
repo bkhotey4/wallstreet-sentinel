@@ -902,7 +902,7 @@ function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi){
  ck('trim','單一持股 > '+cap+'%',w>cap,'佔比 '+w.toFixed(1)+'%');
  ck('trim','同主題 > '+tcap+'%',themeW>tcap,'主題「'+(S?S[4]:'其他')+'」合計 '+themeW.toFixed(1)+'%');
  ck('trim','風險貢獻上限',null,'網站版不計算（Discord /holdings rules 有）');
- ck('add','部位還在上限內',w<cap,'佔比 '+w.toFixed(1)+'% < '+cap+'%');
+ ck('add','部位還在上限內',w<cap,'佔比 '+w.toFixed(1)+'%（上限 '+cap+'%）');
  ck('add','站上 200 日線',ma==null?null:px>ma,ma==null?'—':px.toFixed(2)+' vs '+ma.toFixed(2));
  ck('add','12-1 動能為正',mom==null?null:mom>0,mom==null?'—':(mom>=0?'+':'')+Math.round(mom)+'%');
  if(Z)ck('add','財務體質無警訊',Z[0]==='ok'&&(Z[1]==null||Z[1]<bka),'危機雷達'+(Z[0]==='ok'?'無燈號':'有燈號')+(Z[1]!=null?'，破產機率 '+(Z[1]*100).toFixed(1)+'%':''));
