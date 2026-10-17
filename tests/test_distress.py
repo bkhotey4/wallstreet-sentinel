@@ -252,6 +252,19 @@ def test_site_and_alerts(out):
                                                                                       # a months-old one does not
 
 
+def test_divergence_card():
+    """The sentiment-vs-dark-pool card reads the site's own fear & greed gauge (eng.sx["fg"]), not a missing attribute."""
+    from tools import site_sections as S2
+    mk = types.SimpleNamespace(q=lambda t: {"price": 140.0}, series=lambda t: pd.Series(dtype=float))
+    eng = types.SimpleNamespace(darkpool=types.SimpleNamespace(result={"dpi_5d": 42.9, "pctile": 65}), market=mk,
+                                options=types.SimpleNamespace(spx={"put_call_oi": 1.94, "put_call_volume": 2.26}),
+                                sx={"fg": {"available": True, "score": 28.0}})
+    html = S2.sec_smart_retail_divergence(eng)
+    assert "資料缺" not in html and "28 / 100" in html, html[:300]
+    eng.sx = {"fg": {"available": False}}
+    assert "資料缺" in S2.sec_smart_retail_divergence(eng)                      # genuinely missing → says so, no made-up score
+
+
 def main():
     test_ttm()
     b = test_parse_balance_and_flags()
@@ -260,6 +273,7 @@ def main():
     test_discovery()
     test_bankruptcy_model(b)
     test_site_and_alerts(out)
+    test_divergence_card()
     print("distress OK")
 
 

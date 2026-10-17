@@ -786,8 +786,8 @@ def sec_smart_retail_divergence(eng) -> str:
     pc_vol = op.get("put_call_volume")
     pc_oi = op.get("put_call_oi")
 
-    fg = getattr(eng, "fear_greed", None) or {}
-    fg_score = fg.get("score")
+    fg = (getattr(eng, "sx", None) or {}).get("fg") or {}          # the site's own gauge (wsb.analytics.mood.fear_greed)
+    fg_score = fg.get("score") if fg.get("available", True) else None
 
     if dpi_5d is not None:
         sm_base = max(0.0, min(100.0, (dpi_5d - 30) / 25 * 100))
