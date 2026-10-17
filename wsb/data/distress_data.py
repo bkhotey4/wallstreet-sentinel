@@ -40,7 +40,8 @@ INSTANT = {"assets": ("Assets",), "liab": ("Liabilities",), "cur_assets": ("Asse
            "re": ("RetainedEarningsAccumulatedDeficit",),
            "equity": ("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"),
            "cash": ("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"),
-           "ltd": ("LongTermDebt", "LongTermDebtAndCapitalLeaseObligations"),
+           "ltd": ("LongTermDebt", "LongTermDebtAndCapitalLeaseObligations", "DebtInstrumentCarryingAmount",
+                   "DebtLongtermAndShorttermCombinedAmount"),
            "ltd_nc": ("LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligationsNoncurrent"),
            "ltd_cur": ("LongTermDebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent"),
            "debt_cur": ("DebtCurrent", "ShortTermBorrowings", "CommercialPaper"),
@@ -157,21 +158,27 @@ def ttm_ex(facts: List[Dict]) -> Optional[Tuple[str, float, bool]]:
 
 
 def _pick_instant(cf: Dict, tags: Tuple[str, ...], at: str, back_days: int = 100) -> Optional[float]:
-    best = None
-    for tag in tags:
-        v = instants(_facts(cf, tag))
+    """Value at the balance-sheet date from any of the tags (in order); only if none reports that date, the latest earlier
+    value within `back_days`.  (A company that switches tags — CoreWeave dropped LongTermDebt in its 2026 Q2 10-Q and
+    kept DebtInstrumentCarryingAmount — must not show last quarter's debt.)"""
+    vals = [instants(_facts(cf, tag)) for tag in tags]
+    for v in vals:
         if at in v:
             return v[at]
+    for v in vals:
         near = [e for e in v if 0 <= (_d(at) - _d(e)).days <= back_days]
-        if near and best is None:
-            best = v[max(near)]
-    return best
+        if near:
+            return v[max(near)]
+    return None
 
 
 def _near(series: Dict[str, float], at: str, days: int, tol: int = 25) -> Optional[float]:
     tgt = _d(at) - timedelta(days=days)
     c = [e for e in series if abs((_d(e) - tgt).days) <= tol]
     return series[min(c, key=lambda e: abs((_d(e) - tgt).days))] if c else None
+
+
+BS_V = 3      # balance-sheet parser version (cached sheets below it are re-read)
 
 
 def parse_balance(cf: Dict) -> Optional[Dict]:
@@ -194,13 +201,14 @@ def parse_balance(cf: Dict) -> Optional[Dict]:
         if best and best[2]:
             ann.append(k)
     out["annualized"] = ann                                   # flows scaled up from year-to-date (recent IPO)
+    out["pv"] = BS_V
     dep = {}
     for tag in INSTANT["deposits"]:
         dep = instants(_facts(cf, tag)) or dep
     out["deposits_q"] = _near(dep, at, 91) if dep else None          # one quarter earlier
-    debt_hist = {}
-    for tag in INSTANT["ltd"]:
-        debt_hist = instants(_facts(cf, tag)) or debt_hist
+    debt_hist: Dict[str, float] = {}
+    for tag in reversed(INSTANT["ltd"]):                       # earlier tags in the list win on the same date
+        debt_hist.update(instants(_facts(cf, tag)))
     out["ltd_yago"] = _near(debt_hist, at, 365, 40) if debt_hist else None
     out["shares"] = None
     for ns, tag in SHARES:
@@ -289,7 +297,7 @@ async def refresh(syms: List[str], budget_s: Optional[float] = None) -> Dict[str
                     rec["bs_ts"] = 0
                 rec["fl_ts"] = time.time()
                 await asyncio.sleep(0.15)
-            if time.time() - float(rec.get("bs_ts", 0)) > bs_ttl or (rec.get("bs") and "annualized" not in rec["bs"]):  # parser upgrade
+            if time.time() - float(rec.get("bs_ts", 0)) > bs_ttl or (rec.get("bs") and rec["bs"].get("pv", 1) < BS_V):  # parser upgrade
                 cf = await http.get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(cik):010d}.json", headers=SEC_HDR, timeout=40, retries=1)
                 rec["bs"] = parse_balance(cf)
                 rec["bs_ts"] = time.time()
