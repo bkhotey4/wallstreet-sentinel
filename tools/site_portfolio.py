@@ -450,7 +450,37 @@ function gbar(){
  var b=el('button','btn g');b.type='button';b.appendChild(L(G.on?'立即同步':'用 Google 同步','Sync now'));b.addEventListener('click',function(){gauth(true).then(function(ok){if(ok)gsync();});});s.appendChild(b);
  if(G.on){var o=el('button','btn');o.type='button';o.appendChild(L('停用同步','Stop syncing'));o.addEventListener('click',function(){G.on=false;G.tok=null;try{localStorage.removeItem(GKEY);}catch(e){}gbar();});s.appendChild(o);}
  var st=el('span','st');s.appendChild(st);if(G.on)gmsg('已啟用 Google 同步','Google sync on','ok');
+ grestoreBar(s);
 }
+function grestoreBar(s){
+ var bak=null;try{bak=JSON.parse(localStorage.getItem(BKEY)||'null');}catch(e){}
+ if(bak&&_n(bak)&&!_n(get())){var b1=el('button','btn');b1.type='button';
+  b1.appendChild(L('還原這台裝置的上一份（'+bak.h.length+' 檔）','Restore previous on this device ('+bak.h.length+')'));
+  b1.addEventListener('click',function(){if(confirm(en()?'Restore the previous portfolio saved in this browser?':'要還原這台裝置上一份持股（'+bak.h.length+' 檔）嗎？')){put(bak);render();gbar();}});s.appendChild(b1);}
+ if(G.on){var b2=el('button','btn');b2.type='button';b2.appendChild(L('從雲端歷史版本還原','Restore from Drive history'));
+  b2.addEventListener('click',function(){gauth(true).then(function(ok){if(ok)grestore();});});s.appendChild(b2);}
+}
+function grestore(){gmsg('搜尋雲端歷史版本…','Searching Drive history…');
+ var cur=JSON.stringify(get().h||[]);
+ gfind().then(function(f){if(!f)throw new Error('雲端沒有同步檔');
+  var cands=[];
+  return gread().then(function(r){if(r&&r.prev&&_n(r.prev))cands.push({t:r.prev.updated||0,d:r.prev,src:'上一版'});})
+   .then(function(){return gfetch('https://www.googleapis.com/drive/v3/files/'+G.fid+'/revisions?pageSize=200&fields=revisions(id,modifiedTime)');})
+   .then(function(r){return r.json();}).then(function(j){
+    var revs=(j.revisions||[]).slice().reverse(),i=0;
+    function next(){if(i>=revs.length||i>=40)return Promise.resolve();var rv=revs[i++];
+     return gfetch('https://www.googleapis.com/drive/v3/files/'+G.fid+'/revisions/'+rv.id+'?alt=media').then(function(x){return x.json();})
+      .then(function(d){if(d&&Array.isArray(d.h)&&_n(d)&&JSON.stringify(d.h)!==cur){cands.push({t:Date.parse(rv.modifiedTime),d:d,src:'雲端版本'});return;}return next();})
+      .catch(function(){return next();});}
+    return next();})
+   .then(function(){
+    if(!cands.length){gmsg('雲端歷史版本裡找不到有持股的版本（Google 一般保留約 30 天）','No earlier version with holdings found','err');return;}
+    cands.sort(function(a,b){return b.t-a.t;});var c=cands[0];
+    var when=c.t?new Date(c.t).toLocaleString():'—',syms=c.d.h.map(function(h){return h.s;}).slice(0,12).join(', ');
+    if(confirm((en()?'Restore the version of ':'要還原 ')+when+(en()?'':' 的版本嗎？')+'\n'+c.d.h.length+(en()?' holdings: ':' 檔：')+syms)){
+     var d=_strip(c.d);put(d);render();gbar();gmsg('已還原 '+when+' 的版本（'+d.h.length+' 檔）','Restored '+when,'ok');}
+    else gmsg('沒有變更','No change','ok');});})
+ .catch(function(e){gmsg('還原失敗：'+e.message,'Restore failed: '+e.message,'err');});}
 function gload(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();var sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.onload=res;sc.onerror=function(){rej(new Error('gsi'));};document.head.appendChild(sc);});}
 function gauth(interactive){if(!G.cid)return Promise.resolve(false);if(G.tok&&Date.now()<G.exp-60000)return Promise.resolve(true);
  return gload().then(function(){return new Promise(function(res){var tc=google.accounts.oauth2.initTokenClient({client_id:G.cid,scope:'https://www.googleapis.com/auth/drive.appdata',
@@ -464,17 +494,29 @@ function gwrite(d){var body=JSON.stringify(d);if(G.fid)return gfetch('https://ww
  var bd='-------wss'+Date.now(),meta=JSON.stringify({name:'wss_holdings.json',parents:['appDataFolder']});
  var mp='--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+bd+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+bd+'--';
  return gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+bd},body:mp}).then(function(r){return r.json();}).then(function(j){G.fid=j.id;});}
+function _n(d){return d&&Array.isArray(d.h)?d.h.length+(d.cash||[]).length:0;}
+function _strip(d){var c=JSON.parse(JSON.stringify(d||{}));delete c.prev;return c;}
 function gsync(){if(G.busy||!G.on)return;G.busy=true;gmsg('同步中…','Syncing…');
  var local=get();local.updated=local.updated||0;
- gfind().then(function(f){if(!f)return gwrite(local).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});
+ gfind().then(function(f){
+  if(!f){if(!_n(local)){gmsg('Google 雲端硬碟和這台裝置都還沒有持股資料','No holdings on Drive or on this device','ok');return;}
+   return gwrite(_strip(local)).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});}
   return gread().then(function(remote){remote=remote&&Array.isArray(remote.h)?remote:{v:1,h:[],cash:[],nav:[],updated:0};
-   if((remote.updated||0)>(local.updated||0)){var nv={};(remote.nav||[]).concat(local.nav||[]).forEach(function(p){if(p&&p.d)nv[p.d]=p;});
-    remote.nav=Object.keys(nv).sort().map(function(k){return nv[k];}).slice(-400);put(remote);render();gmsg('已從 Google 雲端硬碟載入 '+new Date(remote.updated).toLocaleString(),'Loaded from Google Drive '+new Date(remote.updated).toLocaleString(),'ok');}
-   else if((local.updated||0)>(remote.updated||0)){return gwrite(local).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});}
-   else gmsg('已同步（無變更）','In sync','ok');});})
+   var lN=_n(local),rN=_n(remote),lw=(local.updated||0)>(remote.updated||0),rw=(remote.updated||0)>(local.updated||0);
+   // an EMPTY portfolio never overwrites a non-empty one, whatever its timestamp — unless it came from 「清除全部」
+   // (a device whose browser data was wiped must not erase the holdings everywhere else)
+   if(lw&&!lN&&rN&&!local.cleared){lw=false;rw=true;}
+   if(rw&&!rN&&lN&&!remote.cleared){rw=false;lw=true;}
+   if(rw){var nv={};(remote.nav||[]).concat(local.nav||[]).forEach(function(p){if(p&&p.d)nv[p.d]=p;});
+    remote.nav=Object.keys(nv).sort().map(function(k){return nv[k];}).slice(-400);_put(remote);render();gmsg('已從 Google 雲端硬碟載入 '+new Date(remote.updated||Date.now()).toLocaleString(),'Loaded from Google Drive','ok');}
+   else if(lw){var up=_strip(local);if(rN)up.prev=_strip(remote);       // the version being replaced stays one step back
+    return gwrite(up).then(function(){gmsg('已上傳到 Google 雲端硬碟 '+new Date().toLocaleTimeString(),'Uploaded '+new Date().toLocaleTimeString(),'ok');});}
+   else gmsg(lN?'已同步（無變更）':'已同步：雲端和這台裝置都沒有持股（可用下方「從雲端歷史版本還原」找回）',lN?'In sync':'In sync, but empty — try restoring from Drive history','ok');});})
  .catch(function(e){gmsg('同步失敗：'+e.message,'Sync failed: '+e.message,'err');if(e.message==='401')G.tok=null;})
  .then(function(){G.busy=false;});}
-var _put=put;put=function(d){d.updated=Date.now();var ok=_put(d);if(ok&&G.on){clearTimeout(G._t);G._t=setTimeout(function(){gauth(false).then(function(ok2){if(ok2)gsync();});},800);}return ok;};
+var BKEY='wss_portfolio_backup_v1';
+var _put=put;put=function(d){var old=get();if(_n(old)&&JSON.stringify(_strip(old).h)!==JSON.stringify((d||{}).h)){try{localStorage.setItem(BKEY,JSON.stringify(_strip(old)));}catch(e){}}
+ if(_n(d))delete d.cleared;d.updated=Date.now();var ok=_put(d);if(ok&&G.on){clearTimeout(G._t);G._t=setTimeout(function(){gauth(false).then(function(ok2){if(ok2)gsync();});},800);}return ok;};
 try{G.on=!!G.cid&&localStorage.getItem(GKEY)==='1';}catch(e){}
 gbar();if(G.on)gauth(false).then(function(ok){if(ok)gsync();});
 
@@ -1362,7 +1404,7 @@ document.getElementById('pfimp').addEventListener('change',function(e){var f=e.t
   (d.cash||[]).forEach(function(c){if(c&&['TWD','USD','HKD'].indexOf(c.cur)>=0&&isFinite(+c.a))clean.cash.push({cur:c.cur,a:+c.a});});
   if(Array.isArray(d.nav))clean.nav=d.nav;
   put(clean);render();setTimeout(function(){msg(['已匯入 '+clean.h.length+' 檔持股','Imported '+clean.h.length+' holdings']);},50);}catch(x){msg(['檔案格式不對','Invalid file']);}};rd.readAsText(f);e.target.value='';});
-document.getElementById('pfclr').addEventListener('click',function(){if(confirm(en()?'Delete all holdings and cash stored in this browser?':'確定刪除這個瀏覽器裡的所有持股與現金？（建議先匯出備份）')){put({v:1,h:[],cash:[],nav:[]});render();}});   // saved as a newer, empty portfolio so sync cannot restore it
+document.getElementById('pfclr').addEventListener('click',function(){if(confirm(en()?'Delete all holdings and cash stored in this browser?':'確定刪除這個瀏覽器裡的所有持股與現金？（建議先匯出備份）')){put({v:1,h:[],cash:[],nav:[],cleared:true});render();}});   // an explicit clear: the only empty state allowed to sync
 document.getElementById('langBtn')&&document.getElementById('langBtn').addEventListener('click',function(){setTimeout(render,0);});
 render();})();
 """

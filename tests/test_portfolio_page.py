@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import re
 import tempfile
 import types
@@ -71,6 +72,19 @@ def main():
     from tools import build_site as B
     src = open(B.__file__, encoding="utf-8").read()
     assert '("portfolio", "我的持股", "My holdings", [SP.sec_portfolio])' in src and "{SP.JS}" in src and "{SP.CSS}" in src
+    # Google sync safety, run on the real page JS (Node): an empty device or an empty Drive never erases holdings,
+    # an explicit 清除全部 still propagates, the replaced version is kept, Drive history can be restored
+    import shutil, subprocess, tempfile as _tf
+    from tools import site_portfolio as _SP
+    node = shutil.which("node")
+    if node:
+        js = Path(_tf.mkdtemp()) / "pf.js"
+        js.write_text(_SP.JS, encoding="utf-8")
+        sim = Path(__file__).with_name("js") / "pf_sync_sim.js"
+        r = subprocess.run([node, str(sim), str(js)], capture_output=True, text=True, encoding="utf-8", timeout=120)
+        assert r.returncode == 0 and "ALL SIM PASS" in r.stdout, r.stdout[-2000:] + r.stderr[-2000:]
+    else:
+        print("node not installed: sync simulation skipped")
     print("PORTFOLIO PAGE TESTS PASSED [OK]")
 
 
