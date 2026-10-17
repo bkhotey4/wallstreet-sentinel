@@ -176,6 +176,17 @@ def test_logic_fixes():
     assert abs(v["r0"] - 3.63) < 1e-9 and v["meetings"][0]["probs"] == {"0": 1.0}, v      # no fake cut at the next meeting
 
 
+def test_guidance_period():
+    from wsb.data import earn_release as ER
+    # ASML 2026-07: a full-year headline glued to "...second-quarter results" must stay full-year
+    t = ("ASML increases outlook, expects 2026 total net sales to be between €43 billion and €45 billion, with a gross margin "
+         "between 54% and 56% VELDHOVEN, the Netherlands, July 15, 2026 - Today, ASML Holding NV (ASML) has published its 2026 "
+         "second-quarter results.")
+    assert {(g["metric"], g["period"]) for g in ER.guidance(t)} == {("revenue", "year"), ("gross_margin", "year")}
+    t2 = "The company expects fourth-quarter revenue of $5.0 billion to $5.2 billion and fiscal 2026 revenue of $19 billion."
+    assert {(g["period"], g["lo"]) for g in ER.guidance(t2)} == {("next_q", 5.0), ("year", 19.0)}
+
+
 def test_logit_odds():
     import numpy as np
     from wsb.analytics import crash_odds as CO
@@ -288,6 +299,7 @@ def test_release_parser():
 
 
 def main():
+    test_guidance_period()
     test_logit_odds()
     test_release_parser()
     test_discord()

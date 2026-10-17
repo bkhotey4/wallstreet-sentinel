@@ -181,9 +181,11 @@ def main():
 
     # options parsing on a synthetic chain
     opts = []
+    from datetime import date as _date, timedelta as _td
+    exp = (_date.today() + _td(days=30)).strftime("%y%m%d")          # always a live contract (a fixed date expires)
     for k in range(4000, 6001, 25):
         for typ in "CP":
-            opts.append({"option": f"SPXW261016{typ}{k*1000:08d}", "iv": 0.18, "open_interest": 1000 + abs(5000 - k),
+            opts.append({"option": f"SPXW{exp}{typ}{k*1000:08d}", "iv": 0.18, "open_interest": 1000 + abs(5000 - k),
                          "volume": 100, "gamma": 0})
     op = parse_chain({"data": {"current_price": 5000, "options": opts}}, max_days=9999)
     print("gamma", {k: (round(v, 3) if isinstance(v, float) else v) for k, v in op.items()})

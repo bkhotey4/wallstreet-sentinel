@@ -151,7 +151,10 @@ def guidance(text: str) -> List[Dict]:
         if len(s) > 480:                                   # a table dump / long paragraph, not a guidance sentence
             continue
         e = EXPECT.search(s).start() if EXPECT.search(s) else 0
-        period = ("year" if re.search(r"full[- ]year|\bannual\b", s, re.I) else "next_q" if QUARTER.search(s)
+        win = s[e:e + 160]                                 # the forward-looking clause decides first: a headline glued to
+        period = ("year" if FULLYEAR.search(win) and not QUARTER.search(win[:60])   # "…second-quarter results" must not turn
+                  else "next_q" if QUARTER.search(win)          # "expects 2026 total net sales" into next-quarter guidance
+                  else "year" if re.search(r"full[- ]year|\bannual\b", s, re.I) else "next_q" if QUARTER.search(s)
                   else "year" if FULLYEAR.search(s) else (lead_period if inherited and lead_period else "next_q"))
         spans = _metric_spans(s)
         for i, (pos, name, kind) in enumerate(spans):
@@ -475,6 +478,9 @@ def sanitize(actual: Dict, guide: List[Dict], ref: Optional[float], form: str) -
     return actual, uniq
 
 
+PARSER_V = 2          # bump when parsing changes: cached records of the last 120 days are rebuilt
+
+
 def build_record(sym: str, d: str, rel: Dict, prev: Optional[Dict], ref: Optional[float] = None) -> Dict:
     p = parse(rel["text"])
     p["actual"], p["guide"] = sanitize(p["actual"], p["guide"], ref, rel.get("form", ""))
@@ -482,7 +488,7 @@ def build_record(sym: str, d: str, rel: Dict, prev: Optional[Dict], ref: Optiona
     return {"sym": sym, "date": d, "acc": rel["acc"], "form": rel["form"], "filed": rel["date"], "url": rel["url"], "docs": rel["docs"],
             "actual": p["actual"], "guide": p["guide"], "prev_guide": pg, "prev_date": prev["date"] if prev else None,
             "vs_prev_guide": compare(p["actual"], pg), "outlook_vs_now": outlook_vs_now(p["actual"], p["guide"]),
-            "excerpt": clean(rel["text"])[:9000], "ts": time.time()}
+            "excerpt": clean(rel["text"])[:9000], "ts": time.time(), "pv": PARSER_V}
 
 
 async def refresh(eng, want: List[Tuple[str, str]], budget_s: float = 120) -> int:
@@ -497,7 +503,7 @@ async def refresh(eng, want: List[Tuple[str, str]], budget_s: float = 120) -> in
             break
         k = f"{sym}|{d}"
         c = cache.get(k) or {}
-        if c.get("acc"):
+        if c.get("acc") and (c.get("pv", 1) >= PARSER_V or (date.today() - date.fromisoformat(d)).days > 120):
             continue
         age_d = (date.today() - date.fromisoformat(d)).days
         if c.get("missing") and (time.time() - c.get("ts", 0) < (1200 if age_d <= 2 else 7200) or age_d > 5):
