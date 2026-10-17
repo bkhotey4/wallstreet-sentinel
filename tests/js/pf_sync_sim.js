@@ -41,7 +41,7 @@ function run(store, drive, opts) {
     Blob: function () {}, URL: { createObjectURL: () => '' }, FileReader: function () {}, Intl, Date, Math, JSON, Promise, Object, Array, Number, String, isFinite, parseFloat, parseInt, Proxy, Symbol, encodeURIComponent };
   ctx.window = ctx; ctx.window.google = ctx.google;
   store['wss_portfolio_gsync'] = '1';
-  const f = new Function(...Object.keys(ctx), src + '\n;return {get, put, gsync, grestore, G, _n, BKEY: typeof BKEY!=="undefined"?BKEY:null, gmsgs: (typeof __m!=="undefined"?__m:null)};');
+  const f = new Function(...Object.keys(ctx), src + '\n;return {rbCheck, rbSum, get, put, gsync, grestore, G, _n, BKEY: typeof BKEY!=="undefined"?BKEY:null, gmsgs: (typeof __m!=="undefined"?__m:null)};');
   let api;
   try { api = f(...Object.values(ctx)); } catch (e) { console.log('RUNTIME ERROR', e.message); process.exit(1); }
   return api;
@@ -84,6 +84,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   drive = { file: null, writes: 0, revs: [] };
   api = run(store, drive); await sleep(50); api.G.on = false; api.put({ v: 1, h: [], cash: [], nav: [], cleared: true });
   check(store.wss_portfolio_backup_v1 && JSON.parse(store.wss_portfolio_backup_v1).h.length === 2, 'this browser keeps the previous version');
+  // 7) rulebook parity with wsb/analytics/rulebook.py (same inputs as tests/test_rulebook.py)
+  const C = { max_weight_pct: 15, max_theme_pct: 30, stop_loss_pct: 25, trend_lag_pp: 15, trailing_pct: 30, bk_exit_pct: 5, bk_add_max_pct: 2, add_max_ssi: 60 };
+  let s1 = api.rbSum(api.rbCheck(120, 200, 20, 40, [150, -30, 300, -40, '半導體'], ['alert', 0.06], [1.0, 1.2, -16.7], 1, C, 63));
+  check(s1.st === 'exit2' && s1.nx === 5 && s1.nt === 2, 'rule check: broken thesis + stop + trend → exit checks (web)');
+  let s2 = api.rbSum(api.rbCheck(180, 100, 5, 10, [150, 40, 185, 20, '半導體'], ['ok', 0.002], [1.2, 1.0, 20], undefined, C, 45));
+  check(s2.st === 'add' && s2.na === 6, 'rule check: all add conditions (web)');
+  let s3 = api.rbSum(api.rbCheck(180, 100, 18, 10, [150, 40, 185, 20, '其他'], undefined, undefined, undefined, C, 45));
+  check(s3.st === 'trim', 'rule check: above the position cap → trim (web)');
   console.log(ok ? 'ALL SIM PASS' : 'SIM FAILED');
   process.exit(ok ? 0 : 1);
 })();
