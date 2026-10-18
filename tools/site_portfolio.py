@@ -901,8 +901,10 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
 
 // ---------------------------------------------------------------- 我的規則檢查（same rules as Discord /holdings rules）
 var RBK = PUB.rules || {};
-function rbStats(sym, h, mk){var s=rbLook(RBK.sym,sym,h);if(s&&s[0]!=null)return s;
- var n=norm(h.s),fm=gFM[mk],c=[sym].concat(n?n.cands:[]);for(var i=0;i<c.length;i++){var f=fm&&fm.map[c[i]];if(f&&f.rb&&f.rb[0]!=null)return f.rb;}return s||null;}
+function rbStats(sym, h, mk){var s=rbLook(RBK.sym,sym,h),n=norm(h.s),fm=gFM[mk],c=[sym].concat(n?n.cands:[]),row=null;
+ for(var i=0;i<c.length;i++){var f=fm&&fm.map[c[i]];if(f&&f.rb){row=f.rb;break;}}
+ if(s&&s[0]!=null){if(!s[4]&&row&&row[4])s=s.slice(0,4).concat([row[4]]);return s;}   // theme: listed industry when not curated
+ return (row&&row[0]!=null)?row:(s||null);}
 function rbLook(map, sym, h){var n=norm(h.s),c=[sym].concat(n?n.cands:[]);for(var i=0;i<c.length;i++){if(map&&map[c[i]]!==undefined)return map[c[i]];}return undefined;}
 function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi, bname){
  var o=[];function ck(g,zh,met,txt){o.push({g:g,zh:zh,met:met,txt:txt});}

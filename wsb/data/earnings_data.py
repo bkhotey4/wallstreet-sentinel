@@ -80,17 +80,21 @@ async def refresh_calendar(budget_s: float = 90, force_days: Optional[List[date]
     days = _load(F_DAYS)
     today, now, t0 = us_today(), time.time(), time.time()
     back, ahead = int(cfg().get("cal_back", 10)), int(cfg().get("cal_ahead", 45))
-    q = list(force_days or [])
-    for i in range(-back, ahead + 1):
+    keep = max(back, int(cfg().get("cal_keep", back)))       # older days: fetched once (final), kept for the latest-EPS lookup
+    q, backfill = list(force_days or []), []
+    for i in range(-keep, ahead + 1):
         d = today + timedelta(days=i)
         if d.weekday() >= 5:
             continue
         rec = days.get(d.isoformat())
         age = now - float((rec or {}).get("ts", 0))
         past_due = rec is not None and i < -3 and not rec.get("final") and (not rec.get("empty") or age > empty_wait(rec["empty"]))
-        if rec is None or past_due or (-3 <= i <= 2 and age > 1800) or (2 < i <= 10 and age > 6 * 3600) \
+        if i < -back and rec is None:
+            backfill.append(d)                               # one-time history: after the live window, newest first
+        elif rec is None or past_due or (-3 <= i <= 2 and age > 1800) or (2 < i <= 10 and age > 6 * 3600) \
                 or (i > 10 and age > 20 * 3600):
             q.append(d)
+    q += sorted(backfill, reverse=True)
     ok = err = 0
     for d in q:
         if time.time() - t0 > budget_s:
@@ -111,7 +115,7 @@ async def refresh_calendar(budget_s: float = 90, force_days: Optional[List[date]
             if err >= 5 and not ok:
                 break
         await asyncio.sleep(0.25)
-    cut = (today - timedelta(days=back + 5)).isoformat()
+    cut = (today - timedelta(days=keep + 5)).isoformat()
     days = {k: v for k, v in days.items() if k >= cut}
     if ok:
         _save(F_DAYS, days)

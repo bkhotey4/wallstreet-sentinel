@@ -974,6 +974,7 @@ econ:
 earnings:
   enabled: true
   cal_back: 10
+  cal_keep: 100               # 財報日曆保留幾天（舊的日子只抓一次）：「我的規則檢查」用來找每家公司最近一次 EPS 對預期
   cal_ahead: 45
   cal_min_mcap: 20000000000   # 財報日曆：精選池以外，只列市值 ≥ 200 億美元
   budget_s: 240
