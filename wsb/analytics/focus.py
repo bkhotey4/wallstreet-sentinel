@@ -26,9 +26,22 @@ def cfg() -> Dict:
     return {**DEFAULTS, **(SETTINGS.get("focus", {}) or {})}
 
 
-def _item(key: str, score: float, title: str, data: List[str], hidden: List[str], nxt: List[str], src: str) -> Dict:
+def _brief(hidden: List[str]) -> str:
+    """The tile's one-liner: the first clause of the first implication."""
+    h = next((x for x in hidden if x), "")
+    for sep in ("——", "。", "；"):
+        if sep in h:
+            h = h.split(sep)[0]
+            break
+    return h if len(h) <= 60 else h[:58] + "…"
+
+
+def _item(key: str, score: float, title: str, data: List[str], hidden: List[str], nxt: List[str], src: str,
+          cat: str = "", kpi: str = "", kpi_sub: str = "", brief: str = "") -> Dict:
+    hidden = [h for h in hidden if h]
     return {"key": key, "score": round(float(max(0.0, min(100.0, score))), 1), "title": title,
-            "data": [d for d in data if d], "hidden": [h for h in hidden if h], "next": [n for n in nxt if n], "src": src}
+            "data": [d for d in data if d], "hidden": hidden, "next": [n for n in nxt if n], "src": src,
+            "cat": cat, "kpi": kpi, "kpi_sub": kpi_sub, "brief": brief or _brief(hidden)}
 
 
 def _days_to(d: str, today: date) -> int:
@@ -61,8 +74,11 @@ def fed(eng, today: date) -> Optional[Dict]:
         data.append(f"到 {last['date']} 累計定價 {last['cum_bp']:+.0f}bp")
         hidden.append(f"期貨已經押注一段{word}循環。{'升息循環中，借錢投資的成長股與高負債公司最先承壓。' if word == '升息' else '降息若是因為景氣轉弱，股市常常先漲後跌。'}")
     d = _days_to(m0["date"], today)
+    top_k, top_v = max(m0["probs"].items(), key=lambda kv: kv[1])
+    brief = (f"真正押的是 {move[0]['date'][5:]}，這次看措辭" if move and move[0]["date"] != m0["date"] else "")
     return _item("fed", 95 - 3 * max(0, d), "聯準會：下一次 FOMC", data, hidden or ["期貨與共識一致，決定本身不易意外。"],
-                 nxt or ["聲明措辭與記者會"], "芝加哥期交所聯邦基金期貨（CME FedWatch 算法）")
+                 nxt or ["聲明措辭與記者會"], "芝加哥期交所聯邦基金期貨（CME FedWatch 算法）",
+                 cat="聯準會", kpi=f"{lab(top_k)} {top_v * 100:.0f}%", kpi_sub=f"{m0['date'][5:]} 會議・{max(0, d)} 天後", brief=brief)
 
 
 # ---------------------------------------------------------------- 2) top-tier data releases
@@ -87,8 +103,11 @@ def releases(eng, today: date) -> List[Dict]:
         for k, lab in (("hot", "若高於預期"), ("cool", "若低於預期")):
             if (sc.get(k) or {}).get("zh"):
                 hidden.append(f"{lab}：" + sc[k]["zh"].split("。")[0] + "。")
-        out.append(_item("rel:" + e["key"], 80 - 4 * _days_to(e["date"], today), f"重大數據：{e['zh']}", data, hidden,
-                         [(sc.get("watch") or {}).get("zh", "")], "經濟日曆（Nasdaq／ForexFactory）"))
+        dd = _days_to(e["date"], today)
+        out.append(_item("rel:" + e["key"], 80 - 4 * dd, f"重大數據：{e['zh']}", data, hidden,
+                         [(sc.get("watch") or {}).get("zh", "")], "經濟日曆（Nasdaq／ForexFactory）",
+                         cat="經濟數據", kpi=e["date"][5:], kpi_sub=(f"{dd} 天後" if dd else "今天") + "・★★★",
+                         brief=(e.get("ctx") or "").split("；")[0] or ""))
     return out
 
 
@@ -140,8 +159,12 @@ def earnings(eng, today: date) -> Optional[Dict]:
     except Exception:  # noqa: BLE001
         pass
     first = _days_to(big[0][0], today)
+    ratio = next((x for x in data if "營運現金流的" in x), "")
+    kpi = ratio.split("營運現金流的 ")[1].split("%")[0] + "%" if ratio else f"{len(names)} 家"
     return _item("earn", 85 - 2 * max(0, first),
-                 f"超大型公司財報（市值 ≥ {float(c['megacap_min']) / 1e8:,.0f} 億美元）", data, hidden, nxt, "Nasdaq 財報日曆、SEC 財報")
+                 f"超大型公司財報（市值 ≥ {float(c['megacap_min']) / 1e8:,.0f} 億美元）", data, hidden, nxt, "Nasdaq 財報日曆、SEC 財報",
+                 cat="財報", kpi=kpi, kpi_sub=("五大科技資本支出 ÷ 營運現金流" if ratio else "兩週內公布") + f"・{len(names)} 家公布",
+                 brief="答案在資本支出指引：AI 投資潮能不能延續" if ratio else "")
 
 
 # ---------------------------------------------------------------- 4) unusual moves this week
@@ -215,8 +238,13 @@ def moves(eng) -> List[Dict]:
         unit = "bp" if t == "^TNX" else "%"
         val = z["chg"] * 100 if t == "^TNX" else z["chg"]
         data = [f"{name} 一週 {val:+.1f}{unit}（現值 {z['last']:,.2f}），是自身近 3 年一週變化的 {abs(z['z']):.1f} 個標準差"]
-        out.append(_item("move:" + t, 50 + 12 * min(abs(z["z"]), 4), f"本週異常變動：{name}", data, _meaning(kind, z["chg"] > 0, ctx),
-                         ["下週是否延續，或很快收回（單週急動常常回測）"], "本站行情（Yahoo）"))
+        mean = _meaning(kind, z["chg"] > 0, ctx)
+        parts = [x.strip() for x in (mean[0] if mean else "").split("。") if x.strip()]
+        tail = parts[-1] if parts and "→" in parts[-1] else ""            # the co-move verdict is the one-liner
+        out.append(_item("move:" + t, 50 + 12 * min(abs(z["z"]), 4), f"本週異常變動：{name}", data, mean,
+                         ["下週是否延續，或很快收回（單週急動常常回測）"], "本站行情（Yahoo）",
+                         cat="異常變動", kpi=f"{val:+.1f}{unit}", kpi_sub=f"{name}・一週・{abs(z['z']):.1f} 個標準差",
+                         brief=tail or ""))
     return out[:3]
 
 
@@ -246,7 +274,9 @@ def rotation(eng) -> Optional[Dict]:
             score += 15
     if not hidden:
         return None
-    return _item("rotation", score, "資金輪動", data, hidden, ["防禦領先是否持續 1 個月以上", "動能股是否止跌"], "本站行情（類股 ETF）")
+    return _item("rotation", score, "資金輪動", data, hidden, ["防禦領先是否持續 1 個月以上", "動能股是否止跌"], "本站行情（類股 ETF）",
+                 cat="資金輪動", kpi=f"{gap:+.1f} pp", kpi_sub="防禦 − 成長類股（1 個月）",
+                 brief="資金轉向避險、擁擠交易平倉" if gap > 2 and mo is not None and lv is not None and mo - lv <= -3 else "")
 
 
 # ---------------------------------------------------------------- 6) credit
@@ -281,7 +311,8 @@ def credit(eng) -> Optional[Dict]:
         hidden.append("低評級利差收斂：信用市場風險胃納回升。")
     if not hidden:
         return None
-    return _item("credit", score, "信用市場", data, hidden, nxt, "FRED（ICE BofA 利差）")
+    return _item("credit", score, "信用市場", data, hidden, nxt, "FRED（ICE BofA 利差）",
+                 cat="信用", kpi=f"{dc:+.2f} pp", kpi_sub=f"CCC 級利差 1 個月（現 {c:.2f}%）・BB {db:+.2f}")
 
 
 # ---------------------------------------------------------------- 7) canaries, stress, hedges
@@ -293,7 +324,8 @@ def lights(eng) -> List[Dict]:
         out.append(_item("canary", 55 + 8 * len(red), f"金絲雀紅燈 {len(red)} 顆",
                          ["、".join(r["zh"] for r in red)],
                          [r.get("why") or "" for r in red[:3]],
-                         ["紅燈是否擴散到資金市場或銀行存款（目前狀況見風險模型分頁）"], "本站金絲雀燈號"))
+                         ["紅燈是否擴散到資金市場或銀行存款（目前狀況見風險模型分頁）"], "本站金絲雀燈號",
+                         cat="金絲雀", kpi=f"{len(red)} 紅", kpi_sub="、".join(r["zh"] for r in red)[:40]))
     st = getattr(eng, "stress", None)
     if st is not None and getattr(st, "chg_20d", None) is not None and abs(st.chg_20d) >= 10:
         up = st.chg_20d > 0
@@ -303,7 +335,9 @@ def lights(eng) -> List[Dict]:
             data.append(f"3 個月內跌 ≥10% 的模型機率 {odds['adjusted']:.1f}%（平常 {odds['base_rate']:.1f}%）")
         out.append(_item("stress", 50 + 2 * abs(st.chg_20d), "壓力指數快速" + ("升溫" if up else "降溫"), data,
                          ["多個市場同時出現壓力：單一事件很少造成這種同步，代表風險在擴散。" if up else "壓力從多個市場同步退潮。"],
-                         ["是否升破 70（歷史上的高壓區）"], "本站系統性壓力指數"))
+                         ["是否升破 70（歷史上的高壓區）"], "本站系統性壓力指數",
+                         cat="壓力指數", kpi=f"{st.score:.0f}", kpi_sub=f"20 天 {st.chg_20d:+.1f} 點",
+                         brief="多個市場同步出現壓力，風險在擴散" if up else ""))
     return out
 
 

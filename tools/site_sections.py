@@ -1050,29 +1050,44 @@ def sec_focus(eng) -> str:
     if not fv.get("available"):
         return ""
 
-    def one(it, i):
-        col = "var(--dn)" if it["score"] >= 75 else "var(--warn)" if it["score"] >= 55 else "var(--mu)"
+    def lvl(sc):
+        return (("var(--dn)", "高", "High") if sc >= 75 else ("var(--warn)", "中", "Med") if sc >= 55 else ("var(--mu)", "低", "Low"))
+
+    def tile(it, i):
+        col, zh, en = lvl(it["score"])
         lst = lambda xs: "".join(f"<li>{esc(x)}</li>" for x in xs)  # noqa: E731
-        return (f'<details class="fcit"{" open" if i < 3 else ""}><summary><span class="fcn" style="background:{col}">{i + 1}</span>'
-                f'<b>{esc(it["title"])}</b><span class="small muted">　{esc(it["data"][0] if it["data"] else "")}</span></summary>'
-                f'<div class="fcb"><div class="small muted">{T("數據", "Data")}</div><ul class="small lines">{lst(it["data"])}</ul>'
-                + (f'<div class="small" style="color:var(--ac)">{T("隱藏涵意", "What it implies")}</div><ul class="small lines">{lst(it["hidden"])}</ul>'
-                   if it["hidden"] else "")
-                + (f'<div class="small muted">{T("接下來看", "Watch next")}</div><ul class="small lines">{lst(it["next"])}</ul>' if it["next"] else "")
-                + f'<div class="small muted">{T("資料", "Source")}：{esc(it["src"])}</div></div></details>')
+        body = (f'<div class="fcd"><div class="fch">{T("數據", "Data")}</div><ul>{lst(it["data"])}</ul>'
+                + (f'<div class="fch" style="color:var(--ac)">{T("隱藏涵意", "What it implies")}</div><ul>{lst(it["hidden"])}</ul>' if it["hidden"] else "")
+                + (f'<div class="fch">{T("接下來看", "Watch next")}</div><ul>{lst(it["next"])}</ul>' if it["next"] else "")
+                + f'<div class="fcs">{T("資料", "Source")}：{esc(it["src"])}</div></div>')
+        return (f'<details class="fct" style="border-top-color:{col}"><summary>'
+                f'<div class="fctop"><span class="fcr" style="background:{col}">{i + 1}</span>'
+                f'<span class="fcc">{esc(it.get("cat") or "")}</span><span class="fcl" style="color:{col}">{T(zh, en)}</span></div>'
+                f'<div class="fctt">{esc(it["title"])}</div>'
+                + (f'<div class="fck"><b>{esc(it["kpi"])}</b><span>{esc(it.get("kpi_sub") or "")}</span></div>' if it.get("kpi") else "")
+                + (f'<div class="fcbr">{esc(it["brief"])}</div>' if it.get("brief") else "")
+                + f'<div class="fcmore">{T("看細節", "Details")} ▾</div></summary>{body}</details>')
+
     items = fv["items"]
     n = int(fv.get("show") or 6)
-    top = "".join(one(it, i) for i, it in enumerate(items[:n]))
-    more = (f'<details><summary class="small">{T("更多焦點", "More")}（{len(items) - n}）</summary>'
-            + "".join(one(it, i + n) for i, it in enumerate(items[n:])) + "</details>") if len(items) > n else ""
-    note = T("焦點全部由數據自動挑選與排序：利率期貨、經濟與財報日曆、SEC 財報、各資產一週變化相對自身歷史、類股輪動、信用利差、金絲雀燈號與壓力指數；"
-             "不用新聞標題。「隱藏涵意」是依數據條件套用的解讀規則（例如同一個殖利率上升，股市同時跌與同時漲代表的意思不同），不是預測，也不是投資建議。"
-             "門檻在 settings.yaml 的 focus。",
-             "Picked and ranked from data only (no headlines). 'What it implies' applies stated interpretation rules; not a forecast or advice.")
-    css = ('<style>.fcit{border-top:1px solid var(--bd);padding:6px 0}.fcit summary{cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}'
-           '.fcn{display:inline-block;min-width:20px;text-align:center;border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:0 6px}'
-           '.fcb{margin:4px 0 4px 28px}</style>')
-    return card("華爾街關注焦點", "What Wall Street is watching", css + top + more + f'<p class="note">{note}</p>', "wide",
+    grid = '<div class="fcg">' + "".join(tile(it, i) for i, it in enumerate(items[:n])) + "</div>"
+    more = (f'<details class="fcx"><summary class="small">{T("更多焦點", "More")}（{len(items) - n}）</summary><div class="fcg">'
+            + "".join(tile(it, i + n) for i, it in enumerate(items[n:])) + "</div></details>") if len(items) > n else ""
+    note = T("焦點全部由數據自動挑選與排序（利率期貨、經濟與財報日曆、SEC 財報、各資產一週變化相對自身歷史、類股輪動、信用利差、金絲雀與壓力指數），"
+             "不用新聞標題；點一下卡片看數據、隱藏涵意與接下來看什麼。「隱藏涵意」是依數據條件套用的解讀規則，不是預測，也不是投資建議。",
+             "Picked and ranked from data only (no headlines). Tap a tile for details. Interpretation rules, not a forecast or advice.")
+    css = ('<style>.fcg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:6px 0}'
+           '.fct{background:var(--card2);border:1px solid var(--bd);border-top:3px solid;border-radius:10px;padding:10px 12px}'
+           '.fct[open]{grid-column:1/-1}.fct summary{list-style:none;cursor:pointer}.fct summary::-webkit-details-marker{display:none}'
+           '.fctop{display:flex;align-items:center;gap:6px;font-size:11.5px}.fcr{color:#fff;border-radius:9px;min-width:18px;text-align:center;font-weight:700;padding:0 5px}'
+           '.fcc{color:var(--mu)}.fcl{margin-left:auto;font-weight:700}.fctt{font-weight:700;font-size:14px;margin:4px 0 2px}'
+           '.fck{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.fck b{font-size:22px;font-weight:800}.fck span{font-size:11.5px;color:var(--mu)}'
+           '.fcbr{font-size:12.5px;margin-top:4px;line-height:1.45}.fcmore{font-size:11px;color:var(--mu);margin-top:6px}.fct[open] .fcmore{display:none}'
+           '.fcd{margin-top:8px;border-top:1px dashed var(--bd);padding-top:6px;font-size:12.5px}.fcd ul{margin:2px 0 6px 18px;padding:0}'
+           '.fch{font-size:11.5px;color:var(--mu);margin-top:4px}.fcs{font-size:11px;color:var(--mu)}.fcx{margin-top:6px}'
+           '@media (max-width:600px){.fcg{grid-template-columns:1fr 1fr;gap:8px}.fct{padding:8px 9px}.fctt{font-size:12.5px}'
+           '.fck b{font-size:18px}.fct:not([open]) .fck span,.fct:not([open]) .fcbr,.fct:not([open]) .fcl{display:none}.fcmore{margin-top:3px}}</style>')
+    return card("華爾街關注焦點", "What Wall Street is watching", css + grid + more + f'<p class="note">{note}</p>', "wide",
                 sub=T(f"資料日 {fv.get('asof')}・共 {len(items)} 則，依重要性排序", f"As of {fv.get('asof')}"))
 
 
