@@ -448,7 +448,7 @@ function norm(raw){var x=String(raw||'').trim().toUpperCase().replace(/\s+/g,'')
  if((m=x.match(/^(\d{1,5})\.HK$/))){var c=('0000'+m[1]).slice(-4);return {key:c+'.HK',mk:'hk',cands:[c+'.HK',m[1]+'.HK']};}
  return {key:x,mk:'us',cands:[x,x.replace('.','-')]};}
 function cur(mk){return mk==='tw'?'TWD':(mk==='hk'?'HKD':'USD');}
-function loadMk(mk){if(MK[mk]!==undefined)return MK[mk];MK[mk]=fetch('market/'+mk+'.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();})
+function loadMk(mk){if(MK[mk]!==undefined)return MK[mk];MK[mk]=fetch('market/'+mk+'.json?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json();})
  .then(function(d){var c=d.cols,iS=c.indexOf('sym'),iN=c.indexOf('name'),iP=c.indexOf('px'),iR=c.indexOf('r1d'),map={};
   var iD=c.indexOf('quote_asof'),iH=c.indexOf('history_asof'),iSrc=c.indexOf('source');
   var iMa=c.indexOf('ma2'),iMo=c.indexOf('m121'),iHi=c.indexOf('hi52'),iRe=c.indexOf('rel6'),iInd=c.indexOf('ind');
@@ -502,33 +502,26 @@ function addRefreshBtn(s){
 function refreshQuotes(){
  var btn = document.getElementById('pfrefresh');
  if(btn){ btn.disabled = true; btn.textContent = en() ? 'Refreshing…' : '🔄 抓取中…'; }
- MK = {};
+ MK = {};                                                   // force loadMk to fetch the newest whole-market files
+ // the hourly quotes and FX baked into the page are replaced by the newest build's copy (market/quotes.json)
+ var qp = fetch('market/quotes.json?t=' + Date.now(), { cache: 'no-store' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+  .then(function(j){ if(j && j.q){ Object.keys(j.q).forEach(function(k){ Q[k] = j.q[k]; }); }
+   if(j && j.fx && j.fx.USD){ Object.keys(j.fx).forEach(function(k){ FX[k] = j.fx[k]; }); FXOK = true; }
+   return j && j.built; })
+  .catch(function(){ return null; });
  var d = get(), need = {};
  d.h.forEach(function(h){ var n = norm(h.s); if(n) need[n.mk] = 1; });
  var mks = Object.keys(need);
  if(mks.indexOf('us') < 0) mks.push('us');
- Promise.all(mks.map(function(mk){
-  return fetch('market/' + mk + '.json?t=' + Date.now(), { cache: 'no-store' })
-   .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-   .then(function(data){
-    var c = data.cols, iS = c.indexOf('sym'), iN = c.indexOf('name'), iP = c.indexOf('px'), iR = c.indexOf('r1d'), map = {};
-    var iD = c.indexOf('quote_asof'), iH = c.indexOf('history_asof'), iSrc = c.indexOf('source');
-    data.rows.forEach(function(a){
-     map[a[iS]] = { px: a[iP], ch: a[iR], name: a[iN], asof: (iD >= 0 && a[iD]) || (iH >= 0 && a[iH]) || data.asof, source: (iSrc >= 0 && a[iSrc]) || 'Yahoo' };
-    });
-    return { asof: data.asof, map: map };
-   }).catch(function(){ return null; });
- })).then(function(res){
+ Promise.all([qp].concat(mks.map(loadMk))).then(function(res){
+  var built = res[0];
   gFM = {};
-  mks.forEach(function(m, i){ gFM[m] = res[i]; });
+  mks.forEach(function(m, i){ gFM[m] = res[i + 1]; });
   draw(d, gFM);
-  var timeStr = new Date().toLocaleTimeString();
-  gmsg('已重新載入最新行情 (' + timeStr + ')', 'Quotes refreshed (' + timeStr + ')', 'ok');
-  if(btn){
-   btn.disabled = false;
-   btn.textContent = '';
-   btn.appendChild(L('🔄 重新整理行情', '🔄 Refresh quotes'));
-  }
+  var t = new Date().toLocaleTimeString();
+  gmsg((built ? '已載入網站最新行情（' + built + ' 台北建置，約每 20 分鐘更新）' : '已重新載入行情') + '・' + t,
+       (built ? 'Loaded the latest site quotes (built ' + built + ')' : 'Quotes reloaded') + ' · ' + t, 'ok');
+  if(btn){ btn.disabled = false; btn.textContent = ''; btn.appendChild(L('🔄 重新整理行情', '🔄 Refresh quotes')); }
  });
 }
 
@@ -681,7 +674,7 @@ function calcBackcastNav(d, tot, FM){
 function _mktDay(){ try{ return new Date().toLocaleDateString('en-CA', {timeZone: 'America/New_York'}); }catch(e){ return new Date().toISOString().slice(0, 10); } }
 function _dms(s){ return Date.parse(s + 'T00:00:00Z'); }
 function _addDays(s, n){ return new Date(_dms(s) + n * 86400000).toISOString().slice(0, 10); }
-function renderNav(d, tot, FM, complete){
+function renderNav(d, tot, FM, complete, CB){
  var x = document.getElementById('pfnavbox');
  if(!x) return;
  x.textContent = '';
@@ -747,6 +740,13 @@ function renderNav(d, tot, FM, complete){
  addStat('區間最高', 'Period high', 'NT$ ' + num(hwm, 0));
  addStat('距區間高點', 'From high', (curDd >= -0.05 ? '0.0% 🏆' : sgn(curDd, 1, true)), cl(curDd));
  addStat('區間最大回撤', 'Max drawdown', (mdd < 0 ? sgn(mdd, 1, true) : '0.0%'), 'dn');
+ var invested = null;
+ if(CB && CB.ok){
+  var pnl = CB.costV - CB.cost, pct = CB.cost > 0 ? pnl / CB.cost * 100 : null;
+  addStat(CB.noCost ? '持股成本（有填成本者）' : '持股成本', CB.noCost ? 'Cost (where entered)' : 'Holdings cost', 'NT$ ' + num(CB.cost, 0));
+  addStat('累計損益', 'Total P&L', 'NT$ ' + sgn(pnl, 0) + (pct != null ? '（' + sgn(pct, 1, true) + '）' : ''), cl(pnl));
+  if(!CB.noCost) invested = CB.cost + CB.cash;          // the chart's cost line: what went in (cost + cash), same basis as the NAV
+ }
  head.appendChild(stats);
  x.appendChild(head);
 
@@ -777,6 +777,7 @@ function renderNav(d, tot, FM, complete){
 
  var minV = Infinity, maxV = -Infinity;
  pts.forEach(function(p){ if(p.v < minV) minV = p.v; if(p.v > maxV) maxV = p.v; });
+ if(invested != null){ minV = Math.min(minV, invested); maxV = Math.max(maxV, invested); }   // keep the cost line in view
  if(minV === maxV){ minV *= 0.98; maxV *= 1.02; } else { var pad = (maxV - minV) * 0.15; minV -= pad; maxV += pad; }
  // x axis = real dates: the whole selected window, even where there is no point yet
  var t0 = _dms(rng ? start : pts[0].d), t1 = _dms(today);
@@ -800,6 +801,13 @@ function renderNav(d, tot, FM, complete){
  var hwmTxt = svgEl('text', { x: W - pR - 4, y: Math.max(12, hwmY - 4), 'text-anchor': 'end', fill: '#f59e0b', 'font-size': '10', 'font-weight': '600' });
  hwmTxt.textContent = (en() ? 'High NT$' : '區間高點 NT$') + num(hwm, 0);
  svg.appendChild(hwmTxt);
+ if(invested != null){
+  var cY = Y(invested);
+  svg.appendChild(svgEl('line', { x1: pL, y1: cY, x2: W - pR, y2: cY, stroke: '#9b59b6', 'stroke-dasharray': '2 3', 'stroke-width': '1.2', opacity: '0.9' }));
+  var cTxt = svgEl('text', { x: pL + 4, y: Math.min(H - pB - 3, cY + 11), 'text-anchor': 'start', fill: '#9b59b6', 'font-size': '10', 'font-weight': '600' });
+  cTxt.textContent = (en() ? 'Cost + cash NT$' : '投入成本（含現金）NT$') + num(invested, 0);
+  svg.appendChild(cTxt);
+ }
  if(coords.length > 1){
   var dArea = 'M ' + coords[0].x.toFixed(1) + ' ' + (H - pB);
   coords.forEach(function(c){ dArea += ' L ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1); });
@@ -907,7 +915,10 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+(FXOK?num(FX.USD,3)+'（'+(FX.asof||'日期不明')+'）':'匯率缺'),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+(FXOK?num(FX.USD,3)+' ('+(FX.asof||'date n/a')+')':'unavailable')]
   :['尚未輸入持股：在下方新增，或用「一次貼上多筆」','No holdings yet — add some below or paste many at once']);
 
- renderNav(d, tot, FM, miss === 0 && !cashMiss && rows.every(function(r){ return r.vt != null; }));
+ // cost basis for the chart: holdings' cost at today's FX + cash; a holding without a cost leaves it partial
+ var noCost = rows.filter(function(r){ return r.vt != null && !(r.h.c > 0); }).length;
+ renderNav(d, tot, FM, miss === 0 && !cashMiss && rows.every(function(r){ return r.vt != null; }),
+           { cost: totCost, costV: costV, cash: cashT, noCost: noCost, ok: totCost > 0 && !cashMiss });
  renderDx(rows, tot, totV, cashT);
  renderRules(rows, totV);
 }

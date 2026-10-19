@@ -1405,6 +1405,13 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     write_pwa(out)
     from wsb.analytics import fullscan as FS
     (out / "market").mkdir(exist_ok=True)
+    try:                                   # 我的持股「重新整理行情」: the newest quotes + FX without reloading the page
+        from tools import site_portfolio as SPF
+        (out / "market" / "quotes.json").write_text(json.dumps(
+            {"q": SPF._quotes(eng), "fx": SPF._fx(eng),
+             "built": datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M")}, ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("quotes.json failed")
     for mk in ("us", "tw", "hk"):
         published = FS.published(mk)
         if published:
