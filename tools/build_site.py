@@ -1083,7 +1083,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [S2.sec_focus, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
@@ -1356,6 +1356,8 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         from wsb.analytics import canary as CN
         from wsb.data import fullmarket as FMK
         eng.canary = CN.build(eng, FMK.load_prices("us")[0])
+        from wsb.analytics import focus as FC
+        eng.focus = FC.build(eng)                  # after the site's canary pass (the red-light item reads it)
     except Exception:  # noqa: BLE001
         log.exception("canary lights failed")
     try:                                   # company filings (8-K / 6-K) for this week's + each curated name's latest report

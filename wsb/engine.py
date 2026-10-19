@@ -27,6 +27,7 @@ from .analytics import earn_verdict as ev
 from .analytics import canary as cn
 from .analytics import distress as dz
 from .analytics import rulebook as rb
+from .analytics import focus as fc
 from .data import fedwatch as fw
 from .analytics import techearn as te
 from .analytics.stress import StressEngine, StressResult
@@ -93,6 +94,7 @@ class Engine:
         self.canary: Dict = {}            # 金絲雀燈號
         self.distress: Dict = {}          # 企業危機雷達
         self.rulebook: Dict = {}          # 我的持股規則檢查（私人）
+        self.focus: Dict = {}             # 華爾街關注焦點
         self.techearn: Dict = {}          # 科技／半導體財報分析
         self._quality: Optional[Dict] = None
         self._quality_ts = 0.0
@@ -259,7 +261,8 @@ class Engine:
                                     ("fedwatch_view", fw.view, "fedwatch"),
                                     ("econ_view", me.build, "econ calendar"), ("techearn", te.build, "tech earnings"),
                                     ("earn_verdict", ev.build, "earnings verdicts"), ("canary", cn.build, "canary lights"),
-                                    ("distress", dz.build, "distress radar"), ("rulebook", rb.build, "holdings rulebook")):
+                                    ("distress", dz.build, "distress radar"), ("rulebook", rb.build, "holdings rulebook"),
+                                    ("focus", fc.build, "market focus")):
                 try:
                     setattr(self, attr, await asyncio.to_thread(fn, self))
                 except Exception:  # noqa: BLE001

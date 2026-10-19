@@ -1044,6 +1044,38 @@ def sec_canary(eng) -> str:
                 sub=T("資金市場、信用品質、銀行存款、槓桿、避險失效、市場內部、景氣類股", "Funding, credit quality, deposits, leverage, hedges, breadth, cyclicals"))
 
 
+# ----------------------------------------------------------------- 華爾街關注焦點
+def sec_focus(eng) -> str:
+    fv = getattr(eng, "focus", None) or {}
+    if not fv.get("available"):
+        return ""
+
+    def one(it, i):
+        col = "var(--dn)" if it["score"] >= 75 else "var(--warn)" if it["score"] >= 55 else "var(--mu)"
+        lst = lambda xs: "".join(f"<li>{esc(x)}</li>" for x in xs)  # noqa: E731
+        return (f'<details class="fcit"{" open" if i < 3 else ""}><summary><span class="fcn" style="background:{col}">{i + 1}</span>'
+                f'<b>{esc(it["title"])}</b><span class="small muted">　{esc(it["data"][0] if it["data"] else "")}</span></summary>'
+                f'<div class="fcb"><div class="small muted">{T("數據", "Data")}</div><ul class="small lines">{lst(it["data"])}</ul>'
+                + (f'<div class="small" style="color:var(--ac)">{T("隱藏涵意", "What it implies")}</div><ul class="small lines">{lst(it["hidden"])}</ul>'
+                   if it["hidden"] else "")
+                + (f'<div class="small muted">{T("接下來看", "Watch next")}</div><ul class="small lines">{lst(it["next"])}</ul>' if it["next"] else "")
+                + f'<div class="small muted">{T("資料", "Source")}：{esc(it["src"])}</div></div></details>')
+    items = fv["items"]
+    n = int(fv.get("show") or 6)
+    top = "".join(one(it, i) for i, it in enumerate(items[:n]))
+    more = (f'<details><summary class="small">{T("更多焦點", "More")}（{len(items) - n}）</summary>'
+            + "".join(one(it, i + n) for i, it in enumerate(items[n:])) + "</details>") if len(items) > n else ""
+    note = T("焦點全部由數據自動挑選與排序：利率期貨、經濟與財報日曆、SEC 財報、各資產一週變化相對自身歷史、類股輪動、信用利差、金絲雀燈號與壓力指數；"
+             "不用新聞標題。「隱藏涵意」是依數據條件套用的解讀規則（例如同一個殖利率上升，股市同時跌與同時漲代表的意思不同），不是預測，也不是投資建議。"
+             "門檻在 settings.yaml 的 focus。",
+             "Picked and ranked from data only (no headlines). 'What it implies' applies stated interpretation rules; not a forecast or advice.")
+    css = ('<style>.fcit{border-top:1px solid var(--bd);padding:6px 0}.fcit summary{cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}'
+           '.fcn{display:inline-block;min-width:20px;text-align:center;border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:0 6px}'
+           '.fcb{margin:4px 0 4px 28px}</style>')
+    return card("華爾街關注焦點", "What Wall Street is watching", css + top + more + f'<p class="note">{note}</p>', "wide",
+                sub=T(f"資料日 {fv.get('asof')}・共 {len(items)} 則，依重要性排序", f"As of {fv.get('asof')}"))
+
+
 # ----------------------------------------------------------------- corporate distress radar
 _DZ_KIND = {"tech": ("科技", "Tech"), "corp": ("企業", "Corp"), "bank": ("銀行", "Bank"), "fin": ("金融", "Financial"),
             "credit": ("私募信貸", "Private credit")}
