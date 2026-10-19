@@ -910,6 +910,9 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
   (totPrev?sgn(totDay/totPrev*100,2,true):'')+(dayMiss?(en()?' · '+dayMiss+' without a daily change':' · '+dayMiss+' 檔缺今日漲跌未計入'):''),cl(totDay));
  k('股票市值','Stocks','NT$ '+num(totV,0),tot?num(totV/tot*100,1)+'%':'');
  k('現金','Cash','NT$ '+num(cashT,0),(d.cash||[]).map(function(c){return c.cur+' '+num(c.a,0);}).join(' · '));
+ if(totCost){var nc=rows.filter(function(r){return r.vt!=null&&!(r.h.c>0);}).length;   // cost basis at today's FX (same basis as 帳面損益)
+  k(nc?'持股成本（有填成本者）':'持股成本',nc?'Cost (where entered)':'Holdings cost','NT$ '+num(totCost,0),
+   (usd?'≈ US$ '+num(totCost/usd,0):'')+(nc?(en()?' · '+nc+' without a cost':' · '+nc+' 檔未填成本'):''));}
  if(totCost)k('帳面損益（有填成本者）','Unrealized (with cost)','NT$ '+sgn(costV-totCost,0),sgn((costV-totCost)/totCost*100,2,true),cl(costV-totCost));
  var dl=Object.keys(dates).map(function(c){return c+' '+dates[c];}).join(' · ');
  msg(d.h.length||(d.cash||[]).length?[(miss?miss+' 檔找不到報價 · ':'')+'價格日期：'+(dl||'—')+' · 美元兌台幣 '+(FXOK?num(FX.USD,3)+'（'+(FX.asof||'日期不明')+'）':'匯率缺'),(miss?miss+' without price · ':'')+'Prices as of: '+(dl||'—')+' · USD/TWD '+(FXOK?num(FX.USD,3)+' ('+(FX.asof||'date n/a')+')':'unavailable')]
