@@ -33,7 +33,7 @@ def main():
     h = I.channel_heat([a, b, c, d], now, tags)
     g = h["商品／地緣能源"]
     assert g["n"] == 1 and g["top"][0]["title"].startswith("Heavy explosions"), g
-    assert abs(g["heat"] - 3 * 0.5 ** (1 / 12)) < 1e-9
+    assert abs(g["heat"] - 3 * 0.5 ** (1 / 12)) < 1e-5, g["heat"]          # items are "1 h old" at creation: allow ~0.2 s of runtime
     assert h["波動率／槓桿去化"]["n"] == 1
     assert h["利率／債市衝擊"]["n"] == 0 and h["利率／債市衝擊"]["n_relief"] == 1
     assert h["套息拆倉"]["n"] == 0 and h["套息拆倉"]["heat"] == 0
