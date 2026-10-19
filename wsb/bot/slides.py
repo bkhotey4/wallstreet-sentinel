@@ -540,7 +540,9 @@ def deck_portfolio(engine) -> List[bytes]:
     s = Slide("持倉風險駕駛艙", f"1/{total}")
     y = s.kpis([("持倉市值", fmt(p["total_value_usd"], 0, money=True), TEXT),
                 ("未實現損益", fmt(p["pnl_pct"], 1, pct=True, sign=True), pn(p["pnl_pct"])),
-                ("今日損益", fmt(p["day_pnl_usd"], 0, money=True, sign=True), pn(p["day_pnl_usd"])),
+                ("今日損益" + ("（部分）" if p.get("day_pnl_missing") else ""),
+                 fmt(p["day_pnl_usd"], 0, money=True, sign=True) if p.get("day_pnl_usd") is not None else "—",
+                 pn(p["day_pnl_usd"] or 0)),
                 ("最壞 1% 單日虧損 VaR99", fmt(p["var99_1d_usd"], 0, money=True), ORANGE)])
     def prow(r):
         return [(r["sym"], TEXT), (f"{r['weight']:.1f}%", TEXT),

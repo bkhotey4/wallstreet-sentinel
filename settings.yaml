@@ -89,6 +89,7 @@ universe:
     "CNY=X": 美元/人民幣
     "KRW=X": 美元/韓元
     "TWD=X": 美元/台幣
+    "HKD=X": 美元/港幣
     "AUDJPY=X": 澳幣/日圓(風險偏好)
     "CHF=X": 美元/瑞郎
     "MXN=X": 美元/披索

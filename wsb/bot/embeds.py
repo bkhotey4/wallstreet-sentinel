@@ -174,7 +174,7 @@ def portfolio(engine) -> discord.Embed:
         return discord.Embed(title="💼 持倉", description=p.get("error", "計算中") if p else "計算中", color=0x95A5A6)
     e = discord.Embed(title="💼 持倉風險駕駛艙", color=0x2C3E50)
     e.description = (f"總值 **${f(p['total_value_usd'],0)}** · 未實現 **{f(p['pnl_pct'],1,sign=True,pct=True)}** (${f(p['pnl_usd'],0,sign=True)})\n"
-                     f"今日 **${f(p['day_pnl_usd'],0,sign=True)}** · β **{f(p['beta'])}** · 年化波動 {f(p['vol_ann_pct'],1)}% · "
+                     f"今日 **${f(p['day_pnl_usd'],0,sign=True)}**{'（' + str(len(p.get('day_pnl_missing') or [])) + ' 檔缺漲跌未計入）' if p.get('day_pnl_missing') else ''} · β **{f(p['beta'])}** · 年化波動 {f(p['vol_ann_pct'],1)}% · "
                      f"近1年最大回撤 {f(p['max_dd_1y_pct'],1)}%\n"
                      f"VaR95 1日 **${f(p['var95_1d_usd'],0)}** · VaR99 1日 **${f(p['var99_1d_usd'],0)}** · CVaR97.5 ${f(p['cvar975_1d_usd'],0)} · "
                      f"VaR99 10日 ${f(p['var99_10d_usd'],0)}\n集中度：有效檔數 **{f(p['effective_n'],1)}**")
@@ -348,7 +348,7 @@ def earnings_preview(engine, rec: dict) -> discord.Embed:
     im = rec.get("implied")
     e = discord.Embed(title=f"📅 {rec['ticker']} 財報前預告 — {rec['date']}", color=0xF39C12)
     if im:
-        risk = (rec.get("value") or 0) * im["move_pct"] / 100
+        risk = rec["value"] * im["move_pct"] / 100 if rec.get("value") is not None else None
         e.description = (f"選擇權隱含波動 **±{im['move_pct']:.1f}%**（{im['expiry']} 到期、履約 {f(im['strike'],0)} 跨式 ${f(im['straddle'],2)}）\n"
                          f"你的部位 ${f(rec.get('value'),0)}（{rec.get('shares') or '—'} 股）→ 隱含單次風險 **±${f(risk,0)}**")
     else:

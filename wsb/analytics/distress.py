@@ -223,14 +223,14 @@ def _corp(b: Dict, px: pd.Series) -> List[Dict]:
         st = "alert" if cov < 1 else "watch" if cov < 2 else "ok"
         out.append(_sig("coverage", "利息保障倍數", st, f"{cov:.1f} 倍（營業利益÷利息）{note('ebit', 'interest')}"))
     ocf, capex = b.get("ocf_ttm"), b.get("capex_ttm")
-    if ocf is not None and cash is not None:
-        fcf = ocf - (capex or 0.0)
+    if ocf is not None and capex is not None and cash is not None:     # CapEx missing → no FCF (OCF alone would flatter)
+        fcf = ocf - capex
         if fcf < 0:
             m = cash / (-fcf / 12)
             st = "alert" if m < 12 else "watch" if m < 24 else "ok"
             out.append(_sig("runway", "現金可撐", st, f"{math.floor(m)} 個月（自由現金流 {fcf / 1e9:+.1f}B／年，不再融資的話）{note('ocf', 'capex')}"))
     if debt is not None and debt > 0:
-        ebitda = (ebit or 0.0) + (b.get("da_ttm") or 0.0) if ebit is not None else None
+        ebitda = ebit + b["da_ttm"] if ebit is not None and b.get("da_ttm") is not None else None   # no D&A → no EBITDA
         if ebitda is not None:
             if ebitda <= 0:
                 out.append(_sig("leverage", "負債／EBITDA", "alert", f"EBITDA ≤ 0，負債 {debt / 1e9:.1f}B"))

@@ -38,14 +38,21 @@ def _pct(a, b):
     return (a / b - 1) * 100
 
 
-def _rank(vals: Dict[str, Optional[float]], invert: bool = False) -> Dict[str, float]:
+def _rank(vals: Dict[str, Optional[float]], invert: bool = False) -> Dict[str, Optional[float]]:
+    """Percentile rank 0–100; a missing value (or a group under 3 names) gets None — never a made-up neutral 50."""
     ok = {k: v for k, v in vals.items() if v is not None and np.isfinite(v)}
     if len(ok) < 3:
-        return {k: 50.0 for k in vals}
+        return {k: None for k in vals}
     s = pd.Series(ok).rank(pct=True) * 100
     if invert:
         s = 100 - s + (100 / len(s))
-    return {k: float(s.get(k, 50.0)) for k in vals}
+    return {k: (float(s[k]) if k in s.index else None) for k in vals}
+
+
+def _blend(parts) -> Optional[float]:
+    """Weighted average over the components that exist (weights renormalised); None if none exist."""
+    have = [(w, x) for w, x in parts if x is not None]
+    return round(sum(w * x for w, x in have) / sum(w for w, _ in have), 1) if have else None
 
 
 def _fin_currency() -> Dict[str, str]:
@@ -175,7 +182,7 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.
     for r in rows:
         s = r["sym"]
         r["elig"] = s in elig
-        r["score"] = round(0.4 * g[s] + 0.4 * v.get(s, 50.0) + 0.1 * gm[s] + 0.1 * r40[s], 1) if s in elig else None
+        r["score"] = _blend([(0.4, g[s]), (0.4, v.get(s)), (0.1, gm[s]), (0.1, r40[s])]) if s in elig else None
     rows.sort(key=lambda r: (-(r["score"] if r["score"] is not None else -1), -(r.get("mcap") or 0)))
     rank = 0
     for r in rows:
@@ -234,7 +241,7 @@ def score_tw(rows: List[Dict], min_g: float, min_rev_100m: float = 1.0) -> List[
     pb = _rank({s: r.get("pb") for s, r in elig.items()}, invert=True)
     for r in rows:
         s = r["code"]
-        r["score"] = round(0.4 * g[s] + 0.4 * v[s] + 0.1 * m[s] + 0.1 * pb[s], 1) if s in elig else None
+        r["score"] = _blend([(0.4, g[s]), (0.4, v[s]), (0.1, m[s]), (0.1, pb[s])]) if s in elig else None
     rows.sort(key=lambda r: (-(r["score"] if r["score"] is not None else -1), -(r["rev"] or 0)))
     rank = 0
     for r in rows:

@@ -115,12 +115,13 @@ def tags(m: Dict, s: Dict) -> List[Tuple[str, str]]:
     return out
 
 
-def _rank(vals: Dict[str, Optional[float]]) -> Dict[str, float]:
+def _rank(vals: Dict[str, Optional[float]]) -> Dict[str, Optional[float]]:
+    """Percentile rank 0–100; missing (or a sample under 3) → None, never a neutral 50."""
     ok = {k: v for k, v in vals.items() if v is not None and np.isfinite(v)}
     if len(ok) < 3:
-        return {k: 50.0 for k in vals}
+        return {k: None for k in vals}
     s = pd.Series(ok).rank(pct=True) * 100
-    return {k: float(s.get(k, 50.0)) for k in vals}
+    return {k: (float(s[k]) if k in s.index else None) for k in vals}
 
 
 W = {"rev_yoy": 0.30, "accel": 0.15, "gm_yoy": 0.15, "om_yoy": 0.10, "eps_yoy": 0.15, "surp": 0.15}
@@ -170,8 +171,10 @@ def build(eng) -> Dict:
                   "eps_yoy": m.get("eps_yoy"), "surp": sinfo["avg"]}
     ranks = {k: _rank({s: raw[s][k] for s in raw}) for k in W}
     for r in rows:
-        have = [k for k in W if raw[r["sym"]][k] is not None]
-        r["score"] = round(sum(W[k] * ranks[k][r["sym"]] for k in W) / sum(W.values()), 1) if len(have) >= 3 else None
+        have = [k for k in W if ranks[k][r["sym"]] is not None]
+        # weights renormalised over the metrics this company has (a missing one is not scored as average)
+        r["score"] = round(sum(W[k] * ranks[k][r["sym"]] for k in have) / sum(W[k] for k in have), 1) if len(have) >= 3 else None
+        r["score_n"] = len(have)
         r["verdict"] = verdict(r)
     rows.sort(key=lambda r: -(r["score"] or -1))
     groups = []

@@ -63,7 +63,9 @@ stress_factor = pd.Series(-mkt).rolling(20).mean().fillna(0).values
 
 cols = {}
 _VAL = set(SETTINGS.get("valuation", {}).get("tickers", []))     # added later: keep the seeded draws of the core set unchanged
+import zlib  # noqa: E402
 for t in [x for x in SETTINGS.all_tickers() if x not in _VAL] + ["NVDA", "TSM", "NEWCO"]:
+    rng = np.random.default_rng(zlib.crc32(t.encode()))      # one stream per ticker: adding a ticker never reshuffles the others
     beta = rng.uniform(0.3, 1.6)
     if t.startswith("^VIX") or t in ("^VVIX", "^MOVE", "^SKEW"):
         base = 18 if t != "^VVIX" else 90

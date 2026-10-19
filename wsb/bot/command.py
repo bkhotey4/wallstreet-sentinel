@@ -148,10 +148,10 @@ def _quality(engine, tag: str) -> Slide:
     for w in ql.get("walk_forward", []):
         if not w.get("n_test"):
             continue
-        sk_ = (w.get("skill") or 0) * 100
+        sk_ = w["skill"] * 100 if w.get("skill") is not None else None     # missing → "—", not 0%
         rows.append([(f"{w['days']}日跌≥{w['drawdown_pct']:.0f}%", TEXT), (fmt(w.get("auc_in"), 2), MUTED),
                      (fmt(w.get("auc_oos"), 2), GREEN if (w.get("auc_oos") or 0) >= 0.65 else ORANGE),
-                     (f"{sk_:+.0f}%", GREEN if sk_ > 5 else MUTED), (w.get("verdict", "—"), TEXT)])
+                     (f"{sk_:+.0f}%" if sk_ is not None else "—", GREEN if sk_ is not None and sk_ > 5 else MUTED), (w.get("verdict", "—"), TEXT)])
     y = 250
     if rows:
         y = s.table(["情境", "樣本內AUC", "樣本外AUC", "Brier技能分", "判讀"], rows, y, [0.26, 0.17, 0.17, 0.2, 0.2], size=36, row_h=80)
@@ -206,7 +206,7 @@ def _lab(engine, tag: str) -> Slide:
     b, e, now = hz["baseline"], hz.get("ensemble"), hz.get("now") or {}
     line = f"基準（只用 SSI）樣本外 AUC {b['auc']:.2f}；安慰劑最高增益 {hz['null_max_d_auc']:+.3f}。"
     if e:
-        line += f"增強模型 AUC {e['auc']:.2f}（{e['d_auc']:+.2f}），Brier 技能 {(e['skill'] or 0) * 100:+.0f}%：" + ("通過，採用。" if e["accepted"] else "未通過，沿用原模型。")
+        line += f"增強模型 AUC {e['auc']:.2f}（{e['d_auc']:+.2f}），Brier 技能 {(format(e['skill'] * 100, '+.0f') + '%') if e.get('skill') is not None else '—'}：" + ("通過，採用。" if e["accepted"] else "未通過，沿用原模型。")
     else:
         line += "沒有任何候選通過檢驗，沿用原模型（誠實的結論：目前沒有找到更好的指標）。"
     y = s.paragraph(line, M, y, W - 2 * M, size=30, color=TEXT) + 6

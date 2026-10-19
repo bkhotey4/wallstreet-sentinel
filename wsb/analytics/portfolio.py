@@ -57,7 +57,7 @@ def load_holdings() -> Dict[str, dict]:
             except (TypeError, ValueError):
                 continue
             if sh > 0 and cost > 0:
-                cur = e.get("currency") or ("TWD" if sym.endswith((".TW", ".TWO")) else "USD")
+                cur = e.get("currency") or ("TWD" if sym.endswith((".TW", ".TWO")) else "HKD" if sym.endswith(".HK") else "USD")
                 out[sym] = {"shares": sh, "cost": cost, "currency": cur, "name": e.get("name", sym)}
         if out:
             return out
@@ -78,14 +78,25 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
     lb = int(cfg.get("var_lookback_days", 504))
     if not holdings:
         return {"error": "找不到持倉檔或持倉為空"}
-    fx = market.series("TWD=X")
-    usdtwd = float(market.q("TWD=X")["price"]) if market.q("TWD=X") else (float(fx.iloc[-1]) if len(fx) else None)
+    # local currency per 1 USD, from Yahoo (TWD=X, HKD=X …); a currency without a rate is never treated as dollars
+    fx_ser, fx_now = {}, {"USD": 1.0}
+    for c in {h["currency"] for h in holdings.values()} - {"USD"}:
+        t = f"{c}=X"
+        ser_c = market.series(t)
+        q_c = market.q(t)
+        fx_ser[c] = ser_c
+        fx_now[c] = float(q_c["price"]) if q_c and q_c.get("price") else (float(ser_c.iloc[-1]) if len(ser_c) else None)
+    usdtwd = fx_now.get("TWD")
+    if usdtwd is None and market.q("TWD=X"):
+        usdtwd = float(market.q("TWD=X")["price"])
 
     px = {}
     for s in list(holdings) + [bench]:
         ser = market.series(s)
-        if s in holdings and holdings[s]["currency"] == "TWD" and len(ser) and len(fx):
-            ser = (ser / fx.reindex(ser.index, method="ffill")).dropna()
+        c = holdings[s]["currency"] if s in holdings else "USD"
+        if c != "USD":
+            fs = fx_ser.get(c, pd.Series(dtype=float))
+            ser = (ser / fs.reindex(ser.index, method="ffill")).dropna() if len(ser) and len(fs) else pd.Series(dtype=float)
         px[s] = ser
     rows, total_val, total_cost = [], 0.0, 0.0
     for s, h in holdings.items():
@@ -95,10 +106,10 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
         if price_local is None:
             rows.append({"sym": s, "error": "無報價"})
             continue
-        if h["currency"] == "TWD" and not usdtwd:
-            rows.append({"sym": s, "error": "缺 USD/TWD 匯率"})
+        conv = fx_now.get(h["currency"])
+        if not conv:
+            rows.append({"sym": s, "error": f"缺 USD/{h['currency']} 匯率"})
             continue
-        conv = usdtwd if h["currency"] == "TWD" else 1.0
         val = price_local * h["shares"] / conv
         cost = h["cost"] * h["shares"] / conv
         total_val += val
@@ -171,7 +182,7 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
             if ret is None:
                 if br is None:
                     continue
-                ret = br * (r.get("beta") or 1.0)
+                ret = br * (r["beta"] if r.get("beta") is not None else 1.0)     # β = 0 is a valid beta
                 prox.append(r["sym"])
             pnl += r["value_usd"] * ret
             detail.append((r["sym"], ret * 100))
@@ -195,7 +206,11 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
     return {
         "total_value_usd": total_val, "total_cost_usd": total_cost,
         "pnl_usd": total_val - total_cost, "pnl_pct": (total_val / total_cost - 1) * 100 if total_cost else None,
-        "day_pnl_usd": sum(r["value_usd"] * (r["d1_pct"] or 0) / (100 + (r["d1_pct"] or 0)) for r in valid),
+        # today's P&L only over holdings with a known daily change; the rest are counted, never assumed flat
+        "day_pnl_usd": sum(r["value_usd"] * r["d1_pct"] / (100 + r["d1_pct"]) for r in valid if r.get("d1_pct") is not None)
+                       if any(r.get("d1_pct") is not None for r in valid) else None,
+        "day_pnl_missing": [r["sym"] for r in valid if r.get("d1_pct") is None],
+        "unpriced": [r["sym"] for r in rows if "error" in r],
         "positions": sorted(rows, key=lambda r: -r.get("value_usd", 0)),
         "beta": port_beta, "betas": betas, "vol_ann_pct": sig_p * np.sqrt(252) * 100,
         "var95_1d_usd": var95 * total_val, "var99_1d_usd": var99 * total_val,

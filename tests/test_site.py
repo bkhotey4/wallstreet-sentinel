@@ -87,6 +87,9 @@ def main():
     # tokens that can contain e.g. "ENB" and made this guard fail at random.
     import re as _re
     visible = _re.sub(r'(?:href|src)="[^"]*"', "", page)
+    # the 我的持股 page's public market data (every US ticker's EPS, prices …) is checked by its own key whitelist in
+    # test_portfolio_page; a public ticker such as Enbridge (ENB) there is not a holding
+    visible = _re.sub(r'<script type="application/json" id="pf-data">.*?</script>', "", visible, flags=_re.S)
     for word in ("持倉總值", "未實現", "VaR99", "ENB"):
         assert not _re.search(rf"(?<![A-Za-z0-9]){_re.escape(word)}(?![A-Za-z0-9])", visible), word
     assert not re.search(r"https?://(?!example\.com)[^\"' ]+\.(js|css)", page), "page must not load external scripts/styles"

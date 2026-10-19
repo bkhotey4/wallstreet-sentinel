@@ -694,7 +694,7 @@ class Sentinel(commands.Bot):
         out += self._stop_alerts()
         out += self._rule_alerts()
         pf = eng.portfolio
-        if pf and not pf.get("error") and pf.get("total_value_usd"):
+        if pf and not pf.get("error") and pf.get("total_value_usd") and pf.get("day_pnl_usd") is not None:
             dd = pf["day_pnl_usd"] / pf["total_value_usd"] * 100
             if dd <= -abs(A.get("portfolio_drawdown_pct", 3)):
                 worst = sorted([p for p in pf["positions"] if p.get("d1_pct") is not None], key=lambda p: p["d1_pct"])[:3]
@@ -1906,7 +1906,7 @@ def register_commands(bot: Sentinel) -> None:
             p = pos.get(s)
             rows.append(f"`{s:<9}` {h['shares']:>9,.0f} 股 @ {h['cost']:,.2f} {h.get('currency', 'USD')}"
                         + (f" → ${p['value_usd']:,.0f}（{p['pnl_pct']:+.1f}%，今日 {p['d1_pct']:+.2f}%）" if p else " → 報價待更新"))
-        tot = f"\n**總市值 ${pf['total_value_usd']:,.0f}，未實現 {pf['pnl_pct']:+.1f}%，今日 ${pf['day_pnl_usd']:+,.0f}**" if pf.get("total_value_usd") else ""
+        tot = f"\n**總市值 ${pf['total_value_usd']:,.0f}，未實現 {pf['pnl_pct']:+.1f}%，今日 " + (f"${pf['day_pnl_usd']:+,.0f}" if pf.get("day_pnl_usd") is not None else "—") + "**" if pf.get("total_value_usd") else ""
         return "\n".join(rows) + tot
 
     holdings_grp = app_commands.Group(name="holdings", description="我的持股（只有你看得到；存在本機 data_cache/holdings.json）")

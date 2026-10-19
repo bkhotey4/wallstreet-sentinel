@@ -75,10 +75,12 @@ async def preview_text(engine, rec: Dict) -> str:
     im = rec.get("implied")
     if not im:
         return f"{rec['ticker']} 將於 {rec['date']} 公布財報（選擇權隱含波動資料缺）。"
+    if rec.get("value") is None:                      # no position value → no made-up $0 risk in the AI prompt
+        return f"{rec['ticker']} 將於 {rec['date']} 公布財報；選擇權隱含波動 ±{im['move_pct']:.1f}%（持股市值暫缺，未估算部位風險）。"
     pack = context.build(engine, "portfolio")
     txt, name = await llm.complete(prompts.SYSTEM, pack + "\n\n" + prompts.EARNINGS_PREVIEW.format(
         t=rec["ticker"], date=rec["date"], move=im["move_pct"], expiry=im["expiry"],
-        value=rec["value"] or 0, risk=(rec["value"] or 0) * im["move_pct"] / 100), 1200)
+        value=rec["value"], risk=rec["value"] * im["move_pct"] / 100), 1200)
     return f"🧠（{name}）\n{txt}"
 
 

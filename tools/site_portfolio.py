@@ -29,7 +29,13 @@ def _fx(eng) -> Dict[str, float]:
             usdtwd, asof = float(s.iloc[-1]), s.index[-1].strftime("%Y-%m-%d")
     if not usdtwd:                        # no quote at all → the page says 匯率缺 instead of inventing a rate
         return {"TWD": 1.0, "USD": None, "HKD": None, "asof": ""}
-    return {"TWD": 1.0, "USD": float(usdtwd), "HKD": float(usdtwd) / HKD_PEG, "asof": asof}
+    qh = eng.market.q("HKD=X") or {}
+    hk = qh.get("price") if qh.get("price") and qh["price"] == qh["price"] else None
+    if not hk:
+        sh = eng.market.series("HKD=X")
+        hk = float(sh.iloc[-1]) if len(sh) else None
+    return {"TWD": 1.0, "USD": float(usdtwd), "HKD": float(usdtwd) / (hk or HKD_PEG), "asof": asof,
+            "hkd_src": "Yahoo HKD=X" if hk else "聯繫匯率 7.8（估算）"}
 
 
 def _quotes(eng) -> Dict[str, list]:
@@ -66,7 +72,9 @@ def _hist_30d(eng) -> dict:
         if sp is not None and not sp.empty:                # individual stocks (KLAC, ORCL, 2330.TW …) live here, not in history
             extra = sp[[c for c in sp.columns if c not in h.columns]]
             h = h.join(extra, how="outer") if len(extra.columns) else h
-        sub = h.reindex(dt_idx).ffill().bfill()
+        # forward-fill at most 3 sessions (holidays / a late print); never back-fill: a stock that listed during
+        # the window has no price before its first day, and an old print must not stand in for a long suspension
+        sub = h.reindex(dt_idx).ffill(limit=3)
         closes = {}
         for col in sub.columns:
             ser = sub[col]
@@ -270,7 +278,7 @@ def sec_portfolio(eng) -> str:
              "URL can see them. 'Sync with Google' stores them in a hidden app-only folder of YOUR Google Drive, so every device signed "
              "in to the same Google account stays in sync; GitHub never sees them. Export / Import still works for manual moves.")
     note = T("價格跟著本站每小時更新（免費報價約延遲 15 分鐘，非逐筆即時）；今日損益＝股數 ×（現價 − 昨收）。台股輸入數字代號即可（例 2330），"
-             "港股請寫 0700.HK；美股直接輸入代號。新台幣合計用網站的美元兌台幣匯率，港幣以聯繫匯率 7.8 估算。找不到報價的代號可以手動輸入價格。",
+             "港股請寫 0700.HK；美股直接輸入代號。新台幣合計用網站的美元兌台幣、美元兌港幣匯率（港幣匯率暫缺時以聯繫匯率 7.8 估算並標示）。找不到報價的代號可以手動輸入價格。",
              "Prices follow the hourly site build (~15 min delayed, not tick-by-tick); today's P&L = shares × (price − previous close). "
              "Taiwan: type the number (e.g. 2330); Hong Kong: 0700.HK; US: the ticker. TWD totals use the site's USD/TWD rate; HKD via the "
              "7.8 peg (approximate). If a ticker has no price you can type one in manually.")
@@ -631,7 +639,7 @@ function calcBackcastNav(d, tot, FM){
  // only draw when ≥90% of today's value has a real daily history; otherwise the "curve" is mostly today's price
  var covV = 0, allV = 0;
  rows.forEach(function(r){ var p = price(r.h, FM && FM[r.mk]), f = fxv(cur(r.mk)); if(!p || p.px == null || f == null) return;
-  r.priced = true; var v = r.n * p.px * f; allV += v; if(r.series) covV += v; });
+  r.priced = true; var v = r.n * p.px * f; r.vToday = v; allV += v; if(r.series) covV += v; });
  if(allV <= 0 || covV / allV < 0.9) return null;
 
  var cashT = 0;
@@ -642,21 +650,19 @@ function calcBackcastNav(d, tot, FM){
 
  var pts = [];
  for(var t=0; t<dates.length; t++){
-  var dayTot = cashT;
+  var dayTot = cashT, dayMiss = 0;
   var dayFx = (twdRates[t] != null && twdRates[t] > 0) ? twdRates[t] : liveFxUsd;
   rows.forEach(function(r){
    if(!r.priced) return;                      // same set as today's total: a holding without a current price is left out
    var px = (r.series && r.series[t] != null) ? r.series[t] : null;
-   if(px == null){
-    var p = price(r.h, FM && FM[r.mk]);
-    if(p && p.px != null) px = p.px;
-   }
+   if(px == null){ dayMiss += r.vToday || 0; return; }          // no price that day: never today's price as a stand-in
    if(px != null){
     var rate = (r.mk === 'tw') ? 1.0 : (r.mk === 'hk' ? (hkUsd != null ? dayFx * hkUsd : null) : dayFx);
     if(rate == null) return;
     dayTot += r.n * px * rate;
    }
   });
+  if(allV > 0 && dayMiss / allV > 0.1) continue;              // under 90% of the value priced that day → no point
   pts.push({ d: dates[t], v: Math.round(dayTot), mode: 'backcast' });
  }
 
@@ -829,10 +835,10 @@ function renderNav(d, tot, FM, complete){
 }
 // ---------------------------------------------------------------- Main Draw
 function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textContent='';var tf=document.getElementById('pft').tFoot;if(tf)tf.remove();
- var rows=[],totV=0,totDay=0,totPrev=0,totCost=0,costV=0,miss=0,dates={};
+ var rows=[],totV=0,totDay=0,totPrev=0,totCost=0,costV=0,miss=0,dayMiss=0,dates={};
  d.h.forEach(function(h,i){var n=norm(h.s),mk=n?n.mk:'us',p=price(h,FM[mk]),c=cur(mk),fx=fxv(c),r={h:h,i:i,mk:mk,cur:c,p:p};
   if(p){r.v=h.n*p.px;r.vt=fx!=null?r.v*fx:null;var prev=p.prev>0?p.prev:((p.ch!=null)?p.px/(1+p.ch/100):null);r.day=(prev!=null&&fx!=null)?h.n*(p.px-prev)*fx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
-   if(r.vt!=null)totV+=r.vt;if(r.day!=null){totDay+=r.day;totPrev+=r.vt-r.day;}if(h.c>0){r.cost=h.n*h.c;r.un=r.v-r.cost;r.ret=r.un/r.cost*100;if(fx!=null){totCost+=r.cost*fx;costV+=r.vt;}}
+   if(r.vt!=null)totV+=r.vt;if(r.day!=null){totDay+=r.day;totPrev+=r.vt-r.day;}else dayMiss++;if(h.c>0){r.cost=h.n*h.c;r.un=r.v-r.cost;r.ret=r.un/r.cost*100;if(fx!=null){totCost+=r.cost*fx;costV+=r.vt;}}
    if(p.asof)dates[c]=(dates[c]&&dates[c]>p.asof)?dates[c]:p.asof;}else miss++;rows.push(r);});
  rows.sort(function(a,b){return (b.vt||0)-(a.vt||0);});
 
@@ -885,8 +891,11 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  var S=document.getElementById('pfsum');S.textContent='';
  function k(zh,en_,v,sub,c,big){var x=el('div','pfk'+(big?' big':''));x.appendChild(el('div','s')).appendChild(L(zh,en_));var vv=el('div','v '+(c||''),v);x.appendChild(vv);if(sub)x.appendChild(el('div','s',sub));S.appendChild(x);}
  if(!FXOK)k('總資產（新台幣）','Total assets (TWD)','—',en()?'USD/TWD rate unavailable':'美元兌台幣匯率暫缺，無法換算','pfwarn',true);
+ else if(miss)k('已估值小計（新台幣）','Valued subtotal (TWD)','NT$ '+num(tot,0),(en()?miss+' without a price — not included':miss+' 檔沒有報價，未計入')+' · ≈ US$ '+num(tot/usd,0),'pfwarn',true);
  else k('總資產（新台幣）','Total assets (TWD)','NT$ '+num(tot,0),'≈ US$ '+num(tot/usd,0),'',true);
- k('今日損益','Today P&L','NT$ '+sgn(totDay,0),totPrev?sgn(totDay/totPrev*100,2,true):'',cl(totDay));
+ if(!totPrev&&dayMiss)k('今日損益','Today P&L','—',en()?'no daily change available':'沒有今日漲跌資料','');
+ else k(dayMiss?'今日損益（部分）':'今日損益',dayMiss?'Today P&L (partial)':'Today P&L','NT$ '+sgn(totDay,0),
+  (totPrev?sgn(totDay/totPrev*100,2,true):'')+(dayMiss?(en()?' · '+dayMiss+' without a daily change':' · '+dayMiss+' 檔缺今日漲跌未計入'):''),cl(totDay));
  k('股票市值','Stocks','NT$ '+num(totV,0),tot?num(totV/tot*100,1)+'%':'');
  k('現金','Cash','NT$ '+num(cashT,0),(d.cash||[]).map(function(c){return c.cur+' '+num(c.a,0);}).join(' · '));
  if(totCost)k('帳面損益（有填成本者）','Unrealized (with cost)','NT$ '+sgn(costV-totCost,0),sgn((costV-totCost)/totCost*100,2,true),cl(costV-totCost));

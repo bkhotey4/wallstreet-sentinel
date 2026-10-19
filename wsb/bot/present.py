@@ -200,7 +200,7 @@ def v_quote(t: str, name: str, st: dict, info: dict) -> List[bytes]:
 def v_earnings_preview(engine, rec: dict) -> List[bytes]:
     from . import slides as S
     im = rec.get("implied") or {}
-    risk = (rec.get("value") or 0) * im.get("move_pct", 0) / 100 if im else None
+    risk = rec["value"] * im["move_pct"] / 100 if im and im.get("move_pct") is not None and rec.get("value") is not None else None
     return S.deck_kpis(f"{rec['ticker']} 財報前預告", [
         ("公布日", rec["date"], S.TEXT),
         ("選擇權隱含波動", f"±{im['move_pct']:.1f}%" if im else "—", S.ORANGE),

@@ -253,7 +253,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     pf = engine.portfolio if private else None
     if pf and not pf.get("error"):
         L.append(f"## 使用者持倉 總值 ${f(pf['total_value_usd'],0)} 未實現 {f(pf['pnl_pct'],1,sign=True,pct=True)} "
-                 f"今日 ${f(pf['day_pnl_usd'],0,sign=True)} β {f(pf['beta'])} 年化波動 {f(pf['vol_ann_pct'],1)}% "
+                 f"今日 ${f(pf['day_pnl_usd'],0,sign=True)}{'（' + str(len(pf.get('day_pnl_missing') or [])) + ' 檔缺今日漲跌未計入）' if pf.get('day_pnl_missing') else ''} β {f(pf['beta'])} 年化波動 {f(pf['vol_ann_pct'],1)}% "
                  f"VaR99(1D) ${f(pf['var99_1d_usd'],0)} CVaR97.5 ${f(pf['cvar975_1d_usd'],0)} 有效檔數 {f(pf['effective_n'],1)}")
         for p in pf["positions"]:
             if "value_usd" in p:
