@@ -1296,7 +1296,8 @@ _RB_ICON = {"exit2": "🔴", "exit1": "🟠", "trim": "🟡", "add": "🟢", "ho
 def rules_embed(rbk: Dict) -> "discord.Embed":
     """The holdings rulebook as one private embed: per holding, which of the user's rules are met."""
     e = discord.Embed(title="📋 我的持股規則檢查（僅你可見）", color=0x5865F2, timestamp=datetime.now(timezone.utc),
-                      description=(f"資料日 {rbk.get('asof') or '—'}｜壓力指數 {rbk['ssi']:.0f}" if rbk.get("ssi") is not None else ""))
+                      description=f"檢查時間 {datetime.now(ZoneInfo('Asia/Taipei')).strftime('%Y-%m-%d %H:%M')} 台北｜使用的收盤價 {rbk.get('asof') or '—'}"
+                                  + (f"｜壓力指數 {rbk['ssi']:.0f}" if rbk.get("ssi") is not None else ""))
     for r in rbk.get("rows", [])[:24]:
         lines = []
         for grp, lab in (("exit", "出場檢查"), ("trim", "減碼檢查")):

@@ -198,6 +198,8 @@ def _rules(eng) -> dict:
     from wsb.data.stocks import universe
     out = {"cfg": {k: v for k, v in RB.cfg().items() if isinstance(v, (int, float)) and not isinstance(v, bool)},
            "bench": {k: v[1] for k, v in RB.BENCH.items()}, "surpc": {},
+           "built": __import__("datetime").datetime.now(__import__("zoneinfo").ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M"),
+           "px_asof": None,
            "ssi": round(float(eng.stress.score), 1) if getattr(eng, "stress", None) else None, "sym": {}, "dz": {}, "surp": {}, "gb": {}}
     try:
         h = eng.market.history
@@ -217,6 +219,8 @@ def _rules(eng) -> dict:
                 continue
             r2 = lambda v: None if v is None else round(float(v), 2)  # noqa: E731
             out["sym"][c] = [r2(st.get("ma200")), r2(st.get("mom_12_1")), r2(st.get("high_52w")), r2(st.get("rel_6m")), themes.get(c)]
+            if st.get("asof") and (out["px_asof"] is None or st["asof"] > out["px_asof"]):
+                out["px_asof"] = st["asof"]                        # latest daily close the rule inputs use
     except Exception:  # noqa: BLE001
         pass
     for r in (getattr(eng, "distress", None) or {}).get("rows", []):
@@ -951,6 +955,12 @@ function renderRules(rows, totV){
  if(!live.length||!totV){x.style.display='none';return;}
  x.style.display='block';
  var hd=el('h3');hd.appendChild(L('我的規則檢查','My rule check'));x.appendChild(hd);
+ var now=new Date(),pad=function(n){return (n<10?'0':'')+n;},
+  nowS=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+ var tm=el('div','small');tm.style.cssText='display:flex;gap:14px;flex-wrap:wrap;margin:2px 0 6px';
+ [['檢查時間','Checked',nowS+'（你的瀏覽器即時計算）'],['使用的收盤價','Prices as of',RBK.px_asof||'—'],['規則數據更新','Rule data built',(RBK.built||'—')+' 台北']]
+  .forEach(function(a){var sp=el('span');sp.appendChild(el('span','muted',(en()?a[1]:a[0])+'：'));sp.appendChild(el('b','',a[2]));tm.appendChild(sp);});
+ x.appendChild(tm);
  var sub=el('p','small muted');sub.appendChild(L('用華爾街常用的進出場紀律（論點停損、停損、趨勢、移動停損、部位上限）當作你的規則，逐檔檢查哪些條件成立；門檻和 Discord「/holdings rules」相同（settings.yaml 的 rulebook）。只在你的瀏覽器裡計算，不會上傳。這是規則檢查，不是買賣指令。',
   'Wall Street entry / exit discipline as your own rules, checked per holding in your browser only. A rule check, not a buy / sell instruction.'));x.appendChild(sub);
  var themeW={},items=[];
