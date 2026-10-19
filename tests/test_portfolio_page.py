@@ -69,7 +69,9 @@ def main():
     assert hosts == {"www.googleapis.com", "accounts.google.com"}, hosts
     assert not re.search(r"sendBeacon|XMLHttpRequest", SP.JS)
     assert "drive.appdata" in SP.JS and "appDataFolder" in SP.JS                  # app-private Drive folder only
-    assert "innerHTML" not in SP.JS                                      # names from data are set via textContent
+    # every redraw of the NAV chart (incl. the 7/30-day buttons) keeps the cost line + total P&L
+    assert "renderNav(d, tot, FM, complete);" not in SP.JS and "renderNav(d, tot, FM, complete, CB);" in SP.JS
+    assert "innerHTML" not in SP.JS                                     # names from data are set via textContent
     from tools import build_site as B
     src = open(B.__file__, encoding="utf-8").read()
     assert '("portfolio", "我的持股", "My holdings", [SP.sec_portfolio])' in src and "{SP.JS}" in src and "{SP.CSS}" in src

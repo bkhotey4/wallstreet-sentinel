@@ -716,7 +716,7 @@ function renderNav(d, tot, FM, complete, CB){
   var b = el('button', 'pfnav-pill' + (rng === o[0] ? ' on' : ''));
   b.type = 'button';
   b.appendChild(L(o[1], o[2]));
-  b.addEventListener('click', function(){ window._navRange = o[0]; renderNav(d, tot, FM, complete); });
+  b.addEventListener('click', function(){ window._navRange = o[0]; renderNav(d, tot, FM, complete, CB); });   // keep the cost line and P&L when switching range
   pills.appendChild(b);
  });
  tit.appendChild(pills);
