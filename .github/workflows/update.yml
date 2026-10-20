@@ -20,7 +20,7 @@ on:
 
 concurrency:
   group: intel-station
-  cancel-in-progress: true
+  cancel-in-progress: false     # a running build always finishes; newer requests wait (only the latest waiting one is kept)
 
 permissions:
   contents: write        # 只用來把每日快照（時光機）推到 data 分支；main 分支不會被 Actions 改動
