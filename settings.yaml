@@ -120,6 +120,10 @@ universe:
     "IWM": 小型股
     "MTUM": 動能因子
     "USMV": 低波動因子
+  factors:                     # 風格因子模型用（不放在 sectors：那一組會進壓力指數的類股相關性）
+    "VTV": 價值因子
+    "VUG": 成長因子
+    "QUAL": 品質因子
 
 # ---------- FRED 總經 / 信用 / 流動性序列 ----------
 fred_series:

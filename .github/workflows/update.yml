@@ -57,6 +57,8 @@ jobs:
             data_cache/stock_news.json
             data_cache/stockscore_hist.json
             data_cache/signals_seen.json
+            data_cache/signal_ledger.json
+            data_cache/sec_segments.json
             data_cache/twse_t86.json
             data_cache/gurus.json
             data_cache/insiders.json
@@ -118,6 +120,8 @@ jobs:
             data_cache/stock_news.json
             data_cache/stockscore_hist.json
             data_cache/signals_seen.json
+            data_cache/signal_ledger.json
+            data_cache/sec_segments.json
             data_cache/twse_t86.json
             data_cache/gurus.json
             data_cache/insiders.json

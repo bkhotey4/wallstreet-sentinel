@@ -79,6 +79,12 @@ class Engine:
         self.shock: Dict = {}
         self.lab: Dict = {}
         self.model_health: Dict = {}
+        self.factors: Dict = {}                          # 風格因子模型 (public per-symbol loadings, factor returns)
+        try:                                             # 營收曝險 (SEC annual reports): cached parse, refreshed slowly
+            from .data import segments as _sg
+            self.segments: Dict = _sg.public(_sg.load())
+        except Exception:  # noqa: BLE001
+            self.segments = {}
         self.xray: Dict = {}
         self.valuation: Dict = {}
         self.scores: Dict = {}            # 個股評分表（美股／台股／港股）
@@ -187,6 +193,14 @@ class Engine:
         mine = [h for h in self.holding_tickers() if "." not in h]
         await distress_data.refresh(list(dict.fromkeys(list(dz.watchlist()) + mine)))
 
+    async def refresh_segments(self, time_budget_s: float = 120) -> None:
+        """Revenue geography / customer concentration from each US company's latest annual report (a few per run)."""
+        from .data import segments as sg
+        from .data.stocks import universe as _uni
+        us = list(((_uni().get("us") or {}).get("symbols") or {}).keys())
+        mine = [h for h in self.holding_tickers() if "." not in h]          # private: stays in this machine's cache
+        self.segments = sg.public(await sg.refresh_for(list(dict.fromkeys(us + mine)), time_budget_s=time_budget_s))
+
     async def refresh_earnings(self, force: bool = False, frames: bool = False) -> None:
         """frames (whole-market US tech via SEC frames) is only needed by the website build."""
         mine = [h for h in self.holding_tickers() if "." not in h]          # EPS surprises for the rulebook too
@@ -196,8 +210,9 @@ class Engine:
         """Slow feeds behind the stock board / bond zone (each one skips itself until its own refresh interval)."""
         res = await asyncio.gather(self.stockprices.refresh(), self.stocknews.refresh(), self.treasury.refresh(),
                                    self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
-                                   self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), return_exceptions=True)
-        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress"), res):
+                                   self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), self.refresh_segments(),
+                                   return_exceptions=True)
+        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
         try:
@@ -241,6 +256,12 @@ class Engine:
                             h["drift"] = {"status": fl["status"], "why": fl.get("why")} if fl else None
                     except Exception:  # noqa: BLE001
                         log.exception("model health failed")
+                    try:                                       # style factors: cheap (~2 s), public data only
+                        from .analytics import factors as fa
+                        sc_ = getattr(getattr(self, "stockprices", None), "close", None)
+                        self.factors = await asyncio.to_thread(fa.build_public, self.market.history, sc_)
+                    except Exception:  # noqa: BLE001
+                        log.exception("factor model failed")
                     self.shock = await asyncio.to_thread(sk.build, self.stress, close, self._quality)
             except Exception:  # noqa: BLE001
                 log.exception("shock radar failed")

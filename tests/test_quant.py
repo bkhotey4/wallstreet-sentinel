@@ -1,0 +1,143 @@
+"""Factor model, SEC revenue exposure parser, signal scorecard — synthetic data, no network.
+Run: python -m tests.test_quant"""
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+import types
+
+import numpy as np
+import pandas as pd
+
+os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wsb_quant_"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from wsb.analytics import factors as FA  # noqa: E402
+from wsb.analytics import signal_ledger as SL  # noqa: E402
+from wsb.data import segments as SG  # noqa: E402
+
+
+def _history(n=700, seed=3):
+    rng = np.random.default_rng(seed)
+    idx = pd.bdate_range("2023-01-02", periods=n)
+    m = rng.normal(0.0004, 0.01, n)
+    semi = rng.normal(0, 0.012, n)
+    size, mom, lowv = (rng.normal(0, 0.006, n) for _ in range(3))
+    px = lambda r: 100 * np.cumprod(1 + r)  # noqa: E731
+    h = pd.DataFrame({"SPY": px(m), "SMH": px(m + semi), "IWM": px(m + size), "MTUM": px(m + mom), "USMV": px(m + lowv),
+                      "DX-Y.NYB": px(rng.normal(0, 0.004, n)), "^TNX": 4 + np.cumsum(rng.normal(0, 0.04, n))}, index=idx)
+    # a stock that is 1.0 × market + 2.0 × semis + noise, and one that is pure market
+    h["SEMI2X"] = px(m + 2 * semi + rng.normal(0, 0.005, n))
+    h["MKT1X"] = px(m + rng.normal(0, 0.005, n))
+    return h
+
+
+def test_factors():
+    h = _history()
+    F = FA.factor_returns(h)
+    assert list(F.columns) == ["mkt", "size", "mom", "lowvol", "rate", "usd", "semi"]      # VTV/VUG/QUAL absent → dropped
+    pub = FA.build_public(h)
+    assert pub["available"] and "SEMI2X" in pub["sym"] and "SPY" in pub["sym"]
+    k = pub["keys"]
+    b = dict(zip(k, pub["sym"]["SEMI2X"]))
+    assert abs(b["semi"] - 2.0) < 0.25 and abs(b["mkt"] - 1.0) < 0.25, b                  # ridge shrinks a little, not much
+    b1 = dict(zip(k, pub["sym"]["MKT1X"]))
+    assert abs(b1["mkt"] - 1.0) < 0.15 and abs(b1["semi"]) < 0.15, b1
+    p = FA.portfolio({"SEMI2X": 0.5, "MKT1X": 0.3, "NOPE": 0.2}, pub)
+    assert p["missing"] == ["NOPE"] and abs(p["covered"] - 0.8) < 1e-9
+    assert abs(p["exposure"]["semi"] - (0.5 * b["semi"] + 0.3 * b1["semi"]) / 0.8) < 1e-9     # normalised to the covered part
+    assert abs(sum(p["risk_contrib"].values()) - p["factor_share"]) < 1e-9
+    assert max(p["risk_contrib"], key=p["risk_contrib"].get) == "semi"
+    lines = FA.headline(p, pub)
+    assert any("半導體" in x for x in lines) and len(lines) == 3
+
+
+XML = b"""<?xml version="1.0"?>
+<xbrl xmlns="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:us-gaap="http://fasb.org/us-gaap/2024">
+ <context id="FY"><entity><identifier scheme="x">1</identifier></entity><period><startDate>2025-07-01</startDate><endDate>2026-06-30</endDate></period></context>
+ <context id="CN"><entity><identifier scheme="x">1</identifier><segment><xbrldi:explicitMember dimension="srt:StatementGeographicalAxis">country:CN</xbrldi:explicitMember></segment></entity><period><startDate>2025-07-01</startDate><endDate>2026-06-30</endDate></period></context>
+ <context id="TW"><entity><identifier scheme="x">1</identifier><segment><xbrldi:explicitMember dimension="srt:StatementGeographicalAxis">country:TW</xbrldi:explicitMember></segment></entity><period><startDate>2025-07-01</startDate><endDate>2026-06-30</endDate></period></context>
+ <context id="NA"><entity><identifier scheme="x">1</identifier><segment><xbrldi:explicitMember dimension="srt:StatementGeographicalAxis">srt:NorthAmericaMember</xbrldi:explicitMember></segment></entity><period><startDate>2025-07-01</startDate><endDate>2026-06-30</endDate></period></context>
+ <context id="C1"><entity><identifier scheme="x">1</identifier><segment>
+   <xbrldi:explicitMember dimension="srt:MajorCustomersAxis">abc:LargestCustomerMember</xbrldi:explicitMember>
+   <xbrldi:explicitMember dimension="us-gaap:ConcentrationRiskByBenchmarkAxis">us-gaap:RevenueFromContractWithCustomerMember</xbrldi:explicitMember>
+   <xbrldi:explicitMember dimension="us-gaap:ConcentrationRiskByTypeAxis">us-gaap:CustomerConcentrationRiskMember</xbrldi:explicitMember></segment></entity>
+   <period><startDate>2025-07-01</startDate><endDate>2026-06-30</endDate></period></context>
+ <context id="Q4"><entity><identifier scheme="x">1</identifier></entity><period><startDate>2026-04-01</startDate><endDate>2026-06-30</endDate></period></context>
+ <us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax contextRef="FY" unitRef="usd" decimals="-6">1000</us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax>
+ <us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax contextRef="Q4" unitRef="usd" decimals="-6">300</us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax>
+ <us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax contextRef="CN" unitRef="usd" decimals="-6">300</us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax>
+ <us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax contextRef="TW" unitRef="usd" decimals="-6">250</us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax>
+ <us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax contextRef="NA" unitRef="usd" decimals="-6">450</us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax>
+ <us-gaap:ConcentrationRiskPercentage1 contextRef="C1" unitRef="pure" decimals="2">0.19</us-gaap:ConcentrationRiskPercentage1>
+</xbrl>"""
+
+
+def test_segments():
+    r = SG.parse_instance(XML)
+    assert r["period"] == "2026-06-30" and r["total"] == 1000 and r["basis"] == "amount"
+    assert r["china"] == 0.3 and r["taiwan"] == 0.25
+    assert r["us"] is None                                   # only "North America" tagged → not broken out, never 0 %
+    assert [g["zh"] for g in r["geo"]] == ["北美", "中國", "台灣"]
+    assert r["customers"][0]["share"] == 0.19 and r["customers"][0]["en"] == "Largest Customer"
+    assert SG.label("country:KR")["zh"] == "南韓" and SG.label("klac:EuropeAndIsraelMember")["en"] == "Europe And Israel"
+    none = SG.parse_instance(XML.replace(b"srt:StatementGeographicalAxis", b"x:OtherAxis").replace(b"CustomerConcentrationRiskMember", b"XMember"))
+    assert not none["geo"] and not none["customers"] and "沒有用標準標籤" in none["note"]
+    pub = SG.public({"KLAC": {"form": "10-K", **r}, "EMPTY": {"geo": [], "customers": []}})
+    assert set(pub) == {"KLAC"} and pub["KLAC"]["cust"][0][2] == 0.19
+
+
+def test_scorecard():
+    idx = pd.bdate_range("2024-01-01", periods=400)
+    rng = np.random.default_rng(5)
+    closes = {f"S{i}": pd.Series(100 * np.cumprod(1 + rng.normal(0, 0.01, len(idx))), index=idx) for i in range(20)}
+    winner = closes["S0"].copy()
+    winner.iloc[200:] *= np.cumprod(np.full(len(idx) - 200, 1.004))          # S0 drifts up after day 200
+    closes["S0"] = winner
+    # pure noise → no claim; many independent days with a real edge → "works"
+    noise = [(d, v) for d, v in zip(idx[:300], rng.normal(0, 0.05, 300))]
+    assert SL.summarize(noise, 1, 20, h=20)["verdict"] in ("unclear", "insufficient")
+    edge = [(d, v) for d, v in zip(idx[:390], 0.02 + rng.normal(0, 0.01, 390))]
+    assert SL.summarize(edge, 1, 20, h=5)["verdict"] == "works"
+    assert SL.summarize([(d, -v) for d, v in edge], -1, 20, h=5)["verdict"] == "works"      # a caution flag that lags = works
+    few = [(idx[0], 0.1)] * 25                                                              # 25 signals, one day → one observation
+    assert SL.summarize(few, 1, 20, h=20)["verdict"] == "insufficient"
+    # ledger: record dedupes within 10 days, evaluate scores only matured entries vs the same-day average
+    rows = [{"sym": "S0", "tier": "A", "price": 100.0, "patterns": [{"pattern": "high52"}], "strength": 70}]
+    led = SL.record([], "us", "2024-11-01", rows, [])
+    led = SL.record(led, "us", "2024-11-05", rows, [])
+    assert len(led) == 1 and led[0]["kind"] == "A"
+    led = SL.record(led, "us", "2024-11-20", rows, [{"sym": "S1", "price": 50.0, "exh": {"n": 2, "flags": ["rsi", "stretch"]}}])
+    ev = SL.evaluate(led, "us", closes)
+    assert ev["logged"] == 3 and ev["by_kind"]["exh"] == 1
+    a5 = ev["h"]["5"]["A"]
+    assert a5["n"] >= 1 and a5["verdict"] == "insufficient"
+
+
+def test_site_sections():
+    from tools import site_quant as SQ
+    h = _history()
+    pub = FA.build_public(h)
+    html = SQ.sec_factor_returns(types.SimpleNamespace(factors=pub))
+    assert "風格因子報酬" in html and "半導體" in html and " bp" in html
+    rp = {"5": {"high52": {"n": 300, "n_eff": 60, "mean": 0.9, "lo": 0.2, "hi": 1.6, "hit": 55, "verdict": "works"},
+                "_all": {"n": 2000, "n_eff": 90, "mean": 0.0, "lo": -0.3, "hi": 0.3, "hit": 50, "verdict": "unclear"}}}
+    sg = {"available": True, "markets": {"us": {"replay": rp, "ledger": {"logged": 3, "since": "2026-10-21", "by_kind": {"A": 2, "B": 0, "C": 0, "exh": 1}, "h": {}}}}}
+    html = SQ.sec_signal_scorecard(types.SimpleNamespace(signals=sg))
+    import re
+    txt = re.sub(r"\s+", "", re.sub(r"<[^>]+>", "", html))                 # visible text, tags and spaces removed
+    assert "訊號成績單" in txt and "✅有效" in txt and "➖沒有明顯優勢" in txt and "已記錄3個訊號" in txt
+    assert SQ.sec_rev_exposure(types.SimpleNamespace(segments={})) == ""
+
+
+def main():
+    test_factors()
+    test_segments()
+    test_scorecard()
+    test_site_sections()
+    print("QUANT TESTS PASSED [OK]")
+
+
+if __name__ == "__main__":
+    main()

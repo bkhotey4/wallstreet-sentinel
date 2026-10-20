@@ -375,6 +375,8 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
     base = base_strengths()
     lookback = int(c.get("active_days", 3))
     seen = _load_seen()
+    from . import signal_ledger as SL
+    ledger = SL.load()
     markets: Dict[str, Dict] = {}
     for mk, u in (uni or universe()).items():
         rows_by = {r["sym"]: r for r in (sc.get(mk) or {}).get("rows", [])}
@@ -462,8 +464,19 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                        "status_counts": {k: sum(1 for r in allrows if r["status"]["status"] == k) for k in STATUS},
                        "exhausted": sorted([r for r in allrows if (r.get("exh") or {}).get("n", 0) >= 2], key=lambda r: -r["exh"]["n"]),
                        "tiers": {t: sum(1 for r in allrows if r.get("tier") == t) for t in TIERS}}
+        try:                                                 # 訊號成績單: in-sample replay + the live out-of-sample ledger
+            markets[mk]["replay"] = SL.replay(series, mk)
+            if persist:
+                ledger = SL.record(ledger, mk, asof, out_rows, allrows)
+            markets[mk]["ledger"] = SL.evaluate(ledger, mk, {s_: next(iter(p_.values()))["close"] for s_, p_ in series.items()})
+        except Exception:  # noqa: BLE001
+            log.exception("signal ledger %s", mk)
     if persist:
         _save_seen(seen)
+        try:
+            SL.save(ledger)
+        except Exception:  # noqa: BLE001
+            log.exception("signal ledger save")
     return {"available": bool(markets), "markets": markets, "horizon": HORIZON}
 
 

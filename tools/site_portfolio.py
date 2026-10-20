@@ -207,6 +207,23 @@ def _macro(eng, days: int = 21) -> list:
     return [x for x in out if x["d"] <= hi][:40]
 
 
+def _fac(eng) -> dict:
+    """Public factor model (per-symbol loadings of the public universe); the page combines it with the holdings."""
+    f = getattr(eng, "factors", None) or {}
+    if not f.get("available"):
+        return {}
+    return {k: f[k] for k in ("keys", "labels", "cov", "today", "sym", "asof")}
+
+
+def _seg(eng) -> dict:
+    """Public revenue exposure per symbol (SEC annual reports)."""
+    out = {}
+    for s_, r in (getattr(eng, "segments", None) or {}).items():
+        c = r.get("cust") or []
+        out[s_] = [r.get("china"), r.get("taiwan"), r.get("us"), (c[0][1], c[0][2]) if c else None, (r.get("period") or "")[:7]]
+    return out
+
+
 def _rules(eng) -> dict:
     """Public inputs for the holdings rulebook, evaluated in the visitor's browser against THEIR holdings (which never leave
     it): per symbol [200-day average, 12-1 momentum %, 52-week high, 6-month return vs its market index (pp), theme],
@@ -292,7 +309,7 @@ def sec_portfolio(eng) -> str:
     gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
     data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng),
                        "earn": _earn(eng), "crisis": _crisis(eng), "beta": _beta(eng),
-                       "sym": _sym_stats(eng), "rules": _rules(eng), "macro": _macro(eng)}, ensure_ascii=False,
+                       "sym": _sym_stats(eng), "rules": _rules(eng), "macro": _macro(eng), "fac": _fac(eng), "seg": _seg(eng)}, ensure_ascii=False,
                       separators=(",", ":")).replace("</", "<\\/")
     priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
              "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
@@ -338,6 +355,8 @@ def sec_portfolio(eng) -> str:
 <div class="pfwhatif" id="pfwhatif" style="display:none"></div>
 <div class="pfevt" id="pfevt" style="display:none"></div>
 <div class="pfchk" id="pfchk" style="display:none"></div>
+<div class="pfevt" id="pffac" style="display:none"></div>
+<div class="pfevt" id="pfseg" style="display:none"></div>
 <div class="pfearn" id="pfearn" style="display:none"></div>
 <p class="note">{note}</p>
 <script type="application/json" id="pf-data">{data}</script></section>'''
@@ -437,6 +456,9 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 .pfevl{display:grid;gap:6px;margin-top:8px}.pfevd{display:grid;grid-template-columns:92px 1fr;gap:8px;align-items:start;padding:6px 8px;border-radius:8px;background:var(--card2)}
 .pfevd.stk{outline:1px solid var(--warn)}.pfevd .dt{font-weight:700}.pfevd .it{display:flex;flex-wrap:wrap;gap:6px}
 .pfevi{font-size:12px;padding:2px 8px;border-radius:12px;border:1px solid var(--bd)}.pfevi.mac{border-color:var(--warn)}
+.pffb{display:grid;grid-template-columns:110px 1fr 64px;gap:6px;align-items:center;font-size:13px;margin:3px 0}
+.pffb .bar{height:10px;background:var(--card2);border-radius:5px;position:relative}.pffb .bar i{position:absolute;top:0;bottom:0;border-radius:5px}
+.pffb .bar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--mu)}
 .pfchk .ok{color:var(--up)}.pfchk li{margin:3px 0}.pfbad{color:var(--warn);font-weight:700;margin-left:4px;cursor:help}
 .pfearn{margin-top:16px;border-top:1px dashed var(--bd);padding-top:14px}
 .pfearn h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:6px}
@@ -1171,6 +1193,8 @@ function renderDx(rows, tot, totV, cashT){
  renderEarnings(rows, tot);
  renderEvents(rows);
  renderChecks(rows);
+ renderFactors(rows);
+ renderSeg(rows);
 }
 
 // ---------------------------------------------------------------- Feature 1: Crisis Replay Simulator
@@ -1501,6 +1525,63 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
 var ADR = {'2330': 'TSM', '2303': 'UMC', '3711': 'ASX', '2412': 'CHT'};   // Taiwan names reporting as US ADRs
 var EARNINGS_CAL = PUB.earn || [];
 var MACRO = PUB.macro || [];
+var FAC = (PUB.fac && PUB.fac.keys) ? PUB.fac : null, SEG = PUB.seg || {};
+function lookup(map, sym){var n=norm(sym),c=n?n.cands.concat([n.key]):[String(sym||'').toUpperCase()];
+ for(var i=0;i<c.length;i++){if(map[c[i]])return map[c[i]];var d=c[i].replace('.','-');if(map[d])return map[d];}return null;}
+
+// ---------------------------------------------------------------- style-factor exposure (computed here, in the browser)
+function renderFactors(rows){
+ var x=document.getElementById('pffac');if(!x)return;x.textContent='';
+ if(!FAC||!rows.length){x.style.display='none';return;}
+ var K=FAC.keys.length,X=FAC.keys.map(function(){return 0;}),spec=0,cov=0,tot=0,act=0,actW=0,miss=[];
+ rows.forEach(function(r){if(r.vt>0)tot+=r.vt;});
+ rows.forEach(function(r){if(!(r.vt>0))return;var w=r.vt/tot,sym=(r.p&&r.p.sym)||r.h.s,b=lookup(FAC.sym,sym);
+  if(!b){miss.push(sym);return;}cov+=w;for(var k=0;k<K;k++)X[k]+=w*b[k];spec+=Math.pow(w*b[K+1]/100,2);
+  if(r.p&&r.p.ch!=null&&r.p.asof===FAC.asof){act+=w*r.p.ch/100;actW+=w;}});
+ if(cov<0.3){x.style.display='none';return;}
+ X=X.map(function(v){return v/cov;});spec/=cov*cov;   // exposures of the covered part, not shrunk by uncovered holdings
+ x.style.display='block';
+ var C=FAC.cov,CX=X.map(function(_,i){var s=0;for(var j=0;j<K;j++)s+=C[i][j]*X[j];return s;}),fv=0;
+ for(var i=0;i<K;i++)fv+=X[i]*CX[i];var tv=fv+spec;
+ var hd=el('h3');hd.appendChild(L('🧭 我的風格曝險（因子模型）','🧭 My style exposure (factor model)'));x.appendChild(hd);
+ var sub=el('p','muted small');sub.appendChild(L('長條＝你的組合對每個因子的敏感度：市場 1.0＝跟大盤一樣；其他因子 0＝跟大盤一樣，正＝偏向這種風格。涵蓋 '+num(cov*100,0)+'% 市值'+(miss.length?'（'+miss.join('、')+' 沒有足夠歷史）':''),
+  'Bars = sensitivity to each factor (market 1.0 = like the index; others 0 = neutral). Covers '+num(cov*100,0)+'% of value'+(miss.length?' ('+miss.join(', ')+' lack history)':'')));x.appendChild(sub);
+ FAC.keys.forEach(function(k,i){var v=X[i],lab=FAC.labels[k],row=el('div','pffb');row.appendChild(L(lab[0],lab[1]));
+  var bar=el('div','bar'),fill=document.createElement('i'),ref=k==='mkt'?1:0,rng=k==='rate'?0.2:1.5,d=Math.max(-1,Math.min(1,(v-ref)/rng));
+  fill.style.left=(d<0?50+d*50:50)+'%';fill.style.width=Math.abs(d*50)+'%';fill.style.background=d>=0?'var(--acc, #4c8dff)':'var(--warn)';
+  bar.appendChild(fill);bar.appendChild(el('span','mid'));row.appendChild(bar);row.appendChild(el('b','r',(k==='rate'?(v*10>=0?'+':'')+num(v*10,2)+'%':num(v,2))));x.appendChild(row);});
+ var nr=el('p','muted small');nr.appendChild(L('利率列＝殖利率每上升 0.1 個百分點，組合的估計漲跌。','Rates row = estimated move per +0.1pp in the 10-year yield.'));x.appendChild(nr);
+ var rc=FAC.keys.map(function(k,i){return [k,X[i]*CX[i]/tv];}).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+ var p1=el('p');p1.appendChild(L('風險來源：'+rc.map(function(a){return FAC.labels[a[0]][0]+' '+num(a[1]*100,0)+'%';}).join('、')+'；個股自身 '+num(spec/tv*100,0)+'%。估計年化波動 '+num(Math.sqrt(tv*252)*100,0)+'%。',
+  'Risk sources: '+rc.map(function(a){return FAC.labels[a[0]][1]+' '+num(a[1]*100,0)+'%';}).join(', ')+'; stock-specific '+num(spec/tv*100,0)+'%. Est. annual vol '+num(Math.sqrt(tv*252)*100,0)+'%.'));x.appendChild(p1);
+ var td=FAC.keys.map(function(k,i){return [k,X[i]*FAC.today[k]];}),ex=td.reduce(function(s,a){return s+a[1];},0);
+ td.sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);});
+ var p2=el('p');p2.appendChild(L('因子日（'+FAC.asof+'）的漲跌來源：'+td.slice(0,3).map(function(a){return FAC.labels[a[0]][0]+' '+sgn(a[1]*100,2,true);}).join('、')+'；因子合計 '+sgn(ex*100,2,true)+(actW>0.9*cov?'。同一天實際 '+sgn(act/actW*100,2,true)+'，差額是個股自身。':'。（報價日和因子日不同，不比較個股自身部分）'),
+  'Moves on '+FAC.asof+': '+td.slice(0,3).map(function(a){return FAC.labels[a[0]][1]+' '+sgn(a[1]*100,2,true);}).join(', ')+'; factors total '+sgn(ex*100,2,true)+(actW>0.9*cov?'. Same-day actual '+sgn(act/actW*100,2,true)+'; the gap is stock-specific.':'. (Quote day differs from the factor day.)')));x.appendChild(p2);
+ var nt=el('p','muted small');nt.appendChild(L('依過去約兩年的每日報酬估計；曝險會隨時間改變，不是預測。因子日是最近一個有完整因子資料的交易日，可能比今天早一天。',
+  'Estimated from ~2 years of daily returns; exposures drift; not a forecast.'));x.appendChild(nt);
+}
+
+// ---------------------------------------------------------------- revenue exposure (SEC annual reports)
+function renderSeg(rows){
+ var x=document.getElementById('pfseg');if(!x)return;x.textContent='';
+ var tot=0;rows.forEach(function(r){if(r.vt>0)tot+=r.vt;});
+ var got=[],cw={c:[0,0],t:[0,0],u:[0,0]};
+ rows.forEach(function(r){if(!(r.vt>0))return;var sym=(r.p&&r.p.sym)||r.h.s,s=lookup(SEG,sym);if(!s)return;var w=r.vt/tot;got.push([sym,w,s]);
+  [['c',0],['t',1],['u',2]].forEach(function(a){if(s[a[1]]!=null){cw[a[0]][0]+=w*s[a[1]];cw[a[0]][1]+=w;}});});
+ if(!got.length){x.style.display='none';return;}
+ x.style.display='block';
+ var hd=el('h3');hd.appendChild(L('🌏 我的營收曝險（SEC 年報）','🌏 My revenue exposure (SEC annual reports)'));x.appendChild(hd);
+ function pc(a){return a[1]>0?num(a[0]/a[1]*100,0)+'%':'—';}
+ var p=el('p');p.appendChild(L('有揭露的持股中，加權後約 '+pc(cw.c)+' 營收來自中國、'+pc(cw.t)+' 來自台灣、'+pc(cw.u)+' 來自美國。',
+  'Across holdings that disclose it: about '+pc(cw.c)+' of revenue from China, '+pc(cw.t)+' Taiwan, '+pc(cw.u)+' US.'));x.appendChild(p);
+ var ul=el('ul','small');got.sort(function(a,b){return b[1]-a[1];}).forEach(function(g){var s=g[2],li=el('li');li.appendChild(el('b','',g[0]+'：'));
+  li.appendChild(L('中國 '+(s[0]!=null?num(s[0]*100,0)+'%':'—')+'・台灣 '+(s[1]!=null?num(s[1]*100,0)+'%':'—')+'・美國 '+(s[2]!=null?num(s[2]*100,0)+'%':'—')+(s[3]?'・最大客戶 '+num(s[3][1]*100,0)+'%':'')+'（'+s[4]+' 年報）',
+   'China '+(s[0]!=null?num(s[0]*100,0)+'%':'—')+' · Taiwan '+(s[1]!=null?num(s[1]*100,0)+'%':'—')+' · US '+(s[2]!=null?num(s[2]*100,0)+'%':'—')+(s[3]?' · top customer '+num(s[3][1]*100,0)+'%':'')+' ('+s[4]+')'));ul.appendChild(li);});
+ x.appendChild(ul);
+ var nt=el('p','muted small');nt.appendChild(L('「—」＝年報沒有單獨揭露（不是 0%）。地區是客戶所在地，不是最終用途。中國比重＝出口管制與地緣政治的直接曝險；單一客戶比重高＝集中風險。',
+  '"—" = not broken out (not 0 %). Regions = where customers are billed.'));x.appendChild(nt);
+}
 var ALIAS = {GOOG:['GOOGL'],GOOGL:['GOOG'],'BRK-B':['BRK.B'],'BRK.B':['BRK-B'],FOX:['FOXA'],FOXA:['FOX'],NWS:['NWSA'],NWSA:['NWS']};
 
 // ---------------------------------------------------------------- personal event radar (next 14 days)

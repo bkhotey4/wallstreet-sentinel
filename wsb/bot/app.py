@@ -1356,6 +1356,16 @@ def personal_embed(d: Dict) -> "discord.Embed":
         e.add_field(name="今日損益拆解（新台幣）",
                     value=f"股價 {sp['price']:+,.0f}｜美元匯率 {sp['fx']:+,.0f}（{sp['fx_chg_pct'] or 0:+.2f}%）｜合計 {sp['total']:+,.0f}"
                           + (f"\n{sp['missing']} 檔缺今日漲跌，未計入" if sp.get("missing") else ""), inline=False)
+    fx_ = d.get("factors")
+    if fx_:
+        e.add_field(name=f"🧭 風格曝險（因子模型，涵蓋 {fx_['covered'] * 100:.0f}% 市值）",
+                    value="\n".join(fx_["lines"])[:1020], inline=False)
+    ex_ = d.get("exposure")
+    if ex_:
+        pc = lambda v: f"{v * 100:.0f}%" if v is not None else "—"  # noqa: E731
+        lines = [f"加權後：中國 {pc(ex_['agg']['china'])}・台灣 {pc(ex_['agg']['taiwan'])}・美國 {pc(ex_['agg']['us'])}"]
+        lines += [f"{s_}：中國 {pc(c)}・台灣 {pc(t)}" + (f"・最大客戶 {pc(k)}" if k else "") for s_, c, t, k in ex_["per"][:8]]
+        e.add_field(name="🌏 營收曝險（SEC 年報；— ＝未單獨揭露）", value="\n".join(lines)[:1020], inline=False)
     iss = d.get("sanity") or []
     e.add_field(name="資料檢查", value="\n".join(f"⚠️ {i['sym']}：{i['zh']}" for i in iss)[:1020] if iss else "✅ 全部正常：成本、報價日期、單日漲跌都在合理範圍",
                 inline=False)

@@ -158,5 +158,35 @@ def build(eng, today: Optional[date] = None) -> Dict:
         rows.append({"sym": s, "cost": h.get("cost"), "price": q.get("price"), "chg_pct": q.get("chg_pct"), "asof": a,
                      "market": mk, "shares": h.get("shares"), "currency": h.get("currency") or "USD"})
     fxq = m.q("TWD=X") or {}
-    return {"available": True, "asof": today.isoformat(), "events": events(weights, cal, ev, today),
-            "sanity": sanity(rows, latest), "split": day_split(rows, fxq.get("price"), fxq.get("chg_pct"))}
+    out = {"available": True, "asof": today.isoformat(), "events": events(weights, cal, ev, today),
+           "sanity": sanity(rows, latest), "split": day_split(rows, fxq.get("price"), fxq.get("chg_pct"))}
+    fac = getattr(eng, "factors", None) or {}
+    tot = sum(w for w in weights.values() if w) or 0
+    if fac.get("available") and tot > 0:                     # style-factor exposure of the holdings
+        from . import factors as FA
+        try:
+            wf = {s: w / tot for s, w in weights.items() if w}
+            same_day = all(r.get("asof") == fac.get("asof") for r in rows if r["sym"] in wf and r.get("asof"))
+            act = sum(wf[s] * (r["chg_pct"] or 0) / 100 for s in wf for r in rows if r["sym"] == s and r.get("chg_pct") is not None)
+            pf_ = FA.portfolio(wf, fac, act if same_day else None)   # the stock-specific gap only when both are the same day
+            if pf_["covered"] >= 0.3:
+                out["factors"] = {"lines": FA.headline(pf_, fac), "covered": pf_["covered"], "missing": pf_["missing"], "asof": fac.get("asof")}
+        except Exception:  # noqa: BLE001
+            pass
+    seg = getattr(eng, "segments", None) or {}
+    if seg and tot > 0:                                      # revenue exposure from SEC annual reports
+        agg = {k: [0.0, 0.0] for k in ("china", "taiwan", "us")}
+        per = []
+        for s_, w in weights.items():
+            r = seg.get(s_) or seg.get(s_.replace(".", "-"))
+            if not r or not w:
+                continue
+            per.append((s_, r))
+            for k in agg:
+                if r.get(k) is not None:
+                    agg[k][0] += w / tot * r[k]
+                    agg[k][1] += w / tot
+        if per:
+            out["exposure"] = {"agg": {k: (v[0] / v[1] if v[1] else None) for k, v in agg.items()},
+                               "per": [(s_, r.get("china"), r.get("taiwan"), (r.get("cust") or [[None, None, None]])[0][2]) for s_, r in per]}
+    return out

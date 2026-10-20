@@ -29,6 +29,7 @@ from wsb.config import SETTINGS
 from tools import site_sections as S2
 from tools import site_econ as S3
 from tools import site_intel as S4
+from tools import site_quant as SQ
 from tools import site_outlook as SO
 from tools import site_portfolio as SP
 from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
@@ -43,7 +44,7 @@ log = logging.getLogger("build_site")
 GROUP_EN = {"us_equity": ("美股指數", "US equities"), "volatility": ("波動率", "Volatility"), "europe": ("歐洲", "Europe"),
             "asia": ("亞洲", "Asia"), "emerging": ("新興市場", "Emerging"), "rates": ("利率／債券", "Rates"),
             "credit": ("信用", "Credit"), "fx": ("外匯", "FX"), "commodities": ("大宗商品", "Commodities"),
-            "crypto": ("加密貨幣", "Crypto"), "sectors": ("美股類股", "Sectors")}
+            "crypto": ("加密貨幣", "Crypto"), "sectors": ("美股類股", "Sectors"), "factors": ("風格因子 ETF", "Factor ETFs")}
 BLOCK_EN = {"信用": "Credit", "私募信貸": "Private credit", "全球新興": "Global EM", "匯率套息": "FX carry",
             "利率": "Rates", "波動率": "Volatility", "股市結構": "Equity structure", "流動性": "Liquidity",
             "商品加密": "Commodities & crypto", "景氣就業": "Growth & jobs"}
@@ -64,7 +65,8 @@ ASSET_EN = {"^GSPC": "S&P 500", "^NDX": "Nasdaq 100", "^DJI": "Dow Jones", "^RUT
             "HG=F": "Copper", "DBC": "Commodity index", "BTC-USD": "Bitcoin", "ETH-USD": "Ether", "SOL-USD": "Solana",
             "XLK": "Technology", "XLC": "Communication", "XLY": "Discretionary", "XLP": "Staples", "XLE": "Energy",
             "XLV": "Health care", "XLI": "Industrials", "XLU": "Utilities", "XLB": "Materials", "XLRE": "Real estate",
-            "IGV": "Software", "IWM": "Small caps", "MTUM": "Momentum factor", "USMV": "Min-vol factor"}
+            "IGV": "Software", "IWM": "Small caps", "MTUM": "Momentum factor", "USMV": "Min-vol factor",
+            "VTV": "Value factor", "VUG": "Growth factor", "QUAL": "Quality factor"}
 STRIP = [("^GSPC", "標普500", 0), ("^NDX", "那指100", 0), ("^TWII", "台股加權", 0), ("^N225", "日經225", 0),
          ("^VIX", "VIX", 2), ("^TNX", "美債10年", 3), ("DX-Y.NYB", "美元指數", 2), ("TWD=X", "美元/台幣", 3),
          ("GC=F", "黃金", 0), ("BZ=F", "布蘭特", 2), ("BTC-USD", "比特幣", 0), ("HYG", "高收益債", 2)]
@@ -1144,8 +1146,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
-            ("signals", "買點訊號", "Entry signals", [S2.sec_signals, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
-            ("intel", "個股情報", "Stock intel", [S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
+            ("signals", "買點訊號", "Entry signals", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
+            ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
@@ -1155,7 +1157,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("bonds", "美債", "Treasuries", [S2.sec_bonds]),
-            ("rotation", "類股寬度", "Sectors & breadth", [S2.sec_rotation, S2.sec_breadth_polarization]),
+            ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [sec_crisis]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
@@ -1385,6 +1387,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             await asyncio.wait_for(eng.refresh_earnings(), 240)
         except Exception as e:  # noqa: BLE001
             log.warning("earnings refresh failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 營收曝險: a few new SEC annual reports per build, the rest cached
+        await asyncio.wait_for(eng.refresh_segments(150), 200)
+        log.info("revenue exposure: %s companies", len(eng.segments or {}))
+    except Exception as e:  # noqa: BLE001
+        log.warning("revenue exposure refresh failed: %s", e if str(e) else type(e).__name__)
     from wsb.analytics import growth as GR
     if fullmarket:
         try:
