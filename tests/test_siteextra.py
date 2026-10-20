@@ -374,6 +374,17 @@ def main():
     yc = SI._load(SI.F_YF)
     assert set(yc) == {"Z0", "Z1", "Z2"} and not any(v.get("ok_ts") for v in yc.values()), "pruned to the universe"
     print(f"  site {len(page) / 1024:.0f} KB")
+    # 過熱清單: an empty main list still shows the one-flag watch list (so the card never looks broken)
+    import types
+    from tools import site_intel as SITI
+    one = {"sym": "AAA", "name": "Alpha", "price": 10.0, "theme": "其他", "exh": {"flags": ["rsi"], "n": 1, "detail": {"rsi": 77}}}
+    two = {"sym": "BBB", "name": "Beta", "price": 20.0, "theme": "其他", "exh": {"flags": ["rsi", "stretch"], "n": 2, "detail": {"rsi": 81, "stretch": 14}}}
+    sg = lambda rows, exh: types.SimpleNamespace(signals={"available": True, "markets": {"us": {"all": rows, "exhausted": exh}}})  # noqa: E731
+    h1 = SITI.sec_exhaust(sg([one], []))
+    assert "沒有同時出現 2 個以上" in h1 and "單一警示（觀察中，1 檔）" in h1 and "AAA" in h1
+    h2 = SITI.sec_exhaust(sg([one, two], [two]))
+    assert "BBB" in h2 and "單一警示（觀察中，1 檔）" in h2
+    assert "整體不在過熱狀態" in SITI.sec_exhaust(sg([], []))
     print("SITE EXTRAS TESTS PASSED")
 
 

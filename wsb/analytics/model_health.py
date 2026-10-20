@@ -159,9 +159,9 @@ def build(eng, now_ts: Optional[float] = None) -> Dict:
     models: List[Dict] = []
     for rep in (getattr(eng, "lab", None) or {}).get("horizons", []) or []:
         if rep.get("drift"):
-            dd = rep.get("drawdown") or 0
-            models.append({"key": f"crash_{rep.get('days')}", "zh": f"崩跌機率模型（{rep.get('days')} 交易日內跌 {dd * 100:.0f}%）",
-                           "en": f"Crash model ({rep.get('days')}d, -{dd * 100:.0f}%)", **rep["drift"]})
+            dd = rep.get("drawdown_pct") or 0
+            models.append({"key": f"crash_{rep.get('days')}", "zh": f"崩跌機率模型（{rep.get('days')} 交易日內跌 ≥{dd:.0f}%）",
+                           "en": f"Crash model (≥{dd:.0f}% fall within {rep.get('days')}d)", **rep["drift"]})
     try:
         eps, hz = _alert_input(eng)
         if eps:

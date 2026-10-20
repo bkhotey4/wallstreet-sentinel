@@ -1105,7 +1105,11 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
    .catch(function(){bar(zh()?'⚠️ 網站已 '+age+' 沒有更新，新版完成後這個頁面會自動載入。':'⚠️ Not updated for '+age+'; this page reloads when a new build is live.');});}
  function check(){if(document.hidden)return;
   fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(v){
-   if(v&&+v.b>B){if(busy())return;try{sessionStorage.setItem('wss_sy',String(window.scrollY));}catch(e){}location.reload();return;}
+   if(v&&+v.b>B){if(busy())return;
+    // one try per new version: if the reload still served the old page (CDN cache), don't loop — the next check retries later
+    var tried=null;try{tried=sessionStorage.getItem('wss_rl');}catch(e){}if(tried===String(v.b))return;
+    try{sessionStorage.setItem('wss_rl',String(v.b));sessionStorage.setItem('wss_sy',String(window.scrollY));}catch(e){}
+    location.replace(location.pathname+'?v='+v.b+location.hash);return;}
    stale();}).catch(stale);}
  setInterval(check,300000);document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});setTimeout(check,20000);})();
 var dp=null,ib=document.getElementById('installBtn');window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ib)ib.classList.add('show');});

@@ -67,7 +67,16 @@ def test_flag():
     assert MH.flag(h, "crash_")["status"] == "drift" and MH.flag(None, "crash_") is None
 
 
+def test_build_labels():
+    import types
+    eng = types.SimpleNamespace(lab={"horizons": [{"days": 63, "drawdown_pct": 10.0, "drift": {"status": "drift", "why": "w"}}]}, market=None)
+    h = MH.build(eng, now_ts=1_800_000_000.0)
+    m = [x for x in h["models"] if x["key"] == "crash_63"][0]
+    assert "63 交易日內跌 ≥10%" in m["zh"] and m["status"] == "drift" and h["status"] == "drift", m
+
+
 def main():
+    test_build_labels()
     test_crash()
     test_alerts()
     test_earn()

@@ -1532,7 +1532,7 @@ function renderEvents(rows){
   row.appendChild(dt);var its=el('div','it');
   by[d].sort(function(a,b){return (a.k==='m'?0:1)-(b.k==='m'?0:1)||(b.w||0)-(a.w||0);}).forEach(function(i){
    var t=i.k==='m'?el('span','pfevi mac'):el('span','pfevi');
-   if(i.k==='m')t.appendChild(L('🏛️ '+i.zh+(i.tpe?'（台北 '+i.tpe+'）':'')+(i.sep?'・含點陣圖':''),'🏛️ '+i.en+(i.tpe?' (Taipei '+i.tpe+')':'')+(i.sep?' · dots':'')));
+   if(i.k==='m')t.appendChild(L('🏛️ '+i.zh+(i.tpe?'・台北 '+i.tpe:'')+(i.sep?'・含點陣圖':''),'🏛️ '+i.en+(i.tpe?' (Taipei '+i.tpe+')':'')+(i.sep?' · dots':'')));
    else{var tm=i.time==='pre'?['盤前','pre']:(i.time==='after'?['盤後','after']:['','']);
     t.appendChild(L('📊 '+i.sym+' 財報'+tm[0]+(i.w!=null?'（'+num(i.w,1)+'%）':''),'📊 '+i.sym+' earnings '+tm[1]+(i.w!=null?' ('+num(i.w,1)+'%)':'')));}
    its.appendChild(t);});

@@ -1342,7 +1342,7 @@ def personal_embed(d: Dict) -> "discord.Embed":
         parts = []
         for x in dd["items"]:
             if x["kind"] == "macro":
-                parts.append(f"🏛️ {x['zh']}" + (f"（台北 {x['tpe']}）" if x.get("tpe") else ""))
+                parts.append(f"🏛️ {x['zh']}" + (f"・台北 {x['tpe']}" if x.get("tpe") else ""))
             else:
                 t = {"pre": "盤前", "after": "盤後"}.get(x.get("time"), "")
                 parts.append(f"📊 {x['sym']} 財報{t}（{x['weight']:.0f}%）")

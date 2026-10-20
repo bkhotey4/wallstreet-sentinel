@@ -80,7 +80,7 @@ def main():
     html2 = B.render(eng, clean, "test-llm")
     assert "AI 市場評論" in html2 and "非農" in html2 and "<h4><b>一句話結論</b></h4>" in html2
     # auto-update: the page carries its build stamp; the script compares it with version.json and reloads
-    assert re.search(r'id="liveb" data-b="\d{10}"', html2) and "version.json?t=" in html2 and "location.reload()" in html2
+    assert re.search(r'id="liveb" data-b="\d{10}"', html2) and "version.json?t=" in html2 and "location.replace(location.pathname+'?v='+v.b" in html2 and "wss_rl" in html2
     assert "系統性壓力指數" in page and "全球跨資產行情" in page and "衝擊雷達" in page and "風險劇本" in page
     assert "<script>alert" not in page and "&lt;script&gt;" in page, "untrusted headline must be escaped"
     assert 'href="javascript:' not in page, "non-http links must be neutralised"

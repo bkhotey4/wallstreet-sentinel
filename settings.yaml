@@ -1037,7 +1037,7 @@ site_trigger:
   workflow: update.yml
   ref: main
   hourly_minutes: 20           # bot 是主要排程：每 20 分鐘完整建置一次（實測 5–11 分鐘）。GitHub 自己的排程常被延遲或略過，只當每小時備援
-  scheduled_skip_if_started_minutes: 15   # 15 分鐘內已有任何建置開始（例如 GitHub 備援或風險觸發）→ 這一輪略過
+  scheduled_skip_if_started_minutes: 8    # 8 分鐘內已有建置開始（建置約 4–7 分鐘）→ 這一輪略過；設太長會讓網站時間停住半小時
   on_risk_alert: true          # 風險警報（SSI 跨級、盤中危險、劇本升階、VIX 倒掛…）一發出就快速重建（約 5 分鐘）
   min_gap_minutes: 15          # 兩次觸發至少間隔（排程每 20 分鐘，留一點時間誤差）
   skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發
