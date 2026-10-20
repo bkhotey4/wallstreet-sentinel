@@ -1773,7 +1773,10 @@ def register_commands(bot: Sentinel) -> None:
 
     @tree.command(name="status", description="資料源健康狀態 + 近 24 小時警報")
     async def status(it: discord.Interaction):
-        await it.response.send_message(embed=E.status(eng))
+        embeds = [E.status(eng)]
+        if (getattr(eng, "model_health", None) or {}).get("models"):
+            embeds.append(E.model_health(eng))                      # 模型近期失準 rides along with data health
+        await it.response.send_message(embeds=embeds)
 
     @tree.command(name="setchannel", description="把目前頻道設為 警報 / 定時簡報 推播頻道")
     @app_commands.choices(kind=[app_commands.Choice(name="即時警報", value="alerts"),

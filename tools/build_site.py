@@ -231,6 +231,33 @@ def sec_radar(eng) -> str:
     return card("風險雷達", "Risk radar", f'<div class="rwrap">{radar("c_radar", st.blocks)}</div><p class="note">{note}</p>', "span3")
 
 
+def _drift_pill(h: Dict) -> str:
+    d = h.get("drift") or {}
+    if d.get("status") not in ("drift", "watch"):
+        return ""
+    zh, en = ("⚠️ 近期失準，參考性降低", "⚠️ drifting lately") if d["status"] == "drift" else ("🟡 近期準度下滑", "🟡 weaker lately")
+    return f' <span class="pill warn" title="{esc(d.get("why") or "")}">{T(zh, en)}</span>'
+
+
+def sec_model_health(eng) -> str:
+    """模型健康度 — each model's recent record against its own long-run record (model_health.py)."""
+    mh = getattr(eng, "model_health", None) or {}
+    if not mh.get("models"):
+        return ""
+    lab = {"ok": ("✅ 正常", "✅ OK"), "watch": ("🟡 留意", "🟡 Watch"), "drift": ("⚠️ 近期失準", "⚠️ Drifting"),
+           "insufficient": ("⏳ 樣本不足", "⏳ Too few cases")}
+    rows = "".join(f'<tr><td>{T(m["zh"], m["en"])}</td><td class="mh-{esc(m["status"])}"><b>{T(*lab.get(m["status"], (m["status"], m["status"])))}</b></td>'
+                   f'<td class="small">{esc(m.get("why") or "—")}</td></tr>' for m in mh["models"])
+    note = T("每個模型拿「最近」的表現和它自己「長期」的表現比較：崩跌模型看近 3 年的 AUC 與 Brier 技能，警報看近 90 天命中率，"
+             "財報跳空看實際跳空是選擇權預估的幾倍。近期失準的模型不會被關掉，但它的數字旁會標註「參考性降低」。"
+             "「樣本不足」＝事件太少無法判斷，不代表正常。",
+             "Each model's recent record vs its own long-run record. A drifting model stays on, but its numbers are flagged. "
+             "'Too few cases' means it cannot be judged yet — not that it is fine.")
+    return card("模型健康度：近期是否失準", "Model health: drifting lately?",
+                f'<table class="mh"><thead><tr><th>{T("模型", "Model")}</th><th>{T("狀態", "Status")}</th><th>{T("依據", "Evidence")}</th></tr></thead>'
+                f'<tbody>{rows}</tbody></table><p class="note">{note}</p>', "wide")
+
+
 def sec_odds(eng) -> str:
     o = eng.odds or {}
     if not o.get("horizons"):
@@ -246,6 +273,7 @@ def sec_odds(eng) -> str:
         rows.append(f'<div class="odd"><div class="ol">{lbl}</div>'
                     f'<div class="ob"><div class="obar" style="width:{(adj or 0) / mx * 100:.1f}%"></div><i class="obase" style="left:{(base or 0) / mx * 100:.1f}%"></i></div>'
                     f'<div class="ov"><b>{num(adj, 1)}%</b> <span class="muted">{T("基準", "base")} {num(base, 1)}%</span> <span class="{lc}">{num(lift, 2)}×</span>'
+                    + _drift_pill(h)
                     + (f' <span class="muted small">{T("（舊分區間法", "(old bucket method")} {num(h.get("bucket_adjusted"), 1)}%）</span>' if h.get("method") == "logit" else "")
                     + '</div></div>')
     mom = o.get("momentum") or {}
@@ -983,6 +1011,7 @@ h2{margin:0 0 8px;font-size:12.5px;font-weight:700;letter-spacing:.06em;color:va
 .obar{height:12px;background:var(--ac);border-radius:0 4px 4px 0}.obase{position:absolute;top:-3px;width:2px;height:18px;background:var(--tx)}.ov{font-size:13px;margin-top:3px}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.trend .th{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
 .path{margin-bottom:12px}.ph{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pill.warn{border-color:var(--warn);color:var(--warn)}.mh{width:100%;border-collapse:collapse}.mh td,.mh th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}.mh-drift{color:var(--dn)}.mh-watch{color:var(--warn)}.mh-ok{color:var(--up)}.mh-insufficient{color:var(--mu)}
 .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);border-radius:99px;padding:1px 9px;font-size:12px;white-space:nowrap;color:var(--tx2)}
 .meter{height:6px;border-radius:99px;background:var(--card2);overflow:hidden;min-width:60px;margin-top:4px}.meter i{display:block;height:100%;border-radius:99px}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 7px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:middle}
@@ -1118,7 +1147,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("mood", "情緒與警報", "Mood & alarms", [S4.sec_fg, S4.sec_em, S4.sec_rules, S4.sec_geo]),
-            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality]),
+            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("bonds", "美債", "Treasuries", [S2.sec_bonds]),

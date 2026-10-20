@@ -278,4 +278,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     if al:
         L.append("## 過去24h警報 " + "; ".join(t for _, _, t in al[:10]))
     L.append(f"## 資料健康 {HEALTH.summary()}")
+    mh = [m for m in (getattr(engine, "model_health", None) or {}).get("models", []) if m.get("status") in ("drift", "watch")]
+    if mh:                                     # the AI must not lean on a model that has been wrong lately
+        L.append("## 模型近期失準（引用這些模型時要說明參考性降低） " + "; ".join(f"{m['zh']}：{m['status']}（{m.get('why', '')}）" for m in mh))
     return "\n".join(L)

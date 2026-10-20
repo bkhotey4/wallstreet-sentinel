@@ -148,7 +148,7 @@ def walk_forward_logit(F: pd.DataFrame, hit: pd.Series, valid: pd.Series, days: 
     p, y, yr, b0 = np.concatenate(P), np.concatenate(Y), np.concatenate(YR), np.concatenate(B)
     bs, bs0 = float(np.mean((p - y) ** 2)), float(np.mean((b0 - y) ** 2))
     return {"n": int(len(y)), "auc": auc(pd.Series(p), pd.Series(y)), "brier": bs,
-            "skill": float(1 - bs / bs0) if bs0 > 0 else None, "p": p, "y": y, "yr": yr,
+            "skill": float(1 - bs / bs0) if bs0 > 0 else None, "p": p, "y": y, "yr": yr, "b": b0,
             "year_auc": {int(k): auc(pd.Series(v[0]), pd.Series(v[1])) for k, v in per_year.items()}}
 
 
@@ -281,6 +281,11 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
         rawb = float(predict(wb, base_F.iloc[[-1]].fillna(0.0).values)[0])
         out["now"] = {"p_enh": None, "p_enh_cal": None, "p_base": rawb * 100, "p_base_cal": float(apply_iso(cal, rawb) * 100),
                       "drivers": []}
+    # 近期失準: recent years vs all test years
+    shown = base_full                                  # the SSI-only model is the one whose probability is shown
+    if shown.get("n"):
+        from . import model_health as MH
+        out["drift"] = MH.crash_drift(shown["p"], shown["y"], shown["yr"], shown.get("b"))
     return out
 
 

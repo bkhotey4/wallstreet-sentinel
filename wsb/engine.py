@@ -78,6 +78,7 @@ class Engine:
         self.odds: Dict = {}
         self.shock: Dict = {}
         self.lab: Dict = {}
+        self.model_health: Dict = {}
         self.xray: Dict = {}
         self.valuation: Dict = {}
         self.scores: Dict = {}            # 個股評分表（美股／台股／港股）
@@ -232,6 +233,14 @@ class Engine:
                             log.exception("feature lab failed")
                     if self.lab and self.odds:                # validated logistic probability for today's SSI
                         self.odds = co.apply_model(self.odds, self.lab, self.stress.score)
+                    try:                                       # 模型近期失準: recent record vs each model's own long-run record
+                        from .analytics import model_health as mh
+                        self.model_health = await asyncio.to_thread(mh.build, self)
+                        for h in (self.odds or {}).get("horizons", []):   # each shown probability carries its own flag
+                            fl = mh.flag(self.model_health, f"crash_{h.get('days')}")
+                            h["drift"] = {"status": fl["status"], "why": fl.get("why")} if fl else None
+                    except Exception:  # noqa: BLE001
+                        log.exception("model health failed")
                     self.shock = await asyncio.to_thread(sk.build, self.stress, close, self._quality)
             except Exception:  # noqa: BLE001
                 log.exception("shock radar failed")

@@ -92,10 +92,32 @@ def risk(engine) -> discord.Embed:
     if od.get("horizons"):
         mom = od.get("momentum") or {}
         lines = [f"**{h['days']}日內跌≥{h['drawdown_pct']:.0f}%**：{f(h.get('adjusted'),1)}%（{h.get('lift_adj_text','')}；"
-                 f"基準 {f(h['base_rate'],1)}%、僅看水準 {f(h['conditional'],1)}%）"
+                 f"基準 {f(h['base_rate'],1)}%、僅看水準 {f(h['conditional'],1)}%）" + drift_note(h)
                  for h in od["horizons"]]
         e.add_field(name=f"📉 經驗崩跌機率（SSI 區間 {od.get('bucket')}・20日 {f(mom.get('chg20'),1,sign=True)} {mom.get('state') or ''}）",
                     value="\n".join(lines), inline=False)
+    return footer(e, engine)
+
+
+def drift_note(h) -> str:
+    """模型近期失準 → say so next to the number (the model is not switched off, its weight in your judgement should drop)."""
+    d = h.get("drift") or {}
+    if d.get("status") == "drift":
+        return f"　⚠️ 近期失準，參考性降低（{d.get('why') or ''}）"
+    if d.get("status") == "watch":
+        return f"　🟡 近期準度下滑（{d.get('why') or ''}）"
+    return ""
+
+
+def model_health(engine) -> discord.Embed:
+    mh = getattr(engine, "model_health", None) or {}
+    e = discord.Embed(title="🩺 模型健康度：近期是否失準", color=0x5865F2)
+    icon = {"ok": "✅", "watch": "🟡", "drift": "⚠️", "insufficient": "⏳"}
+    lab = {"ok": "正常", "watch": "留意", "drift": "近期失準", "insufficient": "樣本不足"}
+    for m in mh.get("models", [])[:12]:
+        e.add_field(name=f"{icon.get(m['status'], '•')} {m['zh']}：{lab.get(m['status'], m['status'])}", value=(m.get("why") or "—")[:1024], inline=False)
+    e.description = ("每個模型拿「最近」的表現和它自己「長期」的表現比較。近期失準的模型不會被關掉，"
+                     "但顯示它的數字時會標註參考性降低。樣本不足＝事件太少，無法判斷，不代表正常。") if mh.get("models") else "尚未計算（需要先跑完特徵實驗室）"
     return footer(e, engine)
 
 
@@ -115,7 +137,7 @@ def crash(engine) -> discord.Embed:
         e.add_field(
             name=(f"{h['days']}交易日內 −{h['drawdown_pct']:.0f}%：{f(h.get('adjusted'),1)}%（{h.get('lift_adj_text','')}）"
                   f"・僅看水準 {f(h['conditional'],1)}%・基準 {f(h['base_rate'],1)}%")[:256],
-            value=(f"區間天數 {h['obs_in_zone']} · 獨立事件 {h['episodes_in_zone']} · 區間中位最深回撤 {f(h['median_fwd_min_in_zone'],1)}%\n{tbl}")[:1024],
+            value=(drift_note(h).strip() + "\n" if h.get("drift") else "") + (f"區間天數 {h['obs_in_zone']} · 獨立事件 {h['episodes_in_zone']} · 區間中位最深回撤 {f(h['median_fwd_min_in_zone'],1)}%\n{tbl}")[:1024],
             inline=False)
     return footer(e, engine)
 
