@@ -125,6 +125,25 @@ def main():
     assert _alert_kind("danger:us:2026-10-12:2") == "risk" and _alert_kind("ssi_level_3") == "risk"
     assert _alert_kind("playbook:2:20261012") == "risk" and _alert_kind("news:abc") != "risk"
     assert _alert_kind("evt:opex:2026-10-16") is None
+    # outage watch: alert once, rebuild only when GitHub is clear and nothing is building, notify on recovery
+    W, t0 = ST.SiteTrigger.watch_decision, 1_000_000.0
+    d = W(20, None, False, None, 60, 30, now=t0)
+    assert not (d["alert"] or d["dispatch"] or d["recovered"]) and d["state"] is None          # fresh site
+    assert W(None, "x", False, None, 60, 30, now=t0)["alert"] is False                         # unknown age → no noise
+    d = W(90, "Degraded Actions", False, None, 60, 30, now=t0)
+    assert d["alert"] and not d["dispatch"]                                                    # outage: wait, don't spam
+    d = W(100, "Degraded Actions", True, d["state"], 60, 30, now=t0 + 600)
+    assert not d["alert"] and not d["dispatch"]                                                # alerted once only
+    d = W(110, None, True, d["state"], 60, 30, now=t0 + 1200)
+    assert not d["dispatch"]                                                                   # a build is already running
+    d = W(120, None, False, d["state"], 60, 30, now=t0 + 1800)
+    assert d["dispatch"]                                                                       # GitHub clear, idle → rebuild
+    d2 = W(125, None, False, d["state"], 60, 30, now=t0 + 2100)
+    assert not d2["dispatch"]                                                                  # retry gap respected
+    assert W(130, None, False, d["state"], 60, 30, now=t0 + 1800 + 1800)["dispatch"]
+    d = W(5, None, False, d2["state"], 60, 30, now=t0 + 4000)
+    assert d["recovered"] and d["state"] is None                                               # fresh again → tell the owner
+    assert not W(5, None, False, None, 60, 30, now=t0)["recovered"]
     print("SITE TRIGGER TESTS PASSED [OK]")
 
 

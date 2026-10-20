@@ -1042,6 +1042,9 @@ site_trigger:
   min_gap_minutes: 15          # 兩次觸發至少間隔（排程每 20 分鐘，留一點時間誤差）
   skip_if_running_minutes: 8   # 已有建置在跑且開始不到 N 分鐘 → 不重複觸發
   protect_full_minutes: 25     # 完整建置（含全市場掃描）開始後 N 分鐘內不被快速建置取消
+  watch_minutes: 10            # 每 N 分鐘檢查網站是否還在更新
+  stale_alert_minutes: 60      # 超過 N 分鐘沒有成功建置 → 私訊通知（含 GitHub 狀態），恢復後再通知一次
+  retry_minutes: 30            # GitHub 恢復正常但沒有建置在跑 → 立刻重建；最多每 N 分鐘一次
   # 需要 .env 的 GITHUB_SITE_TOKEN（fine-grained token，只授權 wallstreet-sentinel，權限 Actions: Read and write）
 
 # ---------- 網站「我的持股」跨裝置同步（Google 登入 → 存到使用者自己的 Google 雲端硬碟隱藏資料夾） ----------

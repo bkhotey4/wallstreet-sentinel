@@ -155,4 +155,63 @@ class SiteTrigger:
         return False, f"GitHub 回應 HTTP {status}{'：' + hint if hint else ''}"
 
 
+    # ------------------------------------------------------------------ outage watch (site not updating)
+    @staticmethod
+    def watch_decision(age_min: Optional[float], incident: Optional[str], alive: bool, state: Optional[dict],
+                       stale_min: float, retry_min: float, now: Optional[float] = None) -> Dict:
+        """What the outage watch should do this tick (pure, tested).
+        age_min: minutes since the last successful site build (None = unknown → do nothing);
+        incident: GitHub's unresolved incident title, or None when GitHub reports all clear;
+        alive: a build is queued / running right now; state: the stored episode {"since", "notified", "retry_ts"}.
+        Returns {"alert": bool, "recovered": bool, "dispatch": bool, "state": new state or None}."""
+        now = now or time.time()
+        out = {"alert": False, "recovered": False, "dispatch": False, "state": state}
+        if age_min is None:
+            return out
+        if age_min < stale_min:                                   # site is fresh again
+            out["recovered"] = bool(state and state.get("notified"))
+            out["state"] = None
+            return out
+        st = dict(state or {"since": now, "notified": False, "retry_ts": 0})
+        if not st.get("notified"):
+            out["alert"], st["notified"] = True, True
+        # GitHub says it's fine again but nothing is building → rebuild now (at most every retry_min)
+        if incident is None and not alive and now - float(st.get("retry_ts", 0)) >= retry_min * 60:
+            out["dispatch"], st["retry_ts"] = True, now
+        out["state"] = st
+        return out
+
+    async def last_success_age(self) -> Tuple[Optional[float], bool]:
+        """(minutes since the last successful build finished, a build is queued/running now)."""
+        runs = await self.recent_runs()
+        if not runs:
+            return None, False
+        alive = any(r.get("status") != "completed" for r in runs)
+        try:
+            d = await http.get(f"{API}/repos/{self.repo}/actions/runs", headers=self._headers(),
+                               params={"status": "success", "per_page": 1}, retries=0, timeout=20)
+            r = ((d or {}).get("workflow_runs") or [None])[0]
+            if not r:
+                return None, alive
+            t = datetime.strptime(r["updated_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - t).total_seconds() / 60, alive
+        except Exception as e:  # noqa: BLE001
+            log.debug("site watch: cannot read last success: %s", e)
+            return None, alive
+
+    @staticmethod
+    async def github_incident() -> Tuple[Optional[str], bool]:
+        """(title of an unresolved GitHub incident touching Actions/Pages, or None; status page reachable)."""
+        try:
+            d = await http.get("https://www.githubstatus.com/api/v2/incidents/unresolved.json", retries=0, timeout=20)
+        except Exception:  # noqa: BLE001
+            return None, False
+        for i in (d or {}).get("incidents", []):
+            name = str(i.get("name", ""))
+            comps = " ".join(str(c.get("name", "")) for c in i.get("components", []) or [])
+            if any(k in (name + " " + comps) for k in ("Actions", "Pages")):
+                return name, True
+        return None, True
+
+
 TRIGGER = SiteTrigger()

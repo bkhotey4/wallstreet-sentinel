@@ -389,7 +389,7 @@ def main():
     for word in ("持倉總值", "未實現", "data-private"):
         assert word not in page, word
     import re
-    assert not re.search(r"https?://(?!example\.com|e\.com|www\.sec\.gov)[^\"' ]+\.(js|css)", page)
+    assert not re.search(r"https?://(?!example\.com|e\.com|www\.sec\.gov)[^\"' ]+\.(js|css)\b", page)
     assert "今日規則精選" not in page and "class=\"pickbox\"" not in page
     d = json.loads((out / "data.json").read_text(encoding="utf-8"))
     assert d["scores"]["us"], "data.json carries the top of the board"

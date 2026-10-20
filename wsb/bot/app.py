@@ -374,8 +374,38 @@ class Sentinel(commands.Bot):
                                       "續期 3 分鐘：GitHub → Settings → Developer settings → Fine-grained tokens → 該 token → Regenerate token，"
                                       "把新值貼到 wallstreet_bot\\.env 的 GITHUB_SITE_TOKEN，再 /restart。")
 
+        async def site_watch():
+            """The site stopped updating (e.g. a GitHub Actions/Pages outage): DM the owner once, rebuild as soon as
+            GitHub reports all clear, and DM again when the site is fresh."""
+            if not SITE.enabled:
+                return
+            cfg = SETTINGS.get("site_trigger", {})
+            age, alive = await SITE.last_success_age()
+            incident, reachable = await SITE.github_incident()
+            if not reachable:
+                incident = "GitHub 狀態頁無法連線"                  # unknown → don't treat as "all clear"
+            dec = SITE.watch_decision(age, incident, alive, store.kv_get("site_watch"),
+                                      float(cfg.get("stale_alert_minutes", 60)), float(cfg.get("retry_minutes", 30)))
+            store.kv_set("site_watch", dec["state"])
+            if dec["dispatch"]:
+                ok, m = await SITE.dispatch("outage recovery", fast=False, force=True)
+                log.info("site watch: GitHub clear, rebuild: %s", m)
+            if not (dec["alert"] or dec["recovered"]):
+                return
+            dm = await self._owner_dm()
+            if not dm:
+                return
+            if dec["alert"]:
+                why = f"GitHub 目前異常：{incident}" if incident else "GitHub 狀態正常，可能是建置失敗或排隊"
+                await self._safe_send(dm, content=f"⚠️ 網站已 {age:.0f} 分鐘沒有更新成功。{why}。\n"
+                                      "不用手動處理：GitHub 一恢復我會自動重新建置，網站更新後會再通知你。")
+            else:
+                await self._safe_send(dm, content=f"✅ 網站已恢復更新（{datetime.now(E.TZ):%m-%d %H:%M}）。"
+                                      "開著的網頁會自動載入新版，不用手動重新整理。")
+
         loops = [
             ("site_token", 24 * 3600, site_token_check, 240),
+            ("site_watch", int(SETTINGS.get("site_trigger", {}).get("watch_minutes", 10)) * 60, site_watch, 300),
             ("site_build", int(SETTINGS.get("site_trigger", {}).get("hourly_minutes", 60)) * 60, site_hourly, 180),
             ("backup", 6 * 3600, backup, 120),
             ("econ", 60, econ, 180),                  # 財經數據公布前提醒／公布後解讀／科技財報結果

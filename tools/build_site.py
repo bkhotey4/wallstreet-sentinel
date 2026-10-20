@@ -1003,6 +1003,7 @@ details.card summary{cursor:pointer;list-style:none}details.card summary::-webki
 details.card summary h2{display:inline;margin:0}details.card summary h2::before{content:"▸ ";color:var(--mu)}details.card[open] summary h2::before{content:"▾ "}details.card[open] summary{margin-bottom:10px}
 details.card{margin-top:12px}
 .lc .span{fill:var(--warn);opacity:.13}.spanlbl{fill:var(--tx2);font-size:11px}
+.stalebar{background:var(--warn);color:#fff;font-size:13px;padding:8px 16px;text-align:center;line-height:1.5}
 .live.stale i{background:var(--mu)}.live.stale{color:var(--warn)}.asof{color:var(--mu);font-size:11px;margin-left:4px}
 .miss{margin-top:6px;font-size:11.5px;color:var(--warn);max-width:220px}
 .blk h3{margin:6px 0 4px;color:var(--tx)}.blk table{font-size:12.5px}.blk td,.blk th{padding:4px 6px}.blk tr.off td{opacity:.7}
@@ -1056,6 +1057,28 @@ document.querySelectorAll('.tab[data-t]').forEach(function(b){b.addEventListener
 document.querySelectorAll('a.golink').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();page(a.dataset.p);
  try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){location.hash=a.dataset.p;}window.scrollTo(0,0);});});
 if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){});}
+// auto-update: an open page checks version.json every 5 min and reloads itself when a newer build is live;
+// when the site has stopped updating it says so, and names a GitHub Actions/Pages outage when there is one
+(function(){var lb=document.getElementById('liveb');if(!lb||!window.fetch)return;var B=+lb.dataset.b||0;
+ try{var sy=sessionStorage.getItem('wss_sy');if(sy!==null){sessionStorage.removeItem('wss_sy');setTimeout(function(){window.scrollTo(0,+sy);},80);}}catch(e){}
+ function zh(){return document.documentElement.lang!=='en';}
+ function busy(){var a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.value);}
+ function bar(t){var b=document.getElementById('stalebar');if(!t){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='stalebar';b.className='stalebar';document.body.insertBefore(b,document.body.firstChild);}b.textContent=t;}
+ function stale(){var m=Math.round((Date.now()/1000-B)/60);if(m<75){bar('');return;}
+  var age=m<120?m+(zh()?' 分鐘':' min'):Math.round(m/60)+(zh()?' 小時':' h');
+  fetch('https://www.githubstatus.com/api/v2/incidents/unresolved.json',{cache:'no-store',credentials:'omit'}).then(function(r){return r.json();})
+   .then(function(d){var inc=(d.incidents||[]).filter(function(i){return /Actions|Pages/.test(i.name+' '+(i.components||[]).map(function(c){return c.name;}).join(' '));})[0];
+    bar(inc?(zh()?'⚠️ 網站已 '+age+' 沒有更新：GitHub 服務異常（'+inc.name+'）。恢復後會自動重建，這個頁面也會自動載入新版，不用手動重新整理。'
+                 :'⚠️ Not updated for '+age+': GitHub outage ('+inc.name+'). The site rebuilds itself once GitHub recovers and this page reloads on its own.')
+           :(zh()?'⚠️ 網站已 '+age+' 沒有更新（GitHub 狀態正常，建置可能在排隊）。系統會自動重試，新版完成後這個頁面會自動載入。'
+                 :'⚠️ Not updated for '+age+' (GitHub reports no outage; the build may be queued). It retries automatically and this page reloads when it is done.'));})
+   .catch(function(){bar(zh()?'⚠️ 網站已 '+age+' 沒有更新，新版完成後這個頁面會自動載入。':'⚠️ Not updated for '+age+'; this page reloads when a new build is live.');});}
+ function check(){if(document.hidden)return;
+  fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(v){
+   if(v&&+v.b>B){if(busy())return;try{sessionStorage.setItem('wss_sy',String(window.scrollY));}catch(e){}location.reload();return;}
+   stale();}).catch(stale);}
+ setInterval(check,300000);document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});setTimeout(check,20000);})();
 var dp=null,ib=document.getElementById('installBtn');window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ib)ib.classList.add('show');});
 if(ib)ib.addEventListener('click',function(){if(dp){dp.prompt();dp=null;ib.classList.remove('show');}});
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
@@ -1132,7 +1155,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <meta name="apple-mobile-web-app-title" content="情報站">
 <style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
-<span class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
+<span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
@@ -1399,7 +1422,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     except Exception:  # noqa: BLE001
         log.exception("earnings verdicts failed")
     out.mkdir(parents=True, exist_ok=True)
-    (out / "index.html").write_text(render(eng, ai_text, ai_engine), encoding="utf-8")
+    page_html = render(eng, ai_text, ai_engine)
+    (out / "index.html").write_text(page_html, encoding="utf-8")
+    vb = re.search(r'id="liveb" data-b="(\d+)"', page_html)                 # same stamp as the page → open pages reload once
+    (out / "version.json").write_text(json.dumps({"b": int(vb.group(1)) if vb else int(time.time())}), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")
     write_pwa(out)

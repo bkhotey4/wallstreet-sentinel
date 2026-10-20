@@ -79,6 +79,8 @@ def main():
     assert "減碼" not in clean and "15%" not in clean and "非農" in clean and "信用利差" in clean
     html2 = B.render(eng, clean, "test-llm")
     assert "AI 市場評論" in html2 and "非農" in html2 and "<h4><b>一句話結論</b></h4>" in html2
+    # auto-update: the page carries its build stamp; the script compares it with version.json and reloads
+    assert re.search(r'id="liveb" data-b="\d{10}"', html2) and "version.json?t=" in html2 and "location.reload()" in html2
     assert "系統性壓力指數" in page and "全球跨資產行情" in page and "衝擊雷達" in page and "風險劇本" in page
     assert "<script>alert" not in page and "&lt;script&gt;" in page, "untrusted headline must be escaped"
     assert 'href="javascript:' not in page, "non-http links must be neutralised"
@@ -92,7 +94,7 @@ def main():
     visible = _re.sub(r'<script type="application/json" id="pf-data">.*?</script>', "", visible, flags=_re.S)
     for word in ("持倉總值", "未實現", "VaR99", "ENB"):
         assert not _re.search(rf"(?<![A-Za-z0-9]){_re.escape(word)}(?![A-Za-z0-9])", visible), word
-    assert not re.search(r"https?://(?!example\.com)[^\"' ]+\.(js|css)", page), "page must not load external scripts/styles"
+    assert not re.search(r"https?://(?!example\.com)[^\"' ]+\.(js|css)\b", page), "page must not load external scripts/styles"
     import json
     d = json.loads((out / "data.json").read_text(encoding="utf-8"))
     assert d["ssi"]["score"] > 0 and "portfolio" not in json.dumps(d).lower()
