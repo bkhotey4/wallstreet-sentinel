@@ -26,7 +26,7 @@ from . import http
 log = logging.getLogger(__name__)
 CACHE = DATA_DIR / "sec_segments.json"
 HDR = {"User-Agent": SEC_USER_AGENT, "Accept": "application/json, text/xml, */*"}
-PARSER_V = 1
+PARSER_V = 2                     # 2: customer groups ("Four Customers", region-based end customers) are not "one customer"
 NS_X = "{http://www.xbrl.org/2003/instance}"
 NS_D = "{http://xbrl.org/2006/xbrldi}"
 REV = ("Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "RevenueFromContractWithCustomerIncludingAssessedTax",
@@ -63,6 +63,18 @@ def label(member: str) -> Dict[str, str]:
                 break
     en = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", raw).strip() or raw
     return {"zh": zh or en, "en": en, "iso": None}
+
+
+GROUP_WORDS = ("Customers", "Based", "EndCustomer", "UnitedStates", "Europe", "Asia", "America", "Distributors", "Others",
+               "Two", "Three", "Four", "Five", "Ten", "Top")
+
+
+def single_customer(member: str) -> bool:
+    """A named / numbered single customer (Customer A, Largest customer, Major Customer One) — not a group or a region."""
+    raw = re.sub(r"Member$", "", (member or "").split(":")[-1])
+    if raw.endswith("One") and "Customer" in raw and "Customers" not in raw:
+        return True
+    return not any(w in raw for w in GROUP_WORDS)
 
 
 def _geo_axis(d: str) -> bool:
@@ -143,13 +155,14 @@ def parse_instance(xml: bytes) -> Dict:
         if "Customer" in typ and "Revenue" in bench:
             mem = next((m for a, m in c[2].items() if a not in ("us-gaap:ConcentrationRiskByTypeAxis", "us-gaap:ConcentrationRiskByBenchmarkAxis")), "")
             sh = v if v <= 1.0 else v / 100
-            if mem and 0 < sh < 1:
+            if mem and 0 < sh < 1 and single_customer(mem):
                 out["customers"].append({"member": mem, **label(mem), "share": sh})
     if not out["customers"] and out["total"]:
         for t, c, v in rev:
             if c[0] == start and c[1] == end and len(c[2]) == 1 and "MajorCustomers" in next(iter(c[2])):
                 m = next(iter(c[2].values()))
-                out["customers"].append({"member": m, **label(m), "share": v / out["total"]})
+                if single_customer(m):
+                    out["customers"].append({"member": m, **label(m), "share": v / out["total"]})
     seen, cust = set(), []
     for x in sorted(out["customers"], key=lambda x: -x["share"]):
         if x["member"] not in seen:

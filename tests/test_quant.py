@@ -81,6 +81,10 @@ def test_segments():
     assert r["us"] is None                                   # only "North America" tagged → not broken out, never 0 %
     assert [g["zh"] for g in r["geo"]] == ["北美", "中國", "台灣"]
     assert r["customers"][0]["share"] == 0.19 and r["customers"][0]["en"] == "Largest Customer"
+    for m in ("nvda:UnitedStatesAndEuropeBasedEndCustomersMember", "asml:FourCustomersMember", "x:DistributorsMember"):
+        assert not SG.single_customer(m), m                    # groups / regions are not "the largest customer"
+    for m in ("tsm:CustomerAMember", "klac:LargestCustomerMember", "avgo:MajorCustomerOneMember"):
+        assert SG.single_customer(m), m
     assert SG.label("country:KR")["zh"] == "南韓" and SG.label("klac:EuropeAndIsraelMember")["en"] == "Europe And Israel"
     none = SG.parse_instance(XML.replace(b"srt:StatementGeographicalAxis", b"x:OtherAxis").replace(b"CustomerConcentrationRiskMember", b"XMember"))
     assert not none["geo"] and not none["customers"] and "沒有用標準標籤" in none["note"]

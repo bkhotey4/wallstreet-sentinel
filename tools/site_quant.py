@@ -17,7 +17,7 @@ def sec_factor_returns(eng) -> str:
         return ""
     rows = []
     for k in f["keys"]:
-        zh, en = f["labels"][k]
+        zh, en = ("利率（10 年期殖利率變動）", "Rates (10-year yield change)") if k == "rate" else f["labels"][k]
         d, w = f["today"].get(k), f["week"].get(k)
         if k == "rate":                                           # yield change, shown in basis points
             dt, wt = (f"{d * 100:+.1f} bp" if d is not None else "—"), (f"{w * 100:+.1f} bp" if w is not None else "—")
