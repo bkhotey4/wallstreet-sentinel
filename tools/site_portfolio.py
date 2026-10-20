@@ -34,7 +34,9 @@ def _fx(eng) -> Dict[str, float]:
     if not hk:
         sh = eng.market.series("HKD=X")
         hk = float(sh.iloc[-1]) if len(sh) else None
+    ch = q.get("chg_pct")
     return {"TWD": 1.0, "USD": float(usdtwd), "HKD": float(usdtwd) / (hk or HKD_PEG), "asof": asof,
+            "USD_chg": round(float(ch), 4) if ch is not None and ch == ch else None,
             "hkd_src": "Yahoo HKD=X" if hk else "聯繫匯率 7.8（估算）"}
 
 
@@ -188,6 +190,23 @@ def _earn(eng) -> list:
     return out
 
 
+def _macro(eng, days: int = 21) -> list:
+    """Upcoming top-importance US releases (public calendar) — the page matches them with the holdings in the browser."""
+    ev = getattr(eng, "econ_view", None) or {}
+    today = ev.get("asof") or ""
+    out = []
+    for e in ev.get("events") or []:
+        if e.get("released") or int(e.get("imp") or 0) < 3 or not e.get("date") or e["date"] < today:
+            continue
+        out.append({"d": e["date"], "zh": e.get("zh") or "", "en": e.get("en") or "", "tpe": e.get("tpe") or "", "sep": bool(e.get("sep"))})
+    try:
+        from datetime import date, timedelta
+        hi = (date.fromisoformat(today) + timedelta(days=days)).isoformat() if today else "9999"
+    except ValueError:
+        hi = "9999"
+    return [x for x in out if x["d"] <= hi][:40]
+
+
 def _rules(eng) -> dict:
     """Public inputs for the holdings rulebook, evaluated in the visitor's browser against THEIR holdings (which never leave
     it): per symbol [200-day average, 12-1 momentum %, 52-week high, 6-month return vs its market index (pp), theme],
@@ -273,7 +292,7 @@ def sec_portfolio(eng) -> str:
     gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
     data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng),
                        "earn": _earn(eng), "crisis": _crisis(eng), "beta": _beta(eng),
-                       "sym": _sym_stats(eng), "rules": _rules(eng)}, ensure_ascii=False,
+                       "sym": _sym_stats(eng), "rules": _rules(eng), "macro": _macro(eng)}, ensure_ascii=False,
                       separators=(",", ":")).replace("</", "<\\/")
     priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
              "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
@@ -317,6 +336,8 @@ def sec_portfolio(eng) -> str:
 <div class="pfdx" id="pfdx" style="display:none"></div>
 <div class="pfcrisis" id="pfcrisis" style="display:none"></div>
 <div class="pfwhatif" id="pfwhatif" style="display:none"></div>
+<div class="pfevt" id="pfevt" style="display:none"></div>
+<div class="pfchk" id="pfchk" style="display:none"></div>
 <div class="pfearn" id="pfearn" style="display:none"></div>
 <p class="note">{note}</p>
 <script type="application/json" id="pf-data">{data}</script></section>'''
@@ -412,6 +433,11 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 .pfwhatif-card .chg{font-size:12px;font-weight:600}
 
 /* Feature 6: Earnings Radar */
+.pfevt,.pfchk{margin-top:16px;border-top:1px dashed var(--bd);padding-top:14px}
+.pfevl{display:grid;gap:6px;margin-top:8px}.pfevd{display:grid;grid-template-columns:92px 1fr;gap:8px;align-items:start;padding:6px 8px;border-radius:8px;background:var(--card2)}
+.pfevd.stk{outline:1px solid var(--warn)}.pfevd .dt{font-weight:700}.pfevd .it{display:flex;flex-wrap:wrap;gap:6px}
+.pfevi{font-size:12px;padding:2px 8px;border-radius:12px;border:1px solid var(--bd)}.pfevi.mac{border-color:var(--warn)}
+.pfchk .ok{color:var(--up)}.pfchk li{margin:3px 0}.pfbad{color:var(--warn);font-weight:700;margin-left:4px;cursor:help}
 .pfearn{margin-top:16px;border-top:1px dashed var(--bd);padding-top:14px}
 .pfearn h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:6px}
 .pfearn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:10px}
@@ -431,6 +457,8 @@ JS = r"""
 (function(){var box=document.getElementById('pfbox');if(!box)return;
 var KEY='wss_portfolio_v1',PUB=JSON.parse(document.getElementById('pf-data').textContent),FX=PUB.fx,Q=PUB.q,MK={},gFM={};
 var FXOK=!!(FX&&FX.USD);function fxv(c){return c==='TWD'?1:(FXOK?FX[c]:null);}
+// yesterday's rate: USD from the USD/TWD daily change; other currencies have no daily change here → today's rate
+function fxPrev(c){var f=fxv(c);if(f==null||c!=='USD'||FX.USD_chg==null)return f;return f/(1+FX.USD_chg/100);}
 var en=function(){return document.documentElement.lang==='en';};
 function L(zh,e){var s=document.createElement('span');s.dataset.en=e;s.dataset.zh=zh;s.textContent=en()?e:zh;return s;}
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
@@ -849,7 +877,10 @@ function renderNav(d, tot, FM, complete, CB){
 function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textContent='';var tf=document.getElementById('pft').tFoot;if(tf)tf.remove();
  var rows=[],totV=0,totDay=0,totPrev=0,totCost=0,costV=0,miss=0,dayMiss=0,dates={};
  d.h.forEach(function(h,i){var n=norm(h.s),mk=n?n.mk:'us',p=price(h,FM[mk]),c=cur(mk),fx=fxv(c),r={h:h,i:i,mk:mk,cur:c,p:p};
-  if(p){r.v=h.n*p.px;r.vt=fx!=null?r.v*fx:null;var prev=p.prev>0?p.prev:((p.ch!=null)?p.px/(1+p.ch/100):null);r.day=(prev!=null&&fx!=null)?h.n*(p.px-prev)*fx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
+  if(p){r.v=h.n*p.px;r.vt=fx!=null?r.v*fx:null;var prev=p.prev>0?p.prev:((p.ch!=null)?p.px/(1+p.ch/100):null),fx0=fxPrev(c);
+   // today in TWD = price part n·(p1−p0)·fx0 + USD/TWD part n·p1·(fx1−fx0); the two add up exactly
+   r.dayPx=(prev!=null&&fx0!=null)?h.n*(p.px-prev)*fx0:null;r.dayFx=(prev!=null&&fx!=null&&fx0!=null)?h.n*p.px*(fx-fx0):null;
+   r.day=(r.dayPx!=null&&r.dayFx!=null)?r.dayPx+r.dayFx:null;r.dayc=prev!=null?h.n*(p.px-prev):null;
    if(r.vt!=null)totV+=r.vt;if(r.day!=null){totDay+=r.day;totPrev+=r.vt-r.day;}else dayMiss++;if(h.c>0){r.cost=h.n*h.c;r.un=r.v-r.cost;r.ret=r.un/r.cost*100;if(fx!=null){totCost+=r.cost*fx;costV+=r.vt;}}
    if(p.asof)dates[c]=(dates[c]&&dates[c]>p.asof)?dates[c]:p.asof;}else miss++;rows.push(r);});
  rows.sort(function(a,b){return (b.vt||0)-(a.vt||0);});
@@ -906,8 +937,12 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  else if(miss)k('已估值小計（新台幣）','Valued subtotal (TWD)','NT$ '+num(tot,0),(en()?miss+' without a price — not included':miss+' 檔沒有報價，未計入')+' · ≈ US$ '+num(tot/usd,0),'pfwarn',true);
  else k('總資產（新台幣）','Total assets (TWD)','NT$ '+num(tot,0),'≈ US$ '+num(tot/usd,0),'',true);
  if(!totPrev&&dayMiss)k('今日損益','Today P&L','—',en()?'no daily change available':'沒有今日漲跌資料','');
- else k(dayMiss?'今日損益（部分）':'今日損益',dayMiss?'Today P&L (partial)':'Today P&L','NT$ '+sgn(totDay,0),
-  (totPrev?sgn(totDay/totPrev*100,2,true):'')+(dayMiss?(en()?' · '+dayMiss+' without a daily change':' · '+dayMiss+' 檔缺今日漲跌未計入'):''),cl(totDay));
+ else{var dPx=0,dFx=0;rows.forEach(function(r){if(r.day!=null){dPx+=r.dayPx;dFx+=r.dayFx;}});
+  var cashFx=0;(d.cash||[]).forEach(function(c){var f1=fxv(c.cur),f0=fxPrev(c.cur);if(f1!=null&&f0!=null)cashFx+=c.a*(f1-f0);});
+  var tDay=totDay+cashFx;dFx+=cashFx;
+  k(dayMiss?'今日損益（部分）':'今日損益',dayMiss?'Today P&L (partial)':'Today P&L','NT$ '+sgn(tDay,0),
+  (totPrev?sgn(tDay/totPrev*100,2,true):'')+(FX.USD_chg!=null?(en()?' · prices '+sgn(dPx,0)+' · USD/TWD '+sgn(dFx,0):' · 股價 '+sgn(dPx,0)+' · 匯率 '+sgn(dFx,0)):'')
+  +(dayMiss?(en()?' · '+dayMiss+' without a daily change':' · '+dayMiss+' 檔缺今日漲跌未計入'):''),cl(tDay));}
  k('股票市值','Stocks','NT$ '+num(totV,0),tot?num(totV/tot*100,1)+'%':'');
  k('現金','Cash','NT$ '+num(cashT,0),(d.cash||[]).map(function(c){return c.cur+' '+num(c.a,0);}).join(' · '));
  if(totCost){var nc=rows.filter(function(r){return r.vt!=null&&!(r.h.c>0);}).length;   // cost basis at today's FX (same basis as 帳面損益)
@@ -1134,6 +1169,8 @@ function renderDx(rows, tot, totV, cashT){
  renderCrisis(rows, tot, totV, cashT);
  renderWhatif(rows, tot, totV, cashT, pfBeta, secW);
  renderEarnings(rows, tot);
+ renderEvents(rows);
+ renderChecks(rows);
 }
 
 // ---------------------------------------------------------------- Feature 1: Crisis Replay Simulator
@@ -1462,7 +1499,72 @@ function renderWhatif(rows, tot, totV, cashT, pfBeta, secW){
 
 // ---------------------------------------------------------------- Feature 6: Earnings Radar
 var ADR = {'2330': 'TSM', '2303': 'UMC', '3711': 'ASX', '2412': 'CHT'};   // Taiwan names reporting as US ADRs
-var EARNINGS_CAL = PUB.earn || [];             // Nasdaq earnings calendar + CBOE implied move (built server-side)
+var EARNINGS_CAL = PUB.earn || [];
+var MACRO = PUB.macro || [];
+var ALIAS = {GOOG:['GOOGL'],GOOGL:['GOOG'],'BRK-B':['BRK.B'],'BRK.B':['BRK-B'],FOX:['FOXA'],FOXA:['FOX'],NWS:['NWSA'],NWSA:['NWS']};
+
+// ---------------------------------------------------------------- personal event radar (next 14 days)
+function isoAdd(n){var t=new Date(Date.now()+n*864e5);return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2);}
+function renderEvents(rows){
+ var x=document.getElementById('pfevt');if(!x)return;x.textContent='';
+ var tot=0;rows.forEach(function(r){tot+=r.vt||0;});
+ var lo=isoAdd(-1),hi=isoAdd(14),by={},seen={};
+ rows.forEach(function(r){var sym=((r.p&&r.p.sym)||r.h.s||'').toUpperCase(),key=sym.replace(/\.(TW|TWO)$/,'');
+  var keys=[key,sym,ADR[key]].concat(ALIAS[key]||[]);if(seen[key])return;
+  var it=EARNINGS_CAL.find(function(c){return keys.indexOf(c.sym)>=0;});
+  if(!it||it.date<lo||it.date>hi)return;seen[key]=1;
+  (by[it.date]=by[it.date]||[]).push({k:'e',sym:sym,time:it.time,w:tot>0?(r.vt||0)/tot*100:null});});
+ MACRO.forEach(function(m){if(m.d<lo||m.d>hi)return;(by[m.d]=by[m.d]||[]).push({k:'m',zh:m.zh,en:m.en,tpe:m.tpe,sep:m.sep});});
+ var ds=Object.keys(by).sort();
+ if(!rows.length||!ds.length){x.style.display='none';return;}
+ x.style.display='block';
+ var hd=el('h3');hd.appendChild(L('📅 我的事件雷達（未來 14 天）','My event radar (next 14 days)'));x.appendChild(hd);
+ var nE=0,wE=0,nM=0,busy=null;
+ ds.forEach(function(d){by[d].forEach(function(i){if(i.k==='e'){nE++;wE+=i.w||0;}else nM++;});if(by[d].length>=2&&(!busy||by[d].length>by[busy].length))busy=d;});
+ var sub=el('p','muted small');
+ sub.appendChild(L(nE+' 檔持股公布財報（合計佔持股 '+num(wE,0)+'%）、'+nM+' 個最高重要度總經事件'+(busy?'；最密集：'+busy.slice(5)+'（'+by[busy].length+' 個事件同日）':'')+'。日期為美東；總經事件影響全部持股。',
+  nE+' holdings report ('+num(wE,0)+'% of holdings), '+nM+' top macro releases'+(busy?'; busiest: '+busy.slice(5)+' ('+by[busy].length+' events)':'')+'. US Eastern dates; macro events hit every holding.'));
+ x.appendChild(sub);
+ var lst=el('div','pfevl');
+ ds.forEach(function(d){var row=el('div','pfevd'+(by[d].length>=2?' stk':''));
+  var dt=el('div','dt',d.slice(5)+' '+['日','一','二','三','四','五','六'][new Date(d+'T12:00:00').getDay()]);
+  if(by[d].length>=2){dt.appendChild(document.createElement('br'));dt.appendChild(L('⚠️ 疊加','⚠️ stacked'));}
+  row.appendChild(dt);var its=el('div','it');
+  by[d].sort(function(a,b){return (a.k==='m'?0:1)-(b.k==='m'?0:1)||(b.w||0)-(a.w||0);}).forEach(function(i){
+   var t=i.k==='m'?el('span','pfevi mac'):el('span','pfevi');
+   if(i.k==='m')t.appendChild(L('🏛️ '+i.zh+(i.tpe?'（台北 '+i.tpe+'）':'')+(i.sep?'・含點陣圖':''),'🏛️ '+i.en+(i.tpe?' (Taipei '+i.tpe+')':'')+(i.sep?' · dots':'')));
+   else{var tm=i.time==='pre'?['盤前','pre']:(i.time==='after'?['盤後','after']:['','']);
+    t.appendChild(L('📊 '+i.sym+' 財報'+tm[0]+(i.w!=null?'（'+num(i.w,1)+'%）':''),'📊 '+i.sym+' earnings '+tm[1]+(i.w!=null?' ('+num(i.w,1)+'%)':'')));}
+   its.appendChild(t);});
+  row.appendChild(its);lst.appendChild(row);});
+ x.appendChild(lst);
+ var nt=el('p','muted small');nt.appendChild(L('資料：Nasdaq 財報日曆、美國經濟日曆（只列最高重要度）。「疊加」＝同一天有兩個以上事件，波動可能互相放大。這是行事曆整理，不是預測。',
+  'Sources: Nasdaq earnings and US economic calendars (top importance only). "Stacked" = two or more events the same day. A calendar, not a forecast.'));x.appendChild(nt);
+}
+
+// ---------------------------------------------------------------- data checks: can these numbers be trusted?
+var CHK = {ratio: 3, jump: 40, stale: 4};
+function rowIssues(r, latest){var h=r.h,p=r.p,o=[];
+ if(!p){o.push(['沒有報價：市值與損益未計入','No quote: left out of value and P&L']);return o;}
+ if(p.src==='manual')o.push(['使用手動輸入的價格，不會自動更新','Manual price: does not update']);
+ if(h.c>0&&p.px>0){var k=Math.max(h.c/p.px,p.px/h.c);if(k>=CHK.ratio)o.push(['成本 '+num(h.c,2)+' 與現價 '+num(p.px,2)+' 相差 '+num(k,1)+' 倍：請確認是否打錯或有拆股','Cost '+num(h.c,2)+' vs price '+num(p.px,2)+' ('+num(k,1)+'×): typo or split?']);}
+ if(p.ch!=null&&Math.abs(p.ch)>=CHK.jump)o.push(['單日 '+sgn(p.ch,1,true)+'：可能是拆股或報價錯誤，請先核對',sgn(p.ch,1,true)+' in a day: split or bad tick?']);
+ var ref=latest[r.cur];if(p.asof&&ref){var g=(new Date(ref)-new Date(p.asof))/864e5;if(g>=CHK.stale)o.push(['報價停在 '+p.asof+'（同市場最新 '+ref+'）：可能停牌或資料中斷','Quote stuck at '+p.asof+' (market '+ref+'): halted or feed gap']);}
+ return o;}
+function renderChecks(rows){
+ var x=document.getElementById('pfchk');if(!x)return;x.textContent='';
+ if(!rows.length){x.style.display='none';return;}
+ var latest={};rows.forEach(function(r){var a=r.p&&r.p.asof;if(a&&(!latest[r.cur]||a>latest[r.cur]))latest[r.cur]=a;});
+ var all=[];rows.forEach(function(r){rowIssues(r,latest).forEach(function(i){all.push([((r.p&&r.p.sym)||r.h.s),i]);});});
+ if(!FXOK)all.push(['USD/TWD',['美元兌台幣匯率暫缺：台幣合計無法計算','USD/TWD rate missing: no TWD totals']]);
+ x.style.display='block';
+ var hd=el('h3');hd.appendChild(L('🔎 資料檢查','🔎 Data checks'));x.appendChild(hd);
+ if(!all.length){var ok=el('p','ok');ok.appendChild(L('✅ 全部正常：每檔都有報價、成本與現價差距合理、沒有異常單日漲跌、報價日期一致'+(FXOK&&FX.asof?'；匯率日期 '+FX.asof:''),
+  '✅ All clear: every holding has a quote, costs look plausible, no abnormal one-day move, quote dates agree'+(FXOK&&FX.asof?'; FX as of '+FX.asof:'')));x.appendChild(ok);return;}
+ var ul=el('ul');all.forEach(function(a){var li=el('li');li.appendChild(el('b','',a[0]+'：'));li.appendChild(L(a[1][0],a[1][1]));ul.appendChild(li);});x.appendChild(ul);
+ var nt=el('p','muted small');nt.appendChild(L('只檢查資料是否合理（成本差 '+CHK.ratio+' 倍以上、單日漲跌 '+CHK.jump+'% 以上、報價落後 '+CHK.stale+' 天以上），不是買賣建議。',
+  'Checks data plausibility only (cost ≥'+CHK.ratio+'× off, one-day move ≥'+CHK.jump+'%, quote ≥'+CHK.stale+' days behind) — not advice.'));x.appendChild(nt);
+}             // Nasdaq earnings calendar + CBOE implied move (built server-side)
 
 function renderEarnings(rows, tot){
  var x = document.getElementById('pfearn');
@@ -1562,6 +1664,9 @@ function renderEarnings(rows, tot){
 function upsert(d,s,n,c){var k=norm(s);if(!k||!(n>=0))return false;var key=k.key,i=d.h.findIndex(function(h){var x=norm(h.s);return x&&x.key===key;});
  if(n===0){if(i>=0)d.h.splice(i,1);return true;}var row={s:key,n:n,c:(c>0?c:0),p:0};if(i>=0){row.p=d.h[i].p||0;if(!(c>0))row.c=d.h[i].c||0;d.h[i]=row;}else d.h.push(row);return true;}
 document.getElementById('pfadd').addEventListener('submit',function(e){e.preventDefault();var f=e.target,d=get();
+ var cc=parseFloat(f.c.value),nn=norm(f.s.value);
+ if(cc>0&&nn){var pq=price({s:nn.key,p:0},(gFM||{})[nn.mk]);if(pq&&pq.px>0){var kk=Math.max(cc/pq.px,pq.px/cc);
+  if(kk>=CHK.ratio&&!confirm(en()?('Cost '+cc+' is '+kk.toFixed(1)+'× away from the price '+pq.px+'. Save anyway?'):('成本 '+cc+' 與現價 '+pq.px+' 相差 '+kk.toFixed(1)+' 倍，確定沒打錯嗎？')))return;}}
  if(upsert(d,f.s.value,parseFloat(f.n.value),parseFloat(f.c.value))){put(d);f.reset();render();}else msg(['代號或股數格式不對','Check the ticker / shares']);});
 document.getElementById('pfcash').addEventListener('submit',function(e){e.preventDefault();var f=e.target,d=get(),a=parseFloat(f.a.value);if(!isFinite(a))return;
  d.cash=(d.cash||[]).filter(function(c){return c.cur!==f.cur.value;});if(a)d.cash.push({cur:f.cur.value,a:a});put(d);f.a.value='';render();});

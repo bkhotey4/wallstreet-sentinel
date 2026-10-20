@@ -34,6 +34,7 @@ from .. import weekly as WK
 from .. import store
 from ..site_trigger import TRIGGER as SITE
 from ..analytics import hedge as HG
+from ..analytics import personal as PERS
 from ..analytics import playbook as PB
 from ..analytics import portfolio as PF
 from ..analytics import scorecard as SC
@@ -973,6 +974,12 @@ class Sentinel(commands.Bot):
         dm = await self._owner_dm()
         if dm and await self._safe_send(dm, embed=rules_embed(rbk)):
             store.kv_set("rules_daily", day)
+            try:                                                    # events + data checks ride along with the daily check
+                pd_ = await asyncio.to_thread(PERS.build, self.engine)
+                if pd_.get("available"):
+                    await self._safe_send(dm, embed=personal_embed(pd_))
+            except Exception:  # noqa: BLE001
+                log.exception("personal radar failed")
 
     def _stop_alerts(self) -> List[Alert]:
         """Edge-triggered: a meaningful position closes below its volatility stop (alert once per breach)."""
@@ -1321,6 +1328,39 @@ PUBLIC_COMMANDS = {"dashboard", "risk", "crash", "market", "macro", "gamma", "ne
 
 
 _RB_ICON = {"exit2": "🔴", "exit1": "🟠", "trim": "🟡", "add": "🟢", "hold": "⚪"}
+
+
+def personal_embed(d: Dict) -> "discord.Embed":
+    """Private: the next two weeks' events for the holdings, data checks, and today's P&L split (prices vs USD/TWD)."""
+    ev = d.get("events") or {}
+    e = discord.Embed(title=f"📅 持股事件雷達＋資料檢查（未來 {ev.get('horizon', 14)} 天，僅你可見）", color=0x2B8A3E,
+                      timestamp=datetime.now(timezone.utc),
+                      description=(f"{ev.get('n_earn', 0)} 檔持股公布財報（合計佔持股 {ev.get('earn_weight', 0):.0f}%）、"
+                                   f"{ev.get('n_macro', 0)} 個最高重要度總經事件。日期為美東；總經事件影響全部持股。"))
+    lines = []
+    for dd in (ev.get("days") or [])[:12]:
+        parts = []
+        for x in dd["items"]:
+            if x["kind"] == "macro":
+                parts.append(f"🏛️ {x['zh']}" + (f"（台北 {x['tpe']}）" if x.get("tpe") else ""))
+            else:
+                t = {"pre": "盤前", "after": "盤後"}.get(x.get("time"), "")
+                parts.append(f"📊 {x['sym']} 財報{t}（{x['weight']:.0f}%）")
+        lines.append(("⚠️ " if dd["stacked"] else "") + f"**{dd['date'][5:]}**　" + "；".join(parts))
+    e.add_field(name="事件（⚠️＝同一天疊加）", value="\n".join(lines)[:1020] or "未來兩週沒有持股財報或最高重要度總經事件", inline=False)
+    b = ev.get("busiest")
+    if b:
+        e.add_field(name="最密集的一天", value=f"{b['date']}：{len(b['items'])} 個事件同日，波動可能疊加", inline=False)
+    sp = d.get("split")
+    if sp:
+        e.add_field(name="今日損益拆解（新台幣）",
+                    value=f"股價 {sp['price']:+,.0f}｜美元匯率 {sp['fx']:+,.0f}（{sp['fx_chg_pct'] or 0:+.2f}%）｜合計 {sp['total']:+,.0f}"
+                          + (f"\n{sp['missing']} 檔缺今日漲跌，未計入" if sp.get("missing") else ""), inline=False)
+    iss = d.get("sanity") or []
+    e.add_field(name="資料檢查", value="\n".join(f"⚠️ {i['sym']}：{i['zh']}" for i in iss)[:1020] if iss else "✅ 全部正常：成本、報價日期、單日漲跌都在合理範圍",
+                inline=False)
+    e.set_footer(text="事件來自 Nasdaq 財報／經濟日曆；檢查只看資料是否合理，不是買賣建議")
+    return e
 
 
 def rules_embed(rbk: Dict) -> "discord.Embed":
@@ -1997,6 +2037,17 @@ def register_commands(bot: Sentinel) -> None:
             await it.response.send_message("規則檢查還沒有結果（持股、報價或歷史股價尚未載入）", ephemeral=True)
             return
         await it.response.send_message(embed=rules_embed(rbk), ephemeral=True)
+
+    @holdings_grp.command(name="events", description="未來兩週持股財報＋重大總經事件、資料檢查、今日損益拆解（只私下回覆你）")
+    async def holdings_events(it: discord.Interaction):
+        if not is_owner(it):
+            await it.response.send_message("🔒 僅限擁有者", ephemeral=True)
+            return
+        d = await asyncio.to_thread(PERS.build, eng)
+        if not d.get("available"):
+            await it.response.send_message("目前沒有持股資料", ephemeral=True)
+            return
+        await it.response.send_message(embed=personal_embed(d), ephemeral=True)
 
     @holdings_grp.command(name="remove", description="刪除一檔持股")
     async def holdings_remove(it: discord.Interaction, ticker: str):

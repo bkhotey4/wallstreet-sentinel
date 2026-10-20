@@ -23,7 +23,10 @@ def main():
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data
-    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta", "sym", "rules"}   # public data only
+    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta", "sym", "rules", "macro"}   # public data only
+    assert all(set(x) <= {"d", "zh", "en", "tpe", "sep"} for x in data["macro"])      # the public US calendar, nothing personal
+    for k in ("renderEvents(rows);", "renderChecks(rows);", "fxPrev(c)", "CHK.ratio&&!confirm("):
+        assert k in SP.JS, k                                           # event radar, data checks, FX split, typo guard
     assert set(data["rules"]) <= {"cfg", "ssi", "sym", "dz", "surp", "surpc", "gb", "bench", "built", "px_asof"}      # rule inputs per public symbol, no holdings
     assert set(data["sym"]) == {"beta", "vol"}
     for bad in ("600:(addSym", "w * 1.1", "found.b : 1.1", "stopPct = 0.10", "建議分批減碼", "千億美元", ": 1.0; }"):
