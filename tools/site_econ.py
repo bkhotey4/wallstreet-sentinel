@@ -5,7 +5,7 @@ from datetime import date
 from typing import Dict, List, Optional
 
 from tools.site_sections import _bar
-from tools.sitekit import T, card, cls, esc, num
+from tools.sitekit import guard_safe, T, card, cls, esc, num
 
 WD = "一二三四五六日"
 DIR_CLS = {"hot": "dhot", "cool": "dcool", "inline": "dinl"}
@@ -258,7 +258,7 @@ def _ev_row(e: Dict, today: str) -> str:
     ai = ""
     if e.get("ai"):
         ai = (f'<div class="ainote"><b>{T("AI 解讀", "AI read")}</b><span class="muted small">（{esc(e["ai"].get("engine", ""))}）</span>'
-              f'<p>{esc(e["ai"]["text"]).replace(chr(10), "<br>")}</p></div>')
+              f'<p>{esc(guard_safe(e["ai"]["text"])).replace(chr(10), "<br>")}</p></div>')
     ctx = f'<p class="small"><b>{T("目前背景", "Backdrop")}：</b>{esc(e["ctx"])}</p>' if e.get("ctx") else ""
     concl = ""
     if e.get("conclusion"):
@@ -335,7 +335,7 @@ def sec_earn_verdict(eng) -> str:
                        if str(rel.get("url", "")).startswith("https://www.sec.gov/") else "") + "</div>")
         if (rel.get("ai") or {}).get("text"):
             relb += (f'<div class="ainote"><b>{T("AI 重點整理（只讀財報原文）", "AI summary (filing text only)")}</b>'
-                     f'<span class="muted small">（{esc(rel["ai"].get("engine", ""))}）</span><p>{esc(rel["ai"]["text"]).replace(chr(10), "<br>")}</p></div>')
+                     f'<span class="muted small">（{esc(rel["ai"].get("engine", ""))}）</span><p>{esc(guard_safe(rel["ai"]["text"])).replace(chr(10), "<br>")}</p></div>')
         imp = ""
         if r.get("impact"):
             imp = (f'<details class="hist"><summary class="small">{T("預估影響（歷史統計與選擇權定價）", "Expected impact (history & options)")}</summary>'
@@ -372,7 +372,7 @@ def sec_latest_reports(eng) -> str:
         if r.get("tw") and r["tw"].get("move") is not None:
             mv += f'　{T("台股隔日", "TW next")} {esc(r["tw"]["name"])} <b class="{cls(r["tw"]["move"])}">{num(r["tw"]["move"], 1, sign=True, pct=True)}</b>'
         ai = (f'<details class="hist"><summary class="small">{T("AI 重點整理（只讀財報原文）", "AI summary")}</summary>'
-              f'<p class="small">{esc(r["ai"]["text"]).replace(chr(10), "<br>")}</p></details>' if (r.get("ai") or {}).get("text") else "")
+              f'<p class="small">{esc(guard_safe(r["ai"]["text"])).replace(chr(10), "<br>")}</p></details>' if (r.get("ai") or {}).get("text") else "")
         link = (f'<a class="small muted" href="{esc(r["url"])}" target="_blank" rel="noopener noreferrer">SEC {esc(r.get("form") or "")}</a>'
                 if str(r.get("url", "")).startswith("https://www.sec.gov/") else "")
         cards.append(f'<div class="ecard" data-q="{esc((r["sym"] + " " + r["name"]).lower())}"><div class="ech"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["sym"])}</span>'
@@ -506,7 +506,7 @@ def sec_tech_board(eng) -> str:
               if s.get("n") else "—")
         tg = "".join(f'<span class="rc {"rcp" if t == "up" else "rcn" if t == "dn" else ""}">{esc(x)}</span>' for x, t in r.get("tags", []))
         ai = (f'<div class="ainote"><b>{T("AI 解讀", "AI read")}</b><span class="muted small">（{esc(r["ai"].get("engine", ""))}）</span>'
-              f'<p>{esc(r["ai"]["text"]).replace(chr(10), "<br>")}</p></div>' if r.get("ai") else "")
+              f'<p>{esc(guard_safe(r["ai"]["text"])).replace(chr(10), "<br>")}</p></div>' if r.get("ai") else "")
         surp = "".join(f'<li>{esc(x["fq"] or "")}：EPS {num(x["eps"], 2)} vs {num(x["cons"], 2)}（{num(x["surp"], 1, sign=True, pct=True)}）'
                        f'{T("，公布 ", ", reported ") + esc(x["date"]) if x.get("date") else ""}</li>' for x in s.get("rows", []))
         src = T("（Nasdaq 季報，近 4 季）", " (Nasdaq, 4 quarters)") if r.get("src") == "nasdaq" else ""

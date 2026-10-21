@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from tools.site_sections import _tabset, _theme_chip
-from tools.sitekit import T, card, cls, esc, line_chart, num
+from tools.sitekit import guard_safe, T, card, cls, esc, line_chart, num
 
 MK = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 WD = "一二三四五六日"
@@ -475,8 +475,8 @@ def sec_debate(eng) -> str:
         head = (f'<div class="gh"><span class="muted">#{r["rank"]}</span><b>{esc(_name(r)[:32])}</b><span class="tk">{esc(r["sym"])}</span>'
                 f'<span class="muted small">{T("營收年增", "Rev growth")} {num(r.get("g"), 0, pct=True)}・{T("估值÷成長", "Value÷growth")} {num(r.get("gav"), 3)} {esc(r.get("basis") or "")}</span></div>')
         if a:
-            body = (f'<p><b class="up">{T("多方", "Bull")}</b>　{esc(a["bull"])}</p><p><b class="dn">{T("空方", "Bear")}</b>　{esc(a["bear"])}</p>'
-                    f'<p><b class="warn">{T("風控", "Risk")}</b>　{esc(a["risk"])}</p><p class="muted small">{esc(a.get("date", ""))} · {esc(a.get("engine", ""))}</p>')
+            body = (f'<p><b class="up">{T("多方", "Bull")}</b>　{esc(guard_safe(a["bull"]))}</p><p><b class="dn">{T("空方", "Bear")}</b>　{esc(guard_safe(a["bear"]))}</p>'
+                    f'<p><b class="warn">{T("風控", "Risk")}</b>　{esc(guard_safe(a["risk"]))}</p><p class="muted small">{esc(a.get("date", ""))} · {esc(a.get("engine", ""))}</p>')
         else:
             body = f'<p class="muted small">{T("這檔的 AI 短評還沒產生（每週更新）。", "Not written yet (weekly).")}</p>'
         out.append(f'<div class="deb">{head}{body}</div>')

@@ -127,7 +127,10 @@ jobs:
       - name: 確認輸出不含持倉
         run: |
           test -s site/index.html
-          ! grep -Eq "## 使用者持倉|持倉總值|未實現損益|data-private" site/index.html
+          # same strict check; on a hit, print WHAT matched so the cause is visible in the log
+          if grep -Eo ".{0,80}(## 使用者持倉|持倉總值|未實現損益|data-private).{0,40}" site/index.html; then
+            echo "::error::output contains holdings-like text (matches printed above)"; exit 1
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         with:
