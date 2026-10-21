@@ -1034,6 +1034,12 @@ details.card summary{cursor:pointer;list-style:none}details.card summary::-webki
 details.card summary h2{display:inline;margin:0}details.card summary h2::before{content:"▸ ";color:var(--mu)}details.card[open] summary h2::before{content:"▾ "}details.card[open] summary{margin-bottom:10px}
 details.card{margin-top:12px}
 .lc .span{fill:var(--warn);opacity:.13}.spanlbl{fill:var(--tx2);font-size:11px}
+.pmcard{padding:10px 16px}.pm>summary{cursor:pointer;list-style:none;font-size:15px}.pm>summary::-webkit-details-marker{display:none}
+.pm>summary::before{content:'▸ ';color:var(--mu)}.pm[open]>summary::before{content:'▾ '}
+.pmp{margin-top:10px}.pmp h3{margin:6px 0;font-size:15px}.pmg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin:6px 0}
+.pmi{display:flex;flex-direction:column;background:var(--card2);border-radius:8px;padding:6px 8px;font-size:13px}.pmi b{font-size:15px}
+.pm2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pm2 h4{margin:6px 0 2px;font-size:13px}.pm2 ul{margin:0;padding-left:18px}
+@media(max-width:620px){.pm2{grid-template-columns:1fr}}
 .stalebar{background:var(--warn);color:#fff;font-size:13px;padding:8px 16px;text-align:center;line-height:1.5}
 .live.stale i{background:var(--mu)}.live.stale{color:var(--warn)}.asof{color:var(--mu);font-size:11px;margin-left:4px}
 .miss{margin-top:6px;font-size:11.5px;color:var(--warn);max-width:220px}
@@ -1114,6 +1120,20 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
     location.replace(location.pathname+'?v='+v.b+location.hash);return;}
    stale();}).catch(stale);}
  setInterval(check,300000);document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});setTimeout(check,20000);})();
+// 開盤前 30 秒: open by itself from 90 min before the US / Taiwan open; otherwise a countdown to the next open
+(function(){var b=document.getElementById('pmbox');if(!b)return;var us=+b.dataset.us*1000,tw=+b.dataset.tw*1000,auto=false,touched=false;
+ function zh(){return document.documentElement.lang!=='en';}
+ function fmt(ms){var m=Math.max(0,Math.round(ms/60000)),h=Math.floor(m/60);return (h?h+(zh()?' 小時 ':'h '):'')+(m%60)+(zh()?' 分':'m');}
+ function hm(t){try{return new Date(t).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'});}catch(e){return '';}}
+ b.addEventListener('toggle',function(){if(!auto)touched=true;auto=false;});
+ function tick(){var now=Date.now(),inUS=now>=us-54e5&&now<=us+18e5,inTW=now>=tw-54e5&&now<=tw+9e5,on=inUS||inTW;
+  b.querySelectorAll('.pmp[data-pm]').forEach(function(p){p.style.display=on?(p.dataset.pm===(inUS?'us':'tw')?'':'none'):'';});
+  if(on&&!b.open&&!touched){auto=true;b.open=true;}
+  var cand=[[us,zh()?'美股':'US'],[tw,zh()?'台股':'Taiwan']].filter(function(a){return a[0]>now;}).sort(function(a,c){return a[0]-c[0];})[0];
+  var c=document.getElementById('pmcount');if(!c)return;
+  if(on)c.textContent=zh()?'— '+(inUS?'美股':'台股')+'開盤前重點':'— '+(inUS?'US':'Taiwan')+' pre-open';
+  else if(cand)c.textContent=zh()?'— 下一個開盤：'+cand[1]+' '+hm(cand[0])+'（還有 '+fmt(cand[0]-now)+'）・點開看隔夜變化':'— next open: '+cand[1]+' in '+fmt(cand[0]-now);}
+ tick();setInterval(tick,60000);})();
 var dp=null,ib=document.getElementById('installBtn');window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ib)ib.classList.add('show');});
 if(ib)ib.addEventListener('click',function(){if(dp){dp.prompt();dp=null;ib.classList.remove('show');}});
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
@@ -1141,7 +1161,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [S2.sec_focus, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SQ.sec_premarket, S2.sec_focus, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),

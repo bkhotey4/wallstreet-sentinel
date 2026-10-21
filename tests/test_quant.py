@@ -135,7 +135,36 @@ def test_site_sections():
     assert SQ.sec_rev_exposure(types.SimpleNamespace(segments={})) == ""
 
 
+def test_premarket():
+    import math
+    from datetime import datetime, timezone
+    from wsb.analytics import premarket as PM
+    from tools import site_quant as SQ
+    # open times in Taipei, across the US daylight-saving switch (11/1) and a weekend
+    assert PM.next_open(datetime(2026, 10, 21, 12, 0, tzinfo=timezone.utc), PM.NY, 9, 30).astimezone(PM.TPE).strftime("%m-%d %H:%M") == "10-21 21:30"
+    assert PM.next_open(datetime(2026, 11, 2, 12, 0, tzinfo=timezone.utc), PM.NY, 9, 30).astimezone(PM.TPE).strftime("%m-%d %H:%M") == "11-02 22:30"
+    assert PM.next_open(datetime(2026, 10, 24, 1, 0, tzinfo=timezone.utc), PM.TPE, 9, 0).strftime("%m-%d %H:%M") == "10-26 09:00"   # Sat → Mon
+    # band record: returns drawn with exactly the stated sigma land inside ±1σ ~68 % of the time
+    rng = np.random.default_rng(9)
+    idx = pd.bdate_range("2010-01-01", periods=3000)
+    sig = pd.Series(1.0, index=idx)
+    close = pd.Series(100 * np.cumprod(1 + rng.normal(0, 0.01, len(idx))), index=idx)
+    r = PM.band_record(close, sig)
+    assert 64 < r["all"]["in1"] < 72 and 93 < r["all"]["in2"] < 97, r
+    # the card renders from a small fake engine
+    h = _history()
+    h["^GSPC"], h["^VIX"] = h["SPY"] * 10, 18.0
+    q = {"ES=F": {"price": 5800.0, "chg_pct": 0.3, "asof": "2026-10-21"}, "^VIX": {"price": 18.0, "chg_pct": -2.0}}
+    mk = types.SimpleNamespace(q=lambda t: q.get(t), series=lambda t: h[t] if t in h else pd.Series(dtype=float))
+    eng = types.SimpleNamespace(market=mk, econ_view={"events": []}, techearn={}, sx={}, options=None)
+    d = PM.build(eng, datetime(2026, 10, 21, 12, 0, tzinfo=timezone.utc))
+    assert abs(d["us_range"]["sigma"] - 18 / math.sqrt(252)) < 1e-9 and d["overnight"][0]["t"] == "ES=F"
+    html = SQ.sec_premarket(eng)
+    assert 'id="pmbox"' in html and "pmmine" in html and "不預測漲跌方向" in html and "±1.13%" in html
+
+
 def main():
+    test_premarket()
     test_factors()
     test_segments()
     test_scorecard()

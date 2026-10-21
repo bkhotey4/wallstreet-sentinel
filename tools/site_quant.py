@@ -117,3 +117,70 @@ def sec_signal_scorecard(eng) -> str:
              "Excess return over a random pick from the same list on the same day, net of round-trip cost, in percentage points. "
              "Intervals use daily averages with ~one independent observation per holding period. Replay = in-sample; live record = out-of-sample.")
     return card("訊號成績單：有沒有贏過隨機亂挑", "Signal scorecard: better than a random pick?", "".join(parts) + f'<p class="note">{note}</p>', "wide")
+
+
+# ------------------------------------------------------------------ 開盤前 30 秒
+def _mv_rows(items, en_=False):
+    out = ""
+    for x in items:
+        ch = x.get("ch")
+        px = num(x["px"], 3 if x["t"] in ("^TNX",) else 2)
+        out += (f'<div class="pmi"><span class="muted small">{T(x["zh"], x["en"])}</span><b>{px}</b>'
+                f'<span class="{cls(ch)}">{num(ch, 2, sign=True, pct=True)}</span></div>')
+    return out
+
+
+def _rec(r: Dict, zh_band: str, en_band: str) -> str:
+    if not r:
+        return ""
+    a, y = r.get("all") or {}, r.get("y1") or {}
+    return T(f"{zh_band}自 {r.get('since', '')[:4]} 年起：收盤落在 ±1σ 內 {a.get('in1', 0):.0f}%、±2σ 內 {a.get('in2', 0):.0f}%"
+             f"（近一年 {y.get('in1', 0):.0f}% / {y.get('in2', 0):.0f}%；理論值 68% / 95%）。",
+             f"{en_band} since {r.get('since', '')[:4]}: inside ±1σ {a.get('in1', 0):.0f}%, ±2σ {a.get('in2', 0):.0f}% (theory 68 / 95 %).")
+
+
+def sec_premarket(eng) -> str:
+    from wsb.analytics import premarket as PM
+    try:
+        d = PM.build(eng)
+    except Exception:  # noqa: BLE001
+        return ""
+    if not d.get("available"):
+        return ""
+    # ---- US panel
+    ev = "".join(f'<li><b>{esc((e.get("tpe") or "—"))}</b> {T(e["zh"], e["en"])}{"・" + T("含點陣圖", "dots") if e.get("sep") else ""}'
+                 f' <span class="muted">{"★" * int(e.get("imp") or 0)}</span></li>' for e in d.get("events", []))
+    er = "".join(f'<li><b>{esc(x["sym"])}</b> {esc(x["name"])}・{T({"pre": "盤前", "after": "盤後"}.get(x["time"], "時間未定"), x["time"] or "time n/a")}'
+                 + (f'・{T("選擇權預期", "implied")} ±{num(x["mv"], 1)}%' if x.get("mv") else "") + "</li>" for x in d.get("earnings", []))
+    rg = d.get("us_range") or {}
+    rng = (f'<p>{T("標普今天的預期波動（VIX 換算）", "S&P range priced today (from VIX)")}：<b>±{num(rg["sigma"], 2)}%</b>'
+           f'（{T("一個標準差", "1σ")} {num(rg["lo1"], 0)}～{num(rg["hi1"], 0)}；{T("兩個標準差", "2σ")} {num(rg["lo2"], 0)}～{num(rg["hi2"], 0)}，'
+           f'{T("基準", "base")} {esc(rg["base_date"][5:])} {T("收盤", "close")} {num(rg["base"], 0)}）</p>'
+           f'<p class="small muted">{_rec(rg.get("record") or {}, "這個範圍", "This band")}'
+           f'{T("VIX 長期高估實際波動，所以 ±1σ 命中率高於 68% 是正常的。", "VIX tends to overstate realised volatility.")}</p>') if rg else ""
+    lv = d.get("levels") or {}
+    lvl = (f'<p>{T("SPX 選擇權關鍵價位", "SPX option levels")}：{T("Gamma 翻轉", "gamma flip")} <b>{num(lv.get("zero_gamma"), 0)}</b>・'
+           f'{T("Call 牆（壓力）", "call wall")} <b>{num(lv.get("call_wall"), 0)}</b>・{T("Put 牆（支撐）", "put wall")} <b>{num(lv.get("put_wall"), 0)}</b>'
+           f'<span class="muted small">（{T("現價低於翻轉點時，造市商避險傾向放大波動", "below the flip, dealer hedging tends to amplify moves")}）</span></p>') if lv else ""
+    us = (f'<div class="pmp" data-pm="us"><h3>🇺🇸 {T("美股開盤前", "Before the US open")}　<span class="muted small">{T("台北", "Taipei")} {esc(d["us_open_tpe"])}</span></h3>'
+          f'<div class="pmg">{_mv_rows(d.get("overnight", []))}</div>{rng}{lvl}'
+          f'<div class="pm2"><div><h4>{T("今天的數據（台北時間）", "Today’s data (Taipei time)")}</h4><ul class="small">{ev or "<li class=muted>" + T("沒有重要數據", "No key releases") + "</li>"}</ul></div>'
+          f'<div><h4>{T("今天的財報", "Today’s earnings")}</h4><ul class="small">{er or "<li class=muted>" + T("追蹤名單今天沒有財報", "None in the tracked list") + "</li>"}</ul></div></div></div>')
+    # ---- Taiwan panel
+    tr = d.get("tw_range") or {}
+    lk = d.get("tw_link") or {}
+    tw = (f'<div class="pmp" data-pm="tw"><h3>🇹🇼 {T("台股開盤前", "Before the Taiwan open")}　<span class="muted small">09:00</span></h3>'
+          f'<div class="pmg">{_mv_rows(d.get("us_close", []))}</div>'
+          + (f'<p>{T("統計推估", "Statistical estimate")}：{esc(lk.get("us_n") or "")} {num(lk.get("us"), 2, sign=True, pct=True)} × Beta {num(lk.get("beta"), 2)} '
+             f'→ {esc(lk.get("tw_n") or "")} <b class="{cls(lk.get("implied"))}">{num(lk.get("implied"), 2, sign=True, pct=True)}</b>'
+             f'<span class="muted small">（{T("近一年相關係數", "1y corr")} {num(lk.get("corr"), 2)}；{T("只反映美股前一晚，不含台股自己的消息", "US overnight only")}）</span></p>' if lk else "")
+          + (f'<p>{T("加權指數的歷史波動範圍（20 日實際波動）", "TAIEX range (20-day realised vol)")}：<b>±{num(tr["sigma"], 2)}%</b>'
+             f'（{num(tr["lo1"], 0)}～{num(tr["hi1"], 0)}）</p><p class="small muted">{_rec(tr.get("record") or {}, "這個範圍", "This band")}</p>' if tr else "")
+          + '</div>')
+    note = T("不預測漲跌方向：這裡只整理隔夜變化、今天的時程，以及市場自己定價的波動範圍，並公開這個範圍過去準不準。"
+             "開盤前 90 分鐘自動展開（美股：台北 20:00 起，11/2 起改 21:00；台股：07:30 起），其他時間可以點開。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
+             "No direction call — overnight changes, today’s schedule and the range the market prices, with that range’s track record.")
+    body = (f'<details class="pm" id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}"><summary><b id="pmhead">{T("開盤前 30 秒", "30 seconds before the open")}</b> '
+            f'<span class="muted small" id="pmcount"></span></summary>{us}{tw}'
+            f'<div class="pmp" id="pmmine" style="display:none"></div><p class="note">{note}　{T("更新", "Built")} {esc(d["built"])}</p></details>')
+    return f'<section class="card wide pmcard">{body}</section>'

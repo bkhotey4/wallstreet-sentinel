@@ -25,7 +25,7 @@ def main():
     data = json.loads(m.group(1))                                       # the only server-provided data
     assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta", "sym", "rules", "macro", "fac", "seg"}   # public data only
     assert all(set(x) <= {"d", "zh", "en", "tpe", "sep"} for x in data["macro"])      # the public US calendar, nothing personal
-    for k in ("renderEvents(rows);", "renderChecks(rows);", "fxPrev(c)", "CHK.ratio&&!confirm("):
+    for k in ("function pmFill()", "PMF=bi>=0?{k:FAC.keys[bi]", "renderEvents(rows);", "renderChecks(rows);", "fxPrev(c)", "CHK.ratio&&!confirm("):
         assert k in SP.JS, k                                           # event radar, data checks, FX split, typo guard
     assert set(data["rules"]) <= {"cfg", "ssi", "sym", "dz", "surp", "surpc", "gb", "bench", "built", "px_asof"}      # rule inputs per public symbol, no holdings
     assert set(data["sym"]) == {"beta", "vol"}

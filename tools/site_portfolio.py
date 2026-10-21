@@ -1526,6 +1526,16 @@ var ADR = {'2330': 'TSM', '2303': 'UMC', '3711': 'ASX', '2412': 'CHT'};   // Tai
 var EARNINGS_CAL = PUB.earn || [];
 var MACRO = PUB.macro || [];
 var FAC = (PUB.fac && PUB.fac.keys) ? PUB.fac : null, SEG = PUB.seg || {};
+var PME = null, PMF = null;   // what the overview's 開盤前 card shows about YOUR holdings (computed here, never uploaded)
+function pmFill(){var x=document.getElementById('pmmine');if(!x)return;x.textContent='';
+ if(!PME&&!PMF){x.style.display='none';return;}
+ x.style.display='block';var hd=el('h3');hd.appendChild(L('🔒 和你的持股有關（只在這個瀏覽器計算）','🔒 About your holdings (computed in this browser only)'));x.appendChild(hd);
+ var ul=el('ul','small');
+ (PME||[]).forEach(function(t){var li=el('li');li.appendChild(L(t[0],t[1]));ul.appendChild(li);});
+ if(PMF){var li=el('li'),lab=FAC.labels[PMF.k];li.appendChild(L('你最大的風格曝險是「'+lab[0]+'」('+sgn(PMF.v,2)+')；最近一個因子日（'+FAC.asof+'）這個因子 '+sgn(PMF.f*100,2,true)+'，估計對你的影響 '+sgn(PMF.v*PMF.f*100,2,true)+'。',
+  'Your largest style tilt: '+lab[1]+' ('+sgn(PMF.v,2)+'); on '+FAC.asof+' that factor moved '+sgn(PMF.f*100,2,true)+' → about '+sgn(PMF.v*PMF.f*100,2,true)+' for you.'));ul.appendChild(li);}
+ if(!ul.children.length){x.style.display='none';return;}
+ x.appendChild(ul);}
 function lookup(map, sym){var n=norm(sym),c=n?n.cands.concat([n.key]):[String(sym||'').toUpperCase()];
  for(var i=0;i<c.length;i++){if(map[c[i]])return map[c[i]];var d=c[i].replace('.','-');if(map[d])return map[d];}return null;}
 
@@ -1541,6 +1551,8 @@ function renderFactors(rows){
  if(cov<0.3){x.style.display='none';return;}
  X=X.map(function(v){return v/cov;});spec/=cov*cov;   // exposures of the covered part, not shrunk by uncovered holdings
  x.style.display='block';
+ var bi=-1;FAC.keys.forEach(function(k,i){if(k==='mkt'||k==='rate')return;if(bi<0||Math.abs(X[i])>Math.abs(X[bi]))bi=i;});
+ PMF=bi>=0?{k:FAC.keys[bi],v:X[bi],f:FAC.today[FAC.keys[bi]]}:null;pmFill();
  var C=FAC.cov,CX=X.map(function(_,i){var s=0;for(var j=0;j<K;j++)s+=C[i][j]*X[j];return s;}),fv=0;
  for(var i=0;i<K;i++)fv+=X[i]*CX[i];var tv=fv+spec;
  var hd=el('h3');hd.appendChild(L('🧭 我的風格曝險（因子模型）','🧭 My style exposure (factor model)'));x.appendChild(hd);
@@ -1597,6 +1609,10 @@ function renderEvents(rows){
   (by[it.date]=by[it.date]||[]).push({k:'e',sym:sym,time:it.time,w:tot>0?(r.vt||0)/tot*100:null});});
  MACRO.forEach(function(m){if(m.d<lo||m.d>hi)return;(by[m.d]=by[m.d]||[]).push({k:'m',zh:m.zh,en:m.en,tpe:m.tpe,sep:m.sep});});
  var ds=Object.keys(by).sort();
+ PME=[];var soonHi=isoAdd(1);
+ ds.forEach(function(d){if(d>soonHi)return;by[d].forEach(function(i){if(i.k!=='e')return;var tm=i.time==='pre'?['盤前','pre-market']:(i.time==='after'?['盤後','after the close']:['','']);
+  PME.push([d.slice(5)+' '+i.sym+' 財報'+tm[0]+(i.w!=null?'（佔持股 '+num(i.w,1)+'%）':''),d.slice(5)+' '+i.sym+' earnings '+tm[1]+(i.w!=null?' ('+num(i.w,1)+'% of holdings)':'')]);});});
+ if(!PME.length)PME=null;pmFill();
  if(!rows.length||!ds.length){x.style.display='none';return;}
  x.style.display='block';
  var hd=el('h3');hd.appendChild(L('📅 我的事件雷達（未來 14 天）','My event radar (next 14 days)'));x.appendChild(hd);
