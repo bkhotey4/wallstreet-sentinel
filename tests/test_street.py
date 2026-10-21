@@ -41,6 +41,23 @@ def main():
     html = SQ.sec_street(eng)
     assert "華爾街機構觀點" in html and "AI Boom Faces" in html and "53.9" in html and "不進入本站任何風險分數" in html
     assert SQ.sec_street(types.SimpleNamespace(street={})) == ""
+    # 新聞整理: Atom + RSS, themes, company match, finance-only filter, card with data-syms for the private pin
+    from wsb.data import news_digest as ND
+    atom = ('<feed><entry><title>Oracle&#39;s AI data center debt worries Wall Street</title>'
+            '<link href="https://www.businessinsider.com/oracle-debt" rel="alternate"/><published>2026-10-21T15:00:00Z</published></entry>'
+            '<entry><title>16 outfits Taylor Swift wore this year</title><link href="https://x/y"/><published>2026-10-21T14:00:00Z</published></entry></feed>')
+    rss = ('<rss><channel><item><title>Fed&apos;s Powell signals another rate hike</title><link>https://example.com/fed</link>'
+           '<pubDate>Tue, 20 Oct 2026 21:00:00 -0000</pubDate></item></channel></rss>')
+    its = ND.parse(atom, "BI") + ND.parse(rss, "BI M")
+    assert [i["title"] for i in its][0] == "Oracle's AI data center debt worries Wall Street" and its[0]["link"].endswith("oracle-debt")
+    assert its[0]["ts"] and its[2]["ts"] and its[2]["link"] == "https://example.com/fed"
+    assert set(ND.topics(its[0]["title"])) >= {"ai", "credit"} and ND.topics(its[1]["title"]) == ["other"] and "fed" in ND.topics(its[2]["title"])
+    assert ND.companies(its[0]["title"], {"Oracle": "ORCL", "Ora": "X"}) == ["ORCL"]     # whole-word match only ("Ora" ≠ "Oracle")
+    rows = [{**i, "topics": ND.topics(i["title"]), "syms": ND.companies(i["title"], {"Oracle": "ORCL"})} for i in its]
+    rows = [r for r in rows if r["topics"] != ["other"] or r["syms"]]
+    assert len(rows) == 2                                                  # the celebrity story is dropped
+    html2 = SQ.sec_news_digest(types.SimpleNamespace(news_digest={"ts": 1792512000, "items": rows, "zh": {rows[0]["title"]: "甲骨文的 AI 資料中心債務讓華爾街擔憂"}}))
+    assert 'data-syms="ORCL"' in html2 and "甲骨文的 AI 資料中心債務" in html2 and 'id="ndmine"' in html2 and "Taylor" not in html2
     print("STREET TESTS PASSED [OK]")
 
 

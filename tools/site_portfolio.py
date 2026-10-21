@@ -240,6 +240,15 @@ def _seg(eng) -> dict:
     return out
 
 
+def _fund(eng) -> dict:
+    """Public 產業體檢 flags per tracked symbol; the page shows the ones that apply to the holdings."""
+    from wsb.data import fundamentals as fu
+    rows = (getattr(eng, "sector_health", None) or {}).get("rows") or []
+    led = (getattr(eng, "sector_health", None) or {}).get("ledger") or []
+    return {"lab": {k: [zh.split("：")[0], en.split(":")[0]] for k, zh, en, _f in fu.RULES},
+            "sym": {r["sym"]: [r["flags"], r["m"].get("end")] for r in rows + led if r.get("flags")}}
+
+
 def _rules(eng) -> dict:
     """Public inputs for the holdings rulebook, evaluated in the visitor's browser against THEIR holdings (which never leave
     it): per symbol [200-day average, 12-1 momentum %, 52-week high, 6-month return vs its market index (pp), theme],
@@ -325,7 +334,7 @@ def sec_portfolio(eng) -> str:
     gcid = ((SETTINGS.get("site", {}) or {}).get("google_client_id") or "").strip()
     data = json.dumps({"fx": _fx(eng), "q": _quotes(eng), "gcid": gcid, "hist": _hist_30d(eng),
                        "earn": _earn(eng), "crisis": _crisis(eng), "beta": _beta(eng),
-                       "sym": _sym_stats(eng), "rules": _rules(eng), "macro": _macro(eng), "fac": _fac(eng), "seg": _seg(eng)}, ensure_ascii=False,
+                       "sym": _sym_stats(eng), "rules": _rules(eng), "macro": _macro(eng), "fac": _fac(eng), "seg": _seg(eng), "fund": _fund(eng)}, ensure_ascii=False,
                       separators=(",", ":")).replace("</", "<\\/")
     priv = T("持股與現金預設只存在「這台裝置的這個瀏覽器」，不會上傳、不在程式碼或 GitHub 裡，別人打開同一個網址看不到。"
              "按「用 Google 同步」後，資料會存到你自己 Google 雲端硬碟裡一個只有本網頁能讀的隱藏資料夾，手機和電腦登入同一個 Google 帳號就會自動同步；"
@@ -373,6 +382,7 @@ def sec_portfolio(eng) -> str:
 <div class="pfchk" id="pfchk" style="display:none"></div>
 <div class="pfevt" id="pffac" style="display:none"></div>
 <div class="pfevt" id="pfseg" style="display:none"></div>
+<div class="pfevt" id="pffund" style="display:none"></div>
 <div class="pfearn" id="pfearn" style="display:none"></div>
 <p class="note">{note}</p>
 <script type="application/json" id="pf-data">{data}</script></section>'''
@@ -1211,6 +1221,7 @@ function renderDx(rows, tot, totV, cashT){
  renderChecks(rows);
  renderFactors(rows);
  renderSeg(rows);
+ renderFund(rows);
 }
 
 // ---------------------------------------------------------------- Feature 1: Crisis Replay Simulator
@@ -1588,6 +1599,21 @@ function renderFactors(rows){
   'Moves on '+FAC.asof+': '+td.slice(0,3).map(function(a){return FAC.labels[a[0]][1]+' '+sgn(a[1]*100,2,true);}).join(', ')+'; factors total '+sgn(ex*100,2,true)+(actW>0.9*cov?'. Same-day actual '+sgn(act/actW*100,2,true)+'; the gap is stock-specific.':'. (Quote day differs from the factor day.)')));x.appendChild(p2);
  var nt=el('p','muted small');nt.appendChild(L('依過去約兩年的每日報酬估計；曝險會隨時間改變，不是預測。因子日是最近一個有完整因子資料的交易日，可能比今天早一天。',
   'Estimated from ~2 years of daily returns; exposures drift; not a forecast.'));x.appendChild(nt);
+}
+
+// ---------------------------------------------------------------- 產業體檢 flags of the holdings (public per-symbol data)
+function renderFund(rows){
+ var x=document.getElementById('pffund');if(!x)return;x.textContent='';
+ var F=PUB.fund||{},S=F.sym||{},lab=F.lab||{},got=[];
+ rows.forEach(function(r){var sym=(r.p&&r.p.sym)||r.h.s,f=lookup(S,sym);if(f&&f[0]&&f[0].length)got.push([sym,f]);});
+ if(!got.length){x.style.display='none';return;}
+ x.style.display='block';
+ var hd=el('h3');hd.appendChild(L('🏭 財報壓力（產業體檢）','🏭 Filing strain (sector health)'));x.appendChild(hd);
+ var ul=el('ul','small');got.forEach(function(g){var li=el('li');li.appendChild(el('b','',g[0]+'：'));
+  li.appendChild(L(g[1][0].map(function(k){return (lab[k]||[k])[0];}).join('、')+'（'+(g[1][1]||'')+' 財報）',g[1][0].map(function(k){return (lab[k]||[k,k])[1];}).join(', ')+' ('+(g[1][1]||'')+')'));ul.appendChild(li);});
+ x.appendChild(ul);
+ var nt=el('p','muted small');nt.appendChild(L('依各公司向 SEC 申報的財報，和它自己一年前比較；規則與全部公司見「產業體檢」分頁。壓力不等於會出事。',
+  'From SEC filings vs each company’s own year-ago figures; see the Sector health tab. A flag is not a prediction.'));x.appendChild(nt);
 }
 
 // ---------------------------------------------------------------- revenue exposure (SEC annual reports)

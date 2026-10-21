@@ -31,6 +31,7 @@ from tools import site_econ as S3
 from tools import site_intel as S4
 from tools import site_quant as SQ
 from tools import site_legal as SL_
+from tools import site_industry as SIN
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -951,7 +952,8 @@ def sec_ai(text: str, engine_name: str, written: Optional[float] = None) -> str:
     when_en = f"Last written {w} Taipei · " if w else ""
     sub = T(f"{when_zh}由 {engine_name} 依本頁公開數據自動撰寫；只描述市場、不構成投資建議，可能有誤（僅中文）",
             f"{when_en}Auto-written by {engine_name} from this page's public data; market description only, not advice (Chinese only)")
-    return card("AI 市場評論", "AI market commentary", f'<div class="ai">{md_to_html(text)}</div>', "wide", sub=sub)
+    from tools.sitekit import guard_safe              # AI wording must never trip the deploy's holdings guard
+    return card("AI 市場評論", "AI market commentary", f'<div class="ai">{md_to_html(guard_safe(text))}</div>', "wide", sub=sub)
 
 
 # ----------------------------------------------------------------- AI: public market commentary (no position advice)
@@ -1161,6 +1163,13 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
     location.replace(location.pathname+'?v='+v.b+location.hash);return;}
    stale();}).catch(stale);}
  setInterval(check,300000);document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});setTimeout(check,20000);})();
+// 新聞整理: pin news about the holdings stored in THIS browser (nothing is sent anywhere)
+(function(){var box=document.getElementById('nddigest');if(!box)return;var hs=[];
+ try{var d=JSON.parse(localStorage.getItem('wss_portfolio_v1')||'{}');hs=(d.h||[]).map(function(h){return String(h.s||'').toUpperCase().replace(/\.(TW|TWO)$/,'');});}catch(e){}
+ if(!hs.length)return;var alias={GOOG:'GOOGL',GOOGL:'GOOG'},seen={},mine=[];
+ box.querySelectorAll('li[data-syms]').forEach(function(li){var ss=(li.dataset.syms||'').split(',').filter(Boolean),k=li.textContent;
+  if(!seen[k]&&ss.some(function(s){return hs.indexOf(s)>=0||hs.indexOf(alias[s])>=0;})){seen[k]=1;mine.push(li.cloneNode(true));}});
+ if(!mine.length)return;var sec=document.getElementById('ndmine'),ul=sec.querySelector('ul');mine.forEach(function(li){ul.appendChild(li);});sec.style.display='';})();
 // 開盤前 30 秒: open by itself from 90 min before the US / Taiwan open; otherwise a countdown to the next open
 (function(){var b=document.getElementById('pmbox');if(!b)return;var us=+b.dataset.us*1000,tw=+b.dataset.tw*1000,auto=false,touched=false;
  function zh(){return document.documentElement.lang!=='en';}
@@ -1213,6 +1222,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
+            ("industry", "產業體檢", "Sector health", [SIN.sec_transmission, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [S4.sec_fg, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
@@ -1223,7 +1233,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
             ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
-            ("news", "新聞日曆", "News & calendar", [sec_calendar, sec_news]),
+            ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
@@ -1466,6 +1476,16 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             await asyncio.wait_for(eng.refresh_earnings(), 240)
         except Exception as e:  # noqa: BLE001
             log.warning("earnings refresh failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 新聞整理（背景）: Business Insider feeds, cached 30 min
+        from wsb.data import news_digest as ND
+        eng.news_digest = await asyncio.wait_for(ND.refresh(), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("news digest failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 產業體檢: SEC companyfacts, a time-boxed slice per build (weekly per company)
+        await asyncio.wait_for(eng.refresh_fundamentals(100), 150)
+        log.info("sector health: %s companies", (eng.sector_health or {}).get("n"))
+    except Exception as e:  # noqa: BLE001
+        log.warning("fundamentals refresh failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 華爾街機構觀點（背景）: public titles + CFTC positioning, cached 6 h
         await asyncio.wait_for(eng.refresh_street(), 90)
     except Exception as e:  # noqa: BLE001

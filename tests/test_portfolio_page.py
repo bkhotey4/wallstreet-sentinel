@@ -29,7 +29,7 @@ def main():
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data
-    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta", "sym", "rules", "macro", "fac", "seg"}   # public data only
+    assert set(data) == {"fx", "q", "gcid", "hist", "earn", "crisis", "beta", "sym", "rules", "macro", "fac", "seg", "fund"}   # public data only
     assert all(set(x) <= {"d", "zh", "en", "tpe", "sep"} for x in data["macro"])      # the public US calendar, nothing personal
     for k in ("function pmFill()", "PMF=bi>=0?{k:FAC.keys[bi]", "renderEvents(rows);", "renderChecks(rows);", "fxPrev(c)", "CHK.ratio&&!confirm("):
         assert k in SP.JS, k                                           # event radar, data checks, FX split, typo guard

@@ -81,6 +81,7 @@ class Engine:
         self.model_health: Dict = {}
         self.factors: Dict = {}                          # 風格因子模型 (public per-symbol loadings, factor returns)
         self.dispersion: Dict = {}
+        self.sector_health: Dict = {}
         try:                                             # 華爾街機構觀點（背景）: cached public titles + CFTC positioning
             from .data import street_views as _sv
             self.street: Dict = _sv.load()
@@ -199,6 +200,16 @@ class Engine:
         mine = [h for h in self.holding_tickers() if "." not in h]
         await distress_data.refresh(list(dict.fromkeys(list(dz.watchlist()) + mine)))
 
+    async def refresh_fundamentals(self, budget_s: float = 60) -> None:
+        """產業體檢: SEC companyfacts for the tracked US list + the AI ledger (+ holdings, kept in this machine's cache)."""
+        from .data import fundamentals as fu
+        from .data.stocks import universe as _uni
+        from .analytics import sector_health as sh
+        us = list(((_uni().get("us") or {}).get("symbols") or {}).keys())
+        mine = [h for h in self.holding_tickers() if "." not in h]
+        cache = await fu.refresh(list(dict.fromkeys(us + sh.AI_LEDGER + mine)), budget_s=budget_s)
+        self.sector_health = await asyncio.to_thread(sh.build, self, cache)
+
     async def refresh_street(self) -> None:
         from .data import street_views as sv
         self.street = await sv.refresh()
@@ -232,6 +243,10 @@ class Engine:
                           "street"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
+        try:
+            await self.refresh_fundamentals()                   # 產業體檢 (SEC companyfacts, weekly per company)
+        except Exception as e:  # noqa: BLE001
+            log.warning("extras refresh fundamentals failed: %s", e)
         try:
             await self.refresh_dispersion()                     # after stock prices refreshed (same gather above)
         except Exception as e:  # noqa: BLE001

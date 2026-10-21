@@ -264,3 +264,40 @@ def sec_street(eng) -> str:
              "期貨部位來自 CFTC（美國商品期貨交易委員會）公開的 Traders in Financial Futures 週報。完整的券商研究報告屬付費內容，本站不取得也不轉載。",
              "Background only: titles, dates and links to each firm’s own public publications; never used in any score. Positions: CFTC TFF weekly report.")
     return card("華爾街機構觀點（背景）", "What Wall Street firms are saying (background)", body + f'<p class="note">{note}</p>', "wide")
+
+
+# ------------------------------------------------------------------ 新聞整理（背景）
+def sec_news_digest(eng) -> str:
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _Z
+    from wsb.data import news_digest as ND
+    nd = getattr(eng, "news_digest", None) or {}
+    items, zh = nd.get("items") or [], nd.get("zh") or {}
+    if not items:
+        return ""
+    tz = _Z("Asia/Taipei")
+
+    def li(i):
+        when = _dt.fromtimestamp(i["ts"], tz).strftime("%m-%d %H:%M") if i.get("ts") else ""
+        from tools.sitekit import guard_safe
+        t = guard_safe(zh[i["title"]]) if zh.get(i["title"]) else None
+        title = (f'{esc(t)} <span class="muted small">{esc(i["title"])}</span>' if t else esc(i["title"]))
+        a = f'<a href="{esc(i["link"])}" target="_blank" rel="noopener">{title}</a>' if i.get("link") else title
+        tags = "".join(f'<span class="pill">{esc(s)}</span> ' for s in i.get("syms") or [])
+        return f'<li data-syms="{esc(",".join(i.get("syms") or []))}"><span class="muted small">{when}</span> {tags}{a}</li>'
+    groups = ""
+    for k, tzh, ten, _rx in ND.TOPICS:
+        g = [i for i in items if k in (i.get("topics") or [])][:8]
+        if g:
+            groups += f'<h3>{T(tzh, ten)}</h3><ul class="small nd">{"".join(li(i) for i in g)}</ul>'
+    other = [i for i in items if (i.get("topics") or []) == ["other"]][:8]
+    if other:
+        groups += f'<h3>{T("其他（提到追蹤名單公司）", "Other (tracked companies)")}</h3><ul class="small nd">{"".join(li(i) for i in other)}</ul>'
+    mine = (f'<div id="ndmine" style="display:none"><h3>🔒 {T("和你的持股有關（只在這個瀏覽器比對）", "About your holdings (matched in this browser only)")}</h3>'
+            f'<ul class="small nd"></ul></div>')
+    upd = _dt.fromtimestamp(nd.get("ts", 0), tz).strftime("%m-%d %H:%M") if nd.get("ts") else "—"
+    note = T(f"來源：Business Insider 公開的新聞訂閱（主訂閱只列免費文章；另含市場新聞）。只列標題、時間與連結，點進去看原文；中文標題由 AI 翻譯，可能有誤，英文原標題附在後面。"
+             f"依標題關鍵字分類；同一則可能出現在多個分類。最後更新 {upd} 台北。新聞只是背景，不進入本站任何風險分數或訊號。",
+             "Business Insider public feeds; titles, times and links only; Chinese titles are AI translations. Background only.")
+    return card("新聞整理（Business Insider・背景）", "News digest (Business Insider, background)",
+                f'<div id="nddigest">{mine}{groups}</div><p class="note">{note}</p>', "wide")

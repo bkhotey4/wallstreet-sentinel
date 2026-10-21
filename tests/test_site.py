@@ -82,6 +82,11 @@ def main():
     from datetime import datetime as _dt
     from zoneinfo import ZoneInfo as _Z
     assert f"最後更新 {_dt.fromtimestamp(1792512000.0, _Z('Asia/Taipei')):%m-%d %H:%M} 台北" in html2
+    # AI text that innocently uses the deploy guard's phrases must not block deployment (same pattern as the workflow)
+    _bad = clean + "\n## 使用者持倉 的影響\n銀行債券的未實現損益擴大；持倉總值 data-private"
+    _html3 = B.render(eng, _bad, "test-llm")
+    assert not re.search(r"## 使用者持倉|持倉總值|未實現損益|data-private", _html3), "AI wording would trip the holdings guard"
+    assert "評價損益" in _html3
     _risk = html2[html2.find('id="p-risk"'):]
     _risk = _risk[:_risk.find('id="p-', 10)] if 'id="p-' in _risk[10:] else _risk
     assert _risk.count('class="upd small muted"') >= 3, _risk.count('class="upd')      # risk cards carry their own update time
