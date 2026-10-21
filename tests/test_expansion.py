@@ -358,7 +358,11 @@ def main():
     out, snap = tmp / "site", tmp / "snapdir"
     B.update_snapshots.__globals__["SETTINGS"].raw.setdefault("snapshots", {})["min_hour"] = 0
     from unittest.mock import AsyncMock, patch
-    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})):
+    # the build's live sources (SEC, Cboe, CFTC, Business Insider) are tested by their own parser tests; here they are
+    # stubbed so this test never depends on the network or a slow API
+    for _m in ("refresh_segments", "refresh_dispersion", "refresh_street", "refresh_fundamentals"):
+        setattr(eng, _m, AsyncMock(return_value=None))
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})),             patch("wsb.data.news_digest.refresh", AsyncMock(return_value={})):
         p = asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
     page = p.read_text(encoding="utf-8")
     for k in ("scores", "gurus", "bonds", "rotation", "history"):
@@ -395,7 +399,8 @@ def main():
     assert all("since_pct" in r for m in pub["signals"].values() for r in m["rows"]), "published snapshot carries since-returns"
     ix = json.loads((out / "snap" / "index.json").read_text(encoding="utf-8"))
     assert len(ix) == 1 and ix[0]["date"] == s["date"] and (out / "snap" / files[0].name).exists()
-    asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})),             patch("wsb.data.news_digest.refresh", AsyncMock(return_value={})):
+        asyncio.run(B.build(out, use_ai=False, engine=eng, snapdir=snap))
     assert len(list(snap.glob("20??-??-??.json"))) == 1, "one snapshot per day"
     for word in ("持倉總值", "未實現", "data-private"):
         assert word not in page, word
