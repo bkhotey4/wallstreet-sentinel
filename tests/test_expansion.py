@@ -107,6 +107,17 @@ def test_parsers():
                  "bidToCoverRatio": "", "competitiveAccepted": ""})
     j = TR.judge(TR.parse_auctions(rows))
     assert len(j) == 7 and j[0]["verdict"] == "偏弱" and j[1]["verdict"] == "正常" and j[-1]["verdict"] is None
+    # TreasuryDirect's Oct-2026 schema: old fields empty, new ...CompetitiveParAwarded / competitiveAuctionCloseDate filled
+    new = [{"securityType": "Note", "floatingRate": "No", "inflationProtected": None, "auctionDate": None, "competitiveAccepted": None,
+            "competitiveAuctionCloseDate": "2026-10-07T00:00:00", "securityTerm": "9-Year 10-Month", "originalSecurityTerm": "10-Year",
+            "highYield": "5.300", "bidToCoverRatio": "2.77", "cusip": "91282CRF0", "offeringAmount": "39000000000",
+            "subtotalCompetitiveParAwardedInsideOfOfferingAmount": "38665438000", "primaryDealersCompetitiveParAwarded": "984000000",
+            "indirectBiddersCompetitiveParAwarded": "31063238000", "directBiddersCompetitiveParAwarded": "6618200000"},
+           {"securityType": "Note", "inflationProtected": "Yes", "competitiveAuctionCloseDate": "2026-10-01T00:00:00", "highYield": "2",
+            "bidToCoverRatio": "2", "subtotalCompetitiveParAwardedInsideOfOfferingAmount": "1", "cusip": "TIPSNEW"}]
+    pn = TR.parse_auctions(new)
+    assert len(pn) == 1 and pn[0]["date"] == "2026-10-07" and pn[0]["term"] == "10-Year"
+    assert abs(pn[0]["dealer"] + pn[0]["indirect"] + pn[0]["direct"] - 100) < 0.5 and abs(pn[0]["indirect"] - 80.3) < 0.1
     print("  parsers ok (news tone, 13F, Form 4, auctions)")
 
 

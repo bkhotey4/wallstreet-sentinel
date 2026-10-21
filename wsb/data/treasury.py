@@ -41,18 +41,27 @@ def _n(x) -> Optional[float]:
 
 def parse_auctions(rows: List[Dict]) -> List[Dict]:
     out = []
+
+    def pick(x, *keys):                                 # TreasuryDirect renamed its fields in Oct 2026: accept both schemas
+        for k in keys:
+            v = x.get(k)
+            if v not in (None, ""):
+                return v
+        return None
     for x in rows or []:
-        if str(x.get("tips", "No")).lower() == "yes" or str(x.get("floatingRate", "No")).lower() == "yes":
+        if any(str(x.get(k) or "No").lower() == "yes" for k in ("tips", "inflationProtected", "floatingRate")):
             continue
-        comp = _n(x.get("competitiveAccepted"))
+        comp = _n(pick(x, "competitiveAccepted", "subtotalCompetitiveParAwardedInsideOfOfferingAmount"))
         btc, hy = _n(x.get("bidToCoverRatio")), _n(x.get("highYield"))
         if not comp or btc is None or hy is None:          # announced but not yet auctioned
             continue
-        share = lambda k: (_n(x.get(k)) or 0) / comp * 100  # noqa: E731
-        out.append({"date": str(x.get("auctionDate", ""))[:10], "term": x.get("originalSecurityTerm") or x.get("securityTerm"),
+        share = lambda *k: (_n(pick(x, *k)) or 0) / comp * 100  # noqa: E731
+        out.append({"date": str(pick(x, "auctionDate", "competitiveAuctionCloseDate") or "")[:10],
+                    "term": x.get("originalSecurityTerm") or x.get("securityTerm"),
                     "label": x.get("securityTerm"), "reopen": str(x.get("reopening", "No")).lower() == "yes",
-                    "high_yield": hy, "btc": btc, "dealer": share("primaryDealerAccepted"),
-                    "indirect": share("indirectBidderAccepted"), "direct": share("directBidderAccepted"),
+                    "high_yield": hy, "btc": btc, "dealer": share("primaryDealerAccepted", "primaryDealersCompetitiveParAwarded"),
+                    "indirect": share("indirectBidderAccepted", "indirectBiddersCompetitiveParAwarded"),
+                    "direct": share("directBidderAccepted", "directBiddersCompetitiveParAwarded"),
                     "size_bn": (_n(x.get("offeringAmount")) or 0) / 1e9, "cusip": x.get("cusip")})
     return sorted({(a["date"], a["cusip"]): a for a in out}.values(), key=lambda a: a["date"], reverse=True)
 

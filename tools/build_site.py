@@ -913,11 +913,44 @@ def sec_quality(eng) -> str:
     return card("模型可信度與資料健康", "Model credibility & data health", body, "wide")
 
 
-def sec_ai(text: str, engine_name: str) -> str:
+def _stamp(eng, fname: str) -> str:
+    """風險模型 cards: when THIS card's numbers were computed (they refresh on different schedules) + its data date."""
+    tz = ZoneInfo("Asia/Taipei")
+    rc = float(getattr(eng, "recompute_ts", 0) or 0) or time.time()
+    asof = data_asof(eng)[0]
+    if fname == "sec_canary":
+        cn = getattr(eng, "canary", None) or {}
+        ts = cn.get("ts") or rc
+        ds = [str(r.get("asof")) for r in cn.get("rows", []) if r.get("asof")]
+        asof = max(ds) if ds else asof
+    elif fname == "sec_quality":
+        ts = float(getattr(eng, "_quality_ts", 0) or 0) or (getattr(eng, "lab", None) or {}).get("ts") or rc
+    elif fname == "sec_model_health":
+        ts = (getattr(eng, "model_health", None) or {}).get("ts") or rc
+    elif fname == "sec_macro":
+        ts = rc
+        try:
+            ds = [str((eng.fred.latest(sid) or {}).get("date") or "") for sid in SETTINGS.get("fred_series", {})]
+            asof = max(d for d in ds if d) or asof
+        except Exception:  # noqa: BLE001
+            pass
+    elif fname in ("sec_shock", "sec_playbook_breaks", "sec_distress"):
+        ts = rc
+    else:
+        return ""
+    when = datetime.fromtimestamp(float(ts), tz).strftime("%m-%d %H:%M")
+    return (f'<p class="upd small muted">{T("最後更新", "Updated")} {when} {T("台北", "Taipei")}'
+            + (f'・{T("資料日", "data as of")} {esc(str(asof))}' if asof else "") + "</p>")
+
+
+def sec_ai(text: str, engine_name: str, written: Optional[float] = None) -> str:
     if not text:
         return ""
-    sub = T(f"由 {engine_name} 依本頁公開數據自動撰寫；只描述市場、不構成投資建議，可能有誤（僅中文）",
-            f"Auto-written by {engine_name} from this page's public data; market description only, not advice (Chinese only)")
+    w = datetime.fromtimestamp(written, ZoneInfo("Asia/Taipei")).strftime("%m-%d %H:%M") if written else None
+    when_zh = f"最後更新 {w} 台北・" if w else ""                  # the commentary is rewritten at most every ~55 min, so it can be older than the page
+    when_en = f"Last written {w} Taipei · " if w else ""
+    sub = T(f"{when_zh}由 {engine_name} 依本頁公開數據自動撰寫；只描述市場、不構成投資建議，可能有誤（僅中文）",
+            f"{when_en}Auto-written by {engine_name} from this page's public data; market description only, not advice (Chinese only)")
     return card("AI 市場評論", "AI market commentary", f'<div class="ai">{md_to_html(text)}</div>', "wide", sub=sub)
 
 
@@ -1197,7 +1230,19 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
     nav, panels = [], []
     for i, (key, zh, en, fs) in enumerate(tabs):
-        html_ = "".join(sec_ai(ai_text, ai_engine) if f is None else _safe_section(f, eng) for f in fs)
+        def _one(f):
+            if f is None:
+                return sec_ai(ai_text, ai_engine, getattr(eng, "ai_written", None))
+            h = _safe_section(f, eng)
+            if key == "risk" and h and "</section>" in h:          # each risk card says when its own numbers were computed
+                try:
+                    st = _stamp(eng, getattr(f, "__name__", ""))
+                except Exception:  # noqa: BLE001
+                    st = ""
+                i_ = h.rfind("</section>")
+                h = h[:i_] + st + h[i_:]
+            return h
+        html_ = "".join(_one(f) for f in fs)
         if not html_.strip():
             html_ = f'<section class="card wide"><p class="muted">{T("這一頁的資料暫時取不到", "No data for this page right now")}</p></section>'
         nav.append(f'<a class="ptab{" on" if i == 0 else ""}" href="#{key}" data-p="{key}" data-en="{esc(en)}">{esc(zh)}</a>')
@@ -1374,15 +1419,20 @@ async def ai_commentary_cached(eng, now: Optional[float] = None) -> Tuple[str, s
     moved = ssi is not None and c.get("ssi") is not None and abs(float(ssi) - float(c["ssi"])) >= jump
     if fresh and not moved:
         log.info("AI commentary reused (%.0f min old)", (now - float(c["ts"])) / 60)
+        eng.ai_written = float(c["ts"])
         return c["text"], c.get("engine", "")
     text, name = await ai_commentary(eng)
     if text:
         try:
             p.write_text(json.dumps({"ts": now, "text": text, "engine": name, "ssi": ssi}, ensure_ascii=False), encoding="utf-8")
+            eng.ai_written = now
         except OSError as e:
             log.warning("AI commentary cache not saved: %s", e)
         return text, name
-    return (c.get("text", ""), c.get("engine", "")) if c.get("text") and now - float(c.get("ts", 0)) < 3 * ttl else ("", "")
+    if c.get("text") and now - float(c.get("ts", 0)) < 3 * ttl:          # the new write failed: an older one, with its own time
+        eng.ai_written = float(c.get("ts", 0))
+        return c.get("text", ""), c.get("engine", "")
+    return "", ""
 
 
 SOFT_BUDGET_S = 30 * 60      # Actions job times out at 40 min: past this, skip the (slow, optional) AI steps so the site still ships
