@@ -125,6 +125,10 @@ universe:
     "VUG": 成長因子
     "QUAL": 品質因子
 
+# 有版權限制的 FRED 序列（ICE BofA 利差、Moody's）：公開網站與公開 AI 評論只顯示衍生指標（百分位、變化方向），
+# 不顯示原始數值；計算（壓力指數、信用循環）照常使用。私人 Discord 不受影響。
+fred_restricted: [BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A3HYC, BAMLH0A1HYBB, BAA10Y]
+
 # ---------- FRED 總經 / 信用 / 流動性序列 ----------
 fred_series:
   BAMLH0A0HYM2: 高收益債利差 OAS

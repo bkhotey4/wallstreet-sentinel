@@ -10,6 +10,8 @@ Two kinds:
 Everything is model data; no headline enters any light."""
 from __future__ import annotations
 
+from ..data import fred as FR  # noqa: E402
+
 import json
 import logging
 import time
@@ -142,6 +144,7 @@ def score_lights(eng) -> List[Dict]:
         s_ok = sc.dropna()
         rows.append({"id": cid, "group": grp, "zh": zh, "en": en, "why": why, "kind": "score", "state": state,
                      "score": None if cur is None else round(cur, 1), "value": None if v is None else round(v, 2), "unit": unit,
+                     "licensed": FR.restricted_component(c),          # public page: score only, no raw ICE / Moody's value
                      "asof": comp.asof if comp else None, "status": comp.status if comp else "na",
                      "rate": round(float((s_ok >= WATCH).mean() * 100), 1) if len(s_ok) else None,
                      "since": s_ok.index[0].strftime("%Y-%m") if len(s_ok) else None,

@@ -167,7 +167,7 @@ def overlay_published(data, quotes):
         if is_new:          # never scanned (ETFs, small caps): a price, not a stale signal
             r.update(st="quote_only", stl="僅報價", why="未納入技術掃描，只提供官方收盤價", tier=None)
         elif not history_day or q["asof"] != history_day or different_basis:
-            r.update(st="stale", stl="技術資料待更新", why="報價與技術資料日期不同或技術日期不明，暫不顯示進場區間", tier=None)
+            r.update(st="stale", stl="技術資料待更新", why="報價與技術資料日期不同或技術日期不明，暫不顯示參考區間", tier=None)
             for key in ("pk", "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "when", "zb", "tg", "ex"):
                 r[key] = None
         rows[sym] = r

@@ -163,7 +163,21 @@ def test_premarket():
     assert 'id="pmbox"' in html and "pmmine" in html and "不預測漲跌方向" in html and "±1.13%" in html
 
 
+def test_licensing():
+    from wsb.data import fred as FR
+    from tools import site_legal as LG
+    assert FR.restricted("BAMLH0A0HYM2") and FR.restricted("BAA10Y") and not FR.restricted("DGS10")
+    assert FR.restricted_component({"src": "fred", "series": "BAMLH0A3HYC", "kind": "level"})
+    assert FR.restricted_component({"src": "fred", "series": "DGS10", "kind": "spread:BAMLH0A1HYBB"})   # the other leg counts
+    assert not FR.restricted_component({"src": "px", "series": "HYG", "kind": "level"})
+    assert FR.direction(0.3) == "擴大" and FR.direction(-0.1) == "收斂" and FR.direction(None) == "—"
+    t = LG.sec_terms(None) + LG.sec_privacy(None)
+    assert "不是投資建議" in t and "github.com/bkhotey4/wallstreet-sentinel/issues" in t and "drive.appdata" in t and "ICE Data Indices" in t
+    assert "&lt;b&gt;" not in t and "&lt;code&gt;" not in t                    # no escaped markup leaking into the text
+
+
 def main():
+    test_licensing()
     test_premarket()
     test_factors()
     test_segments()

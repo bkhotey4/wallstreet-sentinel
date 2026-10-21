@@ -128,6 +128,15 @@ class FredData:
             out["pctile_3y"] = float((tail < s.iloc[-1]).mean() * 100)
         return out
 
+    def change_pctile(self, sid: str, days: int = 21, years: int = 3) -> float | None:
+        """Where the latest `days`-observation change sits among the last `years` of such changes (0–100)."""
+        s = self.get(sid).dropna()
+        if len(s) <= days + 60:
+            return None
+        ch = (s - s.shift(days)).dropna()
+        tail = ch[ch.index >= ch.index[-1] - pd.Timedelta(days=365 * years)]
+        return float((tail < ch.iloc[-1]).mean() * 100) if len(tail) > 60 else None
+
     def net_liquidity(self) -> pd.Series:
         """Fed balance sheet − TGA − RRP (USD bn). Classic risk-asset liquidity proxy."""
         walcl, tga, rrp = self.get("WALCL"), self.get("WTREGEN"), self.get("RRPONTSYD")
@@ -141,3 +150,22 @@ class FredData:
         }).dropna()
         last = min(walcl.index.max(), tga.index.max(), rrp.index.max())   # freshness = the stalest input
         return (df["walcl"] - df["tga"] - df["rrp"]).rename("net_liquidity").loc[:last + pd.Timedelta(days=14)]
+
+
+def restricted(sid: str) -> bool:
+    """Series whose raw values may not be republished (ICE BofA indices, Moody's): show derived figures only."""
+    from ..config import SETTINGS
+    return sid in set(SETTINGS.get("fred_restricted") or [])
+
+
+def direction(chg) -> str:
+    return "—" if chg is None else ("擴大" if chg > 0 else "收斂" if chg < 0 else "持平")
+
+
+def restricted_component(c: dict) -> bool:
+    """A stress / canary component built on a licensed series (its own series or the other leg of a spread)."""
+    import re
+    if not c or c.get("src") != "fred":
+        return False
+    m = re.match(r"spread:([^:]+)", str(c.get("kind") or ""))
+    return restricted(str(c.get("series") or "")) or bool(m and restricted(m.group(1)))

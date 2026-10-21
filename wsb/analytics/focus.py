@@ -293,10 +293,15 @@ def credit(eng) -> Optional[Dict]:
         x = x.dropna()
         return (float(x.iloc[-1]), float(x.iloc[-1] - x.iloc[-1 - n])) if len(x) > n else (float(x.iloc[-1]), None)
     (c, dc), (b, db) = chg(ccc), chg(bb)
-    data = [f"CCC 級利差 {c:.2f}%（1 個月 {dc:+.2f}）、BB 級 {b:.2f}%（{db:+.2f}）" if dc is not None and db is not None else f"CCC {c:.2f}%、BB {b:.2f}%"]
+    # ICE BofA indices are licensed: the page shows percentiles and directions, never the raw spreads
+    pc = (lambda sid: fr.change_pctile(sid)) if hasattr(fr, "change_pctile") else (lambda sid: None)  # noqa: E731
+    pcc, pcb = pc("BAMLH0A3HYC"), pc("BAMLH0A1HYBB")
+    word = lambda d: "擴大" if d and d > 0 else "收斂" if d and d < 0 else "持平"  # noqa: E731
+    data = [f"CCC 級利差 1 個月{word(dc)}（變化幅度位於近 3 年第 {pcc:.0f} 百分位）、BB 級{word(db)}" + (f"（第 {pcb:.0f} 百分位）" if pcb is not None else "")
+            if dc is not None and db is not None and pcc is not None else f"CCC 級利差 1 個月{word(dc)}、BB 級{word(db)}"]
     if hy is not None and len(hy.dropna()):
         h, dh = chg(hy)
-        data.append(f"整體高收益債利差 {h:.2f}%" + (f"（1 個月 {dh:+.2f}）" if dh is not None else ""))
+        data.append(f"整體高收益債利差 1 個月{word(dh)}")
     if dc is None or db is None:
         return None
     hidden, score, nxt = [], 35, ["BB 級利差是否跟著擴大", "高收益債 ETF（HYG）是否破底"]
@@ -312,7 +317,8 @@ def credit(eng) -> Optional[Dict]:
     if not hidden:
         return None
     return _item("credit", score, "信用市場", data, hidden, nxt, "FRED（ICE BofA 利差）",
-                 cat="信用", kpi=f"{dc:+.2f} pp", kpi_sub=f"CCC 級利差 1 個月（現 {c:.2f}%）・BB {db:+.2f}")
+                 cat="信用", kpi=(f"第 {pcc:.0f} 百分位" if pcc is not None else word(dc)),
+                 kpi_sub=f"CCC 利差 1 個月{word(dc)}幅度（近 3 年）・BB {word(db)}・ICE 版權資料只列百分位")
 
 
 # ---------------------------------------------------------------- 7) canaries, stress, hedges

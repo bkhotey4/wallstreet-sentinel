@@ -24,7 +24,7 @@ from ..config import DATA_DIR, SETTINGS
 log = logging.getLogger(__name__)
 LEDGER = DATA_DIR / "signal_ledger.json"
 HORIZONS = (5, 20, 60)
-KINDS = {"A": ("★ 規則精選", "★ Top setup", 1), "B": ("在進場區內", "In the entry zone", 1),
+KINDS = {"A": ("★ 條件最齊全", "★ All conditions met", 1), "B": ("在參考區間內", "In the reference zone", 1),
          "C": ("有訊號・等拉回", "Signal — wait for a pullback", 1), "exh": ("過熱（≥2 個力竭警示）", "Overheated (≥2 exhaustion flags)", -1)}
 
 

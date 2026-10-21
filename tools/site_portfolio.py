@@ -331,7 +331,7 @@ def sec_portfolio(eng) -> str:
 <th>{T("代號", "Ticker")}</th><th>{T("名稱", "Name")}</th><th class="r">{T("股數", "Shares")}</th><th class="r">{T("現價", "Price")}</th>
 <th class="r">{T("今日", "Today")}</th><th class="r">{T("今日損益", "Today P&L")}</th><th class="r">{T("市值", "Value")}</th>
 <th class="r">{T("市值（台幣）", "Value (TWD)")}</th><th class="r">{T("成本", "Cost")}</th><th class="r">{T("帳面損益", "Unrealized")}</th>
-<th class="r">{T("報酬", "Return")}</th><th class="r">{T("防守 / 停利", "Defense / Target")}</th><th class="r">{T("權重", "Weight")}</th><th></th></tr></thead><tbody></tbody></table></div>
+<th class="r">{T("報酬", "Return")}</th><th class="r">{T("波動參考價（下／上）", "Volatility levels (low / high)")}</th><th class="r">{T("權重", "Weight")}</th><th></th></tr></thead><tbody></tbody></table></div>
 <div class="pfforms">
 <form id="pfadd" class="pfrow" autocomplete="off"><b>{T("新增／更新持股", "Add / update a holding")}</b>
 <input name="s" placeholder="NVDA / 2330 / 0700.HK" required maxlength="16" aria-label="ticker">
@@ -926,11 +926,11 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
     var tgtPx = cost * (1 + tgtPct);
     if(p.px <= stopPx){
      var hit = el('span', 's-hit dn');
-     hit.appendChild(L('⚠️ 觸及防守', '⚠️ Stop'));
+     hit.appendChild(L('⚠️ 觸及下方參考價', '⚠️ At the lower level'));
      box.appendChild(hit);
     } else if(p.px >= tgtPx){
      var hit2 = el('span', 's-hit up');
-     hit2.appendChild(L('🎯 達第一停利', '🎯 Target'));
+     hit2.appendChild(L('🎯 達上方參考價', '🎯 At the upper level'));
      box.appendChild(hit2);
     }
     var stpLine = el('span', 's-stp');
@@ -1751,8 +1751,8 @@ function renderEarnings(rows, tot){
  tip.style.marginTop = '10px';
  tip.appendChild(el('span', 'ico', '💡'));
  var tipDesc = el('div', 'desc');
- tipDesc.appendChild(L('財報避震提醒：倒數 7 天以內的持股若單檔對淨值衝擊 > ±2.5%，公布當日跳空容易造成總資產劇烈洗盤。可考慮在公布前保留部分現金或設定防守防護。',
-                       'Earnings Risk Tip: If implied move impacts NAV by > ±2.5%, consider building cash buffer or setting stops before announcement.'));
+ tipDesc.appendChild(L('財報影響提醒：倒數 7 天內、單檔對淨值影響超過 ±2.5% 的持股，公布當天的跳空會明顯牽動總資產。這是曝險提示，要不要調整由你依自己的規則決定。',
+                       'Earnings note: a holding reporting within 7 days whose implied move is > ±2.5% of NAV will visibly move your total. An exposure note, not advice.'));
  tip.appendChild(tipDesc);
  x.appendChild(tip);
 }

@@ -108,7 +108,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
         else:
             row.update({"st": "nodata", "stl": "資料不足", "why": "上市未滿約三個月，資料太少", "str": 0})
         rows.append(row)
-    cfp = SG.pick_cfg()                                              # ★ 規則精選: top n per market among qualifying signals
+    cfp = SG.pick_cfg()                                              # ★ 條件最齊全: top n per market among qualifying signals
     cand = sorted([r for r in rows if r.get("st") == "signal" and SG.pick_ok(
         r.get("pat"), r.get("str"), bool(r.get("inz")), (r["tgtp"] / r["risk"]) if r.get("tgtp") and r.get("risk") else None,
         r.get("risk"), cfp)], key=lambda r: -(r.get("str") or 0))

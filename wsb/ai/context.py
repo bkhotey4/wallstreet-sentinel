@@ -228,7 +228,10 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         L.append("## FRED 總經/信用/流動性")
         for sid, name in SETTINGS.get("fred_series", {}).items():
             x = engine.fred.latest(sid)
-            if x:
+            from ..data.fred import direction as _dir, restricted as _rs
+            if x and not private and _rs(sid):           # licensed series: the public AI gets direction + percentile only
+                L.append(f"{name}({sid}) 版權資料不列數值 @{x['date']} 1M {_dir(x['chg_1m'])} 3M {_dir(x['chg_3m'])} 3年百分位 {f(x.get('pctile_3y'), 0)}")
+            elif x:
                 L.append(f"{name}({sid}) {f(x['value'], 3)} @{x['date']} 1M {f(x['chg_1m'], 3, sign=True)} "
                          f"3M {f(x['chg_3m'], 3, sign=True)} 1Y {f(x['chg_1y'], 3, sign=True)} 3年百分位 {f(x.get('pctile_3y'), 0)}")
     groups = {

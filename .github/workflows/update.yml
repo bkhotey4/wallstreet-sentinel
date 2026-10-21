@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false     # a running build always finishes; newer requests wait (only the latest waiting one is kept)
 
 permissions:
-  contents: write        # 只用來把每日快照（時光機）推到 data 分支；main 分支不會被 Actions 改動
+  contents: read         # 快照改存私有快取，Actions 不再寫入 repo
   pages: write
   id-token: write
 
@@ -59,6 +59,7 @@ jobs:
             data_cache/signals_seen.json
             data_cache/signal_ledger.json
             data_cache/sec_segments.json
+            data_cache/snap
             data_cache/twse_t86.json
             data_cache/gurus.json
             data_cache/insiders.json
@@ -72,15 +73,13 @@ jobs:
           key: data-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: data-
 
-      # 時光機：每日快照存在獨立的 data 分支（不存在就自動建立），不會碰到 main 分支的程式
-      - name: 取出快照分支
-        env:
-          GH_TOKEN: ${{ github.token }}
+      # 時光機：每日快照存在 GitHub Actions 的私有快取（不放在公開 repo）。第一次執行時從舊的 data 分支搬一次
+      - name: 準備快照資料夾
         run: |
-          mkdir -p _data && cd _data && git init -q -b data
-          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-          git fetch -q --depth=1 origin data && git checkout -q -B data FETCH_HEAD || echo "data 分支尚未建立，第一次快照時建立"
-          mkdir -p snap
+          mkdir -p data_cache/snap
+          if [ -z "$(ls -A data_cache/snap 2>/dev/null)" ]; then
+            git fetch -q --depth=1 origin data 2>/dev/null && git archive FETCH_HEAD snap | tar -x -C data_cache && echo "已從舊 data 分支搬入 $(ls data_cache/snap | wc -l) 份快照" || echo "沒有舊快照可搬"
+          fi
 
       - name: 產生網站
         env:
@@ -92,18 +91,7 @@ jobs:
         run: |
           if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
           FM="--fullmarket"; if [ "${{ inputs.fast }}" = "true" ]; then FM=""; fi
-          python -m tools.build_site --out site --snapdir _data/snap $FM $FLAG
-
-      - name: 儲存新快照
-        if: success()
-        run: |
-          cd _data
-          git config user.name "intel-station-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add snap
-          if git diff --cached --quiet; then echo "今天的快照已存在，略過"; exit 0; fi
-          git commit -q -m "快照 $(date -u +%F)"
-          git push -q origin data || echo "快照推送失敗（下次執行會再試）"
+          python -m tools.build_site --out site --snapdir data_cache/snap $FM $FLAG
 
       - name: 儲存資料快取
         if: ${{ !cancelled() }}
@@ -122,6 +110,7 @@ jobs:
             data_cache/signals_seen.json
             data_cache/signal_ledger.json
             data_cache/sec_segments.json
+            data_cache/snap
             data_cache/twse_t86.json
             data_cache/gurus.json
             data_cache/insiders.json

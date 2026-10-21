@@ -30,6 +30,9 @@ from tools import site_sections as S2
 from tools import site_econ as S3
 from tools import site_intel as S4
 from tools import site_quant as SQ
+from tools import site_legal as SL_
+from wsb.data import fred as FR
+CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
 from tools import site_portfolio as SP
 from tools.sitekit import (WORD_EN, T, _CHARTS, card, cls, esc, line_chart, nice_ticks, num, spark,  # noqa: F401
@@ -397,7 +400,11 @@ def sec_macro(eng) -> str:
         x = eng.fred.latest(sid)
         if x and str(x.get("date") or "9999") < (pd.Timestamp.today() - pd.Timedelta(days=400)).strftime("%Y-%m-%d"):
             continue                         # discontinued series kept only to extend history (e.g. IOER before IORB)
-        if x:
+        if x and FR.restricted(sid):         # licensed index (ICE BofA / Moody's): no raw values on the public page
+            rows += (f'<tr><td>{T(name, sid)} <span class="muted small">{T("（版權資料，只列方向與百分位）", "(licensed: direction & percentile only)")}</span></td>'
+                     f'<td class="r muted">—</td><td class="r">{FR.direction(x.get("chg_1m"))}</td>'
+                     f'<td class="r muted">{num(x.get("pctile_3y"), 0)}</td><td class="r muted small">{esc(str(x.get("date") or "—"))}</td></tr>')
+        elif x:
             dg = 0 if abs(x["value"]) >= 1000 else 3
             rows += (f'<tr><td>{T(name, sid)}</td><td class="r">{num(x["value"], dg)}</td><td class="r {cls(x.get("chg_1m"))}">{num(x.get("chg_1m"), dg, sign=True)}</td>'
                      f'<td class="r muted">{num(x.get("pctile_3y"), 0)}</td><td class="r muted small">{esc(str(x.get("date") or "—"))}</td></tr>')
@@ -712,7 +719,8 @@ def sec_indicators(eng) -> str:
                          f'<td colspan="2" class="muted small">{T("未納入：" + stt, "excluded: " + stt)}</td></tr>')
                 continue
             col = LEVEL_COLORS[level_idx(c.score)]
-            rows += (f'<tr><td>{T(zh, en)}</td><td class="r">{fmt_raw(c.raw)}</td><td class="r {cls(c.z)}">{num(c.z, 1, sign=True)}</td>'
+            lic = FR.restricted_component(CFG_BY_ID.get(c.id) or {})          # licensed ICE / Moody's: score, not the raw spread
+            rows += (f'<tr><td>{T(zh, en)}</td><td class="r">{"<span class=muted title=版權資料>—</span>" if lic else fmt_raw(c.raw)}</td><td class="r {cls(c.z)}">{num(c.z, 1, sign=True)}</td>'
                      f'<td class="r"><b>{c.score:.0f}</b></td><td><div class="meter"><i style="width:{min(c.score, 100):.0f}%;background:{col}"></i></div></td></tr>')
         bs = st.blocks.get(b)
         head = f'{T(b, BLOCK_EN.get(b))} <span class="muted">{"—" if bs is None else f"{bs:.0f}"}</span>'
@@ -1185,7 +1193,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("news", "新聞日曆", "News & calendar", [sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
-            ("inputs", "指標明細", "All inputs", [sec_indicators])]
+            ("inputs", "指標明細", "All inputs", [sec_indicators]),
+            ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
     nav, panels = [], []
     for i, (key, zh, en, fs) in enumerate(tabs):
         html_ = "".join(sec_ai(ai_text, ai_engine) if f is None else _safe_section(f, eng) for f in fs)
@@ -1213,7 +1222,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
-<main class="wrap">{strip}{"".join(panels)}<footer>{foot}</footer></main>
+<main class="wrap">{strip}{"".join(panels)}<footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>
 <script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}</script></body></html>'''
 

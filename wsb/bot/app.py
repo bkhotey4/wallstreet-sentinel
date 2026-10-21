@@ -931,7 +931,7 @@ class Sentinel(commands.Bot):
             for m, r in fresh[:mx]:
                 h = r["patterns"][0]
                 out.append(Alert(f"push:signal:{r['sym']}:{h['pattern']}:{m['asof']}", "ℹ️ INFO",
-                                 f"技術面訊號{'（★規則精選）' if r.get('pick') else ''}：{m['label']} {r['name']}（{r['code']}）{h['label']}，強度 {r['strength']:.0f}",
+                                 f"技術面訊號{'（★條件最齊全）' if r.get('pick') else ''}：{m['label']} {r['name']}（{r['code']}）{h['label']}，強度 {r['strength']:.0f}",
                                  f"族群 {r.get('theme', '—')}｜現價 {r['price']:.2f}"
                                  + (f"｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}" if h.get("plan") else "")
                                  + f"｜失效線 {r['inv']:.2f}（距離 -{r['risk_pct']:.1f}%）"
@@ -1549,7 +1549,7 @@ def register_commands(bot: Sentinel) -> None:
                           description=f"資料日 {m['asof']}｜掃描 {m['n_universe']} 檔、{len(m['rows'])} 檔有訊號｜"
                                       "規則篩選，不是買賣建議；收盤跌破失效線＝型態失敗")
         tc = m.get("tiers") or {}
-        e.description += f"\n在進場區內 {tc.get('A', 0) + tc.get('B', 0)}｜等拉回 {tc.get('C', 0)}｜快成立 {tc.get('D', 0)}"
+        e.description += f"\n在參考區間內 {tc.get('A', 0) + tc.get('B', 0)}｜等拉回 {tc.get('C', 0)}｜快成立 {tc.get('D', 0)}"
         lines = []
         for r in [x for x in m["rows"] if x.get("tier") in ("A", "B")][:10]:
             h = r["patterns"][0]
@@ -1558,7 +1558,7 @@ def register_commands(bot: Sentinel) -> None:
                          f"└ 現價 {r['price']:.2f}｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}"
                          f"（{'在區內' if h['plan']['in_zone'] else '區外'}）｜失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）")
         for i in range(0, len(lines), 5):
-            e.add_field(name=f"在進場區內（{i + 1}–{min(i + 5, len(lines))}）", value="\n".join(lines[i:i + 5])[:1024], inline=False)
+            e.add_field(name=f"在參考區間內（{i + 1}–{min(i + 5, len(lines))}）", value="\n".join(lines[i:i + 5])[:1024], inline=False)
         cs = [r for r in m["rows"] if r.get("tier") == "C"][:8]
         if cs:
             e.add_field(name="等拉回（區間可當掛單參考）", inline=False, value="\n".join(

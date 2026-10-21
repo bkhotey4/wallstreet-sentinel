@@ -130,8 +130,9 @@ def credit(fred) -> Dict:
     if hy:
         lvl = hy.get("pctile_3y")
         chg = hy["chg_3m"] * 100 if hy.get("chg_3m") is not None else None
-        ev.append(f"高收益債利差 {hy['value']:.2f}%（3 年百分位 " + (f"{lvl:.0f}%" if lvl is not None else "—")
-                  + "，3 個月 " + (f"{chg:+.0f}bp" if chg is not None else "—") + f"；資料至 {hy.get('date', '—')}）")
+        ev.append("高收益債利差：3 年百分位 " + (f"{lvl:.0f}%" if lvl is not None else "—")
+                  + "，3 個月" + ("擴大" if chg is not None and chg > 0 else "收斂" if chg is not None and chg < 0 else "—")
+                  + f"（ICE BofA 指數，版權資料只列百分位與方向；資料至 {hy.get('date', '—')}）")
         if lvl is not None:
             parts.append(lvl)
         if chg is not None:
@@ -143,11 +144,11 @@ def credit(fred) -> Dict:
             ev.append(f"信用循環階段：{phase}")
     ccc = fred.latest("BAMLH0A3HYC")
     if ccc and ccc.get("pctile_3y") is not None:
-        ev.append(f"CCC 級利差 {ccc['value']:.2f}%（3 年百分位 {ccc['pctile_3y']:.0f}%）——最弱的借款人最先出事")
+        ev.append(f"CCC 級利差：3 年百分位 {ccc['pctile_3y']:.0f}%——最弱的借款人最先出事")
         parts.append(ccc["pctile_3y"])
     baa = fred.latest("BAA10Y")
     if baa and baa.get("pctile_3y") is not None:
-        ev.append(f"Baa 公司債對公債利差 {baa['value']:.2f}%")
+        ev.append(f"Baa 公司債對公債利差：3 年百分位 {baa['pctile_3y']:.0f}%")
     score = float(np.mean(parts)) if parts else None
     if phase and phase.startswith("過熱") and score is not None:
         score = max(score, 45.0)                     # very tight spreads = complacency, not safety

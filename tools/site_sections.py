@@ -166,7 +166,7 @@ def sec_scores_mini(eng) -> str:
 PAT_COL = {"pullback": "#2fbf71", "breakout": "#3987e5", "golden": "#c9a227", "oversold": "#ec835a",
            "shallow": "#14b8a6", "vcp": "#8b5cf6", "high52": "#e879f9", "macd": "#94a3b8"}
 TIER_COL = {"A": "#c9a227", "B": "#2fbf71", "C": "#3987e5", "D": "#6b7280"}
-TIER_T = {"A": ("A ★ 規則精選", "A ★ Top setup"), "B": ("B 在進場區內", "B In the zone"), "C": ("C 有訊號・等拉回", "C Wait for pullback"),
+TIER_T = {"A": ("A ★ 條件最齊全", "A ★ All conditions met"), "B": ("B 在參考區間內", "B In the reference zone"), "C": ("C 有訊號・等拉回", "C Wait for pullback"),
           "D": ("D 快成立", "D Almost there")}
 
 
@@ -217,7 +217,7 @@ def _tagchips(r: Dict) -> str:
     return f"<br>{out}" if out else ""
 
 
-SG_TIER = {"B": ("在進場區內", "In the zone"), "C": ("等拉回", "Wait for pullback"), "D": ("快成立", "Almost there"), "O": ("其他狀態", "Other")}
+SG_TIER = {"B": ("在參考區間內", "In the zone"), "C": ("等拉回", "Wait for pullback"), "D": ("快成立", "Almost there"), "O": ("其他狀態", "Other")}
 
 
 LV_T = {"pull": ("回測", "dip to"), "break": ("突破", "break"), "ma200": ("年線", "200-day")}
@@ -364,11 +364,11 @@ def sec_signals(eng) -> str:
              "⚠️ Rules-based screen of technical setups — not a recommendation. A close below the give-up line means the setup failed.")
     items = [(m["label"], m["label_en"], _signal_table(m)) for m in sg["markets"].values()]
     howto = (f'<details class="sgx"><summary>{T("怎麼看「何時買」與分級", "How to read it")}</summary><ol class="small">'
-             f'<li>{T("「在進場區內」：規則條件已成立、現價也在進場參考區內。點那一列看「▶ 何時買／何時放棄」。", "In the zone: the rule fired and the price is inside the entry zone. Click the row for details.")}</li>'
+             f'<li>{T("「在參考區間內」：規則條件已成立、現價也在進場參考區內。點那一列看「▶ 何時買／何時放棄」。", "In the zone: the rule fired and the price is inside the entry zone. Click the row for details.")}</li>'
              f'<li>{T("「等拉回」：訊號已成立，但現價已離開區間；區間價位可當掛單參考，回到區間內才符合規則。", "Wait for pullback: signal fired but price left the zone; the zone works as a limit-order reference.")}</li>'
              f'<li>{T("「快成立」：還沒有訊號，但離成立只差一步；點開會寫要到哪個價位、出現什麼條件。訊號一成立 Discord 會推播。", "Almost there: the exact trigger price/condition is in the detail row.")}</li>'
              f'<li>{T("每一檔都有參考區：有買點訊號的是「進場參考區」（實心字）；還沒有訊號的是「加碼參考區」（虛線底），依目前狀態找最近的支撐——多頭看 20／50 日線、接近突破看突破後回測前高、空頭或接近黃金交叉要先站回 200 日線、接近超賣看 10 日低點（逆勢）。加碼參考區只是「如果要加碼，規則上比較合理的價位」，不是買點；標「需先站上／站回」的代表條件還沒成立。失效線的 % 是從參考區中點算起。點那一列看完整條件與觀察價。", "Every stock has a reference zone: an entry zone for active signals, and an add-on reference zone (dotted) for the rest, built from the nearest support for its status. It is not a signal.")}</li>'
-             f'<li>{T("失效線：收盤跌破代表型態失敗。進場區寬度依每檔股票平常的波動調整（3%–10%）。綠點＝現價在區內。", "Give-up line: a close below it fails the setup. Zone width scales with volatility; green dot = price inside.")}</li>'
+             f'<li>{T("失效線：收盤跌破代表型態失敗。參考區間寬度依每檔股票平常的波動調整（3%–10%）。綠點＝現價在區內。", "Give-up line: a close below it fails the setup. Zone width scales with volatility; green dot = price inside.")}</li>'
              f'<li>{T("股名下方的藍色小標籤是技術型態（布林壓縮、W 底、箱型突破／假突破、20／60 日線交叉），紅色「過熱」＝同時出現 2 個以上力竭警示（RSI 過熱、離均線過遠、頂背離、價漲量縮、高檔爆量收黑）；滑鼠移上去看定義。搜尋框也可以直接搜「W 底」「過熱」。", "Blue tags = chart patterns; red = two or more exhaustion flags. Hover for definitions.")}</li>'
              f'<li>{T("技術面規則抓不到「基本面成長、估值便宜」的股票（例如營收快速成長的公司），那類請看「成長估值」頁。", "Fundamental growth-at-a-value names are on the Growth valuation page.")}</li></ol>'
              f'<p class="small muted">{T(SIG_DEFS[0], SIG_DEFS[1])}</p></details>')
@@ -417,7 +417,7 @@ def sec_fullmarket(eng, mode: str = "score") -> str:
                 f'<div class="fmctl">' + (f'<select class="btn fmtier"><option value="ALL" data-en="All stocks">全部個股</option>'
                                           f'<option value="IN" data-en="Price inside its zone">現價在參考區內（訊號＋加碼參考）</option>'
                                           f'<option value="ABC" data-en="With a signal">有訊號（在區內＋等拉回）</option>'
-                                          f'<option value="AB" data-en="Signal, in the zone">有訊號・在進場區內</option>'
+                                          f'<option value="AB" data-en="Signal, in the zone">有訊號・在參考區間內</option>'
                                           f'<option value="C" data-en="Wait for pullback">有訊號・等拉回</option><option value="D" data-en="Almost there">快成立</option>'
                                           f'<option value="EX" data-en="Overheating">過熱警示</option></select>'
                                           f'<input class="btn fmq" type="search" placeholder="篩選代號／名稱" data-en-ph="Filter code / name" style="min-width:150px">'
@@ -1009,7 +1009,7 @@ def sec_canary(eng) -> str:
         ico, zh, en, col = _CN_STATE.get(r["state"], _CN_STATE["na"])
         if r.get("kind") == "score":
             u = r.get("unit") or ""
-            val = ("—" if r.get("value") is None else f'US${num(r["value"], 2)}B' if u == "$B" else f'{num(r["value"], 2)}{esc(u)}')
+            val = ("—" if r.get("value") is None or r.get("licensed") else f'US${num(r["value"], 2)}B' if u == "$B" else f'{num(r["value"], 2)}{esc(u)}')
             sc = r.get("score")
             bar = _bar(sc, col) if sc is not None else ""
             meta = (f'{T("分數", "Score")} <b>{num(sc, 0)}</b>/100' + (f'　{T("3 個月變化", "3m")} {num(r.get("chg_3m"), 0, sign=True)}' if r.get("chg_3m") is not None else "")
@@ -1284,7 +1284,7 @@ var TO={A:0,B:1,C:2,D:3};function tb(t){var k=t==='A'?'B':t,L={B:['在區內','I
 function ord(o){if(o.st==='signal')return o.inz?0:2;if(o.inz)return 1;if(o.tier==='D')return 3;if(o.st==='nodata')return 5;return 4;}
 function tag(o){return o.tier||(o.st!=='signal'&&o.inz?'R':null);}
 function pass(o,tv){if(tv==='ALL')return true;if(tv==='IN')return !!o.inz;if(tv==='EX')return !!o.ex;return !!o.tier&&tv.indexOf(o.tier)>=0;}
-function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');if(tag(o))h.appendChild(tb(tag(o)));if(o.pk)h.appendChild(el('span','pill pickp','★ '+(en()?'Top setup':'規則精選')+' '));h.appendChild(el('b',null,o.name+' '));h.appendChild(el('span','tk',o.code));
+function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');if(tag(o))h.appendChild(tb(tag(o)));if(o.pk)h.appendChild(el('span','pill pickp','★ '+(en()?'All conditions met':'條件最齊全')+' '));h.appendChild(el('b',null,o.name+' '));h.appendChild(el('span','tk',o.code));
  h.appendChild(el('span','thc',lbl+(o.board?' '+o.board:'')+' · '+(o.ind||'')));d.appendChild(h);
  d.appendChild(el('div','small',(en()?'Tech score ':'技術分數 ')+f(o.tech,0)+(en()?' — rank ':'（全市場第 ')+o.rank+' / '+o.N+(en()?'':' 名）')
   +'　1M '+sg(o.r1m,1)+'　6M '+sg(o.r6,0)+'　RSI '+f(o.rsi,0)+'　'+(en()?'Price ':'現價 ')+f(o.px,2)));

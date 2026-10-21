@@ -38,7 +38,7 @@ PATTERNS = {"pullback": ("多頭回檔到均線", "Pullback to MA in uptrend"), 
             "shallow": ("強勢股淺回檔", "Shallow dip in a strong trend"), "vcp": ("收斂後突破", "Tight-range breakout (VCP)"),
             "high52": ("創 52 週新高", "New 52-week high"), "macd": ("MACD 黃金交叉", "MACD bullish cross")}
 BASE = {"pullback": 60, "breakout": 62, "golden": 55, "oversold": 45, "shallow": 58, "vcp": 64, "high52": 60, "macd": 50}
-TIERS = {"A": ("★ 規則精選", "★ Top setup"), "B": ("在進場區內", "In the entry zone"), "C": ("有訊號・等拉回", "Signal — wait for a pullback"),
+TIERS = {"A": ("★ 條件最齊全", "★ All conditions met"), "B": ("在參考區間內", "In the reference zone"), "C": ("有訊號・等拉回", "Signal — wait for a pullback"),
          "D": ("快成立", "Almost there")}
 NEAR_D = ("near_pullback", "near_breakout", "near_golden")
 HORIZON = 20
@@ -489,7 +489,7 @@ def pick_cfg() -> Dict:
 
 def pick_ok(pattern: str, strength: Optional[float], in_zone: bool, rr: Optional[float], risk_pct: Optional[float],
             cf: Optional[Dict] = None) -> bool:
-    """★ 規則精選: the signals whose rule conditions are most complete right now —
+    """★ 條件最齊全: the signals whose rule conditions are most complete right now —
     trend-following pattern (not the counter-trend oversold bounce), price still inside the entry zone,
     strong enough, room to the 52-week high ≥ min_rr × the distance to the give-up line (or already at the high), give-up line not too far."""
     cf = cf or pick_cfg()
@@ -561,7 +561,7 @@ def summary_lines(res: Dict, top: int = 5) -> List[str]:
     for m in res["markets"].values():
         pk = [r for r in m["rows"] if r.get("pick")]
         if pk:
-            L.append(f"{m['label']}★規則精選（在進場區內、條件最齊全）：" + "、".join(f"{r['name']}({r['code']})" for r in pk))
+            L.append(f"{m['label']}★條件最齊全（在參考區間內）：" + "、".join(f"{r['name']}({r['code']})" for r in pk))
         rows = m["rows"][:top]
         if rows:
             L.append(f"{m['label']}技術面訊號（強→弱）：" + "、".join(f"{r['name']}({r['code']}) {r['patterns'][0]['label']} {r['strength']:.0f}"
