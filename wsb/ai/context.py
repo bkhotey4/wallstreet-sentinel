@@ -280,6 +280,11 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
     al = store.recent_alerts(24, include_private=private)
     if al:
         L.append("## 過去24h警報 " + "; ".join(t for _, _, t in al[:10]))
+    dp = getattr(engine, "dispersion", None) or {}
+    if dp.get("available"):                    # index vs the median stock, Cboe implied correlation / dispersion
+        us, cb = dp.get("us") or {}, dp.get("cboe") or {}
+        L.append("## 指數 vs 個股 " + (f"標普離高點 {us['index_dd']:.1f}% 中位數個股離高點 {us['median_dd']:.1f}% 跌逾兩成 {us['below20']:.0f}%；" if us else "")
+                 + "；".join(f"{k} {v['now']:.1f}（歷史百分位 {v['pct']:.0f}）" for k, v in cb.items() if v.get("pct") is not None))
     L.append(f"## 資料健康 {HEALTH.summary()}")
     mh = [m for m in (getattr(engine, "model_health", None) or {}).get("models", []) if m.get("status") in ("drift", "watch")]
     if mh:                                     # the AI must not lean on a model that has been wrong lately

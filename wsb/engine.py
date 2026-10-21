@@ -80,6 +80,12 @@ class Engine:
         self.lab: Dict = {}
         self.model_health: Dict = {}
         self.factors: Dict = {}                          # 風格因子模型 (public per-symbol loadings, factor returns)
+        self.dispersion: Dict = {}
+        try:                                             # 華爾街機構觀點（背景）: cached public titles + CFTC positioning
+            from .data import street_views as _sv
+            self.street: Dict = _sv.load()
+        except Exception:  # noqa: BLE001
+            self.street = {}                       # 指數 vs 個股: index-vs-median gap, Cboe implied correlation / dispersion
         try:                                             # 營收曝險 (SEC annual reports): cached parse, refreshed slowly
             from .data import segments as _sg
             self.segments: Dict = _sg.public(_sg.load())
@@ -193,6 +199,16 @@ class Engine:
         mine = [h for h in self.holding_tickers() if "." not in h]
         await distress_data.refresh(list(dict.fromkeys(list(dz.watchlist()) + mine)))
 
+    async def refresh_street(self) -> None:
+        from .data import street_views as sv
+        self.street = await sv.refresh()
+
+    async def refresh_dispersion(self) -> None:
+        """Cboe COR1M / COR3M / DSPX history (public files, cached 6 h) + the index-vs-median-stock gap."""
+        from .analytics import dispersion as ds
+        cb = await ds.refresh_cboe()
+        self.dispersion = await asyncio.to_thread(ds.build, self, cb)
+
     async def refresh_segments(self, time_budget_s: float = 120) -> None:
         """Revenue geography / customer concentration from each US company's latest annual report (a few per run)."""
         from .data import segments as sg
@@ -211,10 +227,15 @@ class Engine:
         res = await asyncio.gather(self.stockprices.refresh(), self.stocknews.refresh(), self.treasury.refresh(),
                                    self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
                                    self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), self.refresh_segments(),
-                                   return_exceptions=True)
-        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments"), res):
+                                   self.refresh_street(), return_exceptions=True)
+        for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments",
+                          "street"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
+        try:
+            await self.refresh_dispersion()                     # after stock prices refreshed (same gather above)
+        except Exception as e:  # noqa: BLE001
+            log.warning("extras refresh dispersion failed: %s", e)
         try:
             await self.refresh_earnings()                       # after the 13F / Form 4 pass: both talk to SEC
         except Exception as e:  # noqa: BLE001

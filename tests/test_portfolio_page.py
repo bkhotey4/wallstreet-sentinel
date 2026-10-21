@@ -20,6 +20,12 @@ def main():
               "EVIL</script>": {"price": 1.0, "chg_pct": 0.0, "asof": "x"}}
     mk = types.SimpleNamespace(quotes=quotes, q=lambda t: quotes.get(t), series=lambda t: __import__("pandas").Series(dtype=float))
     eng = types.SimpleNamespace(market=mk, holdings={"NVDA": {"shares": 15}}, portfolio={"positions": [{"sym": "NVDA"}]})
+    # tracked-list stocks fall back to the site's own daily closes when the hourly / whole-market feeds lack them
+    import pandas as _pd
+    _c = {"TSM": _pd.Series([400.0, 410.0], index=_pd.to_datetime(["2026-10-19", "2026-10-20"]))}
+    _eng2 = types.SimpleNamespace(market=mk, stockprices=types.SimpleNamespace(series=lambda t: _c.get(t, _pd.Series(dtype=float))))
+    _q = SP._quotes(_eng2)
+    assert _q["TSM"][0] == 410.0 and abs(_q["TSM"][1] - 2.5) < 1e-9 and _q["TSM"][2] == "2026-10-20" and _q["TSM"][5] == 400.0
     html = SP.sec_portfolio(eng)
     m = re.search(r'<script type="application/json" id="pf-data">(.*?)</script>', html, re.S)
     data = json.loads(m.group(1))                                       # the only server-provided data

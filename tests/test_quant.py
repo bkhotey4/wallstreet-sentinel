@@ -176,7 +176,42 @@ def test_licensing():
     assert "&lt;b&gt;" not in t and "&lt;code&gt;" not in t                    # no escaped markup leaking into the text
 
 
+def test_dispersion():
+    from wsb.analytics import dispersion as DS
+    from tools import site_quant as SQ
+    a = DS.parse_cboe("DATE,OPEN,HIGH,LOW,CLOSE\n01/03/2006,23.5,23.5,23.5,23.5\n01/04/2006,24,24,24,24.1\n")
+    b = DS.parse_cboe("DATE,DSPX\n06/19/2014,17.81\n06/20/2014,18.0\n")
+    assert list(a.values) == [23.5, 24.1] and str(a.index[0].date()) == "2006-01-03" and b.iloc[-1] == 18.0
+    # index flat at its high while 40 stocks slide late in the window → wide, unusual gap
+    idx = pd.bdate_range("2023-01-02", periods=600)
+    rng = np.random.default_rng(4)
+    index = pd.Series(100 + np.linspace(0, 10, 600), index=idx)
+    closes = {}
+    for i in range(40):
+        p_ = 100 * np.cumprod(1 + rng.normal(0.0005, 0.01, 600))
+        p_[-60:] *= np.linspace(1, 0.75, 60)                      # every stock −25 % over the last 3 months
+        closes[f"S{i}"] = pd.Series(p_, index=idx)
+    g = DS.gap(index, closes)
+    assert g["index_dd"] > -0.5 and g["median_dd"] < -15 and g["gap"] < -15 and g["gap_pct"] > 95 and g["below10"] > 80
+    rd = DS.readings(g, {"rel_3m": -4.0}, {"COR1M": {"pct": 3}, "DSPX": {"pct": 90}},
+                     {"episodes": 9, "h": 21, "dc_low": 3.0, "dc_all": -1.0, "rise5_low": 40, "rise5_all": 30, "dd5_low": 10, "dd5_all": 18})
+    txt = " ".join(r["zh"] for r in rd)
+    assert "少數大型股撐住" in txt and "等權重" in txt and "各走各的" in txt and "並沒有比較常大跌" in txt
+    assert not DS.readings(None, None, {"COR1M": {"pct": 50}}, None)
+    # what followed low-correlation days: a series that is low then rises
+    cidx = pd.bdate_range("2006-01-02", periods=1600)
+    cor = pd.Series(np.r_[30 + rng.normal(0, 2, 1300), np.full(100, 5.0), np.linspace(5, 30, 200)], index=cidx)   # normal, dip, recovery
+    spx = pd.Series(np.linspace(1000, 2000, 1600), index=cidx)
+    af = DS.low_corr_after(cor, spx)
+    assert af and af["rise5_low"] > af["rise5_all"] and af["dd5_low"] == 0 and af["episodes"] >= 1
+    eng = types.SimpleNamespace(dispersion={"available": True, "us": g, "ew": {"rel_1m": 1.0, "rel_3m": -4.0},
+                                            "cboe": {"COR1M": {"now": 8.35, "pct": 2.1, "pct_3y": 12.6, "since": "2006", "asof": "2026-10-20"}}, "readings": rd})
+    html = SQ.sec_index_vs_stocks(eng)
+    assert "指數 vs 個股" in html and "8.35" in html and "中位數個股" in html
+
+
 def main():
+    test_dispersion()
     test_licensing()
     test_premarket()
     test_factors()

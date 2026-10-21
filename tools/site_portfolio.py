@@ -54,6 +54,22 @@ def _quotes(eng) -> Dict[str, list]:
         if px is None or (isinstance(px, float) and math.isnan(px)):
             continue
         out[t] = [round(float(px), 4), None if ch is None or ch != ch else round(float(ch), 3), q.get("asof") or "", names.get(t, q.get("name") or t), q.get("source") or "Yahoo", q.get("prev")]
+    # fallback for the tracked stock list: the daily close from the site's own price history, so a holding never
+    # drops out of the total just because the whole-market file is still back-filling (e.g. after a cache reset)
+    try:
+        from wsb.data.stocks import universe
+        sp = getattr(eng, "stockprices", None)
+        for mk in universe().values():
+            for t, (zh, _en) in (mk.get("symbols") or {}).items():
+                if t in out or sp is None:
+                    continue
+                c = sp.series(t).dropna()
+                if len(c) < 2:
+                    continue
+                p1, p0 = float(c.iloc[-1]), float(c.iloc[-2])
+                out[t] = [round(p1, 4), round((p1 / p0 - 1) * 100, 3) if p0 else None, c.index[-1].strftime("%Y-%m-%d"), zh, "Yahoo（日收盤）", round(p0, 4)]
+    except Exception:  # noqa: BLE001
+        pass
     return out
 
 

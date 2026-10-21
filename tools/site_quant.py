@@ -184,3 +184,83 @@ def sec_premarket(eng) -> str:
             f'<span class="muted small" id="pmcount"></span></summary>{us}{tw}'
             f'<div class="pmp" id="pmmine" style="display:none"></div><p class="note">{note}　{T("更新", "Built")} {esc(d["built"])}</p></details>')
     return f'<section class="card wide pmcard">{body}</section>'
+
+
+# ------------------------------------------------------------------ 指數 vs 個股
+def sec_index_vs_stocks(eng) -> str:
+    d = getattr(eng, "dispersion", None) or {}
+    if not d.get("available"):
+        return ""
+    MKN = {"us": ("美股（本站追蹤名單）", "US (tracked list)", "標普 500", "S&P 500"), "tw": ("台股（本站追蹤名單）", "Taiwan (tracked list)", "加權指數", "TAIEX")}
+    blocks = ""
+    for mk in ("us", "tw"):
+        g = d.get(mk)
+        if not g:
+            continue
+        zh, en, iz, ie = MKN[mk]
+        gp = f'{T("落差位於", "gap at")} {num(g.get("gap_pct"), 0)} {T("百分位（自", "pctile (since")} {esc((g.get("gap_since") or "")[:7])}）' if g.get("gap_pct") is not None else ""
+        blocks += (f'<h3>{T(zh, en)}　<span class="muted small">{g["n"]} {T("檔", "stocks")}・{esc(g["asof"])}</span></h3>'
+                   f'<div class="kv"><div><span class="muted">{T(iz + " 離 52 週高點", ie + " from 52w high")}</span><b class="{cls(g["index_dd"])}">{num(g["index_dd"], 1, sign=True, pct=True)}</b></div>'
+                   f'<div><span class="muted">{T("中位數個股離自己的高點", "Median stock from its high")}</span><b class="{cls(g["median_dd"])}">{num(g["median_dd"], 1, sign=True, pct=True)}</b></div>'
+                   f'<div><span class="muted">{T("跌逾一成／兩成的比例", "Share ≥10% / ≥20% down")}</span><b>{num(g["below10"], 0)}% / {num(g["below20"], 0)}%</b></div>'
+                   f'<div><span class="muted">{T("近 3 個月贏過指數的比例", "Beat the index, 3m")}</span><b>{num(g["beat_3m"], 0)}%</b></div></div>'
+                   f'<p class="small muted">{T("近 1／3 個月：指數", "1m / 3m: index")} {num(g["idx_1m"], 1, sign=True, pct=True)}／{num(g["idx_3m"], 1, sign=True, pct=True)}，'
+                   f'{T("中位數個股", "median stock")} {num(g["med_1m"], 1, sign=True, pct=True)}／{num(g["med_3m"], 1, sign=True, pct=True)}。{gp}</p>')
+    ew = d.get("ew") or {}
+    if ew:
+        blocks += (f'<p>{T("等權重標普（RSP）相對市值加權（SPY）", "Equal-weight (RSP) vs cap-weight (SPY)")}：{T("近 1 個月", "1m")} <b class="{cls(ew["rel_1m"])}">{num(ew["rel_1m"], 1, sign=True)}</b>、'
+                   f'{T("近 3 個月", "3m")} <b class="{cls(ew["rel_3m"])}">{num(ew["rel_3m"], 1, sign=True)}</b> {T("個百分點", "pp")}</p>')
+    cb = d.get("cboe") or {}
+    if cb:
+        lab = {"COR1M": ("隱含相關性（1 個月）", "Implied correlation (1m)"), "COR3M": ("隱含相關性（3 個月）", "Implied correlation (3m)"),
+               "DSPX": ("S&P 500 分散度指數", "S&P 500 Dispersion Index")}
+        rows = "".join(f'<tr><td>{T(*lab.get(k, (k, k)))}</td><td class="r"><b>{num(v["now"], 2)}</b></td><td class="r">{num(v.get("pct"), 0)}</td>'
+                       f'<td class="r">{num(v.get("pct_3y"), 0)}</td><td class="small muted">{esc(v.get("since") or "")}–{esc((v.get("asof") or "")[5:])}</td></tr>'
+                       for k, v in cb.items())
+        blocks += (f'<table class="mini"><thead><tr><th>{T("Cboe 指數", "Cboe index")}</th><th class="r">{T("目前", "Now")}</th>'
+                   f'<th class="r">{T("歷史百分位", "Pctile")}</th><th class="r">{T("近 3 年百分位", "3y pctile")}</th><th>{T("資料期間", "Range")}</th></tr></thead><tbody>{rows}</tbody></table>')
+    rd = d.get("readings") or []
+    if rd:
+        blocks += f'<h3>{T("數據怎麼說", "What the data says")}</h3><ul>' + "".join(f"<li>{T(x['zh'], x['en'])}</li>" for x in rd) + "</ul>"
+    note = T("「中位數個股」是本站追蹤名單（不是全部上市公司）裡排在正中間的那一檔；落差＝中位數個股離高點 − 指數離高點，越負代表越少數股票在撐指數。"
+             "隱含相關性：選擇權市場預期成分股之間會不會一起動（越低＝越各走各的）；分散度指數：預期個股之間報酬差距有多大（越高＝差距越大）。"
+             "資料來源：Cboe 公開的指數歷史檔、本站股價資料。描述現況，不是預測。",
+             "Median stock = the middle of our tracked list, not the whole market. Implied correlation: how much stocks are expected to move together; "
+             "dispersion: how far apart their returns are expected to be. Source: Cboe public index history. Descriptive, not a forecast.")
+    return card("指數 vs 個股：為什麼指數沒跌、帳戶在跌", "Index vs stocks: why the index holds while accounts fall", blocks + f'<p class="note">{note}</p>', "wide")
+
+
+# ------------------------------------------------------------------ 華爾街機構觀點（背景）
+def sec_street(eng) -> str:
+    st = getattr(eng, "street", None) or {}
+    views, pos = st.get("views") or {}, st.get("pos") or {}
+    if not views and not pos:
+        return ""
+    body = ""
+    if pos:
+        rows = ""
+        for code, p in pos.items():
+            rows += (f'<tr><td>{T(p["zh"], p["en"])}</td>'
+                     f'<td class="r"><b class="{cls(p["am"])}">{num(p["am"], 1, sign=True)}%</b><div class="small muted">{T("近 3 年第", "3y pctile")} {num(p["am_pct"], 0)} {T("百分位", "")}・{T("週變化", "wk")} {num(p["am_chg"], 1, sign=True)}</div></td>'
+                     f'<td class="r"><b class="{cls(p["lm"])}">{num(p["lm"], 1, sign=True)}%</b><div class="small muted">{T("近 3 年第", "3y pctile")} {num(p["lm_pct"], 0)} {T("百分位", "")}・{T("週變化", "wk")} {num(p["lm_chg"], 1, sign=True)}</div></td>'
+                     f'<td class="small muted">{esc(p["asof"])}</td></tr>')
+        unit = T("單位：占未平倉量的百分比（多單減空單）。資產管理機構多半是長期多頭，槓桿資金常拿期貨做避險或套利，所以淨空單不一定代表看空。每週二的部位、週五公布。",
+                 "Net long minus short as % of open interest. Leveraged funds often hold shorts as hedges or basis trades. Tuesday positions, published Friday.")
+        body += (f'<h3>{T("機構實際怎麼押（CFTC 期貨部位）", "How institutions are positioned (CFTC futures)")}</h3>'
+                 f'<table class="mini"><thead><tr><th>{T("合約", "Contract")}</th><th class="r">{T("資產管理機構淨部位", "Asset managers, net")}</th>'
+                 f'<th class="r">{T("避險基金等槓桿資金淨部位", "Leveraged funds, net")}</th><th>{T("資料日", "As of")}</th></tr></thead><tbody>{rows}</tbody></table>'
+                 f'<p class="small muted">{unit}</p>')
+    if views:
+        body += f'<h3>{T("機構最近公開的觀點", "Latest public commentary")}</h3>'
+        for k in ("ms", "gs", "br"):
+            v = views.get(k)
+            if not v:
+                continue
+            items = "".join(f'<li><span class="muted small">{esc(i.get("date") or "")}</span> '
+                            + (f'<a href="{esc(i["link"])}" target="_blank" rel="noopener">{esc(i["title"])}</a>' if i.get("link") else esc(i["title"]))
+                            + "</li>" for i in v.get("items", []))
+            body += f'<p><b><a href="{esc(v["home"])}" target="_blank" rel="noopener">{T(v["zh"], v["en"])}</a></b></p><ul class="small">{items}</ul>'
+    note = T("背景資訊：只列各機構自己公開發布的標題、日期與連結（不轉載內容），點進去看原文；這些觀點不進入本站任何風險分數或訊號。"
+             "期貨部位來自 CFTC（美國商品期貨交易委員會）公開的 Traders in Financial Futures 週報。完整的券商研究報告屬付費內容，本站不取得也不轉載。",
+             "Background only: titles, dates and links to each firm’s own public publications; never used in any score. Positions: CFTC TFF weekly report.")
+    return card("華爾街機構觀點（背景）", "What Wall Street firms are saying (background)", body + f'<p class="note">{note}</p>', "wide")
