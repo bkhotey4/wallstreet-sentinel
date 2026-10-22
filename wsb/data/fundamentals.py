@@ -26,7 +26,7 @@ from .distress_data import SEC_HDR, _d, _facts, instants, ttm, ttm_ex
 
 log = logging.getLogger(__name__)
 CACHE = DATA_DIR / "earn_fund.json"
-PV = 1
+PV = 2
 FLOW = {"rev": ("Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet"),
         "ocf": ("NetCashProvidedByUsedInOperatingActivities",),
         "capex": ("PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets"),
@@ -36,8 +36,12 @@ INST = {"inv": ("InventoryNet", "InventoryGross"),
         "ar": ("AccountsReceivableNetCurrent", "ReceivablesNetCurrent"),
         "cip": ("ConstructionInProgressGross",),
         "ppe_gross": ("PropertyPlantAndEquipmentGross",),
-        "debt": ("LongTermDebt", "LongTermDebtAndCapitalLeaseObligations", "DebtLongtermAndShorttermCombinedAmount"),
-        "debt_cur": ("DebtCurrent", "ShortTermBorrowings", "CommercialPaper"),
+        # total debt is filed three ways; each is complete on its own (see total_debt)
+        "debt_all": ("DebtLongtermAndShorttermCombinedAmount",),
+        "debt": ("LongTermDebt", "LongTermDebtAndCapitalLeaseObligations"),            # includes the current portion
+        "debt_nc": ("LongTermDebtNoncurrent", "LongTermNotesPayable"),
+        "debt_ltc": ("LongTermDebtCurrent", "DebtCurrent", "NotesPayableCurrent"),
+        "debt_st": ("ShortTermBorrowings", "CommercialPaper"),
         "fin_lease": ("FinanceLeaseLiability",),
         "cash": ("CashAndCashEquivalentsAtCarryingValue",)}
 
@@ -59,13 +63,13 @@ def _ttm_pair(cf: Dict, tags) -> Dict:
     return {"end": end, "v": val, "ann": ann, "prev": prev[1] if ok_prev else None, "prev_end": prev[0] if ok_prev else None}
 
 
-def _inst_pair(cf: Dict, tags, at: str) -> Dict:
-    """Value at the balance-sheet date `at` (±40 days) and one year earlier (±45 days)."""
+def _inst_pair(cf: Dict, tags, at: str, window: int = 40) -> Dict:
+    """Value at the balance-sheet date `at` (±window days) and one year earlier (±45 days)."""
     for t in tags:
         s = instants(_facts(cf, t))
         if not s:
             continue
-        near = [e for e in s if abs((_d(e) - _d(at)).days) <= 40]
+        near = [e for e in s if abs((_d(e) - _d(at)).days) <= window]
         if not near:
             continue
         e = max(near)
@@ -84,12 +88,30 @@ def parse(cf: Dict) -> Optional[Dict]:
             out[k] = {"stale": v["end"]}
     for k, tags in INST.items():
         out[k] = _inst_pair(cf, tags, at)
+        if not out[k] and k.startswith("debt"):    # some filers tag total debt only in the annual report: accept one quarter back
+            out[k] = _inst_pair(cf, tags, at, window=100)
     out["end"], out["pv"] = at, PV
     return out
 
 
 def _g(a, b) -> Optional[float]:
     return (a / b - 1) * 100 if a is not None and b not in (None, 0) and b > 0 else None
+
+
+def total_debt(p: Dict, key: str = "v") -> Optional[float]:
+    """Combined total, else long-term (incl. current portion) + short-term borrowings, else non-current + current
+    portion + short-term borrowings; finance leases added.  The current portion is never added twice."""
+    g = lambda k: (p.get(k) or {}).get(key)  # noqa: E731
+    st, fl = g("debt_st") or 0.0, g("fin_lease") or 0.0
+    if g("debt_all") is not None:
+        base = g("debt_all")
+    elif g("debt") is not None:
+        base = g("debt") + st
+    elif g("debt_nc") is not None:
+        base = g("debt_nc") + (g("debt_ltc") or 0.0) + st
+    else:
+        return None
+    return base + fl
 
 
 def metrics(p: Dict) -> Dict:
@@ -116,8 +138,7 @@ def metrics(p: Dict) -> Dict:
     m["int_burden"] = intr / ebit * 100 if intr is not None and ebit and ebit > 0 else None
     m["int_burden_prev"] = pv("interest") / pv("ebit") * 100 if pv("interest") is not None and pv("ebit") and pv("ebit") > 0 else None
     m["ebit_negative"] = ebit is not None and ebit <= 0 and intr is not None and intr > 0
-    debt = sum(x for x in (v("debt"), v("debt_cur"), v("fin_lease")) if x is not None) if v("debt") is not None else None
-    debt_p = sum(x for x in (pv("debt"), pv("debt_cur"), pv("fin_lease")) if x is not None) if pv("debt") is not None else None
+    debt, debt_p = total_debt(p, "v"), total_debt(p, "prev")
     m["debt"], m["debt_growth"] = debt, _g(debt, debt_p)
     m["rev"], m["ocf"], m["capex"], m["rev_growth"] = rev, ocf, capex, gr
     return m

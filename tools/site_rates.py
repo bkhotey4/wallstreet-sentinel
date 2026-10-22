@@ -100,7 +100,7 @@ def sec_rates_radar(eng) -> str:
                        f'<td class="r {"dn" if w["hit"] else ""}">{T("已觸及", "crossed") if w["hit"] else _dist(w)}</td></tr>' for w in wl)
         body += (f'<h3>{T("4. 警戒線距離", "4. Distance to watch lines")}</h3><table class="mini"><thead><tr><th></th><th class="r">{T("目前", "Now")}</th>'
                  f'<th class="r">{T("警戒線", "Line")}</th><th class="r">{T("距離", "Distance")}</th></tr></thead><tbody>{rows}</tbody></table>'
-                 f'<p class="small muted">{T("MOVE 125、IXG 125 是財經媒體引用的警戒線；10 年 5.25%、30 年 5.5% 是本站自訂的整數參考線。全部可以在 settings.yaml 的 rates_radar.watch 調整。", "MOVE/IXG lines are those cited in the media; the yield lines are round-number references set here (editable).")}</p>')
+                 f'<p class="small muted">{T("MOVE 125、IXG 125 是財經媒體引用的警戒線；10 年 5.25%、30 年 5.5% 是本站自訂的整數參考線。全部可以在 settings.yaml 的 rates_radar.watch 調整。這裡用即時報價，上方第 1 項用 FRED 的收盤資料，所以殖利率可能差幾個 bp。", "MOVE/IXG lines are those cited in the media; the yield lines are round-number references set here (editable).")}</p>')
     f = r.get("fiscal") or {}
     if f:
         body += (f'<h3>{T("5. 美國財政壓力", "5. US fiscal strain")}</h3><div class="kv">'
@@ -117,10 +117,14 @@ def sec_rates_radar(eng) -> str:
                  f'<th>{T("和近期比", "vs recent")}</th></tr></thead><tbody>{rows}</tbody></table>')
     ai = [a for a in (r.get("ai") or []) if a.get("cost") is not None or a.get("debt_growth") is not None]
     if ai:
-        rows = "".join(f'<tr><td><b>{esc(a["sym"])}</b></td><td class="r">{num(a.get("cost"), 1)}%</td><td class="r">{num(a.get("debt_growth"), 0, sign=True, pct=True)}</td>'
-                       f'<td class="r">{(num(a["int_burden"], 1) + "%") if a.get("int_burden") is not None else "—"}</td><td class="small muted">{esc(a.get("end") or "")}</td></tr>' for a in ai)
+        def per(a):
+            de = a.get("debt_end")
+            return esc(a.get("end") or "") + (f'（{T("負債", "debt")} {esc(de)}）' if de and de != a.get("end") else "")
+        rows = "".join(f'<tr><td><b>{esc(a["sym"])}</b></td><td class="r">{T(num(a["debt_bn"] * 10, 0) + " 億", num(a["debt_bn"], 1) + " bn") if a.get("debt_bn") else "—"}</td>'
+                       f'<td class="r">{(num(a["cost"], 1) + "%") if a.get("cost") is not None else "—"}</td><td class="r">{num(a.get("debt_growth"), 0, sign=True, pct=True)}</td>'
+                       f'<td class="r">{(num(a["int_burden"], 1) + "%") if a.get("int_burden") is not None else "—"}</td><td class="small muted">{per(a)}</td></tr>' for a in ai)
         body += (f'<h3>{T("7. AI 公司的借錢成本", "7. What AI companies pay to borrow")}</h3><table class="mini"><thead><tr><th></th>'
-                 f'<th class="r">{T("平均借款成本", "Avg cost of debt")}</th><th class="r">{T("負債年增", "Debt y/y")}</th><th class="r">{T("利息／營業利益", "Interest/EBIT")}</th><th>{T("財報期", "Period")}</th></tr></thead>'
+                 f'<th class="r">{T("總負債（美元）", "Total debt (USD)")}</th><th class="r">{T("平均借款成本", "Avg cost of debt")}</th><th class="r">{T("負債年增", "Debt y/y")}</th><th class="r">{T("利息／營業利益", "Interest/EBIT")}</th><th>{T("財報期", "Period")}</th></tr></thead>'
                  f'<tbody>{rows}</tbody></table><p class="small muted">{T("平均借款成本＝近 12 個月利息支出 ÷ 目前負債，反映的是舊債與新債的平均；新發債的利率通常更高。", "Average cost = TTM interest ÷ debt; new issues usually cost more.")}</p>')
     note = T("把「美債殖利率 → AI 科技股」這條鏈放在一起看：殖利率為什麼漲、股票相對公債貴不貴、科技股對利率多敏感、離媒體常說的警戒線多遠、政府付利息的壓力、長債有沒有人買、AI 公司借錢有多貴。"
              "全部來自官方與市場數據（FRED、財政部、SEC、Yahoo）；🔑 重點是固定規則的解讀，不是預測，也不是投資建議。",

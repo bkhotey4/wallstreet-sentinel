@@ -211,6 +211,12 @@ class Engine:
         mine = [h for h in self.holding_tickers() if "." not in h]
         cache = await fu.refresh(list(dict.fromkeys(us + sh.AI_LEDGER + mine)), budget_s=budget_s)
         self.sector_health = await asyncio.to_thread(sh.build, self, cache)
+        if (self.rates_radar or {}).get("available"):            # 利率衝擊雷達 #7 needs the filings just loaded
+            from .analytics import rates_radar as rr
+            try:
+                self.rates_radar["ai"] = rr.ai_borrowing(self)
+            except Exception:  # noqa: BLE001
+                log.exception("rates radar AI borrowing failed")
 
     async def refresh_street(self) -> None:
         from .data import street_views as sv

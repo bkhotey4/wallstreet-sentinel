@@ -165,8 +165,9 @@ def ai_borrowing(eng) -> List[Dict]:
         rec = FU.load().get(r["sym"]) or {}
         p = rec.get("p") or {}
         intr, debt = (p.get("interest") or {}).get("v"), r["m"].get("debt")
+        d_end = next(((p.get(k) or {}).get("end") for k in ("debt_all", "debt", "debt_nc") if (p.get(k) or {}).get("v") is not None), None)
         out.append({"sym": r["sym"], "cost": (intr / debt * 100) if intr and debt else None, "debt_growth": r["m"].get("debt_growth"),
-                    "int_burden": r["m"].get("int_burden"), "end": r["m"].get("end")})
+                    "int_burden": r["m"].get("int_burden"), "end": r["m"].get("end"), "debt_end": d_end, "debt_bn": debt / 1e9 if debt else None})
     return out
 
 

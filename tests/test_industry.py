@@ -107,6 +107,13 @@ def main():
     finally:
         cfg.clear()
         cfg.update(old_cfg)
+    # total debt, filed three ways — the current portion of long-term debt is never counted twice
+    v = lambda x, pr=None: {"v": x, "prev": pr}  # noqa: E731
+    assert FU.total_debt({"debt_all": v(130.0), "debt": v(120.0), "debt_ltc": v(7.0)}) == 130.0
+    assert FU.total_debt({"debt": v(84.0), "debt_ltc": v(3.0), "debt_st": v(1.0), "fin_lease": v(2.0)}) == 87.0
+    assert FU.total_debt({"debt_nc": v(98.0, 20.0), "debt_ltc": v(2.0, 9.0)}) == 100.0
+    assert FU.total_debt({"debt_nc": v(98.0, 20.0), "debt_ltc": v(2.0, 9.0)}, "prev") == 29.0
+    assert FU.total_debt({"debt_ltc": v(2.0)}) is None
     print("INDUSTRY TESTS PASSED [OK]")
 
 
