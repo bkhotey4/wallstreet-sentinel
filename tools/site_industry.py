@@ -117,7 +117,9 @@ def sec_real_economy(eng) -> str:
             lvl = (T("版權資料", "licensed") if r.get("licensed") else num(r["value"], 2))
             sz, se, sc = st[r["state"]]
             rows += (f'<tr><td>{T(r["zh"], r["en"])}</td><td class="r">{lvl}</td>'
-                     f'<td class="r"><b>{num(r["yoy"], 2, sign=True)}{unit}</b></td><td class="r">{num(r.get("pct"), 0)}</td>'
+                     + (f'<td class="r">{T("上升" if r["yoy"] > 0 else "下降" if r["yoy"] < 0 else "持平", "up" if r["yoy"] > 0 else "down" if r["yoy"] < 0 else "flat")}</td>'
+                        if r.get("licensed") else f'<td class="r"><b>{num(r["yoy"], 2, sign=True)}{unit}</b></td>')   # licensed: direction only
+                     + f'<td class="r">{num(r.get("pct"), 0)}</td>'
                      f'<td class="{sc}">{T(sz, se)}</td><td class="small muted">{esc(r["date"])}</td></tr>')
         body += (f'<h3>{esc(sec["sector"])} <span class="{tc} small">{T(tz, te)}</span></h3>'
                  f'<div class="scroll"><table class="mini"><thead><tr><th>{T("數據", "Series")}</th><th class="r">{T("最新值", "Latest")}</th>'

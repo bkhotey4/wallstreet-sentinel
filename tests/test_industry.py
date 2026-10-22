@@ -102,6 +102,8 @@ def main():
         e2.real_economy = out
         h = SI.sec_real_economy(e2)
         assert "產業真實經濟數據" in h and "版權資料" in h and "轉強" in h
+        _y = f"{rows[1]['yoy']:+.2f}"
+        assert h.count(_y) == 1 and "上升" in h                      # the licensed row shows direction only (the number once = the open row)
     finally:
         cfg.clear()
         cfg.update(old_cfg)
