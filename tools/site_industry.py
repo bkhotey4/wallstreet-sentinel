@@ -100,3 +100,33 @@ def sec_company_health(eng) -> str:
             f'<th>{T("出現的壓力", "Strain flags")}</th><th>{T("財報期", "Period")}</th></tr></thead><tbody>{tr}</tbody></table></div>'
             f'<p class="note">{T("只列出至少有一項壓力的公司。壓力不等於會出事：資本支出大的成長期公司本來就可能出現資金缺口。", "Companies with at least one flag. A flag is not a prediction.")}</p>')
     return card("個別公司：財報出現哪些壓力", "Companies: which strain shows in the filings", body, "wide")
+
+
+def sec_real_economy(eng) -> str:
+    re_ = getattr(eng, "real_economy", None) or {}
+    if not re_.get("available"):
+        return ""
+    tone = {"worse": ("⚠️ 轉弱", "⚠️ Weakening", "dn"), "better": ("✅ 轉強", "✅ Strengthening", "up"), "mixed": ("➖ 分歧", "➖ Mixed", "muted")}
+    st = {"worse": ("轉弱", "Weaker", "dn"), "better": ("轉強", "Stronger", "up"), "neutral": ("持平", "Steady", "muted")}
+    body = ""
+    for sec in re_["sectors"]:
+        tz, te, tc = tone[sec["tone"]]
+        rows = ""
+        for r in sec["rows"]:
+            unit = "%" if r["kind"] == "pct" else T(" 個百分點", "pp")
+            lvl = (T("版權資料", "licensed") if r.get("licensed") else num(r["value"], 2))
+            sz, se, sc = st[r["state"]]
+            rows += (f'<tr><td>{T(r["zh"], r["en"])}</td><td class="r">{lvl}</td>'
+                     f'<td class="r"><b>{num(r["yoy"], 2, sign=True)}{unit}</b></td><td class="r">{num(r.get("pct"), 0)}</td>'
+                     f'<td class="{sc}">{T(sz, se)}</td><td class="small muted">{esc(r["date"])}</td></tr>')
+        body += (f'<h3>{esc(sec["sector"])} <span class="{tc} small">{T(tz, te)}</span></h3>'
+                 f'<div class="scroll"><table class="mini"><thead><tr><th>{T("數據", "Series")}</th><th class="r">{T("最新值", "Latest")}</th>'
+                 f'<th class="r">{T("一年變化", "1-year change")}</th><th class="r">{T("近 10 年百分位", "10y pctile")}</th>'
+                 f'<th>{T("判讀", "Reading")}</th><th>{T("資料月份", "Data for")}</th></tr></thead><tbody>{rows}</tbody></table></div>')
+    note = T("資料來源：FRED（聖路易聯邦準備銀行）彙整的官方統計（商務部、勞工統計局、聯準會等）。一年變化：一般數據看年增率，利率和逾期率看變化幾個百分點。"
+             "百分位＝這個一年變化在過去 10 年的位置；只有落在最高或最低的四分之一，才判讀為「轉強／轉弱」，其他算持平。"
+             "注意：電力產出創高同時電價上升，代表需求強、供給吃緊（AI 資料中心用電），不等於電力產業沒有瓶頸。"
+             "官方數據有公布時間差（月資料約晚 1 個月、季資料約晚 1 季），日期標在每一列。描述現況，不是預測。",
+             "Official statistics via FRED. One-year change = growth rate (levels) or pp change (rates). 'Stronger/weaker' only when the "
+             "change is in the outer quarter of its 10-year history. Published with a lag. Descriptive, not a forecast.")
+    return card("產業真實經濟數據：官方統計怎麼說", "The real economy by sector: official statistics", body + f'<p class="note">{note}</p>', "wide")

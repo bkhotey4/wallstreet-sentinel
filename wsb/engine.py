@@ -82,6 +82,7 @@ class Engine:
         self.factors: Dict = {}                          # 風格因子模型 (public per-symbol loadings, factor returns)
         self.dispersion: Dict = {}
         self.sector_health: Dict = {}
+        self.real_economy: Dict = {}
         try:                                             # 華爾街機構觀點（背景）: cached public titles + CFTC positioning
             from .data import street_views as _sv
             self.street: Dict = _sv.load()
@@ -292,6 +293,11 @@ class Engine:
                             h["drift"] = {"status": fl["status"], "why": fl.get("why")} if fl else None
                     except Exception:  # noqa: BLE001
                         log.exception("model health failed")
+                    try:                                       # 產業真實經濟數據 (FRED series already loaded)
+                        from .analytics import real_economy as rex
+                        self.real_economy = await asyncio.to_thread(rex.build, self)
+                    except Exception:  # noqa: BLE001
+                        log.exception("real economy failed")
                     try:                                       # style factors: cheap (~2 s), public data only
                         from .analytics import factors as fa
                         sc_ = getattr(getattr(self, "stockprices", None), "close", None)

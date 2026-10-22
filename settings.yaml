@@ -127,7 +127,33 @@ universe:
 
 # 有版權限制的 FRED 序列（ICE BofA 利差、Moody's）：公開網站與公開 AI 評論只顯示衍生指標（百分位、變化方向），
 # 不顯示原始數值；計算（壓力指數、信用循環）照常使用。私人 Discord 不受影響。
-fred_restricted: [BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A3HYC, BAMLH0A1HYBB, BAA10Y]
+fred_restricted: [BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A3HYC, BAMLH0A1HYBB, BAA10Y, UMCSENT, TRUCKD11]   # + 密大消費者信心、美國卡車協會運量
+
+# 產業體檢：各產業的真實經濟數據（FRED，另外下載，不進壓力指數、不放進總經表）
+# good: up = 上升代表變好；down = 上升代表變差。kind: pct = 看年增率；diff = 看一年變化（百分點，用於利率、違約率）
+real_economy:
+  消費:
+    RSAFS: {zh: 零售銷售, en: Retail sales, good: up, kind: pct}
+    DRCCLACBS: {zh: 信用卡逾期率, en: Credit-card delinquency, good: down, kind: diff}
+    UMCSENT: {zh: 密大消費者信心, en: UMich consumer sentiment, good: up, kind: pct}
+  房地產:
+    HOUST: {zh: 新屋開工, en: Housing starts, good: up, kind: pct}
+    MORTGAGE30US: {zh: 30 年房貸利率, en: 30-year mortgage rate, good: down, kind: diff}
+    DRCRELEXFACBS: {zh: 商用不動產貸款逾期率, en: CRE loan delinquency, good: down, kind: diff}
+  工業與運輸:
+    INDPRO: {zh: 工業生產, en: Industrial production, good: up, kind: pct}
+    DGORDER: {zh: 耐久財訂單, en: Durable goods orders, good: up, kind: pct}
+    TRUCKD11: {zh: 卡車運量, en: Truck tonnage, good: up, kind: pct}
+  電力與 AI 基礎建設:
+    IPG2211S: {zh: 發電與輸電產出, en: Electric power output, good: up, kind: pct}
+    APU000072610: {zh: 平均電價（每度）, en: Electricity price per kWh, good: down, kind: pct}
+  半導體:
+    IPG3344S: {zh: 半導體與電子零件產出, en: Semiconductor output, good: up, kind: pct}
+    PCU334413334413: {zh: 半導體出廠價格（PPI）, en: Semiconductor PPI, good: up, kind: pct}
+  銀行與信用:
+    TOTLL: {zh: 銀行放款總額, en: Bank loans, good: up, kind: pct}
+    DPSACBW027SBOG: {zh: 銀行存款總額, en: Bank deposits, good: up, kind: pct}
+    DRALACBN: {zh: 全部貸款逾期率, en: All-loan delinquency, good: down, kind: diff}
 
 # ---------- FRED 總經 / 信用 / 流動性序列 ----------
 fred_series:

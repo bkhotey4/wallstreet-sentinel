@@ -76,7 +76,8 @@ class FredData:
         long_start = str(val.get("fred_start", start))
         trs = (SETTINGS.get("treasury", {}) or {}).get("fred") or {}
         ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())
-                                 + list(trs.keys())))
+                                 + list(trs.keys())
+                                 + [sid for grp in (SETTINGS.get("real_economy") or {}).values() for sid in (grp or {})]))
         starts = {sid: long_start for sid in (val.get("fred") or {})}
         sem = asyncio.Semaphore(4)
         ok, fails, last_err = 0, 0, ""

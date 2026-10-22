@@ -74,6 +74,37 @@ def main():
     eng.sector_health = {"available": True, "ledger": rows[:1], "rows": rows, "themes": th, "transmission": tr, "periods": ("2026-06-30", "2026-06-30")}
     html = SI.sec_ai_ledger(eng) + SI.sec_transmission(eng) + SI.sec_themes_health(eng) + SI.sec_company_health(eng)
     assert "AI 基礎建設帳本" in html and "1.33×" in html and "融資傳導條件成立" in html and "族群體質" in html and "AAA" in html
+    # 產業真實經濟數據: one-year change on the series' own calendar, percentile, licensed masking, card
+    import pandas as pd
+    from wsb.analytics import real_economy as RX
+    idx = pd.date_range("2014-01-01", "2026-09-01", freq="MS")
+    steady = pd.Series([100 * 1.02 ** (i / 12) for i in range(len(idx))], index=idx)          # +2 % a year, every year
+    jump = steady.copy()
+    jump.iloc[-12:] *= [1 + 0.01 * (k + 1) for k in range(12)]                                 # last year: +12 % extra
+    r = RX.one(jump, "up", "pct")
+    assert r["date"] == "2026-09-01" and r["yoy"] > 12 and r["pct"] >= 95 and r["state"] == "better"
+    assert RX.one(jump, "down", "pct")["state"] == "worse"                                      # same move, bad direction
+    assert RX.one(steady, "up", "pct")["state"] == "neutral"                                    # nothing unusual
+    rate = pd.Series([3.0] * (len(idx) - 12) + [3.0 + 0.1 * (k + 1) for k in range(12)], index=idx)
+    rr = RX.one(rate, "down", "diff")
+    assert abs(rr["yoy"] - 1.2) < 1e-9 and rr["state"] == "worse"                               # +1.2 pp in a year
+    from wsb.config import SETTINGS
+    cfg = SETTINGS.raw.setdefault("real_economy", {})
+    old_cfg = dict(cfg)
+    cfg.clear()
+    cfg.update({"測試": {"RSAFS": {"zh": "零售", "en": "Retail", "good": "up", "kind": "pct"},
+                       "UMCSENT": {"zh": "信心", "en": "Sentiment", "good": "up", "kind": "pct"}}})
+    try:
+        e2 = types.SimpleNamespace(fred=types.SimpleNamespace(get=lambda s: jump))
+        out = RX.build(e2)
+        rows = out["sectors"][0]["rows"]
+        assert rows[0]["value"] is not None and rows[1]["value"] is None and rows[1]["licensed"]   # UMich: licensed
+        e2.real_economy = out
+        h = SI.sec_real_economy(e2)
+        assert "產業真實經濟數據" in h and "版權資料" in h and "轉強" in h
+    finally:
+        cfg.clear()
+        cfg.update(old_cfg)
     print("INDUSTRY TESTS PASSED [OK]")
 
 
