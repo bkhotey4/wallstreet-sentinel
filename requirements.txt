@@ -10,3 +10,4 @@ anthropic>=0.40
 google-genai>=1.0
 Pillow>=10.0
 openpyxl>=3.1          # fullmarket: HKEX securities list (xlsx)
+holidays>=0.100        # exchange holidays (pre-market countdown)

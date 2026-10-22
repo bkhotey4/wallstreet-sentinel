@@ -25,15 +25,35 @@ US_CLOSE = [("^GSPC", "標普 500", "S&P 500"), ("^NDX", "那指 100", "Nasdaq 1
             ("TSM", "台積電 ADR", "TSM ADR"), ("^VIX", "VIX", "VIX"), ("TWD=X", "美元/台幣", "USD/TWD")]
 
 
-def next_open(now: datetime, tz: ZoneInfo, hh: int, mm: int) -> datetime:
-    """Next weekday open at hh:mm local (holidays are not modelled)."""
+def _closed(day, market: str) -> bool:
+    """Exchange holiday: NYSE calendar for the US, national holidays for Taiwan (python-holidays).
+    Without the package only weekends count (the page then says the calendar is unavailable)."""
+    try:
+        import holidays
+        cal = holidays.financial_holidays("NYSE", years=day.year) if market == "us" else holidays.country_holidays("TW", years=day.year)
+        return day in cal
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def next_open(now: datetime, tz: ZoneInfo, hh: int, mm: int, market: str = "us", grace_min: int = 30) -> datetime:
+    """Next trading-day open at hh:mm local — skips weekends and exchange holidays; DST via the zone."""
     loc = now.astimezone(tz)
     d = loc.replace(hour=hh, minute=mm, second=0, microsecond=0)
-    if loc > d + timedelta(minutes=30):
+    if loc > d + timedelta(minutes=grace_min):
         d += timedelta(days=1)
-    while d.weekday() >= 5:
+    while d.weekday() >= 5 or _closed(d.date(), market):
         d += timedelta(days=1)
     return d
+
+
+def _bp(item: Dict) -> Optional[float]:
+    """Change of a yield quote in basis points (the feed gives a % change OF the yield level, not of the rate)."""
+    px, ch = item.get("px"), item.get("ch")
+    if px is None or ch is None or ch == -100:
+        return None
+    lvl = px / 10 if px > 20 else px                    # some feeds quote ^TNX ×10
+    return (lvl - lvl / (1 + ch / 100)) * 100
 
 
 def band_record(close: pd.Series, sigma_pct: pd.Series) -> Dict:
@@ -72,6 +92,12 @@ def _mvl(x: Dict) -> str:
 
 
 ASIA = ("^N225", "^KS11", "^HSI", "^TWII")
+BP_MOVE = 5.0                                           # a 10-year move of ≥ 5bp overnight counts as a real rates move
+
+
+def cfg() -> Dict:
+    from ..config import SETTINGS
+    return {"lead_min": 90, "after_open_min": 30, "min_imp": 2, **(SETTINGS.get("premarket", {}) or {})}
 EUROPE = ("^STOXX50E", "^GDAXI")
 
 
@@ -115,10 +141,10 @@ def takeaways_us(d: Dict) -> List[Dict]:
     if sp_dn and g and b and (g.get("ch") or 0) < -0.5 and (b.get("ch") or 0) < -1:
         out.append({"lv": "alert", "zh": "股票、黃金、比特幣同時下跌：投資人連避險資產也一起賣、換回現金——這種「什麼都賣」的情況，常見於投資人被迫降低槓桿的時候。",
                     "en": "Stocks, gold and bitcoin all down: selling across assets for cash — typical of forced de-leveraging."})
-    elif sp_dn and y and (y.get("ch") or 0) < -0.5:
+    elif sp_dn and y and (_bp(y) or 0) <= -BP_MOVE:
         out.append({"lv": "info", "zh": "股票跌、殖利率也跌：資金從股市移到公債避險（典型的避險模式），利率下降對高估值科技股算是一點緩衝。",
                     "en": "Stocks and yields both down: money moving into Treasuries for safety."})
-    elif sp_dn and y and (y.get("ch") or 0) > 0.5:
+    elif sp_dn and y and (_bp(y) or 0) >= BP_MOVE:
         out.append({"lv": "alert", "zh": "股票跌、殖利率卻上升：市場擔心的是通膨或升息，不是景氣——這種組合對高估值成長股壓力最大，公債也無法避險。",
                     "en": "Stocks down while yields rise: an inflation / rates scare — hardest on high-valuation growth, bonds don't hedge."})
     if oil and (oil.get("ch") or 0) >= 2:
@@ -182,8 +208,11 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
     m = getattr(eng, "market", None)
     if m is None:
         return {"available": False}
-    us_open, tw_open = next_open(now, NY, 9, 30), next_open(now, TPE, 9, 0)
-    out: Dict = {"available": True, "built": now.astimezone(TPE).strftime("%m-%d %H:%M"),
+    c = cfg()
+    us_open = next_open(now, NY, 9, 30, "us", c["after_open_min"])
+    tw_open = next_open(now, TPE, 9, 0, "tw", c["after_open_min"])
+    out: Dict = {"available": True, "built": now.astimezone(TPE).strftime("%m-%d %H:%M"), "lead_min": c["lead_min"],
+                 "after_min": c["after_open_min"], "min_imp": c["min_imp"],
                  "us_open": int(us_open.timestamp()), "tw_open": int(tw_open.timestamp()),
                  "us_open_tpe": us_open.astimezone(TPE).strftime("%m-%d %H:%M"), "us_date": us_open.strftime("%Y-%m-%d")}
     out["overnight"] = [{"t": t, "zh": zh, "en": en, "px": q["price"], "ch": q.get("chg_pct"), "asof": q.get("asof"), "sigma": _sigma(m, t)}
@@ -193,7 +222,7 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
     # today's scheduled events (US date of the next open)
     ev = (getattr(eng, "econ_view", None) or {}).get("events") or []
     out["events"] = [{"zh": e.get("zh"), "en": e.get("en"), "tpe": e.get("tpe"), "imp": e.get("imp"), "sep": bool(e.get("sep"))}
-                     for e in ev if e.get("date") == out["us_date"] and not e.get("released") and int(e.get("imp") or 0) >= 2]
+                     for e in ev if e.get("date") == out["us_date"] and not e.get("released") and int(e.get("imp") or 0) >= int(c["min_imp"])]
     te = getattr(eng, "techearn", None)
     cal = ((te.get("calendar") or {}).get("up") or []) if isinstance(te, dict) else []
     mv = {r.get("sym"): r for r in ((getattr(eng, "sx", None) or {}).get("earn") or []) if isinstance(r, dict)}

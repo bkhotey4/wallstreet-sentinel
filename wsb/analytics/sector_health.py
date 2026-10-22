@@ -10,7 +10,12 @@ from typing import Dict, List, Optional
 from ..data import fundamentals as FU
 
 # the AI build-out: the spenders, and the ones that finance it with debt (shown even when outside the tracked list)
-AI_LEDGER = ["MSFT", "GOOGL", "AMZN", "META", "ORCL", "CRWV"]
+def ai_ledger() -> List[str]:
+    from ..config import SETTINGS
+    return list((SETTINGS.get("sector_health") or {}).get("ai_ledger") or ["MSFT", "GOOGL", "AMZN", "META", "ORCL", "CRWV"])
+
+
+AI_LEDGER = ai_ledger()
 RULE_LAB = {k: (zh, en) for k, zh, en, _f in FU.RULES}
 
 
@@ -45,13 +50,14 @@ def by_theme(rows: List[Dict]) -> List[Dict]:
 def transmission(rows: List[Dict], eng) -> Dict:
     """Funding strain (more companies paying capex with outside money) at the same time as tighter credit / higher rates."""
     gap_now = sum(1 for r in rows if "gap" in r["flags"])
-    gap_prev = sum(1 for r in rows if (r["m"].get("capex_ocf_prev") or 0) > 1.0)
+    gap_prev = sum(1 for r in rows if (r["m"].get("capex_ocf_prev") or 0) > 1.0 or r["m"].get("ocf_prev_negative"))
     cover = sum(1 for r in rows if r["m"].get("capex_ocf") is not None and r["m"].get("capex_ocf_prev") is not None)
     st = getattr(eng, "stress", None)
     credit = (getattr(st, "blocks", None) or {}).get("信用") if st is not None else None
     tnx = None
     try:
         s = eng.market.series("^TNX").dropna()
+        s = s / 10 if len(s) and s.median() > 20 else s          # some feeds quote ^TNX ×10 (same rule as factors.py)
         tnx = (float(s.iloc[-1]), float(s.iloc[-1] - s.iloc[-64])) if len(s) > 64 else None
     except Exception:  # noqa: BLE001
         pass

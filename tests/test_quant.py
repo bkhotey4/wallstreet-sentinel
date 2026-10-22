@@ -135,6 +135,27 @@ def test_site_sections():
     assert SQ.sec_rev_exposure(types.SimpleNamespace(segments={})) == ""
 
 
+def test_calendar_and_bp():
+    from datetime import datetime, timezone
+    from wsb.analytics import premarket as PM
+    # Thanksgiving 2026-11-26 (Thu) is skipped: the evening before, the next US open is Friday 11-27
+    nxt = PM.next_open(datetime(2026, 11, 26, 2, 0, tzinfo=timezone.utc), PM.NY, 9, 30, "us")
+    assert nxt.strftime("%Y-%m-%d %H:%M") == "2026-11-27 09:30", nxt
+    # Taiwan Lunar New Year 2027: the next open is a weekday that is not a national holiday
+    import holidays
+    tw = PM.next_open(datetime(2027, 2, 6, 3, 0, tzinfo=timezone.utc), PM.TPE, 9, 0, "tw")
+    assert tw.weekday() < 5 and tw.date() not in holidays.country_holidays("TW", years=2027)
+    # a yield quoted 5.036 and down 2.14 % of its level = about −11 bp (not −2.14 points)
+    assert abs(PM._bp({"px": 5.036, "ch": -2.14}) - (5.036 - 5.036 / 0.9786) * 100) < 1e-9
+    assert abs(PM._bp({"px": 50.36, "ch": -2.14}) - PM._bp({"px": 5.036, "ch": -2.14})) < 1e-9     # ×10 feeds
+    small = {"overnight": [{"t": "ES=F", "zh": "", "en": "", "ch": -0.5, "sigma": 0.8},
+                           {"t": "^TNX", "zh": "", "en": "", "px": 5.0, "ch": 0.4, "sigma": 1}],      # +2 bp only
+             "us_range": {"sigma": 1.0}, "levels": {}, "events": [], "earnings": []}
+    assert not any("殖利率卻上升" in x["zh"] for x in PM.takeaways_us(small))                   # noise is not a rates scare
+    big = {**small, "overnight": [small["overnight"][0], {"t": "^TNX", "zh": "", "en": "", "px": 5.0, "ch": 2.0, "sigma": 1}]}
+    assert any("殖利率卻上升" in x["zh"] for x in PM.takeaways_us(big))                         # ~ +10 bp is
+
+
 def test_takeaways():
     from wsb.analytics import premarket as PM
     from tools import site_quant as SQ
@@ -236,6 +257,7 @@ def test_dispersion():
 
 
 def main():
+    test_calendar_and_bp()
     test_takeaways()
     test_dispersion()
     test_licensing()

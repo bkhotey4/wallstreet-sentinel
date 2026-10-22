@@ -125,8 +125,13 @@ def _mv_rows(items, en_=False):
     for x in items:
         ch = x.get("ch")
         px = num(x["px"], 3 if x["t"] in ("^TNX",) else 2)
-        out += (f'<div class="pmi"><span class="muted small">{T(x["zh"], x["en"])}</span><b>{px}</b>'
-                f'<span class="{cls(ch)}">{num(ch, 2, sign=True, pct=True)}</span></div>')
+        if x["t"] in ("^TNX", "^TYX", "^FVX", "^IRX"):         # yields: the move in basis points, not a % of the yield
+            from wsb.analytics.premarket import _bp
+            bp = _bp(x)
+            chg = f'<span class="{cls(bp)}">{num(bp, 1, sign=True)} bp</span>'
+        else:
+            chg = f'<span class="{cls(ch)}">{num(ch, 2, sign=True, pct=True)}</span>'
+        out += (f'<div class="pmi"><span class="muted small">{T(x["zh"], x["en"])}</span><b>{px}</b>{chg}</div>')
     return out
 
 
@@ -166,7 +171,10 @@ def sec_premarket(eng) -> str:
            f'（{T("一個標準差", "1σ")} {num(rg["lo1"], 0)}～{num(rg["hi1"], 0)}；{T("兩個標準差", "2σ")} {num(rg["lo2"], 0)}～{num(rg["hi2"], 0)}，'
            f'{T("基準", "base")} {esc(rg["base_date"][5:])} {T("收盤", "close")} {num(rg["base"], 0)}）</p>'
            f'<p class="small muted">{_rec(rg.get("record") or {}, "這個範圍", "This band")}'
-           f'{T("VIX 長期高估實際波動，所以 ±1σ 命中率高於 68% 是正常的。", "VIX tends to overstate realised volatility.")}</p>') if rg else ""
+           + (T("命中率高於理論的 68%，代表 VIX 長期高估實際波動（選擇權賣方收取的風險溢酬）。", "Hit rate above 68%: VIX has overstated realised volatility.")
+              if ((rg.get("record") or {}).get("all") or {}).get("in1", 0) > 68 else
+              T("命中率低於理論的 68%，代表實際波動常比 VIX 預期的大。", "Hit rate below 68%: realised moves often exceeded what VIX priced."))
+           + '</p>') if rg else ""
     lv = d.get("levels") or {}
     lvl = (f'<p>{T("SPX 選擇權關鍵價位", "SPX option levels")}：{T("Gamma 翻轉", "gamma flip")} <b>{num(lv.get("zero_gamma"), 0)}</b>・'
            f'{T("Call 牆（壓力）", "call wall")} <b>{num(lv.get("call_wall"), 0)}</b>・{T("Put 牆（支撐）", "put wall")} <b>{num(lv.get("put_wall"), 0)}</b>'
@@ -186,11 +194,19 @@ def sec_premarket(eng) -> str:
           + (f'<p>{T("加權指數的歷史波動範圍（20 日實際波動）", "TAIEX range (20-day realised vol)")}：<b>±{num(tr["sigma"], 2)}%</b>'
              f'（{num(tr["lo1"], 0)}～{num(tr["hi1"], 0)}）</p><p class="small muted">{_rec(tr.get("record") or {}, "這個範圍", "This band")}</p>' if tr else "")
           + '</div>')
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _Z
+    _tz = _Z("Asia/Taipei")
+    lead = int(d.get("lead_min", 90))
+    us_from = _dt.fromtimestamp(d["us_open"] - lead * 60, _tz).strftime("%m-%d %H:%M")
+    tw_from = _dt.fromtimestamp(d["tw_open"] - lead * 60, _tz).strftime("%m-%d %H:%M")
     note = T("不預測漲跌方向：這裡只整理隔夜變化、今天的時程，以及市場自己定價的波動範圍，並公開這個範圍過去準不準。"
              "「今天的重點」是固定規則對這些數字的解讀（例如跌幅和該指數平常單日波動相比、股債金同步的組合代表什麼），🔴 需要留意、🟡 值得注意、🔵 背景。"
-             "開盤前 90 分鐘自動展開（美股：台北 20:00 起，11/2 起改 21:00；台股：07:30 起），其他時間可以點開。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
-             "No direction call — overnight changes, today’s schedule and the range the market prices, with that range’s track record.")
-    body = (f'<details class="pm" id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}"><summary><b id="pmhead">{T("開盤前 30 秒", "30 seconds before the open")}</b> '
+             f"開盤前 {lead} 分鐘自動展開——下一次：美股 {us_from}、台股 {tw_from}（台北時間，已排除週末與交易所休市日，美國夏令／冬令時間自動換算）；"
+             f"經濟數據列出重要度 {'★' * int(d.get('min_imp', 2))} 以上。其他時間可以點開。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
+             "No direction call — overnight changes, today’s schedule and the range the market prices, with that range’s track record. "
+             f"Opens {lead} min before each open (next: US {us_from}, Taiwan {tw_from} Taipei; weekends and exchange holidays skipped).")
+    body = (f'<details class="pm" id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}" data-lead="{lead}" data-after="{int(d.get("after_min", 30))}"><summary><b id="pmhead">{T("開盤前 30 秒", "30 seconds before the open")}</b> '
             f'<span class="muted small" id="pmcount"></span></summary>{us}{tw}'
             f'<div class="pmp" id="pmmine" style="display:none"></div><p class="note">{note}　{T("更新", "Built")} {esc(d["built"])}</p></details>')
     return f'<section class="card wide pmcard">{body}</section>'

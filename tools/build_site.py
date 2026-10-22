@@ -32,6 +32,7 @@ from tools import site_intel as S4
 from tools import site_quant as SQ
 from tools import site_legal as SL_
 from tools import site_industry as SIN
+from tools import site_rates as SR
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -48,7 +49,8 @@ log = logging.getLogger("build_site")
 GROUP_EN = {"us_equity": ("美股指數", "US equities"), "volatility": ("波動率", "Volatility"), "europe": ("歐洲", "Europe"),
             "asia": ("亞洲", "Asia"), "emerging": ("新興市場", "Emerging"), "rates": ("利率／債券", "Rates"),
             "credit": ("信用", "Credit"), "fx": ("外匯", "FX"), "commodities": ("大宗商品", "Commodities"),
-            "crypto": ("加密貨幣", "Crypto"), "sectors": ("美股類股", "Sectors"), "factors": ("風格因子 ETF", "Factor ETFs")}
+            "crypto": ("加密貨幣", "Crypto"), "sectors": ("美股類股", "Sectors"), "factors": ("風格因子 ETF", "Factor ETFs"),
+            "rates_watch": ("利率衝擊觀察", "Rates-shock watch")}
 BLOCK_EN = {"信用": "Credit", "私募信貸": "Private credit", "全球新興": "Global EM", "匯率套息": "FX carry",
             "利率": "Rates", "波動率": "Volatility", "股市結構": "Equity structure", "流動性": "Liquidity",
             "商品加密": "Commodities & crypto", "景氣就業": "Growth & jobs"}
@@ -1172,12 +1174,13 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
   if(!seen[k]&&ss.some(function(s){return hs.indexOf(s)>=0||hs.indexOf(alias[s])>=0;})){seen[k]=1;mine.push(li.cloneNode(true));}});
  if(!mine.length)return;var sec=document.getElementById('ndmine'),ul=sec.querySelector('ul');mine.forEach(function(li){ul.appendChild(li);});sec.style.display='';})();
 // 開盤前 30 秒: open by itself from 90 min before the US / Taiwan open; otherwise a countdown to the next open
-(function(){var b=document.getElementById('pmbox');if(!b)return;var us=+b.dataset.us*1000,tw=+b.dataset.tw*1000,auto=false,touched=false;
+(function(){var b=document.getElementById('pmbox');if(!b)return;var us=+b.dataset.us*1000,tw=+b.dataset.tw*1000,auto=false,touched=false,
+  LEAD=(+b.dataset.lead||90)*6e4,AFT=(+b.dataset.after||30)*6e4;
  function zh(){return document.documentElement.lang!=='en';}
  function fmt(ms){var m=Math.max(0,Math.round(ms/60000)),h=Math.floor(m/60);return (h?h+(zh()?' 小時 ':'h '):'')+(m%60)+(zh()?' 分':'m');}
  function hm(t){try{return new Date(t).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'});}catch(e){return '';}}
  b.addEventListener('toggle',function(){if(!auto)touched=true;auto=false;});
- function tick(){var now=Date.now(),inUS=now>=us-54e5&&now<=us+18e5,inTW=now>=tw-54e5&&now<=tw+9e5,on=inUS||inTW;
+ function tick(){var now=Date.now(),inUS=now>=us-LEAD&&now<=us+AFT,inTW=now>=tw-LEAD&&now<=tw+AFT,on=inUS||inTW;
   b.querySelectorAll('.pmp[data-pm]').forEach(function(p){p.style.display=on?(p.dataset.pm===(inUS?'us':'tw')?'':'none'):'';});
   if(on&&!b.open&&!touched){auto=true;b.open=true;}
   var cand=[[us,zh()?'美股':'US'],[tw,zh()?'台股':'Taiwan']].filter(function(a){return a[0]>now;}).sort(function(a,c){return a[0]-c[0];})[0];
@@ -1228,7 +1231,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("bonds", "美債", "Treasuries", [S2.sec_bonds]),
+            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds]),
             ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [sec_crisis]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),

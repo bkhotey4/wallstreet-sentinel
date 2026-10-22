@@ -124,10 +124,38 @@ universe:
     "VTV": 價值因子
     "VUG": 成長因子
     "QUAL": 品質因子
+  rates_watch:                 # 利率衝擊雷達的警戒線用（不進壓力指數）
+    "IXG": 全球金融股ETF
 
 # 有版權限制的 FRED 序列（ICE BofA 利差、Moody's）：公開網站與公開 AI 評論只顯示衍生指標（百分位、變化方向），
 # 不顯示原始數值；計算（壓力指數、信用循環）照常使用。私人 Discord 不受影響。
 fred_restricted: [BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A3HYC, BAMLH0A1HYBB, BAA10Y, UMCSENT, TRUCKD11]   # + 密大消費者信心、美國卡車協會運量
+
+# ---------- 近期新增模組的可調參數（程式內建同樣的預設值；改這裡即可） ----------
+premarket:
+  lead_min: 90          # 開盤前幾分鐘自動展開「開盤前 30 秒」
+  after_open_min: 30    # 開盤後幾分鐘內仍視為開盤時段
+  min_imp: 2            # 列出的經濟數據重要度下限（★ 數）
+sector_health:
+  ai_ledger: [MSFT, GOOGL, AMZN, META, ORCL, CRWV]   # AI 基礎建設帳本的公司（可以不在追蹤名單內）
+signal_ledger:
+  cost_bp: {us: 10, tw: 45, hk: 30}   # 訊號成績單扣除的來回交易成本（基點）
+  min_n: 20
+factors:
+  lookback: 504         # 因子曝險用多少個交易日估計（約兩年）
+  ridge: 0.05
+personal:
+  days: 14              # 持股事件雷達的天數
+  cost_ratio: 3.0       # 成本和現價相差幾倍要提醒
+  jump_pct: 40.0        # 單日漲跌超過幾 % 要提醒
+  stale_days: 4         # 報價落後幾天要提醒
+rates_radar:
+  beta_window: 126      # 科技股對殖利率的敏感度用幾個交易日估計（約半年）
+  watch:                # 警戒線：MOVE 125、IXG 125 是財經媒體引用的線；10 年 5.25%、30 年 5.5% 是自訂的整數參考線
+    - {t: "^MOVE", zh: "MOVE 美債波動率", en: "MOVE bond volatility", line: 125, side: above}
+    - {t: "IXG", zh: "全球金融股 ETF（IXG）", en: "Global financials ETF (IXG)", line: 125, side: below}
+    - {t: "^TNX", zh: "美債 10 年殖利率", en: "10-year yield", line: 5.25, side: above}
+    - {t: "^TYX", zh: "美債 30 年殖利率", en: "30-year yield", line: 5.5, side: above}
 
 # 產業體檢：各產業的真實經濟數據（FRED，另外下載，不進壓力指數、不放進總經表）
 # good: up = 上升代表變好；down = 上升代表變差。kind: pct = 看年增率；diff = 看一年變化（百分點，用於利率、違約率）

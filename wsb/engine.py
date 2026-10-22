@@ -83,6 +83,7 @@ class Engine:
         self.dispersion: Dict = {}
         self.sector_health: Dict = {}
         self.real_economy: Dict = {}
+        self.rates_radar: Dict = {}                      # 利率衝擊雷達 (yields → tech)
         try:                                             # 華爾街機構觀點（背景）: cached public titles + CFTC positioning
             from .data import street_views as _sv
             self.street: Dict = _sv.load()
@@ -298,6 +299,11 @@ class Engine:
                         self.real_economy = await asyncio.to_thread(rex.build, self)
                     except Exception:  # noqa: BLE001
                         log.exception("real economy failed")
+                    try:                                       # 利率衝擊雷達 (FRED + prices already loaded)
+                        from .analytics import rates_radar as rr
+                        self.rates_radar = await asyncio.to_thread(rr.build, self)
+                    except Exception:  # noqa: BLE001
+                        log.exception("rates radar failed")
                     try:                                       # style factors: cheap (~2 s), public data only
                         from .analytics import factors as fa
                         sc_ = getattr(getattr(self, "stockprices", None), "close", None)

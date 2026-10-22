@@ -70,6 +70,7 @@ class FredData:
         return s
 
     async def refresh(self) -> None:
+        from ..analytics.rates_radar import FRED_IDS as RR_IDS
         every = SETTINGS["refresh"]["fred"]
         start = history_start().isoformat()
         val = SETTINGS.get("valuation", {}) or {}
@@ -77,8 +78,9 @@ class FredData:
         trs = (SETTINGS.get("treasury", {}) or {}).get("fred") or {}
         ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())
                                  + list(trs.keys())
-                                 + [sid for grp in (SETTINGS.get("real_economy") or {}).values() for sid in (grp or {})]))
-        starts = {sid: long_start for sid in (val.get("fred") or {})}
+                                 + [sid for grp in (SETTINGS.get("real_economy") or {}).values() for sid in (grp or {})]
+                                 + list(RR_IDS)))
+        starts = {sid: long_start for sid in list(val.get("fred") or {}) + list(RR_IDS)}   # 利率衝擊雷達 needs 1962+ (1987 check)
         sem = asyncio.Semaphore(4)
         ok, fails, last_err = 0, 0, ""
 

@@ -102,6 +102,7 @@ def metrics(p: Dict) -> Dict:
     m["capex_ocf"] = capex / ocf if capex is not None and ocf and ocf > 0 else None
     m["capex_ocf_prev"] = pv("capex") / pv("ocf") if pv("capex") is not None and pv("ocf") and pv("ocf") > 0 else None
     m["ocf_negative"] = ocf is not None and ocf < 0
+    m["ocf_prev_negative"] = pv("ocf") is not None and pv("ocf") < 0
     cip, gross = v("cip"), v("ppe_gross")
     m["cip_share"] = cip / gross * 100 if cip is not None and gross else None
     m["cip_share_prev"] = pv("cip") / pv("ppe_gross") * 100 if pv("cip") is not None and pv("ppe_gross") else None

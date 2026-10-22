@@ -102,6 +102,15 @@ def sec_company_health(eng) -> str:
     return card("個別公司：財報出現哪些壓力", "Companies: which strain shows in the filings", body, "wide")
 
 
+def _power_note(re_) -> str:
+    """Only when the data shows it: output at a high AND prices rising = strong demand meeting tight supply."""
+    rows = {r["id"]: r for s in re_.get("sectors", []) for r in s["rows"]}
+    out, price = rows.get("IPG2211S"), rows.get("APU000072610")
+    if out and price and (out.get("pct") or 0) >= 90 and (price.get("yoy") or 0) > 0:
+        return "目前發電產出在 10 年高位、電價也在上升：需求強、供給吃緊（例如 AI 資料中心用電），不代表電力沒有瓶頸。"
+    return ""
+
+
 def sec_real_economy(eng) -> str:
     re_ = getattr(eng, "real_economy", None) or {}
     if not re_.get("available"):
@@ -127,7 +136,7 @@ def sec_real_economy(eng) -> str:
                  f'<th>{T("判讀", "Reading")}</th><th>{T("資料月份", "Data for")}</th></tr></thead><tbody>{rows}</tbody></table></div>')
     note = T("資料來源：FRED（聖路易聯邦準備銀行）彙整的官方統計（商務部、勞工統計局、聯準會等）。一年變化：一般數據看年增率，利率和逾期率看變化幾個百分點。"
              "百分位＝這個一年變化在過去 10 年的位置；只有落在最高或最低的四分之一，才判讀為「轉強／轉弱」，其他算持平。"
-             "注意：電力產出創高同時電價上升，代表需求強、供給吃緊（AI 資料中心用電），不等於電力產業沒有瓶頸。"
+             + _power_note(re_) +
              "官方數據有公布時間差（月資料約晚 1 個月、季資料約晚 1 季），日期標在每一列。描述現況，不是預測。",
              "Official statistics via FRED. One-year change = growth rate (levels) or pp change (rates). 'Stronger/weaker' only when the "
              "change is in the outer quarter of its 10-year history. Published with a lag. Descriptive, not a forecast.")
