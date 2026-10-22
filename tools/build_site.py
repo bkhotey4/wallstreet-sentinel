@@ -1079,6 +1079,7 @@ details.card{margin-top:12px}
 .lc .span{fill:var(--warn);opacity:.13}.spanlbl{fill:var(--tx2);font-size:11px}
 .pmcard{padding:10px 16px}.pm>summary{cursor:pointer;list-style:none;font-size:15px}.pm>summary::-webkit-details-marker{display:none}
 .pm>summary::before{content:'▸ ';color:var(--mu)}.pm[open]>summary::before{content:'▾ '}
+.pmtk{background:var(--card2);border-radius:10px;padding:8px 12px;margin:8px 0}.pmtk h4{margin:2px 0 6px;font-size:14px}.pmtk ul{margin:0;padding-left:4px;list-style:none}.pmtk li{margin:4px 0;line-height:1.55;font-size:14px}.pmtk .tk-alert{font-weight:600}
 .pmp{margin-top:10px}.pmp h3{margin:6px 0;font-size:15px}.pmg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin:6px 0}
 .pmi{display:flex;flex-direction:column;background:var(--card2);border-radius:8px;padding:6px 8px;font-size:13px}.pmi b{font-size:15px}
 .pm2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pm2 h4{margin:6px 0 2px;font-size:13px}.pm2 ul{margin:0;padding-left:18px}

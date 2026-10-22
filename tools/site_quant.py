@@ -139,6 +139,15 @@ def _rec(r: Dict, zh_band: str, en_band: str) -> str:
              f"{en_band} since {r.get('since', '')[:4]}: inside ±1σ {a.get('in1', 0):.0f}%, ±2σ {a.get('in2', 0):.0f}% (theory 68 / 95 %).")
 
 
+def _takeaways(items) -> str:
+    """🔑 今天的重點: the rule readings, most important first (alert → watch → info)."""
+    if not items:
+        return ""
+    ico = {"alert": "🔴", "watch": "🟡", "info": "🔵"}
+    lis = "".join(f'<li class="tk-{esc(x["lv"])}">{ico.get(x["lv"], "•")} {T(x["zh"], x["en"])}</li>' for x in items)
+    return f'<div class="pmtk"><h4>🔑 {T("今天的重點", "What matters today")}</h4><ul>{lis}</ul></div>'
+
+
 def sec_premarket(eng) -> str:
     from wsb.analytics import premarket as PM
     try:
@@ -163,14 +172,14 @@ def sec_premarket(eng) -> str:
            f'{T("Call 牆（壓力）", "call wall")} <b>{num(lv.get("call_wall"), 0)}</b>・{T("Put 牆（支撐）", "put wall")} <b>{num(lv.get("put_wall"), 0)}</b>'
            f'<span class="muted small">（{T("現價低於翻轉點時，造市商避險傾向放大波動", "below the flip, dealer hedging tends to amplify moves")}）</span></p>') if lv else ""
     us = (f'<div class="pmp" data-pm="us"><h3>🇺🇸 {T("美股開盤前", "Before the US open")}　<span class="muted small">{T("台北", "Taipei")} {esc(d["us_open_tpe"])}</span></h3>'
-          f'<div class="pmg">{_mv_rows(d.get("overnight", []))}</div>{rng}{lvl}'
+          f'{_takeaways(d.get("take_us"))}<div class="pmg">{_mv_rows(d.get("overnight", []))}</div>{rng}{lvl}'
           f'<div class="pm2"><div><h4>{T("今天的數據（台北時間）", "Today’s data (Taipei time)")}</h4><ul class="small">{ev or "<li class=muted>" + T("沒有重要數據", "No key releases") + "</li>"}</ul></div>'
           f'<div><h4>{T("今天的財報", "Today’s earnings")}</h4><ul class="small">{er or "<li class=muted>" + T("追蹤名單今天沒有財報", "None in the tracked list") + "</li>"}</ul></div></div></div>')
     # ---- Taiwan panel
     tr = d.get("tw_range") or {}
     lk = d.get("tw_link") or {}
     tw = (f'<div class="pmp" data-pm="tw"><h3>🇹🇼 {T("台股開盤前", "Before the Taiwan open")}　<span class="muted small">09:00</span></h3>'
-          f'<div class="pmg">{_mv_rows(d.get("us_close", []))}</div>'
+          f'{_takeaways(d.get("take_tw"))}<div class="pmg">{_mv_rows(d.get("us_close", []))}</div>'
           + (f'<p>{T("統計推估", "Statistical estimate")}：{esc(lk.get("us_n") or "")} {num(lk.get("us"), 2, sign=True, pct=True)} × Beta {num(lk.get("beta"), 2)} '
              f'→ {esc(lk.get("tw_n") or "")} <b class="{cls(lk.get("implied"))}">{num(lk.get("implied"), 2, sign=True, pct=True)}</b>'
              f'<span class="muted small">（{T("近一年相關係數", "1y corr")} {num(lk.get("corr"), 2)}；{T("只反映美股前一晚，不含台股自己的消息", "US overnight only")}）</span></p>' if lk else "")
@@ -178,6 +187,7 @@ def sec_premarket(eng) -> str:
              f'（{num(tr["lo1"], 0)}～{num(tr["hi1"], 0)}）</p><p class="small muted">{_rec(tr.get("record") or {}, "這個範圍", "This band")}</p>' if tr else "")
           + '</div>')
     note = T("不預測漲跌方向：這裡只整理隔夜變化、今天的時程，以及市場自己定價的波動範圍，並公開這個範圍過去準不準。"
+             "「今天的重點」是固定規則對這些數字的解讀（例如跌幅和該指數平常單日波動相比、股債金同步的組合代表什麼），🔴 需要留意、🟡 值得注意、🔵 背景。"
              "開盤前 90 分鐘自動展開（美股：台北 20:00 起，11/2 起改 21:00；台股：07:30 起），其他時間可以點開。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
              "No direction call — overnight changes, today’s schedule and the range the market prices, with that range’s track record.")
     body = (f'<details class="pm" id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}"><summary><b id="pmhead">{T("開盤前 30 秒", "30 seconds before the open")}</b> '

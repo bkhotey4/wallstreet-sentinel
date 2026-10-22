@@ -135,6 +135,31 @@ def test_site_sections():
     assert SQ.sec_rev_exposure(types.SimpleNamespace(segments={})) == ""
 
 
+def test_takeaways():
+    from wsb.analytics import premarket as PM
+    from tools import site_quant as SQ
+
+    def it(t, ch, sig):
+        return {"t": t, "zh": t, "en": t, "ch": ch, "sigma": sig}
+    rough = {"overnight": [it("ES=F", -0.93, 0.8), it("NQ=F", -1.59, 1.1), it("^TNX", -2.1, 1.2), it("CL=F", 2.3, 2.0),
+                           it("GC=F", -1.5, 1.0), it("BTC-USD", -2.8, 2.5), it("^N225", -2.65, 1.1), it("^KS11", -3.5, 1.3),
+                           it("^HSI", -3.0, 1.2), it("^TWII", -1.8, 1.0)],
+             "us_range": {"sigma": 1.13}, "levels": {"spot": 7728, "zero_gamma": 7738}, "events": [], "earnings": [{"sym": "HON", "mv": 4.5}]}
+    t = PM.takeaways_us(rough)
+    txt = " ".join(x["zh"] for x in t)
+    assert t[0]["lv"] == "alert" and "亞股全面下跌" in txt and "黃金、比特幣同時下跌" in txt and "那指期貨" in txt
+    assert "Gamma 翻轉點" in txt and "HON ±4.5%" in txt and "0.8 倍" in txt
+    calm = {"overnight": [it("ES=F", 0.1, 0.8), it("NQ=F", 0.2, 1.1), it("^N225", 0.3, 1.1), it("^KS11", -0.2, 1.3)],
+            "us_range": {"sigma": 1.0}, "levels": {}, "events": [{"zh": "CPI", "en": "CPI", "tpe": "20:30"}], "earnings": []}
+    tc = PM.takeaways_us(calm)
+    assert all(x["lv"] != "alert" for x in tc) and any("CPI" in x["zh"] for x in tc)      # a quiet night raises no alarm
+    tw = PM.takeaways_tw({"us_close": [{"t": "^SOX", "zh": "", "en": "", "ch": -3.4}, {"t": "TWD=X", "zh": "", "en": "", "ch": 0.4}],
+                          "tw_link": {"implied": -1.1, "corr": 0.6}})
+    assert tw[0]["lv"] == "alert" and "台幣貶值" in " ".join(x["zh"] for x in tw)
+    html = SQ._takeaways(t)
+    assert "今天的重點" in html and html.index("🔴") < html.index("🟡")
+
+
 def test_premarket():
     import math
     from datetime import datetime, timezone
@@ -211,6 +236,7 @@ def test_dispersion():
 
 
 def main():
+    test_takeaways()
     test_dispersion()
     test_licensing()
     test_premarket()
