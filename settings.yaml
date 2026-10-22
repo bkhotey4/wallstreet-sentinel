@@ -156,6 +156,11 @@ rates_radar:
     - {t: "IXG", zh: "全球金融股 ETF（IXG）", en: "Global financials ETF (IXG)", line: 125, side: below}
     - {t: "^TNX", zh: "美債 10 年殖利率", en: "10-year yield", line: 5.25, side: above}
     - {t: "^TYX", zh: "美債 30 年殖利率", en: "30-year yield", line: 5.5, side: above}
+vix_explain:
+  lines: [25, 35]       # 要顯示距離的 VIX 線（回測判定「有預警力」的那幾條，數字來自大盤警報規則回測）
+  lookback: 252         # VIX 點數對標普報酬的迴歸用幾個交易日
+  hot_pct: 8.0          # VIX 單日漲超過幾 %，總覽頁才自動出現「VIX 拆解」卡
+  hot_level: 25.0       # 或 VIX 高於這個水準
 
 # 產業體檢：各產業的真實經濟數據（FRED，另外下載，不進壓力指數、不放進總經表）
 # good: up = 上升代表變好；down = 上升代表變差。kind: pct = 看年增率；diff = 看一年變化（百分點，用於利率、違約率）

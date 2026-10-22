@@ -33,6 +33,7 @@ from tools import site_quant as SQ
 from tools import site_legal as SL_
 from tools import site_industry as SIN
 from tools import site_rates as SR
+from tools import site_alerts as SA
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -1215,7 +1216,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SQ.sec_premarket, S2.sec_focus, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SQ.sec_premarket, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
@@ -1227,7 +1228,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
-            ("mood", "情緒與警報", "Mood & alarms", [S4.sec_fg, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
+            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
@@ -1263,6 +1264,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
         panels.append(f'<div class="page{" on" if i == 0 else ""}" id="p-{key}"><div class="grid12">{html_}</div></div>')
     strip = sec_strip(eng)
     asof, stale = data_asof(eng)
+    eng.web_alerts = SA.alerts_payload(eng)                 # 網頁警示 (also written to alerts.json)
     data = json.dumps(_CHARTS, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     foot = T("資料來源：Yahoo Finance、FRED、CBOE、FINRA、SEC EDGAR、TreasuryDirect、證交所／期交所、公開新聞 RSS 與 Google 新聞。平日約每 20 分鐘、週末每 4 小時自動更新；市場轉差時立即重建。"
              "所有數字由程式自動計算；崩跌機率是歷史頻率而非預測，個股評分是量化篩選而非推薦。本站僅提供市場資訊，不構成任何投資建議。"
@@ -1276,14 +1278,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
-<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
+{SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
-<div id="tip" role="status"></div>
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}</script></body></html>'''
+<div id="tip" role="status"></div>{SA.MODAL_HTML}
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1577,6 +1579,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     (out / "index.html").write_text(page_html, encoding="utf-8")
     vb = re.search(r'id="liveb" data-b="(\d+)"', page_html)                 # same stamp as the page → open pages reload once
     (out / "version.json").write_text(json.dumps({"b": int(vb.group(1)) if vb else int(time.time())}), encoding="utf-8")
+    (out / "alerts.json").write_text(json.dumps(getattr(eng, "web_alerts", None) or {"ts": 0, "items": []}, ensure_ascii=False), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")
     write_pwa(out)
