@@ -326,7 +326,19 @@ class MarketData:
         return pd.Series(dtype=float)
 
     def q(self, ticker: str) -> Optional[dict]:
-        return self.quotes.get(ticker)
+        """The live quote — unless the history already has a newer bar (e.g. Yahoo throttled this round and the
+        TWSE file, a day late, filled in): then the newest bar's close / change, so price, % and σ describe one day."""
+        qt = self.quotes.get(ticker)
+        if not qt:
+            return qt
+        s = self.series(ticker)
+        s = s[s > 0]
+        if len(s) >= 2:
+            last_d = s.index[-1].strftime("%Y-%m-%d")
+            if str(qt.get("asof", ""))[:10] < last_d:
+                last, prev = float(s.iloc[-1]), float(s.iloc[-2])
+                return {**qt, "price": last, "prev": prev, "chg_pct": (last / prev - 1) * 100, "asof": last_d, "src": "history"}
+        return qt
 
     def sigma_move(self, ticker: str, lookback: int = 60) -> Optional[float]:
         """Today's return measured in units of the asset's own recent daily vol."""

@@ -97,7 +97,29 @@ def test_web_alerts():
     print("ok web alerts")
 
 
+def test_stale_quote():
+    """台股 case 2026-10-22: Yahoo throttled, the day-late TWSE file gave 10-21 (+1.28%) while history had 10-22 (−1.81%)."""
+    from wsb.data.market import MarketData
+    m = MarketData()
+    idx = pd.bdate_range(end="2026-10-22", periods=80)
+    px = np.linspace(40000, 46890, len(idx))
+    px[-1] = 46041.43
+    m.history = pd.DataFrame({"^TWII": px, "^GSPC": np.linspace(7000, 7660, len(idx))}, index=idx)
+    m.quotes = {"^TWII": {"price": 46887.77, "prev": 46295.0, "chg_pct": 1.28, "asof": "2026-10-21", "source": "TWSE"},
+                "^GSPC": {"price": 7672.0, "prev": 7660.0, "chg_pct": 0.16, "asof": "2026-10-23"}}
+    q = m.q("^TWII")
+    assert q["asof"] == "2026-10-22" and q["price"] == 46041.43 and q["chg_pct"] < -1.5 and q["src"] == "history", q
+    assert m.q("^GSPC")["price"] == 7672.0                    # a quote newer than history is kept as is
+    sg = m.sigma_move("^TWII")
+    assert sg is not None and sg < 0 and np.sign(sg) == np.sign(q["chg_pct"])
+    row = next(r for r in m.returns_table(["^TWII"]) if r["ticker"] == "^TWII")
+    assert row["d1"] < 0 and row["asof"] == "2026-10-22"     # the AI context line now describes one day
+    assert m.q("NOPE") is None
+    print("ok stale quote")
+
+
 if __name__ == "__main__":
+    test_stale_quote()
     test_vix_explain()
     test_web_alerts()
     print("ALL OK")
