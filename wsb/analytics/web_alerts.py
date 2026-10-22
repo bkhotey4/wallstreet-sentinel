@@ -78,8 +78,16 @@ def _vol(eng, out: List[Dict], now: datetime) -> None:
             continue
         if not (x["chg_pct"] == x["chg_pct"]) or np.sign(sg) != np.sign(x["chg_pct"]):
             continue                                       # quote and history disagree → data glitch
+        hs = eng.market.series(t).dropna()
+        if len(hs) and str(x["asof"])[:10] < hs.index[-1].strftime("%Y-%m-%d"):
+            continue                                       # stale quote: σ would be the newer history bar's move, the % the quote's
+        mv = f"{x['chg_pct']:+.2f}%"
+        if t in ("^TNX", "^TYX", "^FVX", "^IRX"):
+            from .vix_explain import _bp
+            b_ = _bp(x)
+            mv = f"{b_:+.0f}bp" if b_ is not None else mv
         out.append({"key": f"sigma:{t}:{x['asof']}:{int(np.sign(sg))}", "lv": "alert", "tab": "markets",
-                    "zh": f"異常波動：{names.get(t, t)} {x['chg_pct']:+.2f}%（{sg:+.1f}σ）", "en": f"Unusual move: {t} {x['chg_pct']:+.2f}% ({sg:+.1f}σ)",
+                    "zh": f"異常波動：{names.get(t, t)} {mv}（{sg:+.1f}σ）", "en": f"Unusual move: {t} {mv} ({sg:+.1f}σ)",
                     "detail": f"單日變動是自己近 60 日波動的 {abs(sg):.1f} 倍"})
     op = getattr(getattr(eng, "options", None), "spx", None) or {}
     if op.get("zero_gamma") and op.get("spot") and op["spot"] < op["zero_gamma"]:

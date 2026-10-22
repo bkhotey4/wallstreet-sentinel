@@ -34,7 +34,7 @@ class FakeMarket:
 
 def market():
     rng = np.random.default_rng(3)
-    idx = pd.bdate_range("2024-01-01", periods=400)
+    idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=400)
     r = rng.normal(0, 1, len(idx))                          # S&P daily %
     vix = pd.Series(16 + (-0.9 * r + rng.normal(0, 0.3, len(idx))), index=idx)    # level noise; diffs carry the relation
     spx = pd.Series(5000 * np.cumprod(1 + r / 100), index=idx)
@@ -77,9 +77,14 @@ def test_web_alerts():
                                 sx={"rules": {"base": {"dd5": 16.0}, "rows": [{"k": "vix25", "zh": "VIX 升破 25", "en": "VIX > 25", "verdict": "warn",
                                                                              "now": True, "last": "2026-10-22", "dd5": 30.0, "n": 93}]}},
                                 portfolio={"total_value_usd": 1e5, "day_pnl_usd": -9000, "positions": [{"sym": "NVDA", "d1_pct": -9}]})
-    eng.market.quotes["^GSPC"]["asof"] = "2099-01-01"        # fresh bar for the σ rule
+    eng.market.quotes["^GSPC"]["asof"] = eng.market.hist["^GSPC"].index[-1].strftime("%Y-%m-%d")   # σ only on the quote's own bar
+    eng.market.sig["HYG"] = -3.5                              # HYG quote older than its history bar → skipped
+    eng.market.hist["HYG"] = eng.market.hist["^GSPC"] / 50
+    eng.market.quotes["HYG"]["asof"] = "2020-01-02"
     out = WA.build(eng)
     keys = [x["key"].split(":")[0] for x in out["items"]]
+    assert not any(x["key"].startswith("sigma:HYG") for x in out["items"])
+    assert any(x["key"].startswith("sigma:^GSPC") for x in out["items"])
     for k in ("ssi", "ssi_jump", "vix_back", "canary", "playbook", "odds", "rule", "gamma"):
         assert k in keys, (k, keys)
     blob = json.dumps(out, ensure_ascii=False)

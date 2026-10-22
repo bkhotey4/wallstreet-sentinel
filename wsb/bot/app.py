@@ -702,6 +702,9 @@ class Sentinel(commands.Bot):
                 continue
             if not (q.get("chg_pct") == q.get("chg_pct")) or np.sign(sg) != np.sign(q["chg_pct"]):
                 continue                                   # quote and history disagree on direction → data glitch, don't alert
+            hs = eng.market.series(t).dropna()
+            if len(hs) and str(q.get("asof", ""))[:10] < hs.index[-1].strftime("%Y-%m-%d"):
+                continue                                   # stale quote: σ would be the newer history bar's move, the % the quote's
             sev = "🚨 CRITICAL" if abs(sg) >= thr + 1.5 or t in A.get("key_assets", []) else "⚠️ WARNING"
             # keyed on the BAR date → a Friday move alerts once, not again on Sat/Sun/Mon morning
             out.append(Alert(f"sigma:{t}:{q['asof']}:{int(np.sign(sg))}", sev,
