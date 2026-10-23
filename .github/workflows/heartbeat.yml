@@ -1,0 +1,51 @@
+name: 雲端心跳（電腦關機也照常更新）
+
+# 平常由家裡電腦上的 bot 每 20 分鐘觸發網站建置；電腦關機時改由這個心跳接手。
+# 每 5 分鐘看一次：最近一次網站建置超過「間隔」而且沒有建置在跑，才觸發一次完整建置。
+# bot 在線時它每次都會看到剛建置過而略過，所以不會重複建置。
+# 一次執行約 5.5 小時，結束前觸發下一次自己，接力不停；下面的排程只是萬一接力斷掉時的備援。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */2 * * *"
+
+concurrency:
+  group: heartbeat
+  cancel-in-progress: false      # 正在跑的心跳不被打斷；同時排隊的只留最新一個，所以永遠只有一條接力
+
+permissions:
+  actions: write                 # 觸發 update.yml 和下一次心跳
+  contents: read
+
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: 每 5 分鐘檢查，網站太久沒更新就建置
+        run: |
+          end=$(( $(date +%s) + 330*60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            if [ "$(date -u +%u)" -le 5 ]; then gap=20; else gap=60; fi        # 平日 20 分鐘、週末 60 分鐘
+            runs=$(gh api "repos/$REPO/actions/workflows/update.yml/runs?per_page=5" \
+                     --jq '[.workflow_runs[] | {s: .status, t: .created_at}]' 2>/dev/null || echo '[]')
+            busy=$(echo "$runs" | jq '[.[] | select(.s != "completed")] | length')
+            newest=$(echo "$runs" | jq -r '.[0].t // empty')
+            age=9999
+            if [ -n "$newest" ]; then age=$(( ($(date +%s) - $(date -d "$newest" +%s)) / 60 )); fi
+            if [ "$busy" -eq 0 ] && [ "$age" -ge $((gap - 2)) ]; then
+              if gh workflow run update.yml -R "$REPO" --ref main -f fast=false; then
+                echo "$(date -u +%H:%M) 觸發建置（上次建置 ${age} 分鐘前）"
+              fi
+            else
+              echo "$(date -u +%H:%M) 略過：建置中 ${busy}、上次建置 ${age} 分鐘前"
+            fi
+            sleep 300
+          done
+
+      - name: 接力：啟動下一次心跳
+        if: ${{ always() }}
+        run: gh workflow run heartbeat.yml -R "$REPO" --ref main
