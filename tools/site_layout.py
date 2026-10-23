@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 GROUPS: List[Tuple[str, str, str, str, str, List[str]]] = [
     ("home", "今日總覽", "Today", "今天市場怎樣、該注意什麼", "Where the market stands today", ["overview"]),
     ("risk", "市場風險", "Market risk", "會不會大跌、壓力在哪", "Crash risk and where the stress is",
-     ["outlook", "risk", "mood", "flows", "valuation", "crisis", "history"]),
+     ["outlook", "risk", "mood", "flows", "valuation", "crisis", "history", "research"]),
     ("macro", "總經與利率", "Macro & rates", "經濟、利率、通膨往哪走", "Economy, rates, inflation", ["econ", "bonds", "energy", "markets"]),
     ("sector", "產業", "Sectors", "哪些產業順風、哪裡有財務風險", "Which sectors have tailwinds or financial risk",
      ["industry", "rotation", "themes", "tech", "growth"]),

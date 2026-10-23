@@ -56,6 +56,17 @@ def _name(pk: pd.Timestamp, tr: pd.Timestamp) -> str:
     return best[1] if best else f"{pk:%Y} 回檔"
 
 
+def wilson(k: int, n: int, z: float = 1.96):
+    """95 % Wilson interval for k successes in n trials (behaves at k = n, unlike the normal approximation)."""
+    if n <= 0:
+        return None, None
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5) / d
+    return max(0.0, c - h) * 100, min(1.0, c + h) * 100
+
+
 def build(eng) -> Dict:
     c = cfg()
     st = getattr(eng, "stress", None)
@@ -95,7 +106,9 @@ def build(eng) -> Dict:
                 fa += 1
         leads = sorted(r["lead"][lv] for r in hit)
         summary[lv] = {"n": len(sc), "hit": len(hit), "early": len(early), "ups": n_up, "false": fa,
-                       "lead_med": leads[len(leads) // 2] if leads else None}
+                       "lead_med": leads[len(leads) // 2] if leads else None,
+                       "hit_ci": wilson(len(hit), len(sc)), "prec": (n_up - fa) / n_up * 100 if n_up else None,
+                       "prec_ci": wilson(n_up - fa, n_up)}
     # where today sits
     now = float(ssi.iloc[-1])
     band = max([lv for lv in [0] + list(c["levels"]) + [60] if lv <= now] or [0])

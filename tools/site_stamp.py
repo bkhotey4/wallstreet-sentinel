@@ -117,7 +117,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
+NONE = {"sec_research", "sec_research_status", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
 
 
 def sources_for(fname: str, tab: str) -> List[str]:

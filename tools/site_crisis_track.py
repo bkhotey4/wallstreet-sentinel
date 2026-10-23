@@ -18,6 +18,10 @@ def sec_crisis_track(eng) -> str:
             f"{s['hit']} 次，其中 {s['early']} 次提前 1 週以上（中位數提前 {s['lead_med'] or 0} 個交易日）。")
     fa = (f"但 SSI 升溫也常是虛驚：同期間 SSI 升上 {lo} 共 {s['ups']} 次，其中 {s['false']} 次之後 6 個月標普沒有跌超過 10%。"
           f"門檻提高到 {hi}（高壓）時假警報少很多（{s2['ups']} 次中 {s2['false']} 次），但 {s2['n']} 次危機只先抓到 {s2['hit']} 次。")
+    if s.get("hit_ci") and s["hit_ci"][0] is not None and s.get("prec") is not None:
+        fa += (f"樣本只有 {s['n']} 次危機，數字的不確定性很大：命中率的 95% 信賴區間約 {s['hit_ci'][0]:.0f}%–{s['hit_ci'][1]:.0f}%；"
+               f"升溫後真的出事的比例（精確率）{s['prec']:.0f}%，95% 區間約 {s['prec_ci'][0]:.0f}%–{s['prec_ci'][1]:.0f}%（Wilson 區間）。"
+               "門檻 55 是看過整段歷史後選的，所以這是樣本內結果。")
     rows = ""
     for x in r["rows"]:
         if not x["scored"]:

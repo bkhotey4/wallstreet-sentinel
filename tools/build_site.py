@@ -41,6 +41,7 @@ from tools import site_layout as SLY
 from tools import site_bottom as SBT
 from tools import site_crisis_track as SCT
 from tools import site_credit as SCR
+from tools import site_research as SRS
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -1235,6 +1236,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
+            ("research", "學術研究", "Research", [SRS.sec_research, SRS.sec_research_status]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
