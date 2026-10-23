@@ -38,10 +38,12 @@ def readings(r: Dict) -> List[Dict]:
                     "en": f"Equity risk premium {g['erp']:.2f}pp — {g['erp_pct']:.0f}th percentile since {g['erp_since']}."})
     if g.get("gap") is not None and g["gap"] < 0 and g.get("y1987") is not None:
         out.append({"lv": "watch", "zh": f"「像 1987」的量化檢查：10 年期殖利率（{g['nominal']:.2f}%）高於股票盈餘殖利率（{g['ey']:.2f}%），差距 {g['gap']:+.2f} 個百分點，方向和 1987 年一樣；"
-                                         f"但 1987 年 7 月的差距是 {g['y1987']:+.2f}、2000 年初是 {g.get('y2000', 0):+.2f}，現在小得多。"
-                                         f"而且 1962 年以來有 {g.get('neg_share', 0):.0f}% 的季度差距都是負的，所以它代表「股票相對公債偏貴」，不是崩盤的時間點。",
+                                         f"但 1987 年 7 月的差距是 {g['y1987']:+.2f}" + (f"、2000 年初是 {g['y2000']:+.2f}" if g.get("y2000") is not None else "") + "，現在小得多。"
+                                         + (f"而且 1962 年以來有 {g['neg_share']:.0f}% 的季度差距都是負的，" if g.get("neg_share") is not None else "")
+                                         + "所以它代表「股票相對公債偏貴」，不是崩盤的時間點。",
                     "en": f"'Like 1987' check: bond yield above the earnings yield ({g['gap']:+.2f}pp) — same sign as 1987 ({g['y1987']:+.2f}) but far smaller; "
-                          f"negative in {g.get('neg_share', 0):.0f}% of quarters since 1962, so it is a valuation statement, not timing."})
+                          + (f"negative in {g['neg_share']:.0f}% of quarters since 1962, " if g.get("neg_share") is not None else "")
+                          + "so it is a valuation statement, not timing."})
     near = [w for w in (r.get("watch") or []) if not w["hit"] and w["dist_pct"] <= 5]
     hit = [w for w in (r.get("watch") or []) if w["hit"]]
     if hit:
@@ -54,6 +56,17 @@ def readings(r: Dict) -> List[Dict]:
     if f.get("pct") is not None and f["pct"] >= 70:
         out.append({"lv": "watch", "zh": f"聯邦利息支出已占稅收 {f['ratio']:.1f}%（{f['since']} 年以來第 {f['pct']:.0f} 百分位；歷史最高 {f['max']:.0f}% 在 {f['max_q']} 年）：利息支出越高，赤字越大、需要發行的公債就越多，市場要消化的供給也越多。",
                     "en": f"Federal interest = {f['ratio']:.1f}% of tax receipts ({f['pct']:.0f}th pctile since {f['since']})."})
+    gl = r.get("global") or {}
+    if gl.get("together"):
+        by = {x["key"]: x for x in gl.get("rows") or []}
+        out.append({"lv": "alert", "zh": "美國與日本長債同步上衝：" + "、".join(f"{by[k]['zh']} {by[k]['chg_bp']:+.0f}bp" for k in ("us10", "jp10", "jp30") if k in by)
+                                         + f"（{gl['step']} 個交易日，都在各自歷史變化的前 {100 - gl['hot_pct']:.0f}%）。長債賣壓跨國一起出現時，常是全球資金在重新配置，不只是單一國家的消息。",
+                    "en": "US and Japanese long bonds selling off together (each 20-day rise in the top of its own history)."})
+    hd = gl.get("hedged") or {}
+    if hd.get("pickup") is not None and hd["pickup"] < 0:
+        out.append({"lv": "watch", "zh": f"日本投資人買美債避險後只剩約 {hd['hedged']:.2f}%，比直接買日本 10 年債（{hd['jgb10']:.2f}%）少 {abs(hd['pickup']):.2f} 個百分點："
+                                         "日本是美債最大的海外買家之一，這個差距為負時，買盤更可能留在日本。",
+                    "en": f"Yen-hedged US 10-year ≈ {hd['hedged']:.2f}% vs JGB 10-year {hd['jgb10']:.2f}% — buying at home pays more."})
     order = {"alert": 0, "watch": 1, "info": 2}
     return sorted(out, key=lambda x: order[x["lv"]])
 
@@ -126,6 +139,23 @@ def sec_rates_radar(eng) -> str:
         body += (f'<h3>{T("7. AI 公司的借錢成本", "7. What AI companies pay to borrow")}</h3><table class="mini"><thead><tr><th></th>'
                  f'<th class="r">{T("總負債（美元）", "Total debt (USD)")}</th><th class="r">{T("平均借款成本", "Avg cost of debt")}</th><th class="r">{T("負債年增", "Debt y/y")}</th><th class="r">{T("利息／營業利益", "Interest/EBIT")}</th><th>{T("財報期", "Period")}</th></tr></thead>'
                  f'<tbody>{rows}</tbody></table><p class="small muted">{T("平均借款成本＝近 12 個月利息支出 ÷ 目前負債，反映的是舊債與新債的平均；新發債的利率通常更高。", "Average cost = TTM interest ÷ debt; new issues usually cost more.")}</p>')
+    gl = r.get("global") or {}
+    if gl.get("rows"):
+        rows = "".join(f'<tr><td>{T(x["zh"], x["en"])}</td><td class="r"><b>{num(x["now"], 2)}%</b></td>'
+                       f'<td class="r {cls(x["chg_bp"])}">{num(x["chg_bp"], 0, sign=True)} bp</td><td class="r">{num(x.get("chg_pct"), 0)}</td>'
+                       f'<td class="r">{num(x.get("lvl_pct"), 0)}</td><td class="small muted">{esc(x["since"])}–{esc(x["asof"])}</td></tr>' for x in gl["rows"])
+        body += (f'<h3>{T("8. 全球長債：美、日、英、德", "8. Global long bonds: US, Japan, UK, Germany")}</h3><table class="mini"><thead><tr><th></th>'
+                 f'<th class="r">{T("殖利率", "Yield")}</th><th class="r">{T("近期變化", "Recent change")}</th><th class="r">{T("變化百分位", "chg pctile")}</th>'
+                 f'<th class="r">{T("水準百分位", "level pctile")}</th><th>{T("資料期間", "Data")}</th></tr></thead><tbody>{rows}</tbody></table>'
+                 f'<p class="small muted">{T("近期變化：日資料看 " + str(gl.get("step", 20)) + " 個交易日，英、德是 OECD 月資料看 1 個月。日本來自財務省，其他來自 FRED。", "Daily rows: change over the step in trading days; UK/Germany: monthly OECD data, month on month.")}</p>')
+        hd = gl.get("hedged") or {}
+        if hd:
+            body += (f'<div class="kv"><div><span class="muted">{T("美債 10 年", "US 10-year")}</span><b>{num(hd["us10"], 2)}%</b></div>'
+                     f'<div><span class="muted">{T("− 日圓避險成本（約美日 1 年利差）", "− yen hedge (≈ 1y rate gap)")}</span><b>{num(hd["hedge_cost"], 2)}</b></div>'
+                     f'<div><span class="muted">{T("＝ 日本投資人避險後收益", "= yen-hedged yield")}</span><b>{num(hd["hedged"], 2)}%</b></div>'
+                     f'<div><span class="muted">{T("對比日本 10 年債", "vs JGB 10-year")}</span><b class="{cls(hd["pickup"])}">{num(hd["pickup"], 2, sign=True)}</b>'
+                     f'<span class="small muted">{T("第", "pctile")} {num(hd.get("pickup_pct"), 0)} {T("百分位", "")}（{esc(hd["since"])}–）</span></div></div>'
+                     f'<p class="small muted">{T("避險成本用美日 1 年期公債利差近似，實際的換匯成本還包含基差，通常更高。", "Hedge cost approximated by the 1-year rate gap; actual FX-swap cost adds a basis.")}</p>')
     note = T("把「美債殖利率 → AI 科技股」這條鏈放在一起看：殖利率為什麼漲、股票相對公債貴不貴、科技股對利率多敏感、離媒體常說的警戒線多遠、政府付利息的壓力、長債有沒有人買、AI 公司借錢有多貴。"
              "全部來自官方與市場數據（FRED、財政部、SEC、Yahoo）；🔑 重點是固定規則的解讀，不是預測，也不是投資建議。",
              "The Treasury → tech chain in one place, from official and market data. Readings are fixed rules, not forecasts or advice.")

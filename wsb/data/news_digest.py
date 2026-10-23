@@ -98,7 +98,7 @@ async def _translate(titles: List[str]) -> Dict[str, str]:
         from ..ai import llm
         prompt = ("把下列英文新聞標題翻成自然的繁體中文（台灣用語），保留公司名稱與數字，逐行輸出，行數與順序必須完全相同，不要編號、不要加任何說明：\n"
                   + "\n".join(titles))
-        text, name = await llm.complete("你是財經新聞編輯，只做翻譯。", prompt, 1500)
+        text, name = await llm.complete("你是財經新聞編輯，只做翻譯。", prompt, 1500, check=False)   # 億/billion rewording ≠ new data
         if name == "none" or not text or text.startswith("⚠️"):
             return {}
         lines = [x.strip() for x in text.strip().splitlines() if x.strip()]

@@ -133,8 +133,9 @@ def divergence(st, close: Optional[pd.Series] = None, thr: Optional[float] = Non
 
 # ---------------------------------------------------------------- 4) credibility: walk-forward + post-mortems
 def walk_forward(ssi: pd.Series, close: pd.Series, days: int, dd: float,
-                 edges: Optional[List[float]] = None, min_train: int = 504) -> Dict:
-    """Yearly expanding-window out-of-sample test of the bucketed crash-odds model (with an `days` embargo)."""
+                 edges: Optional[List[float]] = None, min_train: int = 504, regime_labels: Optional[pd.DataFrame] = None) -> Dict:
+    """Yearly expanding-window out-of-sample test of the bucketed crash-odds model (with an `days` embargo).
+    regime_labels (regime_split.labels): also split the out-of-sample record by regime."""
     edges = edges or SETTINGS.get("crash_odds", {}).get("buckets", [0, 35, 55, 70, 85, 101])
     close = close.dropna()
     df = pd.DataFrame({"ssi": ssi}).join(close.rename("px"), how="inner").dropna()
@@ -142,7 +143,7 @@ def walk_forward(ssi: pd.Series, close: pd.Series, days: int, dd: float,
     valid = fmr.notna()
     hit = ((fmr <= -dd) & valid).astype(float)
     bucket = pd.Series(np.digitize(df["ssi"].values, edges) - 1, index=df.index).clip(0, len(edges) - 2)
-    P, Y, B = [], [], []
+    P, Y, B, D = [], [], [], []
     for yr in sorted(set(df.index.year)):
         test = (df.index.year == yr) & valid.values
         first = int(df.index.searchsorted(pd.Timestamp(year=yr, month=1, day=1)))
@@ -159,14 +160,20 @@ def walk_forward(ssi: pd.Series, close: pd.Series, days: int, dd: float,
         P.append(bucket[test].map(probs).values)
         Y.append(hit[test].values)
         B.append(np.full(int(test.sum()), base))
+        D.append(df.index[test])
     if not P:
         return {"days": days, "drawdown_pct": dd * 100, "n_test": 0}
     p, y, b0 = np.concatenate(P), np.concatenate(Y), np.concatenate(B)
     bs, bs0 = float(np.mean((p - y) ** 2)), float(np.mean((b0 - y) ** 2))
     a = auc(pd.Series(p), pd.Series(y))
-    return {"days": days, "drawdown_pct": dd * 100, "n_test": int(len(y)), "events": int(y.sum()),
-            "auc_oos": a, "verdict": _verdict(a), "brier": bs, "brier_base": bs0,
-            "skill": float(1 - bs / bs0) if bs0 > 0 else None}
+    out = {"days": days, "drawdown_pct": dd * 100, "n_test": int(len(y)), "events": int(y.sum()),
+           "auc_oos": a, "verdict": _verdict(a), "brier": bs, "brier_base": bs0,
+           "skill": float(1 - bs / bs0) if bs0 > 0 else None}
+    if regime_labels is not None and len(regime_labels):
+        from .regime_split import cfg as rs_cfg, split as rs_split
+        oos = pd.DataFrame({"p": p, "y": y}, index=D[0].append(D[1:]) if len(D) > 1 else D[0])
+        out["regimes"] = rs_split(oos, regime_labels, int(rs_cfg()["min_events"]))
+    return out
 
 
 def drawdown_episodes(close: pd.Series, ssi: pd.Series, min_dd: float = 0.10, warn: float = 55.0,
@@ -208,9 +215,9 @@ def drawdown_episodes(close: pd.Series, ssi: pd.Series, min_dd: float = 0.10, wa
     return eps
 
 
-def model_quality(ssi: pd.Series, close: pd.Series) -> Dict:
+def model_quality(ssi: pd.Series, close: pd.Series, regime_labels: Optional[pd.DataFrame] = None) -> Dict:
     hz = SETTINGS.get("crash_odds", {}).get("horizons", [])
-    wf = [walk_forward(ssi, close, int(h["days"]), float(h["drawdown"])) for h in hz]
+    wf = [walk_forward(ssi, close, int(h["days"]), float(h["drawdown"]), regime_labels=regime_labels) for h in hz]
     for w, h in zip(wf, hz):                                                  # in-sample AUC for reference
         df = pd.DataFrame({"ssi": ssi}).join(close.dropna().rename("px"), how="inner").dropna()
         fm = forward_min_return(df["px"], int(h["days"]))

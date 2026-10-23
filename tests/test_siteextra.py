@@ -288,14 +288,14 @@ def main():
     # AI bull / bear notes (stubbed model), then assemble + render
     from wsb.ai import llm
 
-    async def fake_llm(system, prompt, max_tokens=900):
+    async def fake_llm(system, prompt, max_tokens=900, **kw):
         assert "不得出現買進" in system and "營收年增" in prompt
         return json.dumps({"bull": "營收年增 40%，成長加速。", "bear": "估值偏高。\n建議買進。", "risk": "觀察營收年增是否跌破 20%。"}), "stub"
     llm.complete = fake_llm
     assert asyncio.run(SX.generate_debates(3)) == 3 and asyncio.run(SX.generate_debates(3)) == 0, "weekly cache"
     calls = []
 
-    async def bad_llm(system, prompt, max_tokens=900):
+    async def bad_llm(system, prompt, max_tokens=900, **kw):
         calls.append(1)
         return "not json at all", "stub"
     llm.complete = bad_llm
@@ -304,7 +304,7 @@ def main():
     dbc = json.loads(SX.F_DEBATE.read_text(encoding="utf-8"))
     assert sum(1 for v in dbc.values() if v.get("fail_ts")) == 7 and not SX.F_DEBATE.with_suffix(".tmp").exists()
 
-    async def slow_llm(system, prompt, max_tokens=900):
+    async def slow_llm(system, prompt, max_tokens=900, **kw):
         await asyncio.sleep(30)
     llm.complete = slow_llm
     SX.F_DEBATE.write_text(json.dumps({}), encoding="utf-8")

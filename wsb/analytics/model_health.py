@@ -175,7 +175,7 @@ def build(eng, now_ts: Optional[float] = None) -> Dict:
     try:
         bk = json.loads((Path(__file__).with_name("bankruptcy_model.json")).read_text(encoding="utf-8"))
         models.append({"key": "bankruptcy", "zh": "破產預測模型", "en": "Bankruptcy model", "status": "insufficient",
-                       "why": f"{bk.get('trained', '—')} 訓練，樣本外 AUC {bk.get('oos', {}).get('auc', 0):.2f}（{str(bk.get('eval_years', ''))[:9]}）；"
+                       "why": f"{bk.get('trained', '—')} 訓練，樣本外 AUC {format(bk['oos']['auc'], '.2f') if (bk.get('oos') or {}).get('auc') is not None else '—'}（{str(bk.get('eval_years', ''))[:9]}）；"
                               "上線後的實際破產要一年以上才會出現，紀錄累積中"})
     except Exception:  # noqa: BLE001
         pass

@@ -1358,8 +1358,9 @@ def personal_embed(d: Dict) -> "discord.Embed":
         e.add_field(name="最密集的一天", value=f"{b['date']}：{len(b['items'])} 個事件同日，波動可能疊加", inline=False)
     sp = d.get("split")
     if sp:
+        fxc = f"{sp['fx_chg_pct']:+.2f}%" if sp.get("fx_chg_pct") is not None else "匯率漲跌缺"     # Python < 3.12: no nested same-quote f-strings
         e.add_field(name="今日損益拆解（新台幣）",
-                    value=f"股價 {sp['price']:+,.0f}｜美元匯率 {sp['fx']:+,.0f}（{sp['fx_chg_pct'] or 0:+.2f}%）｜合計 {sp['total']:+,.0f}"
+                    value=f"股價 {sp['price']:+,.0f}｜美元匯率 {sp['fx']:+,.0f}（{fxc}）｜合計 {sp['total']:+,.0f}"
                           + (f"\n{sp['missing']} 檔缺今日漲跌，未計入" if sp.get("missing") else ""), inline=False)
     fx_ = d.get("factors")
     if fx_:

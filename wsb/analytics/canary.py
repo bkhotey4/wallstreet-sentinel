@@ -332,6 +332,11 @@ def hike_light(eng) -> Dict:
                          + (f"；一週變化 {d1w:+.0f}bp" if d1w is not None else "；一週變化：快照累積中")}
 
 
+def _pc_lights(eng) -> List[Dict]:
+    from . import private_credit as pcl
+    return pcl.lights(eng)
+
+
 def vix1d_light(eng) -> Dict:
     row = {"id": "vix1d", "group": "避險失效", "zh": "當日恐慌 VIX1D ÷ VIX", "en": "Same-day fear: VIX1D ÷ VIX", "kind": "rule",
            "why": "VIX1D 是「今天收盤前」的隱含波動。它遠高於 VIX＝市場在為一兩天內的衝擊付費；FOMC、CPI 前偏高是正常的。",
@@ -371,7 +376,7 @@ def build(eng, close: Optional[pd.DataFrame] = None) -> Dict:
     rows = []
     for fn in (lambda: score_lights(eng), lambda: [rrp_light(eng)], lambda: [margin_light(eng)], lambda: [cash_dash_light(eng)],
                lambda: [split_light(eng, close)], lambda: [revision_light(eng)], lambda: [hike_light(eng)],
-               lambda: [vix1d_light(eng)]):
+               lambda: [vix1d_light(eng)], lambda: _pc_lights(eng)):
         try:
             rows += fn()
         except Exception:  # noqa: BLE001

@@ -162,7 +162,7 @@ def headline(p: Dict, pub: Dict, bench_today: Optional[float] = None) -> List[st
     rc = sorted(p["risk_contrib"].items(), key=lambda kv: -kv[1])[:3]
     if rc:
         L.append("風險主要來自：" + "、".join(f"{LAB[k][0]} {v * 100:.0f}%" for k, v in rc)
-                 + f"；個股自身 {(1 - (p['factor_share'] or 0)) * 100:.0f}%")
+                 + (f"；個股自身 {(1 - p['factor_share']) * 100:.0f}%" if p.get("factor_share") is not None else ""))
     td = sorted(p["today"].items(), key=lambda kv: -abs(kv[1]))[:3]
     L.append(f"因子日（{pub.get('asof', '—')}）的影響：" + "、".join(f"{LAB[k][0]} {v * 100:+.2f}%" for k, v in td)
              + (f"；個股自身 {p['specific_today'] * 100:+.2f}%" if p.get("specific_today") is not None else ""))

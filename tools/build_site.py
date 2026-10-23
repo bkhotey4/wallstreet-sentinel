@@ -32,6 +32,8 @@ from tools import site_intel as S4
 from tools import site_quant as SQ
 from tools import site_legal as SL_
 from tools import site_industry as SIN
+from tools import site_energy as SE
+from tools import site_regime as SRG
 from tools import site_rates as SR
 from tools import site_alerts as SA
 from tools import site_stamp as STP
@@ -52,7 +54,7 @@ GROUP_EN = {"us_equity": ("美股指數", "US equities"), "volatility": ("波動
             "asia": ("亞洲", "Asia"), "emerging": ("新興市場", "Emerging"), "rates": ("利率／債券", "Rates"),
             "credit": ("信用", "Credit"), "fx": ("外匯", "FX"), "commodities": ("大宗商品", "Commodities"),
             "crypto": ("加密貨幣", "Crypto"), "sectors": ("美股類股", "Sectors"), "factors": ("風格因子 ETF", "Factor ETFs"),
-            "rates_watch": ("利率衝擊觀察", "Rates-shock watch")}
+            "rates_watch": ("利率衝擊觀察", "Rates-shock watch"), "private_credit": ("私募信貸", "Private credit")}
 BLOCK_EN = {"信用": "Credit", "私募信貸": "Private credit", "全球新興": "Global EM", "匯率套息": "FX carry",
             "利率": "Rates", "波動率": "Volatility", "股市結構": "Equity structure", "流動性": "Liquidity",
             "商品加密": "Commodities & crypto", "景氣就業": "Growth & jobs"}
@@ -942,10 +944,12 @@ PUBLIC_SYSTEM = """你是華爾街跨資產策略分析師，正在為一個「�
 【鐵律】
 1. 只能使用 DATA PACK 中的數字；沒有的寫「資料缺」，絕不編造。每個結論附上支撐數據。
 2. 這是市場描述，不是投資建議：不得提出任何買進、賣出、加碼、減碼、停損、避險比例、目標 β、部位調整幅度等操作建議，也不得針對個股給出價位或操作；不得假設讀者持有任何部位。
-3. 可以描述市場正在發生什麼、哪些風險訊號在升溫、歷史上類似情況如何、接下來值得觀察的數據與事件。
+3. 可以描述市場正在發生什麼、哪些風險訊號在升溫、歷史上類似情況如何（只能引用 DATA PACK 的歷史統計，不得憑記憶寫歷史數字）、接下來值得觀察的數據與事件。
 4. 機率要誠實；引用崩跌機率時說明那是歷史頻率、不是預測。
 5. 一律使用台灣繁體中文與台灣用語，語氣冷靜精準；金融術語可保留英文。
-6. 個股評分、大師 13F 持倉、內部人申報只能當作「市場正在發生什麼」來描述（哪些族群強、誰上季新建倉或出清），不得暗示讀者跟進或據此操作。"""
+6. 個股評分、大師 13F 持倉、內部人申報只能當作「市場正在發生什麼」來描述（哪些族群強、誰上季新建倉或出清），不得暗示讀者跟進或據此操作。
+7. 引用百分位或變化時，照抄 DATA PACK 寫的期間（「3年百分位 98」不可寫成「歷史百分位 98」）。
+8. 門檻、價位只能用 DATA PACK 裡已有的數字；程式會刪掉找不到資料來源的數字。"""
 
 PUBLIC_BRIEF = """根據 DATA PACK 撰寫今日的公開市場評論（Markdown，總長 ≤ 1800 字），結構如下：
 
@@ -1207,12 +1211,13 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
-            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, sec_model_health]),
+            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds]),
+            ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
-            ("crisis", "歷史危機", "Past crises", [sec_crisis]),
+            ("crisis", "歷史危機", "Past crises", [sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
             ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),

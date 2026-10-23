@@ -265,8 +265,15 @@ DEBATE_SYS = """你是買方研究部的三人小組，為公開網頁替一檔�
 1. 只能使用提供的數字與事實，沒有的就不提；不得編造新聞、產品、客戶、管理層說法或任何未提供的數字。
 2. 這不是投資建議：不得出現買進、賣出、加碼、減碼、停損、停利、目標價、部位比例等任何操作字眼。
 3. 多方：提供的數據裡最有力的成長或品質證據。空方：估值、獲利品質、成長放緩、燒錢、併購墊高營收等疑慮。
-   風控：哪些數字一變就代表論點出問題（例如營收年增跌破多少、現金可撐年數、毛利率），只描述要觀察什麼。
+   風控：哪些指標一變就代表論點出問題（例如營收年增、現金可撐年數、毛利率），寫出指標與目前數值，不要自己訂門檻數字。
 4. 每段 2～3 句、台灣繁體中文。只輸出 JSON：{"bull":"…","bear":"…","risk":"…"}"""
+
+
+def _numcheck(text: str, source: str) -> str:
+    """A short field: drop sentences with unsourced numbers, without the footnote (an emptied field fails the symbol)."""
+    from ..ai import numcheck as NC
+    out, dropped = NC.check(text, source)
+    return out.replace(NC.NOTE.format(n=len(dropped)), "").strip() if dropped else out
 
 
 def debate_prompt(r: Dict, info: Dict) -> str:
@@ -334,7 +341,8 @@ async def generate_debates(limit: int = 10, max_age_days: float = 7, deadline_s:
                 continue
             wait = min(call_timeout_s, t_end - time.monotonic())
             try:
-                text, name = await asyncio.wait_for(llm.complete(DEBATE_SYS, debate_prompt(r, info.get(sym) or {}), 900), wait)
+                prompt = debate_prompt(r, info.get(sym) or {})
+                text, name = await asyncio.wait_for(llm.complete(DEBATE_SYS, prompt, 900, check=False), wait)   # JSON: checked per field below
             except asyncio.TimeoutError:
                 if wait >= call_timeout_s:                     # the call itself hung (not just the end of this run's budget)
                     failed(sym, "timeout")
@@ -349,7 +357,7 @@ async def generate_debates(limit: int = 10, max_age_days: float = 7, deadline_s:
                 break                                          # the engine is failing: stop for this run
             try:
                 js = json.loads(text[text.index("{"):text.rindex("}") + 1])
-                out = {k: scrub(str(js.get(k, ""))) for k in ("bull", "bear", "risk")}
+                out = {k: scrub(_numcheck(str(js.get(k, "")), DEBATE_SYS + "\n" + prompt)) for k in ("bull", "bear", "risk")}
             except Exception:  # noqa: BLE001
                 failed(sym, "unparseable JSON")
                 continue

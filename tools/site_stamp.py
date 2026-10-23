@@ -98,7 +98,7 @@ TAB_DEFAULT: Dict[str, List[str]] = {
     "overview": ["px", "ssi"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
-    "rotation": ["px"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
+    "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
     "news": ["news"], "history": ["ssi"], "inputs": ["px", "fred"],
 }
 CARD: Dict[str, List[str]] = {
@@ -106,7 +106,7 @@ CARD: Dict[str, List[str]] = {
     "sec_econ_mini": ["econ"], "sec_fg_mini": ["px", "crypto"], "sec_scores_mini": ["stocks"], "sec_trends": ["px"],
     "sec_ssi": ["ssi"], "sec_radar": ["ssi"], "sec_odds": ["ssi"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
-    "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_model_health": ["model"],
+    "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],

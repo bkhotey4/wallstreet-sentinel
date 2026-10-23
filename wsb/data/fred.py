@@ -70,7 +70,9 @@ class FredData:
         return s
 
     async def refresh(self) -> None:
-        from ..analytics.rates_radar import FRED_IDS as RR_IDS
+        from ..analytics.energy_chain import FRED_IDS as EC_IDS
+        from ..analytics.rates_radar import FRED_IDS as RR_IDS, LONG_IDS as RR_LONG
+        from ..analytics.regime_split import FRED_IDS as RS_IDS
         every = SETTINGS["refresh"]["fred"]
         start = history_start().isoformat()
         val = SETTINGS.get("valuation", {}) or {}
@@ -79,8 +81,9 @@ class FredData:
         ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())
                                  + list(trs.keys())
                                  + [sid for grp in (SETTINGS.get("real_economy") or {}).values() for sid in (grp or {})]
-                                 + list(RR_IDS)))
-        starts = {sid: long_start for sid in list(val.get("fred") or {}) + list(RR_IDS)}   # 利率衝擊雷達 needs 1962+ (1987 check)
+                                 + list(RR_IDS) + list(EC_IDS) + list(RS_IDS)))
+        # full history only where a module needs it; DGS2 (an SSI input) and the energy-chain series keep the usual start
+        starts = {sid: long_start for sid in list(val.get("fred") or {}) + list(RR_LONG) + list(RS_IDS)}   # 利率衝擊雷達 needs 1962+ (1987 check)
         sem = asyncio.Semaphore(4)
         ok, fails, last_err = 0, 0, ""
 

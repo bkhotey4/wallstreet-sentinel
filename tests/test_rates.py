@@ -100,9 +100,58 @@ def test_fiscal_auctions_card():
 
 from tools import site_rates as RR_site  # noqa: E402
 
+
+def test_jgb_parse():
+    from wsb.data import global_yields as GY
+    txt = ("Interest Rate\n"
+           "Date,1Y,2Y,3Y,4Y,5Y,6Y,7Y,8Y,9Y,10Y,15Y,20Y,25Y,30Y,40Y\n"
+           "1974/9/24,10.327,9.362,8.83,8.515,8.348,8.29,8.24,8.121,8.127,-,-,-,-,-,-\n"
+           "2026/9/30,1.05,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.95,3.2,3.3,3.4,3.5,3.7\n"
+           "2026/10/1,1.06,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,3.01,3.2,3.3,3.4,3.55,3.7\n")
+    df = GY.parse(txt)
+    assert list(df.columns) == ["1Y", "2Y", "5Y", "10Y", "20Y", "30Y"] and len(df) == 3
+    assert pd.isna(df["10Y"].iloc[0]) and df["10Y"].iloc[-1] == 3.01 and df.index[-1] == pd.Timestamp("2026-10-01")
+    try:
+        GY.parse("Interest Rate\nfoo,bar\n1,2\n")
+        raise AssertionError("a CSV without 10Y must raise")
+    except (ValueError, StopIteration):
+        pass
+    print("ok MOF JGB parser")
+
+
+def test_global_long():
+    idx = pd.bdate_range("2016-01-01", "2026-10-20")
+    flat = lambda v: pd.Series(v, index=idx)  # noqa: E731
+    def surge(a):                                             # flat, then +60bp over the last 20 trading days
+        s = pd.Series(a, index=idx, dtype=float)
+        s.iloc[-20:] = a + np.linspace(0.03, 0.6, 20)
+        return s
+    fred = {"DGS10": surge(4.6), "DGS1": flat(4.0), "DGS30": surge(5.0)}
+    m = pd.date_range("2000-01-01", "2026-09-01", freq="MS")
+    fred["IRLTLT01GBM156N"] = pd.Series(np.linspace(4, 4.9, len(m)), index=m)
+    jgb = {"10Y": surge(2.4), "30Y": surge(2.9), "1Y": flat(0.9)}
+    g = RR.global_long(fred.get, lambda t: jgb.get(t, pd.Series(dtype=float)), 85.0, 20)
+    by = {r["key"]: r for r in g["rows"]}
+    assert set(by) == {"us10", "us30", "jp10", "jp30", "uk10"}, by.keys()    # Germany missing → left out, not invented
+    assert abs(by["jp10"]["chg_bp"] - 60) < 1e-6 and by["jp10"]["chg_pct"] > 99 and by["uk10"]["freq"] == "m"
+    assert g["together"]
+    hd = g["hedged"]
+    assert abs(hd["hedge_cost"] - 3.1) < 1e-9 and abs(hd["hedged"] - (5.2 - 3.1)) < 1e-6 and hd["pickup"] < 0, hd
+    calm = RR.global_long({**fred, "DGS10": flat(4.6)}.get, lambda t: jgb.get(t, pd.Series(dtype=float)), 85.0, 20)
+    assert not calm["together"]
+    assert RR.global_long({}.get, lambda t: pd.Series(dtype=float), 85.0, 20) is None
+    r = {"available": True, "global": g}
+    rd = RR_site.readings(r)
+    assert rd[0]["lv"] == "alert" and "同步上衝" in rd[0]["zh"] and any("避險後" in x["zh"] for x in rd)
+    html = RR_site.sec_rates_radar(types.SimpleNamespace(rates_radar=r))
+    assert "8. 全球長債" in html and "日本 10 年" in html and "+60 bp" in html, html[:400]
+    print("ok global long bonds")
+
 if __name__ == "__main__":
     test_decompose()
     test_yield_gap_and_1987()
     test_beta_and_watch()
     test_fiscal_auctions_card()
+    test_jgb_parse()
+    test_global_long()
     print("ALL OK")

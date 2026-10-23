@@ -85,6 +85,18 @@ universe:
     "BX": 黑石
     "APO": 阿波羅
     "ARES": Ares
+  private_credit:              # 私募信貸燈號用（BDC 股價對淨值、保險／資管一籃）
+    "ARCC": Ares Capital
+    "OBDC": Blue Owl Capital
+    "BXSL": 黑石私募信貸
+    "FSK": FS KKR
+    "MAIN": Main Street
+    "GBDC": Golub
+    "HTGC": Hercules
+    "KKR": KKR
+    "CRBG": Corebridge
+    "BHF": Brighthouse
+    "IAK": 美國保險ETF
   fx:
     "DX-Y.NYB": 美元指數
     "EURUSD=X": 歐元/美元
@@ -100,6 +112,8 @@ universe:
     "CL=F": WTI原油
     "BZ=F": 布蘭特原油
     "NG=F": 天然氣
+    "HO=F": 熱燃油(柴油)
+    "RB=F": 汽油
     "GC=F": 黃金
     "SI=F": 白銀
     "HG=F": 銅
@@ -159,6 +173,32 @@ rates_radar:
     - {t: "IXG", zh: "全球金融股 ETF（IXG）", en: "Global financials ETF (IXG)", line: 125, side: below}
     - {t: "^TNX", zh: "美債 10 年殖利率", en: "10-year yield", line: 5.25, side: above}
     - {t: "^TYX", zh: "美債 30 年殖利率", en: "30-year yield", line: 5.5, side: above}
+  global_hot_pct: 85    # 全球長債：20 日變化在自身歷史 ≥ 此百分位算「急升」；美 10、日 10、日 30 同時急升 → 同步上衝
+  global_step: 20       # 用幾個交易日的變化
+regime_split:           # 依環境拆開驗證模型 + 滯脹年代對照（不進壓力指數）
+  fed_step_pp: 0.25     # 聯邦基金利率 6 個月變化 ≥ +0.25 個百分點＝升息中；≤ −0.25＝降息中
+  fed_months: 6
+  corr_days: 60         # 股債相關性用幾個交易日
+  min_events: 5         # 某環境下事件少於此數就不算 AUC（樣本太少）
+  analogs:              # 滯脹／升息年代的對照期間（可自行增減）
+    - {name: "1973–74 石油禁運", start: "1973-01-11", end: "1974-10-03"}
+    - {name: "1980–82 Volcker 升息", start: "1980-11-28", end: "1982-08-12"}
+    - {name: "1990 波斯灣戰爭", start: "1990-07-16", end: "1990-10-11"}
+    - {name: "1994 債市屠殺", start: "1994-02-02", end: "1994-04-04"}
+    - {name: "2022 暴力升息", start: "2022-01-03", end: "2022-10-12"}
+private_credit:         # 私募信貸燈號（金絲雀）：門檻都是自身歷史百分位
+  bdcs: [ARCC, OBDC, BXSL, FSK, MAIN, GBDC, HTGC]
+  insurers: [APO, KKR, CRBG, BHF, IAK]
+  months: 60            # 收購要約件數抓幾個月（SEC 全文搜尋）
+  hot_pct: 85           # ≥ 此百分位黃燈；≥ 95 紅燈
+  discount_pct: 15      # BDC 折價中位數超過幾 % 也亮黃燈
+  rel_days: 60          # 保險／資管一籃相對標普的天數
+energy_chain:           # 能源傳導鏈：原油 → 柴油 → 通膨預期 → 2 年期殖利率（不進壓力指數）
+  hot_pct: 85           # 裂解價差在自身歷史 ≥ 此百分位 → 偏緊
+  extreme_pct: 95
+  beta_window: 504      # 柴油對 5 年通膨預期的傳導用幾個交易日估計（約兩年）
+  step: 20              # 用每 20 個交易日的變化（不重疊）做迴歸
+  stocks_low_pct: -8.0  # 餾分油庫存比過去 5 年同週平均低超過幾 % → 提醒（需 EIA_API_KEY）
 vix_explain:
   lines: [25, 35]       # 要顯示距離的 VIX 線（回測判定「有預警力」的那幾條，數字來自大盤警報規則回測）
   lookback: 252         # VIX 點數對標普報酬的迴歸用幾個交易日

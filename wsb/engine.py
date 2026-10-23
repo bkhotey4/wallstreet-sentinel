@@ -107,6 +107,15 @@ class Engine:
         self.earn_verdict: Dict = {}      # 財報結論
         from .data.finra import MarginDebt
         self.margin_debt = MarginDebt()   # FINRA 融資餘額（月）
+        from .data.eia import EIAData
+        self.eia = EIAData()              # EIA 餾分油庫存（週，需 EIA_API_KEY）
+        from .data.global_yields import GlobalYields
+        self.global_yields = GlobalYields()  # 日本公債殖利率（財務省，日）
+        from .data.long_history import LongHistory
+        self.long_history = LongHistory()  # 標普 1927 起日線（滯脹年代對照）
+        self.regime_split: Dict = {}      # 依環境拆開驗證 + 滯脹年代對照
+        self.private_credit: Dict = {}    # 私募信貸：收購要約件數、BDC 淨值（SEC）
+        self.energy_chain: Dict = {}      # 能源傳導鏈 (oil → diesel → breakevens → 2-year)
         self.canary: Dict = {}            # 金絲雀燈號
         self.distress: Dict = {}          # 企業危機雷達
         self.rulebook: Dict = {}          # 我的持股規則檢查（私人）
@@ -157,7 +166,8 @@ class Engine:
                  ("stocks", self.stockprices.refresh()), ("stocknews", self.stocknews.refresh()),
                  ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()),
                  ("fedwatch", self.fedwatch.refresh()), ("finra", self.margin_debt.refresh()),
-                 ("distress", self.refresh_distress()))
+                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()),
+                 ("private_credit", self.refresh_private_credit()), ("spx_long", self.long_history.refresh()), ("distress", self.refresh_distress()))
         # each feed gets its own timeout: one hung source can't hold phase 2 (and the bot's loops) forever
         res = await asyncio.gather(*(asyncio.wait_for(c, tmo) for _, c in feeds), return_exceptions=True)
         if not self.site_mode:                           # the site build forces its own (frames) earnings refresh later
@@ -236,6 +246,10 @@ class Engine:
         mine = [h for h in self.holding_tickers() if "." not in h]          # private: stays in this machine's cache
         self.segments = sg.public(await sg.refresh_for(list(dict.fromkeys(us + mine)), time_budget_s=time_budget_s))
 
+    async def refresh_private_credit(self) -> None:
+        from .data import private_credit as pcd
+        self.private_credit = await pcd.refresh()
+
     async def refresh_earnings(self, force: bool = False, frames: bool = False) -> None:
         """frames (whole-market US tech via SEC frames) is only needed by the website build."""
         mine = [h for h in self.holding_tickers() if "." not in h]          # EPS surprises for the rulebook too
@@ -246,9 +260,10 @@ class Engine:
         res = await asyncio.gather(self.stockprices.refresh(), self.stocknews.refresh(), self.treasury.refresh(),
                                    self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
                                    self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), self.refresh_segments(),
-                                   self.refresh_street(), return_exceptions=True)
+                                   self.refresh_street(), self.eia.refresh(), self.global_yields.refresh(), self.refresh_private_credit(),
+                                   self.long_history.refresh(), return_exceptions=True)
         for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments",
-                          "street"), res):
+                          "street", "eia", "mof_jgb", "private_credit", "spx_long"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
         try:
@@ -283,8 +298,12 @@ class Engine:
                     bench = SETTINGS.get("crash_odds", {}).get("benchmark", "^GSPC")
                     close = self.market.series(bench)
                     hrs = float(SETTINGS.get("shock", {}).get("quality_refresh_hours", 6))
-                    if not skip_quality and (self._quality is None or time.time() - self._quality_ts > hrs * 3600):
-                        self._quality = await asyncio.to_thread(sk.model_quality, self.stress.history, close)
+                    no_regimes = (self._quality is not None and len(self.fred.get("FEDFUNDS"))       # FRED arrived after the last run
+                                  and any(w.get("n_test") and "regimes" not in w for w in self._quality.get("walk_forward", [])))
+                    if not skip_quality and (self._quality is None or no_regimes or time.time() - self._quality_ts > hrs * 3600):
+                        from .analytics import regime_split as rsp
+                        lab = rsp.labels(self.fred.get("FEDFUNDS"), close, self.fred.get("DGS10"))
+                        self._quality = await asyncio.to_thread(sk.model_quality, self.stress.history, close, lab)
                         self._quality_ts = time.time()
                         try:
                             self.lab = await asyncio.to_thread(lb.run, self.market.history, self.stress.history, close, self.fred)
@@ -310,6 +329,16 @@ class Engine:
                         self.rates_radar = await asyncio.to_thread(rr.build, self)
                     except Exception:  # noqa: BLE001
                         log.exception("rates radar failed")
+                    try:                                       # 依環境拆開驗證 + 滯脹年代對照
+                        from .analytics import regime_split as rsp
+                        self.regime_split = await asyncio.to_thread(rsp.build, self, self._quality)
+                    except Exception:  # noqa: BLE001
+                        log.exception("regime split failed")
+                    try:                                       # 能源傳導鏈 (FRED + prices already loaded)
+                        from .analytics import energy_chain as ec
+                        self.energy_chain = await asyncio.to_thread(ec.build, self)
+                    except Exception:  # noqa: BLE001
+                        log.exception("energy chain failed")
                     try:                                       # style factors: cheap (~2 s), public data only
                         from .analytics import factors as fa
                         sc_ = getattr(getattr(self, "stockprices", None), "close", None)

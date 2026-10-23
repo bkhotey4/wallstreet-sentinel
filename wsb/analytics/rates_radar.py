@@ -12,6 +12,10 @@
 5. Fiscal strain: federal interest payments ÷ federal tax receipts (BEA, quarterly), total public debt.
 6. Long-end auctions: the latest 10/20/30-year results vs their recent average (from the Treasury module).
 7. AI borrowing: implied cost of debt (interest ÷ debt) and debt growth of the AI ledger companies (SEC filings).
+8. Global long bonds: US, Japan (MOF, daily), UK and Germany (OECD via FRED, monthly) — level and 20-day change, each
+   against its own history; a "together" flag when the US 10-year and both JGB tenors all rise at the top of their own
+   20-day-change history; and the US 10-year a Japanese investor keeps after hedging the yen (≈ 10-year minus the
+   1-year US–Japan rate gap) compared with simply buying a 10-year JGB.
 Descriptive, not a forecast."""
 from __future__ import annotations
 
@@ -22,7 +26,9 @@ import pandas as pd
 
 from ..config import SETTINGS
 
-FRED_IDS = ("DGS10", "DFII10", "T10YIE", "THREEFYTP10", "NFCPATAX", "NCBEILQ027S", "A091RC1Q027SBEA", "W006RC1Q027SBEA", "GFDEBTN")
+FRED_IDS = ("DGS10", "DFII10", "T10YIE", "THREEFYTP10", "NFCPATAX", "NCBEILQ027S", "A091RC1Q027SBEA", "W006RC1Q027SBEA", "GFDEBTN",
+            "DGS1", "DGS30", "IRLTLT01GBM156N", "IRLTLT01DEM156N")
+LONG_IDS = tuple(x for x in FRED_IDS if x not in ("DGS1", "DGS30"))   # full history (DGS1/30 keep the usual start)
 
 
 def cfg() -> Dict:
@@ -30,7 +36,8 @@ def cfg() -> Dict:
          "watch": [{"t": "^MOVE", "zh": "MOVE 美債波動率", "en": "MOVE bond volatility", "line": 125, "side": "above"},
                    {"t": "IXG", "zh": "全球金融股 ETF（IXG）", "en": "Global financials ETF (IXG)", "line": 125, "side": "below"},
                    {"t": "^TNX", "zh": "美債 10 年殖利率", "en": "10-year yield", "line": 5.25, "side": "above"},
-                   {"t": "^TYX", "zh": "美債 30 年殖利率", "en": "30-year yield", "line": 5.5, "side": "above"}]}
+                   {"t": "^TYX", "zh": "美債 30 年殖利率", "en": "30-year yield", "line": 5.5, "side": "above"}],
+         "global_hot_pct": 85.0, "global_step": 20}
     return {**d, **(SETTINGS.get("rates_radar", {}) or {})}
 
 
@@ -171,6 +178,48 @@ def ai_borrowing(eng) -> List[Dict]:
     return out
 
 
+def _row(key, zh, en, s: pd.Series, step: Optional[int], freq: str) -> Optional[Dict]:
+    """Level and recent change (bp) of one yield, each against its own history.  step = trading days (daily series);
+    None = monthly series, compared month on month."""
+    if s is None or len(s.dropna()) < 30:
+        return None
+    ch = (s.diff(step) if step else s.diff()) * 100
+    ch = ch.dropna()
+    if not len(ch):
+        return None
+    v, c = float(s.iloc[-1]), float(ch.iloc[-1])
+    return {"key": key, "zh": zh, "en": en, "now": v, "chg_bp": c, "chg_pct": _pct(ch, c), "lvl_pct": _pct(s, v),
+            "since": s.index[0].strftime("%Y"), "asof": s.index[-1].strftime("%Y-%m-%d"), "freq": freq}
+
+
+def global_long(get, jgb, hot_pct: float, step: int) -> Optional[Dict]:
+    """jgb: callable tenor → Series (MOF).  Rows that have no data are left out."""
+    rows = [r for r in (
+        _row("us10", "美國 10 年", "US 10-year", get("DGS10"), step, "d"),
+        _row("us30", "美國 30 年", "US 30-year", get("DGS30"), step, "d"),
+        _row("jp10", "日本 10 年", "Japan 10-year", jgb("10Y"), step, "d"),
+        _row("jp30", "日本 30 年", "Japan 30-year", jgb("30Y"), step, "d"),
+        _row("uk10", "英國 10 年（月）", "UK 10-year (monthly)", get("IRLTLT01GBM156N"), None, "m"),
+        _row("de10", "德國 10 年（月）", "Germany 10-year (monthly)", get("IRLTLT01DEM156N"), None, "m")) if r]
+    if not rows:
+        return None
+    by = {r["key"]: r for r in rows}
+    trio = [by.get(k) for k in ("us10", "jp10", "jp30")]
+    out = {"rows": rows, "step": step, "hot_pct": hot_pct,
+           "together": all(r and r["chg_bp"] > 0 and r["chg_pct"] is not None and r["chg_pct"] >= hot_pct for r in trio)}
+    us10, us1, jp10, jp1 = get("DGS10"), get("DGS1"), jgb("10Y"), jgb("1Y")
+    if all(x is not None and len(x.dropna()) for x in (us10, us1, jp10, jp1)):
+        j = pd.concat([us10.rename("u10"), us1.rename("u1"), jp10.rename("j10"), jp1.rename("j1")], axis=1).dropna()
+        if len(j) > 60:
+            hedged = j["u10"] - (j["u1"] - j["j1"])                  # 1-year FX hedge ≈ the 1-year rate gap
+            pickup = hedged - j["j10"]
+            out["hedged"] = {"us10": float(j["u10"].iloc[-1]), "hedge_cost": float(j["u1"].iloc[-1] - j["j1"].iloc[-1]),
+                             "hedged": float(hedged.iloc[-1]), "jgb10": float(j["j10"].iloc[-1]), "pickup": float(pickup.iloc[-1]),
+                             "pickup_pct": _pct(pickup, float(pickup.iloc[-1])), "since": j.index[0].strftime("%Y"),
+                             "asof": j.index[-1].strftime("%Y-%m-%d")}
+    return out
+
+
 def build(eng) -> Dict:
     fr, m = getattr(eng, "fred", None), getattr(eng, "market", None)
     if fr is None or m is None:
@@ -181,6 +230,9 @@ def build(eng) -> Dict:
     out = {"available": True, "decomp": decompose(get), "gap": yield_gap(get, m.series("^GSPC")),
            "beta": tech_beta(px, m.series("^TNX"), int(c["beta_window"])), "watch": watch_lines(m.series, c["watch"]),
            "fiscal": fiscal(get), "auctions": long_auctions(eng)}
+    gy = getattr(eng, "global_yields", None)
+    jgb = gy.get if gy is not None else (lambda t: pd.Series(dtype=float))  # noqa: E731
+    out["global"] = global_long(get, jgb, float(c["global_hot_pct"]), int(c["global_step"]))
     try:
         out["ai"] = ai_borrowing(eng)
     except Exception:  # noqa: BLE001

@@ -177,7 +177,7 @@ def test_score_lights_on_engine():
     assert {r["id"] for r in rows} == {x[0] for x in CN.SCORE_LIGHTS}
     assert all(r["state"] in ("ok", "watch", "alert", "warmup", "stale", "na") for r in rows)
     out = CN.build(eng)
-    assert out["available"] and len(out["rows"]) == len(CN.SCORE_LIGHTS) + 7
+    assert out["available"] and len(out["rows"]) == len(CN.SCORE_LIGHTS) + 10         # 7 rule lights + 3 private-credit lights
     from wsb.config import SETTINGS
     ssi_ids = {c["id"] for c in SETTINGS.get("stress_components", [])}
     assert not ({"sofr_iorb", "sofr99_iorb", "cp_tbill", "stock_bond_corr"} & ssi_ids)          # validated wrong-way → out of the SSI

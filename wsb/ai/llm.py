@@ -11,6 +11,7 @@ from typing import Awaitable, Callable, List, Tuple
 
 from ..config import (ANTHROPIC_API_KEY, ANTHROPIC_MODEL, GEMINI_API_KEY, GEMINI_MODEL, LLM_PRIMARY, env)
 from ..health import HEALTH
+from . import numcheck
 
 log = logging.getLogger(__name__)
 _anthropic = None
@@ -98,8 +99,8 @@ def _engines() -> List[Tuple[str, Callable]]:
     return [e for k in order if k in groups for e in groups[k]]
 
 
-async def complete(system: str, user: str, max_tokens: int = 3500) -> Tuple[str, str]:
-    """Returns (text, engine_used)."""
+async def complete(system: str, user: str, max_tokens: int = 3500, check: bool = True) -> Tuple[str, str]:
+    """Returns (text, engine_used). With `check`, sentences whose numbers aren't in the prompt are dropped (numcheck)."""
     engines = _engines()
     if not engines:
         return "⚠️ 未設定任何 AI 金鑰（ANTHROPIC / GEMINI / OPENAI），AI 研判停用；量化數據不受影響。", "none"
@@ -127,6 +128,8 @@ async def complete(system: str, user: str, max_tokens: int = 3500) -> Tuple[str,
                 # one health entry for the whole chain: a fallback model answering is a healthy outcome, so a primary
                 # model that is merely unavailable on this account (e.g. free tier) no longer shows as a broken source
                 HEALTH.ok("llm", 1, every=86400)
+                if check:
+                    txt, _ = numcheck.check(txt.strip(), system + "\n" + user)
                 return txt.strip(), name.split(":", 1)[1]
         except Exception as e:  # noqa: BLE001
             reason = _short(e)

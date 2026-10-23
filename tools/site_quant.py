@@ -139,9 +139,12 @@ def _rec(r: Dict, zh_band: str, en_band: str) -> str:
     if not r:
         return ""
     a, y = r.get("all") or {}, r.get("y1") or {}
-    return T(f"{zh_band}自 {r.get('since', '')[:4]} 年起：收盤落在 ±1σ 內 {a.get('in1', 0):.0f}%、±2σ 內 {a.get('in2', 0):.0f}%"
-             f"（近一年 {y.get('in1', 0):.0f}% / {y.get('in2', 0):.0f}%；理論值 68% / 95%）。",
-             f"{en_band} since {r.get('since', '')[:4]}: inside ±1σ {a.get('in1', 0):.0f}%, ±2σ {a.get('in2', 0):.0f}% (theory 68 / 95 %).")
+    if a.get("in1") is None or a.get("in2") is None:               # no hit-rate record → say nothing rather than "0%"
+        return ""
+    yr = (f"（近一年 {y['in1']:.0f}% / {y['in2']:.0f}%；理論值 68% / 95%）。" if y.get("in1") is not None and y.get("in2") is not None
+          else "（理論值 68% / 95%）。")
+    return T(f"{zh_band}自 {r.get('since', '')[:4]} 年起：收盤落在 ±1σ 內 {a['in1']:.0f}%、±2σ 內 {a['in2']:.0f}%" + yr,
+             f"{en_band} since {r.get('since', '')[:4]}: inside ±1σ {a['in1']:.0f}%, ±2σ {a['in2']:.0f}% (theory 68 / 95 %).")
 
 
 def _takeaways(items) -> str:
