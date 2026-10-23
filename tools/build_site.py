@@ -1042,6 +1042,7 @@ h2{margin:0 0 8px;font-size:12.5px;font-weight:700;letter-spacing:.06em;color:va
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.trend .th{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
 .path{margin-bottom:12px}.ph{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .pill.warn{border-color:var(--warn);color:var(--warn)}.mh{width:100%;border-collapse:collapse}.mh td,.mh th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}.mh-drift{color:var(--dn)}.mh-watch{color:var(--warn)}.mh-ok{color:var(--up)}.mh-insufficient{color:var(--mu)}
+.brief{margin:4px 0 10px;padding-left:20px;line-height:1.7}.sbd details{margin:6px 0}.sbd summary{cursor:pointer}
 .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);border-radius:99px;padding:1px 9px;font-size:12px;white-space:nowrap;color:var(--tx2)}
 .meter{height:6px;border-radius:99px;background:var(--card2);overflow:hidden;min-width:60px;margin-top:4px}.meter i{display:block;height:100%;border-radius:99px}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 7px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:middle}
@@ -1209,7 +1210,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
-            ("industry", "產業體檢", "Sector health", [SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
+            ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
@@ -1473,6 +1474,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.info("sector health: %s companies", (eng.sector_health or {}).get("n"))
     except Exception as e:  # noqa: BLE001
         log.warning("fundamentals refresh failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 產業簡報: SPDR sector holdings (daily) × earnings season × FRED drivers
+        await asyncio.wait_for(eng.refresh_sector_brief(), 120)
+        log.info("sector brief: %s sectors", len((eng.sector_brief or {}).get("sectors") or []))
+    except Exception as e:  # noqa: BLE001
+        log.warning("sector brief failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 華爾街機構觀點（背景）: public titles + CFTC positioning, cached 6 h
         await asyncio.wait_for(eng.refresh_street(), 90)
     except Exception as e:  # noqa: BLE001

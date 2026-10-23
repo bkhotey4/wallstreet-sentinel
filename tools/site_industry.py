@@ -141,3 +141,73 @@ def sec_real_economy(eng) -> str:
              "Official statistics via FRED. One-year change = growth rate (levels) or pp change (rates). 'Stronger/weaker' only when the "
              "change is in the outer quarter of its 10-year history. Published with a lag. Descriptive, not a forecast.")
     return card("產業真實經濟數據：官方統計怎麼說", "The real economy by sector: official statistics", body + f'<p class="note">{note}</p>', "wide")
+
+
+# ------------------------------------------------------------------ 產業簡報
+_VERD = {"tail": ("▲ 順風", "▲ Tailwind", "up"), "neutral": ("● 中性", "● Neutral", "muted"), "head": ("▼ 逆風", "▼ Headwind", "dn")}
+_ST = {"better": ("偏多", "positive", "up"), "worse": ("偏空", "negative", "dn"), "neutral": ("常態", "normal", "muted")}
+
+
+def _vpill(v: str) -> str:
+    zh, en, c = _VERD[v]
+    return f'<b class="{c}">{T(zh, en)}</b>'
+
+
+def sec_sector_brief(eng) -> str:
+    sb = getattr(eng, "sector_brief", None) or {}
+    if not sb.get("available"):
+        return ""
+    ov = sb["overview"]
+    lines = "".join(f"<li>{T(x, x)}</li>" for x in ov["lines"])
+    conc = f'<p><b>{T(ov["concl"], ov["concl"])}</b></p>' if ov.get("concl") else ""
+    note = T(f"每天依當天收盤自動更新（產業成分股名單取自 State Street 每日公布的 11 檔產業 SPDR ETF 持股，資料日 {sb.get('members_asof') or '—'}）。"
+             "判讀由固定規則產生：股價（3 個月相對大盤）、本季財報（優於預估比例對全市場）、相關經濟數據（FRED 官方統計與原物料價格）各給 −1／0／+1，"
+             "合計 ≥ +2 為順風、≤ −2 為逆風。描述現況，不是預測，也不是投資建議。",
+             "Updated daily. Fixed rules: price (3m vs S&P 500), this season's earnings (beat rate vs market), economic drivers (FRED, commodities), "
+             "each −1/0/+1; sum ≥ +2 tailwind, ≤ −2 headwind. Descriptive, not a forecast or advice.")
+    body = f'<ul class="brief">{lines}</ul>{conc}<p class="note">{note}</p>'
+    return card("產業簡報：美國各產業現在的處境", "Sector briefing: where US industries stand", body, "wide")
+
+
+def sec_sector_table(eng) -> str:
+    sb = getattr(eng, "sector_brief", None) or {}
+    if not sb.get("available"):
+        return ""
+    mkt = sb.get("market") or {}
+    rows, det = "", ""
+    order = sorted(sb["sectors"], key=lambda s: (-s["score"]["total"], -((s["px"] or {}).get("rel3m") or -99)))
+    for s in order:
+        p, e, sc = s["px"] or {}, s["earn"] or {}, s["score"]
+        prev = s.get("prev_total")
+        chg = ("" if prev is None else (f' <span class="small {cls(sc["total"] - prev)}">{T("一週前", "1w ago")} {prev:+d}</span>'))
+        earn = (f'{e["n"]} {T("家", "")}・{num(e.get("beat"), 0)}%' + (f'<div class="small muted">{T("差距中位", "median surprise")} {num(e.get("surp"), 1, sign=True)}%</div>' if e.get("surp") is not None else "")
+                if e.get("n") else '<span class="muted">—</span>')
+        good = sum(d["state"] == "better" for d in s["drivers"])
+        bad = sum(d["state"] == "worse" for d in s["drivers"])
+        rows += (f'<tr><td class="nw"><b>{T(s["zh"], s["en"])}</b> <span class="muted small">{esc(s["etf"])}</span></td>'
+                 f'<td>{_vpill(s["verdict"])} <span class="small muted">{sc["total"]:+d}</span>{chg}</td>'
+                 f'<td class="r {cls(p.get("rel3m"))}"><b>{num(p.get("rel3m"), 1, sign=True)}</b></td>'
+                 f'<td class="r {cls(p.get("r1m"))}">{num(p.get("r1m"), 1, sign=True, pct=True)}</td>'
+                 f'<td class="r {cls(p.get("ytd"))}">{num(p.get("ytd"), 1, sign=True, pct=True)}</td>'
+                 f'<td class="r">{num(p.get("off_hi"), 1, pct=True)}</td>'
+                 f'<td class="r">{earn}</td>'
+                 f'<td class="r"><span class="up">{good}</span> / <span class="dn">{bad}</span></td></tr>')
+        drv = "".join(f'<tr><td>{T(d["zh"], d["zh"])}</td><td class="r">{T(d["txt"], d["txt"])}</td>'
+                      f'<td class="{_ST[d["state"]][2]}">{T(_ST[d["state"]][0], _ST[d["state"]][1])}</td><td class="small muted">{esc(d.get("date") or "")}</td></tr>'
+                      for d in s["drivers"])
+        nxt = "、".join(f'{esc(r["sym"])}（{esc(r["date"][5:])}）' for r in s["next"])
+        det += (f'<details class="sgx"><summary>{_vpill(s["verdict"])} <b>{T(s["zh"], s["en"])}</b></summary>'
+                f'<p>{T(s["text"], s["text"])}</p>'
+                + (f'<table class="mini"><tbody>{drv}</tbody></table>' if drv else "")
+                + (f'<p class="small">{T("未來兩週將公布財報", "Reporting in the next two weeks")}：{nxt}'
+                   + (f' {T("等", "and others")} {s["n_next"]} {T("家", "")}' if s["n_next"] > len(s["next"]) else "") + "</p>" if nxt else "")
+                + "</details>")
+    head = (f'<tr><th>{T("產業", "Sector")}</th><th>{T("規則判讀", "Reading")}</th><th class="r">{T("3 個月 vs 標普（百分點）", "3m vs S&P (pp)")}</th>'
+            f'<th class="r">{T("1 個月", "1m")}</th><th class="r">{T("今年以來", "YTD")}</th><th class="r">{T("距 52 週高點", "From 52w high")}</th>'
+            f'<th class="r">{T("本季財報：家數・優於預估", "Season: reports · beat")}</th><th class="r">{T("經濟數據 偏多／偏空", "Drivers +/−")}</th></tr>')
+    note = T(f"全市場本季已公布 {mkt.get('n', 0)} 家、{num(mkt.get('beat'), 0)}% 優於預估。財報家數少於 5 家的產業，財報面不計分。"
+             "「一週前」是同一套規則在 7 天前的總分，用來看判讀有沒有在變。展開各產業可看規則寫出的分析、每項經濟數據和接下來要公布財報的大公司。",
+             "Sectors with fewer than 5 reports are not scored on earnings. '1w ago' = the same rules' total a week earlier. Expand a sector for details.")
+    body = (f'<div class="scroll"><table class="mini srt"><thead>{head}</thead><tbody>{rows}</tbody></table></div>'
+            f'<div class="sbd">{det}</div><p class="note">{note}</p>')
+    return card("產業逐一體檢：股價 × 財報 × 經濟數據", "Sector by sector: price × earnings × the economy", body, "wide")

@@ -83,6 +83,7 @@ class Engine:
         self.dispersion: Dict = {}
         self.sector_health: Dict = {}
         self.real_economy: Dict = {}
+        self.sector_brief: Dict = {}      # 產業簡報 (sector ETFs × earnings season × FRED drivers)
         self.rates_radar: Dict = {}                      # 利率衝擊雷達 (yields → tech)
         try:                                             # 華爾街機構觀點（背景）: cached public titles + CFTC positioning
             from .data import street_views as _sv
@@ -246,6 +247,14 @@ class Engine:
         mine = [h for h in self.holding_tickers() if "." not in h]          # private: stays in this machine's cache
         self.segments = sg.public(await sg.refresh_for(list(dict.fromkeys(us + mine)), time_budget_s=time_budget_s))
 
+    async def refresh_sector_brief(self) -> None:
+        """產業簡報: SPDR sector holdings (once a day) → this season's reports by sector, prices and FRED drivers."""
+        from .data import sector_members as smd
+        from .analytics import sector_brief as sb
+        mem = await smd.refresh()
+        if mem.get("sectors"):
+            self.sector_brief = await asyncio.to_thread(sb.build, self, mem)
+
     async def refresh_private_credit(self) -> None:
         from .data import private_credit as pcd
         self.private_credit = await pcd.refresh()
@@ -261,9 +270,9 @@ class Engine:
                                    self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
                                    self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), self.refresh_segments(),
                                    self.refresh_street(), self.eia.refresh(), self.global_yields.refresh(), self.refresh_private_credit(),
-                                   self.long_history.refresh(), return_exceptions=True)
+                                   self.long_history.refresh(), self.refresh_sector_brief(), return_exceptions=True)
         for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments",
-                          "street", "eia", "mof_jgb", "private_credit", "spx_long"), res):
+                          "street", "eia", "mof_jgb", "private_credit", "spx_long", "sector_brief"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
         try:

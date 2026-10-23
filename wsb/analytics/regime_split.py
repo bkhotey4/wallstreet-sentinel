@@ -99,6 +99,12 @@ def _at(s: Optional[pd.Series], d: pd.Timestamp) -> Optional[float]:
     if s is None:
         return None
     x = s.dropna()
+    if not len(x):                      # fred.get of a series not loaded yet: empty, non-date index (not comparable to d)
+        return None
+    if not isinstance(x.index, pd.DatetimeIndex):
+        x.index = pd.to_datetime(x.index)
+    if x.index.tz is not None:
+        x.index = x.index.tz_localize(None)
     x = x[x.index <= d]
     return float(x.iloc[-1]) if len(x) else None
 
