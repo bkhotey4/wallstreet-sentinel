@@ -35,6 +35,7 @@ universe:
     "^SOX": 費城半導體
   volatility:
     "^VIX": VIX
+    "^VIX1D": VIX 1日
     "^VIX9D": VIX 9日
     "^VIX3M": VIX 3個月
     "^VVIX": VVIX(波動率的波動率)
@@ -209,6 +210,7 @@ fred_series:
   RRPONTSYD: 逆回購 RRP
   WRESBAL: 銀行準備金
   SOFR: SOFR
+  SOFR99: SOFR 第99百分位
   IORB: 準備金利率 IORB
   IOER: 超額準備金利率 IOER（2021 年前）
   WLCFLPCL: 貼現窗口借款
@@ -229,6 +231,7 @@ fred_series:
 # 2026-10 驗證：這三項對「之後股市大跌」的預測力為反向（AUC < 0.5），只作資金市場／避險失效的警訊燈號
 canary_components:
   - {id: sofr_iorb,   block: 流動性,    src: fred, series: SOFR,        kind: "spread:IORB|IOER:ma5", direction: 1,  weight: 0.6}
+  - {id: sofr99_iorb, block: 流動性,    src: fred, series: SOFR99,      kind: "spread:IORB|IOER",      direction: 1,  weight: 0.6}   # 金絲雀專用，不進 SSI
   - {id: cp_tbill,    block: 流動性,    src: fred, series: DCPF3M,      kind: "spread:DTB3:ma5",       direction: 1,  weight: 0.6}
   - {id: stock_bond_corr, block: 股市結構, src: px, series: SPY,        kind: "pcorr:60:TLT",          direction: 1,  weight: 0.6}
 

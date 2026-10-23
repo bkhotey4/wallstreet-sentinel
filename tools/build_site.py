@@ -80,7 +80,7 @@ STRIP = [("^GSPC", "標普500", 0), ("^NDX", "那指100", 0), ("^TWII", "台股�
 TRENDS = [("^GSPC", "標普500", 0), ("^TWII", "台股加權", 0), ("^VIX", "VIX 恐慌指數", 2), ("^TNX", "美債10年殖利率", 3)]
 
 COMP_LABELS = {
-    "sofr_iorb": ("SOFR − IORB（資金市場）", "SOFR − IORB"), "discount_window": ("聯準會貼現窗口借款", "Discount window"),
+    "sofr_iorb": ("SOFR − IORB（資金市場）", "SOFR − IORB"), "sofr99_iorb": ("SOFR99 − IORB（資金市場尾端）", "SOFR99 − IORB"), "discount_window": ("聯準會貼現窗口借款", "Discount window"),
     "cp_tbill": ("商業本票 − 國庫券", "CP − T-bill"), "ccc_bb": ("CCC − BB 利差", "CCC − BB"),
     "bank_deposits": ("銀行存款 4 週變化", "Bank deposits 4w"), "stock_bond_corr": ("股債 60 日相關性", "Stock–bond corr 60d"),
     "transports": ("運輸股 vs 大盤", "Transports vs SPY"), "discretionary_staples": ("非必需 vs 必需消費", "XLY vs XLP"),

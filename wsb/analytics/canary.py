@@ -33,6 +33,8 @@ EVENTS = [("2007-08-09", "次貸危機開始（BNP 凍結基金）"), ("2008-09-
 SCORE_LIGHTS = [
     ("sofr_iorb", "資金市場", ("隔夜融資利率 SOFR − 準備金利率 IORB", "SOFR − IORB"),
      "銀行間缺現金時 SOFR 會高過 IORB。2019 年 9 月回購市場失靈就是這個利差暴衝。", "bp", 100),
+    ("sofr99_iorb", "資金市場", ("最貴 1% 隔夜融資 SOFR99 − IORB", "SOFR 99th pct − IORB"),
+     "SOFR 是平均，SOFR99 是當天最貴那 1% 的交易：少數機構借不到便宜的錢時，尾端會先跳，平均還沒動。", "bp", 100),
     ("discount_window", "資金市場", ("聯準會貼現窗口借款", "Discount-window borrowing"),
      "銀行在別處借不到錢才會來借。2008 年、2020 年 3 月、2023 年 3 月都暴增。", "$B", None),
     ("cp_tbill", "資金市場", ("商業本票 − 國庫券利差（3 個月）", "CP − T-bill (3m)"),
@@ -322,10 +324,46 @@ def hike_light(eng) -> Dict:
                          + (f"；一週變化 {d1w:+.0f}bp" if d1w is not None else "；一週變化：快照累積中")}
 
 
+def vix1d_light(eng) -> Dict:
+    row = {"id": "vix1d", "group": "避險失效", "zh": "當日恐慌 VIX1D ÷ VIX", "en": "Same-day fear: VIX1D ÷ VIX", "kind": "rule",
+           "why": "VIX1D 是「今天收盤前」的隱含波動。它遠高於 VIX＝市場在為一兩天內的衝擊付費；FOMC、CPI 前偏高是正常的。",
+           "rule": "比值落在自己歷史最高的 10% 且 VIX1D ≥ 20 → 黃燈；最高的 2.5% 且 VIX1D ≥ 25 → 紅燈。資料從 2023 年 4 月起。"}
+    v1, v = eng.market.series("^VIX1D").dropna(), eng.market.series("^VIX").dropna()
+    df = pd.concat([v1.rename("v1"), v.rename("v")], axis=1).dropna()
+    df = df[(df["v1"] > 0) & (df["v"] > 0)]
+    if len(df) < 250:
+        return {**row, "state": "na", "note": "資料不足（VIX1D 歷史累積中）"}
+    r = df["v1"] / df["v"]
+    a1, a = eng.market.q("^VIX1D"), eng.market.q("^VIX")
+    if a1 and a and a1.get("price") and a.get("price") and a1.get("asof") == a.get("asof") and str(a1["asof"])[:10] > df.index[-1].strftime("%Y-%m-%d"):
+        cur_v1, cur_r, asof = float(a1["price"]), float(a1["price"]) / float(a["price"]), str(a1["asof"])[:10]
+    else:
+        cur_v1, cur_r, asof = float(df["v1"].iloc[-1]), float(r.iloc[-1]), df.index[-1].strftime("%Y-%m-%d")
+    hist_r = r.iloc[:-1] if asof == df.index[-1].strftime("%Y-%m-%d") else r
+    pct = float((hist_r < cur_r).mean() * 100)
+    state = "alert" if pct >= 97.5 and cur_v1 >= 25 else "watch" if pct >= 90 and cur_v1 >= 20 else "ok"
+    # what followed past top-10% days (S&P 5 sessions later)
+    g = eng.market.series("^GSPC").dropna()
+    hot = r[(r >= r.quantile(0.9)) & (df["v1"] >= 20)].index
+    f5 = [(g[g.index > d].iloc[4] / g[g.index <= d].iloc[-1] - 1) * 100 for d in hot if len(g[g.index > d]) >= 5 and len(g[g.index <= d])]
+    hist = [f"{df.index[0]:%Y-%m} 起 {len(f5)} 天亮過黃燈以上；之後 5 日標普中位數 {np.median(f5):+.1f}%、上漲 {np.mean([x > 0 for x in f5]) * 100:.0f}%"] if len(f5) >= 5 else []
+    ev = ""
+    try:
+        from ..data.econcal import us_today
+        nx = ((getattr(eng, "econ_view", None) or {}).get("next_fomc") or {}).get("date")
+        if nx and 0 <= (date.fromisoformat(nx) - us_today()).days <= 1:
+            ev = "（FOMC 在即，偏高屬正常）"
+    except Exception:  # noqa: BLE001
+        pass
+    return {**row, "state": state, "asof": asof, "history": hist,
+            "value_txt": f"VIX1D {cur_v1:.1f}、比值 {cur_r:.2f}（自身歷史百分位 {pct:.0f}%）{ev}"}
+
+
 def build(eng, close: Optional[pd.DataFrame] = None) -> Dict:
     rows = []
     for fn in (lambda: score_lights(eng), lambda: [rrp_light(eng)], lambda: [margin_light(eng)], lambda: [cash_dash_light(eng)],
-               lambda: [split_light(eng, close)], lambda: [revision_light(eng)], lambda: [hike_light(eng)]):
+               lambda: [split_light(eng, close)], lambda: [revision_light(eng)], lambda: [hike_light(eng)],
+               lambda: [vix1d_light(eng)]):
         try:
             rows += fn()
         except Exception:  # noqa: BLE001

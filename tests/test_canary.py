@@ -177,10 +177,10 @@ def test_score_lights_on_engine():
     assert {r["id"] for r in rows} == {x[0] for x in CN.SCORE_LIGHTS}
     assert all(r["state"] in ("ok", "watch", "alert", "warmup", "stale", "na") for r in rows)
     out = CN.build(eng)
-    assert out["available"] and len(out["rows"]) == len(CN.SCORE_LIGHTS) + 6
+    assert out["available"] and len(out["rows"]) == len(CN.SCORE_LIGHTS) + 7
     from wsb.config import SETTINGS
     ssi_ids = {c["id"] for c in SETTINGS.get("stress_components", [])}
-    assert not ({"sofr_iorb", "cp_tbill", "stock_bond_corr"} & ssi_ids)          # validated wrong-way → out of the SSI
+    assert not ({"sofr_iorb", "sofr99_iorb", "cp_tbill", "stock_bond_corr"} & ssi_ids)          # validated wrong-way → out of the SSI
     rows = {r["id"]: r for r in rows}
     assert rows["stock_bond_corr"]["in_ssi"] is False and rows["move" if "move" in rows else "transports"]["in_ssi"] is True
     # rate-hike pricing light
@@ -194,7 +194,43 @@ def test_score_lights_on_engine():
     assert CN.hike_light(types.SimpleNamespace(fedwatch_view={}))["state"] == "na"
 
 
+def test_vix1d_light():
+    idx = pd.bdate_range(end="2026-10-22", periods=600)
+    rng = np.random.default_rng(9)
+    vix = pd.Series(16 + rng.normal(0, 1, len(idx)), index=idx)
+    v1 = vix * (0.8 + rng.normal(0, 0.08, len(idx)))
+    spx = pd.Series(np.linspace(5000, 7600, len(idx)), index=idx)
+
+    class M:
+        def __init__(s, h, qt=None):
+            s.h, s.qt = h, qt or {}
+
+        def series(s, t):
+            return s.h.get(t, pd.Series(dtype=float))
+
+        def q(s, t):
+            return s.qt.get(t)
+    eng = types.SimpleNamespace(market=M({"^VIX1D": v1, "^VIX": vix, "^GSPC": spx}), econ_view={})
+    assert CN.vix1d_light(eng)["state"] == "ok"
+    v1b = v1.copy()
+    v1b.iloc[-1] = vix.iloc[-1] * 2.0                       # same-day fear at twice VIX, VIX1D ≈ 32
+    eng.market.h["^VIX1D"] = v1b
+    r = CN.vix1d_light(eng)
+    assert r["state"] == "alert" and "百分位 100%" in r["value_txt"], r
+    eng.econ_view = {"next_fomc": {"date": (pd.Timestamp.now(tz="America/New_York") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")}}
+    assert "FOMC 在即" in CN.vix1d_light(eng)["value_txt"]
+    # live quote pair newer than history is used only when both are the same day
+    eng.market.h["^VIX1D"] = v1
+    eng.market.qt = {"^VIX1D": {"price": 40.0, "asof": "2026-10-23"}, "^VIX": {"price": 18.0, "asof": "2026-10-23"}}
+    assert CN.vix1d_light(eng)["asof"] == "2026-10-23" and CN.vix1d_light(eng)["state"] == "alert"
+    eng.market.qt["^VIX"]["asof"] = "2026-10-21"
+    assert CN.vix1d_light(eng)["asof"] == "2026-10-22"
+    assert CN.vix1d_light(types.SimpleNamespace(market=M({}), econ_view={}))["state"] == "na"
+    print("ok vix1d light")
+
+
 def main():
+    test_vix1d_light()
     test_score_lights_on_engine()
     test_transforms()
     test_finra()
