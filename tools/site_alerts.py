@@ -100,8 +100,9 @@ JS = r"""
   localStorage.setItem(SK,JSON.stringify(s));}catch(e){}}
  function esc(t){return String(t||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
  function fresh(d){var s=seen();return (d.items||[]).filter(function(x){return x.lv==='alert'&&!s[x.key];});}
- function badge(d){var a=(d.items||[]).filter(function(x){return x.lv==='alert';}).length,n=(d.items||[]).length;
-  document.getElementById('bellN').textContent=n?String(a||n):'';btn.classList.toggle('quiet',!a);
+ function badge(d){var s=seen(),it=d.items||[],a=it.filter(function(x){return x.lv==='alert';}).length,
+  un=it.filter(function(x){return !s[x.key];}),ua=un.filter(function(x){return x.lv==='alert';}).length;
+  document.getElementById('bellN').textContent=un.length?String(ua||un.length):'';btn.classList.toggle('quiet',!ua);
   btn.title=zh()?(a?a+' 則警示':'目前沒有警示'):(a?a+' alerts':'No alerts');}
  function open(d,news){var s=seen(),L=document.getElementById('allist');
   document.getElementById('alttl').textContent=zh()?(news.length?'⚠️ 市場警示（'+news.length+' 則新的）':'🔔 目前的市場警示'):(news.length?'⚠️ Market alerts ('+news.length+' new)':'🔔 Current market alerts');
@@ -117,7 +118,7 @@ JS = r"""
   if(!('Notification' in window)){nb.hidden=true;}else{nb.hidden=Notification.permission==='granted';
    nb.textContent=Notification.permission==='denied'?(zh()?'桌面通知已被瀏覽器封鎖':'Notifications blocked'):(zh()?'開啟桌面通知':'Turn on desktop notifications');nb.disabled=Notification.permission==='denied';}
   document.getElementById('alok').textContent=zh()?'知道了':'Got it';md.hidden=false;}
- function close(d){var s=seen(),t=Date.now();(d.items||[]).forEach(function(x){if(!s[x.key])s[x.key]=t;});save(s);md.hidden=true;}
+ function close(d){var s=seen(),t=Date.now();(d.items||[]).forEach(function(x){if(!s[x.key])s[x.key]=t;});save(s);md.hidden=true;badge(d);}
  function notify(list){if(!('Notification' in window)||Notification.permission!=='granted'||!list.length)return;
   try{var n=new Notification(zh()?'⚠️ WallStreet Sentinel 市場警示':'⚠️ WallStreet Sentinel alert',{body:list.map(function(x){return zh()?x.zh:(x.en||x.zh);}).slice(0,4).join('\n'),tag:'wss-'+list[0].key,icon:'favicon-64.png'});
    n.onclick=function(){window.focus();open(cur,list);n.close();};}catch(e){}}

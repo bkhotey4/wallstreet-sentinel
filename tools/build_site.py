@@ -37,6 +37,7 @@ from tools import site_regime as SRG
 from tools import site_rates as SR
 from tools import site_alerts as SA
 from tools import site_stamp as STP
+from tools import site_layout as SLY
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -1227,7 +1228,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
-    nav, panels = [], []
+    tabs = SLY.order(tabs)                                 # sidebar order: 7 groups (layout only)
+    names, bodies = {}, {}
     for i, (key, zh, en, fs) in enumerate(tabs):
         def _one(f):
             if f is None:
@@ -1242,8 +1244,13 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
         html_ = "".join(_one(f) for f in fs)
         if not html_.strip():
             html_ = f'<section class="card wide"><p class="muted">{T("這一頁的資料暫時取不到", "No data for this page right now")}</p></section>'
-        nav.append(f'<a class="ptab{" on" if i == 0 else ""}" href="#{key}" data-p="{key}" data-en="{esc(en)}">{esc(zh)}</a>')
-        panels.append(f'<div class="page{" on" if i == 0 else ""}" id="p-{key}"><div class="grid12">{html_}</div></div>')
+        names[key], bodies[key] = (zh, en), html_
+    try:                                                   # 總攬大表: figures copied from the cards just rendered
+        bodies["overview"] = SLY.index_card(bodies, names) + bodies.get("overview", "")
+    except Exception:  # noqa: BLE001
+        log.exception("index card failed")
+    first = tabs[0][0]
+    panels = [f'<div class="page{" on" if k == first else ""}" id="p-{k}"><div class="grid12">{bodies[k]}</div></div>' for k, *_x in tabs]
     strip = sec_strip(eng)
     asof, stale = data_asof(eng)
     eng.web_alerts = SA.alerts_payload(eng)                 # 網頁警示 (also written to alerts.json)
@@ -1260,14 +1267,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
-<nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
-<main class="wrap">{strip}{"".join(panels)}<footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
+{SLY.topnav()}</header>
+<main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
