@@ -27,7 +27,7 @@ def cfg() -> Dict:
 
 
 def parse(raw: bytes) -> Tuple[Optional[str], List[List]]:
-    """xlsx bytes → (as-of text, [[ticker, weight %], …]).  Header row is the one whose first two cells are Name / Ticker."""
+    """xlsx bytes → (as-of text, [[ticker, weight %, name], …]).  Header row is the one whose first two cells are Name / Ticker."""
     import openpyxl
     ws = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True).active
     asof, out, started = None, [], False
@@ -49,7 +49,7 @@ def parse(raw: bytes) -> Tuple[Optional[str], List[List]]:
             continue
         t = str(b).strip().upper()
         if t and t != "-" and w > 0:
-            out.append([t, round(w, 4)])
+            out.append([t, round(w, 4), str(a).strip().title()])
     return asof, out
 
 
@@ -97,8 +97,54 @@ def sector_of(d: Dict) -> Dict[str, str]:
     """ticker → sector ETF (a ticker in two funds keeps the one where it weighs more).  BRK.B and BRK-B both map."""
     best: Dict[str, Tuple[str, float]] = {}
     for etf, v in (d.get("sectors") or {}).items():
-        for t, w in v.get("members") or []:
+        for t, w, *_ in v.get("members") or []:
             for k in {t, t.replace(".", "-"), t.replace("-", ".")}:
                 if k not in best or w > best[k][1]:
                     best[k] = (etf, w)
     return {k: v[0] for k, v in best.items()}
+
+
+# ------------------------------------------------------------------ long price history of each sector's leaders
+PX_FILE = DATA_DIR / "earn_sector_prices.pkl"
+
+
+def leaders(d: Dict, n: int = 8) -> List[str]:
+    """The n largest members of every sector, Yahoo spelling (BRK.B → BRK-B)."""
+    out = []
+    for v in (d.get("sectors") or {}).values():
+        out += [t.replace(".", "-") for t, *_ in sorted(v.get("members") or [], key=lambda x: -x[1])[:n]]
+    return list(dict.fromkeys(out))
+
+
+def load_prices():
+    import pandas as pd
+    try:
+        return pd.read_pickle(PX_FILE) if PX_FILE.exists() else pd.DataFrame()
+    except Exception as e:  # noqa: BLE001
+        log.warning("%s unreadable: %s", PX_FILE.name, e)
+        return pd.DataFrame()
+
+
+async def refresh_prices(syms: List[str], start: str = "2007-01-01", ttl_h: float = 20):
+    """Daily closes since 2007 (2008 crisis and the 2022 rate shock included) for the sector leaders; re-downloaded at
+    most once a day, and a failed download keeps the previous file."""
+    import asyncio
+    from .market import _download
+    old = load_prices()
+    fresh = PX_FILE.exists() and time.time() - PX_FILE.stat().st_mtime < ttl_h * 3600
+    if fresh and not old.empty and set(syms) <= set(old.columns):
+        return old
+    try:
+        df = await asyncio.to_thread(_download, syms, start=start)
+        if df.empty or df.shape[1] < len(syms) * 0.5:
+            raise RuntimeError(f"only {df.shape[1]} of {len(syms)} tickers")
+        df = df.sort_index()
+        tmp = PX_FILE.with_suffix(".tmp")
+        df.to_pickle(tmp)
+        os.replace(tmp, PX_FILE)
+        HEALTH.ok("sector_prices", df.shape[1], every=int(ttl_h * 3600))
+        return df
+    except Exception as e:  # noqa: BLE001
+        log.warning("sector leader prices: %s", e)
+        HEALTH.fail("sector_prices", e, every=int(ttl_h * 3600))
+        return old

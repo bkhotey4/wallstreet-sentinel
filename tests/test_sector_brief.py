@@ -34,7 +34,7 @@ def xlsx(rows):
 
 def test_parse_and_map():
     asof, rows = SM.parse(xlsx([("NVIDIA CORP", "NVDA", "x", "y", 15.4), ("CASH", "-", "", "", 0.1), ("BRK", "BRK.B", "", "", 2.0)]))
-    assert asof == "22-Oct-2026" and rows == [["NVDA", 15.4], ["BRK.B", 2.0]], rows
+    assert asof == "22-Oct-2026" and rows == [["NVDA", 15.4, "Nvidia Corp"], ["BRK.B", 2.0, "Brk"]], rows
     m = SM.sector_of({"sectors": {"XLK": {"members": [["NVDA", 15.4]]}, "XLF": {"members": [["BRK.B", 12.0], ["NVDA", 0.5]]}}})
     assert m["NVDA"] == "XLK" and m["BRK-B"] == "XLF" and m["BRK.B"] == "XLF"
     print("ok parse / map")
@@ -106,12 +106,40 @@ def test_build():
     return r2
 
 
+def test_companies():
+    from wsb.analytics import sector_companies as SC
+    idx = pd.bdate_range("2007-01-01", "2026-10-22")
+    v = np.full(len(idx), 100.0)
+    a = idx.get_loc(idx[idx >= "2008-01-02"][0]); b = idx.get_loc(idx[idx >= "2009-03-02"][0]); c = idx.get_loc(idx[idx >= "2011-03-01"][0])
+    v[a:b] = np.linspace(100, 40, b - a); v[b:c] = np.linspace(40, 100, c - b)              # -60 %, back at the peak ~2011-03
+    s = pd.Series(v, index=idx)
+    r = SC.shock(s, "2007-07-01", "2008-08-31", "2009-12-31")
+    assert abs(r["dd"] + 60) < 1 and 36 <= r["months"] <= 40, r
+    s2 = s.copy(); s2[s2.index >= "2022-01-03"] = 70.0
+    r2 = SC.shock(s2, "2021-07-01", "2022-03-31", "2022-12-31")
+    assert abs(r2["dd"] + 30) < 0.5 and r2["months"] is None and r2["under"] > 40, r2
+    w = SC.worst(s2)
+    assert abs(w["dd"] + 60) < 1 and abs(w["now"] + 30) < 0.5
+    spy = pd.Series(np.linspace(100, 200, len(idx)), index=idx)
+    rec = {"p": {"rev": {"v": 120.0, "prev": 100.0}, "ebit": {"v": 48.0, "prev": 30.0}, "ocf": {"v": 50.0}, "capex": {"v": 30.0, "prev": 20.0}},
+           "m": {"rev_growth": 20.0, "capex_ocf": 0.6, "debt_growth": 40.0}}
+    co = SC.company("XX", "Xx Corp", rec, 20.0, {"surprise": 5.0}, [["2026-10-10", 1.0], ["2026-10-20", 1.1]], {"up": 12.0, "n": 9},
+                    {"flags": [{"code": "4.02", "level": "alert", "zh": "先前財報不可再依賴", "date": date.today().isoformat()}]},
+                    s2, spy, pd.Series(dtype=float), "2026-11-02")
+    j = " ".join(co["good"] + co["future"] + co["own"] + co["env"])
+    for t in ("營收年增 +20%", "營業利益率 40%", "上修 +10.0%", "資本支出年增 +50%", "目標價", "負債快速擴張", "先前財報不可再依賴",
+              "2008 金融海嘯：最深 -60%", "2022 升息衝擊：最深 -30%，至今仍未回到"):
+        assert t in j, (t, j)
+    assert co["env_lvl"] == "高"
+    print("ok companies")
+
+
 def test_site(r):
     from tools import site_industry as SIN
     eng = types.SimpleNamespace(sector_brief=r)
     a, b = SIN.sec_sector_brief(eng), SIN.sec_sector_table(eng)
     assert "產業簡報" in a and "順風" in a and "State Street" in a
-    assert b.count("<details") == 11 and "一週前" in b and "能源" in b and "T0" in b
+    assert b.count("<details") == 11 and "一週前" in b and "能源" in b and "T0" in b and "未來發展" in b and "財務風險" in b
     assert SIN.sec_sector_brief(types.SimpleNamespace(sector_brief={})) == "" == SIN.sec_sector_table(types.SimpleNamespace())
     from tools import site_stamp as STP
     assert STP.sources_for("sec_sector_table", "industry") == ["px", "fred", "earnings"]
@@ -120,5 +148,6 @@ def test_site(r):
 
 if __name__ == "__main__":
     test_parse_and_map()
+    test_companies()
     test_site(test_build())
     print("all sector brief tests passed")

@@ -165,8 +165,34 @@ def sec_sector_brief(eng) -> str:
              "合計 ≥ +2 為順風、≤ −2 為逆風。描述現況，不是預測，也不是投資建議。",
              "Updated daily. Fixed rules: price (3m vs S&P 500), this season's earnings (beat rate vs market), economic drivers (FRED, commodities), "
              "each −1/0/+1; sum ≥ +2 tailwind, ≤ −2 headwind. Descriptive, not a forecast or advice.")
-    body = f'<ul class="brief">{lines}</ul>{conc}<p class="note">{note}</p>'
+    hl = "".join(f"<li>{T(x, x)}</li>" for x in ov.get("highlights") or [])
+    hl = f'<h3>{T("全方位重點：未來發展與財務風險", "Key points: outlook and financial risk")}</h3><ul class="brief">{hl}</ul>' if hl else ""
+    body = f'<ul class="brief">{lines}</ul>{conc}{hl}<p class="note">{note}</p>'
     return card("產業簡報：美國各產業現在的處境", "Sector briefing: where US industries stand", body, "wide")
+
+
+_LV = {"強": "up", "弱": "dn", "中": "muted", "高": "dn", "低": "up"}
+
+
+_CO_NOTE = T("體質：好在哪的項目 ≥ 3 且自身風險 ≤ 1 為強、風險 ≥ 3 且優點 ≤ 1 為弱。大環境拖累：β ≥ 1.3 或過去重大衝擊後超過 36 個月才回到前高為高；"
+             "β ≤ 0.8 且 12 個月內回本為低。好公司也可能在大環境出事時跌深、套很久，這一欄用歷史實際走勢說明這件事；歷史不代表未來。",
+             "Health and macro-drag rules as stated; history, not a forecast.")
+
+
+def _companies(cos) -> str:
+    if not cos:
+        return ""
+    li = lambda xs: "".join(f"<div>• {T(x, x)}</div>" for x in xs) or '<span class="muted">—</span>'  # noqa: E731
+    rows = "".join(
+        f'<tr><td class="nw"><b>{esc(c["sym"])}</b><div class="small muted">{esc(c["name"])}</div>'
+        f'<div class="small">{T("體質", "Health")} <b class="{_LV[c["body"]]}">{T(c["body"], c["body"])}</b>・{T("大環境拖累", "Macro drag")} '
+        f'<b class="{_LV[c["env_lvl"]]}">{T(c["env_lvl"], c["env_lvl"])}</b></div></td>'
+        f'<td class="small">{li(c["good"])}</td><td class="small">{li(c["future"])}</td><td class="small">{li(c["own"])}</td><td class="small">{li(c["env"])}</td></tr>'
+        for c in cos)
+    return (f'<h4>{T("主要公司體檢", "Leading companies")}</h4><div class="scroll"><table class="mini co"><thead><tr><th>{T("公司", "Company")}</th>'
+            f'<th>{T("好在哪", "Strengths")}</th><th>{T("未來往哪走", "Where it is heading")}</th><th>{T("自身財務風險", "Own financial risk")}</th>'
+            f'<th>{T("大環境拖累（會被套多深、多久）", "Macro drag (how deep, how long)")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            f'<p class="note">{_CO_NOTE}</p>')
 
 
 def sec_sector_table(eng) -> str:
@@ -196,9 +222,13 @@ def sec_sector_table(eng) -> str:
                       f'<td class="{_ST[d["state"]][2]}">{T(_ST[d["state"]][0], _ST[d["state"]][1])}</td><td class="small muted">{esc(d.get("date") or "")}</td></tr>'
                       for d in s["drivers"])
         nxt = "、".join(f'{esc(r["sym"])}（{esc(r["date"][5:])}）' for r in s["next"])
-        det += (f'<details class="sgx"><summary>{_vpill(s["verdict"])} <b>{T(s["zh"], s["en"])}</b></summary>'
-                f'<p>{T(s["text"], s["text"])}</p>'
+        pts = "".join(f'<span class="pill {"up" if x.startswith("＋") else "dn"}">{esc(x)}</span> ' for x in s.get("points") or [])
+        sect = lambda zh, en, xs: (f'<h4>{T(zh, en)}</h4><ul class="brief">' + "".join(f"<li>{T(x, x)}</li>" for x in xs) + "</ul>") if xs else ""  # noqa: E731
+        det += (f'<details class="sgx"><summary>{_vpill(s["verdict"])} <b>{T(s["zh"], s["en"])}</b> {pts}</summary>'
+                f'<h4>{T("現況", "Now")}</h4><p>{T(s["text"], s["text"])}</p>'
+                + sect("未來發展", "Outlook", s.get("outlook")) + sect("財務風險", "Financial risk", s.get("risk"))
                 + (f'<table class="mini"><tbody>{drv}</tbody></table>' if drv else "")
+                + _companies(s.get("companies") or [])
                 + (f'<p class="small">{T("未來兩週將公布財報", "Reporting in the next two weeks")}：{nxt}'
                    + (f' {T("等", "and others")} {s["n_next"]} {T("家", "")}' if s["n_next"] > len(s["next"]) else "") + "</p>" if nxt else "")
                 + "</details>")

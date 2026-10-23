@@ -220,7 +220,10 @@ class Engine:
         from .analytics import sector_health as sh
         us = list(((_uni().get("us") or {}).get("symbols") or {}).keys())
         mine = [h for h in self.holding_tickers() if "." not in h]
-        cache = await fu.refresh(list(dict.fromkeys(us + sh.AI_LEDGER + mine)), budget_s=budget_s)
+        from .data import sector_members as smd                  # 產業簡報: the largest members of each sector too
+        top = [t for v in (smd.load().get("sectors") or {}).values()
+               for t, *_ in sorted(v.get("members") or [], key=lambda x: -x[1])[:15]]
+        cache = await fu.refresh(list(dict.fromkeys(us + sh.AI_LEDGER + mine + top)), budget_s=budget_s)
         self.sector_health = await asyncio.to_thread(sh.build, self, cache)
         if (self.rates_radar or {}).get("available"):            # 利率衝擊雷達 #7 needs the filings just loaded
             from .analytics import rates_radar as rr
@@ -253,7 +256,8 @@ class Engine:
         from .analytics import sector_brief as sb
         mem = await smd.refresh()
         if mem.get("sectors"):
-            self.sector_brief = await asyncio.to_thread(sb.build, self, mem)
+            px = await smd.refresh_prices(smd.leaders(mem))     # since 2007: how deep / how long each leader fell in past shocks
+            self.sector_brief = await asyncio.to_thread(sb.build, self, mem, None, px)
 
     async def refresh_private_credit(self) -> None:
         from .data import private_credit as pcd
