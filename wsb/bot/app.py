@@ -713,9 +713,10 @@ class Sentinel(commands.Bot):
         out += self._canary_alerts()
         out += self._distress_alerts()
         vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
-        inverted = bool(vix and v3 and vix["price"] > v3["price"])
+        same = bool(vix and v3 and vix.get("asof") == v3.get("asof"))     # a stale VIX3M must not fake (or hide) a flip
+        inverted = bool(same and vix["price"] > v3["price"])
         was = store.kv_get("vix_inverted")
-        if vix and v3:
+        if same:
             store.kv_set("vix_inverted", inverted)
         if A.get("vix_backwardation") and inverted and was is False:        # edge-triggered: only when it flips
             out.append(Alert(f"vix_backwardation:{vix['asof']}", "🚨 CRITICAL", f"VIX 期限結構倒掛：VIX {vix['price']:.2f} > VIX3M {v3['price']:.2f}",
@@ -745,12 +746,12 @@ class Sentinel(commands.Bot):
             return []
         eng, out = self.engine, []
         vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
-        back = bool(vix and v3 and vix["price"] > v3["price"])
+        back = bool(vix and v3 and vix["price"] > v3["price"] and vix.get("asof") == v3.get("asof"))
         for mkt in ("us", "tw"):
             day = DG.in_session(mkt, eng.market.q)
             if not day:
                 continue
-            r = DG.score(mkt, eng.market.q, vix_backwardation=back)
+            r = DG.score(mkt, eng.market.q, vix_backwardation=back, day=day)
             k = f"danger_max:{mkt}:{day}"
             prev = int(store.kv_get(k) or 0)
             if r["level"] <= prev:
@@ -999,7 +1000,8 @@ class Sentinel(commands.Bot):
 
     def _liquidity_alerts(self) -> List[Alert]:
         """Heads-up the day before (or the day of) high-importance liquidity events."""
-        out, today = [], datetime.now().date()
+        from ..data.econcal import us_today
+        out, today = [], us_today()
         for ev in self.engine.calendar.events:
             if ev.get("type") != "liquidity" or ev.get("importance", 0) < 3:
                 continue

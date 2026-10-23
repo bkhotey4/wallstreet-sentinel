@@ -138,7 +138,11 @@ def _rules(h: pd.DataFrame, bench: str) -> Dict[str, tuple]:
     if tnx is not None:
         sc = 10 if tnx.median() > 15 else 1                  # Yahoo used to quote ^TNX ×10
         out["tnx"] = ("10 年債殖利率 5 日升 ≥ 25bp", "10-year yield +25bp in 5 days", (tnx - tnx.shift(5)) / sc * 100 >= 25)
-    return out
+    # first date each rule could fire (its inputs exist) → its base rate is measured over the same years
+    ins = {"ndx3": [ndx], "vix25": [vix], "vix35": [vix], "vixjump": [vix], "vix9d": [vix, locals().get("v9")],
+           "credit": [hyg, lqd], "tnx": [tnx]}
+    first = lambda xs: max(x.dropna().index[0] for x in xs if x is not None and len(x.dropna()))  # noqa: E731
+    return {k: (*v, first(ins.get(k) or [spx])) for k, v in out.items()}
 
 
 def rule_backtest(h: pd.DataFrame, bench: str = "^GSPC", cooldown: int = 10) -> Dict:
@@ -153,8 +157,10 @@ def rule_backtest(h: pd.DataFrame, bench: str = "^GSPC", cooldown: int = 10) -> 
     base = {"avg5": float(fwd5[valid].mean()), "avg20": float(fwd20[valid].mean()), "win20": float((fwd20[valid] > 0).mean() * 100),
             "dd5": float((dd[valid] <= -5).mean() * 100), "n": int(valid.sum())}
     rows = []
-    for k, (zh, en, flag) in _rules(h, bench).items():
+    for k, (zh, en, flag, start) in _rules(h, bench).items():
         flag = flag.reindex(spx.index).fillna(False).astype(bool)
+        vk = valid & (spx.index >= start)
+        rb = {"avg20": float(fwd20[vk].mean()), "dd5": float((dd[vk] <= -5).mean() * 100)} if vk.sum() > 250 else base
         ev, last = [], None
         for i, (d, f) in enumerate(flag.items()):
             if f and (last is None or i - last > cooldown):
@@ -170,14 +176,14 @@ def rule_backtest(h: pd.DataFrame, bench: str = "^GSPC", cooldown: int = 10) -> 
         p = float((dd[evv] <= -5).mean() * 100) if n else None
         if n < 10:
             vd, vz, ve = "n", "樣本太少", "Too few cases"
-        elif p is not None and p >= max(base["dd5"] * 1.5, base["dd5"] + 5):
+        elif p is not None and p >= max(rb["dd5"] * 1.5, rb["dd5"] + 5):
             vd, vz, ve = "warn", "有預警力：之後再跌 5% 的機率明顯偏高", "Useful warning: a further 5% drop was clearly more likely"
-        elif a20 is not None and a20 >= base["avg20"] + 1 and (p or 0) <= base["dd5"] * 1.5:
+        elif a20 is not None and a20 >= rb["avg20"] + 1 and (p or 0) <= rb["dd5"] * 1.5:
             vd, vz, ve = "rev", "常是短線低點：之後 20 日平均反而較好", "Often a short-term low: better than average afterwards"
         else:
             vd, vz, ve = "none", "沒有明顯預警力", "No clear edge"
         raw_on = flag[flag]                                    # raw flag (not the cooldown-thinned events) for "now" / "last"
-        rows.append({"k": k, "zh": zh, "en": en, "n": n, "avg5": a5, "avg20": a20, "win20": w20, "dd5": p, "verdict": vd,
+        rows.append({"k": k, "zh": zh, "en": en, "n": n, "avg5": a5, "avg20": a20, "win20": w20, "dd5": p, "base_dd5": rb["dd5"], "base_avg20": rb["avg20"], "since": start.strftime("%Y"), "verdict": vd,
                      "vz": vz, "ve": ve, "last": raw_on.index[-1].strftime("%Y-%m-%d") if len(raw_on) else None,
                      "now": bool(flag.iloc[-5:].any())})
     order = {"warn": 0, "rev": 1, "none": 2, "n": 3}

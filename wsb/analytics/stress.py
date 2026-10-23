@@ -291,7 +291,6 @@ class StressEngine:
         # require ≥40% of total weight present for a valid historical point
         coverage_hist = S.notna().mul(W, axis=1).sum(axis=1) / W.sum()
         comp_hist = comp_hist.where(coverage_hist >= 0.4).dropna()
-        block_hist = pd.DataFrame({b: wavg(ids) for b, ids in blocks.items()})
 
         # current score uses only non-stale components
         live = {r.id: r for r in results if r.score is not None}
@@ -304,6 +303,10 @@ class StressEngine:
             li = [live[i] for i in ids if i in live]
             if li:
                 cur_blocks[b] = sum(x.weight * x.score for x in li) / sum(x.weight for x in li)
+        # block history like-for-like with cur_blocks (live components only), else a stale heavy component in a block
+        # fakes a 20-day block acceleration in the shock paths
+        block_hist = pd.DataFrame({b: wavg([i for i in ids if i in live and i in S.columns] or [i for i in ids if i in S.columns])
+                                   for b, ids in blocks.items()})
         label, emoji = level_for(cur)
         # like-for-like: when a component is stale it is excluded from `cur`, so the changes/percentile must be measured
         # against the history of the same live set (otherwise a stale low-score component fakes an SSI jump)

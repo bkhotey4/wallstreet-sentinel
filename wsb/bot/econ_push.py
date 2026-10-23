@@ -102,8 +102,12 @@ def result_embed(e: Dict, quotes: Dict, ai: Optional[str]) -> discord.Embed:
     if sc and d:
         em.add_field(name="對應劇本", value=sc[d]["zh"][:1024], inline=False)
     mv = []
+    from ..data.econcal import us_today
+    day = us_today().isoformat()
     for t, nm in FUT:
-        q = quotes.get(t) or {}
+        q = (quotes(t) if callable(quotes) else quotes.get(t)) or {}
+        if str(q.get("asof", ""))[:10] != day:
+            continue                                   # a kept quote from an earlier day is not the reaction to this release
         if q.get("chg_pct") is not None and q["chg_pct"] == q["chg_pct"]:
             mv.append(f"{nm} {q['chg_pct']:+.2f}%")
     if mv:
@@ -243,7 +247,7 @@ async def tick(bot, now: Optional[datetime] = None) -> None:
             for e in eng.econ_view["events"]:          # 1) the rule-based result first — numbers can't wait for a model
                 k = f"econ_res:{e['id']}"
                 if e["id"] in watch and e["released"] and e["imp"] >= min_imp and e.get("rows") and not store.kv_get(k):
-                    if await _send(bot, result_embed(e, eng.market.quotes, None)):
+                    if await _send(bot, result_embed(e, eng.market.q, None)):
                         store.kv_set(k, True)          # only after a successful send → a failed send is retried next minute
                         sent.append(e)
             if sent and c.get("ai_on_release", True):  # 2) then the AI note, bounded so the minute loop keeps running

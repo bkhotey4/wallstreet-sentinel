@@ -27,12 +27,12 @@ def _danger(eng, out: List[Dict]) -> None:
         return
     q = eng.market.q
     vix, v3 = q("^VIX"), q("^VIX3M")
-    back = bool(vix and v3 and vix.get("price") and v3.get("price") and vix["price"] > v3["price"])
+    back = bool(vix and v3 and vix.get("price") and v3.get("price") and vix["price"] > v3["price"] and vix.get("asof") == v3.get("asof"))
     for mkt in ("us", "tw"):
         day = DG.in_session(mkt, q)
         if not day:
             continue
-        r = DG.score(mkt, q, vix_backwardation=back)
+        r = DG.score(mkt, q, vix_backwardation=back, day=day)
         if r["level"] < 1:
             continue
         trig = "、".join(f"{h['label']} {h['chg']:+.2f}%" if h["chg"] is not None else h["label"] for h in r["hits"][:5])
@@ -64,7 +64,7 @@ def _stress(eng, out: List[Dict], now: datetime) -> None:
 def _vol(eng, out: List[Dict], now: datetime) -> None:
     q = eng.market.q
     vix, v3 = q("^VIX"), q("^VIX3M")
-    if vix and v3 and vix.get("price") and v3.get("price") and vix["price"] > v3["price"]:
+    if vix and v3 and vix.get("price") and v3.get("price") and vix["price"] > v3["price"] and vix.get("asof") == v3.get("asof"):
         out.append({"key": f"vix_back:{vix.get('asof')}", "lv": "alert", "tab": "mood",
                     "zh": f"VIX 期限結構倒掛：VIX {vix['price']:.2f} > VIX3M {v3['price']:.2f}", "en": "VIX term structure inverted",
                     "detail": "近月恐慌高於遠月：市場在為「立即」的尾部風險付費。"})
@@ -118,10 +118,11 @@ def _models(eng, out: List[Dict], now: datetime) -> None:
     rules = (getattr(eng, "sx", None) or {}).get("rules") or {}
     base = (rules.get("base") or {}).get("dd5")
     for r in rules.get("rows", []):
+        base = r.get("base_dd5", (rules.get("base") or {}).get("dd5"))     # same years as the rule's own events
         if r.get("verdict") == "warn" and r.get("now"):
             out.append({"key": f"rule:{r['k']}:{r.get('last')}", "lv": "alert", "tab": "mood",
                         "zh": f"有預警力的規則觸發：{r['zh']}", "en": f"Back-tested warning rule fired: {r['en']}",
-                        "detail": f"回測：之後 20 日內再跌 5% 的機率 {r['dd5']:.0f}%（任何一天 {base:.0f}%），共 {r['n']} 次" if base is not None and r.get("dd5") is not None else ""})
+                        "detail": f"回測：之後 20 日內再跌 5% 的機率 {r['dd5']:.0f}%（同期間任何一天 {base:.0f}%），{r.get('since', '')} 年起共 {r['n']} 次" if base is not None and r.get("dd5") is not None else ""})
 
 
 def build(eng) -> Dict:

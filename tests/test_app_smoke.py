@@ -280,7 +280,8 @@ async def main():
     bot._intel_alerts()
     assert store.kv_get("playbook_stage") == 2                            # hysteresis: 3 pts is not ≥2 below stage-2 entry
     # liquidity heads-up: only importance-3 events within 1 day
-    tomorrow = (_d.today() + __import__("datetime").timedelta(days=1)).isoformat()
+    from wsb.data.econcal import us_today as _ust
+    tomorrow = (_ust() + __import__("datetime").timedelta(days=1)).isoformat()       # US-dated events vs the US date
     eng_.calendar.events = [{"date": tomorrow, "type": "liquidity", "id": "t1", "event": "四巫日", "importance": 3, "note": "n"},
                             {"date": tomorrow, "type": "liquidity", "id": "t2", "event": "VIX", "importance": 1}]
     assert [a.key for a in bot._liquidity_alerts()] == [f"evt:t1:{tomorrow}"]

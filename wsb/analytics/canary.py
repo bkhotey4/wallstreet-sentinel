@@ -173,7 +173,7 @@ def rrp_light(eng) -> Dict:
     w = ch[ch.index >= ch.index[-1] - pd.Timedelta(days=1095)].dropna()
     pct = float((w < w.iloc[-1]).mean() * 100) if len(w) else None
     state = "alert" if depleted and pct is not None and pct <= 2.5 else "watch" if depleted else "ok"
-    return {**row, "state": state, "asof": max(rrp.index[-1], res.index[-1]).strftime("%Y-%m-%d"),
+    return {**row, "state": state, "asof": min(rrp.index[-1], res.index[-1]).strftime("%Y-%m-%d"),
             "value_txt": f"逆回購 US${rrp.iloc[-1]:,.0f}B（近 3 年高點 US${hi:,.0f}B）；銀行準備金 4 週 {ch.iloc[-1]:+.1f}%（近 3 年百分位 {pct:.0f}%）"}
 
 

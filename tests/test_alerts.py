@@ -40,7 +40,7 @@ def market():
     spx = pd.Series(5000 * np.cumprod(1 + r / 100), index=idx)
     quotes = {"^VIX": {"price": 22.0, "chg_pct": 20.0, "asof": "2026-10-22"}, "^GSPC": {"price": 7600, "chg_pct": -1.2, "asof": "2026-10-22"},
               "^NDX": {"price": 29000, "chg_pct": -2.4}, "^SOX": {"price": 10800, "chg_pct": -5.8}, "^VIX9D": {"price": 24.0},
-              "^VIX3M": {"price": 21.0}, "^TNX": {"price": 5.0, "chg_pct": -2.5}, "HYG": {"price": 77, "chg_pct": -1.5}, "^MOVE": {"price": 104}}
+              "^VIX3M": {"price": 21.0, "asof": "2026-10-22"}, "^TNX": {"price": 5.0, "chg_pct": -2.5}, "HYG": {"price": 77, "chg_pct": -1.5}, "^MOVE": {"price": 104}}
     return FakeMarket(quotes, {"^VIX": vix, "^GSPC": spx}, {"^SOX": -3.2, "HYG": -2.4, "^GSPC": -3.1})
 
 
@@ -83,6 +83,13 @@ def test_web_alerts():
     eng.market.quotes["HYG"]["asof"] = "2020-01-02"
     out = WA.build(eng)
     keys = [x["key"].split(":")[0] for x in out["items"]]
+    eng.market.quotes["^VIX3M"]["asof"] = "2026-10-15"          # stale VIX3M must not fake an inversion
+    assert not any(x["key"].startswith("vix_back") for x in WA.build(eng)["items"])
+    eng.market.quotes["^VIX3M"]["asof"] = "2026-10-22"
+    from wsb.analytics import danger as DG                    # a component quote from an earlier day adds no points
+    qq = {"^GSPC": {"chg_pct": -2.5, "asof": "2026-10-22"}, "HYG": {"chg_pct": -3.0, "asof": "2026-10-20"}}
+    r_old = DG.score("us", lambda t: qq.get(t), day="2026-10-22")
+    assert "HYG" not in [h["ticker"] for h in r_old["hits"]] and "^GSPC" in [h["ticker"] for h in r_old["hits"]]
     assert not any(x["key"].startswith("sigma:HYG") for x in out["items"])
     assert any(x["key"].startswith("sigma:^GSPC") for x in out["items"])
     for k in ("ssi", "ssi_jump", "vix_back", "canary", "playbook", "odds", "rule", "gamma"):
@@ -118,7 +125,37 @@ def test_stale_quote():
     print("ok stale quote")
 
 
+def test_fomc_drift():
+    from wsb.analytics import fomc_drift as FD
+    idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=3600)
+    rng = np.random.default_rng(5)
+    r = rng.normal(0.0003, 0.01, len(idx))
+    dates = [d.strftime("%Y-%m-%d") for d in idx[60:-10:40]]
+    for d in dates:                                          # +1% on every decision day → day mean must stand out
+        r[idx.get_loc(pd.Timestamp(d))] += 0.01
+    spx = pd.Series(4000 * np.cumprod(1 + r), index=idx)
+    vix = pd.Series(np.where(np.arange(len(idx)) % 80 < 40, 25.0, 15.0), index=idx)
+    nxt = (pd.Timestamp.today().normalize() + pd.offsets.BDay(3)).strftime("%Y-%m-%d")
+    eng = types.SimpleNamespace(market=FakeMarket({"^GSPC": {"price": float(spx.iloc[-1]) * 1.01, "asof": "2999-01-01"}}, {"^GSPC": spx, "^VIX": vix}),
+                                econ=types.SimpleNamespace(fomc=[{"date": d} for d in dates] + [{"date": nxt}]))
+    FD.history_dates = lambda: []                            # synthetic dates only
+    out = FD.build(eng)
+    assert out["available"] and out["n"] == len(dates), out.get("n")
+    d = out["stats"]["all"]["day"]
+    assert d["mean"] > 0.8 and d["t"] > 2 and abs(d["base_mean"] - 0.03) < 0.1, d
+    assert out["stats"]["hi"]["pre"]["n"] + out["stats"]["lo"]["pre"]["n"] == out["n"]
+    nx = out["next"]
+    assert nx["date"] == nxt and nx["so_far"] is not None and nx["asof"] == "2999-01-01"     # live quote newer than history used
+    txt = " ".join(x["zh"] for x in FD.readings(out))
+    assert "會前 5 日" in txt and "決議當天" in txt and all(x["lv"] == "info" for x in FD.readings(out))
+    from tools import site_alerts as SA
+    h = SA.sec_fomc_drift(eng)
+    assert "FOMC 前漂移" in h and "不是買賣建議" in h
+    print("ok fomc drift")
+
+
 if __name__ == "__main__":
+    test_fomc_drift()
     test_stale_quote()
     test_vix_explain()
     test_web_alerts()

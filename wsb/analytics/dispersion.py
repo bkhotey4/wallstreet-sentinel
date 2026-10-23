@@ -151,8 +151,9 @@ def readings(us: Optional[Dict], ew: Optional[Dict], cb: Dict[str, Dict], after:
         a = after
         out.append({"zh": f"隱含相關性在歷史最低的 5%。過去同樣情況（約 {a['episodes']} 段）之後 {a['h']} 個交易日："
                           f"相關性中位數變化 {a['dc_low']:+.1f} 點（平常 {a['dc_all']:+.1f}），回升超過 5 點的比例 {a['rise5_low']:.0f}%（平常 {a['rise5_all']:.0f}%）——"
-                          f"相關性傾向回升；但標普期間內跌超過 5% 的比例是 {a['dd5_low']:.0f}%（平常 {a['dd5_all']:.0f}%），並沒有比較常大跌。"
-                          "也就是說：個股「各走各的」通常會結束，但歷史上不代表大盤會因此大跌。",
+                          + ("相關性傾向回升" if a['dc_low'] > a['dc_all'] else "相關性並沒有比平常更容易回升")
+                          + f"；標普期間內跌超過 5% 的比例是 {a['dd5_low']:.0f}%（平常 {a['dd5_all']:.0f}%）"
+                          + ("，明顯比較常大跌。" if a['dd5_low'] >= a['dd5_all'] * 1.5 else "，並沒有比較常大跌。"),
                     "en": f"Implied correlation in its lowest 5 %: afterwards correlation tended to rise ({a['dc_low']:+.1f} vs {a['dc_all']:+.1f}), "
                           f"but S&P 5 % drawdowns were not more frequent ({a['dd5_low']:.0f}% vs {a['dd5_all']:.0f}%)."})
     return out

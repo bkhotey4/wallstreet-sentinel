@@ -20,6 +20,16 @@ import pandas as pd
 from ..config import SETTINGS
 
 
+
+def _peak_txt(s) -> str:
+    """The series' all-time high and when — computed, so the sentence never goes out of date."""
+    try:
+        s = s.dropna()
+        k = s.idxmax()
+        return f"有資料以來最高 {float(s.max()):.0f}%（{k.year} 年第 {(k.month - 1) // 3 + 1} 季）。"
+    except Exception:  # noqa: BLE001
+        return ""
+
 def _cfg() -> Dict:
     return SETTINGS.get("valuation", {}) or {}
 
@@ -111,7 +121,7 @@ def build(engine) -> Dict:
         rf = _roll_forward(bi, spx)
         v = rf.get("estimate") if rf.get("estimate") is not None else rf["reported"]
         value.append(_item("buffett", "巴菲特指標（股市總市值／GDP）", "Buffett indicator (equity value / GDP)", v, bi, "%", True,
-                           "越高代表股市相對經濟規模越貴；歷史高點出現在 2000 與 2021 年前後。", rf["quarter"], rf))
+                           "越高代表股市相對經濟規模越貴；" + _peak_txt(bi), rf["quarter"], rf))
     tq = _q_ratio(fred, "NCBEILQ027S", "TNWMVBSNNCB", 1.0)
     if len(tq):
         rf = _roll_forward(tq / 100.0, spx)

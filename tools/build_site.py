@@ -374,13 +374,20 @@ def sec_playbook_breaks(eng) -> str:
 def sec_markets(eng) -> str:
     names = SETTINGS.names()
     tabs, panels = [], []
+    from datetime import timedelta
+    from wsb.data.econcal import us_today
+    cut = (us_today() - timedelta(days=4)).isoformat()
+
+    def old(r):                                    # a ticker that failed for days keeps its last price — say so
+        a = str(r.get("asof") or "")[:10]
+        return f' <span class="small dn" title="{T("資料日期", "data date")}">⚠{esc(a[5:])}</span>' if a and a < cut else ""
     for i, g in enumerate(SETTINGS.universe.keys()):
         rows = eng.market.returns_table(SETTINGS.group(g))
         if not rows:
             continue
         body = "".join(
             f'<tr><td>{T(names.get(r["ticker"], r["ticker"]), ASSET_EN.get(r["ticker"], r["ticker"]))}<span class="tk">{esc(r["ticker"])}</span></td>'
-            f'<td class="r">{num(r["price"], 2)}</td><td class="r {cls(r["d1"])}">{num(r["d1"], 2, sign=True, pct=True)}</td>'
+            f'<td class="r">{num(r["price"], 2)}{old(r)}</td><td class="r {cls(r["d1"])}">{num(r["d1"], 2, sign=True, pct=True)}</td>'
             f'<td class="r {cls(r.get("w1"))}">{num(r.get("w1"), 1, sign=True, pct=True)}</td><td class="r {cls(r.get("m1"))}">{num(r.get("m1"), 1, sign=True, pct=True)}</td>'
             f'<td class="r {cls(r.get("ytd"))}">{num(r.get("ytd"), 1, sign=True, pct=True)}</td>'
             + (f'<td class="r"><div class="pos" title="{num(r.get("pct_52w"), 0)}%"><i style="left:{min(max(r["pct_52w"], 0), 100):.0f}%"></i></div></td></tr>'
@@ -392,8 +399,8 @@ def sec_markets(eng) -> str:
                       f'<th class="r">{T("價格", "Price")}</th><th class="r">{T("今日", "1D")}</th><th class="r">{T("1週", "1W")}</th>'
                       f'<th class="r">{T("1月", "1M")}</th><th class="r">{T("年初至今", "YTD")}</th><th class="r">{T("52週區間位置", "52W range")}</th>'
                       f'</tr></thead><tbody>{body}</tbody></table></div></div>')
-    note = T("Yahoo Finance 報價，可能延遲約 15 分鐘；最右欄是現價在一年高低區間的位置。",
-             "Yahoo Finance quotes, may be ~15 min delayed; the last column shows where price sits in its 52-week range.")
+    note = T("Yahoo Finance 報價，可能延遲約 15 分鐘；最右欄是現價在一年高低區間的位置；⚠日期＝這檔已超過 4 天沒抓到新資料，顯示的是那天的價格。",
+             "Yahoo Finance quotes, may be ~15 min delayed; the last column shows where price sits in its 52-week range; ⚠date = no fresh data for over 4 days.")
     return card("全球跨資產行情", "Global cross-asset board", f'<div class="tabs">{"".join(tabs)}</div>{"".join(panels)}<p class="note">{note}</p>', "span8")
 
 
@@ -1223,7 +1230,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
+            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),

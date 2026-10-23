@@ -59,6 +59,9 @@ def fed(eng, today: date) -> Optional[Dict]:
     lab = lambda bp: "維持不變" if bp == "0" else (f"升息 {int(bp) // 25} 碼" if int(bp) > 0 else f"降息 {-int(bp) // 25} 碼")  # noqa: E731
     p0 = "、".join(f"{lab(k)} {v * 100:.0f}%" for k, v in sorted(m0["probs"].items(), key=lambda kv: -kv[1]))
     data = [f"{m0['date']} 會議（台北 {ev.get('tpe') or '—'}）期貨定價：{p0}"]
+    age = _days_to(str(fv.get("asof") or "")[:10], today) if fv.get("asof") else None
+    if age is not None and age <= -4:
+        data.append(f"⚠ 期貨報價停在 {fv['asof']}（{-age} 天前），機率可能已過時")
     move = [m for m in ms if any(int(k) != 0 and v >= 0.5 for k, v in m["probs"].items())]
     hidden, nxt = [], []
     if move and move[0]["date"] != m0["date"]:
@@ -349,7 +352,8 @@ def lights(eng) -> List[Dict]:
 
 # ---------------------------------------------------------------- build
 def build(eng) -> Dict:
-    today = date.today()
+    from ..data.econcal import us_today
+    today = us_today()
     items: List[Dict] = []
     for fn in (lambda: [fed(eng, today)], lambda: releases(eng, today), lambda: [earnings(eng, today)], lambda: moves(eng),
                lambda: [rotation(eng)], lambda: [credit(eng)], lambda: lights(eng)):

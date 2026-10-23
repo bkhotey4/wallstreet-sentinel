@@ -130,3 +130,32 @@ JS = r"""
   .then(function(d){if(d&&+d.ts>=+(cur.ts||0))show(d);}).catch(function(){});}
  setTimeout(function(){show(cur);},600);setInterval(poll,180000);})();
 """
+
+
+def sec_fomc_drift(eng) -> str:
+    from wsb.analytics import fomc_drift as FD
+    try:
+        r = FD.build(eng)
+    except Exception:  # noqa: BLE001
+        return ""
+    if not r.get("available"):
+        return ""
+    from tools.site_quant import _takeaways
+    body = _takeaways(FD.readings(r)).replace(T("今天的重點", "What matters today"), T("歷史怎麼說", "What history says"))
+    head = (f'<thead><tr><th>{T("樣本", "Sample")}</th>' + "".join(f'<th class="r">{T(zh, en)}</th>' for _, zh, en in FD.WINS) + "</tr></thead>")
+
+    def cell(st):
+        if not st:
+            return '<td class="r">—</td>'
+        return (f'<td class="r"><b class="{cls(st["mean"])}">{num(st["mean"], 2, sign=True, pct=True)}</b>'
+                f'<span class="small muted"> ↑{num(st["up"], 0)}%｜{T("平常", "base")} {num(st["base_mean"], 2, sign=True, pct=True)}｜t {num(st["t"], 1, sign=True)}</span></td>')
+    rows = "".join(f'<tr><td>{T(g["zh"], g["en"])}<span class="small muted"> n={(g.get("pre") or {}).get("n", "—")}</span></td>'
+                   + "".join(cell(g.get(w)) for w, _, _ in FD.WINS) + "</tr>" for g in r["stats"].values())
+    rec = "".join(f'<tr><td>{esc(x["date"])}</td>' + "".join(f'<td class="r {cls(x[w])}">{num(x[w], 2, sign=True, pct=True)}</td>' for w, _, _ in FD.WINS)
+                  + f'<td class="r">{num(x["vix"], 1)}</td></tr>' for x in r["recent"])
+    body += (f'<div class="scroll"><table class="mini">{head}<tbody>{rows}</tbody></table></div>'
+             f'<details class="hist"><summary class="small">{T("最近 8 次會議", "Last 8 meetings")}</summary><div class="scroll"><table class="mini">'
+             f'<thead><tr><th>{T("決議日", "Decision")}</th>' + "".join(f'<th class="r">{T(zh, en)}</th>' for _, zh, en in FD.WINS)
+             + f'<th class="r">{T("起點 VIX", "VIX at start")}</th></tr></thead><tbody>{rec}</tbody></table></div></details>'
+             f'<p class="note">{T("會前＝決議日前 6 個交易日收盤到前 1 日收盤；平常＝同期間任何同長度窗口；t ≥ 2 才算統計上明顯。只用標普收盤價與聯準會會議日期，新聞不是輸入。歷史頻率、樣本小，不是預測，也不是買賣建議。", "Pre = close T-6 to T-1; base = any window of the same length in the same years; |t| ≥ 2 is meaningful. Closes and Fed dates only. Historical frequencies, not a forecast or advice.")}</p>')
+    return card("FOMC 前漂移：會前有沒有上漲慣性", "Pre-FOMC drift", body, "wide")

@@ -49,7 +49,9 @@ def _quotes(eng) -> Dict[str, list]:
     except Exception:  # noqa: BLE001
         pass
     out = {}
+    mq = getattr(eng.market, "q", None)
     for t, q in (getattr(eng.market, "quotes", None) or {}).items():
+        q = (mq(t) if mq else q) or q
         px, ch = q.get("price"), q.get("chg_pct")
         if px is None or (isinstance(px, float) and math.isnan(px)):
             continue

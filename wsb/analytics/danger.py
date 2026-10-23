@@ -53,12 +53,15 @@ def in_session(mkt: str, q: Callable[[str], Optional[dict]], now: Optional[datet
     return today if a.get("asof") == today else None
 
 
-def score(mkt: str, q: Callable[[str], Optional[dict]], vix_backwardation: bool = False) -> Dict:
+def score(mkt: str, q: Callable[[str], Optional[dict]], vix_backwardation: bool = False, day: Optional[str] = None) -> Dict:
     m = MARKETS[mkt]
     rules = CFG.get(f"{mkt}_rules") or m["rules"]
     hits, groups, pts = [], {}, 0
     for t, label, grp, direction, steps in rules:
-        x = (q(t) or {}).get("chg_pct")
+        qt = q(t) or {}
+        if day and str(qt.get("asof", ""))[:10] < day:
+            continue                                   # a quote kept from an earlier day must not add points today
+        x = qt.get("chg_pct")
         if x is None or x != x:
             continue
         p = 0

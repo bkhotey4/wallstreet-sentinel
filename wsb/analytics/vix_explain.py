@@ -103,7 +103,7 @@ def build(eng) -> Dict:
         r = next((x for x in rules.get("rows", []) if f"VIX 升破 {ln}" in x.get("zh", "")), None)
         lines.append({"line": float(ln), "dist": float(ln) - now, "hit": now >= ln,
                       "dd5": r.get("dd5") if r else None, "n": r.get("n") if r else None,
-                      "verdict": r.get("verdict") if r else None, "base_dd5": base})
+                      "verdict": r.get("verdict") if r else None, "base_dd5": (r or {}).get("base_dd5", base)})
     out["lines"] = lines
     out["hot"] = ch >= float(c["hot_pct"]) or now >= float(c["hot_level"])
     return out

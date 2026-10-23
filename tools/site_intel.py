@@ -284,11 +284,11 @@ def sec_rules(eng) -> str:
         f'<tr><td>{T(r["zh"], r["en"])}{fired if r["now"] else ""}</td>'
         f'<td class="r">{r["n"]}</td><td class="r {cls(r["avg5"])}">{num(r["avg5"], 1, sign=True, pct=True)}</td>'
         f'<td class="r {cls(r["avg20"])}">{num(r["avg20"], 1, sign=True, pct=True)}</td><td class="r">{num(r["win20"], 0, pct=True)}</td>'
-        f'<td class="r"><b>{num(r["dd5"], 0, pct=True)}</b></td><td class="small {VD[r["verdict"]][0]}">{VD[r["verdict"]][1]} {T(r["vz"], r["ve"])}</td>'
+        f'<td class="r"><b>{num(r["dd5"], 0, pct=True)}</b><span class="small muted"> / {num(r.get("base_dd5", b["dd5"]), 0, pct=True)}</span></td><td class="small {VD[r["verdict"]][0]}">{VD[r["verdict"]][1]} {T(r["vz"], r["ve"])}</td>'
         f'<td class="small muted nw">{esc(r["last"] or "—")}</td></tr>' for r in rb["rows"] if r["n"] > 0)
     note = T(f"每條規則從 {rb['since']} 年起重跑：觸發日收盤之後標普 500 的表現（同一波 {rb['cooldown']} 個交易日內只算一次）。"
              f"比較基準＝任何一天：5 日平均 {b['avg5']:+.2f}%、20 日平均 {b['avg20']:+.2f}%、20 日上漲比例 {b['win20']:.0f}%、20 日內再跌 5% 的機率 {b['dd5']:.0f}%。"
-             "「有預警力」＝再跌 5% 的機率至少是基準的 1.5 倍；「常是短線低點」＝之後 20 日平均反而比平常好。每條規則屬於哪一種，以上表的計算結果為準。",
+             "「再跌 5%」欄的斜線後面是這條規則自己資料期間（例如 VIX9D 從 2011 年才有）的任何一天機率，判定以它為準。「有預警力」＝再跌 5% 的機率至少是基準的 1.5 倍；「常是短線低點」＝之後 20 日平均反而比平常好。每條規則屬於哪一種，以上表的計算結果為準。",
              "Each alarm rule re-run on history: what the S&P 500 did next, vs any day.")
     return card("大盤警報規則回測", "Do the sell-off alarms work?",
                 f'<p class="small muted">{note}</p><div class="scroll"><table class="mini"><thead><tr><th>{T("規則", "Rule")}</th><th class="r">{T("次數", "n")}</th>'

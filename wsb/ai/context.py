@@ -140,6 +140,14 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         if ev.get("available"):
             L.append("## 財經日曆（重要經濟數據與 FOMC）")
             L += _me.summary_lines(ev)
+            try:
+                from ..analytics import fomc_drift as _fd
+                fd = _fd.readings(_fd.build(engine))
+                if fd:
+                    L.append("## FOMC 前後標普的歷史表現（1995 起，非預測）")
+                    L += ["- " + x["zh"] for x in fd]
+            except Exception:  # noqa: BLE001
+                pass
         tq = getattr(engine, "techearn", None) or {}
         if tq.get("available"):
             L.append("## 科技／半導體財報")

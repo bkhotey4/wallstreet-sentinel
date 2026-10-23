@@ -19,6 +19,7 @@ from datetime import date, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from ..config import DATA_DIR
+from ..health import HEALTH
 
 log = logging.getLogger(__name__)
 FILE = DATA_DIR / "econ_fedwatch.json"          # econ_* is kept by the site workflow's cache
@@ -103,6 +104,7 @@ class FedWatch:
             df = await asyncio.to_thread(_download, tickers, period="5d", interval="1d")
         except Exception as e:  # noqa: BLE001
             log.warning("fed funds futures download failed: %s", e)
+            HEALTH.fail("fedwatch", e, every=6 * 3600)
             return
         got = {}
         for t in tickers:
@@ -112,8 +114,10 @@ class FedWatch:
                     got[t] = [float(s.iloc[-1]), s.index[-1].strftime("%Y-%m-%d")]
         if not got:
             log.warning("fed funds futures: no contract returned")
+            HEALTH.fail("fedwatch", RuntimeError("no fed funds futures contract returned"), every=6 * 3600)
             return
         self.quotes, self.ts = got, time.time()
+        HEALTH.ok("fedwatch", len(got), every=6 * 3600)
         self._save()
 
     def record(self, meetings: List[Dict]) -> None:

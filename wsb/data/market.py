@@ -369,6 +369,11 @@ class MarketData:
             row = {"ticker": t, "price": q["price"] if q else float(s.iloc[-1]),
                    "d1": q["chg_pct"] if q else None, "asof": q["asof"] if q else None}
             last_d = s.index[-1] if len(s) else None
+            lastv = float(s.iloc[-1]) if len(s) else None
+            if lastv and q and q.get("prev") and q.get("price") and str(q.get("asof", ""))[:10] > last_d.strftime("%Y-%m-%d"):
+                # quote is a newer day than the (dividend-adjusted) history → chain today's move onto the last bar, so
+                # 1W/1M/YTD/52W describe the same day as price and 1D and stay on the history's price basis
+                lastv *= float(q["price"]) / float(q["prev"])
             for lbl, days in (("w1", 7), ("m1", 30), ("m3", 91), ("ytd", None)):
                 try:
                     if days is None:                               # last close of the previous year
@@ -377,13 +382,14 @@ class MarketData:
                     else:                                          # calendar offsets: correct for 7-day crypto too
                         past = s[s.index <= last_d - pd.Timedelta(days=days)]
                         base = float(past.iloc[-1]) if len(past) else None
-                    row[lbl] = (float(s.iloc[-1]) / base - 1) * 100 if base else None
+                    row[lbl] = (lastv / base - 1) * 100 if base else None
                 except Exception:  # noqa: BLE001
                     row[lbl] = None
             row["sigma"] = self.sigma_move(t)
             yr = s[s.index > last_d - pd.Timedelta(days=365)] if last_d is not None else s
             if len(s) and (s.index[0] <= last_d - pd.Timedelta(days=330)):
-                row["pct_52w"] = float((s.iloc[-1] - yr.min()) / max(yr.max() - yr.min(), 1e-12) * 100)
+                lo, hi = min(float(yr.min()), lastv), max(float(yr.max()), lastv)
+                row["pct_52w"] = float((lastv - lo) / max(hi - lo, 1e-12) * 100)
             rows.append(row)
         return rows
 

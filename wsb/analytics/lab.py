@@ -127,7 +127,7 @@ def walk_forward_logit(F: pd.DataFrame, hit: pd.Series, valid: pd.Series, days: 
     D = F.join(hit.rename("_y")).join(valid.rename("_v")).dropna()
     D = D[D["_v"].astype(bool)]
     cols = list(F.columns)
-    P, Y, YR, B, per_year = [], [], [], [], {}
+    P, Y, YR, B, X, per_year = [], [], [], [], [], {}
     cal = hit.index                                   # trading calendar of the labels
     for yr in sorted(set(D.index.year)):
         test = D[D.index.year == yr]
@@ -139,6 +139,7 @@ def walk_forward_logit(F: pd.DataFrame, hit: pd.Series, valid: pd.Series, days: 
         w = fit_logit(train[cols].values, train["_y"].values, l2)
         p = predict(w, test[cols].values)
         P.append(p)
+        X.append(test[cols].values)
         Y.append(test["_y"].values)
         YR.append(np.full(len(test), yr))
         B.append(np.full(len(test), float(train["_y"].mean())))
@@ -148,7 +149,7 @@ def walk_forward_logit(F: pd.DataFrame, hit: pd.Series, valid: pd.Series, days: 
     p, y, yr, b0 = np.concatenate(P), np.concatenate(Y), np.concatenate(YR), np.concatenate(B)
     bs, bs0 = float(np.mean((p - y) ** 2)), float(np.mean((b0 - y) ** 2))
     return {"n": int(len(y)), "auc": auc(pd.Series(p), pd.Series(y)), "brier": bs,
-            "skill": float(1 - bs / bs0) if bs0 > 0 else None, "p": p, "y": y, "yr": yr, "b": b0,
+            "skill": float(1 - bs / bs0) if bs0 > 0 else None, "p": p, "y": y, "yr": yr, "b": b0, "X": np.vstack(X),
             "year_auc": {int(k): auc(pd.Series(v[0]), pd.Series(v[1])) for k, v in per_year.items()}}
 
 
@@ -206,7 +207,9 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
     Db = base_F.join(hit.rename("_y")).join(valid.rename("_v")).dropna()
     Db = Db[Db["_v"].astype(bool)]
     wb_all = fit_logit(Db[["ssi"]].values, Db["_y"].values)
-    cal_b = isotonic(base["p"], base["y"])
+    # the map must be learned on the outputs of the model it is applied to: wb_all's raw p on the OOS rows (monotone in
+    # SSI, so this is the SSI → realised-frequency map over the out-of-sample years), not the yearly models' raw p
+    cal_b = isotonic(predict(wb_all, base["X"]), base["y"])
     out["base_model"] = {"w": [float(x) for x in wb_all], "cal": [[float(x) for x in cal_b[0]], [float(x) for x in cal_b[1]]],
                          "auc_oos": base["auc"], "skill": base["skill"], "n": base["n"]}
     base_full = base
@@ -221,7 +224,7 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
         r = walk_forward_logit(F, hit, valid, days)
         if not r.get("n") or r.get("auc") is None:
             continue
-        base = same_rows_base(zk.notna()) or base
+        base = same_rows_base(zk.notna()) or base_full
         common = [y for y in r["year_auc"] if y in base["year_auc"] and r["year_auc"][y] is not None and base["year_auc"][y] is not None]
         better = sum(r["year_auc"][y] > base["year_auc"][y] for y in common)
         d_auc = r["auc"] - base["auc"]
@@ -261,11 +264,11 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
             out["ensemble"]["accepted"] = bool(out["ensemble"]["d_auc"] >= min_gain and out["ensemble"]["d_skill"] > 0
                                                 and (out["ensemble"]["skill"] or 0) > 0)
             out["calibration"] = _calibration(ens["p"], ens["y"])
-            cal = isotonic(ens["p"], ens["y"])
             D = F.join(hit.rename("_y")).join(valid.rename("_v")).dropna()
             D = D[D["_v"].astype(bool)]
             w = fit_logit(D[list(F.columns)].values, D["_y"].values)
-            last = F.iloc[-1].fillna(0.0).values.reshape(1, -1)
+            cal = isotonic(predict(w, ens["X"]), ens["y"])                 # map learned on w's own outputs (see cal_b)
+            last = F.ffill(limit=5).iloc[-1].fillna(0.0).values.reshape(1, -1)   # last valid value, not "neutral"
             wb = fit_logit(D[["ssi"]].values, D["_y"].values)
             raw = float(predict(w, last)[0])
             out["now"] = {"p_enh": raw * 100, "p_enh_cal": float(apply_iso(cal, raw) * 100),
@@ -277,7 +280,7 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
         D = D[D["_v"].astype(bool)]
         wb = fit_logit(D[["ssi"]].values, D["_y"].values)
         out["calibration"] = _calibration(base["p"], base["y"])
-        cal = isotonic(base["p"], base["y"])
+        cal = isotonic(predict(wb, base["X"]), base["y"])
         rawb = float(predict(wb, base_F.iloc[[-1]].fillna(0.0).values)[0])
         out["now"] = {"p_enh": None, "p_enh_cal": None, "p_base": rawb * 100, "p_base_cal": float(apply_iso(cal, rawb) * 100),
                       "drivers": []}
