@@ -190,3 +190,43 @@ CSS = """
 @media(max-width:640px){.otab thead{display:none}.otab tr{display:block;border-bottom:1px solid var(--bd);padding:8px 0}.otab td{display:block;border:0;padding:2px 0}.og,.oc{min-width:0}}
 @media(prefers-reduced-motion:reduce){.side{transition:none}}
 """
+
+
+# 重點標示 (bright-blue keywords in running text, switchable from the header)
+KW_JS = r"""
+(function(){
+// 重點標示: judgement words and "where does it sit" figures in running text turn bright blue (layout only, text unchanged)
+var WORDS=['偏高','偏低','過熱','紅燈','黃燈','危險','偏弱','逆風','順風','擴散','升溫','高壓','極端','警戒','倒掛','收緊','放寬','背離','分歧',
+ '轉弱','轉強','惡化','改善','利潤率擴張','利潤率收縮','明顯上修','明顯下修','上修','下修','非常樂觀','偏樂觀','風險趨避','假警報','沒先亮',
+ '最危險','R-zone','同時過熱','落後大盤','領先大盤','跌破 200 日均線','站在 200 日均線之上','資金缺口','財報壓力','違約','套很久',
+ '至今仍未回到','歷史低檔','歷史高點','創紀錄','合起來怎麼看','隱含意義'];
+WORDS.sort(function(a,b){return b.length-a.length;});
+var esc=function(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');};
+var RE=new RegExp('('+WORDS.map(esc).join('|')+'|第\\s?\\d+\\s?百分位|\\d+(?:\\.\\d+)?\\s?倍|\\d+\\s?次中\\s?\\d+\\s?次|\\d+\\s?／\\s?\\d+\\s?盞)','g');
+var SKIP='th,a,button,script,style,svg,h2,h3,summary,.upd,.kw,.pill,.tile,.ptab,.crumb,label,select,option,input,textarea';
+function run(root){
+ if(document.documentElement.lang==='en')return;
+ var scope=(root||document).querySelectorAll('.card p,.card li,.rimp,.card .d,.card td');
+ scope.forEach(function(el){
+  var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null),nodes=[],n;
+  while((n=w.nextNode()))nodes.push(n);
+  nodes.forEach(function(t){
+   if(!t.nodeValue||!t.parentElement||t.parentElement.closest(SKIP))return;
+   var cell=t.parentElement.closest('td');if(cell&&cell.textContent.length<24)return;   // short table cells: numbers, not sentences
+   RE.lastIndex=0;if(!RE.test(t.nodeValue))return;RE.lastIndex=0;
+   var f=document.createDocumentFragment(),s=t.nodeValue,last=0,m;
+   while((m=RE.exec(s))){if(m.index>last)f.appendChild(document.createTextNode(s.slice(last,m.index)));
+    var b=document.createElement('b');b.className='kw';b.textContent=m[0];f.appendChild(b);last=m.index+m[0].length;}
+   if(last<s.length)f.appendChild(document.createTextNode(s.slice(last)));
+   t.parentNode.replaceChild(f,t);});});}
+function load(){try{return localStorage.getItem('kw');}catch(e){return null;}}
+function setKw(on){document.documentElement.classList.toggle('nokw',!on);var b=document.getElementById('kwBtn');
+ if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');b.title=on?'重點標示：開（點一下關閉）':'重點標示：關（點一下開啟）';}
+ try{localStorage.setItem('kw',on?'1':'0');}catch(e){}}
+setKw(load()!=='0');run();
+var lb=document.getElementById('langBtn');if(lb)lb.addEventListener('click',function(){setTimeout(function(){run();},0);});
+var kb=document.getElementById('kwBtn');if(kb)kb.addEventListener('click',function(){setKw(document.documentElement.classList.contains('nokw'));});
+document.addEventListener('toggle',function(ev){if(ev.target&&ev.target.tagName==='DETAILS')run(ev.target);},true);
+})();
+"""
+KW_CSS = ':root{--kw:#0a66e0}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--kw:#4db2ff}}:root:not([data-theme="light"]){--kw:#4db2ff}:root[data-theme="light"]{--kw:#0a66e0}.kw{color:var(--kw);font-weight:700}.nokw .kw{color:inherit;font-weight:inherit}#kwBtn{font-weight:700}#kwBtn.on{color:var(--kw);border-color:var(--kw)}'
