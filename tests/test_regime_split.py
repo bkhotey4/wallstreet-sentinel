@@ -75,6 +75,21 @@ def test_analogs():
     print("ok analogs")
 
 
+def test_analogs_missing_and_tz():
+    """Right after a restart FRED may not be loaded yet: fred.get returns an empty Series (non-date index), which used
+    to raise a date-type error in _at and leave both cards empty.  tz-aware inputs must work too."""
+    dd = pd.bdate_range("1960-01-04", "2026-10-20")
+    spx = pd.Series(np.linspace(60, 6000, len(dd)), index=dd)
+    a = RS.analogs(spx, lambda k: pd.Series(dtype=float), today=pd.Timestamp("2026-10-20"))
+    assert len(a["episodes"]) == 5 and all(x.get("similarity") is None for x in a["episodes"])
+    assert all("spx_pct" in x and "y10_bp" not in x for x in a["episodes"])
+    mm = pd.date_range("1960-01-01", "2026-10-01", freq="MS", tz="UTC")
+    s = pd.Series(np.linspace(1, 4, len(mm)), index=mm)
+    assert RS._at(s, pd.Timestamp("2022-01-15")) is not None
+    assert RS._at(pd.Series(dtype=float), pd.Timestamp("2022-01-15")) is None
+    print("ok analogs missing / tz")
+
+
 def test_readings_and_cards():
     r = {"available": True, "now": {"fed": "hiking", "sb": "same"},
          "by_horizon": [{"days": 63, "drawdown_pct": 10.0, "regimes": [
@@ -98,5 +113,6 @@ if __name__ == "__main__":
     test_labels()
     test_walk_forward_split()
     test_analogs()
+    test_analogs_missing_and_tz()
     test_readings_and_cards()
     print("ALL OK")
