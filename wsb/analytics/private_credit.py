@@ -153,7 +153,7 @@ def pik_light(data: Dict, c: Dict) -> Dict:
 def unrealized_light(data: Dict, c: Dict) -> Dict:
     row = {"id": "pc_unrealized", "group": "私募信貸", "zh": "BDC 投資組合帳面虧損（占淨值）", "en": "BDC net unrealized depreciation vs NAV", "kind": "rule",
            "why": "BDC 每季要申報「投資組合比成本高或低多少」。放款品質變差時要先往下調估值，所以這個數字通常比違約更早轉差。",
-           "rule": "主要上市 BDC 最新財報的淨未實現損益（稅基）占淨值：中位數 ≤ −3% 黃燈、≤ −6% 紅燈；並列出和一年前的變化。門檻是信用分析慣例，不是回測出來的。"}
+           "rule": "主要上市 BDC 最新財報的投資組合淨帳面增減值（稅基）占淨值：中位數 ≤ −3% 黃燈、≤ −6% 紅燈；並列出和一年前的變化。門檻是信用分析慣例，不是回測出來的。"}
     navs = data.get("nav") or {}
     cur, chg, parts, ends = [], [], [], []
     for s in c["bdcs"]:
