@@ -88,6 +88,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
         run: |
           if [ "${{ inputs.no_ai }}" = "true" ]; then FLAG="--no-ai"; fi
           FM="--fullmarket"; if [ "${{ inputs.fast }}" = "true" ]; then FM=""; fi
