@@ -154,7 +154,29 @@ def test_fomc_drift():
     print("ok fomc drift")
 
 
+def test_card_stamps():
+    import time as _t
+    from tools import site_stamp as STP
+    now = _t.time()
+    today = pd.Timestamp.now(tz="America/New_York").strftime("%Y-%m-%d")
+    m = FakeMarket({"^GSPC": {"price": 1.0, "asof": today}, "^TWII": {"price": 1.0, "asof": "2020-01-02"}}, {})
+    m.quotes_ts = now - 600
+    eng = types.SimpleNamespace(market=m, fred=types.SimpleNamespace(ts=now - 3600, latest=lambda s: {"date": today}))
+    st = STP.stamp(eng, "sec_markets", "markets", now)
+    assert "最後更新" in st and "資料日" in st and " old" not in st and f'data-ts="{int(now - 600)}"' in st, st
+    assert " old" in STP.stamp(eng, "sec_taiwan", "taiwan", now) and "資料偏舊" in STP.stamp(eng, "sec_taiwan", "taiwan", now)
+    eng.fred.ts = now - 3 * 86400                               # a fetch older than 36 h is flagged even without a data date
+    assert " old" in STP.stamp(eng, "sec_macro", "risk", now)
+    assert STP.stamp(eng, "sec_fees", "tools", now) == ""       # static cards carry no stamp
+    h = '<section class="card"><h2>A</h2><p>x</p></section><section class="card wide"><h2>B</h2></section>'
+    out = STP.inject(h, "<p class=\"upd\">S</p>")
+    assert out.count('<p class="upd">S</p>') == 2 and out.index("S</p>") > out.index("</h2>"), out
+    assert STP.inject("<div>no card</div>", "<p>S</p>") == "<div>no card</div>"
+    print("ok card stamps")
+
+
 if __name__ == "__main__":
+    test_card_stamps()
     test_fomc_drift()
     test_stale_quote()
     test_vix_explain()

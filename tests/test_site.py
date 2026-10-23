@@ -79,6 +79,8 @@ def main():
     assert "減碼" not in clean and "15%" not in clean and "非農" in clean and "信用利差" in clean
     eng.ai_written = 1792512000.0                      # the card says when the commentary was written (Taipei time)
     html2 = B.render(eng, clean, "test-llm")
+    if os.environ.get("WSB_SITE_DUMP"):
+        open(os.environ["WSB_SITE_DUMP"], "w", encoding="utf-8").write(html2)
     from datetime import datetime as _dt
     from zoneinfo import ZoneInfo as _Z
     assert f"最後更新 {_dt.fromtimestamp(1792512000.0, _Z('Asia/Taipei')):%m-%d %H:%M} 台北" in html2
@@ -89,7 +91,10 @@ def main():
     assert "評價損益" in _html3
     _risk = html2[html2.find('id="p-risk"'):]
     _risk = _risk[:_risk.find('id="p-', 10)] if 'id="p-' in _risk[10:] else _risk
-    assert _risk.count('class="upd small muted"') >= 3, _risk.count('class="upd')      # risk cards carry their own update time
+    assert _risk.count('<p class="upd') >= 3, _risk.count('class="upd')                # risk cards carry their own update time
+    _cards = html2.count('<section class="card')
+    assert html2.count('<p class="upd') >= _cards * 0.6, (html2.count('<p class="upd'), _cards)   # most cards say when
+    assert 'class="ago" data-ts="' in html2 and "分鐘前" in html2
     assert "AI 市場評論" in html2 and "非農" in html2 and "<h4><b>一句話結論</b></h4>" in html2
     # auto-update: the page carries its build stamp; the script compares it with version.json and reloads
     assert re.search(r'id="liveb" data-b="\d{10}"', html2) and "version.json?t=" in html2 and "location.replace(location.pathname+'?v='+v.b" in html2 and "wss_rl" in html2

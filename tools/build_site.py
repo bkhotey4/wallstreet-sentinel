@@ -34,6 +34,7 @@ from tools import site_legal as SL_
 from tools import site_industry as SIN
 from tools import site_rates as SR
 from tools import site_alerts as SA
+from tools import site_stamp as STP
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -924,36 +925,6 @@ def sec_quality(eng) -> str:
     return card("模型可信度與資料健康", "Model credibility & data health", body, "wide")
 
 
-def _stamp(eng, fname: str) -> str:
-    """風險模型 cards: when THIS card's numbers were computed (they refresh on different schedules) + its data date."""
-    tz = ZoneInfo("Asia/Taipei")
-    rc = float(getattr(eng, "recompute_ts", 0) or 0) or time.time()
-    asof = data_asof(eng)[0]
-    if fname == "sec_canary":
-        cn = getattr(eng, "canary", None) or {}
-        ts = cn.get("ts") or rc
-        ds = [str(r.get("asof")) for r in cn.get("rows", []) if r.get("asof")]
-        asof = max(ds) if ds else asof
-    elif fname == "sec_quality":
-        ts = float(getattr(eng, "_quality_ts", 0) or 0) or (getattr(eng, "lab", None) or {}).get("ts") or rc
-    elif fname == "sec_model_health":
-        ts = (getattr(eng, "model_health", None) or {}).get("ts") or rc
-    elif fname == "sec_macro":
-        ts = rc
-        try:
-            ds = [str((eng.fred.latest(sid) or {}).get("date") or "") for sid in SETTINGS.get("fred_series", {})]
-            asof = max(d for d in ds if d) or asof
-        except Exception:  # noqa: BLE001
-            pass
-    elif fname in ("sec_shock", "sec_playbook_breaks", "sec_distress"):
-        ts = rc
-    else:
-        return ""
-    when = datetime.fromtimestamp(float(ts), tz).strftime("%m-%d %H:%M")
-    return (f'<p class="upd small muted">{T("最後更新", "Updated")} {when} {T("台北", "Taipei")}'
-            + (f'・{T("資料日", "data as of")} {esc(str(asof))}' if asof else "") + "</p>")
-
-
 def sec_ai(text: str, engine_name: str, written: Optional[float] = None) -> str:
     if not text:
         return ""
@@ -1256,13 +1227,11 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             if f is None:
                 return sec_ai(ai_text, ai_engine, getattr(eng, "ai_written", None))
             h = _safe_section(f, eng)
-            if key == "risk" and h and "</section>" in h:          # each risk card says when its own numbers were computed
+            if h and "</h2>" in h:                                 # every card says when its own numbers were fetched
                 try:
-                    st = _stamp(eng, getattr(f, "__name__", ""))
+                    h = STP.inject(h, STP.stamp(eng, getattr(f, "__name__", ""), key))
                 except Exception:  # noqa: BLE001
-                    st = ""
-                i_ = h.rfind("</section>")
-                h = h[:i_] + st + h[i_:]
+                    log.exception("stamp failed for %s", getattr(f, "__name__", f))
             return h
         html_ = "".join(_one(f) for f in fs)
         if not html_.strip():
@@ -1285,14 +1254,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 <nav class="pnav" aria-label="pages"><div class="pbar">{"".join(nav)}</div></nav></header>
 <main class="wrap">{strip}{"".join(panels)}<footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
