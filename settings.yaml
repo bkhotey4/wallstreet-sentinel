@@ -36,6 +36,8 @@ universe:
   volatility:
     "^VIX": VIX
     "^VIX1D": VIX 1日
+    "^VXN": 那指波動率VXN
+    "^OVX": 原油波動率OVX
     "^VIX9D": VIX 9日
     "^VIX3M": VIX 3個月
     "^VVIX": VVIX(波動率的波動率)
@@ -130,7 +132,7 @@ universe:
 
 # 有版權限制的 FRED 序列（ICE BofA 利差、Moody's）：公開網站與公開 AI 評論只顯示衍生指標（百分位、變化方向），
 # 不顯示原始數值；計算（壓力指數、信用循環）照常使用。私人 Discord 不受影響。
-fred_restricted: [BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A3HYC, BAMLH0A1HYBB, BAA10Y, UMCSENT, TRUCKD11]   # + 密大消費者信心、美國卡車協會運量
+fred_restricted: [BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A3HYC, BAMLH0A1HYBB, BAMLHE00EHYIOAS, BAA10Y, UMCSENT, TRUCKD11]   # + 密大消費者信心、美國卡車協會運量
 
 # ---------- 近期新增模組的可調參數（程式內建同樣的預設值；改這裡即可） ----------
 premarket:
@@ -211,6 +213,8 @@ fred_series:
   WRESBAL: 銀行準備金
   SOFR: SOFR
   SOFR99: SOFR 第99百分位
+  BAMLHE00EHYIOAS: 歐洲高收益債利差
+  T5YIFR: 5年後5年通膨預期
   IORB: 準備金利率 IORB
   IOER: 超額準備金利率 IOER（2021 年前）
   WLCFLPCL: 貼現窗口借款
@@ -232,6 +236,10 @@ fred_series:
 canary_components:
   - {id: sofr_iorb,   block: 流動性,    src: fred, series: SOFR,        kind: "spread:IORB|IOER:ma5", direction: 1,  weight: 0.6}
   - {id: sofr99_iorb, block: 流動性,    src: fred, series: SOFR99,      kind: "spread:IORB|IOER",      direction: 1,  weight: 0.6}   # 金絲雀專用，不進 SSI
+  - {id: vxn_vix,     block: 波動率,    src: px,   series: "^VXN",      kind: "ratio:^VIX",            direction: 1,  weight: 0.5}   # 以下四項同樣只當金絲雀
+  - {id: ovx,         block: 商品加密,  src: px,   series: "^OVX",      kind: level,                   direction: 1,  weight: 0.5}
+  - {id: eu_hy_oas,   block: 信用,      src: fred, series: BAMLHE00EHYIOAS, kind: level,               direction: 1,  weight: 0.5}
+  - {id: infl_5y5y,   block: 利率,      src: fred, series: T5YIFR,      kind: level,                   direction: 1,  weight: 0.5}
   - {id: cp_tbill,    block: 流動性,    src: fred, series: DCPF3M,      kind: "spread:DTB3:ma5",       direction: 1,  weight: 0.6}
   - {id: stock_bond_corr, block: 股市結構, src: px, series: SPY,        kind: "pcorr:60:TLT",          direction: 1,  weight: 0.6}
 

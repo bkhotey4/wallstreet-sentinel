@@ -1041,7 +1041,7 @@ def sec_canary(eng) -> str:
              "FRED, FINRA, market prices, Nasdaq estimate snapshots. Model data only. Early warning, not a forecast.")
     return card("金絲雀：危機的早期警訊", "Canaries: early-warning lights",
                 head + f'<div class="cngrid">{"".join(cards)}</div><p class="note">{note}</p>', "wide",
-                sub=T("資金市場、信用品質、銀行存款、槓桿、避險失效、市場內部、景氣類股", "Funding, credit quality, deposits, leverage, hedges, breadth, cyclicals"))
+                sub=T("資金市場、信用品質、銀行存款、槓桿、避險失效、市場內部、景氣類股、外部衝擊", "Funding, credit quality, deposits, leverage, hedges, breadth, cyclicals, external shocks"))
 
 
 # ----------------------------------------------------------------- 華爾街關注焦點

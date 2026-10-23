@@ -57,7 +57,7 @@ BLOCK_EN = {"信用": "Credit", "私募信貸": "Private credit", "全球新興"
             "商品加密": "Commodities & crypto", "景氣就業": "Growth & jobs"}
 ASSET_EN = {"^GSPC": "S&P 500", "^NDX": "Nasdaq 100", "^DJI": "Dow Jones", "^RUT": "Russell 2000", "ES=F": "S&P futures",
             "NQ=F": "Nasdaq futures", "QQQ": "Nasdaq 100 ETF", "RSP": "S&P equal weight", "SMH": "Semiconductor ETF",
-            "^SOX": "PHLX Semiconductor", "^VIX": "VIX", "^VIX9D": "VIX 9-day", "^VIX3M": "VIX 3-month", "^VVIX": "VVIX",
+            "^SOX": "PHLX Semiconductor", "^VIX": "VIX", "^VIX1D": "VIX 1-day", "^VIX9D": "VIX 9-day", "^VXN": "Nasdaq-100 vol (VXN)", "^OVX": "Oil vol (OVX)", "^VIX3M": "VIX 3-month", "^VVIX": "VVIX",
             "^MOVE": "MOVE (bond vol)", "^SKEW": "SKEW", "^STOXX50E": "Euro Stoxx 50", "^GDAXI": "DAX", "^FTSE": "FTSE 100",
             "^FCHI": "CAC 40", "EUFN": "Europe financials", "^N225": "Nikkei 225", "^HSI": "Hang Seng",
             "000001.SS": "Shanghai Composite", "^KS11": "KOSPI", "^TWII": "TAIEX", "^BSESN": "Sensex", "^AXJO": "ASX 200",
@@ -80,7 +80,7 @@ STRIP = [("^GSPC", "標普500", 0), ("^NDX", "那指100", 0), ("^TWII", "台股�
 TRENDS = [("^GSPC", "標普500", 0), ("^TWII", "台股加權", 0), ("^VIX", "VIX 恐慌指數", 2), ("^TNX", "美債10年殖利率", 3)]
 
 COMP_LABELS = {
-    "sofr_iorb": ("SOFR − IORB（資金市場）", "SOFR − IORB"), "sofr99_iorb": ("SOFR99 − IORB（資金市場尾端）", "SOFR99 − IORB"), "discount_window": ("聯準會貼現窗口借款", "Discount window"),
+    "sofr_iorb": ("SOFR − IORB（資金市場）", "SOFR − IORB"), "sofr99_iorb": ("SOFR99 − IORB（資金市場尾端）", "SOFR99 − IORB"), "vxn_vix": ("VXN ÷ VIX（科技股恐慌溢價）", "VXN ÷ VIX"), "ovx": ("原油波動率 OVX", "Oil vol (OVX)"), "eu_hy_oas": ("歐洲高收益債利差", "Euro HY spread"), "infl_5y5y": ("5y5y 通膨預期", "5y5y inflation"), "discount_window": ("聯準會貼現窗口借款", "Discount window"),
     "cp_tbill": ("商業本票 − 國庫券", "CP − T-bill"), "ccc_bb": ("CCC − BB 利差", "CCC − BB"),
     "bank_deposits": ("銀行存款 4 週變化", "Bank deposits 4w"), "stock_bond_corr": ("股債 60 日相關性", "Stock–bond corr 60d"),
     "transports": ("運輸股 vs 大盤", "Transports vs SPY"), "discretionary_staples": ("非必需 vs 必需消費", "XLY vs XLP"),
