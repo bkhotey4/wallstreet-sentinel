@@ -65,6 +65,11 @@ class CryptoSentiment:
         js = await http.get("https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
                             headers={"Referer": "https://www.cnn.com/", "Origin": "https://www.cnn.com"})
         fg = js.get("fear_and_greed", {})
+        try:                                               # 抄底四訊號: keep CNN's history (it only serves one year)
+            from ..analytics import bottom as BT
+            BT.archive(js)
+        except Exception as e:  # noqa: BLE001
+            log.warning("CNN archive failed: %s", e)
         return {"cnn_fng": round(float(fg.get("score")), 1) if fg.get("score") is not None else None,
                 "cnn_fng_label": fg.get("rating"),
                 "cnn_fng_1w": fg.get("previous_1_week"), "cnn_fng_1m": fg.get("previous_1_month")}

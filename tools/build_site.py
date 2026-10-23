@@ -38,6 +38,7 @@ from tools import site_rates as SR
 from tools import site_alerts as SA
 from tools import site_stamp as STP
 from tools import site_layout as SLY
+from tools import site_bottom as SBT
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -1212,7 +1213,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
-            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
+            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
@@ -1267,7 +1268,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SBT.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>

@@ -125,10 +125,22 @@ def _models(eng, out: List[Dict], now: datetime) -> None:
                         "detail": f"回測：之後 20 日內再跌 5% 的機率 {r['dd5']:.0f}%（同期間任何一天 {base:.0f}%），{r.get('since', '')} 年起共 {r['n']} 次" if base is not None and r.get("dd5") is not None else ""})
 
 
+def _bottom(eng, out: List[Dict], now: datetime) -> None:
+    """抄底四訊號: 3 of 4 → pop-up; 2 of 4 → listed under the bell."""
+    from . import bottom as BT
+    r = BT.build(eng)
+    if not r.get("available") or r["n_hit"] < 2:
+        return
+    hit = "、".join(f"{s['zh']} {s['fmt'].format(s['v'])}" for s in r["signals"] if s["hit"])
+    out.append({"key": f"bottom:{r['n_hit']}:{_week(now)}", "lv": "alert" if r["n_hit"] >= 3 else "watch", "tab": "mood",
+                "zh": f"抄底四訊號 {r['n_hit']}/4 成立：{hit}", "en": f"Bottom checklist {r['n_hit']}/4",
+                "detail": "極端恐慌的歷史統計，不是買點建議；訊號出現後市場常會再跌一段"})
+
+
 def build(eng) -> Dict:
     now = datetime.now(timezone.utc)
     out: List[Dict] = []
-    for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now)):
+    for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now), lambda: _bottom(eng, out, now)):
         try:
             f()
         except Exception:  # noqa: BLE001  (one broken rule must not hide the others)

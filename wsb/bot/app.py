@@ -609,6 +609,23 @@ class Sentinel(commands.Bot):
                 store.kv_set(k, True)
         return out
 
+    def _bottom_alerts(self) -> List[Alert]:
+        """抄底四訊號: one message per ISO week per level once 3 or 4 of the four conditions hold."""
+        from ..analytics import bottom as BT
+        try:
+            r = BT.build(self.engine)
+        except Exception:  # noqa: BLE001
+            log.exception("bottom checklist failed")
+            return []
+        if not r.get("available") or r["n_hit"] < 3:
+            return []
+        y, w, _ = datetime.now().isocalendar()
+        hit = "、".join(f"{s['zh']} {s['fmt'].format(s['v'])}（{s['rule']}）" for s in r["signals"] if s["hit"])
+        b = r["bt"]["both"]
+        return [Alert(f"bottom:{r['n_hit']}:{y}W{w:02d}", "⚠️ WARNING", f"抄底四訊號 {r['n_hit']}/4 成立",
+                      f"{hit}｜歷史上 VIX>40 且 RSI<30 共 {b['n']} 波，之後 3 個月標普中位數 {b['3m']['med']:+.1f}%，"
+                      f"但訊號後通常還會再跌（中位數 {b['further']:.1f}%）。歷史統計，不是買點建議。")]
+
     def _distress_alerts(self) -> List[Alert]:
         """Corporate distress radar: one alert when a company ENTERS red (re-armed only once it is back to no light),
         plus every new hard SEC red-flag filing.  The first run only records a baseline (no burst on deploy)."""
@@ -725,6 +742,7 @@ class Sentinel(commands.Bot):
                                         WATCH.concentration_alerts(eng.portfolio)):
             out.append(Alert(key, sev, title, detail))
         out += self._intel_alerts()
+        out += self._bottom_alerts()
         out += self._danger_alerts()
         out += self._stop_alerts()
         out += self._rule_alerts()
