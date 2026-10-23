@@ -59,6 +59,21 @@ def _fred_date(eng) -> Optional[str]:
         return None
 
 
+def _fedres() -> Dict:
+    try:
+        from wsb.data import fed_research as FR
+        return FR.load()
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _fedres_date() -> Optional[str]:
+    d = _fedres()
+    ds = [(d.get("mpd") or {}).get("sp6m", [[None]])[-1][0], ((d.get("ebp") or [[None]])[-1][0] or "") + "-01" if d.get("ebp") else None]
+    ds = [x for x in ds if x]
+    return max(ds) if ds else None
+
+
 def _g(eng, *path):
     o = eng
     for p in path:
@@ -91,6 +106,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "margin": ("FINRA 融資", "FINRA margin", lambda e: (_ts(_g(e, "margin_debt", "ts")), None), 0),
     "taiwan": ("台股籌碼", "Taiwan flows", lambda e: (_ts(_g(e, "taiwan", "ts")), _d(_g(e, "taiwan", "asof"))), 4),
     "street": ("華爾街觀點", "Street views", lambda e: (None, _d(_g(e, "street", "asof"))), 10),
+    "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
 
@@ -108,7 +124,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -117,7 +133,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
+NONE = {"sec_research", "sec_research_status", "sec_research_feed", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
 
 
 def sources_for(fname: str, tab: str) -> List[str]:

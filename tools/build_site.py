@@ -42,6 +42,7 @@ from tools import site_bottom as SBT
 from tools import site_crisis_track as SCT
 from tools import site_credit as SCR
 from tools import site_research as SRS
+from tools import site_slow as SSL
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -1213,7 +1214,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [SQ.sec_premarket, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
-            ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SO.sec_intel, SO.sec_exposure]),
+            ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "買點訊號", "Entry signals", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
@@ -1227,7 +1228,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("bonds", "美債", "Treasuries", [SCR.sec_credit_rates, SR.sec_rates_radar, S2.sec_bonds]),
+            ("bonds", "美債", "Treasuries", [SCR.sec_credit_rates, SSL.sec_ebp, SR.sec_rates_radar, S2.sec_bonds]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
@@ -1236,7 +1237,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
-            ("research", "學術研究", "Research", [SRS.sec_research, SRS.sec_research_status]),
+            ("research", "學術研究", "Research", [SRS.sec_research_feed, SRS.sec_research, SRS.sec_research_status]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
@@ -1279,7 +1280,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SBT.CSS}{SCR.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
@@ -1498,6 +1499,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.info("sector brief: %s sectors", len((eng.sector_brief or {}).get("sectors") or []))
     except Exception as e:  # noqa: BLE001
         log.warning("sector brief failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 聯準會 EBP + 明尼亞波利斯 Fed 選擇權機率（每天一次）
+        from wsb.data import fed_research as FRS
+        await asyncio.wait_for(FRS.refresh(), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("fed research data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 華爾街機構觀點（背景）: public titles + CFTC positioning, cached 6 h
         await asyncio.wait_for(eng.refresh_street(), 90)
     except Exception as e:  # noqa: BLE001

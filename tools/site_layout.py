@@ -64,6 +64,8 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
              ("risk", r"總經象限 (\S+) \S+ 風險偏好 (\S+)", lambda m: f"總經象限：{m[1]}・{m[2]}"),
              ("flows", r"暗池指數（\d+ 檔大型股） ([\d.]+%)", lambda m: f"暗池指數 {m[1]}"),
              ("mood", r"抄底四訊號：恐慌到極點了嗎 .*?(\d) / 4 (\S+)", lambda m: f"抄底四訊號 {m[1]}/4（{m[2]}）"),
+             ("outlook", r"累積脆弱度：(\d+) 盞燈中 (\d+) 盞過熱", lambda m: f"累積脆弱度 {m[2]}/{m[1]} 盞過熱"),
+             ("outlook", r"標普 500 在 6 個月內跌 20% 以上的機率 ([\d.]+%)", lambda m: f"選擇權隱含 6 個月跌 ≥20%：{m[1]}"),
              ("crisis", r"(\d+) 次標普從高點跌 \d+% 以上的危機，壓力指數 SSI 在「跌滿 10% 之前」進入升溫（≥ \d+）的有 (\d+) 次.*?SSI 升上 \d+ 共 (\d+) 次，其中 (\d+) 次之後",
               lambda m: f"危機預警紀錄：{m[1]} 次危機先亮燈 {m[2]} 次，假警報 {m[4]}/{m[3]} 次")],
     "macro": [("econ", r"(\d\d-\d\d) 週. 下次 FOMC.*?市場預期：(\S+)", lambda m: f"下次 FOMC {m[1]}，市場預期{m[2]}"),
@@ -73,7 +75,8 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
               ("bonds", r"美債專區.*?10 年 ([\d.]+%)", lambda m: f"10 年期殖利率 {m[1]}"),
               ("bonds", r"2 年 ([\d.]+%) 10 年 [\d.]+% 30 年 [\d.]+% 10年−2年利差 ([+-]\d+bp)", lambda m: f"2 年期 {m[1]}、10年−2年利差 {m[2]}"),
               ("energy", r"柴油裂解價差 ([\d.]+) 美元／桶，在 2007 年以來第 (\d+) 百分位", lambda m: f"柴油裂解價差第 {m[2]} 百分位"),
-              ("energy", r"布蘭特原油 ([\d.]+) ([+-][\d.]+%)", lambda m: f"布蘭特原油 {m[1]}（3 個月 {m[2]}）")],
+              ("energy", r"布蘭特原油 ([\d.]+) ([+-][\d.]+%)", lambda m: f"布蘭特原油 {m[1]}（3 個月 {m[2]}）"),
+              ("bonds", r"超額債券溢酬 EBP ([+-][\d.]+) .*?12 個月內衰退機率 ([\d.]+%)", lambda m: f"EBP {m[1]}、聯準會 12 個月衰退機率 {m[2]}")],
     "sector": [("industry", r"規則判讀為順風：([^；]*)；逆風：([^。]*)。", lambda m: f"順風：{m[1]}；逆風：{m[2]}"),
                ("industry", r"財報季：已有 (\d+) 家公布，(\d+)% 優於預估", lambda m: f"財報季 {m[1]} 家、{m[2]}% 優於預估"),
                ("industry", r"近 3 個月領漲：([^；]*)；", lambda m: f"近 3 個月領漲：{m[1]}"),
@@ -161,6 +164,8 @@ function sync(){var k=((document.querySelector('.page.on')||{}).id||'p-overview'
 window.addEventListener('hashchange',function(){setTimeout(sync,0);});
 document.addEventListener('click',function(ev){if(ev.target.closest('[data-p]')||ev.target.closest('#langBtn'))setTimeout(sync,0);
  if(side.classList.contains('open')&&!ev.target.closest('#side')&&!ev.target.closest('#sideBtn'))side.classList.remove('open');});
+function lock(){document.documentElement.style.overflow=side.classList.contains('open')?'hidden':'';}
+new MutationObserver(lock).observe(side,{attributes:true,attributeFilter:['class']});
 if(btn)btn.addEventListener('click',function(ev){ev.stopPropagation();side.classList.toggle('open');});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape')side.classList.remove('open');});
 sync();})();
@@ -178,7 +183,8 @@ CSS = """
 .ochip{display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border:1px solid var(--bd);border-radius:99px;font-size:12px;color:var(--tx);text-decoration:none}
 .ochip:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
 @media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}
- .side{position:fixed;inset:0 auto 0 0;width:min(82vw,300px);max-height:none;z-index:60;background:var(--page);border-right:1px solid var(--bd);
+ .side{position:fixed;top:0;left:0;bottom:auto;width:min(82vw,300px);height:100vh;height:100dvh;max-height:100dvh;overflow-y:auto;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;z-index:60;background:var(--page);border-right:1px solid var(--bd);
   padding:calc(14px + env(safe-area-inset-top,0px)) 0 calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-105%);transition:transform .2s}
  .side.open{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}.sidebtn{display:inline-block;margin:6px 8px 6px 0}}
 @media(max-width:640px){.otab thead{display:none}.otab tr{display:block;border-bottom:1px solid var(--bd);padding:8px 0}.otab td{display:block;border:0;padding:2px 0}.og,.oc{min-width:0}}

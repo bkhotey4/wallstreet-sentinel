@@ -16,9 +16,16 @@ from wsb.analytics.crisis_track import wilson  # noqa: E402
 def main():
     secs = R.sections()
     assert len(secs) >= 5 and secs[-1][0] == "結論", [t for t, _ in secs]
-    h = R.sec_research(None)
-    assert h.count('<section class="card') == len(secs) and "<table" in h and 'target="_blank"' in h and R.COMPILED in h
+    import types
+    import pandas as pd
+    eng = types.SimpleNamespace(stress=types.SimpleNamespace(score=62.0),
+                                fred=types.SimpleNamespace(get=lambda k: pd.Series(dtype=float)),
+                                market=types.SimpleNamespace(series=lambda k: pd.Series(dtype=float)))
+    h = R.sec_research(eng)
+    assert h.count("隱含意義") == len(R.POINTS) == 6 and "<details" in h and 'target="_blank"' in h and R.COMPILED in h
     assert "**" not in h and "](http" not in h                       # markdown fully converted
+    now = R.now_reading(eng)
+    assert now[0][0].startswith("即時層") and "偏高" in now[0][1] and now[-1][0] == "合起來怎麼看", now
     st = R.sec_research_status(None)
     assert "落實進度" in st and "尚未" in st and "已完成" in st
     lo, hi = wilson(7, 7)
@@ -26,6 +33,16 @@ def main():
     lo, hi = wilson(11, 48)
     assert 12 < lo < 15 and 35 < hi < 38
     assert wilson(0, 0) == (None, None)
+    import json
+    R.FEED = __import__("pathlib").Path(os.environ["WSB_DATA_DIR"]) / "feed.json"
+    R.FEED.write_text(json.dumps({"items": [
+        {"title": "Paper A", "url": "https://example.org/a", "summary": "重點 A", "implication": "意義 A", "source": "Fed", "added": "2026-10-26"},
+        {"title": "Bad <script>", "url": "javascript:alert(1)", "summary": "x"},
+        {"title": "Paper B", "url": "https://example.org/b", "summary": "重點 B <b>", "added": "2026-11-02"}]}), encoding="utf-8")
+    f = R.sec_research_feed(None)
+    assert "Paper A" in f and "Paper B" in f and "javascript:" not in f and "&lt;b&gt;" in f and f.index("Paper B") < f.index("Paper A")
+    R.FEED.write_text("not json", encoding="utf-8")
+    assert R.sec_research_feed(None) == ""
     print("all research tests passed")
 
 

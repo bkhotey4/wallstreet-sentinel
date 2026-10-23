@@ -284,6 +284,11 @@ class Engine:
                           "street", "eia", "mof_jgb", "private_credit", "spx_long", "sector_brief"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
+        try:                                                    # 聯準會 EBP + 明尼亞波利斯 Fed 選擇權機率（每天一次）
+            from .data import fed_research as frs
+            await frs.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("fed research data failed: %s", e)
         try:
             await self.refresh_fundamentals()                   # 產業體檢 (SEC companyfacts, weekly per company)
         except Exception as e:  # noqa: BLE001
