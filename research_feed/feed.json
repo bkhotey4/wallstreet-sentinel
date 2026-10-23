@@ -1,4 +1,49 @@
 {
   "updated": "2026-10-23",
-  "items": []
+  "items": [
+    {
+      "title": "Introducing Private Credit into the Financial Accounts of the United States",
+      "authors": "Katie Brinkman, Christine Dobridge, Tim Dore, Simon Glossner, Elizabeth Holmquist, Nam Nguyen, Maria Perozek, Irina Stefanescu",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-10-16",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/introducing-private-credit-into-the-financial-accounts-of-the-united-states-20261016.html",
+      "added": "2026-10-23",
+      "summary": "聯準會把「私募信貸」（非銀行基金發放的私下協商企業貸款）正式納入美國金融帳戶。利用 SEC Form PF 等資料，估計私募信貸工具資產從 2012 年約 3,500 億美元增至 2025 年第四季超過 2.6 兆美元，其中對美國企業的放款約 1.5 兆美元。納入後約占非金融企業債務的 6%（2012 年約 1%），使債務占 GDP 比率上升約 5 個百分點，但仍低於 2012 年以來的中位數。",
+      "implication": "私募信貸已不是小角落，但從整體企業負債看，目前槓桿水準還沒有失控。真正要留意的是誰持有它：退休基金約 40%、壽險 14%、家庭與非營利組織 23%。",
+      "site_relevance": "與本站「私募信貸燈號」直接相關，可作為市場規模與持有人結構的官方參考數字。"
+    },
+    {
+      "title": "The Rise of Semiliquid Funds for Retail Investors",
+      "authors": "Logan George, Chaehee Shin",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-10-14",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/the-rise-of-semiliquid-funds-for-retail-investors-20261014.html",
+      "added": "2026-10-23",
+      "summary": "研究區間型基金、要約收購基金與非公開交易 BDC 這類「半流動性」基金，資料來自 SEC Form N-PORT 與 LSEG BDC Collateral。這類基金淨資產從 2018 年的 150 億美元增至 2025 年的 3,880 億美元；非公開 BDC 平均槓桿（負債/股本）約 0.90，持有 93.4% 私募信貸，現金類資產僅 0.2%。贖回通常上限約每季 5%，2026 年初有數家管理人的贖回申請超過上限而被按比例處理。",
+      "implication": "這類基金資產難以快速賣出，卻允許定期贖回。市場情緒轉差時，贖回潮可能讓企業的信貸供給收緊，風險因此更容易順著景氣循環放大。",
+      "site_relevance": "可作為「私募信貸燈號」的補充：建議觀察非公開 BDC 的贖回申請比例與是否限制提領。"
+    },
+    {
+      "title": "Ripples in the Reserve Pool: Unveiling Liquidity Signals from the Federal Funds Market",
+      "authors": "Sriya Anbil, Sebastian Infante, Zeynep Senyuz",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-10-16",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/ripples-in-the-reserve-pool-unveiling-liquidity-signals-from-the-federal-funds-market-20261016.html",
+      "added": "2026-10-23",
+      "summary": "研究在準備金充足的環境下，聯邦資金市場是否仍透露銀行流動性訊息。使用 2015 年 10 月至 2024 年 1 月的 FR 2420 交易資料，發現銀行對銀行的拆借利率才是反映流動性壓力的部分：當準備金比率降到最低時，銀行出借方的利率彈性由 0.15 升至約 0.30。小型銀行存款每週增加 100 美元，準備金約增加 16 美元。",
+      "implication": "即使整體準備金看起來很充裕，個別銀行仍可能缺流動性。看貨幣市場壓力時，應看銀行間拆借的細節，而不只看總量。",
+      "site_relevance": "與本站壓力指數 SSI 的銀行體系與資金市場成分有關，可考慮加入銀行間拆借利差作為觀察項目。"
+    },
+    {
+      "title": "Government Bonds' Safe-Haven Property and Inflationary Pressures",
+      "authors": "Canlin Li, Emre Yoldas",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-10-16",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/government-bonds-safe-haven-property-and-inflationary-pressures-20261016.html",
+      "added": "2026-10-23",
+      "summary": "檢視美國、歐元區與英國的公債是否仍能對沖股市下跌，使用到 2026 年 7 月底的每日股債資料。美國股債相關係數 2000–2021 年為 0.40，2021 年後降為 -0.09。2021 年後美國通膨意外令 10 年期殖利率上升的幅度（0.155）約為 2000–2019 年（0.048）的三倍，同時股價下跌。",
+      "implication": "公債能不能在股災時當避險，取決於通膨環境與衝擊類型。通膨偏高、供給衝擊多時，股債可能同跌，分散效果會變差。",
+      "site_relevance": "與本站「抄底四訊號」及崩跌機率模型的解讀有關，建議在說明中加註：公債避險效果會隨通膨環境改變。"
+    }
+  ]
 }
