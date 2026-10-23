@@ -86,7 +86,7 @@ def test_canary_wiring():
     assert "_pc_lights(eng)" in src
     eng = types.SimpleNamespace(market=types.SimpleNamespace(series=lambda t: pd.Series(dtype=float)), private_credit={})
     rows = PCL.lights(eng, {})
-    assert [r["id"] for r in rows] == ["pc_tenders", "pc_bdc_discount", "pc_insurers"] and all(r["state"] == "na" for r in rows)
+    assert [r["id"] for r in rows] == ["pc_tenders", "pc_bdc_discount", "pc_insurers", "pc_pik", "pc_unrealized"] and all(r["state"] == "na" for r in rows)
     print("ok canary wiring")
 
 
@@ -97,3 +97,27 @@ if __name__ == "__main__":
     test_discount_and_insurer_lights()
     test_canary_wiring()
     print("ALL OK")
+
+
+def test_quality():
+    from wsb.data import private_credit as PCD
+    from wsb.analytics import private_credit as PCL
+
+    def fl(tag, rows):
+        return {tag: {"units": {"USD": [{"start": a, "end": b, "val": v, "form": "10-Q", "filed": b} for a, b, v in rows]}}}
+    cf = {"facts": {"us-gaap": {**fl("InterestIncomeOperatingPaidInKind", [("2025-01-01", "2025-03-31", 6.0), ("2026-01-01", "2026-03-31", 9.0)]),
+                                **fl("GrossInvestmentIncomeOperating", [("2025-01-01", "2025-03-31", 100.0), ("2026-01-01", "2026-03-31", 100.0)]),
+                                "TaxBasisOfInvestmentsUnrealizedAppreciationDepreciationNet": {"units": {"USD": [{"end": "2026-03-31", "val": -70.0, "form": "10-Q", "filed": "x"}]}},
+                                "StockholdersEquity": {"units": {"USD": [{"end": "2026-03-31", "val": 1000.0, "form": "10-Q", "filed": "x"}]}}}}}
+    q = PCD.credit_quality(cf)
+    assert q["pik"] == [["2025-03-31", 89, 6.0], ["2026-03-31", 89, 9.0]] and q["unreal"] == [["2026-03-31", -7.0]], q
+    data = {"nav": {s: {"quality": q} for s in ("A", "B", "C")}}
+    data["nav"]["OLD"] = {"quality": {"pik": [["2023-06-30", 90, 40.0]], "unreal": [["2023-06-30", -50.0]]}}
+    c = {"bdcs": ["A", "B", "C", "OLD"]}
+    p, u = PCL.pik_light(data, c), PCL.unrealized_light(data, c)
+    assert p["state"] == "watch" and "+3.0" in p["value_txt"] and "OLD" not in p["value_txt"], p      # +3pp y/y, stale filer dropped
+    assert u["state"] == "alert" and "OLD" not in u["value_txt"], u                                  # median −7 % of NAV
+    print("ok bdc quality")
+
+
+test_quality()

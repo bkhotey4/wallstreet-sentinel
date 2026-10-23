@@ -59,6 +59,53 @@ def nav_history(cf: Dict) -> List[List]:
     return [[k, float(by[k]["val"])] for k in sorted(by) if float(by[k]["val"]) > 0]
 
 
+# PIK income and total investment income: the first tag a BDC uses (filers differ)
+PIK_TAGS = ("InterestAndDividendIncomeOperatingPaidInKind", "InterestIncomeOperatingPaidInKind", "PaidInKindInterest")
+INC_TAGS = ("GrossInvestmentIncomeOperating", "InterestAndDividendIncomeOperating", "Revenues", "InvestmentIncomeInterestAndDividend")
+
+
+def _flows(cf: Dict, tag: str) -> Dict[tuple, float]:
+    """{(period end, length in days): value} for 10-Q / 10-K duration facts; the latest filing wins."""
+    rows = ((((cf or {}).get("facts") or {}).get("us-gaap") or {}).get(tag) or {}).get("units", {}).get("USD") or []
+    by: Dict[tuple, Dict] = {}
+    for f in rows:
+        if str(f.get("form", "")).split("/")[0] not in ("10-Q", "10-K") or not f.get("start") or not f.get("end") or f.get("val") is None:
+            continue
+        k = (f["end"], (date.fromisoformat(f["end"]) - date.fromisoformat(f["start"])).days)
+        if k not in by or str(f.get("filed", "")) >= str(by[k].get("filed", "")):
+            by[k] = f
+    return {k: float(v["val"]) for k, v in by.items()}
+
+
+def _instants(cf: Dict, tag: str) -> Dict[str, float]:
+    rows = ((((cf or {}).get("facts") or {}).get("us-gaap") or {}).get(tag) or {}).get("units", {}).get("USD") or []
+    by: Dict[str, Dict] = {}
+    for f in rows:
+        if str(f.get("form", "")).split("/")[0] not in ("10-Q", "10-K") or not f.get("end") or f.get("val") is None:
+            continue
+        if f["end"] not in by or str(f.get("filed", "")) >= str(by[f["end"]].get("filed", "")):
+            by[f["end"]] = f
+    return {k: float(v["val"]) for k, v in by.items()}
+
+
+def credit_quality(cf: Dict) -> Dict:
+    """PIK share of investment income [[end, days, %]] (same period for both) and net unrealized appreciation /
+    depreciation on the tax basis as % of net assets [[end, %]] — the loan-quality disclosures the Boston Fed (2026)
+    found informative.  Non-accruals are not tagged in XBRL, so they are not used."""
+    out: Dict = {"pik": [], "unreal": []}
+    pik = next((x for x in (_flows(cf, t) for t in PIK_TAGS) if x), {})
+    inc = next((x for x in (_flows(cf, t) for t in INC_TAGS) if x), {})
+    for k in sorted(set(pik) & set(inc)):
+        if inc[k] > 0 and 80 <= k[1] <= 370:
+            out["pik"].append([k[0], k[1], round(pik[k] / inc[k] * 100, 2)])
+    un = _instants(cf, "TaxBasisOfInvestmentsUnrealizedAppreciationDepreciationNet")
+    eq = _instants(cf, "StockholdersEquity")
+    for e in sorted(set(un) & set(eq)):
+        if eq[e] > 0:
+            out["unreal"].append([e, round(un[e] / eq[e] * 100, 2)])
+    return out
+
+
 def _total(js: Dict) -> Optional[int]:
     t = (((js or {}).get("hits") or {}).get("total") or {})
     v = t.get("value")
@@ -112,7 +159,8 @@ async def refresh(today: Optional[date] = None, force: bool = False) -> Dict:
             log.warning("SEC tender-offer counts failed: %s", e)
             HEALTH.fail("sec_tender", e, every=86400)
     navs = d.get("nav") or {}
-    stale = [s for s in c["bdcs"] if force or time.time() - float((navs.get(s) or {}).get("ts", 0)) > float(c["nav_ttl_h"]) * 3600]
+    stale = [s for s in c["bdcs"] if force or time.time() - float((navs.get(s) or {}).get("ts", 0)) > float(c["nav_ttl_h"]) * 3600
+             or "quality" not in (navs.get(s) or {})]
     if stale:
         try:
             tmap = await ticker_map()
@@ -122,7 +170,7 @@ async def refresh(today: Optional[date] = None, force: bool = False) -> Dict:
                     continue
                 try:
                     cf = await http.get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(cik):010d}.json", headers=SEC_HDR, timeout=40, retries=1)
-                    navs[s] = {"ts": time.time(), "nav": nav_history(cf)}
+                    navs[s] = {"ts": time.time(), "nav": nav_history(cf), "quality": credit_quality(cf)}
                 except Exception as e:  # noqa: BLE001
                     log.info("BDC NAV %s: %s", s, e)
                 await asyncio.sleep(0.15)

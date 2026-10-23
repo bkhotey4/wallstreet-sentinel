@@ -102,8 +102,83 @@ def insurer_light(series_of, c: Dict) -> Dict:
             "history": [f"資料從 {rel.index[0]:%Y-%m} 起；最差 {rel.min():+.1f}（{rel.idxmin():%Y-%m}）"]}
 
 
+def _same_period_yago(rows: List[List]) -> Optional[tuple]:
+    """Latest [end, days, value] and the value for the same-length period ending about a year earlier."""
+    if not rows:
+        return None
+    end, days, v = rows[-1]
+    e = pd.Timestamp(end)
+    prev = [r for r in rows if r[1] == days and abs((pd.Timestamp(r[0]) - (e - pd.DateOffset(years=1))).days) <= 20]
+    return end, v, (prev[-1][2] if prev else None)
+
+
+def _fresh(rows: List[List], newest: Optional[str], days: int = 200) -> List[List]:
+    """Drop a BDC whose latest figure is far older than the newest filing in the group (it stopped tagging the item)."""
+    if not rows or not newest:
+        return rows
+    return rows if (pd.Timestamp(newest) - pd.Timestamp(rows[-1][0])).days <= days else []
+
+
+def _newest(data: Dict, key: str) -> Optional[str]:
+    ends = [((v.get("quality") or {}).get(key) or [[None]])[-1][0] for v in (data.get("nav") or {}).values()]
+    ends = [e for e in ends if e]
+    return max(ends) if ends else None
+
+
+def pik_light(data: Dict, c: Dict) -> Dict:
+    row = {"id": "pc_pik", "group": "私募信貸", "zh": "BDC 實物付息（PIK）占收入比例", "en": "BDC payment-in-kind share of income", "kind": "rule",
+           "why": "PIK＝借款人付不出現金利息，改用「再多借一筆債」抵利息。比例上升代表越來越多借款公司現金吃緊。Boston Fed（2026）發現 2022 年起 PIK 持續上升。",
+           "rule": "主要上市 BDC 最新財報期 PIK 收入占總投資收入的比例（和去年同一段期間比）：中位數比一年前高 2 個百分點以上，或中位數 ≥ 10% → 黃燈；"
+                   "中位數 ≥ 12% 而且還在上升 → 紅燈。門檻是信用分析慣例，不是回測出來的。"}
+    navs = data.get("nav") or {}
+    cur, chg, parts, ends = [], [], [], []
+    for s in c["bdcs"]:
+        r = _same_period_yago(_fresh(((navs.get(s) or {}).get("quality") or {}).get("pik") or [], _newest(data, "pik")))
+        if not r:
+            continue
+        end, v, prev = r
+        cur.append(v)
+        ends.append(end)
+        if prev is not None:
+            chg.append(v - prev)
+        parts.append(f"{s} {v:.1f}%" + (f"（{v - prev:+.1f}）" if prev is not None else ""))
+    if len(cur) < 3:
+        return {**row, "state": "na", "note": "財報資料不足（需要至少 3 家 BDC）"}
+    med, dmed = float(pd.Series(cur).median()), (float(pd.Series(chg).median()) if len(chg) >= 3 else None)
+    st = "alert" if med >= 12 and (dmed or 0) > 0 else "watch" if med >= 10 or (dmed is not None and dmed >= 2) else "ok"
+    return {**row, "state": st, "asof": max(ends),
+            "value_txt": f"{len(cur)} 家中位數 {med:.1f}%" + (f"，比一年前同期 {dmed:+.1f} 個百分點" if dmed is not None else "") + "；" + "、".join(parts)}
+
+
+def unrealized_light(data: Dict, c: Dict) -> Dict:
+    row = {"id": "pc_unrealized", "group": "私募信貸", "zh": "BDC 投資組合帳面虧損（占淨值）", "en": "BDC net unrealized depreciation vs NAV", "kind": "rule",
+           "why": "BDC 每季要申報「投資組合比成本高或低多少」。放款品質變差時要先往下調估值，所以這個數字通常比違約更早轉差。",
+           "rule": "主要上市 BDC 最新財報的淨未實現損益（稅基）占淨值：中位數 ≤ −3% 黃燈、≤ −6% 紅燈；並列出和一年前的變化。門檻是信用分析慣例，不是回測出來的。"}
+    navs = data.get("nav") or {}
+    cur, chg, parts, ends = [], [], [], []
+    for s in c["bdcs"]:
+        u = _fresh(((navs.get(s) or {}).get("quality") or {}).get("unreal") or [], _newest(data, "unreal"))
+        if not u:
+            continue
+        end, v = u[-1]
+        e = pd.Timestamp(end)
+        prev = [x for x in u if abs((pd.Timestamp(x[0]) - (e - pd.DateOffset(years=1))).days) <= 40]
+        cur.append(v)
+        ends.append(end)
+        if prev:
+            chg.append(v - prev[-1][1])
+        parts.append(f"{s} {v:+.1f}%")
+    if len(cur) < 3:
+        return {**row, "state": "na", "note": "財報資料不足（需要至少 3 家 BDC）"}
+    med = float(pd.Series(cur).median())
+    dmed = float(pd.Series(chg).median()) if len(chg) >= 3 else None
+    st = "alert" if med <= -6 else "watch" if med <= -3 else "ok"
+    return {**row, "state": st, "asof": max(ends),
+            "value_txt": f"{len(cur)} 家中位數 {med:+.1f}%" + (f"，比一年前 {dmed:+.1f} 個百分點" if dmed is not None else "") + "；" + "、".join(sorted(parts, key=lambda x: float(x.split()[-1].rstrip('%'))))}
+
+
 def lights(eng, data: Optional[Dict] = None) -> List[Dict]:
     c = PC.cfg()
     data = data if data is not None else (getattr(eng, "private_credit", None) or PC.load())
     so = eng.market.series
-    return [tender_light(data, c), discount_light(data, so, c), insurer_light(so, c)]
+    return [tender_light(data, c), discount_light(data, so, c), insurer_light(so, c), pik_light(data, c), unrealized_light(data, c)]
