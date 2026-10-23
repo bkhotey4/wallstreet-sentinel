@@ -82,7 +82,7 @@ def sens(s: pd.Series, spy: pd.Series, dgs10: pd.Series, weeks: int = 104) -> Di
 
 
 def company(sym: str, name: str, rec: Dict, med_margin: Optional[float], season: Optional[Dict], revs: List, info: Dict,
-            distress: Dict, px: pd.Series, spy: pd.Series, dgs10: pd.Series, nxt: Optional[str]) -> Dict:
+            distress: Dict, px: pd.Series, spy: pd.Series, dgs10: pd.Series, nxt: Optional[str], cr: Optional[Dict] = None) -> Dict:
     from ..data import fundamentals as FU
     p, m = (rec or {}).get("p") or {}, (rec or {}).get("m") or {}
 
@@ -130,6 +130,14 @@ def company(sym: str, name: str, rec: Dict, med_margin: Optional[float], season:
         fut.append(f"分析師目標價中位數比現價 {up:+.0f}%（{int(info['n'])} 位）")
     if nxt:
         fut.append(f"下次財報 {nxt[5:]}")
+    # ---- 信用體檢 (credit_health): strong credit is a strength, weak credit a risk of its own
+    if cr and cr.get("grade"):
+        if cr["grade"] in ("強", "穩健"):
+            good.append(f"信用體質{cr['grade']}（{cr['why']}）")
+        elif cr["grade"] in ("偏弱", "危險"):
+            own.append(f"信用體質{cr['grade']}（{cr['why']}）" + (f"；{cr['heavy']}" if cr.get("heavy") else ""))
+        if cr.get("cov") and cr.get("cov_shock") and cr["cov"] >= 2 > cr["cov_shock"]:
+            own.append(f"借款成本升 2 個百分點時，利息保障從 {cr['cov']:.1f} 倍降到 {cr['cov_shock']:.1f} 倍")
     # ---- 自身風險
     lab = {k: zh.split("：")[0] for k, zh, _en, _f in FU.RULES}
     fl = FU.flags(m) if m else []
@@ -175,7 +183,7 @@ def company(sym: str, name: str, rec: Dict, med_margin: Optional[float], season:
 
 
 def build(sector_members: List, fcache: Dict, season_rows: List[Dict], snap: Dict, ahead: List[Dict], px: pd.DataFrame,
-          spy: pd.Series, dgs10: pd.Series, n: int = 8) -> List[Dict]:
+          spy: pd.Series, dgs10: pd.Series, n: int = 8, credit: Optional[Dict] = None) -> List[Dict]:
     info = _load("sinfo_yf.json")
     dist = _load("earn_distress.json")
     lead = sorted(sector_members or [], key=lambda x: -x[1])[:n]
@@ -198,5 +206,5 @@ def build(sector_members: List, fcache: Dict, season_rows: List[Dict], snap: Dic
         rec = next((fcache[k] for k in alt if k in fcache), {})
         out.append(company(t, name, rec, med, next((seas[k] for k in alt if k in seas), None), revs,
                            next((info[k] for k in alt if k in info), {}), next((dist[k] for k in alt if k in dist), {}),
-                           s, spy, dgs10, nx))
+                           s, spy, dgs10, nx, next(((credit or {})[k] for k in alt if k in (credit or {})), None)))
     return out

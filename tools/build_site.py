@@ -40,6 +40,7 @@ from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
 from tools import site_crisis_track as SCT
+from tools import site_credit as SCR
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -344,6 +345,13 @@ def sec_shock(eng) -> str:
         flag = f' <span class="pill"><i class="sw" style="background:#d03b3b"></i>{T("背離警示", "Divergence")}</span>' if dv.get("flag") else ""
         dvh = (f'<p>{T("股債背離：信用／利率／流動性／新興壓力", "Divergence: credit / rates / liquidity / EM stress")} <b>{dv["credit"]:.0f}</b> '
                f'vs {T("股市隱含恐慌", "equity-implied fear")} <b>{dv["equity"]:.0f}</b>（{dv["gap"]:+.0f}）{flag}</p>')
+        hs = dv.get("hist") or {}
+        pw, base = hs.get("prob_when_flagged"), hs.get("base_rate")
+        if pw is not None and base:
+            weak = pw < 1.2 * base
+            bt = (f"回測：背離時 63 個交易日內跌 ≥10% 的機率 {pw:.1f}%，平常 {base:.1f}%"
+                  + ("——歷史上預警力很弱，只當參考（詳見「美債」頁的「信用與利率」）。" if weak else "。"))
+            dvh += f'<p class="note">{T(bt, bt)}</p>'
     body = (f'<div class="g2"><div>{paths}</div><div class="scroll"><table><thead><tr><th>{T("區塊", "Block")}</th>'
             f'<th class="r">{T("水準", "Level")}</th><th></th><th class="r">{T("20日", "20D")}</th><th>{T("狀態", "State")}</th>'
             f'<th class="r">AUC</th></tr></thead><tbody>{rows}</tbody></table></div></div>{dvh}')
@@ -1213,12 +1221,12 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
-            ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
+            ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds]),
+            ("bonds", "美債", "Treasuries", [SCR.sec_credit_rates, SR.sec_rates_radar, S2.sec_bonds]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
@@ -1269,14 +1277,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SBT.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SBT.CSS}{SCR.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
 <header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SCR.JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:

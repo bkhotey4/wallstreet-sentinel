@@ -336,6 +336,14 @@ def build(eng, members: Dict, today: Optional[date] = None, px: Optional[pd.Data
     if px is None:
         px = load_prices()
     dgs10 = eng.fred.get("DGS10").dropna()
+    try:                                                     # 美國主要公司信用體檢 (SEC balance sheets of the leaders)
+        from ..data import distress_data as DDC
+        from . import credit_health as CH
+        credit = CH.build(members, DDC.load(), px, today)
+    except Exception:  # noqa: BLE001
+        log.exception("credit health failed")
+        credit = {"available": False}
+    cmap = {r["sym"]: r for r in credit.get("rows") or []}
     secs = []
     for etf in NAMES:
         p = price_block(eng.market.series(etf), spy)
@@ -368,7 +376,7 @@ def build(eng, members: Dict, today: Optional[date] = None, px: Optional[pd.Data
             sv = {}
         try:
             cos = SC.build((members.get("sectors") or {}).get(etf, {}).get("members") or [], fcache, rows, snap,
-                           upcoming(days, today, 60), px, spy, dgs10, int(c["companies"]))
+                           upcoming(days, today, 60), px, spy, dgs10, int(c["companies"]), credit=cmap)
         except Exception:  # noqa: BLE001
             log.exception("sector companies %s failed", etf)
             cos = []
@@ -391,7 +399,7 @@ def build(eng, members: Dict, today: Optional[date] = None, px: Optional[pd.Data
         log.exception("sector highlights failed")
         ov["highlights"] = []
     asof = [s["px"]["asof"] for s in secs if s["px"]]
-    return {"available": True, "sectors": secs, "market": mkt, "prev": prev, "overview": ov, "asof": max(asof) if asof else None,
+    return {"available": True, "sectors": secs, "credit": credit, "market": mkt, "prev": prev, "overview": ov, "asof": max(asof) if asof else None,
             "members_asof": next((v.get("asof") for v in (members.get("sectors") or {}).values() if v.get("asof")), None),
             "n_hist": len(hist), "week_ago": bool(wk), "today": today.isoformat()}
 

@@ -257,6 +257,11 @@ class Engine:
         mem = await smd.refresh()
         if mem.get("sectors"):
             px = await smd.refresh_prices(smd.leaders(mem))     # since 2007: how deep / how long each leader fell in past shocks
+            try:                                                 # 信用體檢: SEC balance sheets of the same leaders (weekly, time-boxed)
+                from .data import distress_data as dd
+                await dd.refresh(smd.leaders(mem), budget_s=60)
+            except Exception as e:  # noqa: BLE001
+                log.warning("leader balance sheets failed: %s", e)
             self.sector_brief = await asyncio.to_thread(sb.build, self, mem, None, px)
 
     async def refresh_private_credit(self) -> None:

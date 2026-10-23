@@ -108,7 +108,7 @@ def sector_of(d: Dict) -> Dict[str, str]:
 PX_FILE = DATA_DIR / "earn_sector_prices.pkl"
 
 
-def leaders(d: Dict, n: int = 8) -> List[str]:
+def leaders(d: Dict, n: int = 15) -> List[str]:
     """The n largest members of every sector, Yahoo spelling (BRK.B → BRK-B)."""
     out = []
     for v in (d.get("sectors") or {}).values():
