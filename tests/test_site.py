@@ -79,6 +79,10 @@ def main():
     assert len(keys) == len(set(keys)) and all(side.count(f'data-p="{k}"') == 1 for k in keys), keys
     assert [k for k in keys if k in SLY.GROUP_OF] == [k for *_x, ks in SLY.GROUPS for k in ks if k in keys]
     assert page.index('id="c-index"') < page.index('id="p-risk"') and "總攬大表" in page and 'id="crumb"' in page
+    _pages = {k: page[page.find(f'id="p-{k}"'):] for k in keys}
+    _pk = SLY.picks({k: v[:v.find('class="page', 10)] if 'class="page' in v[10:] else v for k, v in _pages.items()})
+    # the index reads its figures off the cards: a reworded card must not silently empty it
+    assert len(_pk["home"]) >= 5 and len(_pk["risk"]) >= 4 and len(_pk["sector"]) >= 4 and len(_pk["stock"]) >= 2, _pk
     assert "Gamma 雷達" in page and "暗池指數" in page and "total_mcap_usd" not in page
     # AI commentary: advice lines are scrubbed, market description kept
     txt = "**一句話結論**\n信用利差擴大，SSI 升溫。\n- 建議減碼半導體 20%\n- 避險比例提高到 15%\n- 關注週五非農"
