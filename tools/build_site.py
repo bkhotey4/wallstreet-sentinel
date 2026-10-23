@@ -39,6 +39,7 @@ from tools import site_alerts as SA
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
+from tools import site_crisis_track as SCT
 from wsb.data import fred as FR
 CFG_BY_ID = {c.get("id"): c for c in SETTINGS.get("stress_components", []) or []}
 from tools import site_outlook as SO
@@ -1220,7 +1221,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
-            ("crisis", "歷史危機", "Past crises", [sec_crisis, SRG.sec_analogs]),
+            ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
             ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
