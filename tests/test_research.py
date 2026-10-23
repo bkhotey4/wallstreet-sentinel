@@ -22,8 +22,10 @@ def main():
                                 fred=types.SimpleNamespace(get=lambda k: pd.Series(dtype=float)),
                                 market=types.SimpleNamespace(series=lambda k: pd.Series(dtype=float)))
     h = R.sec_research(eng)
-    assert h.count("隱含意義") == len(R.POINTS) == 6 and "<details" in h and 'target="_blank"' in h and R.COMPILED in h
-    assert "**" not in h and "](http" not in h                       # markdown fully converted
+    assert h.count("隱含意義") == len(R.POINTS) == 6 and "<details" in h and R.COMPILED in h
+    assert h.index("學界的眼光看現在的市場") < h.index("判讀依據") and "附錄" not in h
+    full = R.md_html("x [a](https://e.org) **b**")
+    assert 'target="_blank"' in full and "<b>b</b>" in full                # the review renderer still works
     now = R.now_reading(eng)
     assert now[0][0].startswith("即時層") and "偏高" in now[0][1] and now[-1][0] == "合起來怎麼看", now
     st = R.sec_research_status(None)

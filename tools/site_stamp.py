@@ -124,7 +124,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -133,7 +133,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_feed", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
+NONE = {"sec_research", "sec_research_status", "sec_research_feed", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
 
 
 def sources_for(fname: str, tab: str) -> List[str]:

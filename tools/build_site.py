@@ -1237,7 +1237,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
-            ("research", "學術研究", "Research", [SRS.sec_research_feed, SRS.sec_research, SRS.sec_research_status]),
+            ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]

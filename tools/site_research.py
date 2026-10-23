@@ -169,32 +169,35 @@ def now_reading(eng) -> list:
     return out
 
 
-def sec_research(eng) -> str:
-    secs = sections()
-    head = T(f"學術界與各國央行（聯準會、ECB、BIS、IMF、英格蘭銀行）對金融風險預警的研究，整理成 6 個重點。整理日期 {COMPILED}。",
-             f"Six takeaways from the literature, compiled {COMPILED}.")
+def sec_research_now(eng) -> str:
+    """Top of the page: today's data read the way the research reads it."""
+    now = now_reading(eng)
+    if not now:
+        return ""
+    rows = "".join(f'<tr><td class="nw"><b>{T(a, a)}</b></td><td>{T(b, b)}</td></tr>' for a, b in now[:-1])
+    last = now[-1][1]
+    note = T("用今天的資料、照學界與央行研究的判讀邏輯自動解讀，每次網站更新都會重算。這是對現況的描述，不是預測，也不是投資建議。",
+             "Recomputed each build. Not a forecast or advice.")
+    body = (f'<table class="mini"><tbody>{rows}</tbody></table>'
+            f'<p class="rimp"><b>{T("合起來怎麼看", "Putting it together")}</b>：{T(last, last)}</p><p class="note">{note}</p>')
+    return card("學界的眼光看現在的市場：各層訊號在說什麼", "Today through the research lens", body, "wide")
+
+
+def sec_research_points(eng) -> str:
+    """The six takeaways behind that reading, folded away."""
     pts = ""
     for k, (t, bullets, imp) in enumerate(POINTS, 1):
         lis = "".join(f"<li>{T(b, b)}</li>" for b in bullets)
         pts += (f'<div class="rpt"><h3>{k}. {T(t, t)}</h3><ul class="brief">{lis}</ul>'
                 f'<p class="rimp"><b>{T("隱含意義", "So what")}</b>：{T(imp, imp)}</p></div>')
-    cards = [card("學術研究重點：6 件事", "Research: six takeaways", f'<p class="sub">{head}</p>{pts}', "wide")]
-    now = now_reading(eng)
-    if now:
-        rows = "".join(f'<tr><td class="nw"><b>{T(a, a)}</b></td><td>{T(b, b)}</td></tr>' for a, b in now[:-1])
-        last = now[-1][1]
-        note = T("用今天的資料、照上面的研究邏輯自動解讀，每次網站更新都會重算。這是對現況的描述，不是預測，也不是投資建議。",
-                 "Recomputed each build. Not a forecast or advice.")
-        body = (f'<table class="mini"><tbody>{rows}</tbody></table>'
-                f'<p class="rimp"><b>{T("合起來怎麼看", "Putting it together")}</b>：{T(last, last)}</p><p class="note">{note}</p>')
-        cards.append(card("套用到現在的市場：各層訊號在說什麼", "Applied to today: what each layer says", body, "wide"))
-    if secs:
-        full = "".join(f"<h3>{T(t, t)}</h3>" + md_html(b) for t, b in secs)
-        intro = T("附錄：這份是當初為了改進本站而做的完整文獻整理，所以文中常出現「網站應該補什麼」的建議口吻；論文出處與資料連結都在這裡。",
-                  "Appendix: the full review written to improve this site, with all sources.")
-        cards.append(card("附錄：完整研究報告與論文出處", "Appendix: full review and sources",
-                          f'<p class="note">{intro}</p><details class="sgx"><summary>{T("點開看完整報告", "Show the full review")}</summary>{full}</details>', "wide"))
-    return "".join(cards)
+    head = T(f"上面的判讀根據學界與各國央行（聯準會、ECB、BIS、IMF、英格蘭銀行）研究的 6 個共識，整理日期 {COMPILED}。",
+             f"Six takeaways behind the reading, compiled {COMPILED}.")
+    return card("判讀依據：學界的 6 個共識", "Why: six takeaways from the research",
+                f'<p class="note">{head}</p><details class="sgx"><summary>{T("點開看 6 個重點", "Show the six takeaways")}</summary>{pts}</details>', "wide")
+
+
+def sec_research(eng) -> str:          # kept for callers of the old name
+    return sec_research_now(eng) + sec_research_points(eng)
 
 
 CSS = ".rpt{margin:4px 0 14px}.rpt h3{margin:8px 0 4px;font-size:15px}.rimp{margin:4px 0 0;padding:8px 10px;border-left:3px solid var(--ac);background:var(--wash)}"
