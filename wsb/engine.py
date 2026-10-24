@@ -223,7 +223,8 @@ class Engine:
         from .data import sector_members as smd                  # 產業簡報: the largest members of each sector too
         top = [t for v in (smd.load().get("sectors") or {}).values()
                for t, *_ in sorted(v.get("members") or [], key=lambda x: -x[1])[:15]]
-        cache = await fu.refresh(list(dict.fromkeys(us + sh.AI_LEDGER + mine + top)), budget_s=budget_s)
+        from .data.stability import AI_GROUP
+        cache = await fu.refresh(list(dict.fromkeys(us + sh.AI_LEDGER + list(AI_GROUP) + mine + top)), budget_s=budget_s)
         self.sector_health = await asyncio.to_thread(sh.build, self, cache)
         if (self.rates_radar or {}).get("available"):            # 利率衝擊雷達 #7 needs the filings just loaded
             from .analytics import rates_radar as rr
@@ -289,6 +290,11 @@ class Engine:
             await frs.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("fed research data failed: %s", e)
+        try:                                                    # 金融穩定缺口：財政部發債、資金市場、基差交易（6 小時一次）
+            from .data import stability as stb
+            await stb.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("stability data failed: %s", e)
         try:
             await self.refresh_fundamentals()                   # 產業體檢 (SEC companyfacts, weekly per company)
         except Exception as e:  # noqa: BLE001

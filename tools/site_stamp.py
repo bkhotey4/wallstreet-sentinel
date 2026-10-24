@@ -74,6 +74,38 @@ def _fedres_date() -> Optional[str]:
     return max(ds) if ds else None
 
 
+def _stab_ts(k: str):
+    try:
+        from wsb.data import stability as ST
+        return (ST.load().get("ts_each") or {}).get(k)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _stab_date(k: str) -> Optional[str]:
+    try:
+        from wsb.data import stability as ST
+        d = ST.load()
+        if k == "refunding":
+            p = (d.get("refunding") or {}).get("policy") or {}
+            return _d(p.get("date"))
+        if k == "ai":
+            v = ST.ai_view()
+            return _d(max(r["end"] for r in v["rows"])) if v else None
+        rows = d.get(k) or []
+        return _d(rows[-1][0]) if rows else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _cover_date() -> Optional[str]:
+    try:
+        from tools.site_stability import coverage
+        return _d(coverage().get("updated"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _feed_date() -> Optional[str]:
     try:
         import json
@@ -117,6 +149,11 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "street": ("華爾街觀點", "Street views", lambda e: (None, _d(_g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
     "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
+    "refund": ("財政部再融資", "Treasury refunding", lambda e: (_ts(_stab_ts("refunding")), _stab_date("refunding")), 100),
+    "funding": ("紐約聯準會 SOFR", "NY Fed SOFR", lambda e: (_ts(_stab_ts("sofr")), _stab_date("sofr")), 4),
+    "cftc": ("CFTC 持倉", "CFTC positions", lambda e: (_ts(_stab_ts("cftc")), _stab_date("cftc")), 10),
+    "fund": ("SEC 財報（XBRL）", "SEC XBRL", lambda e: (None, _stab_date("ai")), 120),
+    "cover": ("覆蓋盤點", "Coverage audit", lambda e: (None, _cover_date()), 40),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
 
@@ -125,7 +162,7 @@ TAB_DEFAULT: Dict[str, List[str]] = {
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
-    "news": ["news"], "history": ["ssi"], "inputs": ["px", "fred"], "ai": ["px"],
+    "news": ["news"], "history": ["ssi"], "inputs": ["px", "fred"], "ai": ["px"], "stability": ["funding"],
 }
 CARD: Dict[str, List[str]] = {
     "sec_premarket": ["px"], "sec_focus": ["px", "fedwatch", "econ"], "sec_vix_hot": ["px"], "sec_vix_explain": ["px"],
@@ -134,7 +171,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],

@@ -241,6 +241,44 @@ def macro(engine) -> discord.Embed:
                          f"· 3Y百分位 {f(x.get('pctile_3y'),0)} ({x['date'][5:]})")
     for i in range(0, len(lines), 8):
         e.add_field(name="FRED 即時序列" if i == 0 else "​", value="\n".join(lines[i:i + 8])[:1024], inline=False)
+    try:
+        from ..data import stability as stb
+        st = stb.summary_lines(stb.view(engine))
+        if st:
+            e.add_field(name="金融穩定監測（/stability 看細節）", value="\n".join(st)[:1024], inline=False)
+    except Exception:  # noqa: BLE001
+        pass
+    return footer(e, engine)
+
+
+def stability(engine) -> discord.Embed:
+    """金融穩定監測：財政部發債、短期資金、基差交易、AI 資本支出（官方數據＋固定規則）。"""
+    from ..data import stability as stb
+    v = stb.view(engine)
+    e = discord.Embed(title="🏦 金融穩定監測", color=0x34495E,
+                      description="聯準會《金融穩定報告》點名的 4 個缺口：全部官方免費數據、固定規則判讀，不看新聞標題。")
+    rf, fu, ba, ai = (v.get(k) or {} for k in ("refunding", "funding", "basis", "ai"))
+    if rf:
+        b = rf.get("bills") or {}
+        q = ((rf.get("estimates") or {}).get("quarters") or [])
+        e.add_field(name=f"{rf['emoji']} 財政部發債：標售規模{rf['state']}",
+                    value=(f"{rf['read']}\n" + ("借款估算：" + "；".join(f"{x['quarter']} ${x['bn']:,.0f}B" for x in q) + "\n" if q else "")
+                           + (f"短期國債占 {b['share']:.1f}%（{b['month']}，第 {b['pct']:.0f} 百分位）\n" if b else "")
+                           + (f"下次公布：{'、'.join(rf['next'])}" if rf.get("next") else ""))[:1024], inline=False)
+    if fu:
+        srf = fu.get("srf") or {}
+        e.add_field(name=f"{fu['emoji']} 短期資金市場：{fu['state']}",
+                    value=(f"SOFR {fu['sofr']:.2f}%（{fu['date']}）" + (f"，比 IORB {fu['spread']:+.0f}bp" if fu.get("spread") is not None else "")
+                           + (f"\n常設回購近 20 天最多 ${srf['max20']:,.1f}B" if srf else "") + f"\n{fu['read']}")[:1024], inline=False)
+    if ba:
+        e.add_field(name=f"{ba['emoji']} 美債基差交易：{ba['state']}",
+                    value=(f"槓桿基金淨空單 ${ba['net']:,.0f}B（{ba['date']}，{ba['since']} 年以來第 {ba['pct']:.0f} 百分位；一年前 ${ba['yago']:,.0f}B）\n{ba['read']}")[:1024], inline=False)
+    if ai:
+        e.add_field(name=f"{ai['emoji']} AI 資本支出：{ai['state']}",
+                    value=(f"6 家合計資本支出÷營業現金流 {ai['ratio']:.2f} 倍" + (f"；>1 倍：{'、'.join(ai['over1'])}" if ai["over1"] else "")
+                           + f"\n{ai['read']}")[:1024], inline=False)
+    if not (rf or fu or ba or ai):
+        e.description = "資料載入中（每 6 小時更新一次）"
     return footer(e, engine)
 
 

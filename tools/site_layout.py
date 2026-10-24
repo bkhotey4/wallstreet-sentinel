@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 GROUPS: List[Tuple[str, str, str, str, str, List[str]]] = [
     ("home", "今日總覽", "Today", "今天市場怎樣、該注意什麼", "Where the market stands today", ["overview"]),
     ("risk", "市場風險", "Market risk", "會不會大跌、壓力在哪", "Crash risk and where the stress is",
-     ["ai", "outlook", "risk", "mood", "flows", "valuation", "crisis", "history", "research"]),
+     ["ai", "stability", "outlook", "risk", "mood", "flows", "valuation", "crisis", "history", "research"]),
     ("macro", "總經與利率", "Macro & rates", "經濟、利率、通膨往哪走", "Economy, rates, inflation", ["econ", "bonds", "energy", "markets"]),
     ("sector", "產業", "Sectors", "哪些產業順風、哪裡有財務風險", "Which sectors have tailwinds or financial risk",
      ["industry", "rotation", "themes", "tech", "growth"]),
@@ -57,6 +57,7 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
              ("ai", r"AI 風險分數 (\d+)／100：([^（，]+)", lambda m: f"AI 風險分數 {m[1]}／100：{m[2]}"),
              ("ai", r"熱度計：(太熱|偏貪婪|健康|偏冷)", lambda m: f"熱度計：{m[1]}"),
              ("ai", r"AI 視角交叉比對：(\d+) 項一致、(\d+) 項分歧", lambda m: f"AI 視角 × 人類指標：{m[1]} 項一致、{m[2]} 項分歧"),
+             ("stability", r"金融穩定 4 項：(\S+)", lambda m: f"金融穩定：{m[1]}"),
              ("outlook", r"(\d+) 綜合風險：(\S+)", lambda m: f"綜合風險 {m[1]} {m[2]}"),
              ("risk", r"紅燈 (\d+) 黃燈 (\d+)", lambda m: f"金絲雀 紅燈 {m[1]}・黃燈 {m[2]}"),
              ("mood", r"恐慌與貪婪指數（多因子） .*?資料日 \S+ (\d+) (\S+)", lambda m: f"恐慌貪婪 {m[1]} {m[2]}"),
@@ -137,18 +138,64 @@ def index_card(pages: Dict[str, str], names: Dict[str, Tuple[str, str]]) -> str:
 
 
 # ------------------------------------------------------------------ sidebar, breadcrumb
-def sidebar(names: Dict[str, Tuple[str, str]], first: str = "overview") -> str:
+_SEC = re.compile(r"<section\b([^>]*)>")
+
+
+def card_index(bodies: Dict[str, str]) -> Tuple[Dict[str, str], Dict[str, List[Tuple[str, str, str]]]]:
+    """Give every card an id and list each page's cards (id, zh title, en title) for the sidebar's sub-menus."""
+    out_b: Dict[str, str] = {}
+    cards: Dict[str, List[Tuple[str, str, str]]] = {}
+    for k, h in bodies.items():
+        n, lst, parts, pos = 0, [], [], 0
+        for m in _SEC.finditer(h):
+            attrs = m.group(1)
+            if 'class="card' not in attrs:
+                continue
+            idm = re.search(r'\bid="([^"]+)"', attrs)
+            if idm:
+                cid = idm.group(1)
+            else:
+                n += 1
+                cid = f"c-{k}-{n}"
+                parts.append(h[pos:m.start()] + f'<section id="{cid}"{attrs}>')
+                pos = m.end()
+            h2 = re.match(r'\s*<h2>(.*?)</h2>', h[m.end():m.end() + 2000], re.S)
+            if h2:
+                en = re.search(r'data-en="([^"]*)"', h2.group(1))
+                zh = _h.unescape(re.sub(r"<[^>]+>", "", h2.group(1))).strip()
+                if zh:
+                    lst.append((cid, zh, _h.unescape(en.group(1)) if en else zh))
+        parts.append(h[pos:])
+        out_b[k], cards[k] = "".join(parts), lst
+    return out_b, cards
+
+
+def _tab(k: str, names, first: str, cards) -> str:
+    sub = (cards or {}).get(k) or []
+    a = f'<a class="ptab{" on" if k == first else ""}" href="#{k}" data-p="{k}" data-en="{esc(names[k][1])}">{esc(names[k][0])}</a>'
+    if len(sub) < 2:
+        return f'<div class="prow">{a}</div>'
+    items = "".join(f'<a class="pca" href="#{k}" data-p="{k}" data-c="{esc(cid)}" title="{esc(zh)}" data-en="{esc(en)}">{esc(zh)}</a>'
+                    for cid, zh, en in sub)
+    return (f'<div class="prow">{a}<button class="pcar" type="button" data-k="{k}" aria-expanded="false" aria-controls="ps-{k}" '
+            f'aria-label="{esc(names[k][0])}：展開 {len(sub)} 張卡片">▸</button></div>'
+            f'<div class="psub" id="ps-{k}" hidden>{items}</div>')
+
+
+def sidebar(names: Dict[str, Tuple[str, str]], first: str = "overview", cards: Optional[Dict[str, List[Tuple[str, str, str]]]] = None) -> str:
     out = ""
     for g, zh, en, qz, qe, ks in GROUPS:
         ks = [k for k in ks if k in names]
         if not ks:
             continue
-        links = "".join(f'<a class="ptab{" on" if k == first else ""}" href="#{k}" data-p="{k}" data-en="{esc(names[k][1])}">{esc(names[k][0])}</a>' for k in ks)
+        links = "".join(_tab(k, names, first, cards) for k in ks)
         out += f'<div class="sg"><div class="sgt">{T(zh, en)}<span>{T(qz, qe)}</span></div>{links}</div>'
     extra = [k for k in names if k not in GROUP_OF]
     if extra:
-        out += '<div class="sg">' + "".join(f'<a class="ptab" href="#{k}" data-p="{k}" data-en="{esc(names[k][1])}">{esc(names[k][0])}</a>' for k in extra) + "</div>"
-    return f'<aside class="side" id="side" aria-label="pages">{out}</aside>'
+        out += '<div class="sg">' + "".join(_tab(k, names, first, cards) for k in extra) + "</div>"
+    tools = (f'<div class="pall"><button type="button" class="pallb" data-all="1">{T("全部展開", "Expand all")}</button>'
+             f'<button type="button" class="pallb" data-all="0">{T("全部收合", "Collapse all")}</button></div>') if cards else ""
+    return f'<aside class="side" id="side" aria-label="pages">{tools}{out}</aside>'
 
 
 def topnav() -> str:
@@ -164,7 +211,18 @@ def js(names: Dict[str, Tuple[str, str]]) -> str:
 var side=document.getElementById('side'),crumb=document.getElementById('crumb'),btn=document.getElementById('sideBtn');if(!side)return;
 function sync(){var k=((document.querySelector('.page.on')||{}).id||'p-overview').slice(2),en=document.documentElement.lang==='en',i=en?1:0;
  var g=GN[GROUP_OF[k]],n=NM[k];if(crumb)crumb.textContent=(g?g[i]+' › ':'')+(n?n[i]:'');side.classList.remove('open');
+ if(k!==cur){cur=k;side.querySelectorAll('.pcar').forEach(function(b){if(!b.dataset.pin)fold(b,b.dataset.k===k);});}
  var a=side.querySelector('.ptab.on');if(a&&a.scrollIntoView&&window.innerWidth>900){var r=a.getBoundingClientRect(),s=side.getBoundingClientRect();if(r.top<s.top||r.bottom>s.bottom)a.scrollIntoView({block:'nearest'});}}
+var cur=null;
+function fold(b,open){var s=document.getElementById('ps-'+b.dataset.k);if(!s)return;s.hidden=!open;b.setAttribute('aria-expanded',open?'true':'false');b.textContent=open?'▾':'▸';}
+side.addEventListener('click',function(ev){var b=ev.target.closest('.pcar');
+ if(b){ev.preventDefault();ev.stopPropagation();b.dataset.pin='1';fold(b,b.getAttribute('aria-expanded')!=='true');return;}
+ var x=ev.target.closest('.pallb');if(x){ev.stopPropagation();side.querySelectorAll('.pcar').forEach(function(b){b.dataset.pin='1';fold(b,x.dataset.all==='1');});return;}
+ var c=ev.target.closest('.pca');if(!c)return;ev.preventDefault();
+ var t=side.querySelector('.ptab[data-p="'+c.dataset.p+'"]');if(t&&!t.classList.contains('on'))t.click();
+ side.querySelectorAll('.pca.on').forEach(function(e){e.classList.remove('on');});c.classList.add('on');
+ setTimeout(function(){var el=document.getElementById(c.dataset.c);if(!el)return;var d=el.querySelector('details');if(d&&!el.querySelector('details[open]'))d.open=true;
+  el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('aiflash');setTimeout(function(){el.classList.remove('aiflash');},1600);},60);});
 window.addEventListener('hashchange',function(){setTimeout(sync,0);});
 document.addEventListener('click',function(ev){if(ev.target.closest('[data-p]')||ev.target.closest('#langBtn'))setTimeout(sync,0);
  if(side.classList.contains('open')&&!ev.target.closest('#side')&&!ev.target.closest('#sideBtn'))side.classList.remove('open');});
@@ -182,6 +240,11 @@ CSS = """
 .sg{margin:0 0 14px}.sgt{font-weight:700;font-size:13.5px;padding:4px 10px;color:var(--tx)}.sgt span{display:block;font-weight:400;font-size:11.5px;color:var(--tx2)}
 .side .ptab{display:block;border-bottom:0;border-left:3px solid transparent;padding:6px 14px;font-size:13px}
 .side .ptab.on{border-left-color:var(--ac);background:var(--wash);border-bottom:0}
+.prow{display:flex;align-items:stretch}.prow .ptab{flex:1;min-width:0}
+.pcar{flex:none;width:30px;border:0;background:none;color:var(--tx2);cursor:pointer;font-size:13px;border-radius:4px}.pcar:hover{color:var(--ac);background:var(--wash)}
+.psub{margin:0 0 4px 17px;border-left:1px solid var(--bd)}.pca{display:block;padding:4px 10px;font-size:12.5px;color:var(--tx2);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pca:hover,.pca.on{color:var(--ac);text-decoration:none;background:var(--wash)}
+.pall{display:flex;gap:6px;padding:0 10px 10px}.pallb{flex:1;font-size:12px;padding:4px 6px;border:1px solid var(--bd);border-radius:6px;background:none;color:var(--tx2);cursor:pointer}.pallb:hover{color:var(--ac);border-color:var(--ac)}
+.card[id]{scroll-margin-top:72px}
 .lmain{min-width:0}.sidebtn{display:none}.crumb{font-size:13px;color:var(--tx2);padding:10px 4px;white-space:nowrap}
 .ovt .otab td{vertical-align:top}.og{min-width:120px}.oq{font-size:12px;color:var(--tx2);margin-top:2px}.ol{margin:0;padding-left:16px;line-height:1.7}.oc{min-width:180px}
 .ochip{display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border:1px solid var(--bd);border-radius:99px;font-size:12px;color:var(--tx);text-decoration:none}

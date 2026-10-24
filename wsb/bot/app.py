@@ -315,6 +315,10 @@ class Sentinel(commands.Bot):
                 await self._run_alerts(self._extras_alerts())
             except Exception:  # noqa: BLE001
                 log.exception("extras alerts failed")
+            try:
+                await self._run_alerts(self._stability_alerts())
+            except Exception:  # noqa: BLE001
+                log.exception("stability alerts failed")
 
         async def econ():
             await EP.tick(self)
@@ -1017,6 +1021,13 @@ class Sentinel(commands.Bot):
                                  f"權重 {r['weight']:.0f}%；22 日高點 {r['high']:.2f}，停損 = 高點 − 3×平均波幅。這是紀律提醒，不是賣出指令（/xray 看全部）"))
         return out
 
+    def _stability_alerts(self) -> List[Alert]:
+        """金融穩定監測：財政部標售規模改口、再融資公布日前一天、資金市場偏緊、基差交易新高、每月盤點的新缺口。"""
+        from ..data import stability as stb
+        from ..data.econcal import us_today
+        v = stb.view(self.engine)
+        return [Alert(k, sev, t, d) for k, sev, t, d in stb.alerts(v, us_today().isoformat())]
+
     def _liquidity_alerts(self) -> List[Alert]:
         """Heads-up the day before (or the day of) high-importance liquidity events."""
         from ..data.econcal import us_today
@@ -1533,6 +1544,11 @@ def register_commands(bot: Sentinel) -> None:
     async def macro(it: discord.Interaction):
         await it.response.defer(thinking=True)
         await P.deliver(it, slides=lambda: P.v_macro(eng), embeds=lambda: E.macro(eng))
+
+    @tree.command(name="stability", description="金融穩定監測：財政部發債、短期資金市場、美債基差交易、AI 資本支出")
+    async def stability(it: discord.Interaction):
+        await it.response.defer(thinking=True)
+        await P.deliver(it, embeds=lambda: E.stability(eng))
 
     @tree.command(name="scores", description="個股評分表：美股／台股／港股 技術面＋情報面，由高到低（量化篩選，非推薦）")
     @app_commands.choices(market=[app_commands.Choice(name="美股", value="us"), app_commands.Choice(name="台股", value="tw"),

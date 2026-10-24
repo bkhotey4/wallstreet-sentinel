@@ -76,7 +76,11 @@ def main():
     import tools.site_layout as SLY
     side = page[page.find('<aside class="side"'):page.find("</aside>")]
     keys = re.findall(r'class="page[^"]*" id="p-([a-z]+)"', page)
-    assert len(keys) == len(set(keys)) and all(side.count(f'data-p="{k}"') == 1 for k in keys), keys
+    tabs_ = re.findall(r'<a class="ptab[^"]*" href="#[a-z]+" data-p="([a-z]+)"', side)
+    assert len(keys) == len(set(keys)) and all(tabs_.count(k) == 1 for k in keys), keys
+    # each page with ≥2 cards has a fold-out list of its cards in the sidebar; every link points at a real card id
+    for cid in re.findall(r'class="pca"[^>]*data-c="([^"]+)"', side):
+        assert f'id="{cid}"' in page, cid
     assert [k for k in keys if k in SLY.GROUP_OF] == [k for *_x, ks in SLY.GROUPS for k in ks if k in keys]
     assert page.index('id="c-index"') < page.index('id="p-risk"') and "總攬大表" in page and 'id="crumb"' in page
     _pages = {k: page[page.find(f'id="p-{k}"'):] for k in keys}
