@@ -59,7 +59,7 @@ def score(sig: pd.Series, px: pd.Series, h: int, dd: float) -> Dict:
 
 
 # ---------------------------------------------------------------- 地震學：餘震
-BUCKETS = ((1, 5), (6, 20), (21, 60), (61, 250), (251, 10 ** 6))
+BUCKETS = ((1, 5), (6, 20), (21, 60), (61, 250), (251, 10 ** 9))
 
 
 def _bucket(t: int) -> int:
@@ -118,7 +118,7 @@ def aftershock(spx: pd.Series, c: Dict) -> Dict:
     for a, b in BUCKETS:
         inb = (since >= a) & (since <= b) & done
         fit_m, oos_m = inb & (ix >= start) & (ix < split), inb & (ix >= split)
-        rows.append({"band": f"{a}–{b} 天" if b < 10 ** 6 else f"{a} 天以上",
+        rows.append({"band": f"{a}–{b} 天" if b < 10 ** 9 else f"{a} 天以上",
                      "fit": float(fut[fit_m].mean() * 100) if fit_m.sum() else None,
                      "oos": float(fut[oos_m].mean() * 100) if oos_m.sum() else None,
                      "n_fit": int(fit_m.sum()), "n_oos": int(oos_m.sum())})
@@ -128,7 +128,8 @@ def aftershock(spx: pd.Series, c: Dict) -> Dict:
     lastd = ix[n - 1 - t_now]
     rec = r.iloc[-20:]
     bg_now = float(big[-250:].mean())
-    return {"available": True, "rows": rows, "cur": cur, "days_since": t_now, "last_main": lastd.strftime("%Y-%m-%d"),
+    since_s = pd.Series(since, index=ix)
+    return {"available": True, "_since": since_s, "rows": rows, "cur": cur, "days_since": t_now, "last_main": lastd.strftime("%Y-%m-%d"),
             "last_main_r": float(r[lastd]), "p_now": rows[cur]["oos"], "fit": f, "next": nx, "split": c["split"][:4],
             "main": c["main"], "after": c["after"], "bg_now": bg_now * 100, "p_bg": (1 - (1 - bg_now) ** nx) * 100,
             "recent_max": float(rec.abs().max()), "recent_max_d": rec.abs().idxmax().strftime("%Y-%m-%d"),
@@ -257,7 +258,9 @@ def absorption(hist: pd.DataFrame, spx: pd.Series, c: Dict) -> Dict:
     sig = dar >= c["dar"]
     bt = score(sig, spx, int(c["horizon"]), float(c["dd"]))
     pct = float((ar.iloc[:-1] < ar.iloc[-1]).mean() * 100)
-    return {"available": True, "ar": float(ar.iloc[-1]) * 100, "ar_pct": pct, "dar": float(dar.iloc[-1]),
+    arv = ar.to_numpy()
+    ar_exp = pd.Series([np.nan if i < 250 else (arv[:i] < arv[i]).mean() * 100 for i in range(len(arv))], index=ar.index)
+    return {"available": True, "_ar_pct": ar_exp.dropna(), "ar": float(ar.iloc[-1]) * 100, "ar_pct": pct, "dar": float(dar.iloc[-1]),
             "on": bool(sig.iloc[-1]), "bt": bt, "since": ar.index[0].strftime("%Y-%m"), "asof": ar.index[-1].strftime("%Y-%m-%d"),
             "ar_1y": float(ar.iloc[-252:].mean()) * 100, "spark": ar.iloc[-500:] * 100}
 
@@ -298,9 +301,89 @@ def turbulence(hist: pd.DataFrame, spx: pd.Series, c: Dict) -> Dict:
     sig = pc >= c["tb_pct"]
     bt = score(sig, spx, int(c["horizon"]), float(c["dd"]))
     top = tb.iloc[-20:].idxmax()
-    return {"available": True, "t5": float(t5.iloc[-1]), "pct": float(pc.iloc[-1]), "on": bool(sig.iloc[-1]), "bt": bt,
+    return {"available": True, "_pc": pc, "t5": float(t5.iloc[-1]), "pct": float(pc.iloc[-1]), "on": bool(sig.iloc[-1]), "bt": bt,
             "since": pc.index[0].strftime("%Y-%m"), "asof": pc.index[-1].strftime("%Y-%m-%d"),
             "top_d": top.strftime("%Y-%m-%d"), "top_v": float(tb[top]), "spark": pc.iloc[-500:]}
+
+
+# ---------------------------------------------------------------- AI 風險分數
+QUAKE_PTS = (100, 80, 60, 40, 20)            # by aftershock bucket: 1–5, 6–20, 21–60, 61–250, > 250 days
+
+
+def score_series(out: Dict) -> pd.Series:
+    """Daily 0–100: mean of turbulence percentile, synchrony percentile (both vs their own past) and aftershock stage."""
+    parts = []
+    t, a, q = out.get("turbulence") or {}, out.get("absorption") or {}, out.get("aftershock") or {}
+    if t.get("available"):
+        parts.append(t["_pc"])
+    if a.get("available"):
+        parts.append(a["_ar_pct"])
+    if q.get("available"):
+        sn = q["_since"]
+        parts.append(pd.Series([QUAKE_PTS[_bucket(max(int(x), 1))] for x in sn.to_numpy()], index=sn.index))
+    if len(parts) < 2:
+        return pd.Series(dtype=float)
+    j = pd.concat(parts, axis=1).ffill(limit=3).dropna()
+    return j.mean(axis=1)
+
+
+BANDS = ((0, 40, "低"), (40, 55, "偏低"), (55, 70, "中等"), (70, 101, "偏高"))
+
+
+def risk_score(out: Dict, spx: pd.Series, h: int = 63) -> Dict:
+    sc = score_series(out)
+    spx = spx.dropna()
+    if len(sc) < 1000 or len(spx) < 1000:
+        return {"available": False}
+    j = pd.concat({"s": sc, "p": spx}, axis=1).dropna()
+    p = j["p"]
+    drop = fwd_drop(p, h)
+    d21 = fwd_drop(p, 21)
+    # first day the fall reached -10 % (trading days after the signal day)
+    pv = p.to_numpy()
+    hit_day = np.full(len(pv), np.nan)
+    for i in range(len(pv) - 1):
+        seg = pv[i + 1:i + 1 + h] / pv[i] - 1
+        k = np.flatnonzero(seg <= -0.10)
+        if len(k):
+            hit_day[i] = k[0] + 1
+    hd = pd.Series(hit_day, index=p.index)
+    ok = drop.notna()
+    rows = []
+    for lo, hi, zh in BANDS:
+        m = ok & (j["s"] >= lo) & (j["s"] < hi)
+        dm = drop[m]
+        if not len(dm):
+            rows.append({"band": zh, "lo": lo, "hi": min(hi, 100), "n": 0})
+            continue
+        rows.append({"band": zh, "lo": lo, "hi": min(hi, 100), "n": int(len(dm)),
+                     "digest": float((dm > -5).mean() * 100), "pull": float(((dm <= -5) & (dm > -10)).mean() * 100),
+                     "crash": float((dm <= -10).mean() * 100), "d21": float((d21[m] <= -5).mean() * 100),
+                     "days_med": float(hd[m].dropna().median()) if hd[m].notna().any() else None})
+    base = {"digest": float((drop[ok] > -5).mean() * 100), "crash": float((drop[ok] <= -10).mean() * 100),
+            "d21": float((d21[d21.notna()] <= -5).mean() * 100)}
+    y = (drop[ok] <= -10).to_numpy()
+    sv = j["s"][ok].to_numpy()
+    now = float(sc.iloc[-1])
+    cur = next(k for k, (lo, hi, _z) in enumerate(BANDS) if lo <= now < hi)
+    # the present pattern: turbulence high while sectors move apart
+    t, a = out.get("turbulence") or {}, out.get("absorption") or {}
+    pat = None
+    if t.get("available") and a.get("available"):
+        pj = pd.concat({"t": t["_pc"], "a": a["_ar_pct"]}, axis=1).dropna()
+        on = ((pj["t"] >= 80) & (pj["a"] <= 20)).reindex(drop.index, fill_value=False).astype(bool)
+        pm = on & ok
+        if pm.sum() >= 20:
+            dm = drop[pm]
+            prior = on.shift(1, fill_value=False).rolling(20, min_periods=1).max().astype(bool)
+            first = on & ~prior & ok
+            pat = {"n": int(pm.sum()), "episodes": int(first.sum()), "ep_crash": int((drop[first] <= -10).sum()),
+                   "days_med": float(hd[pm].dropna().median()) if hd[pm].notna().any() else None,
+                   "digest": float((dm > -5).mean() * 100), "crash": float((dm <= -10).mean() * 100),
+                   "pull": float(((dm <= -5) & (dm > -10)).mean() * 100), "now": bool(t["pct"] >= 80 and a["ar_pct"] <= 20)}
+    return {"available": True, "now": now, "pct": float((sc.iloc[:-1] < now).mean() * 100), "cur": cur, "rows": rows,
+            "base": base, "auc": auc(sv, y.astype(bool)), "since": sc.index[0].strftime("%Y-%m"), "h": h,
+            "pattern": pat, "spark": sc.iloc[-250:]}
 
 
 # ---------------------------------------------------------------- all three
@@ -324,5 +407,9 @@ def build(eng) -> Dict:
         except Exception as e:  # noqa: BLE001
             out[k] = {"available": False, "err": str(e)}
     out["available"] = any(out[k].get("available") for k in ("aftershock", "absorption", "turbulence", "analog"))
+    try:
+        out["score"] = risk_score(out, spx)
+    except Exception as e:  # noqa: BLE001
+        out["score"] = {"available": False, "err": str(e)}
     _CACHE.update(key=key, val=out)
     return out

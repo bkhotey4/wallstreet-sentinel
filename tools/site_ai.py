@@ -108,6 +108,84 @@ def watch(ph: dict, ssi) -> list:
     return out
 
 
+def score_view(sc: dict) -> dict:
+    """Which history to read today by: the exact present pattern when it is on and has enough days, else the score band."""
+    if not sc.get("available"):
+        return {}
+    pat = sc.get("pattern") or {}
+    row = sc["rows"][sc["cur"]]
+    src, by = (pat, "pattern") if pat.get("now") else (row, "band")
+    base = sc["base"]["crash"]
+    d, pu, cr = src.get("digest"), src.get("pull"), src.get("crash")
+    if d is None:
+        return {}
+    lift = cr / base if base else None
+    ep = src.get("episodes") or 0
+    ep_rate = src["ep_crash"] / ep * 100 if ep >= 5 else None
+    mixed = ep_rate is not None and (cr > base) != (ep_rate > base)      # day-weighted and episode-weighted disagree
+    if mixed:
+        v = (f"以市場消化為主，大跌機率和平常差不多（按天算 {cr:.0f}%、按獨立事件算 {ep_rate:.0f}%，平常 {base:.0f}%；樣本少）")
+    elif cr >= 30 or (lift or 0) >= 2:
+        v = "大跌風險明顯偏高"
+    elif d >= 50:
+        v = "以市場消化為主" + (f"，但大跌機率是平常的 {lift:.1f} 倍" if lift and lift >= 1.2 else "")
+    else:
+        v = "回檔機率偏高，但多數沒有演變成大跌"
+    return {"by": by, "ep_rate": ep_rate, "mixed": mixed, "digest": d, "pull": pu, "crash": cr, "base": base, "lift": lift, "verdict": v,
+            "days": src.get("days_med"), "n": src.get("n"), "episodes": src.get("episodes"), "ep_crash": src.get("ep_crash")}
+
+
+def _bar(d, pu, cr) -> str:
+    seg = [(d, "up", "消化"), (pu, "muted", "回檔"), (cr, "dn", "大跌")]
+    cells = "".join(f'<span class="{c}" style="flex:{max(v, 1):.0f}">{T(z, z)} {v:.0f}%</span>' for v, c, z in seg)
+    return f'<div class="aibar">{cells}</div>'
+
+
+def score_block(ph: dict) -> str:
+    sc = ph.get("score") or {}
+    v = score_view(sc)
+    if not v:
+        return ""
+    band = sc["rows"][sc["cur"]]["band"]
+    who = ("現在這種組合（亂流高、各產業各走各的）" if v["by"] == "pattern" else f"分數落在「{band}」區間時")
+    line1 = f"AI 風險分數 {sc['now']:.0f}／100（{band}；{sc['since'][:4]} 年以來第 {sc['pct']:.0f} 百分位）"
+    line2 = (f"{who}，歷史上之後 3 個月：消化（跌不到 5%）{v['digest']:.0f}%、回檔 5–10% {v['pull']:.0f}%、"
+             f"大跌 ≥10% {v['crash']:.0f}%（平常 {v['base']:.0f}%）。")
+    line3 = (f"如果真的大跌，歷史上中位數是在 {v['days']:.0f} 個交易日（約 {v['days'] / 21:.1f} 個月）內跌到 -10%；"
+             "這是「萬一發生」時的時間分布，不是預告會在那天發生。" if v.get("days") else "")
+    return (f'<p class="rimp big2"><b>{T(line1, line1)}</b><br>{T("判讀", "Reading")}：<b>{T(v["verdict"], v["verdict"])}</b></p>'
+            f'{_bar(v["digest"], v["pull"], v["crash"])}<p class="small">{T(line2, line2)}{T(line3, line3)}</p>')
+
+
+def sec_ai_score(eng) -> str:
+    ph = _ph(eng)
+    sc = (ph or {}).get("score") or {}
+    if not sc.get("available"):
+        return ""
+    v = score_view(sc)
+    rows = "".join(f'<tr{" class=hl" if k == sc["cur"] else ""}><td>{T(r["band"], r["band"])}（{r["lo"]}–{r["hi"]}）{" ◀ 現在" if k == sc["cur"] else ""}</td>'
+                   f'<td class="r">{num(r.get("digest"), 0)}%</td><td class="r">{num(r.get("pull"), 0)}%</td><td class="r"><b>{num(r.get("crash"), 0)}%</b></td>'
+                   f'<td class="r">{num(r.get("days_med"), 0)}</td><td class="r small muted">{r["n"]:,}</td></tr>' for k, r in enumerate(sc["rows"]))
+    pat = sc.get("pattern") or {}
+    pline = (f"「亂流高＋各產業各走各的」這種組合（現在{'正是' if pat.get('now') else '不是'}）共出現 {pat['n']} 天、{pat.get('episodes', 0)} 段，"
+             f"之後 3 個月消化 {pat['digest']:.0f}%、回檔 {pat['pull']:.0f}%、大跌 {pat['crash']:.0f}%；"
+             f"{pat.get('episodes', 0)} 段裡有 {pat.get('ep_crash', 0)} 段在 3 個月內跌了 10% 以上。") if pat else ""
+    since = sc["since"][:4]
+    note = T(f"分數＝亂流百分位、產業同步度百分位、餘震階段分數三者平均（都只和自己過去比），{since} 年起每天計算。"
+             f"「消化」＝之後 3 個月最多跌不到 5%；「大跌」＝3 個月內從當天跌 10% 以上。分數沒有用結果資料調整任何參數，它對 3 個月內大跌的 AUC 是 {num(sc.get('auc'), 2)}（0.5＝亂猜），"
+             "預測力有限，而且分數高低和大跌機率不是一直線：只有最高的區間明顯危險。重疊的日子不是獨立事件，段數比天數更能代表樣本大小。"
+             "這是歷史頻率，不是預測，也不是投資建議。",
+             "Score = mean of turbulence pct, synchrony pct and aftershock stage. Modest AUC; historical frequencies, not a forecast.")
+    body = (score_block(ph) + _fold(
+        f'<div class="scroll"><table class="mini"><thead><tr><th>{T("分數區間", "Score band")}</th><th class="r">{T("消化", "Digest")}</th>'
+        f'<th class="r">{T("回檔 5–10%", "Pullback")}</th><th class="r">{T("大跌 ≥10%", "Crash")}</th>'
+        f'<th class="r">{T("跌到 -10% 的天數中位數", "Median days to -10%")}</th><th class="r">{T("天數", "Days")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+        f'<p>{T(pline, pline)}</p>'
+        f'<p class="note">{note}</p>',
+        "點開看各分數區間的歷史結果"))
+    return card("AI 風險分數：市場消化，還是會大跌？", "AI risk score: digestion or a fall?", body, "wide")
+
+
 def sec_ai_brief(eng) -> str:
     """一眼看懂: one sentence, four lights, three things to watch; the comparison table and lessons folded."""
     ph = _ph(eng)
@@ -125,7 +203,10 @@ def sec_ai_brief(eng) -> str:
     cmp_ = "".join(f'<li><b>{T(r["dim"], r["dim"])}</b>：{T("人類", "Human")} {_pill(r["h"][1])} ／ AI {_pill(r["a"][1])} → '
                    f'{T(r["v"] or "—", r["v"] or "—")}</li>' for r in rows)
     cnt = f"AI 視角交叉比對：{n_ok} 項一致、{n_split} 項分歧"
-    body = (f'<p class="rimp big2"><b>{T(head, head)}</b></p>'
+    v = score_view(ph.get("score") or {})
+    sc = ph.get("score") or {}
+    sline = ((f"AI 風險分數 {sc['now']:.0f}／100：{v['verdict']}" + ("" if v["mixed"] else f"（3 個月內大跌 {v['crash']:.0f}%，平常 {v['base']:.0f}%）")) if v else "")
+    body = (f'<p class="rimp big2"><b>{T(head, head)}</b>' + (f'<br>{T(sline, sline)}' if sline else "") + '</p>'
             f'<h3>{T("4 個燈號", "Four lights")}</h3><ul class="brief">{lights}</ul>'
             f'<h3>{T("人類指標 vs AI", "Human vs AI")}</h3><p class="small">{T(cnt, cnt)}</p><ul class="brief">{cmp_}</ul>'
             f'<h3>{T("接下來要盯的 3 件事", "Three things to watch")}</h3><ul class="brief">{w}</ul>'
@@ -380,3 +461,8 @@ def sec_ai_intro(eng) -> str:
     lis = "".join(f'<li><b>{T(a, a)}</b>：{T(b, b)}</li>' for a, b in pts)
     return card("從回測學到的 4 件事", "What the machine lens learned from its own back-tests",
                 _fold(f'<ul class="brief">{lis}</ul>', "點開看"), "wide")
+
+
+CSS = (".aibar{display:flex;gap:3px;margin:8px 0 4px;font-size:12px;font-weight:700}"
+       ".aibar span{padding:5px 6px;border-radius:4px;background:var(--wash);border-bottom:3px solid currentColor;"
+       "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}")

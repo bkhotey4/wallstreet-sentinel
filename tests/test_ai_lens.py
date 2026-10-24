@@ -90,15 +90,32 @@ def test_analog_past_only():
     print("ok analog")
 
 
+def test_score():
+    from tools import site_ai as SAI
+    PH._CACHE.clear()
+    sc = PH.build(fixture())["score"]
+    assert sc["available"] and 0 <= sc["now"] <= 100 and len(sc["rows"]) == 4
+    for r in sc["rows"]:
+        if r["n"]:
+            assert abs(r["digest"] + r["pull"] + r["crash"] - 100) < 1e-6         # three outcomes cover every day
+    fake = {"available": True, "cur": 0, "base": {"crash": 14.0}, "rows": [{"band": "低", "digest": 70, "pull": 15, "crash": 15}],
+            "pattern": {"now": True, "digest": 58, "pull": 20, "crash": 22, "episodes": 11, "ep_crash": 1, "n": 294}}
+    v = SAI.score_view(fake)
+    assert v["mixed"] and "差不多" in v["verdict"] and "9%" in v["verdict"]              # days say 22 %, episodes say 9 %
+    fake["pattern"]["ep_crash"] = 5
+    assert "倍" in SAI.score_view(fake)["verdict"]
+    print("ok score")
+
+
 def test_cards():
     from tools import site_ai as SAI
     PH._CACHE.clear()
     e = fixture()
-    h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
+    h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
     b = SAI.sec_ai_brief(e)
     assert "一眼看懂" in b and "接下來要盯的 3 件事" in b and b.count("<li>") >= 10 and "<details" not in b
     assert all("<details" in f(e) for f in (SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross))
-    for w in ("AI 視角交叉比對", "人類世界觀", "大森定律", "吸收比率", "Mahalanobis", "k 最近鄰", "假警報", "不是投資建議"):
+    for w in ("AI 風險分數", "消化", "AI 視角交叉比對", "人類世界觀", "大森定律", "吸收比率", "Mahalanobis", "k 最近鄰", "假警報", "不是投資建議"):
         assert w in h, w
     assert "未實現" not in h and "持倉" not in h
     rows = SAI.cross_rows(e)
@@ -106,8 +123,9 @@ def test_cards():
     assert SAI.agree(SAI.TENSE, SAI.CALM) == "分歧" and SAI.agree(SAI.TENSE, SAI.TENSE) == "一致"
     from tools import site_layout as SLY
     assert SLY.GROUP_OF["ai"] == "risk"
-    pk = SLY.picks({"ai": h})
-    assert pk["risk"][0].startswith("AI 判斷：") and any("AI 視角" in x for x in pk["risk"]), pk["risk"]
+    stamped = h.replace("</h2>", "</h2><span class=upd>🕒 最後更新 10-24 13:06・ 資料日 10-23</span>", 1)
+    pk = SLY.picks({"ai": stamped})
+    assert pk["risk"][0].startswith("AI 判斷：") and "🕒" not in pk["risk"][0] and any("AI 視角" in x for x in pk["risk"]), pk["risk"]
     assert SLY.GROUPS[1][5][0] == "ai"
     empty = types.SimpleNamespace(market=types.SimpleNamespace(history=pd.DataFrame(), series=lambda t: pd.Series(dtype=float), q=lambda t: None))
     PH._CACHE.clear()
@@ -119,5 +137,6 @@ if __name__ == "__main__":
     test_aftershock()
     test_absorption_turbulence()
     test_analog_past_only()
+    test_score()
     test_cards()
     print("all AI-lens tests passed")
