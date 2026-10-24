@@ -57,7 +57,7 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
              ("ai", r"AI 風險分數 (\d+)／100：([^（，]+)", lambda m: f"AI 風險分數 {m[1]}／100：{m[2]}"),
              ("ai", r"熱度計：(太熱|偏貪婪|健康|偏冷)", lambda m: f"熱度計：{m[1]}"),
              ("ai", r"AI 視角交叉比對：(\d+) 項一致、(\d+) 項分歧", lambda m: f"AI 視角 × 人類指標：{m[1]} 項一致、{m[2]} 項分歧"),
-             ("stability", r"金融穩定 4 項：(\S+)", lambda m: f"金融穩定：{m[1]}"),
+             ("stability", r"金融穩定 4 項：((?:\d+ 項[紅黃]燈、?)+|全部正常)", lambda m: f"金融穩定：{m[1]}"),
              ("outlook", r"(\d+) 綜合風險：(\S+)", lambda m: f"綜合風險 {m[1]} {m[2]}"),
              ("risk", r"紅燈 (\d+) 黃燈 (\d+)", lambda m: f"金絲雀 紅燈 {m[1]}・黃燈 {m[2]}"),
              ("mood", r"恐慌與貪婪指數（多因子） .*?資料日 \S+ (\d+) (\S+)", lambda m: f"恐慌貪婪 {m[1]} {m[2]}"),

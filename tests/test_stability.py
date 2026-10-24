@@ -134,6 +134,8 @@ def test_cards_and_layout():
     assert "sec_st_brief" in STP.CARD and "stability" in STP.TAB_DEFAULT
     stamped = STP.inject(h, STP.stamp(e, "sec_st_brief", "stability"))
     assert "🕒" in stamped
+    assert "金融穩定：" in " ".join(SLY.picks({"stability": "<p>金融穩定 4 項：1 項紅燈、2 項黃燈 基差交易</p>"})["risk"])
+    assert "金融穩定：1 項紅燈、2 項黃燈" in SLY.picks({"stability": "<p>金融穩定 4 項：1 項紅燈、2 項黃燈 基差交易</p>"})["risk"]
     for bad in ("使用者持倉", "持倉總值", "未實現", "data-private"):
         assert bad not in h + r
 
