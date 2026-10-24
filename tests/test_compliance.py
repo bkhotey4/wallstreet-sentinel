@@ -29,6 +29,11 @@ def test_no_trading_instruction_words():
     assert not hits, hits
 
 
+def test_ai_text_rewording():
+    from tools.sitekit import guard_safe
+    assert guard_safe("精選池中 9 成企業；有買點訊號") == "追蹤池中 9 成企業；型態成立"
+
+
 def test_banner():
     from tools import build_site as BS
     b = BS.comply_bar()

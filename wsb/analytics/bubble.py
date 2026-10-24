@@ -191,13 +191,13 @@ def history_table(ff: Dict) -> Dict:
     """Per group and period: the summary, plus the 1970+ cases.  Each group is scanned once (from 1926) and the periods are
     filtered by date; the result is cached in memory and in econ_bubble.json keyed by the data's last month."""
     end = max(max(v) for v in ff.values()) if ff else ""
-    if _CACHE.get("hist_end") == end:
+    if _CACHE.get("hist_end") == end and (_CACHE.get("hist") or {}).get("_v") == HIST_V:
         return _CACHE["hist"]
     d = load()
-    if (d.get("hist") or {}).get("_end") == end:
+    if (d.get("hist") or {}).get("_end") == end and (d.get("hist") or {}).get("_v") == HIST_V:
         _CACHE.update(hist_end=end, hist=d["hist"])
         return d["hist"]
-    out: Dict = {"_end": end}
+    out: Dict = {"_end": end, "_v": HIST_V, "scen": scenarios(ff)}
     for gk, _zh, test in GROUPS + (("any", "所有產業、任何時候（基準）", lambda r, o, v: r == r),):
         eps = episodes(ff, test, "1926")
         out[gk] = {p: summarize([e for e in eps if e["date"] >= p]) for p in PERIODS}
@@ -209,6 +209,77 @@ def history_table(ff: Dict) -> Dict:
     except Exception:  # noqa: BLE001
         log.warning("bubble history cache not saved")
     return out
+
+
+SCEN_RUN, SCEN_OFF, SCEN_START, HIST_V = 1.0, -0.15, "1946", 3
+
+
+def scenarios(ff: Dict[str, Dict[str, float]]) -> Optional[Dict]:
+    """The decision-useful view.  Cases since 1946 (the Depression left out): a 2-year run-up ≥ 100 % that has already
+    fallen ≥ 15 % from its 12-month high.  Outcome over the next 24 months: back to the old high within 12 months,
+    a ≥ 40 % fall from the high, or neither; the deepest fall from the high; and how the next 3 months split the odds."""
+    rows = []
+    for ind, rets in ff.items():
+        r = pd.Series(rets)
+        r.index = pd.to_datetime(r.index + "-01")
+        r = r.sort_index()
+        if len(r) < 60:
+            continue
+        px = (1 + r).cumprod()
+        f = features(px)
+        hi12 = px.rolling(12).max()
+        last = None
+        for i in range(36, len(px) - H):
+            x = f.iloc[i]
+            if not (x["run"] >= SCEN_RUN and x["off"] <= SCEN_OFF) or (last is not None and i - last < 24):
+                continue
+            last = i
+            if px.index[i] < pd.Timestamp(f"{SCEN_START}-01-01"):
+                continue
+            pk, fut = hi12.iloc[i], px.iloc[i:i + H + 1]
+            dd = fut.values / np.maximum(fut.cummax().values, pk) - 1
+            hit = np.where(dd <= -DD)[0]
+            nh = np.where(fut.values >= pk)[0]
+            m_c = int(hit[0]) if len(hit) else None
+            m_h = int(nh[0]) if len(nh) else None
+            first = ("crash" if m_c is not None and (m_h is None or m_c < m_h) else "high" if m_h is not None else "range")
+            rows.append({"ind": ind, "date": px.index[i].strftime("%Y-%m"), "crash": m_c is not None, "m": m_c, "m_high": m_h, "first": first,
+                         "newhi12": bool(m_h is not None and m_h <= 12), "r3": float(fut.iloc[3] / fut.iloc[0] - 1), "mdd": float(dd.min())})
+    if len(rows) < 15:
+        return None
+    e = pd.DataFrame(rows)
+    n = len(e)
+    crash, newhi = float(e["crash"].mean() * 100), float(e["newhi12"].mean() * 100)
+    both = float((e["crash"] & e["newhi12"]).mean() * 100)
+
+    def split(mask):
+        s = e[mask & ~(e["m"].notna() & (e["m"] <= 3))]           # still undecided at the 3-month checkpoint
+        return {"n": int(len(s)), "newhi": float(s["newhi12"].mean() * 100) if len(s) else None,
+                "crash": float(s["crash"].mean() * 100) if len(s) else None}
+    fc = e["first"].value_counts(normalize=True) * 100
+    return {"n": n, "since": SCEN_START, "crash": crash, "newhi": newhi, "both": both,
+            "first_high": float(fc.get("high", 0)), "first_crash": float(fc.get("crash", 0)), "first_range": float(fc.get("range", 0)),
+            "med_m": float(e.loc[e["crash"], "m"].median()) if e["crash"].any() else None,
+            "med_m_high": float(e.loc[e["first"] == "high", "m_high"].median()) if (e["first"] == "high").any() else None,
+            "mdd_q": [float(x) for x in e["mdd"].quantile([0.25, 0.5, 0.75])],
+            "up3": split(e["r3"] > 0), "down3": split(e["r3"] <= 0), "down10": split(e["r3"] <= -0.10),
+            "cases": e.sort_values("date", ascending=False).to_dict("records")}
+
+
+def levels(eng, sym: str, sc: Dict) -> Optional[Dict]:
+    """Translate the scenario numbers into index levels for one basket (daily closes)."""
+    try:
+        s = eng.market.series(sym).dropna()
+    except Exception:  # noqa: BLE001
+        return None
+    if len(s) < 260:
+        return None
+    hi = float(s.tail(252).max())
+    now = float(s.iloc[-1])
+    q25, q50, q75 = sc["mdd_q"]
+    return {"sym": sym, "now": now, "asof": s.index[-1].strftime("%Y-%m-%d"), "high": hi, "high_d": s.tail(252).idxmax().strftime("%Y-%m-%d"),
+            "off": (now / hi - 1) * 100, "crash_line": hi * (1 - DD), "mild": hi * (1 + q75), "typical": hi * (1 + q50), "deep": hi * (1 + q25),
+            "check_date": (s.index[-1] + pd.DateOffset(months=3)).strftime("%Y-%m-%d"), "check_down10": now * 0.9}
 
 
 def current_state(eng) -> List[Dict]:
@@ -312,6 +383,13 @@ def build(eng) -> Dict:
         out["hist"] = history_table(ff)
         out["ff_end"] = max(max(v) for v in ff.values())
     out["now"] = current_state(eng)
+    sc = (out.get("hist") or {}).get("scen")
+    if sc:
+        for sym in ("^SOX", "SMH"):
+            lv = levels(eng, sym, sc)
+            if lv:
+                out["levels"] = lv
+                break
     out["elephants"] = elephants(eng, cf) if cf else []
     out["insiders"] = insider_ai(eng)
     return out

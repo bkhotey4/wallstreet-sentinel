@@ -487,7 +487,7 @@ def sec_tech_season(eng) -> str:
            f'<th class="r">{T("動能分數", "Score")}</th><th>{T("動能領先", "Leaders")}</th></tr></thead><tbody>{rows}</tbody></table></div>')
     ai = te.get("ai_season")
     ai_h = (f'<div class="ainote"><b>{T("AI 財報季總結", "AI season summary")}</b><span class="muted small">（{esc(ai.get("engine", ""))}）</span>'
-            f'<p>{esc(ai["text"]).replace(chr(10), "<br>")}</p></div>' if ai else "")
+            f'<p>{esc(guard_safe(ai["text"])).replace(chr(10), "<br>")}</p></div>' if ai else "")
     return card("科技／半導體財報季", "Tech & semis earnings season", chips + tbl + ai_h, "wide")
 
 

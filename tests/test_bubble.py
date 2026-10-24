@@ -45,6 +45,24 @@ def test_parse_and_episodes():
     assert h["hot"]["1946"]["n"] == 1 and h["hot"]["1970"] is None and h["any"]["1946"]["n"] >= 2
 
 
+def test_scenarios():
+    months = pd.date_range("1950-01-01", periods=600, freq="MS")
+    ff = {}
+    for k in range(20):                                   # 20 industries: a 2-year boom, a 20 % dip, then half recover / half crash
+        a = np.full(600, 0.004)
+        s = 30 + k * 25
+        a[s:s + 24] = 0.045
+        a[s + 24:s + 26] = -0.09
+        a[s + 26:s + 40] = 0.03 if k % 2 else -0.06
+        ff[f"I{k}"] = {f"{m:%Y-%m}": float(x) for m, x in zip(months, a)}
+    sc = BB.scenarios(ff)
+    assert sc and sc["n"] == 20 and abs(sc["first_high"] + sc["first_crash"] + sc["first_range"] - 100) < 1e-6
+    assert 30 <= sc["first_crash"] <= 70 and sc["up3"]["newhi"] > sc["down3"]["newhi"]
+    px = pd.Series(np.r_[np.linspace(100, 200, 300), np.linspace(200, 150, 30)], index=pd.bdate_range("2025-06-01", periods=330))
+    lv = BB.levels(_eng({"^SOX": px}), "^SOX", sc)
+    assert abs(lv["crash_line"] - 120) < 1e-6 and lv["off"] < -20 and lv["check_down10"] == lv["now"] * 0.9
+
+
 def _eng(series):
     return types.SimpleNamespace(market=types.SimpleNamespace(series=lambda t: series.get(t, pd.Series(dtype=float)), q=lambda t: None))
 

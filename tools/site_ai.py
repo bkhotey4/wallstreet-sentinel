@@ -522,8 +522,13 @@ def sec_ai_brief(eng) -> str:
     if bb.get("available"):
         be, bh, bl = bubble_state(bb)
         r46 = ((bb.get("hist") or {}).get(bl["group"]) or {}).get("1946") if bl else None
-        tiles.append(("ai-bubble", f"{be} AI 泡沫計時器", (f"{r46['p12']:.0f}<small>% ／12 個月</small>" if r46 else "不符合"),
-                      (f"{bl['name']} 2 年 {bl['run']:+.0f}%、離高點 {bl['off']:+.0f}%；歷史同組 12 個月內破裂比例（1946 年起）" if bl else bh), ""))
+        scn = (bb.get("hist") or {}).get("scen")
+        if bl and scn and bb.get("levels"):
+            tiles.append(("ai-bubble", f"{be} AI 泡沫計時器", f"{scn['first_high']:.0f}<small>% 回高點</small>・{scn['first_crash']:.0f}<small>% 破裂</small>",
+                          f"歷史 {scn['n']} 次類似情況接下來 2 年先發生哪一件；檢查點 {bb['levels']['check_date']}", ""))
+        else:
+            tiles.append(("ai-bubble", f"{be} AI 泡沫計時器", (f"{r46['p12']:.0f}<small>% ／12 個月</small>" if r46 else "不符合"),
+                          (f"{bl['name']} 2 年 {bl['run']:+.0f}%、離高點 {bl['off']:+.0f}%；歷史同組 12 個月內破裂比例（1946 年起）" if bl else bh), ""))
     if bb.get("elephants"):
         ee, eh = elephant_state(bb)
         tiles.append(("ai-elephant", f"{ee} 大象撤退", eh.split("：")[0], eh.split("：")[-1], ""))
@@ -847,12 +852,50 @@ def bubble_line(b: dict) -> str:
     emo, head, lead = bubble_state(b)
     if not lead:
         return f"{emo} {head}"
+    sc, lv = (b.get("hist") or {}).get("scen"), b.get("levels")
+    if sc and lv:
+        return (f"{emo} {head}：歷史上 {sc['n']} 次類似情況，接下來 2 年先回到高點 {sc['first_high']:.0f}%、先從高點跌超過 40% {sc['first_crash']:.0f}%；"
+                f"關鍵看 {lv['check_date']}（3 個月後）費半在不在 {lv['now']:,.0f} 之上。")
     rows = (b.get("hist") or {}).get(lead["group"]) or {}
     p12 = [rows[p]["p12"] for p in ("1926", "1946", "1970") if rows.get(p)]
     s = rows.get("1946") or {}
     rng = f"{min(p12):.0f}%–{max(p12):.0f}%" if p12 else "—"
     return (f"{emo} {head}：歷史上同一組，12 個月內從高點跌 40% 以上的比例依起算年份介於 {rng}"
             + (f"（1946 年起 {s['n']} 次裡 {s['p12']:.0f}%）" if s else "") + "；樣本少，看範圍不要看單一數字。")
+
+
+def scenario_block(b: dict) -> str:
+    sc, lv = (b.get("hist") or {}).get("scen"), b.get("levels")
+    if not sc or not lv:
+        return ""
+    name = "費城半導體" if lv["sym"] == "^SOX" else "半導體（SMH）"
+    seg = [(sc["first_high"], "aibd", f"先回到高點（中位數約 {num(sc['med_m_high'], 0)} 個月）"),
+           (sc["first_range"], "aibp", "兩個都沒發生"),
+           (sc["first_crash"], "aibc", f"先跌破高點 −40%（中位數約 {num(sc['med_m'], 0)} 個月）")]
+    tot = sum(v for v, _c, _z in seg) or 1
+    bar = ('<div class="aibar">' + "".join(f'<i class="{c}" style="width:{v / tot * 100:.1f}%">{f"{v:.0f}%" if v >= 9 else ""}</i>' for v, c, _z in seg) + "</div>"
+           + '<div class="ailg">' + "".join(f'<span><b class="{c}"></b>{T(z, "")} {v:.0f}%</span>' for v, c, z in seg) + "</div>")
+    q25, q50, q75 = sc["mdd_q"]
+    ladder = [(f"現在（{lv['asof']}）", lv["now"], lv["off"], ""),
+              ("較輕：一半案例跌得比這淺", lv["mild"], q75 * 100, ""),
+              ("典型（中位數）", lv["typical"], q50 * 100, ""),
+              ("破裂線（從高點 −40%）", lv["crash_line"], -40.0, ""),
+              ("較重：四分之一案例跌得比這深", lv["deep"], q25 * 100, "")]
+    lad = "".join(f'<tr><td>{T(a, "")}</td><td class="r"><b>{v:,.0f}</b></td><td class="r">{o:+.0f}%</td></tr>'
+                  for a, v, o, _ in sorted(ladder, key=lambda x: -x[1]))
+    u, d, d10 = sc["up3"], sc["down3"], sc["down10"]
+    now_s, d10_s = f"{lv['now']:,.0f}", f"{lv['check_down10']:,.0f}"
+    lis = [f"{name}高於現在的 {now_s}：歷史上 {u['n']} 次裡 {u['newhi']:.0f}% 在 12 個月內回到高點",
+           f"低於 {now_s}：{d['n']} 次裡只有 {d['newhi']:.0f}% 回到高點",
+           f"跌破 {d10_s}（再跌 10%）：{d10['n']} 次裡 {d10['newhi']:.0f}% 回到高點"]
+    check = (f"<b>{T('關鍵檢查點：' + lv['check_date'] + '（3 個月後）', '')}</b><ul class='small'>"
+             + "".join(f"<li>{T(x, '')}</li>" for x in lis) + "</ul>"
+             f"<p class='small muted'>{T('短期漲跌幾乎不影響「會不會破 −40%」（兩邊都約四成），但很能分辨「能不能回到高點」。', '')}</p>")
+    head = (f"{name}：2 年漲超過一倍、已從 {lv['high_d']} 的高點 {lv['high']:,.0f} 跌了 {-lv['off']:.0f}%。"
+            f"歷史上 {sc['n']} 次類似情況（{sc['since']} 年起，2 年漲 ≥100%、已從高點跌 ≥15%），接下來 2 年先發生哪一件事：")
+    return (f'<p class="rimp big2"><b>{T(head, "")}</b></p>{bar}'
+            f'<div class="g2"><div><b>{T("最深可能跌到哪（從高點算的最大跌幅）", "")}</b><div class="scroll"><table class="mini"><tbody>{lad}</tbody></table></div></div>'
+            f'<div class="aiwatch">{check}</div></div>')
 
 
 @_anchor("ai-bubble")
@@ -887,18 +930,19 @@ def sec_ai_bubble(eng) -> str:
              "限制：符合條件的次數很少，而且 1929–1937 年的大蕭條拉高了早期的比例，所以三個起算年份都列出來；這是歷史頻率，不是預測，說不出日期，也不是投資建議。"
              "另外試算過 Sornette 的 LPPLS 加速度模型，在這組數據上每個視窗都「合格」，分不出泡沫與否，所以沒有採用。",
              "Greenwood, Shleifer & You (2019) on Ken French 49 industries since 1926. Historical frequencies, not a forecast.")
-    body = (f'<p class="rimp big2"><b>{T(lead_txt, "")}</b></p>'
-            + (f'<p>{T(when, "")}</p>' if when else "")
+    top = scenario_block(b)
+    body = ((top if top else f'<p class="rimp big2"><b>{T(lead_txt, "")}</b></p>' + (f'<p>{T(when, "")}</p>' if when else ""))
+            + _fold(f'<p><b>{T("依條件分組的破裂比例（三個起算年份）", "")}</b>：{T(lead_txt, "")}</p>'
             + f'<div class="scroll"><table class="mini"><thead><tr><th>{T("期間", "Since")}</th><th class="r">{T("次數", "Cases")}</th>'
             f'<th class="r">{T("6 個月內破裂", "≤6m")}</th><th class="r">{T("12 個月內", "≤12m")}</th><th class="r">{T("24 個月內", "≤24m")}</th>'
             f'<th class="r">{T("破裂月數中位數", "Median months")}</th><th class="r">{T("沒破的 1 年報酬", "Survivors 1y")}</th></tr></thead><tbody>{trs}</tbody></table></div>'
-            + _fold(f'<p><b>{T("現在的 AI 族群", "AI baskets now")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("族群", "Basket")}</th>'
+            + f'<p><b>{T("現在的 AI 族群", "AI baskets now")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("族群", "Basket")}</th>'
                     f'<th class="r">{T("2 年漲幅", "2y run-up")}</th><th class="r">{T("離一年高點", "Off 1y high")}</th><th class="r">{T("波動放大", "Vol ratio")}</th>'
                     f'<th>{T("落在哪一組", "Group")}</th></tr></thead><tbody>{now}</tbody></table></div>'
                     + (f'<p><b>{T("1970 年以來同一組的每一次", "Every case since 1970")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("訊號月", "Month")}</th>'
                        f'<th>{T("產業", "Industry")}</th><th class="r">{T("2 年漲幅", "Run-up")}</th><th>{T("結果", "Outcome")}</th><th class="r">{T("之後 1 年", "Next 1y")}</th></tr></thead>'
                        f'<tbody>{cases}</tbody></table></div>' if cases else "")
-                    + f'<p class="note">{note}</p>', "點開看現在的族群、每一次歷史案例與方法"))
+                    + f'<p class="note">{note}</p>', "點開看分組統計、現在的族群、每一次歷史案例與方法"))
     return card("AI 泡沫計時器：不猜日期，看時間分布", "AI bubble timer: a time distribution, not a date", body, "wide")
 
 
