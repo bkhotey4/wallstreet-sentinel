@@ -100,7 +100,7 @@ class Engine:
         self.scores: Dict = {}            # 個股評分表（美股／台股／港股）
         self.bonds: Dict = {}             # 美債專區（殖利率曲線、期限溢價、標售）
         self.rotation: Dict = {}          # 類股輪動與市場寬度
-        self.signals: Dict = {}           # 技術面買點訊號（規則篩選）
+        self.signals: Dict = {}           # 技術型態觀察（規則篩選）
         self.econ_view: Dict = {}         # 財經日曆（FOMC、CPI、PPI…＋影響劇本）
         from .data.fedwatch import FedWatch
         self.fedwatch = FedWatch()        # 聯邦基金期貨 → FOMC 結果機率
@@ -295,6 +295,11 @@ class Engine:
             await stb.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("stability data failed: %s", e)
+        try:                                                    # 重大事件倒數：CPI／非農官方發布日
+            from .analytics import event_clock as evc
+            await evc.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("release dates failed: %s", e)
         try:                                                    # AI 泡沫計時器（產業歷史每月、CFTC 每 12 小時）
             from .analytics import bubble as bub
             await bub.refresh()

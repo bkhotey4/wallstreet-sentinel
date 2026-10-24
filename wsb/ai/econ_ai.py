@@ -112,7 +112,7 @@ def earnings_prompt(r: Dict) -> str:
 
 def season_prompt(res: Dict) -> str:
     b = res["season"]
-    L = [f"精選池科技／半導體近 45 天公布 {b['n']} 家，{b['beats']} 家 EPS 優於預期，平均驚喜 {_fmt(b.get('avg_surp'), 1, True)}%，"
+    L = [f"追蹤池科技／半導體近 45 天公布 {b['n']} 家，{b['beats']} 家 EPS 優於預期，平均驚喜 {_fmt(b.get('avg_surp'), 1, True)}%，"
          f"營收年增中位數 {_fmt(b.get('rev_yoy'), 0)}%，財報後兩日平均 {_fmt(b.get('avg_react'), 1, True)}%"]
     for g in res["groups"]:
         L.append(f"{g['theme']}（{g['n']} 家）：營收年增中位數 {_fmt(g.get('rev_yoy'), 0)}%、毛利率年變化中位數 {_fmt(g.get('gm_yoy'), 1, True)}pp、"

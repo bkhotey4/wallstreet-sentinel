@@ -134,7 +134,7 @@ def _bottom(eng, out: List[Dict], now: datetime) -> None:
     hit = "、".join(f"{s['zh']} {s['fmt'].format(s['v'])}" for s in r["signals"] if s["hit"])
     out.append({"key": f"bottom:{r['n_hit']}:{_week(now)}", "lv": "alert" if r["n_hit"] >= 3 else "watch", "tab": "mood",
                 "zh": f"抄底四訊號 {r['n_hit']}/4 成立：{hit}", "en": f"Bottom checklist {r['n_hit']}/4",
-                "detail": "極端恐慌的歷史統計，不是買點建議；訊號出現後市場常會再跌一段"})
+                "detail": "極端恐慌的歷史統計，不是投資建議；訊號出現後市場常會再跌一段"})
 
 
 def build(eng) -> Dict:

@@ -1,4 +1,4 @@
-"""Discord：重要經濟數據公布前提醒、公布後即時解讀、精選池科技／半導體財報結果。
+"""Discord：重要經濟數據公布前提醒、公布後即時解讀、追蹤池科技／半導體財報結果。
 
 由 Sentinel 的 econ 迴圈每分鐘呼叫一次 tick()。去重用 store.kv（同一事件只推一次，送出成功後才記錄）；機器人停機期間
 錯過的事件不補推（排定時間 60 分鐘後就不再當作「即時」；財報結果超過 1 天不補推）。公布監看從排定時間前 70 分鐘開始，
@@ -174,7 +174,7 @@ def detail_embed(r: Dict) -> discord.Embed:
     if tg:
         em.add_field(name="規則標籤", value=tg[:1024], inline=False)
     if r.get("score") is not None:
-        em.add_field(name="財報動能分數", value=f"{r['score']:.0f}（精選池科技／半導體內的百分位綜合）", inline=False)
+        em.add_field(name="財報動能分數", value=f"{r['score']:.0f}（追蹤池科技／半導體內的百分位綜合）", inline=False)
     em.set_footer(text="資料：SEC XBRL｜不構成投資建議")
     return em
 

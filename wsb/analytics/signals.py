@@ -1,4 +1,4 @@
-"""Technical entry-signal screen (技術面買點訊號) for the stock-scoring universe — rules, not recommendations.
+"""Technical entry-signal screen (技術型態觀察) for the stock-scoring universe — rules, not recommendations.
 
 Eight patterns, all computed from daily closes and volume:
     pullback   多頭回檔到均線   uptrend (price > 200-day, 50 > 200, 200-day rising) that dipped ≥3% to the 20- or 50-day
@@ -153,7 +153,7 @@ def backtest(series: Dict[str, Dict[str, pd.DataFrame]], horizon: int = HORIZON)
     return out
 
 
-STATUS = {"signal": ("有買點訊號", "Signal active"), "near_pullback": ("接近回檔買點", "Near pullback entry"),
+STATUS = {"signal": ("型態成立", "Signal active"), "near_pullback": ("接近回檔型態", "Near pullback pattern"),
           "near_breakout": ("接近突破", "Near breakout"), "near_golden": ("接近黃金交叉", "Near golden cross"),
           "near_oversold": ("接近超賣", "Near oversold"), "extended": ("多頭但漲多", "Uptrend, extended"),
           "uptrend": ("多頭整理", "Uptrend, consolidating"), "range": ("盤整、無明確型態", "Range-bound"),
@@ -212,10 +212,10 @@ def trigger_text(k: str, df: pd.DataFrame) -> tuple:
                           f"A close above {h20:.2f} (20-day high) on ≥1.5× volume"),
         "near_golden": (f"50 日線（{m50:.2f}）上穿 200 日線（{m200:.2f}）→ 成立「黃金交叉」", f"50-day {m50:.2f} crossing above the 200-day {m200:.2f}"),
         "near_oversold": ("RSI 跌破 30 後站回 5 日線 → 成立「超賣反彈」（逆勢）", "RSI below 30, then a close back above the 5-day"),
-        "uptrend": (f"回測 20 日線 {m20:.2f} 止跌，或放量突破 {h20:.2f}，才會出現買點", f"A dip to {m20:.2f} that holds, or a volume break above {h20:.2f}"),
+        "uptrend": (f"回測 20 日線 {m20:.2f} 止跌，或放量突破 {h20:.2f}，型態才算成立", f"A dip to {m20:.2f} that holds, or a volume break above {h20:.2f}"),
         "extended": (f"離均線太遠，規則上等回到 20 日線 {m20:.2f} 附近再看", f"Too stretched — the rules wait for a return toward {m20:.2f}"),
-        "range": (f"放量突破 {h20:.2f}，或站上 200 日線 {m200:.2f}，才會出現買點", f"A volume break above {h20:.2f} or a reclaim of the 200-day {m200:.2f}"),
-        "downtrend": (f"空頭：站回 200 日線 {m200:.2f} 之前，規則不給順勢買點", f"Downtrend: no trend-following entry until it reclaims the 200-day {m200:.2f}"),
+        "range": (f"放量突破 {h20:.2f}，或站上 200 日線 {m200:.2f}，型態才算成立", f"A volume break above {h20:.2f} or a reclaim of the 200-day {m200:.2f}"),
+        "downtrend": (f"空頭：站回 200 日線 {m200:.2f} 之前，規則不認定順勢型態成立", f"Downtrend: no trend pattern until it reclaims the 200-day {m200:.2f}"),
     }.get(k, ("—", "—"))
 
 

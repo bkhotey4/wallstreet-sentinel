@@ -38,6 +38,8 @@ from tools import site_rates as SR
 from tools import site_alerts as SA
 from tools import site_ai as SAI
 from tools import site_stability as SST
+from tools import site_events as SEV
+from tools import site_calc as SCA
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
@@ -1210,16 +1212,40 @@ def _safe_section(f, eng) -> str:
         return ""
 
 
+# 研究工具宣告：每次首訪都看得到，按「我知道了」後 30 天內不再顯示（只記在這台瀏覽器）
+COMPLY_ZH = ("本站為個人開源的量化演算法與金融數據研究工具，不是經主管機關核准的證券投資顧問，不提供任何個別有價證券的投資推介、"
+             "買賣建議或個人理財諮詢。所有指標、分數、型態與歷史機率都由程式依公開數據自動計算，過去表現不保證未來結果；"
+             "投資人應獨立判斷，自負投資盈虧。")
+COMPLY_EN = ("A personal open-source quantitative research tool built on public data. Not a licensed investment adviser; no "
+             "recommendation to buy or sell any security and no personal advice. Past results do not guarantee future results.")
+
+
+def comply_bar() -> str:
+    return (f'<div class="comply" id="comply" role="note"><span>⚠️ <b>{T("免責聲明與研究工具宣告", "Disclaimer")}</b>：{T(COMPLY_ZH, COMPLY_EN)} '
+            f'<a href="#about" data-p="about" class="golink">{T("條款與隱私", "Terms")}</a></span>'
+            f'<button type="button" class="btn" id="complyX">{T("我知道了", "Got it")}</button></div>')
+
+
+COMPLY_CSS = (".comply{display:flex;gap:10px;align-items:flex-start;padding:8px max(16px,env(safe-area-inset-left,0px));font-size:12.5px;"
+              "line-height:1.55;background:var(--wash);border-bottom:1px solid var(--bd);color:var(--tx)}.comply span{flex:1;min-width:0}"
+              ".comply .btn{flex:none;font-size:12px;padding:3px 10px}.comply.hide{display:none}")
+COMPLY_JS = r"""
+(function(){var b=document.getElementById('comply');if(!b)return;var k='disclaimer_closed';
+ try{var v=+localStorage.getItem(k)||0;if(v&&Date.now()-v<30*864e5)b.classList.add('hide');}catch(e){}
+ var x=document.getElementById('complyX');if(x)x.addEventListener('click',function(){b.classList.add('hide');try{localStorage.setItem(k,String(Date.now()));}catch(e){}});})();
+"""
+
+
 def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SQ.sec_premarket, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SEV.sec_event_clock, SQ.sec_premarket, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
-            ("signals", "買點訊號", "Entry signals", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
+            ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
@@ -1242,7 +1268,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_bubble, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ai, SST.sec_st_coverage]),
-            ("tools", "工具", "Tools", [S4.sec_fees]),
+            ("tools", "工具", "Tools", [SCA.sec_sizing, S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
     tabs = SLY.order(tabs)                                 # sidebar order: 7 groups (layout only)
@@ -1285,14 +1311,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}</style></head><body>
-<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{COMPLY_CSS}</style></head><body>
+{comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SLY.KW_JS}{SAI.JS}{SCR.JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1514,6 +1540,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(STB.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("stability data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 重大事件倒數：FRED 的 CPI／非農發布日（7 天一次）
+        from wsb.analytics import event_clock as EVC
+        await asyncio.wait_for(EVC.refresh(), 60)
+    except Exception as e:  # noqa: BLE001
+        log.warning("release dates failed: %s", e if str(e) else type(e).__name__)
     try:                                           # AI 泡沫計時器：Ken French 49 產業（月）＋ CFTC 股指期貨部位
         from wsb.analytics import bubble as BUB
         await asyncio.wait_for(BUB.refresh(), 150)
@@ -1625,7 +1656,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             (out / "market" / f"{mk}.json").write_text(json.dumps(published, ensure_ascii=False), encoding="utf-8")
     for src, name in ((TE.OUT_US, "ustech.json"), (TE.OUT_TW, "twrev.json"), (GR.OUT_US, "growth_us.json"), (GR.OUT_TW, "growth_tw.json")):
         if src.exists():
-            (out / "market" / name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            (out / "market" / name).write_text(GR.clean_text(src.read_text(encoding="utf-8")), encoding="utf-8")
     if snapdir is not None:
         try:
             w = update_snapshots(eng, snapdir, out, ai_text)

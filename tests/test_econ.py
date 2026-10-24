@@ -403,12 +403,12 @@ def main():
     ed.frames[f"ShortTermInvestments/{qs[1]}I"] = {"ts": 0, "v": {"4": 0.2e9}}
     rows = GR.us_rows(ed, items + [{"sym": "SLOWB", "name": "Slow Co class B", "ind": "科技", "mcap": 1e9},
                                    {"sym": "OKLO", "name": "Oklo", "ind": "公用事業", "mcap": 9e9}],
-                      {"FAST": {"cik": 1}, "SLOW": {"cik": 2}, "SLOWB": {"cik": 2}, "SMR": {"cik": 3}, "OKLO": {"cik": 4}}, {"FAST": {"stl": "有買點訊號"}}, TODAY)
+                      {"FAST": {"cik": 1}, "SLOW": {"cik": 2}, "SLOWB": {"cik": 2}, "SMR": {"cik": 3}, "OKLO": {"cik": 4}}, {"FAST": {"stl": "型態成立"}}, TODAY)
     assert not any(r["sym"] == "SLOWB" for r in rows), "one row per company (share classes de-duplicated)"
     assert next(r for r in rows if r["sym"] == "SLOW")["ma"] and not next(r for r in rows if r["sym"] == "FAST")["ma"]
     by = {r["sym"]: r for r in rows}
     assert abs(by["FAST"]["g"] - ((1.1 ** 4) - 1) * 100) < 0.5 and abs(by["SLOW"]["g"] - ((1.03 ** 4) - 1) * 100) < 0.5, by["FAST"]["g"]
-    assert by["FAST"]["gm"] == 60.0 and abs(by["FAST"]["om"] - 10) < 1e-6 and by["FAST"]["st"] == "有買點訊號"
+    assert by["FAST"]["gm"] == 60.0 and abs(by["FAST"]["om"] - 10) < 1e-6 and by["FAST"]["st"] == "型態成立"
     assert by["NU"]["src"] == "Nasdaq 年報" and abs(by["NU"]["g"] - (15.9 / 11.57 - 1) * 100) < 0.01 and abs(by["NU"]["ps"] - 70 / 15.9) < 1e-6
     pre = next(r for r in rows if r["sym"] == "OKLO")
     assert pre["ttm"] == 0 and pre["g"] is None and abs(pre["runway"] - 2.0) < 1e-9 and pre["cash"] == 1.2e9, pre

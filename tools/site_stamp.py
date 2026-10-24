@@ -124,6 +124,14 @@ def _bub_cftc_date() -> Optional[str]:
         return None
 
 
+def _rel_ts():
+    try:
+        from wsb.analytics import event_clock as EC
+        return EC.load().get("ts_check")
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _cover_date() -> Optional[str]:
     try:
         from tools.site_stability import coverage
@@ -181,6 +189,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "fund": ("SEC 財報（XBRL）", "SEC XBRL", lambda e: (None, _stab_date("ai")), 120),
     "ff49": ("產業歷史（Ken French，每月更新）", "Ken French industries", lambda e: (_ts(_bub_ts("ts_check")), _bub_end()), 75),
     "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 10),
+    "rel": ("FRED 發布日程", "FRED release dates", lambda e: (_ts(_rel_ts()), None), 0),
     "cover": ("覆蓋盤點", "Coverage audit", lambda e: (None, _cover_date()), 40),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
@@ -199,7 +208,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -225,7 +234,7 @@ def system_stamp(now: float) -> str:
 
 
 # cards whose sources update on different clocks (daily / weekly / monthly): list each source's last check visibly
-DETAIL = {"sec_ai_bubble", "sec_ai_elephant", "sec_st_brief", "sec_st_refunding", "sec_st_funding", "sec_st_basis", "sec_st_ai", "sec_st_coverage"}
+DETAIL = {"sec_event_clock", "sec_ai_bubble", "sec_ai_elephant", "sec_st_brief", "sec_st_refunding", "sec_st_funding", "sec_st_basis", "sec_st_ai", "sec_st_coverage"}
 
 
 def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:

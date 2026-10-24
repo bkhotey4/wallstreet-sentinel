@@ -246,14 +246,14 @@ def _watch_rows(m: Dict) -> List[str]:
         th = esc(r.get("theme", "其他"))
         st = r["status"]
         tg = r.get("tier") or "O"
-        when = (f'<b class="act">▶ {T("何時才算買點", "What would trigger an entry")}：</b>{T(st.get("when", "—"), st.get("when_en", "—"))}'
+        when = (f'<b class="act">▶ {T("型態成立條件", "Pattern conditions")}：</b>{T(st.get("when", "—"), st.get("when_en", "—"))}'
                 if st.get("when") else "")
         lab = (f'<span class="sgb s{tg}">{T(*SG_TIER[tg])}</span>' if tg == "D" else "")
         pl = st.get("plan")
         ref, give = "", '<td class="r muted">—</td>'
         if pl:
             give = f'<td class="r nw muted">{num(pl["inv"], 2)}<span class="small"> -{num(pl["risk_pct"], 1)}%</span></td>'
-            ref = ('<b class="act">▶ ' + T("加碼參考區（尚無訊號，非買點）", "Add-on reference zone (no signal yet)") + "：</b>"
+            ref = ('<b class="act">▶ ' + T("次級支撐觀察區（尚無型態成立）", "Secondary support zone (no pattern yet)") + "：</b>"
                    + T(pl.get("zone", ""), pl.get("zone_en", "")) + "；" + T(pl.get("where", ""), pl.get("where_en", "")) + "。"
                    + '<br><b class="act">▶ ' + T("參考失效線", "Reference give-up") + "：</b>"
                    + T("收盤跌破 %.2f（距參考區中點 -%.1f%%）" % (pl["inv"], pl["risk_pct"]),
@@ -299,9 +299,9 @@ def _signal_table(m: Dict) -> str:
             tg_, tp = pl["target"], pl["target_pct"]
             over = ('<b class="act">▶ ' + T("上方壓力", "Overhead") + "：</b>"
                     + T("52 週高點 %.2f（+%.0f%%）" % (tg_, tp), "52-week high %.2f (+%.0f%%)" % (tg_, tp)) + rr + "。")
-        action = ('<b class="act">▶ ' + T("何時買（規則參考）", "When (rule reference)") + "：</b>"
+        action = ('<b class="act">▶ ' + T("歷史型態支撐參考區", "When (rule reference)") + "：</b>"
                   + T(pl.get("zone", ""), pl.get("zone_en", "")) + "；" + T(pl.get("where", ""), pl.get("where_en", "")) + "。"
-                  + '<br><b class="act">▶ ' + T("何時放棄", "Give up if") + "：</b>" + give + "。" + (("<br>" + over) if over else ""))
+                  + '<br><b class="act">▶ ' + T("型態失效觀察線", "Pattern fails if") + "：</b>" + give + "。" + (("<br>" + over) if over else ""))
         rows.append(f'<tr class="sm" data-th="{th}" data-q="{_q(r)}" data-tier="{tg}"><td><span class="sgb s{tg}">{T(*SG_TIER[tg])}</span></td>'
                     f'<td class="nw"><b>{T(r["name"], r["name_en"])}</b><span class="tk">{esc(r["code"])}</span>{_theme_chip(r.get("theme", "其他"))}{_tagchips(r)}</td>'
                     f'<td>{pills}{new}</td><td>{_bar(r["strength"], _score_color(r["strength"]))}</td>'
@@ -337,11 +337,11 @@ def _signal_table(m: Dict) -> str:
     return (f'<div class="sgbar"><div class="sgps">{pills}</div></div>{_theme_chips(m.get("all") or m["rows"], tid)}'
             f'<div class="scroll"><table class="score sgt" id="{tid}"><thead><tr><th>{T("分級", "Tier")}</th>'
             f'<th>{T("個股", "Stock")}</th><th>{T("型態／狀態", "Pattern / status")}</th><th>{T("強度", "Strength")}</th><th class="r">{T("現價", "Price")}</th>'
-            f'<th class="r">{T("進場／加碼參考區", "Entry / add-on zone")}</th><th class="r">{T("失效線", "Give-up")}</th><th></th>'
+            f'<th class="r">{T("支撐／次級支撐參考區", "Support / secondary zone")}</th><th class="r">{T("失效線", "Give-up")}</th><th></th>'
             f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div>' + bt_html)
 
 
-_ST_T = {"signal": ("有買點訊號", "Signal"), "near_pullback": ("接近回檔買點", "Near pullback"), "near_breakout": ("接近突破", "Near breakout"),
+_ST_T = {"signal": ("型態成立", "Signal"), "near_pullback": ("接近回檔型態", "Near pullback"), "near_breakout": ("接近突破", "Near breakout"),
          "near_golden": ("接近黃金交叉", "Near golden cross"), "near_oversold": ("接近超賣", "Near oversold"), "extended": ("多頭但漲多", "Extended"),
          "uptrend": ("多頭整理", "Uptrend"), "range": ("盤整", "Range"), "downtrend": ("空頭趨勢", "Downtrend"), "nodata": ("資料不足", "No data")}
 
@@ -359,22 +359,22 @@ def sec_picks_mini(eng) -> str:          # removed from the page (kept for older
 def sec_signals(eng) -> str:
     sg = getattr(eng, "signals", None) or {}
     if not sg.get("available"):
-        return card("技術面買點訊號", "Technical entry signals", f'<p class="muted">{T("個股價格資料暫時取不到", "Stock data unavailable right now")}</p>', "wide")
+        return card("技術型態觀察", "Technical pattern watch", f'<p class="muted">{T("個股價格資料暫時取不到", "Stock data unavailable right now")}</p>', "wide")
     warn = T("⚠️ 規則篩選（均線、動能、量能），只說明現在出現哪種技術型態，不是買進建議；收盤跌破失效線＝型態失敗。",
              "⚠️ Rules-based screen of technical setups — not a recommendation. A close below the give-up line means the setup failed.")
     items = [(m["label"], m["label_en"], _signal_table(m)) for m in sg["markets"].values()]
-    howto = (f'<details class="sgx"><summary>{T("怎麼看「何時買」與分級", "How to read it")}</summary><ol class="small">'
-             f'<li>{T("「在參考區間內」：規則條件已成立、現價也在進場參考區內。點那一列看「▶ 何時買／何時放棄」。", "In the zone: the rule fired and the price is inside the entry zone. Click the row for details.")}</li>'
+    howto = (f'<details class="sgx"><summary>{T("怎麼看支撐參考區與分級", "How to read it")}</summary><ol class="small">'
+             f'<li>{T("「在參考區間內」：規則條件已成立、現價也在型態支撐參考區內。點那一列看「▶ 支撐參考區／型態失效線」。", "In the zone: the rule fired and the price is inside the entry zone. Click the row for details.")}</li>'
              f'<li>{T("「等拉回」：訊號已成立，但現價已離開區間；區間價位可當掛單參考，回到區間內才符合規則。", "Wait for pullback: signal fired but price left the zone; the zone works as a limit-order reference.")}</li>'
              f'<li>{T("「快成立」：還沒有訊號，但離成立只差一步；點開會寫要到哪個價位、出現什麼條件。訊號一成立 Discord 會推播。", "Almost there: the exact trigger price/condition is in the detail row.")}</li>'
-             f'<li>{T("每一檔都有參考區：有買點訊號的是「進場參考區」（實心字）；還沒有訊號的是「加碼參考區」（虛線底），依目前狀態找最近的支撐——多頭看 20／50 日線、接近突破看突破後回測前高、空頭或接近黃金交叉要先站回 200 日線、接近超賣看 10 日低點（逆勢）。加碼參考區只是「如果要加碼，規則上比較合理的價位」，不是買點；標「需先站上／站回」的代表條件還沒成立。失效線的 % 是從參考區中點算起。點那一列看完整條件與觀察價。", "Every stock has a reference zone: an entry zone for active signals, and an add-on reference zone (dotted) for the rest, built from the nearest support for its status. It is not a signal.")}</li>'
+             f'<li>{T("每一檔都有參考區：型態成立的是「型態支撐參考區」（實心字）；還沒有訊號的是「次級支撐觀察區」（虛線底），依目前狀態找最近的支撐——多頭看 20／50 日線、接近突破看突破後回測前高、空頭或接近黃金交叉要先站回 200 日線、接近超賣看 10 日低點（逆勢）。次級支撐觀察區只是「如果要加碼，規則上比較合理的價位」，不是買賣指示；標「需先站上／站回」的代表條件還沒成立。失效線的 % 是從參考區中點算起。點那一列看完整條件與觀察價。", "Every stock has a reference zone: an entry zone for active signals, and an add-on reference zone (dotted) for the rest, built from the nearest support for its status. It is not a signal.")}</li>'
              f'<li>{T("失效線：收盤跌破代表型態失敗。參考區間寬度依每檔股票平常的波動調整（3%–10%）。綠點＝現價在區內。", "Give-up line: a close below it fails the setup. Zone width scales with volatility; green dot = price inside.")}</li>'
              f'<li>{T("股名下方的藍色小標籤是技術型態（布林壓縮、W 底、箱型突破／假突破、20／60 日線交叉），紅色「過熱」＝同時出現 2 個以上力竭警示（RSI 過熱、離均線過遠、頂背離、價漲量縮、高檔爆量收黑）；滑鼠移上去看定義。搜尋框也可以直接搜「W 底」「過熱」。", "Blue tags = chart patterns; red = two or more exhaustion flags. Hover for definitions.")}</li>'
              f'<li>{T("技術面規則抓不到「基本面成長、估值便宜」的股票（例如營收快速成長的公司），那類請看「成長估值」頁。", "Fundamental growth-at-a-value names are on the Growth valuation page.")}</li></ol>'
              f'<p class="small muted">{T(SIG_DEFS[0], SIG_DEFS[1])}</p></details>')
     search = (f'<div class="sbox"><input type="search" id="sigQ" class="btn" placeholder="搜尋代號或名稱（含全市場），例如 NU、台積電" aria-label="search">'
               f'<span class="muted small" id="sigQn"></span><div class="fmres" id="sigQfm"></div></div>')
-    return card("技術面買點訊號", "Technical entry signals", f'<p class="small muted">{warn}</p>' + search + howto + _tabset("sg", items), "wide")
+    return card("技術型態觀察", "Technical pattern watch", f'<p class="small muted">{warn}</p>' + search + howto + _tabset("sg", items), "wide")
 
 
 SIG_DEFS = ("型態定義：多頭回檔＝股價在上升的 200 日線之上、50 日線在 200 日線之上，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
@@ -403,11 +403,11 @@ def _fm_summary() -> str:
 def sec_fullmarket(eng, mode: str = "score") -> str:
     """Shell for the client-side full-market table (data loaded from market/<mk>.json only when opened)."""
     title = ("全市場排行（美股市值 10 億美元以上、台股上市＋上櫃、港股主板）", "Full-market ranking") if mode == "score" else \
-        ("全市場個股・進場／加碼參考區（美股約 2,500 檔、台股、港股）", "Every stock: entry / add-on zones")
-    note = T("全市場資料每天收盤後更新，只算技術面（情報面只有上方精選池才有）。分數在同一個市場內排名；族群為交易所／Nasdaq 官方產業分類。"
+        ("全市場個股・支撐／次級支撐參考區（美股約 2,500 檔、台股、港股）", "Every stock: entry / add-on zones")
+    note = T("全市場資料每天收盤後更新，只算技術面（情報面只有上方追蹤池才有）。分數在同一個市場內排名；族群為交易所／Nasdaq 官方產業分類。"
              "搜尋框輸入任何代號或名稱都會一起查全市場。", "Updated daily, technical only; ranks within each market; official industry groups.")
     if mode != "score":
-        note = T("列出全市場每一檔：有訊號的顯示進場參考區，其餘顯示加碼參考區（括號註明「參考」）。預設排序：訊號且現價在區內 → 現價在加碼參考區內 → "
+        note = T("列出全市場每一檔：有訊號的顯示型態支撐參考區，其餘顯示次級支撐觀察區（括號註明「參考」）。預設排序：訊號且現價在區內 → 現價在次級支撐觀察區內 → "
                  "訊號等拉回 → 快成立 → 其他（同一類再依強度）。想找「現在價位比較合規則」的股票，選「現價在參考區內」。點任一列看完整條件、技術型態與過熱警示。"
                  "全市場資料每天收盤後更新、只算技術面，不是買賣建議。", "Every stock in the market with its entry or add-on zone. Updated daily; technical only; not advice.")
     btns = "".join(f'<button class="tab{" on" if i == 0 else ""}" data-fmk="{k}" type="button">{T(*FM_LABEL[k])}</button>'
@@ -1296,12 +1296,12 @@ function card(o,lbl){var d=el('div','fmcard'),h=el('div','fmh');if(tag(o))h.appe
   +'　1M '+sg(o.r1m,1)+'　6M '+sg(o.r6,0)+'　RSI '+f(o.rsi,0)+'　'+(en()?'Price ':'現價 ')+f(o.px,2)));
  if(o.source)d.appendChild(el('div','small muted',o.source+' '+(o.quote_asof||'—')+' · '+(en()?'Technical data: ':'技術資料：')+(o.history_asof||'—')));
  var st=el('div','small');st.appendChild(el('b','act',(o.stl||'—')+(o.patl?'：'+o.patl:'')+' '));d.appendChild(st);
- if(o.st==='signal'){d.appendChild(el('div','small','▶ '+(en()?'Entry zone ':'何時買（規則參考）：進場參考區 ')+f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' (in zone)':'（現價在區內）'):(en()?' (outside)':'（現價在區外）'))));
-  d.appendChild(el('div','small','▶ '+(en()?'Give up below ':'何時放棄：收盤跌破 ')+f(o.inv,2)+'（-'+f(o.risk,1)+'%）'+(o.tgt?('　▶ '+(en()?'Overhead ':'上方壓力 52 週高 ')+f(o.tgt,2)+'（+'+f(o.tgtp,0)+'%）'):'')));}
+ if(o.st==='signal'){d.appendChild(el('div','small','▶ '+(en()?'Pattern support zone ':'歷史型態支撐參考區：')+f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' (in zone)':'（現價在區內）'):(en()?' (outside)':'（現價在區外）'))));
+  d.appendChild(el('div','small','▶ '+(en()?'Pattern fails below ':'型態失效觀察線：收盤跌破 ')+f(o.inv,2)+'（-'+f(o.risk,1)+'%）'+(o.tgt?('　▶ '+(en()?'Overhead ':'上方壓力 52 週高 ')+f(o.tgt,2)+'（+'+f(o.tgtp,0)+'%）'):'')));}
  if(o.tg)d.appendChild(el('div','small','◆ '+(en()?'Patterns: ':'技術型態：')+o.tg));if(o.ex)d.appendChild(el('div','small dn','⚠ '+(en()?'Overheating: ':'過熱警示：')+o.ex));
- if(o.st==='signal'){}else{if(o.zlo!=null){d.appendChild(el('div','small','▶ '+(en()?'Add-on reference zone (no signal yet): ':'加碼參考區（尚無訊號，非買點）：')+(o.zb?o.zb+' ':'')+f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' (in zone)':'（現價在區內）'):'')));
+ if(o.st==='signal'){}else{if(o.zlo!=null){d.appendChild(el('div','small','▶ '+(en()?'Secondary support zone (no pattern yet): ':'次級支撐觀察區（尚無型態成立）：')+(o.zb?o.zb+' ':'')+f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' (in zone)':'（現價在區內）'):'')));
   d.appendChild(el('div','small','▶ '+(en()?'Reference give-up below ':'參考失效線：收盤跌破 ')+f(o.inv,2)+(en()?' (-':'（距參考區中點 -')+f(o.risk,1)+'%）'));}
-  if(o.when)d.appendChild(el('div','small','▶ '+(en()?'Would trigger: ':'何時才算買點：')+o.when));if(o.why)d.appendChild(el('div','small muted',o.why));}
+  if(o.when)d.appendChild(el('div','small','▶ '+(en()?'Would trigger: ':'型態成立條件：')+o.when));if(o.why)d.appendChild(el('div','small muted',o.why));}
  return d;}
 var T0=0;window.FMsearch=function(v,box){if(!box)return;clearTimeout(T0);box.textContent='';if(!v||v.length<1)return;
  T0=setTimeout(function(){box.textContent=en()?'Searching the full market…':'搜尋全市場中…';
@@ -1322,17 +1322,17 @@ document.querySelectorAll('.fm').forEach(function(w){var mode=w.dataset.mode,mk=
    &&(!q||(o.code||'').toLowerCase().indexOf(q)>=0||(o.name||'').toLowerCase().indexOf(q)>=0);});
   if(mode!=='score')its.sort(function(a,b){return ord(a)-ord(b)||(b.str||0)-(a.str||0);});
   stl.textContent=(en()?' ':' ')+its.length+(en()?' names':' 檔')+' · '+(en()?'as of ':'資料日 ')+data.asof;
-  var det=el('div','fmres');body.appendChild(det);det.appendChild(el('p','muted small',en()?'Click a row for the entry / give-up levels.':'點表格任一列，這裡會顯示該檔的「何時買／何時放棄」。'));
+  var det=el('div','fmres');body.appendChild(det);det.appendChild(el('p','muted small',en()?'Click a row for the entry / give-up levels.':'點表格任一列，這裡會顯示該檔的「支撐參考區／型態失效線」。'));
   var sc=el('div','scroll'),t=el('table','mini'),th=el('tr');
   (mode==='score'?['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Tech':'技術分',en()?'1M':'1月',en()?'6M':'6月','RSI',en()?'Status':'狀態']
-   :['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Pattern / status':'型態／狀態',en()?'Strength':'強度',en()?'Price':'現價',en()?'Entry / add-on zone':'進場／加碼參考區',en()?'Give-up':'失效線'])
+   :['#',en()?'Stock':'個股',en()?'Industry':'產業',en()?'Pattern / status':'型態／狀態',en()?'Strength':'強度',en()?'Price':'現價',en()?'Support / secondary zone':'支撐／次級支撐參考區',en()?'Give-up':'失效線'])
    .forEach(function(x){th.appendChild(el('th',null,x));});var hd=el('thead');hd.appendChild(th);t.appendChild(hd);var tbd=el('tbody');
   its.slice(0,shown).forEach(function(o,i){var tr=el('tr');if(o.pk&&mode!=='score')tr.className='pickrow';var nm=el('td','nw');if(tag(o)&&mode!=='score')nm.appendChild(tb(tag(o)));nm.appendChild(el('b',null,o.name+' '));nm.appendChild(el('span','tk',o.code));
    if(o.source)nm.appendChild(el('div','small muted',o.source+' '+(o.quote_asof||'—')));
    var cells=mode==='score'?[o.rank==null?'—':String(o.rank),nm,o.ind||'',f(o.tech,0),sg(o.r1m,1),sg(o.r6,0),f(o.rsi,0),o.stl||'']
     :[String(i+1),nm,o.ind||'',o.patl||o.stl||'',f(o.str,0),f(o.px,2),o.zlo==null?'—':(f(o.zlo,2)+'–'+f(o.zhi,2)+(o.inz?(en()?' ✓':' 區內'):'')+(o.st!=='signal'?(en()?' (ref)':'（參考）'):'')),o.inv==null?'—':(f(o.inv,2)+'（-'+f(o.risk,1)+'%）')];
    cells.forEach(function(c){if(typeof c==='string'){tr.appendChild(el('td',null,c));}else tr.appendChild(c);});
-   tr.style.cursor='pointer';tr.title=en()?'Click for details':'點一下看何時買／何時放棄';
+   tr.style.cursor='pointer';tr.title=en()?'Click for details':'點一下看支撐參考區／型態失效線';
    tr.addEventListener('click',function(){det.textContent='';det.appendChild(card(o,data.label));det.scrollIntoView({block:'nearest'});});tbd.appendChild(tr);});
   t.appendChild(tbd);sc.appendChild(t);body.appendChild(sc);
   if(its.length>shown){var more=el('button','btn',en()?'Show 100 more':'再顯示 100 檔');more.type='button';more.addEventListener('click',function(){shown+=100;render();});body.appendChild(more);
@@ -1362,7 +1362,7 @@ function apply(t){if(!t)return;var bar=t.closest('.panel')||document,p=bar.query
   h.style.display=n?'':'none';var c=h.querySelector('.ghn');if(c)c.textContent=n;});
  var vis=0;t.querySelectorAll('tr.sm').forEach(function(tr){if(tr.style.display!=='none')vis++;});
  var em=t.querySelector('tfoot.sgempty');if(!em){em=document.createElement('tfoot');em.className='sgempty';em.innerHTML='<tr><td colspan="8" class="muted small"></td></tr>';t.appendChild(em);}
- em.style.display=vis?'none':'';em.querySelector('td').textContent=q?(en()?'Not in the curated list - see the full-market result above (entry / add-on zone, give-up line).':'這檔不在精選池，請看上方「全市場結果」卡片（有加碼參考區與失效線）；精選池以外的股票也都列在本頁最下方的全市場表格。')
+ em.style.display=vis?'none':'';em.querySelector('td').textContent=q?(en()?'Not in the curated list - see the full-market result above (entry / add-on zone, give-up line).':'這檔不在追蹤池，請看上方「全市場結果」卡片（有次級支撐觀察區與失效線）；追蹤池以外的股票也都列在本頁最下方的全市場表格。')
   :(en()?'No stock matches this filter.':'這個篩選條件下沒有股票。');}
 function group(t,on){var tb=t.tBodies[0];if(!t._orig){t._orig=Array.prototype.slice.call(tb.children).filter(function(r){return !r.classList.contains('gh');});}
  tb.querySelectorAll('tr.gh').forEach(function(h){h.remove();});
@@ -1388,7 +1388,7 @@ document.querySelectorAll('.sgp').forEach(function(b){b.addEventListener('click'
 document.querySelectorAll('select.thf').forEach(function(s){if((s.dataset.for||'').indexOf('sgt_')===0)s.addEventListener('change',function(){apply(document.getElementById(s.dataset.for));});});
 var q=document.getElementById('sigQ');if(q){var n=document.getElementById('sigQn');q.addEventListener('input',function(){var v=q.value.trim().toLowerCase(),cnt=0,first=null;
  document.querySelectorAll('table.sgt').forEach(function(t){apply(t);var h=0;if(v)t.querySelectorAll('tr.sm').forEach(function(tr){if(tr.style.display!=='none')h++;});if(h&&!first)first=t;cnt+=h;});
- if(n)n.textContent=v?(cnt?(' '+cnt+(en()?' match(es) in the curated list':' 筆在精選池')):(en()?' not in the curated list':' 不在精選池')):'';
+ if(n)n.textContent=v?(cnt?(' '+cnt+(en()?' match(es) in the curated list':' 筆在追蹤池')):(en()?' not in the curated list':' 不在追蹤池')):'';
  if(window.FMsearch)window.FMsearch(v,document.getElementById('sigQfm'));
  if(first){var pid=first.closest('.panel').id,b=document.querySelector('.tab[data-t="'+pid+'"]');if(b&&!b.classList.contains('on'))b.click();}});}
 })();
@@ -1397,7 +1397,7 @@ var q=document.getElementById('sigQ');if(q){var n=document.getElementById('sigQn
   document.querySelectorAll('table.score[id^="'+cf[2]+'"]').forEach(function(t){var hit=0;t.querySelectorAll('tbody tr').forEach(function(tr){
    var main=tr.classList.contains('why')?tr.previousElementSibling:tr;var ok=!v||((main.dataset.q||'').indexOf(v)>=0);tr.style.display=ok?'':'none';
    if(ok&&!tr.classList.contains('why')&&v){hit++;}});if(hit&&!first)first=t;cnt+=hit;});
-  n.textContent=v?(cnt?(' '+cnt+(document.documentElement.lang==='en'?' match(es) in the curated list':' 筆在精選池')):(document.documentElement.lang==='en'?' not in the curated list':' 不在精選池')):'';
+  n.textContent=v?(cnt?(' '+cnt+(document.documentElement.lang==='en'?' match(es) in the curated list':' 筆在追蹤池')):(document.documentElement.lang==='en'?' not in the curated list':' 不在追蹤池')):'';
   if(window.FMsearch)window.FMsearch(v,document.getElementById(cf[0]+'fm'));
   if(first){var pid=first.closest('.panel').id,b=document.querySelector('.tab[data-t="'+pid+'"]');if(b&&!b.classList.contains('on'))b.click();}});});
 function tfilter(id){if(id.indexOf('sgt_')===0)return;var t=document.getElementById(id);if(!t)return;var sel=document.querySelector('select.thf[data-for="'+id+'"]'),

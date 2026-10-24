@@ -629,7 +629,7 @@ class Sentinel(commands.Bot):
         b = r["bt"]["both"]
         return [Alert(f"bottom:{r['n_hit']}:{y}W{w:02d}", "⚠️ WARNING", f"抄底四訊號 {r['n_hit']}/4 成立",
                       f"{hit}｜歷史上 VIX>40 且 RSI<30 共 {b['n']} 波，之後 3 個月標普中位數 {b['3m']['med']:+.1f}%，"
-                      f"但訊號後通常還會再跌（中位數 {b['further']:.1f}%）。歷史統計，不是買點建議。")]
+                      f"但訊號後通常還會再跌（中位數 {b['further']:.1f}%）。歷史統計，不是投資建議。")]
 
     def _distress_alerts(self) -> List[Alert]:
         """Corporate distress radar: one alert when a company ENTERS red (re-armed only once it is back to no light),
@@ -960,7 +960,7 @@ class Sentinel(commands.Bot):
                 out.append(Alert(f"push:signal:{r['sym']}:{h['pattern']}:{m['asof']}", "ℹ️ INFO",
                                  f"技術面訊號{'（★條件最齊全）' if r.get('pick') else ''}：{m['label']} {r['name']}（{r['code']}）{h['label']}，強度 {r['strength']:.0f}",
                                  f"族群 {r.get('theme', '—')}｜現價 {r['price']:.2f}"
-                                 + (f"｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}" if h.get("plan") else "")
+                                 + (f"｜型態支撐參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}" if h.get("plan") else "")
                                  + f"｜失效線 {r['inv']:.2f}（距離 -{r['risk_pct']:.1f}%）"
                                  f"｜綜合分數 {r['score'] if r.get('score') is None else format(r['score'], '.0f')}\n"
                                  "規則篩選，不是買賣建議；收盤跌破失效線代表型態失敗（/signals 看全部）"))
@@ -1602,7 +1602,7 @@ def register_commands(bot: Sentinel) -> None:
         e.set_footer(text=f"評分池 {br.get('n')} 檔｜站上 200 日線 " + (f"{a200:.0f}%" if a200 is not None else "—") + "｜完整表與理由：情報站網頁「個股評分」分頁")
         await it.followup.send(embed=e)
 
-    @tree.command(name="signals", description="技術面買點訊號：多頭回檔／帶量突破／黃金交叉／超賣反彈，由強到弱（規則篩選，非建議）")
+    @tree.command(name="signals", description="技術型態觀察：多頭回檔／帶量突破／黃金交叉／超賣反彈，由強到弱（規則篩選，非建議）")
     @app_commands.choices(market=[app_commands.Choice(name="美股", value="us"), app_commands.Choice(name="台股", value="tw"),
                                   app_commands.Choice(name="港股", value="hk")])
     async def signals_cmd(it: discord.Interaction, market: app_commands.Choice[str]):
@@ -1613,7 +1613,7 @@ def register_commands(bot: Sentinel) -> None:
         if not m:
             await it.followup.send("個股資料還在載入，請稍後再試。")
             return
-        e = discord.Embed(title=f"🎯 {m['label']}技術面買點訊號（由強到弱）", color=0x2FBF71,
+        e = discord.Embed(title=f"🎯 {m['label']}技術型態觀察（由強到弱）", color=0x2FBF71,
                           description=f"資料日 {m['asof']}｜掃描 {m['n_universe']} 檔、{len(m['rows'])} 檔有訊號｜"
                                       "規則篩選，不是買賣建議；收盤跌破失效線＝型態失敗")
         tc = m.get("tiers") or {}
@@ -1623,7 +1623,7 @@ def register_commands(bot: Sentinel) -> None:
             h = r["patterns"][0]
             tag = "🆕" if r.get("new") else ""
             lines.append(f"**{r['rank']}. {r['name']}** `{r['code']}` {tag}{h['label']} **{r['strength']:.0f}**｜{r.get('theme', '')}\n"
-                         f"└ 現價 {r['price']:.2f}｜進場參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}"
+                         f"└ 現價 {r['price']:.2f}｜型態支撐參考區 {h['plan']['zone_lo']:.2f}–{h['plan']['zone_hi']:.2f}"
                          f"（{'在區內' if h['plan']['in_zone'] else '區外'}）｜失效線 {r['inv']:.2f}（-{r['risk_pct']:.1f}%）")
         for i in range(0, len(lines), 5):
             e.add_field(name=f"在參考區間內（{i + 1}–{min(i + 5, len(lines))}）", value="\n".join(lines[i:i + 5])[:1024], inline=False)
@@ -1634,7 +1634,7 @@ def register_commands(bot: Sentinel) -> None:
                 f"{r['patterns'][0]['plan']['zone_lo']:.2f}–{r['patterns'][0]['plan']['zone_hi']:.2f}｜失效 {r['inv']:.2f}" for r in cs)[:1024])
         near = [r for r in m.get("all", []) if r.get("tier") == "D"][:6]
         if near:
-            e.add_field(name="快成立（尚未成立）— 何時才算買點", value="\n".join(
+            e.add_field(name="快成立（尚未成立）— 型態成立條件", value="\n".join(
                 f"{r['name']} `{r['code']}`：{r['status'].get('when') or r['status']['why']}" for r in near)[:1024], inline=False)
         bt = m.get("backtest") or {}
         from ..analytics.signals import PATTERNS as _PT
@@ -1653,7 +1653,7 @@ def register_commands(bot: Sentinel) -> None:
             return
         await it.followup.send(embed=EP.econ_week_embed(ev))
 
-    @tree.command(name="techearn", description="科技／半導體財報分析：營收年增、毛利率、EPS 驚喜、下次財報（精選池，例如 NVDA、AMD）")
+    @tree.command(name="techearn", description="科技／半導體財報分析：營收年增、毛利率、EPS 驚喜、下次財報（追蹤池，例如 NVDA、AMD）")
     @app_commands.describe(ticker="美股代號，例如 NVDA、AVGO、MSFT")
     async def techearn_cmd(it: discord.Interaction, ticker: str):
         await it.response.defer(thinking=True)
@@ -1664,7 +1664,7 @@ def register_commands(bot: Sentinel) -> None:
         r = next((x for x in te.get("rows", []) if x["sym"] == sym), None)
         if not r:
             names = "、".join(x["sym"] for x in te.get("rows", [])[:40])
-            await it.followup.send(f"⚠️ {sym} 不在精選池的科技／半導體名單。可查：{names}")
+            await it.followup.send(f"⚠️ {sym} 不在追蹤池的科技／半導體名單。可查：{names}")
             return
         await it.followup.send(embed=EP.tech_embed(r))
 
@@ -1690,14 +1690,14 @@ def register_commands(bot: Sentinel) -> None:
         if sg:
             h = sg["patterns"][0]
             pl = h.get("plan") or {}
-            e.add_field(name="買點訊號（規則參考）", value=(f"{h['label']}，強度 {sg['strength']:.0f}\n▶ 何時買：{pl.get('zone', '—')}；{pl.get('where', '')}\n"
-                                                    f"▶ 何時放棄：收盤跌破 {sg['inv']:.2f}（-{sg['risk_pct']:.1f}%）"
+            e.add_field(name="技術型態（規則參考）", value=(f"{h['label']}，強度 {sg['strength']:.0f}\n▶ 歷史型態支撐參考區：{pl.get('zone', '—')}；{pl.get('where', '')}\n"
+                                                    f"▶ 型態失效觀察線：收盤跌破 {sg['inv']:.2f}（-{sg['risk_pct']:.1f}%）"
                                                     + (f"\n▶ 上方壓力：52 週高 {pl['target']:.2f}（+{pl['target_pct']:.0f}%）" if pl.get("target") else ""))[:1024],
                         inline=False)
         elif st:
             wp = st.get("plan") or {}
-            ref = (f"\n▶ 加碼參考區（尚無訊號）：{wp['zone']}；{wp['where']}\n▶ 參考失效線：{wp['inv']:.2f}" if wp else "")
-            e.add_field(name="目前狀態", value=f"{st.get('label')}：{st.get('why', '')}\n▶ 何時才算買點：{st.get('when') or '—'}{ref}"[:1024], inline=False)
+            ref = (f"\n▶ 次級支撐觀察區（尚無型態成立）：{wp['zone']}；{wp['where']}\n▶ 參考失效線：{wp['inv']:.2f}" if wp else "")
+            e.add_field(name="目前狀態", value=f"{st.get('label')}：{st.get('why', '')}\n▶ 型態成立條件：{st.get('when') or '—'}{ref}"[:1024], inline=False)
         g = lambda v, f: "—" if v is None else format(v, f)  # noqa: E731
         e.add_field(name="報酬", value=f"今日 {g(r['r1d'], '+.1f')}%｜1 月 {g(r['r1m'], '+.1f')}%｜6 月 {g(r['r6'], '+.0f')}%｜RSI {g(r['rsi'], '.0f')}", inline=False)
         e.set_footer(text="規則化量化篩選，不是買賣建議")

@@ -82,6 +82,8 @@ def main():
     for cid in re.findall(r'class="pca"[^>]*data-c="([^"]+)"', side):
         assert f'id="{cid}"' in page, cid
     assert [k for k in keys if k in SLY.GROUP_OF] == [k for *_x, ks in SLY.GROUPS for k in ks if k in keys]
+    for w in ("有買點訊號", "接近回檔買點", "技術面買點", "何時買", "何時放棄", "精選池", "加碼參考區"):   # our own labels (third-party headlines are quoted as-is)
+        assert w not in page, w
     assert page.index('id="c-index"') < page.index('id="p-risk"') and "總攬大表" in page and 'id="crumb"' in page
     _pages = {k: page[page.find(f'id="p-{k}"'):] for k in keys}
     _pk = SLY.picks({k: v[:v.find('class="page', 10)] if 'class="page' in v[10:] else v for k, v in _pages.items()})

@@ -83,7 +83,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
             if hits:
                 h = hits[0]
                 pl = h["plan"]
-                row.update({"st": "signal", "stl": "有買點訊號", "pat": h["pattern"], "patl": h["label"], "str": _r(min(100, h["strength"] + 5 * (len(hits) - 1)), 1),
+                row.update({"st": "signal", "stl": "型態成立", "pat": h["pattern"], "patl": h["label"], "str": _r(min(100, h["strength"] + 5 * (len(hits) - 1)), 1),
                             "zlo": _r(pl["zone_lo"], 3), "zhi": _r(pl["zone_hi"], 3), "inv": _r(h["inv"], 3), "risk": _r(h["risk_pct"], 1),
                             "tgt": _r(pl.get("target"), 3), "tgtp": _r(pl.get("target_pct"), 0), "inz": bool(pl.get("in_zone")),
                             "why": pl.get("where", "")})

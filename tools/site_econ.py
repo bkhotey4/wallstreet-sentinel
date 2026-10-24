@@ -406,7 +406,7 @@ def sec_earn_cal(eng) -> str:
     past = "".join(f'<tr data-k="{"t" if x["tech"] else "c" if x["cur"] else "o"}"><td class="nw">{esc(x["date"][5:])}</td>{nm(x)}'
                    f'<td class="r">{num(x["eps"], 2)}</td><td class="r muted">{num(x["eps_f"], 2)}</td><td class="r {cls(x["surp"])}">{num(x["surp"], 1, sign=True, pct=True)}</td>'
                    f'<td class="r {cls(x.get("react"))}">{num(x.get("react"), 1, sign=True, pct=True)}</td></tr>' for x in cal.get("past", [])[:80])
-    sel = (f'<select class="btn ecf"><option value="" data-en="All">全部（精選池＋市值 200 億美元以上）</option><option value="tc" data-en="Curated">只看精選池</option>'
+    sel = (f'<select class="btn ecf"><option value="" data-en="All">全部（追蹤池＋市值 200 億美元以上）</option><option value="tc" data-en="Curated">只看追蹤池</option>'
            f'<option value="t" data-en="Tech &amp; semis">只看科技／半導體</option></select>')
     body = (f'<div class="fmctl">{sel}</div><h4>{T("即將公布（21 天內）", "Upcoming (21 days)")}</h4>'
             f'<div class="scroll"><table class="mini ecal"><thead><tr><th>{T("日期", "Date")}</th><th>{T("時段", "Time")}</th><th>{T("公司", "Company")}</th>'
@@ -415,7 +415,7 @@ def sec_earn_cal(eng) -> str:
             f'<h4>{T("最近 7 天已公布", "Reported in the last 7 days")}</h4><div class="scroll"><table class="mini ecal"><thead><tr><th>{T("日期", "Date")}</th>'
             f'<th>{T("公司", "Company")}</th><th class="r">{T("EPS 實際", "EPS")}</th><th class="r">{T("預期", "Est.")}</th><th class="r">{T("驚喜", "Surprise")}</th>'
             f'<th class="r">{T("前後兩日股價", "2-day move")}</th></tr></thead><tbody>{past}</tbody></table></div>')
-    note = T("資料：Nasdaq 財報日曆（EPS 預期來自 Zacks 彙整）。日期為美東；盤後公布的股價反應出現在隔天。兩日股價＝財報日前一個交易日收盤到之後第一個交易日收盤（只算精選池）。",
+    note = T("資料：Nasdaq 財報日曆（EPS 預期來自 Zacks 彙整）。日期為美東；盤後公布的股價反應出現在隔天。兩日股價＝財報日前一個交易日收盤到之後第一個交易日收盤（只算追蹤池）。",
              "Source: Nasdaq earnings calendar (Zacks consensus). US dates.")
     return card("美股財報日曆", "US earnings calendar", body + f'<p class="note">{note}</p>', "wide")
 
@@ -534,10 +534,10 @@ def sec_tech_board(eng) -> str:
             f'<th class="r opt">{T("財報兩日波動", "2-day move")}</th><th class="r">{T("下次財報（EPS 預期）", "Next report (est.)")}</th>'
             f'<th>{T("財報動能分數", "Momentum score")}</th></tr>')
     note = T("數字來自 SEC XBRL 財報（第 4 季＝全年減前三季；外國公司如台積電 ADR 用 Nasdaq 季報）與 Nasdaq 的 EPS 預期／驚喜。"
-             "財報動能分數＝在精選池科技／半導體裡的百分位：營收年增 30%、成長加速 15%、毛利率年變化 15%、營益率年變化 10%、EPS 年增 15%、"
+             "財報動能分數＝在追蹤池科技／半導體裡的百分位：營收年增 30%、成長加速 15%、毛利率年變化 15%、營益率年變化 10%、EPS 年增 15%、"
              "近 4 季平均 EPS 驚喜 15%；只描述財報數字的相對強弱，不是投資建議。EPS 為 GAAP 稀釋，可能與市場常看的調整後 EPS 不同。",
              "SEC XBRL (Q4 = FY − Q1..Q3; foreign filers via Nasdaq) + Nasdaq EPS consensus. Score = percentile blend; not advice.")
-    return card("科技／半導體財報分析（精選池）", "Tech & semis earnings (curated)",
+    return card("科技／半導體財報分析（追蹤池）", "Tech & semis earnings (curated)",
                 ctl + f'<div class="scroll"><table class="score teb"><thead>{head}</thead><tbody>{"".join(trs)}</tbody></table></div><p class="note">{note}</p>', "wide")
 
 
@@ -554,7 +554,7 @@ def sec_tw_rev(eng) -> str:
     body = (f'<div class="g2"><div><h4>{T("電子產業合計（" + tw["ym"] + "）", "Electronics by industry (" + tw["ym"] + ")")}</h4>'
             f'<div class="scroll"><table class="mini"><thead><tr><th>{T("產業", "Industry")}</th><th class="r">{T("月營收（億元）", "Revenue (NT$100m)")}</th>'
             f'<th class="r">{T("年增", "y/y")}</th></tr></thead><tbody>{inds}</tbody></table></div></div>'
-            f'<div><h4>{T("精選池台股（依年增排序）", "Curated Taiwan names (by y/y)")}</h4><div class="scroll"><table class="mini"><thead><tr><th>{T("公司", "Company")}</th>'
+            f'<div><h4>{T("追蹤池台股（依年增排序）", "Curated Taiwan names (by y/y)")}</h4><div class="scroll"><table class="mini"><thead><tr><th>{T("公司", "Company")}</th>'
             f'<th class="r">{T("億元", "NT$100m")}</th><th class="r">{T("月增", "m/m")}</th><th class="r">{T("年增", "y/y")}</th><th class="r">{T("累計年增", "YTD y/y")}</th></tr></thead>'
             f'<tbody>{cur}</tbody></table></div></div></div>'
             f'<h4>{T("全部電子股月營收", "All electronics — monthly revenue")}</h4>' + _jt("tw"))
@@ -606,7 +606,7 @@ def sec_growth(eng) -> str:
     from wsb.analytics import growth as GR
     us, tw = GR.published("us"), GR.published("tw")
     howto = (f'<details class="sgx" open><summary>{T("這頁在找什麼、怎麼看", "What this page looks for")}</summary><ul class="small">'
-             f'<li>{T("技術面買點只看股價型態，抓不到「營收成長很快、但估值還不貴」的公司。這頁反過來從財報找：成長越快、成長調整後的估值越低，排名越前面。", "Finds fast revenue growth at a relatively low growth-adjusted valuation.")}</li>'
+             f'<li>{T("技術型態觀察只看股價型態，抓不到「營收成長很快、但估值還不貴」的公司。這頁反過來從財報找：成長越快、成長調整後的估值越低，排名越前面。", "Finds fast revenue growth at a relatively low growth-adjusted valuation.")}</li>'
              f'<li>{T("美股「估值÷成長」：有毛利率的公司用「市值÷近 4 季毛利」（P/GP，避免低毛利行業只因本銷比低就看起來便宜），沒有毛利資料的（金融等）用本益比，再除以營收年增率；兩種分開比較，數字越低代表每一分成長付的價格越便宜。成長率超過 100% 以 100% 計（避免併購造成的跳增被當成成長），最新一季也要仍在成長。本銷比 P/S 與 PSG 也列出供參考。", "Value ÷ growth: price/gross profit (or P/E without a gross margin) ÷ revenue growth, compared within each basis; growth capped at 100%.")}</li>'
              f'<li>{T("40 法則＝營收年增＋營益率，常用來看成長股「成長與獲利」的平衡（≥ 40 算健康）。", "Rule of 40 = growth + operating margin.")}</li>'
              f'<li>{T("台股 PEG＝本益比÷今年累計營收年增率；營收是每月公布，比季報即時。", "Taiwan PEG = P/E ÷ YTD revenue growth (monthly data).")}</li>'
@@ -710,7 +710,7 @@ document.querySelectorAll('.jt').forEach(function(w){var sp=SPEC[w.dataset.kind]
   its.sort(function(a,b){var x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return asc?x-y:y-x;});st.textContent=' '+its.length+(en()?' rows':' 筆');
   var sc=el('div','scroll'),t=el('table','mini'),hr=el('tr');sp.cols.forEach(function(c){hr.appendChild(el('th',null,en()?c[2]:c[1]));});var th=el('thead');th.appendChild(hr);t.appendChild(th);
   var tb=el('tbody');its.slice(0,shown).forEach(function(o){var tr=el('tr');sp.cols.forEach(function(c){var v=o[c[0]],td=el('td',(c[3]!=null?'r ':'')+(c[4]==='%'||c[4]==='pp'?(v>0?'up':v<0?'dn':''):''),fm(v,c));
-   if(c[0]==='name'&&o.cur)td.appendChild(el('span','pill','精選'));if(c[0]==='name'&&o.small)td.appendChild(el('span','pill',en()?'early stage':'營收尚小'));if(c[0]==='name'&&o.odd&&!o.small)td.appendChild(el('span','pill',en()?'small base':'基期小'));if(c[0]==='name'&&o.ma)td.appendChild(el('span','pill',en()?'acquisition':'含併購'));if(c[0]==='name'&&o.flag)td.appendChild(el('span','pill warn',o.flag));tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
+   if(c[0]==='name'&&o.cur)td.appendChild(el('span','pill','追蹤池'));if(c[0]==='name'&&o.small)td.appendChild(el('span','pill',en()?'early stage':'營收尚小'));if(c[0]==='name'&&o.odd&&!o.small)td.appendChild(el('span','pill',en()?'small base':'基期小'));if(c[0]==='name'&&o.ma)td.appendChild(el('span','pill',en()?'acquisition':'含併購'));if(c[0]==='name'&&o.flag)td.appendChild(el('span','pill warn',o.flag));tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
   if(its.length>shown){var m=el('button','btn',en()?'Show 100 more':'再顯示 100 筆');m.type='button';m.addEventListener('click',function(){shown+=100;render();});body.appendChild(m);}}
  function go(){btn.style.display='none';st.textContent=en()?'Loading…':'載入中…';fetch(sp.src,{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
   d.items=d.rows.map(function(a){var o={};d.cols.forEach(function(k,i){o[k]=a[i];});return o;});data=d;var cnt={};d.items.forEach(function(o){if(sp.pre&&!sp.pre(o))return;var v=o[sp.filt];if(v)cnt[v]=(cnt[v]||0)+1;});

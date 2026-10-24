@@ -1,7 +1,7 @@
 """科技與半導體財報分析（規則計算，不是投資建議）。
 
 每家公司：最新一季營收、年增率與是否加速、毛利率／營益率與年變化、EPS 與年增、近 4 季 EPS 相對預期、財報前後兩日股價
-波動、下一次財報日與 EPS 預期，再把這些換成精選池內的百分位，合成「財報動能分數」。另外產出：族群彙總、本季財報季
+波動、下一次財報日與 EPS 預期，再把這些換成追蹤池內的百分位，合成「財報動能分數」。另外產出：族群彙總、本季財報季
 計分板、美股財報日曆、全市場美股科技股最新一季表（SEC frames）、台股電子業月營收表。"""
 from __future__ import annotations
 
@@ -371,7 +371,7 @@ def summary_lines(res: Dict) -> List[str]:
     L = []
     b = res["season"]
     if b.get("n"):
-        L.append(f"科技／半導體財報季：精選池近 45 天 {b['n']} 家公布，{b['beats']} 家 EPS 優於預期，營收年增中位數 "
+        L.append(f"科技／半導體財報季：追蹤池近 45 天 {b['n']} 家公布，{b['beats']} 家 EPS 優於預期，營收年增中位數 "
                  + (f"{b['rev_yoy']:.0f}%" if b.get("rev_yoy") is not None else "—"))
     for g in res["groups"]:
         L.append(f"{g['theme']}：營收年增中位數 " + (f"{g['rev_yoy']:.0f}%" if g.get("rev_yoy") is not None else "—")

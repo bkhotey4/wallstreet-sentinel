@@ -28,6 +28,21 @@ FLAG_FX = "非美元財報"                       # Nasdaq annual fallback in th
 FLAG_FX_SUSPECT = "疑似非美元財報"            # currency unknown, but P/S < 0.3 with no gross margin looks like one
 
 
+
+# status labels saved by older runs used trading-instruction wording; show the current neutral wording instead
+_LEGACY_ST = {"有買點訊號": "型態成立", "接近回檔買點": "接近回檔型態"}
+
+
+def _st(s):
+    return _LEGACY_ST.get(s, s)
+
+
+def clean_text(s: str) -> str:
+    """The same label map on a saved JSON text (files written before the rename)."""
+    for a, b in _LEGACY_ST.items():
+        s = s.replace(a, b)
+    return s
+
 def _r(v, n=1):
     return None if v is None or not np.isfinite(v) else round(float(v), n)
 
@@ -146,7 +161,7 @@ def us_rows(ed, items: List[Dict], tmap: Dict[str, Dict], tech: Optional[Dict[st
                     "r40": (g + row["om"]) if g is not None and row.get("om") is not None else None,
                     "pe": (mcap / row["ni"]) if mcap and row.get("ni") and row["ni"] > 0 else None})
         t = tech.get(sym) or {}
-        row["st"], row["tech"] = t.get("stl"), t.get("tech")
+        row["st"], row["tech"] = _st(t.get("stl")), t.get("tech")
         out.append(row)
     return out
 
@@ -229,7 +244,7 @@ def tw_rows(ed, tech: Optional[Dict[str, Dict]] = None, cur: Optional[set] = Non
         t = tech.get(code) or {}
         out.append({"code": code, "name": r["name"], "ind": r["ind"], "board": r["board"], "ym": r["ym"], "rev": r["rev"] / 1e5,
                     "cum_yoy": g, "yoy": r.get("yoy"), "streak": streak, "pe": p.get("pe"), "pb": p.get("pb"), "dy": p.get("dy"),
-                    "peg": peg, "st": t.get("stl"), "cur": code in cur})
+                    "peg": peg, "st": _st(t.get("stl")), "cur": code in cur})
     return out
 
 
@@ -306,6 +321,6 @@ def write_tw(ed) -> Dict:
 def published(mk: str) -> Optional[Dict]:
     p = OUT_US if mk == "us" else OUT_TW
     try:
-        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+        return json.loads(clean_text(p.read_text(encoding="utf-8"))) if p.exists() else None
     except Exception:  # noqa: BLE001
         return None

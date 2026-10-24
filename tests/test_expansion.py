@@ -371,21 +371,21 @@ def main():
     assert "波克夏（巴菲特）" in page and "賣權（看空）" in page and "可能已停止申報" in page
     assert "內部人買賣（Form 4）" in page and "美債專區" in page and 'id="c_curve"' in page and "偏弱" in page
     assert "類股輪動與市場寬度" in page and 'id="c_rot"' in page and 'id="c_br0"' in page
-    assert (out / "market" / "us.json").exists() and "全市場排行" in page and "全市場個股・進場／加碼參考區" in page and "fmq" in page and 'id="stockQfm"' in page
+    assert (out / "market" / "us.json").exists() and "全市場排行" in page and "全市場個股・支撐／次級支撐參考區" in page and "fmq" in page and 'id="stockQfm"' in page
     for k in ("signals", "themes"):
         assert f'id="p-{k}"' in page, k
-    assert "何時買（規則參考）" in page and "何時才算買點" in page and "進場參考區" in page and 'id="sigQ"' in page and 'id="stockQ"' in page
+    assert "歷史型態支撐參考區" in page and "型態成立條件" in page and "型態支撐參考區" in page and 'id="sigQ"' in page and 'id="stockQ"' in page
     hit = next(r for m in eng.signals["markets"].values() for r in m["rows"])
     pl = hit["patterns"][0]["plan"]
     assert pl["zone_lo"] < pl["zone_hi"] and pl["where"] and (pl["target"] is None or pl["target"] > hit["price"])
     assert all(r["status"].get("when") for m in eng.signals["markets"].values() for r in m["all"]
                if not r["signal"] and r["status"]["status"] != "nodata")
-    assert "技術面買點訊號" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
+    assert "技術型態觀察" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
     for m in eng.signals["markets"].values():               # every stock with history has an entry or add-on reference zone
         for r in m["all"]:
             if not r.get("signal") and r["status"]["status"] != "nodata":
                 assert r["status"].get("plan") and r["status"]["plan"]["zone_lo"] > r["status"]["plan"]["inv"], r["sym"]
-    assert "加碼參考區" in page and 'class="refz"' in page
+    assert "次級支撐觀察區" in page and 'class="refz"' in page
     assert 'class="btn thf"' in page and 'data-th="半導體"' in page and 'class="sgp' in page and 'class="sm"' in page and 'class="sd"' in page
     assert "時光機" in page and 'id="tmSel"' in page and 'rel="manifest"' in page and "serviceWorker" in page
     assert "不是買賣建議" in page or "not investment advice" in page

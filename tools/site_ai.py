@@ -152,7 +152,7 @@ def score_view(sc: dict) -> dict:
 
 def _bar(d, pu, cr, compact: bool = False) -> str:
     """A real 100 % stacked bar: each segment's width is its share; numbers inside when wide enough, legend below."""
-    seg = [(d, "sd", "消化（跌不到 5%）"), (pu, "sp", "回檔 5–10%"), (cr, "sc", "大跌 ≥10%")]
+    seg = [(d, "aibd", "消化（跌不到 5%）"), (pu, "aibp", "回檔 5–10%"), (cr, "aibc", "大跌 ≥10%")]
     tot = sum(max(v or 0, 0) for v, _c, _z in seg) or 1
     cells = "".join(f'<i class="{c}" style="width:{max(v or 0, 0) / tot * 100:.1f}%" title="{z} {v:.0f}%">'
                     f'{"" if compact or (v or 0) < 9 else f"{v:.0f}%"}</i>' for v, c, z in seg)
@@ -972,7 +972,7 @@ CSS = (".aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,
        ".aibar{display:flex;gap:2px;margin:10px 0 4px;height:28px;border-radius:6px;overflow:hidden;font-size:12.5px;font-weight:700}"
        ".aibar i{display:flex;align-items:center;justify-content:center;font-style:normal;color:#fff;white-space:nowrap;"
        "overflow:hidden;min-width:0;padding:0 4px}"
-       ".aibar .sd{background:var(--up)}.aibar .sp{background:var(--mu)}.aibar .sc{background:var(--dn)}"
+       ".aibar .aibd{background:var(--up)}.aibar .aibp{background:var(--mu)}.aibar .aibc{background:var(--dn)}"
        ".aitile .aibar{height:10px;margin:4px 0;border-radius:5px}"
        ".ailg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;margin:0 0 6px}.ailg b{display:inline-block;width:10px;height:10px;"
-       "border-radius:2px;margin-right:5px;vertical-align:-1px}.ailg .sd{background:var(--up)}.ailg .sp{background:var(--mu)}.ailg .sc{background:var(--dn)}")
+       "border-radius:2px;margin-right:5px;vertical-align:-1px}.ailg .aibd{background:var(--up)}.ailg .aibp{background:var(--mu)}.ailg .aibc{background:var(--dn)}")

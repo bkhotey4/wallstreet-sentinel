@@ -1,4 +1,4 @@
-"""財報資料：美股財報日曆、EPS 預期與驚喜、SEC 季報數字（精選池與全市場科技股）、台股電子業月營收。
+"""財報資料：美股財報日曆、EPS 預期與驚喜、SEC 季報數字（追蹤池與全市場科技股）、台股電子業月營收。
 
   * Nasdaq earnings calendar  api.nasdaq.com/api/calendar/earnings?date=D  (no date shift; past dates carry eps + surprise)
   * Nasdaq earnings surprise  api.nasdaq.com/api/company/SYM/earnings-surprise   (last 4 quarters, EPS vs consensus)

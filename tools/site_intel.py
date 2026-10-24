@@ -88,7 +88,7 @@ def sec_analyst(eng) -> str:
     note = T("目標價與評級來自 Yahoo Finance 彙整的券商預估，通常落後股價、偏樂觀；分析師少於 3 位的樣本代表性低。"
              "評級分數 1＝強力買進、3＝持有、5＝賣出。這是市場共識的整理，不是本站的看法或建議。點欄位標題可排序。",
              "Consensus targets / ratings compiled by Yahoo Finance. They lag the price and lean optimistic. Not our view or advice.")
-    return card("分析師共識與目標價", "Analyst consensus & targets", f'<p class="small muted">{note}</p>' + _tabset("an", items), "wide")
+    return card("分析師共識與目標價（第三方券商彙整，非本站預測）", "Analyst consensus & targets (third-party, not our forecast)", f'<p class="small muted">{note}</p>' + _tabset("an", items), "wide")
 
 
 def _div_table(rows: List[Dict], mk: str) -> str:
@@ -141,11 +141,11 @@ def sec_filings(eng) -> str:
     head = (f'<thead><tr><th>{T("日期", "Date")}</th><th>{T("等級", "Level")}</th><th>{T("公司", "Company")}</th><th>{T("表單", "Form")}</th>'
             f'<th>{T("內容", "Items")}</th><th></th></tr></thead>')
     body = (f'<div class="scroll"><table class="mini">{head}<tbody>{"".join(tr(r) for r in hi)}</tbody></table></div>' if hi else
-            f'<p class="muted">{T("最近 30 天精選池沒有「重大／留意」等級的申報。", "No high / medium filings in the last 30 days.")}</p>')
+            f'<p class="muted">{T("最近 30 天追蹤池沒有「重大／留意」等級的申報。", "No high / medium filings in the last 30 days.")}</p>')
     if lo:
         body += (f'<details class="sgx"><summary>{T("一般申報", "Routine filings")} {len(lo)}</summary><div class="scroll"><table class="mini">{head}'
                  f'<tbody>{"".join(tr(r) for r in lo[:40])}</tbody></table></div></details>')
-    note = T(f"美股精選池 {k['covered']} 家公司最近 {k['days']} 天在 SEC 的申報，依 8-K 項目分級。重大＝4.02 財報不可信賴、1.03 破產、2.06 資產減損、"
+    note = T(f"美股追蹤池 {k['covered']} 家公司最近 {k['days']} 天在 SEC 的申報，依 8-K 項目分級。重大＝4.02 財報不可信賴、1.03 破產、2.06 資產減損、"
              "3.01 下市通知、4.01 換會計師、2.04 債務違約觸發、延遲申報等；留意＝高管異動、併購完成、重組裁員、增資發行、主動型投資人持股。"
              "申報不等於利空，請點 SEC 看原文。", "Recent SEC filings of the curated US names, graded by 8-K item.")
     return card("SEC 重大申報", "SEC material filings",
@@ -359,13 +359,13 @@ def sec_link(eng) -> str:
                  + f'<div class="chartbox">{line_chart("adrprem", s, "TSM ADR 溢價 %", 1)}</div>')
     note = T("台股每個交易日對應「上一個台股交易日之後」的美股交易日（台北時間；台股休市時把中間幾晚的美股漲跌複利累計，"
              "美股休市、中間沒有美股交易的台股交易日不列入），用近一年資料算相關係數與 Beta；推估台股＝Beta × 美股前一晚（累計）漲跌。"
-             "族群用本站精選池等權平均（括號內為檔數）。大波動同向率＝美股前一晚漲跌 ≥ 2% 時台股同方向的比例。"
+             "族群用本站追蹤池等權平均（括號內為檔數）。大波動同向率＝美股前一晚漲跌 ≥ 2% 時台股同方向的比例。"
              "ADR 溢價＝TSM ÷（2330 × 5 ÷ 美元台幣）− 1，同日收盤比較，溢價偏高時常有回歸平均的傾向，但可以持續很久。",
              "Each Taiwan session paired with the previous US close; beta / correlation over the last year. ADR premium = TSM vs 5 × 2330 in USD.")
     return card("台美連動", "US → Taiwan linkage", f'<p class="small muted">{note}</p>' + body, "wide")
 
 
-# ================================================================== 過熱清單（買點訊號頁）
+# ================================================================== 過熱清單（技術型態觀察頁）
 def sec_exhaust(eng) -> str:
     from wsb.analytics import patterns as PT
     sg = getattr(eng, "signals", None) or {}
@@ -384,7 +384,7 @@ def sec_exhaust(eng) -> str:
     defs = "".join(f'<li><b>{T(*PT.EXH[k])}</b>：{esc(v)}</li>' for k, v in PT.EXH_DEF.items())
     body = (f'<div class="scroll"><table class="mini"><thead><tr><th>{T("個股", "Stock")}</th><th>{T("市場", "Market")}</th><th class="r">{T("現價", "Price")}</th>'
             f'<th class="r">{T("警示數", "Flags")}</th><th>{T("哪些警示", "Which")}</th></tr></thead><tbody>{tr}</tbody></table></div>' if rows else
-            f'<p class="muted">{T("目前精選池沒有同時出現 2 個以上力竭警示的股票。", "No stock shows two or more exhaustion flags right now.")}</p>')
+            f'<p class="muted">{T("目前追蹤池沒有同時出現 2 個以上力竭警示的股票。", "No stock shows two or more exhaustion flags right now.")}</p>')
     if watch:
         wr = "".join(f'<tr><td class="nw">{_nm(r)}{_theme_chip(r.get("theme", "其他"))}</td><td>{T(*MK[mk])}</td><td class="r">{num(r.get("price"), 2)}</td>'
                      f'<td class="small">{esc(PT.exh_text(r["exh"]))}</td></tr>' for mk, r in watch[:30])
@@ -394,8 +394,8 @@ def sec_exhaust(eng) -> str:
                  f'<th class="r">{T("現價", "Price")}</th><th>{T("哪個警示", "Which")}</th></tr></thead><tbody>{wr}</tbody></table></div>'
                  + (f'<p class="small muted">{T(f"只列前 30 檔，共 {len(watch)} 檔", f"First 30 of {len(watch)}")}</p>' if len(watch) > 30 else ""))
     elif not rows:
-        body += f'<p class="muted">{T("也沒有只出現 1 個警示的股票：目前精選池整體不在過熱狀態。", "No stock has even one flag: the watch pool is not overheated.")}</p>'
-    note = T("同時出現 2 個以上力竭警示的股票。這些是「短線追高風險較高」的描述，不代表會下跌，強勢股可以過熱很久；如果要加碼，可以等回到加碼參考區再看。",
+        body += f'<p class="muted">{T("也沒有只出現 1 個警示的股票：目前追蹤池整體不在過熱狀態。", "No stock has even one flag: the watch pool is not overheated.")}</p>'
+    note = T("同時出現 2 個以上力竭警示的股票。這些是「短線追高風險較高」的描述，不代表會下跌，強勢股可以過熱很久；如果要加碼，可以等回到次級支撐觀察區再看。",
              "Stocks with two or more exhaustion flags — higher short-term chase risk, not a sell signal.")
     return card("過熱／力竭警示", "Overheating / exhaustion watch", f'<p class="small muted">{note}</p>{body}'
                 f'<details class="sgx"><summary>{T("五種警示的定義", "Definitions")}</summary><ul class="small">{defs}</ul></details>', "wide")
