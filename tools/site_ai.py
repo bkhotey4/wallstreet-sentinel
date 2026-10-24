@@ -20,6 +20,21 @@ def _ph(eng):
         return {"available": False}
 
 
+def _anchor(k: str):
+    """Give a card an id so a dashboard block can jump to it."""
+    def deco(f):
+        def g(eng):
+            h = f(eng)
+            if not h:
+                return h
+            back = "" if k == "ai-top" else f'<p class="aiback"><a href="#ai" data-jump="ai-top">{T("↑ 回到重點", "↑ Back to summary")}</a></p>'
+            h = h.replace('<section class="card', f'<section id="{k}" class="card', 1)
+            return h[:h.rindex("</section>")] + back + "</section>"
+        g.__name__ = f.__name__
+        return g
+    return deco
+
+
 def _cls(state: Optional[str]) -> str:
     return {TENSE: "dn", CALM: "up"}.get(state or "", "muted")
 
@@ -135,9 +150,9 @@ def score_view(sc: dict) -> dict:
             "days": src.get("days_med"), "n": src.get("n"), "episodes": src.get("episodes"), "ep_crash": src.get("ep_crash")}
 
 
-def _bar(d, pu, cr) -> str:
+def _bar(d, pu, cr, compact: bool = False) -> str:
     seg = [(d, "up", "消化"), (pu, "muted", "回檔"), (cr, "dn", "大跌")]
-    cells = "".join(f'<span class="{c}" style="flex:{max(v, 1):.0f}">{T(z, z)} {v:.0f}%</span>' for v, c, z in seg)
+    cells = "".join(f'<span class="{c}" style="flex:{max(v, 1):.0f}">{"" if compact else T(z, z) + f" {v:.0f}%"}</span>' for v, c, z in seg)
     return f'<div class="aibar">{cells}</div>'
 
 
@@ -157,6 +172,7 @@ def score_block(ph: dict) -> str:
             f'{_bar(v["digest"], v["pull"], v["crash"])}<p class="small">{T(line2, line2)}{T(line3, line3)}</p>')
 
 
+@_anchor("ai-score")
 def sec_ai_score(eng) -> str:
     ph = _ph(eng)
     sc = (ph or {}).get("score") or {}
@@ -186,6 +202,7 @@ def sec_ai_score(eng) -> str:
     return card("AI 風險分數：市場消化，還是會大跌？", "AI risk score: digestion or a fall?", body, "wide")
 
 
+@_anchor("ai-top")
 def sec_ai_brief(eng) -> str:
     """一眼看懂: one sentence, four lights, three things to watch; the comparison table and lessons folded."""
     ph = _ph(eng)
@@ -206,12 +223,42 @@ def sec_ai_brief(eng) -> str:
     v = score_view(ph.get("score") or {})
     sc = ph.get("score") or {}
     sline = ((f"AI 風險分數 {sc['now']:.0f}／100：{v['verdict']}" + ("" if v["mixed"] else f"（3 個月內大跌 {v['crash']:.0f}%，平常 {v['base']:.0f}%）")) if v else "")
+    aft, flo, tur, ana = (ph.get(k) or {} for k in ("aftershock", "absorption", "turbulence", "analog"))
+    tiles = []
+    if v:
+        band = sc["rows"][sc["cur"]]["band"]
+        tiles.append(("ai-score", "📊 AI 風險分數", f"{sc['now']:.0f}<small>／100</small>", f"{band}・{sc['since'][:4]} 年以來第 {sc['pct']:.0f} 百分位", ""))
+        short = v["verdict"].split("（")[0].split("，")[0]
+        when = (f"消化 {v['digest']:.0f}%・回檔 {v['pull']:.0f}%・大跌 {v['crash']:.0f}%"
+                + (f"；萬一大跌，中位數約 {v['days'] / 21:.1f} 個月內跌到 -10%" if v.get("days") else ""))
+        tiles.append(("ai-score", "⚖️ 消化還是大跌（3 個月）", short, when, _bar(v["digest"], v["pull"], v["crash"], compact=True)))
+    if tur.get("available"):
+        st = turb_state(tur)
+        tiles.append(("ai-turb", f"{EMO[st]} 亂流", f"第 {tur['pct']:.0f}<small> 百分位</small>",
+                      "股債匯商品走法很不尋常" if st == TENSE else "跨資產走法正常" if st == CALM else "跨資產走法有點不尋常", ""))
+    if flo.get("available"):
+        st = flock_state(flo)
+        big = "歷史最低" if flo["ar_pct"] < 1 else f"第 {flo['ar_pct']:.0f}<small> 百分位</small>"
+        tiles.append(("ai-flock", f"{EMO[st]} 鳥群同步度", big,
+                      "各產業開始一起動" if st == TENSE else "各產業各走各的，沒有一起逃" if st == CALM else "同步程度普通", ""))
+    if aft.get("available"):
+        st = quake_state(aft)
+        tiles.append(("ai-quake", f"{EMO[st]} 地震餘震", f"{aft['days_since']}<small> 天</small>",
+                      ("距上次大震，餘震期已結束" if st == CALM else "距上次大震，還在餘震期") + f"・5 天內 ≥2% 波動機率 {num(aft['p_now'], 0)}%", ""))
+    if ana.get("available"):
+        ok = ana.get("auc") is not None and ana["auc"] >= 0.55
+        tiles.append(("ai-analog", f"{EMO[analog_state(ana)] if ok else EMO[None]} AI 記憶（相似日）", "採計" if ok else "不採計",
+                      f"回測 AUC {num(ana['auc'], 2)}" + ("" if ok else "，比亂猜還差"), ""))
+    tiles.append(("ai-cross", "🤝 人類指標 vs AI", f"{n_ok}<small> 一致</small>・{n_split}<small> 分歧</small>", cnt, ""))
+    grid = "".join(f'<a class="aitile" href="#ai" data-jump="{k}"><span class="tl">{T(lab, lab)}</span><span class="tv">{big}</span>'
+                   f'<span class="tt">{T(txt, txt)}</span>{extra}<span class="go">{T("看細節 ›", "Details ›")}</span></a>'
+                   for k, lab, big, txt, extra in tiles)
     body = (f'<p class="rimp big2"><b>{T(head, head)}</b>' + (f'<br>{T(sline, sline)}' if sline else "") + '</p>'
-            f'<h3>{T("4 個燈號", "Four lights")}</h3><ul class="brief">{lights}</ul>'
-            f'<h3>{T("人類指標 vs AI", "Human vs AI")}</h3><p class="small">{T(cnt, cnt)}</p><ul class="brief">{cmp_}</ul>'
-            f'<h3>{T("接下來要盯的 3 件事", "Three things to watch")}</h3><ul class="brief">{w}</ul>'
-            f'<p class="note">{T("只看價格數字、不讀新聞。描述現在的風險水位，不預告哪一天會跌，也不是投資建議。", "Price-only; not a timing tool, not advice.")}</p>')
+            f'<div class="aigrid">{grid}</div>'
+            f'<div class="aiwatch"><b>{T("接下來要盯的 3 件事", "Three things to watch")}</b><ol>{w}</ol></div>'
+            f'<p class="note">{T("點任一區塊會跳到下面的細節。只看價格數字、不讀新聞；描述現在的風險水位，不預告哪一天會跌，也不是投資建議。", "Tap a block for details. Price-only; not a timing tool, not advice.")}</p>')
     return card("一眼看懂：AI 怎麼看現在的風險", "At a glance: the machine view of risk now", body, "wide")
+
 
 
 # ---------------------------------------------------------------- the four lenses
@@ -240,6 +287,7 @@ def analog_state(a: dict) -> Optional[str]:
     return TENSE if r >= 1.3 else CALM if r <= 0.7 else NEUTRAL
 
 
+@_anchor("ai-quake")
 def sec_ai_quake(eng) -> str:
     ph = _ph(eng)
     a = (ph or {}).get("aftershock") or {}
@@ -267,6 +315,7 @@ def sec_ai_quake(eng) -> str:
     return card("地震學：餘震計時器", "Seismology: aftershock clock", _top(lens_lines(ph)["quake"]) + _fold(body + f'<p class="note">{note}</p>'), "wide")
 
 
+@_anchor("ai-flock")
 def sec_ai_flock(eng) -> str:
     ph = _ph(eng)
     a = (ph or {}).get("absorption") or {}
@@ -287,6 +336,7 @@ def sec_ai_flock(eng) -> str:
     return card("鳥群：市場同步度（吸收比率）", "Flocking: absorption ratio", _top(lens_lines(ph)["flock"]) + _fold(body + f'<p class="note">{note}</p>'), "wide")
 
 
+@_anchor("ai-turb")
 def sec_ai_turb(eng) -> str:
     ph = _ph(eng)
     a = (ph or {}).get("turbulence") or {}
@@ -305,6 +355,7 @@ def sec_ai_turb(eng) -> str:
     return card("亂流：跨資產異常程度", "Turbulence: how unusual today's cross-asset move is", _top(lens_lines(ph)["turb"]) + _fold(body + f'<p class="note">{note}</p>'), "wide")
 
 
+@_anchor("ai-analog")
 def sec_ai_analog(eng) -> str:
     ph = _ph(eng)
     a = (ph or {}).get("analog") or {}
@@ -419,6 +470,7 @@ def reading(rows: List[dict], ph: dict) -> str:
     return "".join(parts)
 
 
+@_anchor("ai-cross")
 def sec_ai_cross(eng) -> str:
     rows = cross_rows(eng)
     if not rows:
@@ -463,6 +515,22 @@ def sec_ai_intro(eng) -> str:
                 _fold(f'<ul class="brief">{lis}</ul>', "點開看"), "wide")
 
 
-CSS = (".aibar{display:flex;gap:3px;margin:8px 0 4px;font-size:12px;font-weight:700}"
+JS = r"""
+document.addEventListener('click',function(ev){var a=ev.target.closest('[data-jump]');if(!a)return;ev.preventDefault();
+ var t=document.getElementById(a.getAttribute('data-jump'));if(!t)return;var d=t.querySelector('details');if(d)d.open=true;
+ t.scrollIntoView({behavior:'smooth',block:'start'});t.classList.add('aiflash');setTimeout(function(){t.classList.remove('aiflash');},1600);});
+"""
+
+CSS = (".aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:10px 0}"
+       ".aitile{display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid var(--bd);border-radius:10px;"
+       "background:var(--wash);color:inherit;text-decoration:none;min-width:0}"
+       ".aitile:hover{border-color:var(--ac)}.aitile .tl{font-size:13px;font-weight:700}"
+       ".aitile .tv{font-size:24px;font-weight:800;line-height:1.15}.aitile .tv small{font-size:13px;font-weight:600;opacity:.75}"
+       ".aitile .tt{font-size:12.5px;opacity:.85}.aitile .go{margin-top:auto;font-size:12px;color:var(--ac)}"
+       ".aiwatch{padding:10px 12px;border-left:3px solid var(--ac);background:var(--wash);border-radius:4px}"
+       ".aiwatch ol{margin:6px 0 0;padding-left:20px}.aiwatch li{margin:3px 0}"
+       "[id^=ai-]{scroll-margin-top:72px}.aiback{margin:8px 0 0;text-align:right;font-size:12.5px}.aiback a{color:var(--ac)}"
+       ".aiflash{outline:2px solid var(--ac);outline-offset:2px;transition:outline .3s}"
+       ".aibar{display:flex;gap:3px;margin:8px 0 4px;font-size:12px;font-weight:700}"
        ".aibar span{padding:5px 6px;border-radius:4px;background:var(--wash);border-bottom:3px solid currentColor;"
-       "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}")
+       "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.aitile .aibar span{padding:3px 0;margin:0}")

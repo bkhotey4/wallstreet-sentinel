@@ -113,7 +113,10 @@ def test_cards():
     e = fixture()
     h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
     b = SAI.sec_ai_brief(e)
-    assert "一眼看懂" in b and "接下來要盯的 3 件事" in b and b.count("<li>") >= 10 and "<details" not in b
+    assert "回到重點" not in b and h.count("回到重點") == 6
+    assert "一眼看懂" in b and "接下來要盯的 3 件事" in b and b.count('class="aitile"') >= 7 and "<details" not in b
+    for k in ("ai-score", "ai-turb", "ai-flock", "ai-quake", "ai-analog", "ai-cross"):
+        assert f'data-jump="{k}"' in b and h.count(f'id="{k}"') == 1, k             # every block lands on exactly one card
     assert all("<details" in f(e) for f in (SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross))
     for w in ("AI 風險分數", "消化", "AI 視角交叉比對", "人類世界觀", "大森定律", "吸收比率", "Mahalanobis", "k 最近鄰", "假警報", "不是投資建議"):
         assert w in h, w
