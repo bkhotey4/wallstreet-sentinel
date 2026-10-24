@@ -1035,6 +1035,14 @@ class Sentinel(commands.Bot):
                                      f"大象撤退：資產管理機構在{e['name']}期貨 13 週大幅減碼（歷史第 {e['pct']:.0f} 百分位）",
                                      f"淨多單 {e['am']:+.1f}%（13 週 {e['chg13']:+.1f}）。回測 2010 年起，這種時候之後 3 個月內跌 ≥10% 的頻率約 "
                                      f"{e.get('exit_rate') or 0:.0f}%，平常 {e.get('base') or 0:.0f}%；預測力有限（AUC {e.get('auc') or 0:.2f}）。"))
+            cs = bub.credit_state(bub.load().get("credit") or {})          # 信用利差開始擴大（每月一次的資料）
+            if cs is not None and len(cs.dropna()):
+                last = cs.dropna().iloc[-1]
+                mon = cs.dropna().index[-1].strftime("%Y-%m")
+                if last["ch6"] > 0:
+                    out.append(Alert(f"credit_widen:{mon}", "⚠️ WARNING", f"信用利差開始擴大：穆迪 Baa−Aaa 6 個月 {last['ch6']:+.2f} 個百分點",
+                                     f"現在 {last['sp']:.2f}（歷史第 {last['pct']:.0f} 百分位）。歷史上價格泡沫遇到信用開始變緊時，先破裂的比例明顯較高；"
+                                     "看網站「AI 視角看風險」→ AI 泡沫計時器的信用條件。"))
         except Exception:  # noqa: BLE001
             log.exception("elephant alert failed")
         try:                                     # AI 的結論改變（人類比數據緊張／數據比人類緊張／差不多）；第一次只記錄

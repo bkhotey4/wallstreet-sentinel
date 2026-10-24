@@ -123,6 +123,11 @@ async def refresh(force: bool = False) -> Dict:
         except Exception as e:  # noqa: BLE001
             bad.append(f"cftc: {e if str(e) else type(e).__name__}")
     d["ts_check"] = now
+    if force or now - float(d.get("ts_credit", 0)) > TTL_FF or not d.get("credit"):
+        try:
+            d["credit"], d["ts_credit"] = await fetch_credit(), now
+        except Exception as e:  # noqa: BLE001
+            bad.append(f"credit: {e if str(e) else type(e).__name__}")
     if not bad or d.get("ff") or d.get("cftc"):
         _save(d)
     if bad:
@@ -131,6 +136,42 @@ async def refresh(force: bool = False) -> Dict:
     else:
         HEALTH.ok("bubble", len(d.get("ff") or {}), every=TTL_CFTC)
     return d
+
+
+async def fetch_credit() -> Dict[str, float]:
+    """{YYYY-MM: Moody's Baa yield − Aaa yield (percentage points)} since 1919 from FRED (monthly)."""
+    from ..config import FRED_API_KEY
+    from ..data import http
+    out = {}
+    for sid in ("BAA", "AAA"):
+        if FRED_API_KEY:
+            js = await http.get("https://api.stlouisfed.org/fred/series/observations", params={
+                "series_id": sid, "api_key": FRED_API_KEY, "file_type": "json", "observation_start": "1919-01-01"}, timeout=30, retries=1)
+            rows = [(o["date"][:7], o["value"]) for o in js.get("observations", [])]
+        else:
+            txt = await http.get("https://fred.stlouisfed.org/graph/fredgraph.csv", params={"id": sid, "cosd": "1919-01-01"}, kind="text", timeout=30)
+            rows = [(ln.split(",")[0][:7], ln.split(",")[1]) for ln in txt.splitlines()[1:] if "," in ln]
+        out[sid] = {m: float(v) for m, v in rows if v not in (".", "")}
+    sp = {m: round(out["BAA"][m] - out["AAA"][m], 3) for m in out["BAA"] if m in out["AAA"]}
+    if len(sp) < 600:
+        raise ValueError(f"only {len(sp)} months")
+    return sp
+
+
+def credit_state(credit: Dict[str, float]) -> Optional[pd.DataFrame]:
+    """Monthly spread, its 6-month change and its percentile vs all earlier months (past-only, 10-year warm-up)."""
+    if not credit:
+        return None
+    s = pd.Series(credit)
+    s.index = pd.to_datetime(s.index + "-01")
+    s = s.sort_index()
+    return pd.DataFrame({"sp": s, "ch6": s.diff(6), "pct": s.expanding(120).apply(lambda x: (x[:-1] < x[-1]).mean() * 100, raw=True)})
+
+
+CREDIT_GROUPS = (("low_narrow", "利差偏低（市場很樂觀）、還在收窄", lambda p, c: p < 50 and c <= 0),
+                 ("low_widen", "利差偏低、但開始擴大（樂觀開始退潮）", lambda p, c: p < 50 and c > 0),
+                 ("high_widen", "利差偏高、還在擴大（市場已經在擔心）", lambda p, c: p >= 50 and c > 0),
+                 ("high_narrow", "利差偏高、開始收窄（擔心在消退）", lambda p, c: p >= 50 and c <= 0))
 
 
 # ───────────────────────── 1. 歷史泡沫統計 ─────────────────────────
@@ -190,14 +231,15 @@ def summarize(eps: List[Dict]) -> Optional[Dict]:
 def history_table(ff: Dict) -> Dict:
     """Per group and period: the summary, plus the 1970+ cases.  Each group is scanned once (from 1926) and the periods are
     filtered by date; the result is cached in memory and in econ_bubble.json keyed by the data's last month."""
-    end = max(max(v) for v in ff.values()) if ff else ""
+    cr = load().get("credit") or {}
+    end = (max(max(v) for v in ff.values()) if ff else "") + "|" + (max(cr) if cr else "")
     if _CACHE.get("hist_end") == end and (_CACHE.get("hist") or {}).get("_v") == HIST_V:
         return _CACHE["hist"]
     d = load()
     if (d.get("hist") or {}).get("_end") == end and (d.get("hist") or {}).get("_v") == HIST_V:
         _CACHE.update(hist_end=end, hist=d["hist"])
         return d["hist"]
-    out: Dict = {"_end": end, "_v": HIST_V, "scen": scenarios(ff)}
+    out: Dict = {"_end": end, "_v": HIST_V, "scen": scenarios(ff, load().get("credit"))}
     for gk, _zh, test in GROUPS + (("any", "所有產業、任何時候（基準）", lambda r, o, v: r == r),):
         eps = episodes(ff, test, "1926")
         out[gk] = {p: summarize([e for e in eps if e["date"] >= p]) for p in PERIODS}
@@ -211,10 +253,10 @@ def history_table(ff: Dict) -> Dict:
     return out
 
 
-SCEN_RUN, SCEN_OFF, SCEN_START, HIST_V = 1.0, -0.15, "1946", 3
+SCEN_RUN, SCEN_OFF, SCEN_START, HIST_V = 1.0, -0.15, "1946", 5
 
 
-def scenarios(ff: Dict[str, Dict[str, float]]) -> Optional[Dict]:
+def scenarios(ff: Dict[str, Dict[str, float]], credit: Optional[Dict[str, float]] = None) -> Optional[Dict]:
     """The decision-useful view.  Cases since 1946 (the Depression left out): a 2-year run-up ≥ 100 % that has already
     fallen ≥ 15 % from its 12-month high.  Outcome over the next 24 months: back to the old high within 12 months,
     a ≥ 40 % fall from the high, or neither; the deepest fall from the high; and how the next 3 months split the odds."""
@@ -256,13 +298,32 @@ def scenarios(ff: Dict[str, Dict[str, float]]) -> Optional[Dict]:
         s = e[mask & ~(e["m"].notna() & (e["m"] <= 3))]           # still undecided at the 3-month checkpoint
         return {"n": int(len(s)), "newhi": float(s["newhi12"].mean() * 100) if len(s) else None,
                 "crash": float(s["crash"].mean() * 100) if len(s) else None}
+    cs = credit_state(credit or {})
+    cred = None
+    if cs is not None:
+        e["ch6"] = [cs["ch6"].get(pd.Timestamp(x + "-01")) for x in e["date"]]
+        e["pct"] = [cs["pct"].get(pd.Timestamp(x + "-01")) for x in e["date"]]
+        ok = e.dropna(subset=["ch6", "pct"])
+
+        def grp(mask, frm=None):
+            s = ok[mask] if frm is None else ok[mask & (ok["date"] >= frm)]
+            return {"n": int(len(s)), "first_crash": float((s["first"] == "crash").mean() * 100) if len(s) else None,
+                    "first_high": float((s["first"] == "high").mean() * 100) if len(s) else None}
+        last = cs.dropna().iloc[-1]
+        cur = next((k for k, _z, f in CREDIT_GROUPS if f(last["pct"], last["ch6"])), None)
+        cred = {"widen": grp(ok["ch6"] > 0), "narrow": grp(ok["ch6"] <= 0), "low": grp(ok["pct"] < 50), "high": grp(ok["pct"] >= 50),
+                "groups": {k: grp(ok.apply(lambda r, f=f: f(r["pct"], r["ch6"]), axis=1)) for k, _z, f in CREDIT_GROUPS},
+                # 1946 has five industries signalling in the same month; the 1950+ split shows the result does not hinge on them
+                "groups50": {k: grp(ok.apply(lambda r, f=f: f(r["pct"], r["ch6"]), axis=1), "1950") for k, _z, f in CREDIT_GROUPS},
+                "now": {"month": cs.dropna().index[-1].strftime("%Y-%m"), "sp": float(last["sp"]), "ch6": float(last["ch6"]),
+                        "pct": float(last["pct"]), "group": cur, "since": cs["pct"].dropna().index[0].strftime("%Y")}}
     fc = e["first"].value_counts(normalize=True) * 100
     return {"n": n, "since": SCEN_START, "crash": crash, "newhi": newhi, "both": both,
             "first_high": float(fc.get("high", 0)), "first_crash": float(fc.get("crash", 0)), "first_range": float(fc.get("range", 0)),
             "med_m": float(e.loc[e["crash"], "m"].median()) if e["crash"].any() else None,
             "med_m_high": float(e.loc[e["first"] == "high", "m_high"].median()) if (e["first"] == "high").any() else None,
             "mdd_q": [float(x) for x in e["mdd"].quantile([0.25, 0.5, 0.75])],
-            "up3": split(e["r3"] > 0), "down3": split(e["r3"] <= 0), "down10": split(e["r3"] <= -0.10),
+            "up3": split(e["r3"] > 0), "down3": split(e["r3"] <= 0), "down10": split(e["r3"] <= -0.10), "credit": cred,
             "cases": e.sort_values("date", ascending=False).to_dict("records")}
 
 

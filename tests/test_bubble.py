@@ -63,6 +63,28 @@ def test_scenarios():
     assert abs(lv["crash_line"] - 120) < 1e-6 and lv["off"] < -20 and lv["check_down10"] == lv["now"] * 0.9
 
 
+def test_credit_split():
+    months = pd.date_range("1940-01-01", periods=720, freq="MS")
+    credit = {f"{m:%Y-%m}": 1.0 + 0.3 * np.sin(i / 9) for i, m in enumerate(months)}
+    cs = BB.credit_state(credit)
+    assert cs["pct"].iloc[:119].isna().all() and cs["pct"].notna().iloc[-1] and abs(cs["ch6"].iloc[-1] - (cs["sp"].iloc[-1] - cs["sp"].iloc[-7])) < 1e-9
+    ff = {}
+    for k in range(20):
+        a = np.full(720, 0.004)
+        s = 30 + k * 25
+        a[s:s + 24] = 0.045
+        a[s + 24:s + 26] = -0.09
+        a[s + 26:s + 40] = 0.03 if k % 2 else -0.06
+        ff[f"I{k}"] = {f"{m:%Y-%m}": float(x) for m, x in zip(months, a)}
+    sc = BB.scenarios(ff, credit)
+    cr = sc["credit"]
+    assert cr["now"]["group"] in {k for k, _z, _f in BB.CREDIT_GROUPS}
+    assert cr["widen"]["n"] + cr["narrow"]["n"] == sum(v["n"] for v in cr["groups"].values())
+    from tools import site_ai as SAI
+    h = SAI.credit_block(sc)
+    assert "加上信用條件" in h and "什麼是信用利差" in h and "◀ 現在" in h
+
+
 def _eng(series):
     return types.SimpleNamespace(market=types.SimpleNamespace(series=lambda t: series.get(t, pd.Series(dtype=float)), q=lambda t: None))
 

@@ -854,14 +854,57 @@ def bubble_line(b: dict) -> str:
         return f"{emo} {head}"
     sc, lv = (b.get("hist") or {}).get("scen"), b.get("levels")
     if sc and lv:
+        cn = ((sc.get("credit") or {}).get("now") or {})
+        ctxt = ("；信用利差還在收窄，要盯它何時開始擴大" if cn.get("ch6") is not None and cn["ch6"] <= 0 else
+                "；信用利差已經開始擴大，破裂機率偏高的組合" if cn.get("ch6") is not None else "")
         return (f"{emo} {head}：歷史上 {sc['n']} 次類似情況，接下來 2 年先回到高點 {sc['first_high']:.0f}%、先從高點跌超過 40% {sc['first_crash']:.0f}%；"
-                f"關鍵看 {lv['check_date']}（3 個月後）費半在不在 {lv['now']:,.0f} 之上。")
+                f"關鍵看 {lv['check_date']}（3 個月後）費半在不在 {lv['now']:,.0f} 之上{ctxt}。")
     rows = (b.get("hist") or {}).get(lead["group"]) or {}
     p12 = [rows[p]["p12"] for p in ("1926", "1946", "1970") if rows.get(p)]
     s = rows.get("1946") or {}
     rng = f"{min(p12):.0f}%–{max(p12):.0f}%" if p12 else "—"
     return (f"{emo} {head}：歷史上同一組，12 個月內從高點跌 40% 以上的比例依起算年份介於 {rng}"
             + (f"（1946 年起 {s['n']} 次裡 {s['p12']:.0f}%）" if s else "") + "；樣本少，看範圍不要看單一數字。")
+
+
+def credit_block(sc: dict) -> str:
+    """Bubble odds split by the credit market (Moody's Baa − Aaa), written for a beginner."""
+    from wsb.analytics import bubble as BB
+    cr = (sc or {}).get("credit") or {}
+    now = cr.get("now")
+    if not now:
+        return ""
+    zh = {k: z for k, z, _f in BB.CREDIT_GROUPS}
+    g, g50 = cr["groups"], cr.get("groups50") or {}
+    cur = now["group"]
+    c, c50 = g.get(cur) or {}, g50.get(cur) or {}
+    state = ("非常樂觀" if now["pct"] < 10 else "偏樂觀" if now["pct"] < 50 else "偏擔心" if now["pct"] < 90 else "非常擔心")
+    move = "還在收窄（大家越來越不擔心）" if now["ch6"] <= 0 else "開始擴大（市場開始擔心違約）"
+    lw, lw50 = g.get("low_widen") or {}, g50.get("low_widen") or {}
+    what = (f"什麼是信用利差：評等較差的公司（穆迪 Baa）借錢，要比評等最好的公司（Aaa）多付的利息。"
+            f"數字越大，代表市場越擔心公司還不出錢；數字越小，代表大家很放心、甚至太放心。")
+    lines = [f"現在（{now['month']}）：{now['sp']:.2f} 個百分點，{now['since']} 年以來第 {now['pct']:.0f} 百分位——{state}；過去 6 個月 {now['ch6']:+.2f}，{move}。",
+             f"歷史上同樣「{zh.get(cur, '')}」的 {c.get('n', 0)} 次泡沫：先破裂 {num(c.get('first_crash'), 0)}%、先回到高點 {num(c.get('first_high'), 0)}%"
+             + (f"（1950 年起 {c50['n']} 次：先破裂 {num(c50.get('first_crash'), 0)}%）" if c50.get("n") and c50.get("n") != c.get("n") else "") + "。"]
+    if cur in ("low_narrow", "high_narrow"):
+        lines.append(f"要盯的轉折：利差如果開始擴大，歷史上「樂觀開始退潮」那組先破裂的比例是 {num(lw50.get('first_crash'), 0)}%（1950 年起 {lw50.get('n', 0)} 次；"
+                     f"含 1946 年是 {num(lw.get('first_crash'), 0)}%）——泡沫通常要等到借錢變難才會破。")
+    rows = "".join(f'<tr{" class=hl" if k == cur else ""}><td>{T(zh[k], "")}{" ◀ 現在" if k == cur else ""}</td><td class="r">{g[k]["n"]}</td>'
+                   f'<td class="r">{num(g[k]["first_crash"], 0)}%</td><td class="r">{num(g[k]["first_high"], 0)}%</td>'
+                   f'<td class="r small muted">{num((g50.get(k) or {}).get("first_crash"), 0)}%（{(g50.get(k) or {}).get("n", 0)}）</td></tr>'
+                   for k, _z, _f in BB.CREDIT_GROUPS if g.get(k, {}).get("n"))
+    w, n_ = cr["widen"], cr["narrow"]
+    dir_txt = (f"只看方向：訊號前 6 個月利差在擴大的 {w['n']} 次，先破裂 {num(w['first_crash'], 0)}%；"
+               f"在收窄的 {n_['n']} 次，只有 {num(n_['first_crash'], 0)}%。")
+    note = T("資料：FRED 的穆迪 Baa、Aaa 公司債殖利率（1919 年起月資料）。百分位只和當時以前的月份比，避免用到未來資訊。"
+             "學術依據：Krishnamurthy & Muir（2017）發現信用利差擴大是危機前最穩定的訊號；López-Salido 等（2017）發現利差太低（太樂觀）之後兩年比較容易出問題。"
+             "樣本只有幾十次、再分組後每組更少，方向可信、精確數字不要太當真。", "")
+    tbl = (f'<div class="scroll"><table class="mini"><thead><tr><th>{T("訊號當時的信用市場", "")}</th><th class="r">{T("次數", "")}</th>'
+           f'<th class="r">{T("先破裂", "")}</th><th class="r">{T("先回高點", "")}</th><th class="r">{T("1950 年起先破裂（次數）", "")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+           f'<p class="small">{T(dir_txt, "")}</p><p class="note">{note}</p>')
+    return (f'<div class="aiwatch"><b>{T("加上信用條件：借錢的市場怎麼說", "")}</b><p class="small muted">{T(what, "")}</p>'
+            + "".join(f'<p class="small">{T(x, "")}</p>' for x in lines)
+            + _fold(tbl, "看四種信用情況的完整比較") + "</div>")
 
 
 def scenario_block(b: dict) -> str:
@@ -895,7 +938,7 @@ def scenario_block(b: dict) -> str:
             f"歷史上 {sc['n']} 次類似情況（{sc['since']} 年起，2 年漲 ≥100%、已從高點跌 ≥15%），接下來 2 年先發生哪一件事：")
     return (f'<p class="rimp big2"><b>{T(head, "")}</b></p>{bar}'
             f'<div class="g2"><div><b>{T("最深可能跌到哪（從高點算的最大跌幅）", "")}</b><div class="scroll"><table class="mini"><tbody>{lad}</tbody></table></div></div>'
-            f'<div class="aiwatch">{check}</div></div>')
+            f'<div class="aiwatch">{check}</div></div>' + credit_block(sc))
 
 
 @_anchor("ai-bubble")
