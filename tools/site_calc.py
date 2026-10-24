@@ -19,7 +19,9 @@ def sec_sizing(eng) -> str:
             + f("win", "勝率 %（選填，凱利公式用）", "Win rate % (optional)", "例：45")
             + f("rr", "平均賺賠比（選填，凱利公式用）", "Avg win ÷ avg loss (optional)", "例：2")
             + "</div>")
-    out = '<div class="szo" id="sz_out" aria-live="polite"></div>'
+    pick = (f'<div class="szpk" id="sz_pick" hidden><label class="szf"><span>{T("從「我的持股」帶入（只讀這台瀏覽器的資料）", "Fill from my holdings")}</span>'
+            f'<select id="sz_hold" aria-label="從我的持股帶入"><option value="">{T("選一檔持股…", "Pick a holding…")}</option></select></label></div>')
+    out = pick + '<div class="szo" id="sz_out" aria-live="polite"></div>'
     note = T("公式：每股風險＝價格−失效價；可承受虧損＝總資金×比例；股數上限＝可承受虧損÷每股風險（無條件捨去）；風報比＝(目標價−價格)÷每股風險；"
              "凱利比例＝勝率−(1−勝率)÷賺賠比。凱利公式假設勝率和賺賠比都準確，實務上常只用一半或更少，而且估錯時虧損會被放大。"
              "這是純數學試算工具：所有數字都由你自己輸入，只在你的瀏覽器裡計算，不會送出或儲存；結果不是投資建議，也不代表任何標的值得交易。",
@@ -50,5 +52,13 @@ JS = r"""
   if(tgt!=null&&tgt>px)o.appendChild(cell(en?'Reward ÷ risk':'風報比',fm((tgt-px)/ps,2)+' : 1'));
   if(win!=null&&rr!=null&&rr>0){var w=win/100,k=w-(1-w)/rr;o.appendChild(cell(en?'Kelly (full / half)':'凱利比例（全／半）',k>0?(fm(k*100,1)+'% / '+fm(k*50,1)+'%'):(en?'≤ 0: negative edge':'≤ 0：期望值為負')));}
   if(pos>cap)o.appendChild(warn(en?'Position exceeds capital (would need leverage).':'部位金額超過總資金（需要槓桿）。'));}
- ids.forEach(function(k){var e=document.getElementById('sz_'+k);if(e)e.addEventListener('input',calc);});calc();})();
+ ids.forEach(function(k){var e=document.getElementById('sz_'+k);if(e)e.addEventListener('input',calc);});calc();
+ var H=[],Q={};try{var d=JSON.parse(localStorage.getItem('wss_portfolio_v1')||'null');if(d&&Array.isArray(d.h))H=d.h.filter(function(h){return h&&h.s&&+h.n>0;});}catch(e){}
+ try{Q=(JSON.parse((document.getElementById('pf-data')||{}).textContent||'{}').q)||{};}catch(e){}
+ function qp(s){var c=[s,s+'.TW',s+'.TWO',String(s).toUpperCase()];for(var i=0;i<c.length;i++){var q=Q[c[i]];if(q&&q[0]!=null)return +q[0];}return null;}
+ function hp(h){return qp(h.s)||(+h.p>0?+h.p:null)||(+h.c>0?+h.c:null);}
+ var sel=document.getElementById('sz_hold'),box=document.getElementById('sz_pick');
+ if(sel&&H.length){box.hidden=false;H.forEach(function(h,i){var o=document.createElement('option');o.value=i;o.textContent=h.s+'（'+h.n+' 股）';sel.appendChild(o);});
+  sel.addEventListener('change',function(){var h=H[+sel.value];if(!h)return;var p=hp(h),tot=0;H.forEach(function(x){var q=hp(x);if(q)tot+=q*(+x.n);});
+   var set=function(k,v){var e=document.getElementById('sz_'+k);if(e&&v!=null&&isFinite(v))e.value=Math.round(v*100)/100;};set('px',p);if(tot>0)set('cap',tot);calc();});}})();
 """

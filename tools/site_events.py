@@ -8,6 +8,11 @@ from zoneinfo import ZoneInfo
 from tools.sitekit import T, card
 
 TPE = ZoneInfo("Asia/Taipei")
+LINKS = {"fomc": (("聯準會會議日程與聲明", "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"),
+                  ("記者會直播（聯準會 YouTube）", "https://www.youtube.com/@federalreserve")),
+         "cpi": (("BLS CPI 發布時間表", "https://www.bls.gov/schedule/news_release/cpi.htm"),),
+         "nfp": (("BLS 就業報告發布時間表", "https://www.bls.gov/schedule/news_release/empsit.htm"),),
+         "opex": (("Cboe 交易日曆", "https://www.cboe.com/about/hours/"),)}
 
 
 def _ev(eng) -> dict:
@@ -42,6 +47,7 @@ def sec_event_clock(eng) -> str:
                   f'<div class="small muted">{T("美東", "ET")} {et:%m-%d %H:%M}・{T("台北", "Taipei")} {tp:%m-%d %H:%M}</div>'
                   + (f'<div class="small">{T("1995 年以來（" + str(a["n"]) + " 次）", "Since 1995")}：{T(_cmp(a), "")}</div>' if a else "")
                   + (f'<div class="small muted">{T("近 3 年（" + str(rc["n"]) + " 次）", "Last 3 years")}：{T(_cmp(rc), "")}</div>' if rc else "")
+                  + '<div class="small">' + "・".join(f'<a href="{u}" target="_blank" rel="noopener">{T(z, "")}</a>' for z, u in LINKS.get(r["key"], ())) + "</div>"
                   + "</div>")
     if not tiles:
         return ""

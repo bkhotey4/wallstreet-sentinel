@@ -173,11 +173,12 @@ def card_index(bodies: Dict[str, str]) -> Tuple[Dict[str, str], Dict[str, List[T
 def _tab(k: str, names, first: str, cards) -> str:
     sub = (cards or {}).get(k) or []
     a = f'<a class="ptab{" on" if k == first else ""}" href="#{k}" data-p="{k}" data-en="{esc(names[k][1])}">{esc(names[k][0])}</a>'
+    star = f'<button class="ppin" type="button" data-k="{k}" aria-pressed="false" aria-label="{esc(names[k][0])}：釘選">☆</button>'
     if len(sub) < 2:
-        return f'<div class="prow">{a}</div>'
+        return f'<div class="prow">{a}{star}</div>'
     items = "".join(f'<a class="pca" href="#{k}" data-p="{k}" data-c="{esc(cid)}" title="{esc(zh)}" data-en="{esc(en)}">{esc(zh)}</a>'
                     for cid, zh, en in sub)
-    return (f'<div class="prow">{a}<button class="pcar" type="button" data-k="{k}" aria-expanded="false" aria-controls="ps-{k}" '
+    return (f'<div class="prow">{a}{star}<button class="pcar" type="button" data-k="{k}" aria-expanded="false" aria-controls="ps-{k}" '
             f'aria-label="{esc(names[k][0])}：展開 {len(sub)} 張卡片">▸</button></div>'
             f'<div class="psub" id="ps-{k}" hidden>{items}</div>')
 
@@ -195,7 +196,10 @@ def sidebar(names: Dict[str, Tuple[str, str]], first: str = "overview", cards: O
         out += '<div class="sg">' + "".join(_tab(k, names, first, cards) for k in extra) + "</div>"
     tools = (f'<div class="pall"><button type="button" class="pallb" data-all="1">{T("全部展開", "Expand all")}</button>'
              f'<button type="button" class="pallb" data-all="0">{T("全部收合", "Collapse all")}</button></div>') if cards else ""
-    return f'<aside class="side" id="side" aria-label="pages">{tools}{out}</aside>'
+    search = (f'<div class="psrch"><input id="qsearch" type="search" autocomplete="off" placeholder="搜尋分頁或指標（按 / ）" '
+              f'data-en-ph="Search pages or cards (press /)" aria-label="搜尋分頁或指標"><p class="psnone" id="qsnone" hidden>{T("找不到符合的分頁或卡片", "No match")}</p></div>')
+    pins = f'<div class="sg pinned" id="pinned" hidden><div class="sgt">{T("⭐ 我的釘選", "⭐ Pinned")}<span>{T("按分頁旁的 ☆ 加入或移除", "Tap ☆ to add or remove")}</span></div><div id="pinlist"></div></div>'
+    return f'<aside class="side" id="side" aria-label="pages">{search}{tools}{pins}{out}</aside>'
 
 
 def topnav() -> str:
@@ -230,6 +234,30 @@ function lock(){document.documentElement.style.overflow=side.classList.contains(
 new MutationObserver(lock).observe(side,{attributes:true,attributeFilter:['class']});
 if(btn)btn.addEventListener('click',function(ev){ev.stopPropagation();side.classList.toggle('open');});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape')side.classList.remove('open');});
+var qs=document.getElementById('qsearch'),qn=document.getElementById('qsnone');
+function rows(){return side.querySelectorAll('.sg:not(.pinned) .prow');}
+function filt(){var q=(qs.value||'').trim().toLowerCase(),hit=0;
+ rows().forEach(function(r){var a=r.querySelector('.ptab'),k=a.dataset.p,s=document.getElementById('ps-'+k),m=!q||a.textContent.toLowerCase().indexOf(q)>=0||(a.dataset.en||'').toLowerCase().indexOf(q)>=0,sub=0;
+  if(s)s.querySelectorAll('.pca').forEach(function(c){var ok=!q||m||c.textContent.toLowerCase().indexOf(q)>=0||(c.dataset.en||'').toLowerCase().indexOf(q)>=0;c.style.display=ok?'':'none';if(ok&&q)sub++;});
+  var show=!q||m||sub>0;r.style.display=show?'':'none';if(s){if(q){s.hidden=!(sub>0||m);}else{var b=r.querySelector('.pcar');s.hidden=!(b&&b.getAttribute('aria-expanded')==='true');}}if(show&&q)hit++;});
+ side.querySelectorAll('.sg:not(.pinned)').forEach(function(g){var any=[].some.call(g.querySelectorAll('.prow'),function(r){return r.style.display!=='none';});g.style.display=any?'':'none';});
+ if(qn)qn.hidden=!q||hit>0;}
+if(qs){qs.addEventListener('input',filt);qs.addEventListener('keydown',function(ev){if(ev.key==='Escape'){qs.value='';filt();qs.blur();}
+ if(ev.key==='Enter'){var f=side.querySelector('.sg:not(.pinned) .psub:not([hidden]) .pca:not([style*="none"])')||side.querySelector('.sg:not(.pinned) .prow:not([style*="none"]) .ptab');if(f)f.click();}});}
+document.addEventListener('keydown',function(ev){if(ev.key==='/'&&qs&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){ev.preventDefault();if(window.innerWidth<=900)side.classList.add('open');qs.focus();}});
+var PK='wss_pins';function pins(){try{return JSON.parse(localStorage.getItem(PK)||'[]')||[];}catch(e){return [];}}
+function drawPins(){var p=pins(),box=document.getElementById('pinned'),l=document.getElementById('pinlist');if(!box||!l)return;l.textContent='';
+ p.forEach(function(k){var o=side.querySelector('.sg:not(.pinned) .ptab[data-p="'+k+'"]');if(!o)return;var a=document.createElement('a');a.className='ppa';a.href='#'+k;a.textContent=o.textContent;a.dataset.k=k;
+  a.addEventListener('click',function(ev){ev.preventDefault();o.click();});l.appendChild(a);});box.hidden=!l.children.length;
+ side.querySelectorAll('.ppin').forEach(function(b){var on=p.indexOf(b.dataset.k)>=0;b.textContent=on?'★':'☆';b.setAttribute('aria-pressed',on?'true':'false');});}
+side.addEventListener('click',function(ev){var b=ev.target.closest('.ppin');if(!b)return;ev.preventDefault();ev.stopPropagation();var p=pins(),k=b.dataset.k,i=p.indexOf(k);
+ if(i>=0)p.splice(i,1);else p.push(k);try{localStorage.setItem(PK,JSON.stringify(p));}catch(e){}drawPins();});drawPins();
+var tx=null,ty=null,lm=document.querySelector('.lmain');
+if(lm){lm.addEventListener('touchstart',function(e){if(e.touches.length!==1)return;tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+ lm.addEventListener('touchend',function(e){if(tx==null)return;var dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;tx=null;
+  if(Math.abs(dx)<90||Math.abs(dy)>45||window.innerWidth>900)return;if(e.target.closest('.scroll,table,svg,input,textarea,select,.aigrid'))return;
+  var tabs=[].slice.call(side.querySelectorAll('.sg:not(.pinned) .ptab')),i=tabs.findIndex(function(a){return a.classList.contains('on');});
+  var n=tabs[i+(dx<0?1:-1)];if(n)n.click();},{passive:true});}
 sync();})();
 """)
 
@@ -241,6 +269,10 @@ CSS = """
 .side .ptab{display:block;border-bottom:0;border-left:3px solid transparent;padding:6px 14px;font-size:13px}
 .side .ptab.on{border-left-color:var(--ac);background:var(--wash);border-bottom:0}
 .prow{display:flex;align-items:stretch}.prow .ptab{flex:1;min-width:0}
+.ppin{flex:none;width:26px;border:0;background:none;color:var(--tx2);cursor:pointer;font-size:13px;opacity:.45}.ppin[aria-pressed="true"]{opacity:1;color:#e8a33d}
+.prow:hover .ppin{opacity:1}.psrch{padding:0 10px 10px}.psrch input{width:100%;box-sizing:border-box;padding:6px 9px;border:1px solid var(--bd);border-radius:8px;
+background:var(--card2,transparent);color:var(--tx);font-size:13px}.psnone{font-size:12px;color:var(--tx2);margin:6px 2px 0}
+.ppa{display:block;padding:5px 14px;font-size:13px;color:var(--tx);text-decoration:none;border-left:3px solid #e8a33d}.ppa:hover{background:var(--wash)}
 .pcar{flex:none;width:30px;border:0;background:none;color:var(--tx2);cursor:pointer;font-size:13px;border-radius:4px}.pcar:hover{color:var(--ac);background:var(--wash)}
 .psub{margin:0 0 4px 17px;border-left:1px solid var(--bd)}.pca{display:block;padding:4px 10px;font-size:12.5px;color:var(--tx2);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pca:hover,.pca.on{color:var(--ac);text-decoration:none;background:var(--wash)}
 .pall{display:flex;gap:6px;padding:0 10px 10px}.pallb{flex:1;font-size:12px;padding:4px 6px;border:1px solid var(--bd);border-radius:6px;background:none;color:var(--tx2);cursor:pointer}.pallb:hover{color:var(--ac);border-color:var(--ac)}

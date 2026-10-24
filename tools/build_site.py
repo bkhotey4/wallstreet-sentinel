@@ -42,6 +42,7 @@ from tools import site_events as SEV
 from tools import site_calc as SCA
 from tools import site_transmission as STR
 from tools import site_observer as SOB
+from tools import site_watch2 as SW2
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
@@ -1254,17 +1255,17 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
-            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
+            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("bonds", "美債", "Treasuries", [SCR.sec_credit_rates, SSL.sec_ebp, SR.sec_rates_radar, S2.sec_bonds]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
-            ("rotation", "類股寬度", "Sectors & breadth", [SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
+            ("rotation", "類股寬度", "Sectors & breadth", [SW2.sec_nh_nl, SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [sec_markets]),
-            ("taiwan", "台股", "Taiwan", [S4.sec_link, sec_taiwan_trends, sec_taiwan]),
+            ("taiwan", "台股", "Taiwan", [S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
@@ -1313,7 +1314,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{COMPLY_CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
@@ -1542,6 +1543,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(STB.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("stability data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 外資台指期淨未平倉歷史（FinMind，2018 年起）
+        from wsb.data import tw_futures as TWF
+        await asyncio.wait_for(TWF.refresh(), 90)
+    except Exception as e:  # noqa: BLE001
+        log.warning("TW foreign OI failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 第二意見與傳導管道：OFR 壓力指數、外國央行託管美債、日圓套利
         from wsb.data import transmission as TRM
         await asyncio.wait_for(TRM.refresh(), 120)
