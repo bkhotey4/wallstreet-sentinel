@@ -295,6 +295,11 @@ class Engine:
             await stb.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("stability data failed: %s", e)
+        try:                                                    # 第二意見與傳導管道（12 小時一次）
+            from .data import transmission as trm
+            await trm.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("transmission data failed: %s", e)
         try:                                                    # 重大事件倒數：CPI／非農官方發布日
             from .analytics import event_clock as evc
             await evc.refresh()

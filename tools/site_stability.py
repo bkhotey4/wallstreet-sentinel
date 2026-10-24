@@ -99,6 +99,11 @@ def sec_st_brief(eng) -> str:
                       f"資本支出÷營業現金流・{ai['state']}" + (f"（{'、'.join(ai['over1'])} > 1）" if ai["over1"] else ""), ""))
     cv = coverage()
     gaps = cv.get("gaps") or []
+    try:
+        from tools import site_transmission as STR
+        tiles += STR.tiles(eng)
+    except Exception:  # noqa: BLE001
+        pass
     tiles.append(("st-cover", "🧭 監測覆蓋盤點", f"{len(gaps)}<small> 個缺口</small>" if cv else "待盤點",
                   f"每月對照聯準會／IMF／OFR 報告" + (f"・{cv.get('updated')}" if cv.get("updated") else ""), ""))
     reds = sum(1 for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🔴")

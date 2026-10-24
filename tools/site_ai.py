@@ -378,6 +378,16 @@ def ai_verdict(eng, ph: dict) -> dict:
                      f"跨資產走法確實很不尋常（亂流第 {tur['pct']:.0f} 百分位），但 9 大產業各走各的"
                      + ("，同步度是 " + flo["since"][:4] + " 年以來最低" if flo["ar_pct"] < 1 else f"（同步度第 {flo['ar_pct']:.0f} 百分位）")
                      + "。衝擊集中在部分資產，資金在輪動，不是全面一起逃。", "ai-flock"))
+    try:
+        from wsb.data import transmission as TRM
+        fsi = TRM.view(eng).get("fsi") or {}
+    except Exception:  # noqa: BLE001
+        fsi = {}
+    cur_b = next((r for r in fsi.get("rows") or [] if r["now"]), None)
+    if fear is not None and fear >= 55 and fsi.get("now") is not None and fsi["now"] <= 0 and cur_b and cur_b.get("p") is not None:
+        over.append(("「金融體系很緊張」",
+                     f"美國財政部金融研究辦公室的官方壓力指數是 {fsi['now']:+.2f}（{fsi['band']}，0＝歷史平均）；歷史上落在這一檔時，"
+                     f"之後 3 個月跌 ≥10% 的機率 {cur_b['p']:.0f}%，平常 {fsi['base']:.0f}%。", None))
     if quake_state(aft) == CALM:
         over.append(("「大跌會一波接一波」",
                      f"上次單日 ≥{aft['main']:.0f}% 的大震已經是 {aft['days_since']} 個交易日前，餘震期結束；"

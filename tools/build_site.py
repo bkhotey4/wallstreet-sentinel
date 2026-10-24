@@ -40,6 +40,7 @@ from tools import site_ai as SAI
 from tools import site_stability as SST
 from tools import site_events as SEV
 from tools import site_calc as SCA
+from tools import site_transmission as STR
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
@@ -1267,7 +1268,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_bubble, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
-            ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ai, SST.sec_st_coverage]),
+            ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_yen, SST.sec_st_coverage]),
             ("tools", "工具", "Tools", [SCA.sec_sizing, S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
@@ -1540,6 +1541,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(STB.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("stability data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 第二意見與傳導管道：OFR 壓力指數、外國央行託管美債、日圓套利
+        from wsb.data import transmission as TRM
+        await asyncio.wait_for(TRM.refresh(), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("transmission data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 重大事件倒數：FRED 的 CPI／非農發布日（7 天一次）
         from wsb.analytics import event_clock as EVC
         await asyncio.wait_for(EVC.refresh(), 60)

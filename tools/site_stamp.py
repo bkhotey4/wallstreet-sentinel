@@ -141,6 +141,23 @@ def _rel_ts():
         return None
 
 
+def _trm(k: str):
+    try:
+        from wsb.data import transmission as TRM
+        return TRM.load().get(k)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _trm_date(k: str) -> Optional[str]:
+    v = _trm(k)
+    if not v:
+        return None
+    if k == "fsi":
+        return (v.get("dates") or [None])[-1]
+    return max(v) if isinstance(v, dict) else None
+
+
 def _cover_date() -> Optional[str]:
     try:
         from tools.site_stability import coverage
@@ -200,6 +217,9 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "baa": ("穆迪公司債利差（FRED，每月）", "Moody's Baa−Aaa", lambda e: (_ts(_bub_ts("ts_check")), _bub_credit_month()), 75),
     "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 10),
     "rel": ("FRED 發布日程", "FRED release dates", lambda e: (_ts(_rel_ts()), None), 0),
+    "ofr": ("OFR 金融壓力指數（每日）", "OFR FSI", lambda e: (_ts(_trm("ts_check")), _trm_date("fsi")), 7),
+    "custody": ("紐約聯準會託管美債（每週）", "Fed custody holdings", lambda e: (_ts(_trm("ts_check")), _trm_date("custody")), 14),
+    "jpy": ("日圓匯率＋CFTC 日圓部位", "Yen and CFTC", lambda e: (_ts(_trm("ts_check")), _trm_date("jpy")), 10),
     "cover": ("覆蓋盤點", "Coverage audit", lambda e: (None, _cover_date()), 40),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
@@ -218,7 +238,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_tr_custody": ["custody"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -244,7 +264,7 @@ def system_stamp(now: float) -> str:
 
 
 # cards whose sources update on different clocks (daily / weekly / monthly): list each source's last check visibly
-DETAIL = {"sec_event_clock", "sec_ai_bubble", "sec_ai_elephant", "sec_st_brief", "sec_st_refunding", "sec_st_funding", "sec_st_basis", "sec_st_ai", "sec_st_coverage"}
+DETAIL = {"sec_tr_fsi", "sec_tr_custody", "sec_tr_yen", "sec_event_clock", "sec_ai_bubble", "sec_ai_elephant", "sec_st_brief", "sec_st_refunding", "sec_st_funding", "sec_st_basis", "sec_st_ai", "sec_st_coverage"}
 
 
 def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:

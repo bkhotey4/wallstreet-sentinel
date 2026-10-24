@@ -1045,6 +1045,18 @@ class Sentinel(commands.Bot):
                                      "看網站「AI 視角看風險」→ AI 泡沫計時器的信用條件。"))
         except Exception:  # noqa: BLE001
             log.exception("elephant alert failed")
+        try:                                     # OFR 官方壓力指數升破 2（壓力高）、外國央行託管美債 13 週減少落在歷史最低 5%
+            from ..data import transmission as trm
+            tv = trm.view(self.engine)
+            f, c = tv.get("fsi") or {}, tv.get("custody") or {}
+            if f.get("now") is not None and f["now"] > 2:
+                out.append(Alert(f"ofr_fsi:{f['date'][:7]}", "⚠️ WARNING", f"官方金融壓力指數升到 {f['now']:+.2f}（{f['band']}）",
+                                 "OFR 金融壓力指數高於 2 時，歷史上之後 3 個月跌 ≥10% 的頻率明顯高於平常；看網站「金融穩定監測」頁。"))
+            if c.get("pct13") is not None and c["pct13"] <= 5:
+                out.append(Alert(f"custody:{c['date']}", "ℹ️ INFO", f"外國央行託管美債 13 週減少 {c['chg13']:.1f}%（歷史最低 5%）",
+                                 f"目前 {c['tn']:.2f} 兆美元、一年 {c['chg52']:+.1f}%。這是美元信任的慢變數，本身不預測股市。"))
+        except Exception:  # noqa: BLE001
+            log.exception("transmission alerts failed")
         try:                                     # AI 的結論改變（人類比數據緊張／數據比人類緊張／差不多）；第一次只記錄
             from ..analytics import ai_verdict as AV
             from ..analytics import physics as PH
