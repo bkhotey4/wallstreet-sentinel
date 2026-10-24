@@ -413,6 +413,17 @@ def ai_verdict(eng, ph: dict) -> dict:
         be, bh, bl = bubble_state(bb)
         if bl:
             under.insert(0, (f"{bl['name']}的泡沫風險", bubble_line(bb).split("：", 1)[-1], "ai-bubble"))
+    try:
+        from tools import site_chain as SCH
+        now_c = (SCH._ac(eng) or {}).get("now") or {}
+        gm = {g["zh"]: g for g in now_c.get("groups") or []}
+        pw, ut = gm.get("電力與電網"), gm.get("公用事業（對照）")
+        if pw and pw["beta"] >= 0.5:
+            under.append(("「AI 受惠股」其實和 AI 綁在一起",
+                          f"電力與電網股在費半大跌的日子平均跌到 {pw['beta']:.2f} 倍" + (f"（真正的公用事業只有 {ut['beta']:.2f}）" if ut else "")
+                          + "；人類把它當防禦股，數據顯示泡沫洩氣時它會跟著跌。", "ai-chain"))
+    except Exception:  # noqa: BLE001
+        pass
     if bb.get("elephants"):
         ee, eh = elephant_state(bb)
         if ee in ("🟠", "🔴"):
@@ -544,6 +555,13 @@ def sec_ai_brief(eng) -> str:
         else:
             tiles.append(("ai-bubble", f"{be} AI 泡沫計時器", (f"{r46['p12']:.0f}<small>% ／12 個月</small>" if r46 else "不符合"),
                           (f"{bl['name']} 2 年 {bl['run']:+.0f}%、離高點 {bl['off']:+.0f}%；歷史同組 12 個月內破裂比例（1946 年起）" if bl else bh), ""))
+    try:
+        from tools import site_chain as SCH
+        ct = SCH.tile(eng)
+        if ct:
+            tiles.append(ct)
+    except Exception:  # noqa: BLE001
+        pass
     if bb.get("elephants"):
         ee, eh = elephant_state(bb)
         tiles.append(("ai-elephant", f"{ee} 大象撤退", eh.split("：")[0], eh.split("：")[-1], ""))
