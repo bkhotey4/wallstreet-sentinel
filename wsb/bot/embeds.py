@@ -40,8 +40,78 @@ def arrow(x):
     return "🟩" if x > 0 else "🟥" if x < 0 else "⬜"
 
 
+def data_stamp(engine) -> str:
+    """When this message was made, when quotes were last fetched, and which trading day they describe."""
+    now = datetime.now(TZ)
+    parts = [f"🕒 系統更新 {now:%m/%d %H:%M} 台北"]
+    m = getattr(engine, "market", None)
+    qts = getattr(m, "quotes_ts", None)
+    if qts:
+        mins = int((now.timestamp() - float(qts)) / 60)
+        parts.append(f"報價 {datetime.fromtimestamp(float(qts), TZ):%m/%d %H:%M}（{mins} 分鐘前）" + ("⚠ 報價偏舊" if mins > 60 else ""))
+    try:
+        asof = str((m.q("^GSPC") or {}).get("asof") or "")[:10]
+    except Exception:  # noqa: BLE001
+        asof = ""
+    if asof:
+        parts.append(f"美股資料日 {asof[5:]}")
+    rts = getattr(engine, "recompute_ts", None)
+    if rts:
+        parts.append(f"風險模型 {datetime.fromtimestamp(float(rts), TZ):%H:%M}")
+    return "｜".join(parts)
+
+
+def stamp_embed(e, engine) -> None:
+    """Append the data stamp to an embed's footer once (keeps whatever footer the builder set)."""
+    if not isinstance(e, discord.Embed):
+        return
+    old = e.footer.text or ""
+    if "🕒" in old:
+        return
+    st = data_stamp(engine)
+    if len(e) + len(st) + 1 > 6000 or len(old) + len(st) + 1 > 2048:      # Discord's limits: never break a send for a stamp
+        return
+    e.set_footer(text=((old + "\n") if old else "") + st, icon_url=e.footer.icon_url)
+
+
+_INSTALLED = {"done": False}
+
+
+def wrap_send(fn, engine):
+    """A send / edit coroutine that stamps any embed= / embeds= it is given, then calls the original."""
+    async def inner(*a, **k):
+        for key in ("embed", "embeds"):
+            v = k.get(key)
+            if v:
+                for x in (v if isinstance(v, (list, tuple)) else [v]):
+                    try:
+                        stamp_embed(x, engine)
+                    except Exception:  # noqa: BLE001
+                        pass
+        return await fn(*a, **k)
+    inner.__wrapped__ = fn
+    return inner
+
+
+def install_stamps(engine) -> None:
+    """Every embed the bot sends or edits gets the stamp, whichever command or job built it; slides get it too."""
+    if _INSTALLED["done"]:
+        return
+    _INSTALLED["done"] = True
+
+    abc = getattr(discord, "abc", None)
+    for cls, name in ((getattr(abc, "Messageable", None), "send"), (getattr(discord, "Webhook", None), "send"),
+                      (getattr(discord, "InteractionResponse", None), "send_message"), (getattr(discord, "InteractionResponse", None), "edit_message"),
+                      (getattr(discord, "Message", None), "edit"), (getattr(discord, "WebhookMessage", None), "edit"),
+                      (getattr(discord, "Interaction", None), "edit_original_response")):
+        if cls is not None and hasattr(cls, name):
+            setattr(cls, name, wrap_send(getattr(cls, name), engine))
+    from . import slides
+    slides.DATA_STAMP = lambda: data_stamp(engine).replace("🕒 ", "")
+
+
 def footer(e: discord.Embed, engine) -> discord.Embed:
-    e.set_footer(text=f"WallStreet Sentinel · {engine.age_str()} · {datetime.now(TZ):%m/%d %H:%M} 台北 · 非投資建議")
+    e.set_footer(text=f"WallStreet Sentinel · 非投資建議\n{data_stamp(engine)}")
     return e
 
 

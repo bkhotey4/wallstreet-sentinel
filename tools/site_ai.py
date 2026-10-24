@@ -202,6 +202,94 @@ def sec_ai_score(eng) -> str:
     return card("AI 風險分數：市場消化，還是會大跌？", "AI risk score: digestion or a fall?", body, "wide")
 
 
+# ---------------------------------------------------------------- 熱度計：健康、偏貪婪、太熱，還是偏冷
+def fuel(eng) -> list:
+    """(name, hot, reading) for the slow 'fuel' that turns a strong market into an overheated one."""
+    out = []
+    try:
+        from wsb.analytics import vulnerability as VU
+        from wsb.data import fed_research as FR
+        lt = {x["k"]: x for x in VU.build(eng, FR.load().get("ebp")).get("lights") or []}
+    except Exception:  # noqa: BLE001
+        lt = {}
+    if "credit" in lt or "household" in lt:
+        hot = any(lt.get(k, {}).get("state") == "hot" for k in ("credit", "household"))
+        out.append(("借款暴增", hot, (lt.get("credit") or lt.get("household"))["txt"]))
+    if "spreads" in lt or "ebp" in lt:
+        hot = any(lt.get(k, {}).get("state") == "hot" for k in ("spreads", "ebp"))
+        out.append(("信用定價太樂觀", hot, "；".join(lt[k]["txt"] for k in ("spreads", "ebp") if k in lt)))
+    try:
+        from wsb.analytics import valuation as VA
+        items = {i["key"]: i for g in VA.build(eng).get("groups") or [] for i in g["items"]}
+    except Exception:  # noqa: BLE001
+        items = {}
+    b = items.get("buffett")
+    if b and b.get("pctile") is not None:
+        out.append(("估值偏貴", b["pctile"] >= 90, f"巴菲特指標 {b['value']:.0f}%（{b.get('hist_start') or ''} 年以來第 {b['pctile']:.0f} 百分位）"))
+    sp = [items[k] for k in ("hibeta", "arkk") if k in items and items[k].get("pctile") is not None]
+    if sp:
+        out.append(("投機資金追高", any(x["pctile"] >= 90 for x in sp), "；".join(f"{x['label']} 第 {x['pctile']:.0f} 百分位" for x in sp)))
+    if "rzone" in lt:
+        out.append(("R-zone：借款與資產同時過熱", lt["rzone"]["state"] == "hot", lt["rzone"]["txt"]))
+    return out
+
+
+def heat_status(h: dict, fu: list) -> tuple:
+    hv = h.get("now") if h.get("available") else None
+    hot = [n for n, x, _t in fu if x]
+    rz = any(n.startswith("R-zone") and x for n, x, _t in fu)
+    if rz or (len(hot) >= 3 and (hv or 0) >= 60):
+        st, txt = "太熱", "漲勢強、底下燃料也多（" + "、".join(hot) + "）"
+    elif len(hot) >= 2:
+        st, txt = "偏貪婪", "價格走勢還算健康，但" + "、".join(hot)
+    elif hv is not None and hv < 30:
+        st, txt = "偏冷", "價格動能弱，市場在修正或恐懼中"
+    else:
+        st, txt = "健康", ("健康的強勢：動能好、燃料不多" if (hv or 0) >= 60 else "動能和燃料都在正常範圍")
+    return st, txt, hot
+
+
+HEAT_EMO = {"太熱": "🔴", "偏貪婪": "🟠", "健康": "🟢", "偏冷": "🔵"}
+
+
+@_anchor("ai-heat")
+def sec_ai_heat(eng) -> str:
+    ph = _ph(eng)
+    h = (ph or {}).get("heat") or {}
+    fu = fuel(eng)
+    if not h.get("available") and not fu:
+        return ""
+    st, txt, hot = heat_status(h, fu)
+    top = f"{HEAT_EMO[st]} 熱度計：{st}——{txt}"
+    parts = []
+    if h.get("available"):
+        c = h["comp"]
+        lis = [f"離 200 日均線 {h['dev_pct']:+.1f}%（第 {c['dev']:.0f} 百分位）",
+               f"上漲加速度第 {c['acc']:.0f} 百分位（越高越像「越漲越快」）",
+               f"平靜度第 {c['calm']:.0f} 百分位（越高波動越低）"]
+        lab = f"{h['band']} {h['now']:.0f}／100"
+        parts.append(f'<div><b>{T("價格動能（AI 視角，只看價格）", "Price momentum (price only)")}</b>：{T(lab, lab)}'
+                     f'<ul class="brief">{"".join(f"<li>{T(x, x)}</li>" for x in lis)}</ul></div>')
+    if fu:
+        lis = "".join(f'<li>{"🔥" if x else "・"} <b>{T(n, n)}</b>：{T(t, t)}</li>' for n, x, t in fu)
+        parts.append(f'<div><b>{T("底下的燃料（決定熱是健康還是危險）", "Fuel underneath")}</b>：{len(hot)}／{len(fu)} {T("項偏熱", "hot")}<ul class="brief">{lis}</ul></div>')
+    rows = ""
+    for r in h.get("rows") or []:
+        rows += (f'<tr><td>{r["yrs"]} 年</td><td>{T(r["band"], r["band"])}{"（%d–%d）" % (r["lo"], r["hi"]) if "lo" in r else ""}</td>'
+                 f'<td class="r">{num(r["med"], 1, sign=True)}%</td><td class="r">{num(r["crash"], 0)}%（≥{r["dd"]}%）</td><td class="r small muted">{r["n"]:,}</td></tr>')
+    table = (f'<div class="scroll"><table class="mini"><thead><tr><th>{T("之後", "Horizon")}</th><th>{T("價格熱度", "Heat")}</th>'
+             f'<th class="r">{T("報酬中位數", "Median return")}</th><th class="r">{T("期間內大跌機率", "Chance of a big fall")}</th>'
+             f'<th class="r">{T("天數", "Days")}</th></tr></thead><tbody>{rows}</tbody></table></div>') if rows else ""
+    note = T(f"回測發現（標普 500，{h.get('since', '1932')} 年起）：只看價格的「熱」並不危險，價格最熱的時候，之後 1 年和 3 年的表現反而不差、大跌機率也比較低，"
+             "因為強勁又平穩的漲勢通常會延續。所以「太熱」不能只看漲多少，要看底下有沒有燃料：借款暴增、信用定價太樂觀、估值太貴、投機資金追高。"
+             "1999 年和 2007 年的問題都在燃料，不在漲勢本身。燃料的判讀依據 Greenwood 等（2022）、López-Salido 等（2017）、Gilchrist & Zakrajšek（2012），"
+             "詳見「全方位風險」的累積脆弱度和「估值泡沫」頁。燃料多不代表馬上出事，可能持續好幾年。這是現況描述，不是預測，也不是投資建議。",
+             "Price heat alone has not been dangerous since 1932; the fuel (credit, valuation, speculation) decides. Not a forecast or advice.")
+    body = (f'<p class="rimp big2"><b>{T(top, top)}</b></p><div class="g2">{"".join(parts)}</div>'
+            + _fold(table + f'<p class="note">{note}</p>', "點開看回測：價格熱度之後的表現"))
+    return card("熱度計：風險退散後，是健康還是太熱？", "Heat gauge: healthy, greedy or overheated?", body, "wide")
+
+
 @_anchor("ai-top")
 def sec_ai_brief(eng) -> str:
     """一眼看懂: one sentence, four lights, three things to watch; the comparison table and lessons folded."""
@@ -249,6 +337,12 @@ def sec_ai_brief(eng) -> str:
         ok = ana.get("auc") is not None and ana["auc"] >= 0.55
         tiles.append(("ai-analog", f"{EMO[analog_state(ana)] if ok else EMO[None]} AI 記憶（相似日）", "採計" if ok else "不採計",
                       f"回測 AUC {num(ana['auc'], 2)}" + ("" if ok else "，比亂猜還差"), ""))
+    hh = ph.get("heat") or {}
+    fu = fuel(eng)
+    if hh.get("available") or fu:
+        hst, htxt, hhot = heat_status(hh, fu)
+        tiles.append(("ai-heat", f"{HEAT_EMO[hst]} 熱度計（健康還是太熱）", hst,
+                      (f"價格動能 {hh['now']:.0f}／100・" if hh.get("available") else "") + f"燃料 {len(hhot)}／{len(fu)} 項偏熱", ""))
     tiles.append(("ai-cross", "🤝 人類指標 vs AI", f"{n_ok}<small> 一致</small>・{n_split}<small> 分歧</small>", cnt, ""))
     grid = "".join(f'<a class="aitile" href="#ai" data-jump="{k}"><span class="tl">{T(lab, lab)}</span><span class="tv">{big}</span>'
                    f'<span class="tt">{T(txt, txt)}</span>{extra}<span class="go">{T("看細節 ›", "Details ›")}</span></a>'

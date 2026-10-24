@@ -1239,7 +1239,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
-            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
+            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
@@ -1261,7 +1261,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             html_ = f'<section class="card wide"><p class="muted">{T("這一頁的資料暫時取不到", "No data for this page right now")}</p></section>'
         names[key], bodies[key] = (zh, en), html_
     try:                                                   # 總攬大表: figures copied from the cards just rendered
-        bodies["overview"] = SLY.index_card(bodies, names) + bodies.get("overview", "")
+        bodies["overview"] = STP.inject(SLY.index_card(bodies, names), STP.stamp(eng, "sec_index", "overview")) + bodies.get("overview", "")
     except Exception:  # noqa: BLE001
         log.exception("index card failed")
     first = tabs[0][0]

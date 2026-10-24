@@ -81,6 +81,7 @@ class Sentinel(commands.Bot):
             allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
             allowed_installs=app_commands.AppInstallationType(guild=True, user=True))
         self.engine = Engine()
+        E.install_stamps(self.engine)              # every embed / slide shows system time, quote time and data date
         self._tasks: List[asyncio.Task] = []
         self._bg: set = set()                     # strong refs to fire-and-forget tasks (+ error logging)
         self._sending: set = set()                # scheduled jobs currently in progress

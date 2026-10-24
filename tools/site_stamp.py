@@ -74,6 +74,15 @@ def _fedres_date() -> Optional[str]:
     return max(ds) if ds else None
 
 
+def _feed_date() -> Optional[str]:
+    try:
+        import json
+        from tools.site_research import FEED
+        return _d(json.loads(FEED.read_text(encoding="utf-8")).get("updated"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _g(eng, *path):
     o = eng
     for p in path:
@@ -107,6 +116,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "taiwan": ("台股籌碼", "Taiwan flows", lambda e: (_ts(_g(e, "taiwan", "ts")), _d(_g(e, "taiwan", "asof"))), 4),
     "street": ("華爾街觀點", "Street views", lambda e: (None, _d(_g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
+    "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
 
@@ -124,7 +134,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -133,7 +143,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_feed", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
 
 
 def sources_for(fname: str, tab: str) -> List[str]:
@@ -142,11 +152,18 @@ def sources_for(fname: str, tab: str) -> List[str]:
     return CARD.get(fname) or TAB_DEFAULT.get(tab, [])
 
 
+def system_stamp(now: float) -> str:
+    """For cards whose content does not come from a feed (explanations, terms, tools): when the page was built."""
+    when = datetime.fromtimestamp(now, TPE).strftime("%m-%d %H:%M")
+    return (f'<p class="upd" title="{esc("這張卡的內容不隨行情變動；時間是網站最後一次重新產生的時間")}">🕒 {T("系統更新", "Built")} {when}'
+            f' <span class="ago" data-ts="{int(now)}"></span></p>')
+
+
 def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
     keys = sources_for(fname, tab)
-    if not keys:
-        return ""
     now = now or time.time()
+    if not keys:
+        return system_stamp(now)
     try:
         from wsb.data.econcal import us_today
         today = us_today()
@@ -172,7 +189,7 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
         w = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else "—"
         tips.append(f"{zh}：抓取 {w}" + (f"，資料日 {d}" if d else ""))
     if not fetched and not dates:
-        return ""
+        return system_stamp(now)
     ts = min(fetched) if fetched else None
     d = max(dates) if dates else None
     when = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else None
@@ -187,21 +204,18 @@ def inject(html: str, st: str) -> str:
     """Put the stamp right under each card's title (every card a section returned)."""
     if not st or "</h2>" not in html:
         return html
+    import re
+    starts = [m.start() for m in re.finditer(r'<section\b[^>]*\bclass="card', html)]     # id="…" may come before class
     out, i = [], 0
-    while True:
-        j = html.find('<section class="card', i)
-        if j < 0:
-            out.append(html[i:])
-            break
+    for n, j in enumerate(starts):
         k = html.find("</h2>", j)
-        nxt = html.find('<section class="card', j + 1)
+        nxt = starts[n + 1] if n + 1 < len(starts) else -1
         if k < 0 or (0 <= nxt < k):
-            out.append(html[i:j + 1])
-            i = j + 1
             continue
         k += len("</h2>")
         out.append(html[i:k] + st)
         i = k
+    out.append(html[i:])
     return "".join(out)
 
 

@@ -306,6 +306,60 @@ def turbulence(hist: pd.DataFrame, spx: pd.Series, c: Dict) -> Dict:
             "top_d": top.strftime("%Y-%m-%d"), "top_v": float(tb[top]), "spark": pc.iloc[-500:]}
 
 
+# ---------------------------------------------------------------- 熱度：價格動能（離趨勢多遠、是否加速、是否太平靜）
+def exp_pct(sr: pd.Series, warm: int = 1000) -> pd.Series:
+    """Each value's percentile among all earlier values (expanding, past only)."""
+    import bisect
+    v = sr.to_numpy(dtype=float)
+    out = np.full(len(v), np.nan)
+    seen: List[float] = []
+    for i, x in enumerate(v):
+        if np.isnan(x):
+            continue
+        if len(seen) >= warm:
+            out[i] = bisect.bisect_left(seen, x) / len(seen) * 100
+        bisect.insort(seen, x)
+    return pd.Series(out, index=sr.index)
+
+
+def curvature(lp: pd.Series, n: int = 252) -> pd.Series:
+    """Quadratic coefficient of log price over the last n days (> 0 = rising faster than exponential, Sornette)."""
+    t = np.arange(n) - (n - 1) / 2
+    w = np.linalg.pinv(np.vstack([np.ones(n), t, t ** 2]).T)[2]
+    c = np.convolve(lp.to_numpy(), w[::-1], mode="full")[n - 1:len(lp)] * n * n
+    return pd.Series(c, index=lp.index[n - 1:]).reindex(lp.index)
+
+
+HEAT_BANDS = ((0, 30, "冷"), (30, 60, "溫"), (60, 80, "熱"), (80, 101, "很熱"))
+
+
+def heat(spx: pd.Series) -> Dict:
+    spx = spx.dropna()
+    spx = spx[spx > 0]
+    if len(spx) < 252 * 30:
+        return {"available": False}
+    lp = np.log(spx)
+    dev = spx / spx.rolling(200).mean() - 1
+    comp = pd.DataFrame({"dev": exp_pct(dev), "acc": exp_pct(curvature(lp)), "calm": 100 - exp_pct(lp.diff().rolling(21).std())})
+    h = comp.mean(axis=1, skipna=False).dropna()
+    out_rows = []
+    for yrs, dd in ((1, 20), (3, 30)):
+        n = 252 * yrs
+        fr = (spx.shift(-n) / spx - 1) * 100
+        fmin = spx[::-1].rolling(n, min_periods=n).min()[::-1].shift(-1)
+        fdd = (fmin / spx - 1) * 100
+        j = pd.DataFrame({"h": h, "r": fr, "dd": fdd}).dropna()
+        for lo, hi, zh in HEAT_BANDS:
+            x = j[(j.h >= lo) & (j.h < hi)]
+            out_rows.append({"yrs": yrs, "dd": dd, "band": zh, "lo": lo, "hi": min(hi, 100), "n": int(len(x)),
+                             "med": float(x.r.median()) if len(x) else None, "crash": float((x.dd <= -dd).mean() * 100) if len(x) else None})
+        out_rows.append({"yrs": yrs, "dd": dd, "band": "全部", "n": int(len(j)), "med": float(j.r.median()), "crash": float((j.dd <= -dd).mean() * 100)})
+    now = float(h.iloc[-1])
+    return {"available": True, "now": now, "band": next(z for lo, hi, z in HEAT_BANDS if lo <= now < hi),
+            "comp": {k: float(comp[k].iloc[-1]) for k in comp}, "dev_pct": float(dev.iloc[-1] * 100), "rows": out_rows,
+            "since": h.index[0].strftime("%Y"), "spark": h.iloc[-500:]}
+
+
 # ---------------------------------------------------------------- AI 風險分數
 QUAKE_PTS = (100, 80, 60, 40, 20)            # by aftershock bucket: 1–5, 6–20, 21–60, 61–250, > 250 days
 
@@ -401,7 +455,7 @@ def build(eng) -> Dict:
     c = CFG
     out = {"available": True, "cfg": c}
     for k, fn in (("aftershock", lambda: aftershock(spx_long, c)), ("absorption", lambda: absorption(hist, spx, c)),
-                  ("turbulence", lambda: turbulence(hist, spx, c)), ("analog", lambda: analog(hist, c))):
+                  ("turbulence", lambda: turbulence(hist, spx, c)), ("analog", lambda: analog(hist, c)), ("heat", lambda: heat(spx_long))):
         try:
             out[k] = fn()
         except Exception as e:  # noqa: BLE001

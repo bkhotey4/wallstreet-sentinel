@@ -134,6 +134,9 @@ def fmt(x, d=2, pct=False, sign=False, money=False) -> str:
 
 
 # ------------------------------------------------------------------ canvas
+DATA_STAMP = lambda: ""          # set by embeds.install_stamps: quote time and data date for every slide footer
+
+
 class Slide:
     def __init__(self, title: str, page: str = "", subtitle: str = "") -> None:
         self.im = Image.new("RGB", (W, H), BG)
@@ -158,8 +161,12 @@ class Slide:
         self.d.line((M, 138, W - M, 138), fill=BORDER, width=3)
         if subtitle:
             self.d.text((M, 170), subtitle, font=self.fit(subtitle, 32, W - 2 * M, False, 22), fill=MUTED, anchor="lm")
-        self.d.text((W / 2, H - 30), "WallStreet Sentinel · 即時數據 · 非投資建議", font=font(22), fill="#5A6470",
-                    anchor="mm")
+        try:
+            ds = DATA_STAMP()
+        except Exception:  # noqa: BLE001
+            ds = ""
+        self.d.text((W / 2, H - 30), "WallStreet Sentinel · " + (ds or f"系統更新 {now:%m/%d %H:%M}") + " · 非投資建議",
+                    font=self.fit("WallStreet Sentinel · " + ds + " · 非投資建議", 22, W - 2 * M, False, 16), fill="#5A6470", anchor="mm")
 
     # -- primitives
     def text_w(self, s: str, f) -> float:

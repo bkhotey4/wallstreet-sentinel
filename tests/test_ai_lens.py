@@ -107,18 +107,38 @@ def test_score():
     print("ok score")
 
 
+def test_heat():
+    from tools import site_ai as SAI
+    x = pd.Series([3.0, 1.0, 2.0, 5.0, 4.0])
+    e = PH.exp_pct(x, warm=2).tolist()
+    assert np.isnan(e[0]) and np.isnan(e[1]) and e[2] == 50.0 and e[3] == 100.0 and abs(e[4] - 75.0) < 1e-9   # past values only
+    d = pd.bdate_range("2000-01-03", periods=600)
+    t = np.arange(600, dtype=float)
+    assert PH.curvature(pd.Series(0.000004 * t ** 2, index=d)).iloc[-1] > 0 > PH.curvature(pd.Series(-0.000004 * t ** 2, index=d)).iloc[-1]
+    PH._CACHE.clear()
+    h = PH.build(fixture())["heat"]
+    assert h["available"] and 0 <= h["now"] <= 100 and {r["yrs"] for r in h["rows"]} == {1, 3}
+    hot2 = [("信用定價太樂觀", True, ""), ("估值偏貴", True, ""), ("借款暴增", False, "")]
+    assert SAI.heat_status({"available": True, "now": 50}, hot2)[0] == "偏貪婪"
+    assert SAI.heat_status({"available": True, "now": 70}, hot2 + [("投機資金追高", True, "")])[0] == "太熱"
+    assert SAI.heat_status({"available": True, "now": 50}, [("R-zone：借款與資產同時過熱", True, "")])[0] == "太熱"
+    assert SAI.heat_status({"available": True, "now": 20}, [])[0] == "偏冷"
+    assert SAI.heat_status({"available": True, "now": 70}, hot2[:1])[1].startswith("健康的強勢")
+    print("ok heat")
+
+
 def test_cards():
     from tools import site_ai as SAI
     PH._CACHE.clear()
     e = fixture()
-    h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
+    h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_heat, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
     b = SAI.sec_ai_brief(e)
-    assert "回到重點" not in b and h.count("回到重點") == 6
+    assert "回到重點" not in b and h.count("回到重點") == 7
     assert "一眼看懂" in b and "接下來要盯的 3 件事" in b and b.count('class="aitile"') >= 7 and "<details" not in b
-    for k in ("ai-score", "ai-turb", "ai-flock", "ai-quake", "ai-analog", "ai-cross"):
+    for k in ("ai-score", "ai-heat", "ai-turb", "ai-flock", "ai-quake", "ai-analog", "ai-cross"):
         assert f'data-jump="{k}"' in b and h.count(f'id="{k}"') == 1, k             # every block lands on exactly one card
     assert all("<details" in f(e) for f in (SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross))
-    for w in ("AI 風險分數", "消化", "AI 視角交叉比對", "人類世界觀", "大森定律", "吸收比率", "Mahalanobis", "k 最近鄰", "假警報", "不是投資建議"):
+    for w in ("AI 風險分數", "消化", "熱度計", "AI 視角交叉比對", "人類世界觀", "大森定律", "吸收比率", "Mahalanobis", "k 最近鄰", "假警報", "不是投資建議"):
         assert w in h, w
     assert "未實現" not in h and "持倉" not in h
     rows = SAI.cross_rows(e)
@@ -141,5 +161,6 @@ if __name__ == "__main__":
     test_absorption_turbulence()
     test_analog_past_only()
     test_score()
+    test_heat()
     test_cards()
     print("all AI-lens tests passed")
