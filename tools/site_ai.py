@@ -528,6 +528,11 @@ def sec_ai_brief(eng) -> str:
         hst, htxt, hhot = heat_status(hh, fu)
         tiles.append(("ai-heat", f"{HEAT_EMO[hst]} 熱度計（健康還是太熱）", hst,
                       (f"價格動能 {hh['now']:.0f}／100・" if hh.get("available") else "") + f"燃料 {len(hhot)}／{len(fu)} 項偏熱", ""))
+    try:
+        from tools import site_observer as SOB
+        tiles.insert(0, SOB.tile())
+    except Exception:  # noqa: BLE001
+        pass
     bb = _bub(eng)
     if bb.get("available"):
         be, bh, bl = bubble_state(bb)

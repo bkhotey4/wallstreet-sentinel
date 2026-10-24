@@ -39,6 +39,7 @@ REPO_URL = "https://markets.newyorkfed.org/api/rp/repo/all/results/last/{n}.json
 CFTC_URL = "https://publicreporting.cftc.gov/resource/gpe5-46if.json"
 # the monthly coverage audit (cloud routine) writes this file in the public site repo; the bot reads it from there
 COVER_URL = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/coverage.json"
+AIVIEW_URL = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/ai_view.json"   # 獨立 AI 觀察員
 # contract → (中文, 名目面額 $) ; 2 年期一口 20 萬美元，其餘 10 萬
 FUTURES = {"042601": ("2 年", 200_000), "044601": ("5 年", 100_000), "043602": ("10 年", 100_000),
            "043607": ("超長 10 年", 100_000), "020601": ("30 年", 100_000), "020604": ("超長 30 年", 100_000)}
@@ -227,7 +228,8 @@ async def refresh(force: bool = False) -> Dict:
     steps = (("refunding", lambda: fetch_refunding(d.get("refunding") or {})), ("bills", fetch_bills),
              ("sofr", lambda: _get_parse(SOFR_URL.format(end=time.strftime("%Y-%m-%d")), parse_sofr)),
              ("repo", lambda: _get_parse(REPO_URL.format(n=500), parse_repo)), ("cftc", fetch_cftc),
-             ("coverage", lambda: _get_parse(COVER_URL, lambda js: js if isinstance(js, dict) and "gaps" in js else None)))
+             ("coverage", lambda: _get_parse(COVER_URL, lambda js: js if isinstance(js, dict) and "gaps" in js else None)),
+             ("ai_view", lambda: _get_parse(AIVIEW_URL, lambda js: js if isinstance(js, dict) and js.get("verdict") else None)))
     for key, fn in steps:
         try:
             v = await fn()
@@ -237,7 +239,7 @@ async def refresh(force: bool = False) -> Dict:
             d.setdefault("ts_each", {})[key] = now
         except Exception as e:  # noqa: BLE001
             bad.append(f"{key}: {e if str(e) else type(e).__name__}")
-    bad = [b for b in bad if not b.startswith("coverage")]   # optional: absent until the first monthly audit runs
+    bad = [b for b in bad if not b.startswith(("coverage", "ai_view"))]   # optional: absent until the first monthly audit runs
     d["ts_check"] = now
     if len(bad) < len(steps):
         d["ts"] = now

@@ -1057,6 +1057,17 @@ class Sentinel(commands.Bot):
                                  f"目前 {c['tn']:.2f} 兆美元、一年 {c['chg52']:+.1f}%。這是美元信任的慢變數，本身不預測股市。"))
         except Exception:  # noqa: BLE001
             log.exception("transmission alerts failed")
+        try:                                     # 獨立 AI 觀察員的整體判讀改變（雲端排程每個交易日兩次，從公開 repo 讀）
+            av = stb.load().get("ai_view") or {}
+            prev_v = store.kv_get("ai_observer_verdict")
+            if av.get("verdict"):
+                store.kv_set("ai_observer_verdict", av["verdict"])
+                if prev_v and prev_v != av["verdict"]:
+                    lines = "\n".join(f"・{n.get('claim', '')}：{n.get('judgement', '')}" for n in (av.get("narratives") or [])[:5])
+                    out.append(Alert(f"aiobserver:{av.get('updated', '')}", "ℹ️ INFO", f"獨立 AI 觀察員判讀改變：{prev_v} → {av['verdict']}",
+                                     f"{av.get('summary', '')}\n{lines}"[:1000]))
+        except Exception:  # noqa: BLE001
+            log.exception("AI observer alert failed")
         try:                                     # AI 的結論改變（人類比數據緊張／數據比人類緊張／差不多）；第一次只記錄
             from ..analytics import ai_verdict as AV
             from ..analytics import physics as PH
