@@ -56,34 +56,47 @@ def vix_term(eng) -> Optional[Dict]:
     return out
 
 
-def nh_nl(eng) -> Optional[Dict]:
+def _universe_close(eng):
+    """Whole US market (~2,500 stocks, built by the site job) when it is there; else the site's tracking pool."""
+    try:
+        from ..data import fullmarket as FM
+        fm, _v = FM.load_prices("us")
+        if not fm.empty and fm.shape[1] >= 300 and len(fm) >= 265:
+            return fm.astype(float), "美股全市場"
+    except Exception:  # noqa: BLE001
+        pass
     sp = getattr(eng, "stockprices", None)
     close = getattr(sp, "close", None) if sp is not None else None
     if close is None or close.empty:
-        return None
+        return None, None
     try:
         from ..data.stocks import universe
         us = list(((universe().get("us") or {}).get("symbols") or {}).keys())
     except Exception:  # noqa: BLE001
         us = []
     cols = [c for c in close.columns if c in us] or [c for c in close.columns if "." not in str(c)]
-    c = close[cols].astype(float)
-    if len(c) < 300 or len(cols) < 50:
+    return close[cols].astype(float), "本站追蹤池"
+
+
+def nh_nl(eng) -> Optional[Dict]:
+    c, src = _universe_close(eng)
+    if c is None or len(c) < 265 or c.shape[1] < 50:
         return None
+    cols = list(c.columns)
     hi = c.rolling(252, min_periods=240).max()
     lo = c.rolling(252, min_periods=240).min()
     nh = (c >= hi).sum(axis=1)
     nl = (c <= lo).sum(axis=1)
     valid = hi.notna().sum(axis=1) >= 50
     diff = (nh - nl)[valid]
-    if len(diff) < 40:
+    if len(diff) < 10:
         return None
     nh, nl = nh[valid], nl[valid]
     try:
         spx = eng.market.series("^GSPC").dropna()
     except Exception:  # noqa: BLE001
         spx = pd.Series(dtype=float)
-    out = {"date": diff.index[-1].strftime("%Y-%m-%d"), "nh": int(nh.iloc[-1]), "nl": int(nl.iloc[-1]), "diff": int(diff.iloc[-1]),
+    out = {"src": src, "date": diff.index[-1].strftime("%Y-%m-%d"), "nh": int(nh.iloc[-1]), "nl": int(nl.iloc[-1]), "diff": int(diff.iloc[-1]),
            "avg10": float(diff.tail(10).mean()), "n": int(valid.iloc[-1] and hi.notna().iloc[-1].sum()),
            "hist": [[i.strftime("%Y-%m-%d"), int(x)] for i, x in diff.tail(120).items()]}
     sig = "沒有背離"

@@ -111,6 +111,32 @@ def sec_tr_yen(eng) -> str:
     return card("日圓套利交易：2024 年 8 月閃崩的引信", "Yen carry trade", body, "wide")
 
 
+DOLLAR_NOTE = ("換匯額度：外國央行缺美元時，可以拿自己的貨幣跟聯準會換美元。平常幾乎沒人用；用量衝到 100 億美元以上，代表全球在搶美元"
+               "（2008 金融海嘯、2011 歐債危機、2020 疫情都是）。GDPNow：亞特蘭大聯準會用最新公布的經濟數據，即時估算這一季 GDP 年化成長率，"
+               "比官方 GDP 早好幾週；它不是預測股市，負數才代表經濟可能在收縮。資料：FRED SWPT、GDPNOW。不是投資建議。")
+
+
+@_anchor("st-dollar")
+def sec_tr_dollar(eng) -> str:
+    v = _v(eng).get("dollar")
+    if not v:
+        return ""
+    sw, gn = v.get("swaps"), v.get("gdpnow")
+    lines = []
+    if sw:
+        spells = "、".join(sw["spells"][-5:])
+        lines.append(f"{sw['emoji']} 聯準會換匯額度：現在 {sw['bn'] * 10:,.1f} 億美元（{sw['date']}），{sw['state']}。"
+                     f"歷史上超過 100 億美元的時期：{spells}；最高是 {sw['peak_d']} 的 {sw['peak'] * 10:,.0f} 億美元。")
+    if gn:
+        prev = f"（上一季 {gn['prev']:.1f}%）" if gn.get("prev") is not None else ""
+        lines.append(f"{gn['emoji']} 亞特蘭大聯準會 GDPNow：{gn['quarter']} 經濟成長估計 {gn['pct']:+.1f}%（年化）{prev}。")
+    head = ("一句話看懂：全球沒有在搶美元，經濟也還在成長。" if sw and sw["emoji"] == "🟢" and gn and gn["pct"] > 0 else
+            "一句話看懂：美元或景氣出現壓力，看下面兩項。")
+    body = (f'<p class="rimp big2"><b>{T(head, "")}</b></p>' + "".join(f'<p>{T(x, "")}</p>' for x in lines)
+            + f'<details class="sgx"><summary>{T("這兩個是什麼？", "What are these?")}</summary><p class="note">{T(DOLLAR_NOTE, "")}</p></details>')
+    return card("美元荒與即時景氣：換匯額度、GDPNow", "Dollar squeeze and GDPNow", body, "wide")
+
+
 def tiles(eng) -> list:
     v = _v(eng)
     out = []
@@ -121,6 +147,10 @@ def tiles(eng) -> list:
         out.append(("st-fsi", f"{fsi_emoji(f)} 官方壓力指數（OFR）", f"{f['now']:+.2f}", sub, ""))
     if c:
         out.append(("st-custody", f"{c['emoji']} 外國央行託管美債", f"{c['chg52']:+.1f}<small>% ／年</small>", f"{c['state']}・{c['tn']:.2f} 兆美元", ""))
+    dv = v.get("dollar") or {}
+    if dv.get("swaps"):
+        sw = dv["swaps"]
+        out.append(("st-dollar", f"{sw['emoji']} 美元荒（換匯額度）", sw["state"], f"{sw['bn'] * 10:,.1f} 億美元" + (f"・GDPNow {dv['gdpnow']['pct']:+.1f}%" if dv.get("gdpnow") else ""), ""))
     if y:
         out.append(("st-yen", f"{yen_emoji(y)} 日圓套利", f"{y['usdjpy']:.0f}", y["state"], ""))
     return out

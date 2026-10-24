@@ -59,6 +59,15 @@ def test_yen():
     assert TR.yen_view(d, _spx())["carry_big"]
 
 
+def test_dollar():
+    w = pd.date_range("2007-01-03", periods=900, freq="7D")
+    sw = {d.strftime("%Y-%m-%d"): (500000.0 if 50 <= i < 80 else 20000.0 if 600 <= i < 610 else 150.0) for i, d in enumerate(w)}
+    v = TR.dollar_view({"swaps": sw, "gdpnow": {"2026-04-01": 1.5, "2026-07-01": 3.5}})
+    assert v["swaps"]["state"].startswith("正常") and len(v["swaps"]["spells"]) == 2 and v["gdpnow"]["quarter"] == "2026Q3"
+    sw[w[-1].strftime("%Y-%m-%d")] = 15000.0
+    assert TR.dollar_view({"swaps": sw})["swaps"]["state"] == "美元荒"
+
+
 def test_cards():
     from tools import site_transmission as STR
     TR._save({"fsi": TR.parse_fsi(_fsi_csv(-1.9)), "custody": {d.strftime("%Y-%m-%d"): 2.6e6 - i * 1000 for i, d in enumerate(pd.date_range("2010-01-06", periods=800, freq="7D"))},

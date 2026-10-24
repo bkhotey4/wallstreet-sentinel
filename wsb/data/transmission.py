@@ -89,6 +89,7 @@ async def refresh(force: bool = False) -> Dict:
     bad = []
     if force or now - float(d.get("ts", 0)) > TTL or not d.get("fsi"):
         steps = (("fsi", lambda: _get_fsi()), ("custody", lambda: _fred("WMTSECL1", "2003-01-01")),
+                 ("swaps", lambda: _fred("SWPT", "2007-01-01")), ("gdpnow", lambda: _fred("GDPNOW", "2011-01-01")),
                  ("jpy", lambda: _fred("DEXJPUS", "1990-01-01")), ("yen_cftc", _yen_cftc))
         for k, fn in steps:
             try:
@@ -193,6 +194,32 @@ def yen_view(d: Dict, spx: pd.Series) -> Optional[Dict]:
     return out
 
 
+def dollar_view(d: Dict) -> Optional[Dict]:
+    """Fed central-bank liquidity swaps (FRED SWPT, weekly, $ millions) and the Atlanta Fed GDPNow (FRED GDPNOW, latest quarter)."""
+    sw, gn = d.get("swaps") or {}, d.get("gdpnow") or {}
+    if len(sw) < 50 and not gn:
+        return None
+    out: Dict = {}
+    if len(sw) >= 50:
+        s = pd.Series(sw).sort_index()
+        big = s[s >= 10000]
+        eps, last = [], None
+        for dt in big.index:                                   # spells of ≥ $10 bn, a new spell after 26 quiet weeks
+            if last is None or (pd.Timestamp(dt) - pd.Timestamp(last)).days > 182:
+                eps.append(dt[:7])
+            last = dt
+        now = float(s.iloc[-1])
+        out["swaps"] = {"date": s.index[-1], "bn": now / 1000, "peak": float(s.max()) / 1000, "peak_d": s.idxmax()[:7], "spells": eps,
+                        "state": "美元荒" if now >= 10000 else "有人在借" if now >= 1000 else "正常（幾乎沒人用）",
+                        "emoji": "🔴" if now >= 10000 else "🟡" if now >= 1000 else "🟢"}
+    if gn:
+        q = sorted(gn)[-1]
+        y, m = int(q[:4]), int(q[5:7])
+        out["gdpnow"] = {"quarter": f"{y}Q{(m - 1) // 3 + 1}", "pct": float(gn[q]), "prev": float(gn[sorted(gn)[-2]]) if len(gn) > 1 else None,
+                         "emoji": "🔴" if gn[q] < 0 else "🟡" if gn[q] < 1 else "🟢"}
+    return out
+
+
 def view(eng) -> Dict:
     d = load()
     try:
@@ -201,7 +228,8 @@ def view(eng) -> Dict:
         spx = pd.Series(dtype=float)
     ssi = getattr(getattr(eng, "stress", None), "score", None)
     out = {"ts_check": d.get("ts_check")}
-    for k, fn in (("fsi", lambda: fsi_view(d, spx, ssi)), ("custody", lambda: custody_view(d)), ("yen", lambda: yen_view(d, spx))):
+    for k, fn in (("fsi", lambda: fsi_view(d, spx, ssi)), ("custody", lambda: custody_view(d)), ("yen", lambda: yen_view(d, spx)),
+                  ("dollar", lambda: dollar_view(d))):
         try:
             out[k] = fn()
         except Exception:  # noqa: BLE001
