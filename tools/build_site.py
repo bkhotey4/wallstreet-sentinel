@@ -36,6 +36,7 @@ from tools import site_energy as SE
 from tools import site_regime as SRG
 from tools import site_rates as SR
 from tools import site_alerts as SA
+from tools import site_ai as SAI
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
@@ -1238,6 +1239,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
+            ("ai", "AI 風險", "AI risk", [SAI.sec_ai_brief, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]

@@ -115,7 +115,7 @@ TAB_DEFAULT: Dict[str, List[str]] = {
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
-    "news": ["news"], "history": ["ssi"], "inputs": ["px", "fred"],
+    "news": ["news"], "history": ["ssi"], "inputs": ["px", "fred"], "ai": ["px"],
 }
 CARD: Dict[str, List[str]] = {
     "sec_premarket": ["px"], "sec_focus": ["px", "fedwatch", "econ"], "sec_vix_hot": ["px"], "sec_vix_explain": ["px"],
@@ -124,7 +124,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
