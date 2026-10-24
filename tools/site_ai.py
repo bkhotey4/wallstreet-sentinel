@@ -290,26 +290,181 @@ def sec_ai_heat(eng) -> str:
     return card("熱度計：風險退散後，是健康還是太熱？", "Heat gauge: healthy, greedy or overheated?", body, "wide")
 
 
+# ---------------------------------------------------------------- 人類是不是在嚇自己
+def fear_backtest(eng, pct_cut: float = 80.0, h: int = 63, dd: float = 10.0) -> Optional[dict]:
+    """What happened after the days the crowd was scared (VIX in its own top 20 % of the past year), since 1995.
+    Past-only percentile: each day is ranked against the 252 days before it."""
+    try:
+        v = eng.market.series("^VIX").dropna()
+        s = eng.market.series("^GSPC").dropna()
+    except Exception:  # noqa: BLE001
+        return None
+    if len(v) < 1500 or len(s) < 1500:
+        return None
+    import numpy as np
+    fwd = s.shift(-h) / s - 1
+    low = s[::-1].rolling(h, min_periods=1).min()[::-1].shift(-1) / s - 1
+    arr = v.values
+    pc = np.full(len(arr), np.nan)
+    for k in range(252, len(arr)):
+        w = arr[k - 252:k]
+        pc[k] = (w < arr[k]).mean() * 100
+    df = pd.concat([pd.Series(pc, index=v.index, name="p"), fwd.rename("f"), low.rename("m")], axis=1)
+    now_p = df["p"].dropna().iloc[-1] if df["p"].notna().any() else None
+    df = df.dropna()
+    if len(df) < 1000:
+        return None
+    sc = df[df["p"] >= pct_cut]
+    if len(sc) < 100:
+        return None
+    return {"since": str(df.index[0].year), "n": len(sc), "now_pct": now_p, "vix": float(arr[-1]),
+            "med": float(sc["f"].median() * 100), "med_all": float(df["f"].median() * 100),
+            "up": float((sc["f"] > 0).mean() * 100), "up_all": float((df["f"] > 0).mean() * 100),
+            "crash": float((sc["m"] <= -dd / 100).mean() * 100), "crash_all": float((df["m"] <= -dd / 100).mean() * 100)}
+
+
+def human_fear(eng) -> Tuple[Optional[float], List[str]]:
+    """How scared people are, 0–100: the mean of (100 − Fear & Greed), VIX's percentile in the past year, and SSI."""
+    parts, vals = [], []
+    fg = None
+    try:
+        from wsb.analytics import bottom as BT
+        cr = getattr(getattr(eng, "crypto", None), "data", None) or {}
+        fg = cr.get("cnn_fng")
+        if fg is None:
+            s = BT._ser(BT.load(), "fg")
+            fg = float(s.iloc[-1]) if len(s) else None
+    except Exception:  # noqa: BLE001
+        fg = None
+    if fg is not None:
+        vals.append(100 - float(fg))
+        parts.append(f"恐懼與貪婪 {fg:.0f}" + ("（極度恐懼）" if fg < 25 else "（恐懼）" if fg < 45 else ""))
+    try:
+        v = eng.market.series("^VIX").dropna()
+        if len(v) > 252:
+            p = float((v.iloc[-253:-1] < v.iloc[-1]).mean() * 100)
+            vals.append(p)
+            parts.append(f"VIX {v.iloc[-1]:.1f}（近一年第 {p:.0f} 百分位）")
+    except Exception:  # noqa: BLE001
+        pass
+    ssi = getattr(getattr(eng, "stress", None), "score", None)
+    if ssi is not None:
+        vals.append(float(ssi))
+        parts.append(f"壓力指數 SSI {ssi:.0f}")
+    return (sum(vals) / len(vals) if vals else None), parts
+
+
+def _stab(eng) -> dict:
+    try:
+        from tools import site_stability as SST
+        return SST._v(eng) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+# why each slow "fuel" matters, in plain words (the research behind it is in the heat-gauge card)
+FUEL_WHY = {"信用定價太樂觀": "借錢的人幾乎不用多付風險補償，大家都覺得不會出事；研究發現這種時候 1–2 年後反而比較容易出問題",
+            "估值偏貴": "股價相對整體經濟的規模創新高；估值不決定什麼時候跌，但決定一旦跌下來會跌多深",
+            "借款暴增": "企業或家庭借錢的速度比收入快很多；過去的金融危機前幾年幾乎都有這個現象",
+            "投機資金追高": "高風險股票被追得很高，代表市場願意為夢想付高價，回檔時跌得最兇",
+            "R-zone": "借錢和資產價格同時過熱，學術研究中危機機率最高的組合"}
+
+
+def ai_verdict(eng, ph: dict) -> dict:
+    """The page's conclusion: what people fear that the data does not support, what the data shows that people do not
+    fear, and the few readings that would change the conclusion.  Every line is a fixed rule on numbers, no headlines."""
+    sc = ph.get("score") or {}
+    v = score_view(sc)
+    fear, fparts = human_fear(eng)
+    ai = float(sc["now"]) if sc.get("available") else None
+    tur, flo, aft, ana = (ph.get(k) or {} for k in ("turbulence", "absorption", "aftershock", "analog"))
+    over, under, trig = [], [], []
+    fb = fear_backtest(eng)
+    if fear is not None and fear >= 55 and fb:
+        over.append(("「大家都很怕，所以要跌了」",
+                     f"1995 年以來，VIX 落在近一年前 20% 高的 {fb['n']:,} 天，之後 3 個月報酬中位數 {fb['med']:+.1f}%（平常 {fb['med_all']:+.1f}%），"
+                     f"{fb['up']:.0f}% 的時候是上漲（平常 {fb['up_all']:.0f}%）。恐慌代表接下來晃得比較大，不代表一定往下："
+                     f"同一批日子 3 個月內跌 ≥10% 的機率是 {fb['crash']:.0f}%（平常 {fb['crash_all']:.0f}%）。", "ai-cross"))
+    if v and not (v["crash"] >= 30 or (v.get("lift") or 0) >= 2):
+        over.append(("「要崩盤了」",
+                     f"用跨資產結構算的 AI 風險分數是 {sc['now']:.0f}／100；歷史上同樣的狀態，之後 3 個月有 "
+                     f"{v['digest']:.0f}% 只是消化（跌不到 5%），大跌 ≥10% 的機率"
+                     + (f"按獨立事件算約 {v['ep_rate']:.0f}%" if v.get("ep_rate") is not None else f"約 {v['crash']:.0f}%")
+                     + f"，平常是 {v['base']:.0f}%。", "ai-score"))
+    if turb_state(tur) == TENSE and flock_state(flo) == CALM:
+        over.append(("「到處都在跌，要一起崩」",
+                     f"跨資產走法確實很不尋常（亂流第 {tur['pct']:.0f} 百分位），但 9 大產業各走各的"
+                     + ("，同步度是 " + flo["since"][:4] + " 年以來最低" if flo["ar_pct"] < 1 else f"（同步度第 {flo['ar_pct']:.0f} 百分位）")
+                     + "。衝擊集中在部分資產，資金在輪動，不是全面一起逃。", "ai-flock"))
+    if quake_state(aft) == CALM:
+        over.append(("「大跌會一波接一波」",
+                     f"上次單日 ≥{aft['main']:.0f}% 的大震已經是 {aft['days_since']} 個交易日前，餘震期結束；"
+                     f"接下來 5 天出現 ≥2% 單日波動的機率約 {num(aft['p_now'], 0)}%，屬於背景水準。", "ai-quake"))
+    hh = ph.get("heat") or {}
+    fu = fuel(eng)
+    for n, hot, txt in fu:
+        if hot:
+            under.append((n, FUEL_WHY.get(n.split("：")[0], "") + f"（數據：{txt}）", "ai-heat"))
+    stb = _stab(eng)
+    for k, lab in (("basis", "美債基差交易"), ("ai", "AI 巨頭靠借錢擴張"), ("funding", "短期資金"), ("refunding", "財政部發債")):
+        x = stb.get(k) or {}
+        if x.get("emoji") in ("🟡", "🔴"):
+            under.append((f"{lab}（{x['state']}）", x.get("read", ""), None))
+    if flo.get("available"):
+        trig.append(("各產業開始一起動", f"同步度短期變化 ≥ +1 個標準差（現在 {flo['dar']:+.1f}）：衝擊從局部擴散到整個市場，結論會從「消化」改成「系統性」。", "ai-flock"))
+    if tur.get("available"):
+        ssi = getattr(getattr(eng, "stress", None), "score", None)
+        trig.append(("亂流＋壓力一起升", f"亂流維持第 80 百分位以上（現在第 {tur['pct']:.0f}），而且壓力指數 SSI 升破 55"
+                     + (f"（現在 {ssi:.0f}）" if ssi is not None else "") + "。", "ai-turb"))
+    if stb.get("funding"):
+        trig.append(("資金和信用開始緊", "SOFR 連續高於準備金利率、常設回購被大量動用，或投資級（BBB）利差跟著垃圾債擴大：慢慢累積的燃料開始被點燃。", None))
+    trig.append(("出現單日 ≥4% 的大震", "餘震計時器歸零，之後幾天再出現大波動的機率會跳升。", "ai-quake"))
+    if fear is None or ai is None:
+        lab, txt = "資料不足", "人類情緒或 AI 結構指標有缺，暫時無法比較。"
+    elif fear - ai >= 20:
+        lab = "人類比數據緊張"
+        txt = ("現在比較像人類在嚇自己：情緒和新聞的恐慌，沒有反映在價格結構上（局部衝擊、資金輪動，不是全面踩踏）。"
+               + ("但真正該注意的是大家沒在怕、正在慢慢累積的燃料：" + "、".join(u[0].split("（")[0] for u in under[:3]) + "。" if under else ""))
+    elif ai - fear >= 20:
+        lab = "數據比人類緊張"
+        txt = "價格結構在變差，但大家還沒反應過來；這是比較需要小心的組合。"
+    else:
+        lab = "人類和數據差不多"
+        txt = "人類的感受和價格結構大致一致，沒有明顯的自己嚇自己，也沒有被忽略的結構警訊。"
+    return {"label": lab, "text": txt, "fear": fear, "fparts": fparts, "ai": ai, "over": over, "under": under, "trig": trig, "fb": fb}
+
+
+def _gauge(fear: Optional[float], ai: Optional[float]) -> str:
+    def row(lab, val, cls):
+        if val is None:
+            return ""
+        return (f'<div class="fgrow"><span class="fgl">{T(lab, lab)}</span><span class="fgbar"><i class="{cls}" style="width:{max(2, min(100, val)):.0f}%"></i></span>'
+                f'<b class="fgv">{val:.0f}</b></div>')
+    return f'<div class="fg">{row("人類的恐懼", fear, "dn")}{row("AI 測到的結構風險", ai, "ac")}</div>'
+
+
+def _col(title: str, items: list, empty: str) -> str:
+    lis = "".join(f'<li><b>{T(a, a)}</b>：{T(b, b)}' + (f' <a href="#ai" data-jump="{k}" class="small">{T("看依據 ›", "Evidence ›")}</a>' if k else "") + "</li>"
+                  for a, b, k in items)
+    return f'<div class="aicol"><h3>{T(title, title)}</h3>' + (f"<ul>{lis}</ul>" if lis else f'<p class="small muted">{T(empty, empty)}</p>') + "</div>"
+
+
 @_anchor("ai-top")
 def sec_ai_brief(eng) -> str:
-    """一眼看懂: one sentence, four lights, three things to watch; the comparison table and lessons folded."""
+    """AI 的結論: is the crowd scaring itself?  Fear vs structure, three columns (over-feared / under-feared / what would
+    change the conclusion), then one block per AI gauge that jumps to its detail card."""
     ph = _ph(eng)
     if not ph.get("available"):
         return ""
     rows = cross_rows(eng)
     hs = [r["h"] for r in rows]
-    ll = lens_lines(ph)
     head = headline(ph, hs)
-    lights = "".join(f'<li>{e} {T(t, t)}</li>' for e, t in (ll[k] for k in ("turb", "flock", "quake", "analog") if k in ll))
-    ssi = getattr(getattr(eng, "stress", None), "score", None)
-    w = "".join(f"<li>{T(x, x)}</li>" for x in watch(ph, ssi))
-    n_ok = sum(r["v"] == "一致" for r in rows)
-    n_split = sum(r["v"] == "分歧" for r in rows)
-    cmp_ = "".join(f'<li><b>{T(r["dim"], r["dim"])}</b>：{T("人類", "Human")} {_pill(r["h"][1])} ／ AI {_pill(r["a"][1])} → '
-                   f'{T(r["v"] or "—", r["v"] or "—")}</li>' for r in rows)
-    cnt = f"AI 視角交叉比對：{n_ok} 項一致、{n_split} 項分歧"
+    vd = ai_verdict(eng, ph)
     v = score_view(ph.get("score") or {})
     sc = ph.get("score") or {}
+    n_ok = sum(r["v"] == "一致" for r in rows)
+    n_split = sum(r["v"] == "分歧" for r in rows)
+    cnt = f"AI 視角交叉比對：{n_ok} 項一致、{n_split} 項分歧"
     sline = ((f"AI 風險分數 {sc['now']:.0f}／100：{v['verdict']}" + ("" if v["mixed"] else f"（3 個月內大跌 {v['crash']:.0f}%，平常 {v['base']:.0f}%）")) if v else "")
     aft, flo, tur, ana = (ph.get(k) or {} for k in ("aftershock", "absorption", "turbulence", "analog"))
     tiles = []
@@ -347,11 +502,21 @@ def sec_ai_brief(eng) -> str:
     grid = "".join(f'<a class="aitile" href="#ai" data-jump="{k}"><span class="tl">{T(lab, lab)}</span><span class="tv">{big}</span>'
                    f'<span class="tt">{T(txt, txt)}</span>{extra}<span class="go">{T("看細節 ›", "Details ›")}</span></a>'
                    for k, lab, big, txt, extra in tiles)
-    body = (f'<p class="rimp big2"><b>{T(head, head)}</b>' + (f'<br>{T(sline, sline)}' if sline else "") + '</p>'
-            f'<div class="aigrid">{grid}</div>'
-            f'<div class="aiwatch"><b>{T("接下來要盯的 3 件事", "Three things to watch")}</b><ol>{w}</ol></div>'
-            f'<p class="note">{T("點任一區塊會跳到下面的細節。只看價格數字、不讀新聞；描述現在的風險水位，不預告哪一天會跌，也不是投資建議。", "Tap a block for details. Price-only; not a timing tool, not advice.")}</p>')
-    return card("一眼看懂：AI 怎麼看現在的風險", "At a glance: the machine view of risk now", body, "wide")
+    fp = "・".join(vd["fparts"])
+    note = T("「人類在怕」那一欄，是把群眾情緒和可以回測的歷史放在一起看；「沒在怕」那一欄，是學術研究證實會在 1–3 年後出問題、但平常沒人討論的慢變數。"
+             "全部只看數字、不讀新聞標題；描述現在的風險水位，不預告哪一天會跌，也不是投資建議。", "Numbers only; not a timing tool, not advice.")
+    body = (f'<p class="rimp big2"><b>{T("AI 判斷：" + vd["label"], "")}</b>——{T(vd["text"], "")}</p>'
+            + _gauge(vd["fear"], vd["ai"])
+            + f'<p class="small muted">{T("人類的恐懼＝" + fp + " 的平均；AI 結構風險＝下方的 AI 風險分數（只看價格之間的結構）。", "")}</p>'
+            f'<div class="aicols">'
+            + _col("😨 人類在怕，但數據說還好", vd["over"], "目前沒有明顯被誇大的恐懼。")
+            + _col("🙈 人類沒在怕，但數據在累積", vd["under"], "目前沒有被忽略的累積風險。")
+            + _col("🎯 出現這些，結論才會改", vd["trig"], "—")
+            + "</div>"
+            f'<p class="small"><b>{T("市場結構", "Structure")}</b>：{T(head, head)}' + (f'<br>{T(sline, sline)}' if sline else "") + "</p>"
+            f'<h3 class="aih">{T("各項 AI 指標（點區塊看細節）", "Each machine gauge (tap for details)")}</h3><div class="aigrid">{grid}</div>'
+            f'<p class="note">{note}</p>')
+    return card("AI 的結論：人類是不是在嚇自己？", "The machine's verdict: is the crowd scaring itself?", body, "wide")
 
 
 
@@ -621,6 +786,13 @@ CSS = (".aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,
        ".aitile:hover{border-color:var(--ac)}.aitile .tl{font-size:13px;font-weight:700}"
        ".aitile .tv{font-size:24px;font-weight:800;line-height:1.15}.aitile .tv small{font-size:13px;font-weight:600;opacity:.75}"
        ".aitile .tt{font-size:12.5px;opacity:.85}.aitile .go{margin-top:auto;font-size:12px;color:var(--ac)}"
+       ".aicols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:12px 0}"
+       ".aicol{padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--wash);min-width:0}"
+       ".aicol h3{margin:0 0 6px;font-size:14px}.aicol ul{margin:0;padding-left:18px}.aicol li{margin:6px 0;font-size:13px;line-height:1.55}"
+       ".aih{font-size:14px;margin:14px 0 0}"
+       ".fg{display:grid;gap:6px;margin:10px 0 4px;max-width:560px}.fgrow{display:grid;grid-template-columns:130px 1fr 36px;gap:8px;align-items:center}"
+       ".fgl{font-size:13px}.fgv{text-align:right}.fgbar{height:12px;border-radius:6px;background:var(--wash);border:1px solid var(--bd);overflow:hidden}"
+       ".fgbar i{display:block;height:100%;background:currentColor}.fgbar i.ac{color:var(--ac)}"
        ".aiwatch{padding:10px 12px;border-left:3px solid var(--ac);background:var(--wash);border-radius:4px}"
        ".aiwatch ol{margin:6px 0 0;padding-left:20px}.aiwatch li{margin:3px 0}"
        "[id^=ai-]{scroll-margin-top:72px}.aiback{margin:8px 0 0;text-align:right;font-size:12.5px}.aiback a{color:var(--ac)}"

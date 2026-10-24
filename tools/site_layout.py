@@ -53,7 +53,7 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
              ("overview", r"63 日內跌 ≥ 10% ([\d.]+%) 基準 ([\d.]+%)", lambda m: f"63 日內跌 ≥10% 機率 {m[1]}（平常 {m[2]}）"),
              ("outlook", r"12 個月內美國衰退 ([\d.]+%)", lambda m: f"12 個月內美國衰退機率 {m[1]}"),
              ("mood", r"VIX ([\d.]+) [+-][\d.]+% 近一年百分位 (\d+)", lambda m: f"VIX {m[1]}（近一年第 {m[2]} 百分位）")],
-    "risk": [("ai", r"一眼看懂：AI 怎麼看現在的風險 (?:🕒.*?資料日 \S+ )?([^\s🕒]\S*)", lambda m: f"AI 判斷：{m[1]}"),
+    "risk": [("ai", r"AI 判斷：([^\s，。；—]+)", lambda m: f"AI 判斷：{m[1]}"),
              ("ai", r"AI 風險分數 (\d+)／100：([^（，]+)", lambda m: f"AI 風險分數 {m[1]}／100：{m[2]}"),
              ("ai", r"熱度計：(太熱|偏貪婪|健康|偏冷)", lambda m: f"熱度計：{m[1]}"),
              ("ai", r"AI 視角交叉比對：(\d+) 項一致、(\d+) 項分歧", lambda m: f"AI 視角 × 人類指標：{m[1]} 項一致、{m[2]} 項分歧"),

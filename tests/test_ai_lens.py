@@ -134,7 +134,11 @@ def test_cards():
     h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_heat, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
     b = SAI.sec_ai_brief(e)
     assert "回到重點" not in b and h.count("回到重點") == 7
-    assert "一眼看懂" in b and "接下來要盯的 3 件事" in b and b.count('class="aitile"') >= 7 and "<details" not in b
+    assert "AI 的結論" in b and "AI 判斷：" in b and b.count('class="aitile"') >= 7 and "<details" not in b
+    for w in ("人類在怕，但數據說還好", "人類沒在怕，但數據在累積", "出現這些，結論才會改", "人類的恐懼", "AI 測到的結構風險"):
+        assert w in b, w
+    vd = SAI.ai_verdict(e, SAI._ph(e))
+    assert vd["label"] in ("人類比數據緊張", "數據比人類緊張", "人類和數據差不多", "資料不足") and vd["trig"]
     for k in ("ai-score", "ai-heat", "ai-turb", "ai-flock", "ai-quake", "ai-analog", "ai-cross"):
         assert f'data-jump="{k}"' in b and h.count(f'id="{k}"') == 1, k             # every block lands on exactly one card
     assert all("<details" in f(e) for f in (SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross))
@@ -156,6 +160,20 @@ def test_cards():
     print("ok cards")
 
 
+def test_fear_backtest():
+    from tools import site_ai as SAI
+    import numpy as np
+    idx = pd.bdate_range("2000-01-03", periods=3000)
+    rng = np.random.default_rng(1)
+    vix = pd.Series(15 + 10 * (np.sin(np.arange(3000) / 40) > 0.8) + rng.normal(0, 0.3, 3000), index=idx)
+    spx = pd.Series(np.cumprod(1 + rng.normal(0.0003, 0.01, 3000)) * 100, index=idx)
+    m = types.SimpleNamespace(series=lambda t: {"^VIX": vix, "^GSPC": spx}.get(t, pd.Series(dtype=float)))
+    fb = SAI.fear_backtest(types.SimpleNamespace(market=m))
+    assert fb and fb["n"] >= 100 and 0 <= fb["up"] <= 100 and fb["since"] == "2000"
+    assert SAI.fear_backtest(types.SimpleNamespace(market=types.SimpleNamespace(series=lambda t: pd.Series(dtype=float)))) is None
+    print("ok fear backtest")
+
+
 if __name__ == "__main__":
     test_aftershock()
     test_absorption_turbulence()
@@ -163,4 +181,5 @@ if __name__ == "__main__":
     test_score()
     test_heat()
     test_cards()
+    test_fear_backtest()
     print("all AI-lens tests passed")
