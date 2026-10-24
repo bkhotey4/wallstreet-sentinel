@@ -220,6 +220,8 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     now = time.time()
     if not force and now - float(d.get("ts", 0)) < TTL and d.get("sofr"):
+        d["ts_check"] = now
+        _save(d)
         return d
     bad = []
     steps = (("refunding", lambda: fetch_refunding(d.get("refunding") or {})), ("bills", fetch_bills),
@@ -236,6 +238,7 @@ async def refresh(force: bool = False) -> Dict:
         except Exception as e:  # noqa: BLE001
             bad.append(f"{key}: {e if str(e) else type(e).__name__}")
     bad = [b for b in bad if not b.startswith("coverage")]   # optional: absent until the first monthly audit runs
+    d["ts_check"] = now
     if len(bad) < len(steps):
         d["ts"] = now
         _save(d)

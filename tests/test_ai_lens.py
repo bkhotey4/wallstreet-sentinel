@@ -134,7 +134,7 @@ def test_cards():
     h = "".join(f(e) for f in (SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_heat, SAI.sec_ai_cross, SAI.sec_ai_intro, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog))
     b = SAI.sec_ai_brief(e)
     assert "回到重點" not in b and h.count("回到重點") == 7
-    assert "AI 的結論" in b and "AI 判斷：" in b and b.count('class="aitile"') >= 7 and "<details" not in b
+    assert "AI 的結論" in b and "AI 判斷：" in b and b.count('class="aitile"') >= 7 and b.count("<details") <= 1   # only the trend fold
     for w in ("人類在怕，但數據說還好", "人類沒在怕，但數據在累積", "出現這些，結論才會改", "人類的恐懼", "AI 測到的結構風險"):
         assert w in b, w
     vd = SAI.ai_verdict(e, SAI._ph(e))
@@ -160,6 +160,24 @@ def test_cards():
     print("ok cards")
 
 
+def test_verdict_core():
+    from wsb.analytics import ai_verdict as AV
+    assert AV.label(25) == AV.HUMAN and AV.label(-22) == AV.MACHINE and AV.label(10) == AV.SAME and AV.label(None) is None
+    assert AV.label(17, AV.HUMAN) == AV.HUMAN and AV.label(14, AV.HUMAN) == AV.SAME            # hysteresis: 20 in, 15 out
+    assert AV.label(17, AV.SAME) == AV.SAME and AV.label(-16, AV.MACHINE) == AV.MACHINE
+    idx = pd.bdate_range("2026-01-01", periods=6)
+    df = pd.DataFrame({"fear": [50, 70, 72, 60, 40, 40], "ai": [45, 45, 45, 45, 45, 70]}, index=idx)
+    df["gap"] = df["fear"] - df["ai"]
+    labs, prev = [], None
+    for g in df["gap"]:
+        prev = AV.label(g, prev)
+        labs.append(prev)
+    df["label"] = labs
+    ch = AV.changes(df)
+    assert [c["to"] for c in ch] == [AV.MACHINE, AV.SAME, AV.HUMAN] and ch[-1]["date"] == "2026-01-02"
+    print("ok verdict core")
+
+
 def test_fear_backtest():
     from tools import site_ai as SAI
     import numpy as np
@@ -182,4 +200,5 @@ if __name__ == "__main__":
     test_heat()
     test_cards()
     test_fear_backtest()
+    test_verdict_core()
     print("all AI-lens tests passed")

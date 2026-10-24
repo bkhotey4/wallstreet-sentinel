@@ -295,6 +295,11 @@ class Engine:
             await stb.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("stability data failed: %s", e)
+        try:                                                    # AI 泡沫計時器（產業歷史每月、CFTC 每 12 小時）
+            from .analytics import bubble as bub
+            await bub.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("bubble data failed: %s", e)
         try:
             await self.refresh_fundamentals()                   # 產業體檢 (SEC companyfacts, weekly per company)
         except Exception as e:  # noqa: BLE001

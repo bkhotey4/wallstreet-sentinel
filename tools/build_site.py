@@ -1240,7 +1240,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
-            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
+            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SAI.sec_ai_score, SAI.sec_ai_bubble, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ai, SST.sec_st_coverage]),
             ("tools", "工具", "Tools", [S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
@@ -1514,6 +1514,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(STB.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("stability data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # AI 泡沫計時器：Ken French 49 產業（月）＋ CFTC 股指期貨部位
+        from wsb.analytics import bubble as BUB
+        await asyncio.wait_for(BUB.refresh(), 150)
+    except Exception as e:  # noqa: BLE001
+        log.warning("bubble data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 華爾街機構觀點（背景）: public titles + CFTC positioning, cached 6 h
         await asyncio.wait_for(eng.refresh_street(), 90)
     except Exception as e:  # noqa: BLE001

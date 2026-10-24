@@ -98,6 +98,32 @@ def _stab_date(k: str) -> Optional[str]:
         return None
 
 
+def _bub_ts(k: str):
+    try:
+        from wsb.analytics import bubble as BB
+        return BB.load().get(k)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _bub_end() -> Optional[str]:
+    try:
+        from wsb.analytics import bubble as BB
+        ff = BB.load().get("ff") or {}
+        return (max(max(v) for v in ff.values()) + "-28") if ff else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _bub_cftc_date() -> Optional[str]:
+    try:
+        from wsb.analytics import bubble as BB
+        c = BB.load().get("cftc") or {}
+        return max(v[-1][0] for v in c.values()) if c else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _cover_date() -> Optional[str]:
     try:
         from tools.site_stability import coverage
@@ -153,6 +179,8 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "funding": ("紐約聯準會 SOFR", "NY Fed SOFR", lambda e: (_ts(_stab_ts("sofr")), _stab_date("sofr")), 4),
     "cftc": ("CFTC 持倉", "CFTC positions", lambda e: (_ts(_stab_ts("cftc")), _stab_date("cftc")), 10),
     "fund": ("SEC 財報（XBRL）", "SEC XBRL", lambda e: (None, _stab_date("ai")), 120),
+    "ff49": ("產業歷史（Ken French，每月更新）", "Ken French industries", lambda e: (_ts(_bub_ts("ts_check")), _bub_end()), 75),
+    "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 10),
     "cover": ("覆蓋盤點", "Coverage audit", lambda e: (None, _cover_date()), 40),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
@@ -171,7 +199,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -194,6 +222,10 @@ def system_stamp(now: float) -> str:
     when = datetime.fromtimestamp(now, TPE).strftime("%m-%d %H:%M")
     return (f'<p class="upd" title="{esc("這張卡的內容不隨行情變動；時間是網站最後一次重新產生的時間")}">🕒 {T("系統更新", "Built")} {when}'
             f' <span class="ago" data-ts="{int(now)}"></span></p>')
+
+
+# cards whose sources update on different clocks (daily / weekly / monthly): list each source's last check visibly
+DETAIL = {"sec_ai_bubble", "sec_ai_elephant", "sec_st_brief", "sec_st_refunding", "sec_st_funding", "sec_st_basis", "sec_st_ai", "sec_st_coverage"}
 
 
 def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
@@ -224,7 +256,7 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
         if ts and now - ts > 36 * 3600:
             old = True
         w = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else "—"
-        tips.append(f"{zh}：抓取 {w}" + (f"，資料日 {d}" if d else ""))
+        tips.append(f"{zh} 檢查 {w}" + (f"・資料日 {d}" if d else ""))
     if not fetched and not dates:
         return system_stamp(now)
     ts = min(fetched) if fetched else None
@@ -232,6 +264,8 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
     when = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else None
     parts = ([f'{T("最後更新", "Updated")} {when}'] if when else []) + ([f'{T("資料日", "data")} {esc(d[5:])}'] if d else [])
     txt = "🕒 " + "・".join(parts)
+    if fname in DETAIL and tips:
+        txt += f'<span class="updd">{T("（各來源最後檢查：" + "；".join(tips) + "）", "")}</span>'
     ago = f' <span class="ago" data-ts="{int(ts)}"></span>' if ts else ""
     return (f'<p class="upd{" old" if old else ""}" title="{esc("；".join(tips))}">{txt}{ago}'
             + (f' <b>⚠ {T("資料偏舊", "stale")}</b>' if old else "") + "</p>")
@@ -261,7 +295,7 @@ def inject(html: str, st: str) -> str:
     return "".join(out)
 
 
-CSS = (".upd{font-size:11.5px;color:var(--tx2,#8a8f98);margin:-4px 0 8px}.upd.old{color:#e8a33d}.upd.old b{font-weight:700}"
+CSS = (".upd{font-size:11.5px;color:var(--tx2,#8a8f98);margin:-4px 0 8px}.updd{display:block;margin-top:2px;line-height:1.5}.upd.old{color:#e8a33d}.upd.old b{font-weight:700}"
        ".upd .ago{opacity:.8}")
 JS = r"""
 (function(){function f(){var n=Date.now()/1e3;document.querySelectorAll('.upd .ago').forEach(function(s){var a=n-(+s.dataset.ts);if(!(a>=0))return;

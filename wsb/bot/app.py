@@ -1026,7 +1026,34 @@ class Sentinel(commands.Bot):
         from ..data import stability as stb
         from ..data.econcal import us_today
         v = stb.view(self.engine)
-        return [Alert(k, sev, t, d) for k, sev, t, d in stb.alerts(v, us_today().isoformat())]
+        out = [Alert(k, sev, t, d) for k, sev, t, d in stb.alerts(v, us_today().isoformat())]
+        try:                                     # 大象撤退：資產管理機構股指期貨淨多單 13 週變化落在歷史最低 10%
+            from ..analytics import bubble as bub
+            for e in bub.elephants(self.engine, bub.load().get("cftc") or {}):
+                if e["state"] == "撤退":
+                    out.append(Alert(f"elephant:{e['name']}:{e['date']}", "⚠️ WARNING",
+                                     f"大象撤退：資產管理機構在{e['name']}期貨 13 週大幅減碼（歷史第 {e['pct']:.0f} 百分位）",
+                                     f"淨多單 {e['am']:+.1f}%（13 週 {e['chg13']:+.1f}）。回測 2010 年起，這種時候之後 3 個月內跌 ≥10% 的頻率約 "
+                                     f"{e.get('exit_rate') or 0:.0f}%，平常 {e.get('base') or 0:.0f}%；預測力有限（AUC {e.get('auc') or 0:.2f}）。"))
+        except Exception:  # noqa: BLE001
+            log.exception("elephant alert failed")
+        try:                                     # AI 的結論改變（人類比數據緊張／數據比人類緊張／差不多）；第一次只記錄
+            from ..analytics import ai_verdict as AV
+            from ..analytics import physics as PH
+            v = AV.today(self.engine, PH.build(self.engine))
+            prev = store.kv_get("ai_verdict_label")
+            if v["label"]:
+                store.kv_set("ai_verdict_label", v["label"])
+            if v["label"] and prev and v["label"] != prev:
+                sev = "⚠️ WARNING" if v["label"] == AV.MACHINE else "ℹ️ INFO"
+                out.append(Alert(f"aiverdict:{v['label']}:{us_today().isoformat()}", sev, f"AI 的結論改變：{prev} → {v['label']}",
+                                 f"人類的恐懼 {v['fear']:.0f}、AI 測到的結構風險 {v['ai']:.0f}（{'・'.join(v['fparts'])}）。"
+                                 + ("價格結構在變差、但大家還沒反應，是比較需要小心的組合。" if v["label"] == AV.MACHINE else
+                                    "情緒的恐慌沒有反映在價格結構上。" if v["label"] == AV.HUMAN else "人類的感受和價格結構大致一致。")
+                                 + "\n看網站「AI 視角看風險」頁。"))
+        except Exception:  # noqa: BLE001
+            log.exception("AI verdict alert failed")
+        return out
 
     def _liquidity_alerts(self) -> List[Alert]:
         """Heads-up the day before (or the day of) high-importance liquidity events."""

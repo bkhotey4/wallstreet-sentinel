@@ -151,9 +151,16 @@ def score_view(sc: dict) -> dict:
 
 
 def _bar(d, pu, cr, compact: bool = False) -> str:
-    seg = [(d, "up", "消化"), (pu, "muted", "回檔"), (cr, "dn", "大跌")]
-    cells = "".join(f'<span class="{c}" style="flex:{max(v, 1):.0f}">{"" if compact else T(z, z) + f" {v:.0f}%"}</span>' for v, c, z in seg)
-    return f'<div class="aibar">{cells}</div>'
+    """A real 100 % stacked bar: each segment's width is its share; numbers inside when wide enough, legend below."""
+    seg = [(d, "sd", "消化（跌不到 5%）"), (pu, "sp", "回檔 5–10%"), (cr, "sc", "大跌 ≥10%")]
+    tot = sum(max(v or 0, 0) for v, _c, _z in seg) or 1
+    cells = "".join(f'<i class="{c}" style="width:{max(v or 0, 0) / tot * 100:.1f}%" title="{z} {v:.0f}%">'
+                    f'{"" if compact or (v or 0) < 9 else f"{v:.0f}%"}</i>' for v, c, z in seg)
+    bar = f'<div class="aibar" role="img" aria-label="消化 {d:.0f}%、回檔 {pu:.0f}%、大跌 {cr:.0f}%">{cells}</div>'
+    if compact:
+        return bar
+    lg = "".join(f'<span><b class="{c}"></b>{T(z, z)} {v:.0f}%</span>' for v, c, z in seg)
+    return bar + f'<div class="ailg">{lg}</div>'
 
 
 def score_block(ph: dict) -> str:
@@ -324,34 +331,8 @@ def fear_backtest(eng, pct_cut: float = 80.0, h: int = 63, dd: float = 10.0) -> 
 
 
 def human_fear(eng) -> Tuple[Optional[float], List[str]]:
-    """How scared people are, 0–100: the mean of (100 − Fear & Greed), VIX's percentile in the past year, and SSI."""
-    parts, vals = [], []
-    fg = None
-    try:
-        from wsb.analytics import bottom as BT
-        cr = getattr(getattr(eng, "crypto", None), "data", None) or {}
-        fg = cr.get("cnn_fng")
-        if fg is None:
-            s = BT._ser(BT.load(), "fg")
-            fg = float(s.iloc[-1]) if len(s) else None
-    except Exception:  # noqa: BLE001
-        fg = None
-    if fg is not None:
-        vals.append(100 - float(fg))
-        parts.append(f"恐懼與貪婪 {fg:.0f}" + ("（極度恐懼）" if fg < 25 else "（恐懼）" if fg < 45 else ""))
-    try:
-        v = eng.market.series("^VIX").dropna()
-        if len(v) > 252:
-            p = float((v.iloc[-253:-1] < v.iloc[-1]).mean() * 100)
-            vals.append(p)
-            parts.append(f"VIX {v.iloc[-1]:.1f}（近一年第 {p:.0f} 百分位）")
-    except Exception:  # noqa: BLE001
-        pass
-    ssi = getattr(getattr(eng, "stress", None), "score", None)
-    if ssi is not None:
-        vals.append(float(ssi))
-        parts.append(f"壓力指數 SSI {ssi:.0f}")
-    return (sum(vals) / len(vals) if vals else None), parts
+    from wsb.analytics import ai_verdict as AV
+    return AV.fear_now(eng)
 
 
 def _stab(eng) -> dict:
@@ -375,8 +356,9 @@ def ai_verdict(eng, ph: dict) -> dict:
     fear, and the few readings that would change the conclusion.  Every line is a fixed rule on numbers, no headlines."""
     sc = ph.get("score") or {}
     v = score_view(sc)
-    fear, fparts = human_fear(eng)
-    ai = float(sc["now"]) if sc.get("available") else None
+    from wsb.analytics import ai_verdict as AV
+    live = AV.today(eng, ph)
+    fear, fparts, ai = live["fear"], live["fparts"], live["ai"]
     tur, flo, aft, ana = (ph.get(k) or {} for k in ("turbulence", "absorption", "aftershock", "analog"))
     over, under, trig = [], [], []
     fb = fear_backtest(eng)
@@ -416,22 +398,60 @@ def ai_verdict(eng, ph: dict) -> dict:
         ssi = getattr(getattr(eng, "stress", None), "score", None)
         trig.append(("亂流＋壓力一起升", f"亂流維持第 80 百分位以上（現在第 {tur['pct']:.0f}），而且壓力指數 SSI 升破 55"
                      + (f"（現在 {ssi:.0f}）" if ssi is not None else "") + "。", "ai-turb"))
+    bb = _bub(eng)
+    if bb.get("available"):
+        be, bh, bl = bubble_state(bb)
+        if bl:
+            under.insert(0, (f"{bl['name']}的泡沫風險", bubble_line(bb).split("：", 1)[-1], "ai-bubble"))
+    if bb.get("elephants"):
+        ee, eh = elephant_state(bb)
+        if ee in ("🟠", "🔴"):
+            under.insert(0, ("大錢在減碼", eh, "ai-elephant"))
+        trig.append(("大象開始撤退", "資產管理機構在股指期貨的淨多單 13 週大幅下降、落在歷史最低 10%（回測：之後 3 個月大跌的頻率約是平常的 1.6–1.9 倍）。", "ai-elephant"))
     if stb.get("funding"):
         trig.append(("資金和信用開始緊", "SOFR 連續高於準備金利率、常設回購被大量動用，或投資級（BBB）利差跟著垃圾債擴大：慢慢累積的燃料開始被點燃。", None))
     trig.append(("出現單日 ≥4% 的大震", "餘震計時器歸零，之後幾天再出現大波動的機率會跳升。", "ai-quake"))
-    if fear is None or ai is None:
+    lab = live["label"]
+    if lab is None:
         lab, txt = "資料不足", "人類情緒或 AI 結構指標有缺，暫時無法比較。"
-    elif fear - ai >= 20:
-        lab = "人類比數據緊張"
+    elif lab == AV.HUMAN:
         txt = ("現在比較像人類在嚇自己：情緒和新聞的恐慌，沒有反映在價格結構上（局部衝擊、資金輪動，不是全面踩踏）。"
                + ("但真正該注意的是大家沒在怕、正在慢慢累積的燃料：" + "、".join(u[0].split("（")[0] for u in under[:3]) + "。" if under else ""))
-    elif ai - fear >= 20:
-        lab = "數據比人類緊張"
+    elif lab == AV.MACHINE:
         txt = "價格結構在變差，但大家還沒反應過來；這是比較需要小心的組合。"
     else:
-        lab = "人類和數據差不多"
         txt = "人類的感受和價格結構大致一致，沒有明顯的自己嚇自己，也沒有被忽略的結構警訊。"
-    return {"label": lab, "text": txt, "fear": fear, "fparts": fparts, "ai": ai, "over": over, "under": under, "trig": trig, "fb": fb}
+    return {"label": lab, "text": txt, "fear": fear, "fparts": fparts, "ai": ai, "over": over, "under": under, "trig": trig, "fb": fb,
+            "since": live.get("since"), "history": live.get("history"), "changes": live.get("changes") or []}
+
+
+def trend_svg(df) -> str:
+    """Fear (red) vs machine structure (blue), last year, 0–100; each week is hoverable."""
+    if df is None or len(df) < 20:
+        return ""
+    W, H, L, R, TP, B = 640, 170, 30, 8, 8, 22
+    n = len(df)
+    x = lambda i: L + i * (W - L - R) / (n - 1)  # noqa: E731
+    y = lambda v: TP + (100 - max(0, min(100, v))) * (H - TP - B) / 100  # noqa: E731
+    line = lambda col: " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(df[col].values))  # noqa: E731
+    grid = "".join(f'<line x1="{L}" x2="{W - R}" y1="{y(g):.1f}" y2="{y(g):.1f}" class="tg"/><text x="{L - 4}" y="{y(g) + 4:.1f}" class="tl" text-anchor="end">{g}</text>'
+                   for g in (0, 50, 100))
+    ticks = ""
+    last_m = None
+    for i, d in enumerate(df.index):
+        if d.month != last_m and d.month in (1, 4, 7, 10):
+            ticks += f'<text x="{x(i):.1f}" y="{H - 6}" class="tl" text-anchor="middle">{d:%Y-%m}</text>'
+        last_m = d.month
+    hov = ""
+    step = max(1, n // 52)
+    for i in range(0, n, step):
+        r = df.iloc[i]
+        hov += (f'<rect x="{x(i) - (W - L - R) / 104:.1f}" y="{TP}" width="{(W - L - R) / 52:.1f}" height="{H - TP - B}" class="th">'
+                f'<title>{df.index[i]:%Y-%m-%d}｜人類恐懼 {r["fear"]:.0f}｜AI 結構風險 {r["ai"]:.0f}｜{r["label"]}</title></rect>')
+    return (f'<div class="scroll"><svg class="aitrend" viewBox="0 0 {W} {H}" role="img" aria-label="人類恐懼與 AI 結構風險，近一年">{grid}{ticks}'
+            f'<polyline points="{line("fear")}" class="tf"/><polyline points="{line("ai")}" class="ta"/>{hov}</svg></div>'
+            f'<div class="ailg"><span><b class="lf"></b>{T("人類的恐懼", "Human fear")}</span><span><b class="la"></b>{T("AI 測到的結構風險", "Machine structure")}</span>'
+            f'<span class="muted">{T("滑鼠移到圖上看每週數值", "Hover for weekly values")}</span></div>')
 
 
 def _gauge(fear: Optional[float], ai: Optional[float]) -> str:
@@ -498,6 +518,15 @@ def sec_ai_brief(eng) -> str:
         hst, htxt, hhot = heat_status(hh, fu)
         tiles.append(("ai-heat", f"{HEAT_EMO[hst]} 熱度計（健康還是太熱）", hst,
                       (f"價格動能 {hh['now']:.0f}／100・" if hh.get("available") else "") + f"燃料 {len(hhot)}／{len(fu)} 項偏熱", ""))
+    bb = _bub(eng)
+    if bb.get("available"):
+        be, bh, bl = bubble_state(bb)
+        r46 = ((bb.get("hist") or {}).get(bl["group"]) or {}).get("1946") if bl else None
+        tiles.append(("ai-bubble", f"{be} AI 泡沫計時器", (f"{r46['p12']:.0f}<small>% ／12 個月</small>" if r46 else "不符合"),
+                      (f"{bl['name']} 2 年 {bl['run']:+.0f}%、離高點 {bl['off']:+.0f}%；歷史同組 12 個月內破裂比例（1946 年起）" if bl else bh), ""))
+    if bb.get("elephants"):
+        ee, eh = elephant_state(bb)
+        tiles.append(("ai-elephant", f"{ee} 大象撤退", eh.split("：")[0], eh.split("：")[-1], ""))
     tiles.append(("ai-cross", "🤝 人類指標 vs AI", f"{n_ok}<small> 一致</small>・{n_split}<small> 分歧</small>", cnt, ""))
     grid = "".join(f'<a class="aitile" href="#ai" data-jump="{k}"><span class="tl">{T(lab, lab)}</span><span class="tv">{big}</span>'
                    f'<span class="tt">{T(txt, txt)}</span>{extra}<span class="go">{T("看細節 ›", "Details ›")}</span></a>'
@@ -507,6 +536,8 @@ def sec_ai_brief(eng) -> str:
              "全部只看數字、不讀新聞標題；描述現在的風險水位，不預告哪一天會跌，也不是投資建議。", "Numbers only; not a timing tool, not advice.")
     body = (f'<p class="rimp big2"><b>{T("AI 判斷：" + vd["label"], "")}</b>——{T(vd["text"], "")}</p>'
             + _gauge(vd["fear"], vd["ai"])
+            + (f'<p class="small"><b>{T("這個判讀從 " + vd["since"] + " 起維持", "")}</b>；'
+               + T("網站每次更新都會用最新數字重算（平日約每 20 分鐘），判讀改變時 Discord 會通知。", "") + "</p>" if vd.get("since") else "")
             + f'<p class="small muted">{T("人類的恐懼＝" + fp + " 的平均；AI 結構風險＝下方的 AI 風險分數（只看價格之間的結構）。", "")}</p>'
             f'<div class="aicols">'
             + _col("😨 人類在怕，但數據說還好", vd["over"], "目前沒有明顯被誇大的恐懼。")
@@ -514,7 +545,12 @@ def sec_ai_brief(eng) -> str:
             + _col("🎯 出現這些，結論才會改", vd["trig"], "—")
             + "</div>"
             f'<p class="small"><b>{T("市場結構", "Structure")}</b>：{T(head, head)}' + (f'<br>{T(sline, sline)}' if sline else "") + "</p>"
-            f'<h3 class="aih">{T("各項 AI 指標（點區塊看細節）", "Each machine gauge (tap for details)")}</h3><div class="aigrid">{grid}</div>'
+            + (f'<details class="sgx"><summary>{T("看近一年走勢與判讀變化紀錄", "Past year and verdict changes")}</summary>{trend_svg(vd.get("history"))}'
+               + (f'<ul class="small">' + "".join(f'<li>{c["date"]}：{T(c["from"], "")} → <b>{T(c["to"], "")}</b>（人類恐懼 {c["fear"]:.0f}、AI 結構風險 {c["ai"]:.0f}）</li>' for c in vd["changes"]) + "</ul>"
+                  if vd.get("changes") else f'<p class="small muted">{T("近一年判讀沒有改變過。", "")}</p>')
+               + f'<p class="note">{T("差距 ≥ 20 分才換判讀，縮小到 15 分以內才換回來，避免在門檻附近每天跳來跳去。過去的值都只用當天已知的數據重算。", "")}</p></details>'
+               if vd.get("history") is not None else "")
+            + f'<h3 class="aih">{T("各項 AI 指標（點區塊看細節）", "Each machine gauge (tap for details)")}</h3><div class="aigrid">{grid}</div>'
             f'<p class="note">{note}</p>')
     return card("AI 的結論：人類是不是在嚇自己？", "The machine's verdict: is the crowd scaring itself?", body, "wide")
 
@@ -774,6 +810,138 @@ def sec_ai_intro(eng) -> str:
                 _fold(f'<ul class="brief">{lis}</ul>', "點開看"), "wide")
 
 
+# ---------------------------------------------------------------- AI 泡沫計時器、大象撤退
+def _bub(eng) -> dict:
+    c = getattr(eng, "_bubble_view", None)
+    if c is None:
+        try:
+            from wsb.analytics import bubble as BB
+            c = BB.build(eng)
+        except Exception:  # noqa: BLE001
+            c = {"available": False}
+        try:
+            eng._bubble_view = c
+        except Exception:  # noqa: BLE001
+            pass
+    return c
+
+
+def bubble_lead(b: dict) -> Optional[dict]:
+    """The AI basket in the most dangerous historical group (GROUPS are ordered most specific first)."""
+    from wsb.analytics import bubble as BB
+    order = {k: i for i, (k, _z, _t) in enumerate(BB.GROUPS)}
+    hit = [r for r in b.get("now") or [] if r.get("group")]
+    return min(hit, key=lambda r: order[r["group"]]) if hit else None
+
+
+def bubble_state(b: dict) -> tuple:
+    lead = bubble_lead(b)
+    if not lead:
+        return "🟢", "AI 族群不符合歷史泡沫條件", None
+    if lead["group"] in ("hot_fall_vol", "hot_fall"):
+        return "🔴", f"{lead['name']}落在歷史上破裂比例最高的那一組", lead
+    return "🟠", f"{lead['name']}符合歷史泡沫候選條件", lead
+
+
+def bubble_line(b: dict) -> str:
+    emo, head, lead = bubble_state(b)
+    if not lead:
+        return f"{emo} {head}"
+    rows = (b.get("hist") or {}).get(lead["group"]) or {}
+    p12 = [rows[p]["p12"] for p in ("1926", "1946", "1970") if rows.get(p)]
+    s = rows.get("1946") or {}
+    rng = f"{min(p12):.0f}%–{max(p12):.0f}%" if p12 else "—"
+    return (f"{emo} {head}：歷史上同一組，12 個月內從高點跌 40% 以上的比例依起算年份介於 {rng}"
+            + (f"（1946 年起 {s['n']} 次裡 {s['p12']:.0f}%）" if s else "") + "；樣本少，看範圍不要看單一數字。")
+
+
+@_anchor("ai-bubble")
+def sec_ai_bubble(eng) -> str:
+    b = _bub(eng)
+    if not b.get("available"):
+        return ""
+    from wsb.analytics import bubble as BB
+    emo, head, lead = bubble_state(b)
+    grp = lead["group"] if lead else "hot"
+    hist = b.get("hist") or {}
+    rows_g, base = hist.get(grp) or {}, hist.get("any") or {}
+
+    def tr(lab, r):
+        if not r:
+            return ""
+        return (f'<tr><td>{T(lab, lab)}</td><td class="r">{r["n"]:,}</td><td class="r">{r["p6"]:.0f}%</td><td class="r"><b>{r["p12"]:.0f}%</b></td>'
+                f'<td class="r">{r["p24"]:.0f}%</td><td class="r">{num(r["med_months"], 0)}</td><td class="r">{num(r["ok_ret1y"], 0, sign=True)}%</td></tr>')
+    trs = "".join(tr(f"{p} 年起", rows_g.get(p)) for p in BB.PERIODS) + tr("對照：任何產業、任何時候（1946 年起）", base.get("1946"))
+    now = "".join(f'<tr><td>{T(r["name"], r["name"])}</td><td class="r">{r["run"]:+.0f}%</td><td class="r">{r["off"]:+.0f}%</td>'
+                  f'<td class="r">{r["volup"]:.1f} 倍</td><td>{T(BB.GROUP_ZH.get(r["group"], "不符合"), "")}</td></tr>' for r in b.get("now") or [])
+    cases = "".join(f'<tr><td>{esc(e["date"])}</td><td>{esc(e["ind"])}</td><td class="r">{e["run"] * 100:+.0f}%</td>'
+                    f'<td class="{"dn" if e["crash"] else "up"}">{T("破裂（" + str(e["months"]) + " 個月後）" if e["crash"] else "沒破", "")}</td>'
+                    f'<td class="r">{e["ret1y"] * 100:+.0f}%</td></tr>' for e in rows_g.get("cases") or [])
+    r46 = rows_g.get("1946") or {}
+    lead_txt = (f"{head}：2 年漲 {lead['run']:+.0f}%、離一年高點 {lead['off']:+.0f}%、波動是之前的 {lead['volup']:.1f} 倍。" if lead else head + "。")
+    when = (f"歷史上同一組（1946 年起 {r46['n']} 次）：6 個月內破裂 {r46['p6']:.0f}%、12 個月內 {r46['p12']:.0f}%、24 個月內 {r46['p24']:.0f}%；"
+            f"破裂的話，中位數是訊號後約 {num(r46['med_months'], 0)} 個月。沒破的那些，之後 1 年報酬中位數 {num(r46['ok_ret1y'], 0, sign=True)}%。") if r46 else ""
+    note = T("方法：Greenwood、Shleifer & You（2019）〈Bubbles for Fama〉。資料是 Ken French 的 49 產業月報酬（1926 年起，最新到 "
+             + str(b.get("ff_end", "")) + "）。產業 2 年漲 ≥100% 算泡沫候選，同一產業 24 個月內只算一次；之後 24 個月內，從訊號前一年高點或之後的最高點跌 ≥40% 算「破裂」。"
+             "條件分組：已從高點跌 ≥20%、波動（近 12 個月）是前 24 個月的 1.3 倍以上——這兩個在原論文都是破裂機率較高的特徵。"
+             "限制：符合條件的次數很少，而且 1929–1937 年的大蕭條拉高了早期的比例，所以三個起算年份都列出來；這是歷史頻率，不是預測，說不出日期，也不是投資建議。"
+             "另外試算過 Sornette 的 LPPLS 加速度模型，在這組數據上每個視窗都「合格」，分不出泡沫與否，所以沒有採用。",
+             "Greenwood, Shleifer & You (2019) on Ken French 49 industries since 1926. Historical frequencies, not a forecast.")
+    body = (f'<p class="rimp big2"><b>{T(lead_txt, "")}</b></p>'
+            + (f'<p>{T(when, "")}</p>' if when else "")
+            + f'<div class="scroll"><table class="mini"><thead><tr><th>{T("期間", "Since")}</th><th class="r">{T("次數", "Cases")}</th>'
+            f'<th class="r">{T("6 個月內破裂", "≤6m")}</th><th class="r">{T("12 個月內", "≤12m")}</th><th class="r">{T("24 個月內", "≤24m")}</th>'
+            f'<th class="r">{T("破裂月數中位數", "Median months")}</th><th class="r">{T("沒破的 1 年報酬", "Survivors 1y")}</th></tr></thead><tbody>{trs}</tbody></table></div>'
+            + _fold(f'<p><b>{T("現在的 AI 族群", "AI baskets now")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("族群", "Basket")}</th>'
+                    f'<th class="r">{T("2 年漲幅", "2y run-up")}</th><th class="r">{T("離一年高點", "Off 1y high")}</th><th class="r">{T("波動放大", "Vol ratio")}</th>'
+                    f'<th>{T("落在哪一組", "Group")}</th></tr></thead><tbody>{now}</tbody></table></div>'
+                    + (f'<p><b>{T("1970 年以來同一組的每一次", "Every case since 1970")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("訊號月", "Month")}</th>'
+                       f'<th>{T("產業", "Industry")}</th><th class="r">{T("2 年漲幅", "Run-up")}</th><th>{T("結果", "Outcome")}</th><th class="r">{T("之後 1 年", "Next 1y")}</th></tr></thead>'
+                       f'<tbody>{cases}</tbody></table></div>' if cases else "")
+                    + f'<p class="note">{note}</p>', "點開看現在的族群、每一次歷史案例與方法"))
+    return card("AI 泡沫計時器：不猜日期，看時間分布", "AI bubble timer: a time distribution, not a date", body, "wide")
+
+
+def elephant_state(b: dict) -> tuple:
+    el = b.get("elephants") or []
+    if not el:
+        return "⚪", "沒有資料"
+    if any(e["state"] == "撤退" for e in el):
+        return "🔴", "大錢在撤退：" + "、".join(e["name"] for e in el if e["state"] == "撤退") + " 期貨的資產管理機構 13 週大幅減碼"
+    if any(e["state"] == "減碼" for e in el):
+        return "🟠", "大錢在減碼：" + "、".join(e["name"] for e in el if e["state"] == "減碼")
+    return "🟢", "大象沒有在撤退：資產管理機構的期貨部位持平或加碼"
+
+
+@_anchor("ai-elephant")
+def sec_ai_elephant(eng) -> str:
+    b = _bub(eng)
+    el = b.get("elephants") or []
+    if not el:
+        return ""
+    emo, head = elephant_state(b)
+    rows = "".join(f'<tr><td>{T(e["name"], e["name"])}</td><td class="r">{e["am"]:+.1f}%</td><td class="r">{e["chg13"]:+.1f}</td>'
+                   f'<td class="r">{num(e["pct"], 0)}</td><td>{T(e["state"], e["state"])}</td>'
+                   f'<td class="r">{num(e.get("exit_rate"), 0)}%（{T("平常", "base")} {num(e.get("base"), 0)}%）</td><td class="r">{num(e.get("auc"), 2)}</td></tr>' for e in el)
+    lev = "、".join(f'{e["name"]} {num(e.get("auc_lev"), 2)}' for e in el)
+    ins = b.get("insiders") or {}
+    ins_txt = (f"AI 相關公司內部人（{ins['from']}～{ins['to']}）：賣出約 {(ins['sell'] + ins['sell_plan']) / 1e8:,.1f} 億美元、買進約 {ins['buy'] / 1e8:,.2f} 億美元；"
+               "賣最多的是 " + "、".join(f"{s}（{v / 1e8:,.1f} 億）" for s, v in ins.get("top") or []) +
+               "。高層賣股多半是事先排定的計畫或稅務、分散需求，買進才比較有資訊；本站只保存幾個月的申報，沒辦法回測，只當背景，不計入判斷。") if ins else ""
+    note = T("怎麼看：CFTC 每週公布期貨的持倉，「資產管理機構」是退休基金、共同基金、保險這類長期大錢；它們在股指期貨的淨多單（占未平倉量 %）"
+             "13 週內大幅下降、落在自己歷史最低 10%，代表大錢在降低股票曝險。回測 2010 年起每週一筆：這種時候之後 3 個月內跌 ≥10% 的頻率，比平常高；"
+             "AUC 0.56–0.59，有一點預測力但不強，而且每週的樣本彼此重疊，不是獨立事件。避險基金（槓桿基金）的部位回測沒有預測力（AUC "
+             + lev + "，0.5＝亂猜），所以不採用。"
+             "13F 大師持倉（「大師持倉」頁）每季一次、晚 45 天公布，太慢，只適合事後看誰在賣。資料：CFTC 交易者持倉報告（TFF）。不是投資建議。", "")
+    body = (f'<p class="rimp big2"><b>{emo} {T(head, "")}</b></p>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("期貨", "Futures")}</th><th class="r">{T("資產管理機構淨多單", "Asset-manager net")}</th>'
+            f'<th class="r">{T("13 週變化", "13w change")}</th><th class="r">{T("變化的歷史百分位", "Pctile")}</th><th>{T("判讀", "Reading")}</th>'
+            f'<th class="r">{T("「撤退」時 3 個月內跌 ≥10%", "Fall ≥10% after exits")}</th><th class="r">AUC</th></tr></thead><tbody>{rows}</tbody></table></div>'
+            + (f'<p class="small">{T(ins_txt, "")}</p>' if ins_txt else "")
+            + _fold(f'<p class="note">{note}</p>', "點開看方法與限制"))
+    return card("大象撤退：金融圈的大錢在跑嗎？", "Are the elephants leaving?", body, "wide")
+
+
 JS = r"""
 document.addEventListener('click',function(ev){var a=ev.target.closest('[data-jump]');if(!a)return;ev.preventDefault();
  var t=document.getElementById(a.getAttribute('data-jump'));if(!t)return;var d=t.querySelector('details');if(d)d.open=true;
@@ -793,10 +961,18 @@ CSS = (".aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,
        ".fg{display:grid;gap:6px;margin:10px 0 4px;max-width:560px}.fgrow{display:grid;grid-template-columns:130px 1fr 36px;gap:8px;align-items:center}"
        ".fgl{font-size:13px}.fgv{text-align:right}.fgbar{height:12px;border-radius:6px;background:var(--wash);border:1px solid var(--bd);overflow:hidden}"
        ".fgbar i{display:block;height:100%;background:currentColor}.fgbar i.ac{color:var(--ac)}"
+       ".aitrend{width:100%;min-width:480px;height:auto;display:block;margin:8px 0 2px}.aitrend .tg{stroke:var(--bd);stroke-width:1}"
+       ".aitrend .tl{font-size:10px;fill:var(--mu)}.aitrend polyline{fill:none;stroke-width:2;stroke-linejoin:round}"
+       ".aitrend .tf{stroke:var(--dn)}.aitrend .ta{stroke:var(--ac)}.aitrend .th{fill:transparent}.aitrend .th:hover{fill:var(--wash);opacity:.6}"
+       ".ailg .lf{background:var(--dn)}.ailg .la{background:var(--ac)}"
        ".aiwatch{padding:10px 12px;border-left:3px solid var(--ac);background:var(--wash);border-radius:4px}"
        ".aiwatch ol{margin:6px 0 0;padding-left:20px}.aiwatch li{margin:3px 0}"
        "[id^=ai-]{scroll-margin-top:72px}.aiback{margin:8px 0 0;text-align:right;font-size:12.5px}.aiback a{color:var(--ac)}"
        ".aiflash{outline:2px solid var(--ac);outline-offset:2px;transition:outline .3s}"
-       ".aibar{display:flex;gap:3px;margin:8px 0 4px;font-size:12px;font-weight:700}"
-       ".aibar span{padding:5px 6px;border-radius:4px;background:var(--wash);border-bottom:3px solid currentColor;"
-       "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.aitile .aibar span{padding:3px 0;margin:0}")
+       ".aibar{display:flex;gap:2px;margin:10px 0 4px;height:28px;border-radius:6px;overflow:hidden;font-size:12.5px;font-weight:700}"
+       ".aibar i{display:flex;align-items:center;justify-content:center;font-style:normal;color:#fff;white-space:nowrap;"
+       "overflow:hidden;min-width:0;padding:0 4px}"
+       ".aibar .sd{background:var(--up)}.aibar .sp{background:var(--mu)}.aibar .sc{background:var(--dn)}"
+       ".aitile .aibar{height:10px;margin:4px 0;border-radius:5px}"
+       ".ailg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;margin:0 0 6px}.ailg b{display:inline-block;width:10px;height:10px;"
+       "border-radius:2px;margin-right:5px;vertical-align:-1px}.ailg .sd{background:var(--up)}.ailg .sp{background:var(--mu)}.ailg .sc{background:var(--dn)}")
