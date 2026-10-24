@@ -87,7 +87,7 @@ async def refresh(force: bool = False) -> Dict:
     now = time.time()
     d["ts_check"] = now
     bad = []
-    if force or now - float(d.get("ts", 0)) > TTL or not d.get("fsi"):
+    if force or now - float(d.get("ts", 0)) > TTL or any(not d.get(k) for k in ("fsi", "custody", "jpy", "swaps", "gdpnow")):
         steps = (("fsi", lambda: _get_fsi()), ("custody", lambda: _fred("WMTSECL1", "2003-01-01")),
                  ("swaps", lambda: _fred("SWPT", "2007-01-01")), ("gdpnow", lambda: _fred("GDPNOW", "2011-01-01")),
                  ("jpy", lambda: _fred("DEXJPUS", "1990-01-01")), ("yen_cftc", _yen_cftc))
