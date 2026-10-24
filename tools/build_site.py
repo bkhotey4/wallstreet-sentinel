@@ -945,7 +945,7 @@ def sec_ai(text: str, engine_name: str, written: Optional[float] = None) -> str:
     if not text:
         return ""
     w = datetime.fromtimestamp(written, ZoneInfo("Asia/Taipei")).strftime("%m-%d %H:%M") if written else None
-    when_zh = f"最後更新 {w} 台北・" if w else ""                  # the commentary is rewritten at most every ~55 min, so it can be older than the page
+    when_zh = f"🕒 最後更新 {w} 台北・" if w else ""                  # the commentary is rewritten at most every ~55 min, so it can be older than the page
     when_en = f"Last written {w} Taipei · " if w else ""
     sub = T(f"{when_zh}由 {engine_name} 依本頁公開數據自動撰寫；只描述市場、不構成投資建議，可能有誤（僅中文）",
             f"{when_en}Auto-written by {engine_name} from this page's public data; market description only, not advice (Chinese only)")
@@ -1250,7 +1250,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             if f is None:
                 return sec_ai(ai_text, ai_engine, getattr(eng, "ai_written", None))
             h = _safe_section(f, eng)
-            if h and "</h2>" in h:                                 # every card says when its own numbers were fetched
+            if h and "<section" in h:                                 # every card says when its own numbers were fetched
                 try:
                     h = STP.inject(h, STP.stamp(eng, getattr(f, "__name__", ""), key))
                 except Exception:  # noqa: BLE001

@@ -37,6 +37,8 @@ def test_site_inject_and_fallback():
     h = '<section id="ai-x" class="card wide"><h2>A</h2><p>x</p></section><section class="card"><h2>B</h2></section>'
     out = STP.inject(h, "<p class=upd>S</p>")
     assert out.count("<p class=upd>S</p>") == 2, out                              # an id before class is still a card
+    nt = STP.inject('<section class="card wide pmcard"><details><summary>x</summary></details></section>', "<p class=upd>S</p>")
+    assert nt.startswith('<section class="card wide pmcard"><p class=upd>S</p><details'), nt   # a card without a title still gets one
     st = STP.stamp(ENG, "sec_terms", "about")
     assert "系統更新" in st and "data-ts" in st                                    # static cards say when the page was built
     st2 = STP.stamp(types.SimpleNamespace(), "sec_unknown_card", "nosuchtab")

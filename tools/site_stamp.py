@@ -201,8 +201,8 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
 
 
 def inject(html: str, st: str) -> str:
-    """Put the stamp right under each card's title (every card a section returned)."""
-    if not st or "</h2>" not in html:
+    """Put the stamp right under each card's title (every card a section returned); a card without a title gets it first."""
+    if not st:
         return html
     import re
     starts = [m.start() for m in re.finditer(r'<section\b[^>]*\bclass="card', html)]     # id="…" may come before class
@@ -210,7 +210,12 @@ def inject(html: str, st: str) -> str:
     for n, j in enumerate(starts):
         k = html.find("</h2>", j)
         nxt = starts[n + 1] if n + 1 < len(starts) else -1
-        if k < 0 or (0 <= nxt < k):
+        if k < 0 or (0 <= nxt < k):                    # no title in this card: right after its opening tag
+            k = html.find(">", j)
+            if k < 0:
+                continue
+            out.append(html[i:k + 1] + st)
+            i = k + 1
             continue
         k += len("</h2>")
         out.append(html[i:k] + st)
