@@ -295,6 +295,11 @@ class Engine:
             await stb.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("stability data failed: %s", e)
+        try:                                                    # AI 資本支出依賴度（SEC 季資料，7 天一次）
+            from .analytics import capex_link as cxl
+            await cxl.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("capex link failed: %s", e)
         try:                                                    # 外資台指期淨未平倉歷史（12 小時一次）
             from .data import tw_futures as twf
             await twf.refresh()

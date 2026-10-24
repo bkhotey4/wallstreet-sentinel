@@ -44,6 +44,7 @@ from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
 from tools import site_chain as SCH
+from tools import site_capex as SCX
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
@@ -1270,7 +1271,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
-            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
+            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_dollar, STR.sec_tr_yen, SST.sec_st_coverage]),
             ("tools", "工具", "Tools", [SCA.sec_sizing, S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
@@ -1544,6 +1545,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(STB.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("stability data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # AI 資本支出依賴度：SEC 季資料（7 天一次）
+        from wsb.analytics import capex_link as CXL
+        await asyncio.wait_for(CXL.refresh(), 150)
+    except Exception as e:  # noqa: BLE001
+        log.warning("capex link failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 外資台指期淨未平倉歷史（FinMind，2018 年起）
         from wsb.data import tw_futures as TWF
         await asyncio.wait_for(TWF.refresh(), 90)

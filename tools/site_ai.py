@@ -418,6 +418,16 @@ def ai_verdict(eng, ph: dict) -> dict:
         now_c = (SCH._ac(eng) or {}).get("now") or {}
         gm = {g["zh"]: g for g in now_c.get("groups") or []}
         pw, ut = gm.get("電力與電網"), gm.get("公用事業（對照）")
+        try:
+            from tools import site_capex as SCX
+            cb = SCX._cl()
+            dep = [r for r in (cb or {}).get("rows") or [] if r["corr"] >= 0.5 and r["n"] >= 12 and r["if_flat"] < r["rev_yoy"] - 20]
+            if dep:
+                under.append(("營收綁在巨頭的資本支出上",
+                              "雲端巨頭資本支出年增 " + f"{cb['capex_yoy']:.0f}%" + "；如果明年不再成長，" + "、".join(
+                                  f"{r['zh']}營收成長可能從 {r['rev_yoy']:+.0f}% 掉到 {r['if_flat']:+.0f}%" for r in dep[:3]) + "。", "ai-capex"))
+        except Exception:  # noqa: BLE001
+            pass
         if pw and pw["beta"] >= 0.5:
             under.append(("「AI 受惠股」其實和 AI 綁在一起",
                           f"電力與電網股在費半大跌的日子平均跌到 {pw['beta']:.2f} 倍" + (f"（真正的公用事業只有 {ut['beta']:.2f}）" if ut else "")
