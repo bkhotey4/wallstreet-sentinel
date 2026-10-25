@@ -10,6 +10,7 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# reads the real data_cache to render; anything it writes (the AI-note cache) is redirected to a temp file below
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
@@ -137,7 +138,8 @@ def main():
     async def fake_ai(e):
         calls.append(1)
         return f"note {len(calls)}", "test"
-    with patch.object(B, "ai_commentary", fake_ai):
+    tmp_cache = Path(tempfile.mkdtemp(prefix="wsb_comm_")) / "econ_commentary.json"   # never touch the real data_cache
+    with patch.object(B, "ai_commentary", fake_ai), patch.object(B, "_commentary_cache", lambda: tmp_cache):
         B._commentary_cache().unlink(missing_ok=True)
         t0 = time.time()
         assert asyncio.run(B.ai_commentary_cached(eng, now=t0)) == ("note 1", "test")

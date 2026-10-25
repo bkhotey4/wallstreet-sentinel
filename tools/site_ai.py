@@ -420,10 +420,14 @@ def ai_verdict(eng, ph: dict) -> dict:
         pw, ut = gm.get("電力與電網"), gm.get("公用事業（對照）")
         try:
             from wsb.data import euro_asia as EAD
-            for x in ((EAD.view(eng).get("europe") or {}).get("hot") or [])[:2]:
+            eu = EAD.view(eng).get("europe") or {}
+            band = (eu.get("ciss") or {}).get("band")
+            whole = ("歐元區整體壓力還低，但歐債危機都是從單一國家開始" if band == "低" else
+                     f"歐元區整體壓力已經{band}" if band else "歐元區整體壓力數據暫缺")
+            for x in (eu.get("hot") or [])[:2]:
                 under.append((f"{x['zh']}的公債壓力",
                               f"{x['zh']} 10 年期公債比德國多付 {x['spread']:.2f} 個百分點，是 1999 年以來第 {x['pct']:.0f} 百分位（2011 年歐債危機最高 {x['max']:.2f}），"
-                              f"半年 {x['chg6']:+.2f}；歐元區整體壓力還低，但歐債危機都是從單一國家開始。", None))
+                              f"半年 {x['chg6']:+.2f}；{whole}。", None))
         except Exception:  # noqa: BLE001
             pass
         try:

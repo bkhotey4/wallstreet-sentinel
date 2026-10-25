@@ -330,6 +330,20 @@ def sec_geo(eng) -> str:
 
 
 # ================================================================== 台美連動（台股頁）
+def gap_line(eng, lk: dict):
+    """Implied TAIEX open from last night's US move × the historical beta, in index points (pending rows only)."""
+    r = next((x for x in lk.get("index") or [] if "加權" in str(x.get("tw_n", "")) and x.get("implied") is not None), None)
+    if not r or r.get("tw") is not None:
+        return None
+    try:
+        lvl = float(eng.market.series("^TWII").dropna().iloc[-1])
+    except Exception:  # noqa: BLE001
+        return None
+    pts = lvl * r["implied"] / 100
+    return (f"一句話看懂：依{r['us_n']}前一晚 {r['us_ret'] if 'us_ret' in r else r['us']:+.2f}% 與過去的連動（Beta {r['beta']:.2f}），"
+            f"推估加權指數開盤約 {r['implied']:+.2f}%（約 {pts:+,.0f} 點）。這是歷史平均關係的換算，實際開盤常常不一樣。")
+
+
 def sec_link(eng) -> str:
     lk = _sx(eng).get("link") or {}
     if not lk.get("available"):
@@ -349,6 +363,9 @@ def sec_link(eng) -> str:
     th = "".join(row(f'{T(r["us_theme"], r["us_theme"])} <span class="muted small">({r["n_us"]})</span> → {T(r["tw_theme"], r["tw_theme"])} '
                      f'<span class="muted small">({r["n_tw"]})</span>', r) for r in lk.get("rows", []))
     body = f'<div class="scroll"><table class="mini">{head}<tbody>{idx}{th}</tbody></table></div>'
+    gap = gap_line(eng, lk)
+    if gap:
+        body = f'<p class="rimp big2"><b>{T(gap, "")}</b></p>' + body
     a = lk.get("adr")
     if a and abs(a["now"]) < 60:                                  # a broken quote (e.g. a split not yet adjusted) is not shown
         s = pd.Series([v for _, v in a["hist"]], index=pd.to_datetime([d for d, _ in a["hist"]]))

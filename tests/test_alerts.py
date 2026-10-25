@@ -167,7 +167,7 @@ def test_card_stamps():
     assert " old" in STP.stamp(eng, "sec_taiwan", "taiwan", now) and "資料偏舊" in STP.stamp(eng, "sec_taiwan", "taiwan", now)
     eng.fred.ts = now - 3 * 86400                               # a fetch older than 36 h is flagged even without a data date
     assert " old" in STP.stamp(eng, "sec_macro", "risk", now)
-    assert "系統更新" in STP.stamp(eng, "sec_fees", "tools", now)   # static cards say when the page was built
+    assert "網站產生" in STP.stamp(eng, "sec_fees", "tools", now)   # static cards say when the page was built
     h = '<section class="card"><h2>A</h2><p>x</p></section><section class="card wide"><h2>B</h2></section>'
     out = STP.inject(h, "<p class=\"upd\">S</p>")
     assert out.count('<p class="upd">S</p>') == 2 and out.index("S</p>") > out.index("</h2>"), out

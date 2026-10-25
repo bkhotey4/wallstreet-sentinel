@@ -45,11 +45,28 @@ def sec_lookup(eng) -> str:
     return card("查任何股票（即時報價）", "Any ticker (live quote)", body, "wide")
 
 
+def sec_watch(eng) -> str:
+    body = (f'<p class="rimp big2"><b>{T("一句話看懂：加入你想追的任何股票，看它離 200 日均線多遠、RSI 冷熱、離一年高點多遠，以及近一個月的歷史波動區間。", "Your own watchlist: distance from the 200-day average, RSI, drawdown and a one-month volatility range.")}</b></p>'
+            '<form class="lqf" id="wlf" autocomplete="off"><input id="wlin" class="lqin" maxlength="15" placeholder="SMR、OKLO、3231.TW" aria-label="ticker">'
+            f'<button class="btn" type="submit">{T("加入", "Add")}</button></form><div id="wlbox" class="scroll"></div>'
+            f'<p class="lqoff" id="wloff">{T("這個功能只在 Cloudflare 版網址可用：", "Only on the Cloudflare site: ")}<a href="{CF_URL}" target="_blank" rel="noopener">{CF_URL.replace("https://", "")}</a></p>'
+            f'<details class="sgx"><summary>{T("每一欄怎麼看", "How to read")}</summary><p class="note">{T(WL_NOTE, "")}</p></details>')
+    return card("自選股觀察（存在你的瀏覽器）", "My watchlist (kept in your browser)", body, "wide")
+
+
+WL_NOTE = ("清單只存在你這台裝置的瀏覽器（換手機或清除瀏覽資料就不見），查詢時只把代號送到本站的報價服務，不留存。"
+           "距 200 日線＝現價比過去 200 個交易日平均高或低多少，常用來分辨長期趨勢向上或向下。"
+           "RSI(14)＝近 14 天漲跌力道，70 以上偏熱、30 以下偏冷，強勢股可以長期待在 70 以上，不代表會反轉。"
+           "近一個月波動區間＝用近 20 天的實際波動推算，一個月後股價約有三分之二的機率落在這個範圍（常態分配假設，極端行情會超出）。"
+           "資料：Yahoo Finance，約有延遲。不是投資建議。")
+
+
 CSS = (".lqbar{margin:8px 0 4px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card)}"
        ".lqhead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}.lqst{font-size:12px;color:var(--mu)}.lqst.on{color:var(--up)}"
        ".lqal{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.lqchip{font-size:12.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--bd)}"
        ".lqchip.hit{border-color:var(--dn);color:var(--dn);font-weight:600}.lqchip.ok{color:var(--mu)}"
        ".lqnote{margin:4px 0 0;font-size:11.5px;color:var(--mu)}.tile .asof.lv{color:var(--up)}"
+       ".wlt td,.wlt th{white-space:nowrap}.wlx{background:none;border:0;color:var(--mu);cursor:pointer;font-size:14px}.wlx:hover{color:var(--dn)}"
        ".lqf{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.lqin{flex:1;min-width:0;max-width:260px;padding:6px 10px;border:1px solid var(--bd);"
        "border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px}.lqout{font-size:15px;margin:6px 0}.lqoff{font-size:12.5px;color:var(--mu)}")
 
@@ -60,7 +77,7 @@ _JS = r"""
  var dead=false,lastOk=0,data={};function en(){return document.documentElement.lang==='en';}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){if(x==null||isNaN(x))return '—';if(Math.abs(x)<0.5*Math.pow(10,-d))x=0;return (x>0?'+':x<0?'':'')+f(x,d);}
- function api(list){return fetch('api/quote?s='+encodeURIComponent(list),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
+ function api(list,full){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
  function hhmm(t){if(!t)return '';var d=new Date(t*1000),p=function(n){return ('0'+n).slice(-2);};var tm=p(d.getHours())+':'+p(d.getMinutes());
    return d.toDateString()===new Date().toDateString()?tm:(d.getMonth()+1)+'/'+d.getDate()+' '+tm;}
  function paintTiles(q){tiles.forEach(function(t){var s=t.getAttribute('data-lq'),x=q[s];if(!x)return;var dg=+t.getAttribute('data-dg')||0;
@@ -89,6 +106,31 @@ _JS = r"""
      o.appendChild(document.createTextNode(' '+f(x.price,2)+' '+x.cur+' '));var c=document.createElement('span');c.className=cl;c.textContent=sg(x.chg,2)+'%';o.appendChild(c);
      o.appendChild(document.createTextNode(' · '+hhmm(x.t)));})
    .catch(function(){o.textContent=dead?'':(en()?'Quote source unavailable, try later':'報價來源暫時取不到，稍後再試');});});}
+ // watchlist: tickers in localStorage, one-year daily stats from /api/quote?full=1
+ var WK='wss_watch_v1',wb=document.getElementById('wlbox');
+ function wget(){try{var a=JSON.parse(localStorage.getItem(WK)||'[]');return Array.isArray(a)?a:[];}catch(e){return [];}}
+ function wput(a){try{localStorage.setItem(WK,JSON.stringify(a));}catch(e){}}
+ function cell(tr,txt,c){var td=document.createElement('td');td.className=c||'r';td.textContent=txt;tr.appendChild(td);return td;}
+ var wseq=0;
+ function wdraw(){if(!wb)return;var a=wget(),my=++wseq;wb.textContent='';
+   if(!a.length){var p=document.createElement('p');p.className='small muted';p.textContent=en()?'Nothing yet — add a ticker above.':'還沒有自選股，在上面輸入代號加入。';wb.appendChild(p);return;}
+   if(dead)return;
+   api(a.join(','),1).then(function(d){if(my!==wseq)return;wb.textContent='';var q=d.q||{};var off=document.getElementById('wloff');if(off)off.hidden=true;
+    var t=document.createElement('table');t.className='mini wlt';var hd=['代號','名稱','現價','今日','距 200 日線','RSI(14)','距 52 週高','近一個月波動區間',''],he=['Ticker','Name','Price','Today','vs 200d','RSI','From high','1-month range',''];
+    var tr0=document.createElement('tr');hd.forEach(function(h,i){var th=document.createElement('th');th.textContent=en()?he[i]:h;if(i>1)th.className='r';tr0.appendChild(th);});var th0=document.createElement('thead');th0.appendChild(tr0);t.appendChild(th0);
+    var tb=document.createElement('tbody');a.forEach(function(s){var x=q[s],tr=document.createElement('tr');cell(tr,s,'');
+     if(!x){var td=cell(tr,en()?'not found':'找不到這個代號','muted');td.colSpan=7;}
+     else{cell(tr,x.name,'small');cell(tr,f(x.price,2)+' '+x.cur);var c=cell(tr,sg(x.chg,2)+'%');if(x.chg)c.classList.add(x.chg>0?'up':'dn');
+      var g=cell(tr,x.ma_gap!=null?sg(x.ma_gap,1)+'%':'—');if(x.ma_gap!=null)g.classList.add(x.ma_gap>=0?'up':'dn');
+      cell(tr,x.rsi14!=null?f(x.rsi14,0)+(x.rsi14>=70?(en()?' hot':' 偏熱'):x.rsi14<=30?(en()?' cold':' 偏冷'):''):'—');
+      var dd=x.hi52?(x.price/x.hi52-1)*100:null,h=cell(tr,dd!=null?sg(dd,1)+'%':'—');if(dd!=null&&dd<=-40)h.classList.add('dn');
+      cell(tr,x.m1?f(x.m1[0],2)+' ～ '+f(x.m1[1],2):'—');}
+     var del=document.createElement('button');del.type='button';del.className='wlx';del.textContent='✕';del.setAttribute('aria-label','remove '+s);
+     del.addEventListener('click',function(){wput(wget().filter(function(y){return y!==s;}));wdraw();});var tdd=document.createElement('td');tdd.appendChild(del);tr.appendChild(tdd);tb.appendChild(tr);});
+    t.appendChild(tb);wb.appendChild(t);}).catch(function(){var p=document.createElement('p');p.className='small muted';p.textContent=dead?'':(en()?'Quote source unavailable, try later':'報價來源暫時取不到，稍後再試');wb.appendChild(p);});}
+ var wf=document.getElementById('wlf');if(wf){wf.addEventListener('submit',function(e){e.preventDefault();var s=(document.getElementById('wlin').value||'').trim().toUpperCase();
+   if(!/^[A-Z0-9^=.\-]{1,15}$/.test(s))return;var a=wget();if(a.indexOf(s)<0&&a.length<25){a.push(s);wput(a);}document.getElementById('wlin').value='';wdraw();});
+  setTimeout(wdraw,1500);}
 })();
 """
 JS = _JS.replace("__RULES__", json.dumps(RULES, ensure_ascii=False)).replace("__EXTRA__", json.dumps(EXTRA)).replace("__POLL__", str(POLL_S))

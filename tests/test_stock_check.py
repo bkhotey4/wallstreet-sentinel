@@ -36,6 +36,17 @@ def test_quarters_ytd_q4_and_splits():
     assert abs(e2["2025Q1"] - 0.1) < 1e-9 and abs(e2["2025Q4"] - (4.6 - 0.1 - 0.1 - 1.2)) < 1e-9   # only facts filed before the split shrink
 
 
+def test_annual_only_and_ttm_columns_are_not_quarters():
+    # an annual-only tag must not become Q4; a trailing-12-month column (Amazon) must not be differenced into a quarter
+    annual = [_fact("2024-01-01", "2024-12-31", 100), _fact("2025-01-01", "2025-12-31", 120)]
+    assert S.q_flow(_cf({"Revenues": {"USD": annual}}), "Revenues") == {}
+    amzn = [_fact("2023-04-01", "2023-06-30", 6.75), _fact("2023-04-01", "2024-03-31", 37.68), _fact("2024-01-01", "2024-03-31", 10.43)]
+    q = S.q_flow(_cf({"NetIncomeLoss": {"USD": amzn}}), "NetIncomeLoss")
+    assert q["2024Q1"] == 10.43 and q["2023Q2"] == 6.75
+    from wsb.analytics import capex_link as CL
+    assert CL._quarterly_tag(_cf({"Revenues": {"USD": annual}}), "Revenues") == {}
+
+
 def test_ttm_fiscal_gap():
     s = {"2025Q1": 1, "2025Q3": 1, "2025Q4": 1, "2026Q1": 1, "2026Q3": 1}       # 16-week quarter leaves 2026Q2 empty
     assert S.ttm(s, "2026Q3") == 4 and S.ttm({"2026Q3": 1}, "2026Q3") is None

@@ -24,6 +24,7 @@ from ..config import DATA_DIR
 log = logging.getLogger(__name__)
 FILE = DATA_DIR / "econ_capex_link.json"
 TTL = 7 * 86400
+PV = 2                                  # parser version: a cache made by an older parser is re-read at once
 BUYERS = ("MSFT", "GOOGL", "AMZN", "META", "ORCL")
 SUPPLIERS = (("NVDA", "輝達"), ("AVGO", "博通"), ("AMD", "超微"), ("MRVL", "邁威爾"), ("MU", "美光"), ("AMAT", "應用材料"), ("LRCX", "科林研發"),
              ("KLAC", "科磊"), ("ANET", "Arista 網通"), ("VRT", "Vertiv 散熱電源"), ("DELL", "戴爾"), ("SMCI", "美超微"), ("ETN", "伊頓電氣"),
@@ -74,17 +75,20 @@ def _quarterly_tag(cf: Dict, tag: str) -> Dict[str, float]:
             span = (date.fromisoformat(e) - date.fromisoformat(s)).days
             if 80 <= span <= 380:
                 by_start.setdefault(s, []).append((e, float(f["val"]), span))
-        out: Dict[str, float] = {}
+        direct: Dict[str, float] = {}
+        derived: Dict[str, float] = {}
         for s, rows in by_start.items():
             rows.sort()
-            prev = 0.0
+            prev_v, prev_span = 0.0, 0
             for e, v, span in rows:
                 q = _cal_q(e)
-                val = v - prev if span > 100 else v
-                if q not in out and val > 0:
-                    out[q] = val
-                prev = v
-        return out
+                if span <= 100:
+                    if v > 0:
+                        direct.setdefault(q, v)
+                elif 80 <= span - prev_span <= 100 and v - prev_v > 0:   # YTD minus the previous YTD; an annual-only fact is never a Q4
+                    derived.setdefault(q, v - prev_v)
+                prev_v, prev_span = v, span
+        return {**derived, **direct}
     return {}
 
 
@@ -95,6 +99,8 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     now = time.time()
     d["ts_check"] = now
+    if d.get("pv") != PV:
+        d = {"ts_check": now}                                        # older parser turned annual / trailing-12-month facts into quarters
     if not force and now - float(d.get("ts", 0)) < TTL and d.get("rev"):
         _save(d)
         return d
@@ -123,7 +129,7 @@ async def refresh(force: bool = False) -> Dict:
         except Exception as e:  # noqa: BLE001
             log.info("capex link %s: %s", sym, e)
     if rev and cap:
-        d.update(rev=rev, capex=cap, ts=now)
+        d.update(rev=rev, capex=cap, ts=now, pv=PV)
     _save(d)
     return d
 

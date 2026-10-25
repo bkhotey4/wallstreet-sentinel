@@ -40,9 +40,13 @@ def test_site_inject_and_fallback():
     nt = STP.inject('<section class="card wide pmcard"><details><summary>x</summary></details></section>', "<p class=upd>S</p>")
     assert nt.startswith('<section class="card wide pmcard"><p class=upd>S</p><details'), nt   # a card without a title still gets one
     st = STP.stamp(ENG, "sec_terms", "about")
-    assert "系統更新" in st and "data-ts" in st                                    # static cards say when the page was built
+    assert "網站產生" in st and "data-ts" in st                                    # static cards say when the page was built
     st2 = STP.stamp(types.SimpleNamespace(), "sec_unknown_card", "nosuchtab")
-    assert "系統更新" in st2                                                       # nothing known → still a time, never blank
+    assert "網站產生" in st2                                                       # nothing known → still a time, never blank
+    assert "即時" in STP.stamp(ENG, "sec_watch", "tools")                          # browser-side live cards say so
+    STP.SOURCES["_t"] = ("測試來源", "t", lambda e: (None, None), 1)
+    STP.CARD["sec_t"] = ["_t"]
+    assert "尚未取得資料" in STP.stamp(ENG, "sec_t", "x") and "測試來源" in STP.stamp(ENG, "sec_t", "x")   # sources but nothing yet
     print("ok site stamps")
 
 

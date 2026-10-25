@@ -2,6 +2,8 @@
 import asyncio
 import tests.test_offline as T  # noqa: F401  (stubs + synthetic market)
 from datetime import date
+import os as _os_iso, tempfile as _tf_iso
+_os_iso.environ.setdefault("WSB_DATA_DIR", _tf_iso.mkdtemp(prefix="wsb_test_"))   # never read or write the real data_cache
 from wsb.data import taiwan as TW
 
 BFI = {"stat": "OK", "date": "20260930", "fields": ["單位名稱", "買進金額", "賣出金額", "買賣差額"],

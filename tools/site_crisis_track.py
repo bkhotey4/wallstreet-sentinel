@@ -22,6 +22,9 @@ def sec_crisis_track(eng) -> str:
         fa += (f"樣本只有 {s['n']} 次危機，數字的不確定性很大：命中率的 95% 信賴區間約 {s['hit_ci'][0]:.0f}%–{s['hit_ci'][1]:.0f}%；"
                f"升溫後真的出事的比例（精確率）{s['prec']:.0f}%，95% 區間約 {s['prec_ci'][0]:.0f}%–{s['prec_ci'][1]:.0f}%（Wilson 區間）。"
                "門檻 55 是看過整段歷史後選的，所以這是樣本內結果。")
+    if s.get("rand") is not None and s.get("prec") is not None:
+        fa += (f"對照組：隨便挑一天亮燈，之後 6 個月標普跌超過 10% 的比例是 {s['rand']:.0f}%（隨機亮燈基準）；SSI 升溫後是 {s['prec']:.0f}%，"
+               + ("比亂猜好一些" if s["prec"] > s["rand"] + 5 else "和亂猜差不多") + f"。平均每年約 {s['fa_yr']:.1f} 次假警報。")
     rows = ""
     for x in r["rows"]:
         if not x["scored"]:

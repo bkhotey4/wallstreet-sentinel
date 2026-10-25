@@ -204,7 +204,7 @@ def sidebar(names: Dict[str, Tuple[str, str]], first: str = "overview", cards: O
 
 def topnav() -> str:
     return (f'<nav class="pnav" aria-label="pages"><div class="pbar"><button class="btn sidebtn" id="sideBtn" type="button" aria-controls="side">'
-            f'☰ {T("目錄", "Pages")}</button><span class="crumb" id="crumb"></span></div></nav>')
+            f'☰ {T("目錄", "Pages")}</button><span class="crumb" id="crumb"></span><span class="qtabs" id="qtabs"></span></div></nav>')
 
 
 def js(names: Dict[str, Tuple[str, str]]) -> str:
@@ -247,7 +247,10 @@ if(qs){qs.addEventListener('input',filt);qs.addEventListener('keydown',function(
 document.addEventListener('keydown',function(ev){if((ev.key==='/'||((ev.key==='k'||ev.key==='K')&&(ev.ctrlKey||ev.metaKey)))&&qs&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){ev.preventDefault();side.classList.add('open');qs.focus();qs.select();}});
 var ob=document.getElementById('omniBtn');if(ob&&qs){ob.addEventListener('click',function(ev){ev.stopPropagation();side.classList.add('open');qs.focus();qs.select();});}
 var PK='wss_pins';function pins(){try{return JSON.parse(localStorage.getItem(PK)||'[]')||[];}catch(e){return [];}}
-function drawPins(){var p=pins(),box=document.getElementById('pinned'),l=document.getElementById('pinlist');if(!box||!l)return;l.textContent='';
+function drawQuick(p){var q=document.getElementById('qtabs');if(!q)return;q.textContent='';var ks=(p.length?p:['overview','portfolio','taiwan','ai']).slice(0,6);
+ ks.forEach(function(k){var o=side.querySelector('.sg:not(.pinned) .ptab[data-p="'+k+'"]');if(!o)return;var a=document.createElement('a');a.className='qtab';a.href='#'+k;
+  a.textContent=(o.querySelector('.pt')||o).textContent.replace(/[☆★]/g,'').trim();a.addEventListener('click',function(ev){ev.preventDefault();o.click();});q.appendChild(a);});}
+function drawPins(){var p=pins(),box=document.getElementById('pinned'),l=document.getElementById('pinlist');drawQuick(p);if(!box||!l)return;l.textContent='';
  p.forEach(function(k){var o=side.querySelector('.sg:not(.pinned) .ptab[data-p="'+k+'"]');if(!o)return;var a=document.createElement('a');a.className='ppa';a.href='#'+k;a.textContent=o.textContent;a.dataset.k=k;
   a.addEventListener('click',function(ev){ev.preventDefault();o.click();});l.appendChild(a);});box.hidden=!l.children.length;
  side.querySelectorAll('.ppin').forEach(function(b){var on=p.indexOf(b.dataset.k)>=0;b.textContent=on?'★':'☆';b.setAttribute('aria-pressed',on?'true':'false');});}
@@ -279,6 +282,9 @@ background:var(--card2,transparent);color:var(--tx);font-size:13px}.psnone{font-
 .pall{display:flex;gap:6px;padding:0 10px 10px}.pallb{flex:1;font-size:12px;padding:4px 6px;border:1px solid var(--bd);border-radius:6px;background:none;color:var(--tx2);cursor:pointer}.pallb:hover{color:var(--ac);border-color:var(--ac)}
 .card[id]{scroll-margin-top:72px}
 .lmain{min-width:0}.sidebtn{display:none}.crumb{font-size:13px;color:var(--tx2);padding:10px 4px;white-space:nowrap}
+.qtabs{display:none}.qtab{flex:none;padding:3px 10px;border:1px solid var(--bd);border-radius:99px;font-size:12.5px;color:var(--tx);text-decoration:none;white-space:nowrap}
+.qtab:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
+@media(max-width:900px){.qtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px 0;min-width:0;flex:1}.qtabs::-webkit-scrollbar{display:none}.pbar{display:flex;align-items:center;gap:4px;min-width:0}.crumb{display:none}}
 .ovt .otab{table-layout:fixed;width:100%}.ovt .otab td{vertical-align:top}.ovt .otab th:nth-child(1){width:150px}.ovt .otab th:nth-child(3){width:30%}.og{min-width:0}.oq{font-size:12px;color:var(--tx2);margin-top:2px}.ol{margin:0;padding-left:16px;line-height:1.7;columns:2 260px;column-gap:28px}.ol li{break-inside:avoid}.oc{min-width:0}
 .ochip{display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border:1px solid var(--bd);border-radius:99px;font-size:12px;color:var(--tx);text-decoration:none}
 .ochip:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}

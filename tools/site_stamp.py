@@ -82,6 +82,17 @@ def _stab_ts(k: str):
         return None
 
 
+def _fund_ts():
+    try:
+        from wsb.data import fundamentals as F
+        from wsb.data.stability import AI_GROUP
+        d = F.load()
+        ts = [float((d.get(s) or {}).get("ts") or 0) for s in AI_GROUP]
+        return max(ts) or None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _stab_date(k: str) -> Optional[str]:
     try:
         from wsb.data import stability as ST
@@ -256,13 +267,13 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "insiders": ("內部人申報", "Form 4", lambda e: (_ts(_g(e, "insiders", "data", "ts")), None), 0),
     "margin": ("FINRA 融資", "FINRA margin", lambda e: (_ts(_g(e, "margin_debt", "ts")), None), 0),
     "taiwan": ("台股籌碼", "Taiwan flows", lambda e: (_ts(_g(e, "taiwan", "ts")), _d(_g(e, "taiwan", "asof"))), 4),
-    "street": ("華爾街觀點", "Street views", lambda e: (None, _d(_g(e, "street", "asof"))), 10),
+    "street": ("華爾街觀點", "Street views", lambda e: (_ts(_g(e, "street", "ts")), _d(_g(e, "street", "pos", "asof") or _g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
     "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
     "refund": ("財政部再融資", "Treasury refunding", lambda e: (_ts(_stab_ts("refunding")), _stab_date("refunding")), 100),
     "funding": ("紐約聯準會 SOFR", "NY Fed SOFR", lambda e: (_ts(_stab_ts("sofr")), _stab_date("sofr")), 4),
     "cftc": ("CFTC 持倉", "CFTC positions", lambda e: (_ts(_stab_ts("cftc")), _stab_date("cftc")), 10),
-    "fund": ("SEC 財報（XBRL）", "SEC XBRL", lambda e: (None, _stab_date("ai")), 120),
+    "fund": ("SEC 財報（XBRL）", "SEC XBRL", lambda e: (_ts(_fund_ts()), _stab_date("ai")), 120),
     "ff49": ("產業歷史（Ken French，每月更新）", "Ken French industries", lambda e: (_ts(_bub_ts("ts_check")), _bub_end()), 75),
     "baa": ("穆迪公司債利差（FRED，每月）", "Moody's Baa−Aaa", lambda e: (_ts(_bub_ts("ts_check")), _bub_credit_month()), 75),
     "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 10),
@@ -275,8 +286,8 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "capexq": ("SEC 季報（資本支出／營收）", "SEC quarterly", lambda e: (_ts(_cxl("ts_check")), None), 0),
     "stockchk": ("SEC 季報＋每週股價（個股體檢）", "SEC filings + weekly prices", lambda e: (_ts(_sck("ts_check")), None), 0),
     "twfoi": ("外資台指期部位（FinMind）", "TAIFEX foreign OI", lambda e: (_ts(_twf("ts_check")), _twf_date()), 5),
-    "observer": ("獨立 AI 觀察員", "AI observer", lambda e: (None, _obs_date()), 4),
-    "cover": ("覆蓋盤點", "Coverage audit", lambda e: (None, _cover_date()), 40),
+    "observer": ("獨立 AI 觀察員", "AI observer", lambda e: (_ts(_stab_ts("ai_view")), _obs_date()), 4),
+    "cover": ("覆蓋盤點", "Coverage audit", lambda e: (_ts(_stab_ts("coverage")), _cover_date()), 40),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
 
@@ -294,7 +305,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_crisis": ["px"], "sec_timemachine": ["ssi"], "sec_dual": ["ssi", "px", "fred", "ofr"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -303,11 +314,13 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_timemachine", "sec_crisis"}   # static or self-dated
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing"}   # static content
+LIVE = {"sec_lookup", "sec_watch"}
+MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 
 
 def sources_for(fname: str, tab: str) -> List[str]:
-    if fname in NONE:
+    if fname in NONE or fname in LIVE:
         return []
     return CARD.get(fname) or TAB_DEFAULT.get(tab, [])
 
@@ -315,8 +328,17 @@ def sources_for(fname: str, tab: str) -> List[str]:
 def system_stamp(now: float) -> str:
     """For cards whose content does not come from a feed (explanations, terms, tools): when the page was built."""
     when = datetime.fromtimestamp(now, TPE).strftime("%m-%d %H:%M")
-    return (f'<p class="upd" title="{esc("這張卡的內容不隨行情變動；時間是網站最後一次重新產生的時間")}">🕒 {T("系統更新", "Built")} {when}'
+    return (f'<p class="upd" title="{esc("這張卡的內容不隨行情變動；時間是網站最後一次重新產生的時間")}">🕒 {T("說明／工具，不隨行情變動・網站產生", "Static content · built")} {when}'
             f' <span class="ago" data-ts="{int(now)}"></span></p>')
+
+
+def live_stamp() -> str:
+    return (f'<p class="upd">🕒 {T("即時：每次打開頁面時向報價服務抓取（Cloudflare 版），報價約有數分鐘延遲", "Live: fetched when the page opens (Cloudflare site)")}</p>')
+
+
+def pending_stamp(tips) -> str:
+    return (f'<p class="upd old" title="{esc("；".join(tips))}">🕒 {T("尚未取得資料", "No data yet")}'
+            f'<span class="updd">{T("（" + "；".join(tips) + "）", "")}</span></p>')
 
 
 # cards whose sources update on different clocks (daily / weekly / monthly): list each source's last check visibly
@@ -326,6 +348,8 @@ DETAIL = {"sec_europe", "sec_tw_foi", "sec_tr_fsi", "sec_tr_custody", "sec_tr_ye
 def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
     keys = sources_for(fname, tab)
     now = now or time.time()
+    if fname in LIVE:
+        return live_stamp()
     if not keys:
         return system_stamp(now)
     try:
@@ -348,12 +372,12 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
             dates.append(d)
             if lag and d < (today - timedelta(days=lag)).isoformat():
                 old = True
-        if ts and now - ts > 36 * 3600:
+        if ts and now - ts > MAX_AGE_H.get(k, 36) * 3600:
             old = True
         w = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else "—"
         tips.append(f"{zh} 檢查 {w}" + (f"・資料日 {d}" if d else ""))
     if not fetched and not dates:
-        return system_stamp(now)
+        return pending_stamp(tips)                    # it has sources but none has reported yet: say so, not the build time
     ts = min(fetched) if fetched else None
     d = max(dates) if dates else None
     when = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else None

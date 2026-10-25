@@ -90,6 +90,12 @@ def build(eng) -> Dict:
         rows.append(r)
     sc = [r for r in rows if r["scored"]]
     summary = {}
+    # random baseline: share of ALL days (SSI era) followed by a ≥fa_dd fall within fa_days — what a light switched on at random would score
+    fd = int(c["fa_days"])
+    fwd = full[::-1].rolling(fd, min_periods=fd).min()[::-1].shift(-1)
+    dd_all = ((fwd / full - 1) * 100)[(full.index >= start)].dropna()
+    rand = float((dd_all <= -c["fa_dd"]).mean() * 100) if len(dd_all) else None
+    yrs = max((ssi.index[-1] - ssi.index[0]).days / 365.25, 1.0)
     for lv in c["levels"]:
         hit = [r for r in sc if r["lead"][lv] is not None]
         early = [r for r in hit if r["lead"][lv] >= c["early_days"]]
@@ -108,7 +114,7 @@ def build(eng) -> Dict:
         summary[lv] = {"n": len(sc), "hit": len(hit), "early": len(early), "ups": n_up, "false": fa,
                        "lead_med": leads[len(leads) // 2] if leads else None,
                        "hit_ci": wilson(len(hit), len(sc)), "prec": (n_up - fa) / n_up * 100 if n_up else None,
-                       "prec_ci": wilson(n_up - fa, n_up)}
+                       "prec_ci": wilson(n_up - fa, n_up), "rand": rand, "fa_yr": fa / yrs, "years": yrs}
     # where today sits
     now = float(ssi.iloc[-1])
     band = max([lv for lv in [0] + list(c["levels"]) + [60] if lv <= now] or [0])

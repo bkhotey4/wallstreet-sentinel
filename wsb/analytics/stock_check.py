@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 FILE = DATA_DIR / "earn_stockcheck.json"
 FACTS_TTL = 7 * 86400
 PX_TTL = 20 * 3600
-PV = 2
+PV = 3
 BANKS = {"JPM", "GS", "MS", "BAC", "WFC", "C"}
 # the ticker moved to a new holding-company filer with no history yet: fall back to the old registrant's facts
 OLD_CIK = {"XOM": 34088}
@@ -54,7 +54,8 @@ INST = {"equity": ("StockholdersEquity", "StockholdersEquityIncludingPortionAttr
         "ltd": ("LongTermDebt", "LongTermDebtAndCapitalLeaseObligations", "DebtLongtermAndShorttermCombinedAmount"),
         "ltd_nc": ("LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligationsNoncurrent"),
         "ltd_cur": ("LongTermDebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent"),
-        "st": ("ShortTermBorrowings", "CommercialPaper", "DebtCurrent")}
+        "st": ("ShortTermBorrowings", "CommercialPaper"),
+        "debt_cur": ("DebtCurrent",)}
 
 
 def universe() -> List[str]:
@@ -110,17 +111,19 @@ def q_flow(cf: Dict, tag: str, unit: str = "USD", additive: bool = True, splits=
         span = (date.fromisoformat(e) - date.fromisoformat(s)).days
         if 80 <= span <= 380:
             by_start.setdefault(s, []).append((e, float(f["val"]), span))
-    out: Dict[str, float] = {}
+    direct: Dict[str, float] = {}
+    derived: Dict[str, float] = {}
     for _s, rows in by_start.items():
         rows.sort()
-        prev = 0.0
+        prev_v, prev_span = 0.0, 0
         for e, v, span in rows:
             q = _cal_q(e)
             if span <= 100:
-                out.setdefault(q, v)
-            elif additive:
-                out.setdefault(q, v - prev)
-            prev = v
+                direct.setdefault(q, v)
+            elif additive and 80 <= span - prev_span <= 100:             # e.g. 9 months − 6 months; never FY − nothing
+                derived.setdefault(q, v - prev_v)
+            prev_v, prev_span = v, span
+    out = {**derived, **direct}                                           # a filed 3-month figure beats a derived one
     if not additive:
         # fourth quarters are usually filed only inside the annual figure: EPS Q4 ≈ FY − Q1..Q3, share count Q4 ≈ the annual average
         for (s, e), f in best.items():
@@ -130,6 +133,18 @@ def q_flow(cf: Dict, tag: str, unit: str = "USD", additive: bool = True, splits=
             if len(inner) == 3:
                 out[_cal_q(e)] = float(f["val"]) - sum(inner) if unit == "USD/shares" else float(f["val"])
     return dict(sorted(out.items()))
+
+
+def q_ends(cf: Dict, tags, unit: str) -> Dict[str, str]:
+    """{calendar quarter: the real period end date} for a per-share tag (used to date when EPS became public)."""
+    out: Dict[str, str] = {}
+    for t in tags:
+        for f in _units(cf, t, unit):
+            if f.get("start") and f.get("end") and 80 <= (date.fromisoformat(f["end"]) - date.fromisoformat(f["start"])).days <= 380:
+                q = _cal_q(f["end"])
+                if f["end"] > out.get(q, ""):
+                    out[q] = f["end"]
+    return out
 
 
 def q_merge(cf: Dict, tags, unit: str, additive: bool = True, splits=None) -> Dict[str, float]:
@@ -159,6 +174,7 @@ def parse(cf: Dict, splits=None) -> Optional[Dict]:
     if len(p["rev"]) < 8:
         return None
     p.update({k: inst(cf, tags) for k, tags in INST.items()})
+    p["eps_end"] = q_ends(cf, *FLOWS["eps"])
     p["name"] = cf.get("entityName") or ""
     return p
 
@@ -204,6 +220,8 @@ def total_debt(p: Dict, q: str) -> Optional[float]:
     else:
         base = None
     st = g("st")
+    if st is None and g("ltd") is None and g("ltd_cur") is None:
+        st = g("debt_cur")                                                # includes the current long-term part: only without one
     if base is None and st is None:
         return None
     return (base or 0) + (st or 0)
@@ -255,11 +273,12 @@ def eps_ttm_series(p: Dict) -> pd.Series:
     """TTM diluted EPS indexed by the date it became public (quarter end + 45 days)."""
     eps = p.get("eps") or {}
     out = {}
+    ends = p.get("eps_end") or {}
     for q in eps:
         v = ttm(eps, q)
         if v is not None:
             y, n = int(q[:4]), int(q[-1])
-            qend = pd.Timestamp(year=y, month=n * 3, day=1) + pd.offsets.MonthEnd(0)
+            qend = pd.Timestamp(ends[q]) if q in ends else pd.Timestamp(year=y, month=n * 3, day=1) + pd.offsets.MonthEnd(0)
             out[qend + pd.Timedelta(days=PUB_LAG)] = v
     return pd.Series(out, dtype=float).sort_index()
 
@@ -309,7 +328,8 @@ def one(sym: str, p: Dict, px: pd.Series, fpe: Optional[float] = None) -> Option
     pe_now = price / eps_now if price and eps_now and eps_now > 0 else None
     pct = float((pe < pe_now).mean() * 100) if pe_now and len(pe) >= 52 else None
     sh = (p.get("shares") or {})
-    shares = sh[list(sh)[-1]] if sh else None
+    last_q = list(sh)[-1] if sh else None
+    shares = sh[last_q] if last_q and last_q >= _back(f["end"], 2) else None       # a 2013 share count must not price 2026
     mcap = price * shares if price and shares else None
     ev = mcap + (f["debt"] or 0) - (f["cash"] or 0) if mcap and not bank else None
     thin = bool(f["fcf"] is not None and f["ocf"] and f["ocf"] > 0 and f["fcf"] < 0.15 * f["ocf"])    # FCF squeezed by heavy investment
@@ -389,7 +409,7 @@ async def refresh(force: bool = False, budget_s: float = 120) -> Dict:
             w, sp = await loop.run_in_executor(None, _weekly, sym)
             if len(w) >= 52:
                 px[sym], pts[sym] = w, now
-                if sp != splits.get(sym, []):
+                if [list(x) for x in sp] != [list(x) for x in splits.get(sym, [])]:
                     splits[sym] = sp
                     fts[sym] = 0                                          # new split → re-read the per-share history
         except Exception as e:  # noqa: BLE001

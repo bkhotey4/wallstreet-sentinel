@@ -108,9 +108,11 @@ def _hist_30d(eng) -> dict:
 
 # Historical windows (event dates are facts; the depth of each fall is measured from price history below)
 CRISIS_WINDOWS = {"yen2024": ("2024-07-10", "2024-08-05"), "fed2022": ("2022-01-03", "2022-10-12"),
-                  "covid2020": ("2020-02-19", "2020-03-23"), "gfc2008": ("2007-10-09", "2009-03-09")}
+                  "covid2020": ("2020-02-19", "2020-03-23"), "gfc2008": ("2007-10-09", "2009-03-09"),
+                  "dotcom2000": ("2000-03-24", "2002-10-09")}
 CRISIS_PROXY = {"semi": ["^SOX", "SMH"], "tech": ["XLK", "QQQ"], "front": ["ARKK", "XLE"], "fin": ["XLF"],
                 "def": ["XLP", "XLU"], "other": ["^GSPC"]}
+CRISIS_PROXY_AT = {"dotcom2000": {"front": ["^NDX", "QQQ"]}}      # per-window overrides (proxy did not exist / wrong era)
 
 
 def _crisis(eng) -> Dict[str, dict]:
@@ -118,7 +120,7 @@ def _crisis(eng) -> Dict[str, dict]:
     out = {}
     for cid, (a, b) in CRISIS_WINDOWS.items():
         sh, src = {}, {}
-        for k, cands in CRISIS_PROXY.items():
+        for k, cands in {**CRISIS_PROXY, **CRISIS_PROXY_AT.get(cid, {})}.items():
             for t in cands:
                 try:
                     x = eng.market.series(t).loc[a:b].dropna()
@@ -353,12 +355,13 @@ def sec_portfolio(eng) -> str:
 <p class="sub">{priv}</p>
 <div class="pfsync" id="pfsync"></div>
 <div class="pfsum" id="pfsum"></div>
+<div class="pfdiv" id="pfdiv" style="display:none"></div>
 <div class="pfnav-box" id="pfnavbox" style="display:none"></div>
 <div class="pfwrap"><table class="pft" id="pft"><thead><tr>
 <th>{T("代號", "Ticker")}</th><th>{T("名稱", "Name")}</th><th class="r">{T("股數", "Shares")}</th><th class="r">{T("現價", "Price")}</th>
 <th class="r">{T("今日", "Today")}</th><th class="r">{T("今日損益", "Today P&L")}</th><th class="r">{T("市值", "Value")}</th>
 <th class="r">{T("市值（台幣）", "Value (TWD)")}</th><th class="r">{T("成本", "Cost")}</th><th class="r">{T("帳面損益", "Unrealized")}</th>
-<th class="r">{T("報酬", "Return")}</th><th class="r">{T("波動參考價（下／上）", "Volatility levels (low / high)")}</th><th class="r">{T("權重", "Weight")}</th><th></th></tr></thead><tbody></tbody></table></div>
+<th class="r">{T("報酬", "Return")}</th><th class="r">{T("距 52 週高點", "From 52w high")}</th><th class="r">{T("波動參考價（下／上）", "Volatility levels (low / high)")}</th><th class="r">{T("權重", "Weight")}</th><th></th></tr></thead><tbody></tbody></table></div>
 <div class="pfforms">
 <form id="pfadd" class="pfrow" autocomplete="off"><b>{T("新增／更新持股", "Add / update a holding")}</b>
 <input name="s" placeholder="NVDA / 2330 / 0700.HK" required maxlength="16" aria-label="ticker">
@@ -406,6 +409,8 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 .pfrow input,.pfrow select,.pfbulk textarea{background:var(--card2);border:1px solid var(--bd);color:var(--tx);border-radius:6px;padding:6px 8px;font:inherit;font-size:14px}
 .pfrow input{width:150px}.pfbulk textarea{width:100%;max-width:520px;display:block;margin:6px 0}.pfx{background:none;border:0;color:var(--mu);cursor:pointer;font-size:15px}
 .pfx:hover{color:var(--dn)}.pfwarn{color:var(--warn)}
+.pfdiv{margin:10px 0;padding:10px 12px;border:1px solid var(--bd);border-radius:10px}.pfdiv h3{margin:0 0 8px;font-size:15px}
+.pfdivg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.pfdd{background:var(--wash);border:1px solid var(--warn);border-radius:6px;padding:0 5px}
 .pfsync{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px;font-size:13px}.pfsync .ok{color:var(--up)}.pfsync .err{color:var(--dn)}
 .btn.g{border-color:var(--ac);color:var(--ac)}
 .pfdx{margin-top:16px;border-top:1px dashed var(--bd);padding-top:14px}
@@ -941,6 +946,8 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
   td((p&&p.sym)||h.s,'');td(p?(p.name||''):'','');td(num(h.n,h.n%1?2:0));
   if(p){var pxcell=td(num(p.px,2)+' '+r.cur+(p.src==='manual'?' ✎':''));if(p.source)pxcell.appendChild(el('div','small muted',p.source+' '+(p.asof||'—')));td(sgn(p.ch,2,true),'r '+cl(p.ch));td(r.dayc!=null?sgn(r.dayc,0):'—','r '+cl(r.dayc));
    td(num(r.v,0));td(r.vt!=null?num(r.vt,0):'—');td(h.c>0?num(r.cost,0):'—');td(r.un!=null?sgn(r.un,0):'—','r '+cl(r.un));td(r.ret!=null?sgn(r.ret,1,true):'—','r '+cl(r.ret));
+   var fmq=gFM[r.mk]&&gFM[r.mk].map[p.sym],hi=(fmq&&fmq.rb&&fmq.rb[2])||null,ddTd=td('—');ddTd.dataset.ddsym=p.sym;ddTd.dataset.px=p.px;
+   if(hi)paintDD(ddTd,p.px,hi);
    
    // Feature 3: Dynamic Stop & Profit Targets column
    var stopTd = td('', 'r');
@@ -977,7 +984,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
    stopTd.appendChild(box);
 
    td(totV&&r.vt!=null?num(r.vt/totV*100,1)+'%':'—');}
-  else{var t=td('','r pfwarn');t.colSpan=10;t.appendChild(L('找不到報價，請手動輸入價格：','No price found — enter one: '));var inp=el('input');inp.type='number';inp.step='any';inp.min='0';inp.setAttribute('aria-label','manual price');
+  else{var t=td('','r pfwarn');t.colSpan=11;t.appendChild(L('找不到報價，請手動輸入價格：','No price found — enter one: '));var inp=el('input');inp.type='number';inp.step='any';inp.min='0';inp.setAttribute('aria-label','manual price');
    inp.addEventListener('change',function(){var dd=get();dd.h[r.i].p=parseFloat(inp.value)||0;put(dd);render();});t.appendChild(inp);}
   var del=el('button','pfx','✕');del.type='button';del.title=en()?'Remove':'刪除';del.addEventListener('click',function(){var dd=get();dd.h.splice(r.i,1);put(dd);render();});td(del,'');
   tb.appendChild(tr);});
@@ -1223,9 +1230,39 @@ function renderDx(rows, tot, totV, cashT){
  renderEvents(rows);
  renderChecks(rows);
  renderFactors(rows);
+ renderDiv(rows, totV);
  renderSeg(rows);
  renderFund(rows);
 }
+
+// ---------------------------------------------------------------- 52-week drawdown + dividend cash flow (live quote API, Cloudflare site only)
+function paintDD(td,px,hi){if(!(hi>0)||!(px>0))return;var dd=(px/hi-1)*100;td.textContent='';var b=el('span',dd<=-40?'pfdd':'',sgn(dd,1,true));
+ b.className+=' '+cl(dd<0?-1:0);td.appendChild(b);if(dd<=-40){td.appendChild(el('div','small pfwarn',en()?'deep drawdown':'深幅回撤'));}}
+var DIVQ={},DIVDEAD=false;
+function renderDiv(rows,totV){var x=document.getElementById('pfdiv');if(!x)return;
+ var live=rows.filter(function(r){return r.p&&r.vt!=null&&/^[A-Za-z0-9^=.\-]{1,15}$/.test(r.p.sym);});
+ if(!live.length){x.style.display='none';return;}x.style.display='block';
+ var need=live.map(function(r){return r.p.sym;}).filter(function(s){return !(s in DIVQ);});
+ function fill(){document.querySelectorAll('#pft td[data-ddsym]').forEach(function(t){var q=DIVQ[t.dataset.ddsym];if(q&&q.hi52&&t.textContent==='—')paintDD(t,+t.dataset.px,q.hi52);});}
+ function paint(){x.textContent='';var h=el('h3','');h.appendChild(L('💰 預估年度股息現金流','Estimated dividend cash flow'));x.appendChild(h);
+  if(DIVDEAD){var p0=el('p','small muted');p0.appendChild(L('股息估算需要即時報價，只在 Cloudflare 版網址可用：wallstreet-sentinel.pages.dev','Needs the live quote service: wallstreet-sentinel.pages.dev'));x.appendChild(p0);return;}
+  var ann=0,val=0,yc=0,cost=0,miss=0,top=[];
+  live.forEach(function(r){var q=DIVQ[r.p.sym],f=fxv(r.cur);if(q===undefined||f==null){miss++;return;}var d=(q&&q.div12)||0,a=d*r.h.n*f;ann+=a;val+=r.vt;
+   if(r.h.c>0){yc+=a;cost+=r.h.c*r.h.n*f;}if(a>0)top.push([r.p.sym,a,d/r.p.px*100]);});
+  if(!val){var p1=el('p','small muted');p1.appendChild(L('載入股息資料中…','Loading dividends…'));x.appendChild(p1);return;}
+  var g=el('div','pfdivg');function k(zh,e,v,sub){var b=el('div','pfk');b.appendChild(el('div','s')).appendChild(L(zh,e));b.appendChild(el('div','v',v));if(sub)b.appendChild(el('div','s',sub));g.appendChild(b);}
+  k('預估年領股息','Per year','NT$ '+num(ann,0));k('平均每月約','Per month','NT$ '+num(ann/12,0));
+  k('目前殖利率','Current yield',num(ann/val*100,2)+'%');if(cost>0)k('成本殖利率（有填成本的持股）','Yield on cost',num(yc/cost*100,2)+'%');x.appendChild(g);
+  top.sort(function(a,b){return b[1]-a[1];});if(top.length){var p2=el('p','small');p2.appendChild(L('股息主要來自：','Mostly from: '));
+   p2.appendChild(document.createTextNode(top.slice(0,5).map(function(t){return t[0]+' NT$ '+num(t[1],0)+'（殖利率 '+num(t[2],1)+'%）';}).join('、')));x.appendChild(p2);}
+  var n=el('p','note');n.appendChild(L('估算方式＝過去 12 個月實際發放的現金股息 × 目前股數，換算台幣；之後的配息可能增加、減少或暫停，美股股息未扣 30% 預扣稅。'
+   +(miss?'有 '+miss+' 檔沒抓到資料，沒算進去。':'')+'查詢時只把股票代號送到本站的報價服務（不含股數、成本），不留存。',
+   'Last 12 months of cash dividends × current shares, in TWD; future payouts can change; US withholding tax not deducted. Only tickers are sent to the quote service, nothing is stored.'));x.appendChild(n);}
+ paint();
+ if(need.length&&!DIVDEAD){fetch('api/quote?full=1&s='+encodeURIComponent(need.slice(0,25).join(',')),{cache:'no-store'})
+  .then(function(r){if(r.status===404||r.status===405){DIVDEAD=true;throw 0;}if(!r.ok)throw 0;return r.json();})
+  .then(function(d){need.slice(0,25).forEach(function(s){DIVQ[s]=(d.q||{})[s]||null;});paint();fill();}).catch(function(){paint();});}
+ else fill();}
 
 // ---------------------------------------------------------------- Feature 1: Crisis Replay Simulator
 var curCrisisId = 'yen2024', CS = PUB.crisis || {};
@@ -1250,6 +1287,13 @@ var CRISES = [
   descZh: '美股 2020 年 3 月 9、12、16、18 日四度觸發熔斷；3 月中黃金與長債也一度和股票同步下跌。',
   descEn: 'US circuit breakers tripped on Mar 9, 12, 16 and 18, 2020; gold and long bonds also fell with stocks in mid-March.',
   shocks: (CS.covid2020 || {}).shocks
+ },
+ {
+  id: 'dotcom2000',
+  zh: '2000 網路泡沫破裂', en: '2000 Dot-com Bust',
+  descZh: '2000 年 3 月那斯達克見頂後，獲利撐不起估值的網路與科技股一路下跌到 2002 年 10 月；那斯達克 100 跌約八成，費城半導體跌逾八成，民生必需品只跌約三成。前沿類別在這段期間以那斯達克 100 代表（當時還沒有 ARKK）。',
+  descEn: 'After the Nasdaq peaked in Mar-2000, tech fell until Oct-2002: Nasdaq-100 about -80%, SOX over -80%, staples about -30%. Frontier proxied by the Nasdaq-100.',
+  shocks: (CS.dotcom2000 || {}).shocks
  },
  {
   id: 'gfc2008',
