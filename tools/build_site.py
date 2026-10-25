@@ -41,6 +41,7 @@ from tools import site_stability as SST
 from tools import site_events as SEV
 from tools import site_calc as SCA
 from tools import site_live as SLV
+from tools import site_stockcheck as SSC
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -1256,7 +1257,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
-            ("growth", "成長估值", "Growth value", [S3.sec_growth, S4.sec_debate]),
+            ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
@@ -1437,6 +1438,9 @@ def write_pwa(out: Path) -> None:
         shutil.copyfile(f, out / f.name)
     (out / "manifest.webmanifest").write_text(json.dumps(MANIFEST, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "sw.js").write_text(SW_JS, encoding="utf-8")
+    # keep search engines out (the page also carries <meta name="robots" content="noindex">); _headers is read by Cloudflare Pages
+    (out / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8")
+    (out / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow, noarchive\n", encoding="utf-8")
 
 
 # ----------------------------------------------------------------- main
@@ -1557,6 +1561,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(CXL.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("capex link failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 個股估值體檢：SEC 季資料（7 天）＋每週股價（20 小時）
+        from wsb.analytics import stock_check as SCK
+        await asyncio.wait_for(SCK.refresh(), 240)
+    except Exception as e:  # noqa: BLE001
+        log.warning("stock check failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 外資台指期淨未平倉歷史（FinMind，2018 年起）
         from wsb.data import tw_futures as TWF
         await asyncio.wait_for(TWF.refresh(), 90)

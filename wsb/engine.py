@@ -305,6 +305,11 @@ class Engine:
             await cxl.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("capex link failed: %s", e)
+        try:                                                    # 個股估值體檢（SEC 季資料 7 天、股價 20 小時）
+            from .analytics import stock_check as sck
+            await sck.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("stock check failed: %s", e)
         try:                                                    # 外資台指期淨未平倉歷史（12 小時一次）
             from .data import tw_futures as twf
             await twf.refresh()
