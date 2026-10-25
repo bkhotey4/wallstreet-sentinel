@@ -149,6 +149,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          node tests_js/quote.test.mjs        # functions/api/quote.js = 即時報價（行情列、盤中門檻、查任何股票）
           npx --yes wrangler@3.114.0 pages project create wallstreet-sentinel --production-branch=main >/dev/null 2>&1 || true
           npx --yes wrangler@3.114.0 pages deploy site --project-name=wallstreet-sentinel --branch=main --commit-dirty=true
 
