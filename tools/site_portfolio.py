@@ -372,7 +372,8 @@ def sec_portfolio(eng) -> str:
 <details class="pfbulk"><summary>{T("一次貼上多筆", "Paste many at once")}</summary>
 <p class="small muted">{T("每行一筆：代號 股數 成本（成本可省略），用空白或逗號分隔，例如：", "One per line: ticker shares cost (cost optional), e.g.:")}<code>NVDA 15 50</code> · <code>2330 1000 600</code> · <code>0700.HK 200</code></p>
 <textarea id="pfpaste" rows="5" spellcheck="false"></textarea><button class="btn" type="button" id="pfpastebtn">{T("加入", "Add")}</button></details>
-<div class="pfrow"><button class="btn" type="button" id="pfexp">{T("匯出備份", "Export")}</button>
+<div class="pfrow"><button class="btn" type="button" id="pfexp">{T("匯出備份 (JSON)", "Export JSON")}</button>
+<button class="btn" type="button" id="pfexpcsv">{T("匯出 CSV (Excel)", "Export CSV")}</button>
 <label class="btn" for="pfimp">{T("匯入", "Import")}</label><input id="pfimp" type="file" accept="application/json,.json" hidden>
 <button class="btn" type="button" id="pfclr">{T("清除全部", "Clear all")}</button><span class="small muted" id="pfmsg" role="status"></span></div>
 </div>
@@ -1826,6 +1827,40 @@ document.getElementById('pfpastebtn').addEventListener('click',function(){var d=
  });
  put(d);document.getElementById('pfpaste').value='';render();
  setTimeout(function(){msg(['已加入 '+ok+' 筆'+(bad?'，'+bad+' 行格式不對':''),'Added '+ok+(bad?', '+bad+' lines skipped':'')]);},50);});
+var expCsv=document.getElementById('pfexpcsv');
+if(expCsv)expCsv.addEventListener('click',function(){
+ var d=get(),tb=document.getElementById('pft').tBodies[0];
+ if(!d.h.length&&!(d.cash||[]).length){msg(['無持股可供匯出','No holdings to export']);return;}
+ var isZh=!en(),lines=[];
+ if(isZh){lines.push(['代號','名稱','股數','現價','幣別','今日漲跌(%)','市值(原幣)','市值(台幣)','每股成本','帳面損益(原幣)','報酬率(%)','投資權重(%)'].join(','));}
+ else{lines.push(['Ticker','Name','Shares','Price','Currency','Today(%)','Value','Value_TWD','Cost_Per_Share','Unrealized','Return(%)','Weight(%)'].join(','));}
+ for(var r=0;r<tb.rows.length;r++){
+  var cells=tb.rows[r].cells;
+  if(cells.length<12)continue;
+  var sym=(cells[0].textContent||'').trim();
+  var name='"'+(cells[1].textContent||'').replace(/"/g,'""').trim()+'"';
+  var shares=(cells[2].textContent||'').replace(/,/g,'').trim();
+  var pStr=(cells[3].textContent||'').trim().split(' ');
+  var px=(pStr[0]||'').replace(/,/g,'').trim(),curStr=pStr[1]||'';
+  var chg=(cells[4].textContent||'').replace(/[+%]/g,'').trim();
+  var vOrig=(cells[6].textContent||'').replace(/,/g,'').trim();
+  var vTwd=(cells[7].textContent||'').replace(/,/g,'').trim();
+  var cost=(cells[8].textContent||'').replace(/,/g,'').trim();
+  var un=(cells[9].textContent||'').replace(/[+,]/g,'').trim();
+  var ret=(cells[10].textContent||'').replace(/[+%,]/g,'').trim();
+  var wt=(cells[12].textContent||'').replace(/%/g,'').trim();
+  lines.push([sym,name,shares,px,curStr,chg,vOrig,vTwd,cost,un,ret,wt].join(','));
+ }
+ (d.cash||[]).forEach(function(c){
+  var f=fxv(c.cur),vt=f!=null?(c.a*f).toFixed(0):'—';
+  if(isZh){lines.push(['CASH','現金 ('+c.cur+')',c.a,'1',c.cur,'0',c.a,vt,'—','0','0%','—'].join(','));}
+  else{lines.push(['CASH','Cash ('+c.cur+')',c.a,'1',c.cur,'0',c.a,vt,'—','0','0%','—'].join(','));}
+ });
+ var csv='\uFEFF'+lines.join('\r\n');
+ var b=new Blob([csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download='portfolio_'+new Date().toISOString().slice(0,10)+'.csv';
+ document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+});
 document.getElementById('pfexp').addEventListener('click',function(){var b=new Blob([JSON.stringify(get(),null,1)],{type:'application/json'}),a=document.createElement('a');
  a.href=URL.createObjectURL(b);a.download='my_holdings_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);});
 document.getElementById('pfimp').addEventListener('change',function(e){var f=e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var d=JSON.parse(rd.result);

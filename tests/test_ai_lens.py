@@ -138,7 +138,8 @@ def test_cards():
     for w in ("人類在怕，但數據說還好", "人類沒在怕，但數據在累積", "出現這些，結論才會改", "人類的恐懼", "AI 測到的結構風險"):
         assert w in b, w
     vd = SAI.ai_verdict(e, SAI._ph(e))
-    assert vd["label"] in ("人類比數據緊張", "數據比人類緊張", "人類和數據差不多", "資料不足") and vd["trig"]
+    assert vd["market"] in ("全面崩盤的恐懼被誇大", "整體市場結構在變差", "整體市場：人心和數據差不多", "資料不足") and vd["trig"]
+    assert vd["ai_layer"]["label"] in ("AI 族群的壓力是真的", "AI 族群有局部壓力", "AI 族群目前平穩") and "；" in vd["label"]
     for k in ("ai-score", "ai-heat", "ai-turb", "ai-flock", "ai-quake", "ai-analog", "ai-cross"):
         assert f'data-jump="{k}"' in b and h.count(f'id="{k}"') == 1, k             # every block lands on exactly one card
     assert all("<details" in f(e) for f in (SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross))

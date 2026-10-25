@@ -1052,6 +1052,16 @@ class Sentinel(commands.Bot):
             if f.get("now") is not None and f["now"] > 2:
                 out.append(Alert(f"ofr_fsi:{f['date'][:7]}", "⚠️ WARNING", f"官方金融壓力指數升到 {f['now']:+.2f}（{f['band']}）",
                                  "OFR 金融壓力指數高於 2 時，歷史上之後 3 個月跌 ≥10% 的頻率明顯高於平常；看網站「金融穩定監測」頁。"))
+            from ..data import euro_asia as ead
+            eu = ead.view(self.engine).get("europe") or {}
+            ci = eu.get("ciss") or {}
+            if ci.get("now") is not None and ci["now"] >= 0.1:
+                out.append(Alert(f"ciss:{ci['date'][:7]}", "⚠️ WARNING", f"歐元區系統性壓力升溫：CISS {ci['now']:.2f}（{ci['band']}）",
+                                 "CISS 超過 0.1 時，歷史上美股 3 個月內跌 ≥10% 的頻率約是平常的 1.5 倍；看網站「全球行情」頁。"))
+            for x in eu.get("spreads") or []:
+                if x["pct"] >= 99:
+                    out.append(Alert(f"eu_spread:{x['code']}:{x['month']}", "⚠️ WARNING", f"{x['zh']}公債利差創 1999 年以來新高區：比德國多 {x['spread']:.2f} 個百分點",
+                                     f"歷史第 {x['pct']:.0f} 百分位，半年 {x['chg6']:+.2f}；2011 年歐債危機最高 {x['max']:.2f}。"))
             sw = (tv.get("dollar") or {}).get("swaps") or {}
             if sw.get("bn") is not None and sw["bn"] >= 10:
                 out.append(Alert(f"swaps:{sw['date']}", "⚠️ WARNING", f"美元荒訊號：聯準會換匯額度用量 {sw['bn'] * 10:,.0f} 億美元",

@@ -419,6 +419,14 @@ def ai_verdict(eng, ph: dict) -> dict:
         gm = {g["zh"]: g for g in now_c.get("groups") or []}
         pw, ut = gm.get("電力與電網"), gm.get("公用事業（對照）")
         try:
+            from wsb.data import euro_asia as EAD
+            for x in ((EAD.view(eng).get("europe") or {}).get("hot") or [])[:2]:
+                under.append((f"{x['zh']}的公債壓力",
+                              f"{x['zh']} 10 年期公債比德國多付 {x['spread']:.2f} 個百分點，是 1999 年以來第 {x['pct']:.0f} 百分位（2011 年歐債危機最高 {x['max']:.2f}），"
+                              f"半年 {x['chg6']:+.2f}；歐元區整體壓力還低，但歐債危機都是從單一國家開始。", None))
+        except Exception:  # noqa: BLE001
+            pass
+        try:
             from tools import site_capex as SCX
             cb = SCX._cl()
             dep = [r for r in (cb or {}).get("rows") or [] if r["corr"] >= 0.5 and r["n"] >= 12 and r["if_flat"] < r["rev_yoy"] - 20]
@@ -443,17 +451,56 @@ def ai_verdict(eng, ph: dict) -> dict:
         trig.append(("資金和信用開始緊", "SOFR 連續高於準備金利率、常設回購被大量動用，或投資級（BBB）利差跟著垃圾債擴大：慢慢累積的燃料開始被點燃。", None))
     trig.append(("出現單日 ≥4% 的大震", "餘震計時器歸零，之後幾天再出現大波動的機率會跳升。", "ai-quake"))
     lab = live["label"]
-    if lab is None:
-        lab, txt = "資料不足", "人類情緒或 AI 結構指標有缺，暫時無法比較。"
-    elif lab == AV.HUMAN:
-        txt = ("現在比較像人類在嚇自己：情緒和新聞的恐慌，沒有反映在價格結構上（局部衝擊、資金輪動，不是全面踩踏）。"
-               + ("但真正該注意的是大家沒在怕、正在慢慢累積的燃料：" + "、".join(u[0].split("（")[0] for u in under[:3]) + "。" if under else ""))
-    elif lab == AV.MACHINE:
-        txt = "價格結構在變差，但大家還沒反應過來；這是比較需要小心的組合。"
-    else:
-        txt = "人類的感受和價格結構大致一致，沒有明顯的自己嚇自己，也沒有被忽略的結構警訊。"
-    return {"label": lab, "text": txt, "fear": fear, "fparts": fparts, "ai": ai, "over": over, "under": under, "trig": trig, "fb": fb,
-            "since": live.get("since"), "history": live.get("history"), "changes": live.get("changes") or []}
+    # layer 1 — the whole market (fear vs cross-asset structure, with hysteresis)
+    mkt = {AV.HUMAN: "全面崩盤的恐懼被誇大", AV.MACHINE: "整體市場結構在變差", AV.SAME: "整體市場：人心和數據差不多"}.get(lab, "資料不足")
+    mtxt = {AV.HUMAN: "各產業沒有一起逃、金融體系壓力不高，「整個市場一起崩」的跡象不多",
+            AV.MACHINE: "價格結構在變差、但大家還沒反應過來，這是比較需要小心的組合",
+            AV.SAME: "人的感受和價格結構大致一致"}.get(lab, "人類情緒或結構指標有缺")
+    # layer 2 — the AI supply chain, from its own evidence
+    ai_l = ai_layer(eng)
+    head = f"{mkt}；{ai_l['label']}"
+    txt = f"整體市場：{mtxt}。AI 族群：{ai_l['text']}"
+    return {"label": head, "market": mkt, "ai_layer": ai_l, "text": txt, "fear": fear, "fparts": fparts, "ai": ai, "over": over, "under": under,
+            "trig": trig, "fb": fb, "since": live.get("since"), "history": live.get("history"), "changes": live.get("changes") or []}
+
+
+def ai_layer(eng) -> dict:
+    """AI supply-chain stress from four independent pieces of evidence; 2+ = the fear is grounded."""
+    ev = []
+    try:
+        bb = _bub(eng)
+        be, _bh, bl = bubble_state(bb)
+        if bl and bl["group"] in ("hot_fall_vol", "hot_fall"):
+            ev.append(f"{bl['name']}落在歷史上泡沫破裂比例最高的一組（離高點 {bl['off']:+.0f}%）")
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from tools import site_chain as SCH
+        now_c = (SCH._ac(eng) or {}).get("now") or {}
+        mem = next((g for g in now_c.get("groups") or [] if g["zh"] == "記憶體"), None)
+        if mem and mem["off"] <= -20:
+            ev.append(f"記憶體股離一年高點 {mem['off']:+.0f}%（產業鏈最敏感的一環）")
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from wsb.data import euro_asia as EAD
+        kr = next((r for r in ((EAD.view(eng).get("asia") or {}).get("rows") or []) if r["sym"] == "^KS11"), None)
+        if kr and (kr["m1"] <= -10 or kr["off"] <= -25):
+            ev.append(f"以記憶體股為主的韓國股市一個月 {kr['m1']:+.0f}%")
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from tools import site_capex as SCX
+        cb = SCX._cl() or {}
+        dep = [r for r in cb.get("rows") or [] if r["corr"] >= 0.5 and r["n"] >= 12 and r["if_flat"] < r["rev_yoy"] - 20]
+        if dep and cb.get("capex_yoy", 0) >= 40:
+            ev.append(f"{len(dep)} 家供應商的營收綁在巨頭資本支出上（巨頭支出已年增 {cb['capex_yoy']:.0f}%，很難再更快）")
+    except Exception:  # noqa: BLE001
+        pass
+    n = len(ev)
+    label = "AI 族群的壓力是真的" if n >= 2 else "AI 族群有局部壓力" if n == 1 else "AI 族群目前平穩"
+    text = ("、".join(ev) + "——這一塊的擔心有數據根據。" if n >= 2 else ("、".join(ev) + "。" if n else "泡沫計時器、產業鏈與亞洲記憶體股都沒有明顯壓力。"))
+    return {"label": label, "text": text, "evidence": ev, "n": n}
 
 
 def trend_svg(df) -> str:
@@ -582,7 +629,9 @@ def sec_ai_brief(eng) -> str:
     fp = "・".join(vd["fparts"])
     note = T("「人類在怕」那一欄，是把群眾情緒和可以回測的歷史放在一起看；「沒在怕」那一欄，是學術研究證實會在 1–3 年後出問題、但平常沒人討論的慢變數。"
              "全部只看數字、不讀新聞標題；描述現在的風險水位，不預告哪一天會跌，也不是投資建議。", "Numbers only; not a timing tool, not advice.")
-    body = (f'<p class="rimp big2"><b>{T("AI 判斷：" + vd["label"], "")}</b>——{T(vd["text"], "")}</p>'
+    body = (f'<p class="rimp big2"><b>{T("AI 判斷：" + vd["label"], "")}</b></p>'
+            f'<ul class="aiv2"><li>{T("整體市場：" + vd.get("market", ""), "")}——{T(vd["text"].split("。AI 族群：")[0].replace("整體市場：", ""), "")}</li>'
+            f'<li>{T((vd.get("ai_layer") or {}).get("label", ""), "")}——{T((vd.get("ai_layer") or {}).get("text", ""), "")}</li></ul>'
             + _gauge(vd["fear"], vd["ai"])
             + (f'<p class="small"><b>{T("這個判讀從 " + vd["since"] + " 起維持", "")}</b>；'
                + T("網站每次更新都會用最新數字重算（平日約每 20 分鐘），判讀改變時 Discord 會通知。", "") + "</p>" if vd.get("since") else "")
@@ -1095,6 +1144,7 @@ CSS = (".aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,
        ".aitrend .tl{font-size:10px;fill:var(--mu)}.aitrend polyline{fill:none;stroke-width:2;stroke-linejoin:round}"
        ".aitrend .tf{stroke:var(--dn)}.aitrend .ta{stroke:var(--ac)}.aitrend .th{fill:transparent}.aitrend .th:hover{fill:var(--wash);opacity:.6}"
        ".ailg .lf{background:var(--dn)}.ailg .la{background:var(--ac)}"
+       ".aiv2{margin:6px 0 10px;padding-left:20px}.aiv2 li{margin:4px 0;line-height:1.6}"
        ".aiwatch{padding:10px 12px;border-left:3px solid var(--ac);background:var(--wash);border-radius:4px}"
        ".aiwatch ol{margin:6px 0 0;padding-left:20px}.aiwatch li{margin:3px 0}"
        "[id^=ai-]{scroll-margin-top:72px}.aiback{margin:8px 0 0;text-align:right;font-size:12.5px}.aiback a{color:var(--ac)}"
