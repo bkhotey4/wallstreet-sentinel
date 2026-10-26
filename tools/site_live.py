@@ -213,11 +213,11 @@ _JS = r"""
    h+='<span class="lqchip '+(hit?'hit':'ok')+'">'+(hit?'● ':'○ ')+(en()?r.en:r.zh)+'：'+(r.f==='chg'?sg(v,r.dg)+'%':f(v,r.dg))+'</span>';});
    document.getElementById('lqal').innerHTML=h;var one=document.getElementById('lqone');var sh=paintScan(q),red=sh.filter(function(o){return o.lv>=2;}).length,yel=sh.length-red;
    var all=hits.length+red,gd=(window.__lqgood||[]),gc=gd.filter(function(o){return o.combo;})[0];
-   one.textContent=all?(en()?'Live: '+all+' alert(s) — see the red items':'一句話看懂（即時）：'+all+' 項亮紅燈'+(yel?'、'+yel+' 項黃燈':'')+'，看紅色那幾項')
-     :yel?(en()?'Live: '+yel+' unusual move(s) worth watching':'一句話看懂（即時）：沒有紅燈，但有 '+yel+' 項波動比平常大（黃燈）')
-     :gc?(en()?'Live: no stress signal — '+gc.en:'一句話看懂（即時）：沒有壓力訊號；'+gc.zh+'——'+gc.why)
-     :gd.length?(en()?'Live: no stress signal; '+gd.length+' big move(s) in the healthy direction':'一句話看懂（即時）：沒有壓力訊號；'+gd.length+' 個市場往好的方向大幅變動（綠色）')
-     :(en()?'Live: no alert — fixed thresholds, unusual-move scan and volume all normal':'一句話看懂（即時）：目前沒有亮燈，固定門檻、異常波動、成交量三層檢查都正常');}
+   one.textContent=all?(en()?'Live: '+all+' alert(s) — see the red items':'一句話看懂（即時）：🔴 偵測到異常——'+all+' 項亮紅燈'+(yel?'、'+yel+' 項黃燈':'')+'，看紅色那幾項')
+     :yel?(en()?'Live: '+yel+' unusual move(s) worth watching':'一句話看懂（即時）：⚠️ 沒有紅燈，但有 '+yel+' 項波動比平常大（黃燈），值得留意')
+     :gc?(en()?'Live: no stress signal — '+gc.en:'一句話看懂（即時）：✅ 目前無偵測到異常；'+gc.zh+'——'+gc.why)
+     :gd.length?(en()?'Live: no stress signal; '+gd.length+' big move(s) in the healthy direction':'一句話看懂（即時）：✅ 目前無偵測到異常；'+gd.length+' 個市場往好的方向大幅變動（綠色）')
+     :(en()?'Live: no alert — fixed thresholds, unusual-move scan and volume all normal':'一句話看懂（即時）：✅ 目前無偵測到異常——固定門檻、異常波動、組合型態、成交量四層檢查都正常');}
  function ago(){var st=document.getElementById('lqst');if(!st||!lastOk)return;var s=Math.round((Date.now()-lastOk)/1000);
    st.className='lqst on';st.textContent='● '+(en()?'live · updated '+(s<60?s+'s':Math.round(s/60)+'m')+' ago':'即時 · '+(s<60?s+' 秒前':Math.round(s/60)+' 分鐘前')+'更新');}
  function stale(){var st=document.getElementById('lqst');if(st&&lastOk){st.className='lqst';st.textContent=en()?'live paused — showing hourly data':'即時暫停，顯示整點資料';}}
