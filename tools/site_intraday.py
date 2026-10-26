@@ -30,7 +30,7 @@ def sec_intraday(eng) -> str:
             "歷史上約三分之二的日子收在範圍內；Gamma 翻轉點、Call 牆、Put 牆來自每小時更新的 CBOE 選擇權資料。類股用 11 個 SPDR 類股 ETF，"
             "防禦型＝醫療、必需消費、公用事業、不動產。量能＝今天到目前為止的成交量 ÷ 前 4 個交易日同一時段的平均。"
             "這裡只描述盤中現況，不預測收盤，也不是投資建議。報價：Yahoo Finance，約有數分鐘延遲。")
-    body = (f'<div id="idbox" data-lv="{lv}"><p class="rimp big2"><b id="idone">{T("一句話看懂：美股開盤後，這裡每分鐘自動整理盤勢。", "Live read of the US session appears here.")}</b></p>'
+    body = (f'<div id="idbox" data-lv="{lv}"><p class="small muted" id="idst">🕒 {T("等待即時報價…", "Waiting for live quotes…")}</p><p class="rimp big2"><b id="idone">{T("一句話看懂：美股開盤後，這裡每分鐘自動整理盤勢。", "Live read of the US session appears here.")}</b></p>'
             '<ul id="idlist"></ul><div class="scroll"><table class="mini" id="idsec" hidden></table></div></div>'
             f'<p class="lqoff" id="idoff">{T("即時盤勢只在 Cloudflare 版網址可用：", "Live only on the Cloudflare site: ")}'
             f'<a href="{CF_URL}/#premarket" target="_blank" rel="noopener">{CF_URL.replace("https://", "")}</a></p>'
@@ -78,7 +78,10 @@ _JS = r"""
    fetch('api/quote?s='+encodeURIComponent(syms.join(','))+'&vol=SPY,QQQ',{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();}).then(function(d){
      if(off)off.hidden=true;var q=d.q||{},o=read(q),one=document.getElementById('idone'),ul=document.getElementById('idlist');if(!o)return;
      var tag=ss==='open'?'':(en()?' (market closed — last session)':'（美股目前'+(ss==='pre'?'尚未開盤':'已收盤')+'，以下是最近一個交易日）');
-     one.textContent=o.one+tag;ul.innerHTML=o.L.map(function(x){var li=document.createElement('li');li.textContent=x;return li.outerHTML;}).join('');}).catch(function(){});}
+     one.textContent=o.one+tag;var st=document.getElementById('idst'),qt=(q['^GSPC']||{}).t;
+     if(st){var p=function(n){return ('0'+n).slice(-2);},n=new Date(),tq=qt?new Date(qt*1000):null,tp=function(d){return d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'});};
+      st.textContent='🕒 '+(en()?'Updated '+tp(n)+' Taipei'+(tq?' · S&P quote '+tp(tq):'')+' · refreshes every minute'
+        :'最後更新 '+tp(n)+'（台北）'+(tq?'・標普報價時間 '+tp(tq):'')+'・每分鐘自動更新');}ul.innerHTML=o.L.map(function(x){var li=document.createElement('li');li.textContent=x;return li.outerHTML;}).join('');}).catch(function(){});}
  pull();setInterval(pull,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)pull();});
 })();
 """

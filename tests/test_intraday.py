@@ -17,7 +17,7 @@ def test_card_and_js():
     eng = types.SimpleNamespace(options=types.SimpleNamespace(spx={"zero_gamma": 7714.0, "call_wall": 7800, "put_wall": None}))
     assert SI.levels(eng) == {"zero_gamma": 7714.0, "call_wall": 7800.0} and SI.levels(None) == {}
     h = SI.sec_intraday(eng)
-    assert "一句話看懂" in h and 'id="idbox"' in h and "zero_gamma" in h and "pages.dev" in h and "不是投資建議" in h
+    assert "一句話看懂" in h and 'id="idbox"' in h and 'id="idst"' in h and "最後更新" in SI.JS and "zero_gamma" in h and "pages.dev" in h and "不是投資建議" in h
     assert len(SI.SECTORS) == 11 and len(SI.CORE) + len(SI.SECTORS) <= 25 and {k for *_x, k in SI.SECTORS} == {"cyc", "def"}
     assert "__SEC__" not in SI.JS and "XLK" in SI.JS and "&vol=SPY,QQQ" in SI.JS and "America/New_York" in SI.JS
     for b in ("目標價", "上漲空間", "低估", "高估", "買進", "賣出"):
