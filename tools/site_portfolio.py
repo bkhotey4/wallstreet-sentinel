@@ -593,18 +593,36 @@ function refreshQuotes(){
    if(j && j.fx && j.fx.USD){ Object.keys(j.fx).forEach(function(k){ FX[k] = j.fx[k]; }); FXOK = true; }
    return j && j.built; })
   .catch(function(){ return null; });
- var d = get(), need = {};
- d.h.forEach(function(h){ var n = norm(h.s); if(n) need[n.mk] = 1; });
+ var d = get(), need = {}, syms = ['TWD=X', 'HKD=X'];
+ d.h.forEach(function(h){ var n = norm(h.s); if(n){ need[n.mk] = 1; n.cands.forEach(function(s){ if(syms.indexOf(s) < 0) syms.push(s); }); } });
  var mks = Object.keys(need);
  if(mks.indexOf('us') < 0) mks.push('us');
- Promise.all([qp].concat(mks.map(loadMk))).then(function(res){
-  var built = res[0];
+ // live quotes for every holding + FX right now (Cloudflare site only; elsewhere this quietly does nothing)
+ var live = qp.then(function(){
+  var chunks = [];
+  for(var i = 0; i < syms.length; i += 25) chunks.push(syms.slice(i, i + 25));
+  return Promise.all(chunks.map(function(c){ return fetch('api/quote?s=' + encodeURIComponent(c.join(',')), { cache: 'no-store' })
+   .then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return null; }); }));
+ }).then(function(rs){
+  var n = 0, p2 = function(x){ return ('0' + x).slice(-2); };
+  rs.forEach(function(j){ if(!j || !j.q) return; Object.keys(j.q).forEach(function(s){ var x = j.q[s]; if(!x || x.price == null) return;
+   var t = x.t ? new Date(x.t * 1000) : new Date(), asof = t.getFullYear() + '-' + p2(t.getMonth() + 1) + '-' + p2(t.getDate()) + ' ' + p2(t.getHours()) + ':' + p2(t.getMinutes());
+   Q[s] = [x.price, x.chg, asof, x.name || s, 'Yahoo 即時', x.prev]; n++; }); });
+  var tw = Q['TWD=X'], hk = Q['HKD=X'];
+  if(tw && tw[2] && tw[2].length > 10 && tw[0]){ FX.USD = tw[0]; if(hk && hk[0]) FX.HKD = tw[0] / hk[0]; FXOK = true; }
+  return n;
+ }).catch(function(){ return 0; });
+ Promise.all([qp, live].concat(mks.map(loadMk))).then(function(res){
+  var built = res[0], nlive = res[1];
+  res = [built].concat(res.slice(2));
   gFM = {};
   mks.forEach(function(m, i){ gFM[m] = res[i + 1]; });
   draw(d, gFM);
   var t = new Date().toLocaleTimeString();
-  gmsg((built ? '已載入網站最新行情（' + built + ' 台北建置，約每 20 分鐘更新）' : '已重新載入行情') + '・' + t,
-       (built ? 'Loaded the latest site quotes (built ' + built + ')' : 'Quotes reloaded') + ' · ' + t, 'ok');
+  if(nlive) gmsg('已抓取即時行情並重新計算（' + nlive + ' 筆報價與匯率，Yahoo，約延遲數分鐘）・' + t,
+                 'Live quotes fetched and recalculated (' + nlive + ' quotes incl. FX, may be delayed a few minutes) · ' + t, 'ok');
+  else gmsg((built ? '已載入網站最新行情（' + built + ' 台北建置，約每 20 分鐘更新；即時報價只在 Cloudflare 版網址可用）' : '已重新載入行情') + '・' + t,
+       (built ? 'Loaded the latest site quotes (built ' + built + '; live quotes only on the Cloudflare site)' : 'Quotes reloaded') + ' · ' + t, 'ok');
   if(btn){ btn.disabled = false; btn.textContent = ''; btn.appendChild(L('🔄 重新整理行情', '🔄 Refresh quotes')); }
  });
 }
