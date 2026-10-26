@@ -1,6 +1,17 @@
 {
-  "updated": "2026-10-23",
+  "updated": "2026-10-26",
   "items": [
+    {
+      "title": "Bank liquidity regulation and the growth of private credit",
+      "authors": "Sebastian Doerr, Gaston Gelos, Vesa Pursiainen",
+      "source": "BIS, Working Papers No 1388",
+      "published": "2026-10-20",
+      "url": "https://www.bis.org/publications/bank-liquidity-regulation-and-growth-private-credit",
+      "added": "2026-10-26",
+      "summary": "研究銀行流動性規範（LCR）如何推動私募信貸成長。比較美國各郡縣：LCR 銀行占比越高、或銀行原本流動性缺口越大的地方，LCR 實施後私募信貸成長越快。估計的影響幅度與 2012 年 CCAR 壓力測試提高資本要求的效果相當；越依賴信貸的產業，這個關聯越強，符合「放款供給改變」的解釋。",
+      "implication": "私募信貸變大，部分原因是銀行規範收緊後，放款轉到銀行體系以外。風險並沒有消失，而是搬到較少人看得見的地方。",
+      "site_relevance": "與本站「私募信貸燈號」有關，可在說明中補充私募信貸成長與銀行監管之間的關係。"
+    },
     {
       "title": "Introducing Private Credit into the Financial Accounts of the United States",
       "authors": "Katie Brinkman, Christine Dobridge, Tim Dore, Simon Glossner, Elizabeth Holmquist, Nam Nguyen, Maria Perozek, Irina Stefanescu",
