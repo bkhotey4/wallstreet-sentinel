@@ -3,6 +3,7 @@ insider Form 4 activity, US Treasury zone, sector rotation & breadth, and the ti
 from __future__ import annotations
 
 import math
+from datetime import date
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -1145,6 +1146,16 @@ def _v(d: Dict, k: str, fmt: str, mul: float = 1) -> str:
     x = (d or {}).get(k)
     return "—" if x is None else format(x * mul, fmt)
 
+def next_retrain(today: date) -> str:
+    """The quarterly retrain check runs on the 15th of Jan / Apr / Jul / Oct."""
+    for y in (today.year, today.year + 1):
+        for mo in (1, 4, 7, 10):
+            d = date(y, mo, 15)
+            if d > today:
+                return d.isoformat()
+    return "—"
+
+
 def _bk_table(dz) -> str:
     """Model ranking: highest 12-month bankruptcy probability, whatever the rule-based light says."""
     m = dz.get("bk_model") or {}
@@ -1162,9 +1173,14 @@ def _bk_table(dz) -> str:
                  f'<td class="r"><b style="color:{col}">{p * 100:.1f}%</b></td>'
                  f'<td><span class="small" style="color:{lcol}">{ico} {T(zh, en)}</span></td><td class="small">{esc(r.get("bs_end") or "—")}</td></tr>')
     age = dz.get("bk_model_age_d")
-    old = (f'<p class="small" style="color:var(--warn)">⚠️ {T(f"模型已 {age} 天沒有重新訓練", f"Model is {age} days old")}</p>'
-           if age is not None and age > 540 else "")
-    how = T(f"機率來自 logistic 破產模型：用 SEC 財報（{m.get('sample', '')}，{_v(m, 'rows', ',')} 筆公司×半年快照，"
+    old = (f'<p class="small" style="color:var(--warn)">⚠️ {T(f"模型已 {age} 天沒有重新訓練（排程是每 3 個月一次）", f"Model is {age} days old")}</p>'
+           if age is not None and age > 120 else "")
+    if m.get("trained"):
+        nxt, tr = next_retrain(date.today()), m["trained"]
+        info = (f"🔁 模型訓練日 {tr}（{age} 天前）・每 3 個月重新檢查並訓練一次（1、4、7、10 月 15 日），下次 {nxt}。"
+                "每天的機率都用各公司最新財報計算，重新訓練只更新模型權重。")
+        old = f'<p class="small muted">{T(info, f"Trained {tr}; retrained quarterly, next {nxt}.")}</p>' + old
+    how = T(f"機率來自 logistic 破產模型：用 SEC 財報（{m.get('sample', '')}，{_v(m, 'rows', ',')} 筆公司×財報快照，"
             f"其中 {_v(m, 'bankruptcies', '')} 筆在一年內申報 8-K 1.03 破產）逐年訓練，每次只用當時已公布的數字。"
             f"樣本外驗證（{str(m.get('eval_years') or '—')[:9]}）：AUC {_v(o, 'auc', '.2f')}，Altman Z'' 為 {_v(o, 'auc_z', '.2f')}、雷達點數 {_v(o, 'auc_pts', '.2f')}，"
             f"逐年比較，模型較好的年數 {o.get('beats_z_years') or '—'}。機率最高的 5% 公司抓到 {_v(o, 'top5_recall', '.0f', 100)}% 的破產案"

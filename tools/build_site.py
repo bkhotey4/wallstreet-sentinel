@@ -1064,6 +1064,7 @@ body{margin:0;background:var(--page);color:var(--tx);font:14px/1.55 system-ui,-a
 .bar{max-width:1320px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{font-weight:800;letter-spacing:.08em;font-size:13px}.brand small{display:block;font-weight:500;letter-spacing:0;color:var(--mu);font-size:12px}
 .live{display:inline-flex;align-items:center;gap:6px;color:var(--mu);font-size:12px;margin-left:auto}.live i{width:8px;height:8px;border-radius:50%;background:var(--up)}
+.fsb{min-width:34px;font-weight:700}.fsb:disabled{opacity:.4;cursor:default}
 .btn{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer;min-width:40px}
 .wrap{max-width:1320px;margin:0 auto;padding:12px 16px 40px}
 .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(148px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
@@ -1233,6 +1234,14 @@ function setTheme(t){if(t==='light')document.documentElement.setAttribute('data-
 document.getElementById('langBtn').addEventListener('click',function(){setLang(document.documentElement.lang==='en'?'zh':'en');});
 document.getElementById('themeBtn').addEventListener('click',function(){setTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');});
 if(load('theme')==='light')setTheme('light');if(load('lang')==='en')setLang('en');
+// text size: the page is laid out in px, so scale the content area (the header buttons stay put); remembered per browser
+var FS=[0.9,1,1.15,1.3],FSN=['小','標準','大','特大'];
+function setFs(i){i=Math.max(0,Math.min(FS.length-1,i));var mw=document.querySelector('main.wrap');if(mw)mw.style.zoom=FS[i]===1?'':String(FS[i]);
+ document.documentElement.dataset.fs=i;store('fs',String(i));var a=document.getElementById('fsDn'),b=document.getElementById('fsUp');
+ if(a){a.disabled=i===0;a.title='字體縮小（目前：'+FSN[i]+'）';}if(b){b.disabled=i===FS.length-1;b.title='字體放大（目前：'+FSN[i]+'）';}}
+var fs0=parseInt(load('fs'),10);setFs(isNaN(fs0)?1:fs0);
+document.getElementById('fsDn').addEventListener('click',function(){setFs((+document.documentElement.dataset.fs||0)-1);});
+document.getElementById('fsUp').addEventListener('click',function(){setFs((+document.documentElement.dataset.fs||0)+1);});
 })();
 """
 
@@ -1350,7 +1359,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
-{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
+{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></div>
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
