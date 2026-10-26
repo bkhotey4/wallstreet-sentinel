@@ -1,6 +1,6 @@
 // node tests_js/quote.test.mjs — offline checks with a fake upstream; add LIVE=1 to also hit Yahoo for real.
 import assert from "node:assert/strict";
-import { one, parse, onRequestGet, rsi, tech } from "../functions/api/quote.js";
+import { one, parse, onRequestGet, rsi, tech, volRatio, sdAll } from "../functions/api/quote.js";
 
 assert.deepEqual(parse("^vix, ^VIX ,bad sym,<x>,2330.TW"), ["^VIX", "2330.TW"]);
 assert.equal(parse(Array.from({ length: 40 }, (_, i) => "A" + i).join(",")).length, 25);
@@ -26,6 +26,20 @@ assert.equal(f.div12, 1.5);
 assert.ok(f.rsi14 === 100 && f.ma_gap > 0 && f.m1[0] < 359 && f.m1[1] > 359);
 assert.ok(Math.abs(rsi([1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2]) - 50) < 10);
 assert.equal(tech([5], {}, now).hi52, undefined);
+assert.equal(sdAll([1, 2, 3]), null);                                    // too short for a one-year normal move
+const alt = Array.from({ length: 101 }, (_, i) => (i % 2 ? 101 : 100));
+assert.ok(sdAll(alt) > 0.9 && sdAll(alt) < 1.1 && f.sd1y > 0);
+
+// volume vs the same time on earlier days: 3 days × 4 bars; today has 2 bars so far with double the volume
+const D = 86400, t0 = 1_000_000 * D + 13.5 * 3600, vts = [], vv = [], vc = [];
+for (let d = 0; d < 3; d++) for (let b = 0; b < (d === 2 ? 2 : 4); b++) { vts.push(t0 + d * D + b * 300); vv.push(d === 2 ? 200 : 100); vc.push(10 + d); }
+const vr = volRatio(vts, vv, vc, 0);
+assert.equal(vr.vol, 400); assert.equal(vr.volx, 2); assert.equal(vr.prevDay, 11);
+assert.deepEqual(volRatio(vts.slice(0, 4), vv.slice(0, 4), vc.slice(0, 4), 0), {});   // one day only: no baseline
+const fakeVol = async () => new Response(JSON.stringify({ chart: { result: [{ meta: { regularMarketPrice: 9, regularMarketTime: vts.at(-1), chartPreviousClose: 1, shortName: "V" },
+  timestamp: vts, indicators: { quote: [{ volume: vv, close: vc }] } }] } }));
+const qv = await one("V", fakeVol, false, true);
+assert.equal(qv.volx, 2); assert.equal(qv.prev, 11); assert.ok(Math.abs(qv.chg - (9 / 11 - 1) * 100) < 1e-9);
 
 const bad = await onRequestGet({ request: new Request("https://x/api/quote?s=<<") });
 assert.equal(bad.status, 400);
@@ -37,6 +51,8 @@ if (process.env.LIVE) {
   assert.ok(d.q["^VIX"].price > 0 && d.q["2330.TW"].price > 0 && !d.q["NOPE_ZZZ"]);
   const r2 = await (await onRequestGet({ request: new Request("https://x/api/quote?full=1&s=00878.TW,MSFT") })).json();
   assert.ok(r2.q["00878.TW"].div12 > 0 && r2.q["MSFT"].hi52 > 0 && r2.q["MSFT"].rsi14 > 0);
-  console.log("live:", JSON.stringify(d.q["^VIX"]), JSON.stringify(r2.q["00878.TW"]));
+  const r3 = await (await onRequestGet({ request: new Request("https://x/api/quote?s=SPY,^VIX&vol=SPY") })).json();
+  assert.ok(r3.q["SPY"].price > 0 && r3.q["SPY"].prev > 0 && r3.q["^VIX"].volx === undefined);
+  console.log("live:", JSON.stringify(d.q["^VIX"]), JSON.stringify(r2.q["00878.TW"]), JSON.stringify(r3.q["SPY"]));
 }
 console.log("quote tests ok");

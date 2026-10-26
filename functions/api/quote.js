@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: GET /api/quote?s=^VIX,^GSPC,...  → live quotes for the page's strip, alert lights and ticker lookup.
 // Add &full=1 for one year of daily data per symbol: 52-week high/low, dividends paid in the last 12 months, 200-day average,
 // RSI(14) and recent volatility (portfolio dividend box, drawdown column, the browser-side watchlist).
+// Add &vol=SPY,QQQ for those symbols' volume today vs the average of the previous days up to the same time (5-minute bars,
+// 5 days): the live "heavy selling" light.
 // Public market data only (Yahoo chart); no keys, nothing stored. Each symbol set is cached 30 s (full: 10 min) at the edge.
 const OK = /^[A-Za-z0-9^=.\-]{1,15}$/;
 const MAX = 25;
@@ -30,6 +32,14 @@ export function rsi(closes, n = 14) {
   return dn === 0 ? 100 : 100 - 100 / (1 + up / dn);
 }
 
+export function sdAll(c) {
+  const r = [];
+  for (let i = 1; i < c.length; i++) r.push((c[i] / c[i - 1] - 1) * 100);
+  if (r.length < 60) return null;
+  const m = r.reduce((a, b) => a + b, 0) / r.length;
+  return Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / (r.length - 1));
+}
+
 export function tech(closes, divs, nowSec) {
   const c = closes.filter((x) => typeof x === "number" && x > 0);
   if (c.length < 2) return {};
@@ -45,13 +55,39 @@ export function tech(closes, divs, nowSec) {
     hi52: Math.max(...c.slice(-252)), lo52: Math.min(...c.slice(-252)),
     ma200, ma_gap: ma200 ? (last / ma200 - 1) * 100 : null, rsi14: rsi(c),
     vol20: sd != null ? sd * Math.sqrt(252) * 100 : null,                // annualised, %
+    sd1y: sdAll(c.slice(-253)),                                         // one-year std of daily % change (live unusual-move scan)
     m1: sd != null ? [last * Math.exp(-sd * Math.sqrt(21)), last * Math.exp(sd * Math.sqrt(21))] : null,   // ±1σ over ~1 month
     div12,
   };
 }
 
-export async function one(sym, fetchImpl = fetch, full = false) {
-  const q = full ? "range=1y&interval=1d&events=div" : "range=1d&interval=5m";
+// today's cumulative volume ÷ the average cumulative volume of earlier days up to the same exchange-local time of day
+export function volRatio(ts, vols, closes, off) {
+  const day = (s) => Math.floor((s + off) / 86400), tod = (s) => (s + off) % 86400;
+  const byDay = new Map();
+  for (let i = 0; i < ts.length; i++) {
+    if (ts[i] == null) continue;
+    const d = day(ts[i]);
+    if (!byDay.has(d)) byDay.set(d, []);
+    byDay.get(d).push([tod(ts[i]), typeof vols[i] === "number" ? vols[i] : 0, closes[i]]);
+  }
+  const days = [...byDay.keys()].sort((a, b) => a - b);
+  if (days.length < 3) return {};
+  const today = byDay.get(days[days.length - 1]), cut = today[today.length - 1][0];
+  const cum = (bars) => bars.filter((b) => b[0] <= cut).reduce((a, b) => a + b[1], 0);
+  const past = days.slice(0, -1).map((d) => cum(byDay.get(d))).filter((v) => v > 0);
+  const prevBars = byDay.get(days[days.length - 2]).filter((b) => typeof b[2] === "number");
+  const out = { prevDay: prevBars.length ? prevBars[prevBars.length - 1][2] : null };
+  if (past.length >= 2) {
+    const avg = past.reduce((a, b) => a + b, 0) / past.length;
+    out.vol = cum(today);
+    out.volx = avg ? out.vol / avg : null;
+  }
+  return out;
+}
+
+export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
+  const q = full ? "range=1y&interval=1d&events=div" : vol ? "range=5d&interval=5m" : "range=1d&interval=5m";
   const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?${q}`, { headers: { "User-Agent": "Mozilla/5.0" } });
   if (!r.ok) return null;
   const res = (((await r.json()).chart || {}).result || [])[0];
@@ -70,6 +106,12 @@ export async function one(sym, fetchImpl = fetch, full = false) {
     }
     Object.assign(out, tech(closes, (res.events || {}).dividends, Math.floor(Date.now() / 1000)));
   }
+  if (vol && !full) {
+    const qd = ((res.indicators || {}).quote || [])[0] || {};
+    const v = volRatio(res.timestamp || [], qd.volume || [], qd.close || [], m.gmtoffset || 0);
+    prev = m.previousClose ?? v.prevDay ?? null;                      // with range=5d, chartPreviousClose is 5 days old
+    if (v.volx != null) { out.vol = v.vol; out.volx = v.volx; }
+  }
   out.prev = prev ?? null;
   out.chg = prev ? (out.price / prev - 1) * 100 : null;
   return out;
@@ -83,9 +125,10 @@ export async function onRequestGet({ request, waitUntil }) {
   const u = new URL(request.url);
   const syms = parse(u.searchParams.get("s"));
   const full = u.searchParams.get("full") === "1";
+  const vols = new Set(parse(u.searchParams.get("vol")));
   if (!syms.length) return json({ error: "no symbols" }, 400, 0);
   const cache = typeof caches !== "undefined" ? caches.default : null;
-  const key = new Request(`https://quote.cache/${full ? "f/" : ""}${syms.slice().sort().join(",")}`);
+  const key = new Request(`https://quote.cache/${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}`);
   if (cache) {
     const hit = await cache.match(key);
     if (hit) return hit;
@@ -93,7 +136,7 @@ export async function onRequestGet({ request, waitUntil }) {
   const out = {};
   await Promise.all(syms.map(async (s) => {
     try {
-      const q = await one(s, fetch, full);
+      const q = await one(s, fetch, full, vols.has(s));
       if (q) out[s] = q;
     } catch (e) { /* one bad symbol never breaks the rest */ }
   }));
