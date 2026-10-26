@@ -36,7 +36,9 @@ def test_anomaly_scan():
     assert all(a[0] in SL.EXTRA for a in SL.ANOM) and all(v[3] in ("up", "down") for v in SL.VOLS)
     keys = {a[0] for a in SL.ANOM} | {b[0] for b in SL.BASKETS}
     for k, zh, en, lv, why, legs in SL.COMBOS:                          # every leg points at a market the scan measures
-        assert lv in (1, 2) and zh and en and why and legs and all(s in keys and op in (">=", "<=") for s, op, _z in legs), k
+        assert lv in (-1, 0, 1, 2) and zh and en and why and legs and all(s in keys and op in (">=", "<=") for s, op, _z in legs), k
+    assert {c[3] for c in SL.COMBOS} >= {-1, 0, 1, 2} and all(s in keys for s in SL.BAD_UP + SL.NEUTRAL)
+    assert "往好的方向" in SL.JS and "沒有壓力訊號" in SL.JS
     assert len({c[0] for c in SL.COMBOS}) == len(SL.COMBOS) and "組合訊號" in SL.JS and "sd1y" in SL.JS
     assert "ES=F" in SL.JS and "&vol=" in SL.JS and "異常波動掃描" in SL.JS and "大量賣壓" in SL.JS
 
