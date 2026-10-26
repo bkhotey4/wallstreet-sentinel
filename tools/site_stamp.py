@@ -362,10 +362,10 @@ CARD: Dict[str, List[str]] = {
     "sec_fg": ["px", "crypto"], "sec_link": ["tw", "px"], "sec_taiwan": ["tw", "taiwan"], "sec_taiwan_trends": ["tw"],
     "sec_signal_scorecard": ["stocks"], "sec_earn_moves": ["earnings", "stocks"], "sec_analyst": ["earnings"],
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
-    "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
+    "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note"}   # static content
-LIVE = {"sec_lookup", "sec_watch"}
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note", "sec_industry_note"}   # static content
+LIVE = {"sec_lookup", "sec_watch", "sec_intraday"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 
 

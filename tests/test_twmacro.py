@@ -145,6 +145,21 @@ def test_note_file(tmp=None):
         ST.NOTE = old
 
 
+def test_industry_note():
+    from tools import site_indnote as SN
+    old = SN.NOTE
+    p = Path(tempfile.mkdtemp()) / "industry_note.json"
+    p.write_text('{"notes": [{"month": "2026-W44", "date": "2026-10-31", "title": "產業筆記", "summary": ["雲端資本支出年增 60%"], "sectors": [{"name": "能源", "state": "轉弱", "read": "油價回落"}, {"name": "x"}]}]}', encoding="utf-8")
+    SN.NOTE = p
+    try:
+        h = SN.sec_industry_note(None)
+        assert "雲端資本支出年增 60%" in h and "每週產業分析筆記" in h and "油價回落" in h and "各產業一句話" in h
+        SN.NOTE = Path(tempfile.mkdtemp()) / "none.json"
+        assert SN.sec_industry_note(None) == ""
+    finally:
+        SN.NOTE = old
+
+
 def test_layout_group():
     from tools import site_layout as LY
     assert all(LY.GROUP_OF[k] == "tw" for k in ("tw_ai", "taiwan", "tw_bonds", "tw_credit", "tw_econ", "tw_money", "tw_life"))

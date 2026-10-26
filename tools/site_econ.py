@@ -563,7 +563,7 @@ def sec_tw_rev(eng) -> str:
     return card("台股電子業月營收", "Taiwan electronics monthly revenue", body + f'<p class="note">{note}</p>', "wide")
 
 
-JT_PH = {"tw": "搜尋代號或名稱，例如 2330、聯發科", "us": "搜尋代號或名稱，例如 NVDA、Snowflake",
+JT_PH = {"ur": "搜尋代號或名稱，例如 SPCX、NVDA、Costco", "tw": "搜尋代號或名稱，例如 2330、聯發科", "us": "搜尋代號或名稱，例如 NVDA、Snowflake",
          "gus": "搜尋代號或名稱，例如 NU、SMR、HOOD", "gearly": "搜尋代號或名稱，例如 SMR、OKLO、RKLB", "gtw": "搜尋代號或名稱，例如 2330、奇鋐"}
 
 
@@ -631,6 +631,19 @@ def sec_growth(eng) -> str:
     return card("成長股估值篩選（美股＋台股）", "Growth at a reasonable price (US + Taiwan)", "".join(parts) + f'<p class="note">{note}</p>', "wide")
 
 
+def sec_us_read(eng) -> str:
+    lead = T("一句話看懂：每一家美股都用最新一季 SEC 財報自動判讀——成長在加速還是放緩、是靠降價換來的還是有營運槓桿、帳款和庫存有沒有異常、是不是靠併購、多燒錢。",
+             "Every US company read from its latest SEC quarter: growth speed, margins, receivables and inventory, acquisitions, capex, cash.")
+    how = ("「加速」＝最新一季營收年增率減上一季的年增率。毛利率、營益率變化＝最新一季和一年前同一季比（百分點）。"
+           "以價換量：營收年增 10% 以上但毛利率掉 2 點以上；營運槓桿：營益率升 3 點以上；應收帳款膨脹：應收帳款年增比營收快 20 點以上；"
+           "庫存堆積：庫存年增比營收快 25 點以上；含併購：商譽一年內大增；重資本：最近一個會計年度資本支出 ≥ 營收的 30%；"
+           "現金吃緊：照近 4 季營業現金流的燒錢速度，現金不到 2 年。資料：SEC XBRL frames（每季、全部申報公司），名單與市值來自 Nasdaq，"
+           "每次網站更新都重算。這是對財報數字的白話描述，不是預測，也不是投資建議；公司的分部營收（例如 SpaceX 的 Starlink）不在這份資料裡。")
+    body = (f'<p class="rimp big2"><b>{lead}</b></p>' + _jt("ur")
+            + f'<details class="sgx"><summary>{T("每個標籤的規則", "Rules")}</summary><p class="note">{T(how, "")}</p></details>')
+    return card("美股全市場財報判讀（每一檔的白話解讀）", "Every US filing, read in plain words", body, "wide")
+
+
 def sec_us_tech(eng) -> str:
     te = getattr(eng, "techearn", None) or {}
     n = te.get("ustech_n") or 0
@@ -667,7 +680,7 @@ details.ev .tm{min-width:74px;font-variant-numeric:tabular-nums}.evn{min-width:1
 table.teb tr.tm{cursor:pointer}table.teb tr.det{display:none}table.teb tr.det.open{display:table-row}table.teb tr.det td{background:var(--card2)}
 .detg{display:grid;grid-template-columns:320px 1fr;gap:12px;align-items:start}.qchart{width:300px;height:96px}
 .qchart .qb{fill:color-mix(in srgb,var(--ac) 55%,transparent)}.qchart .qg{fill:none;stroke:var(--warn);stroke-width:2}.qchart .ql{font-size:9px;fill:var(--mu)}
-.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.jt table td,.jt table th{white-space:nowrap}.jt th[data-s]{cursor:pointer}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.jt table td,.jt table th{white-space:nowrap}.jt table td.wrap{white-space:normal;min-width:180px;max-width:460px;font-size:12.5px}.jt th[data-s]{cursor:pointer}
 @media(max-width:760px){.scen,.g2,.detg{grid-template-columns:1fr}.evn{min-width:0}}
 """
 
@@ -696,6 +709,9 @@ var SPEC={tw:{src:'market/twrev.json',filt:'ind',sorts:[['yoy','年增率','y/y'
  gtw:{src:'market/growth_tw.json',filt:'ind',only:'rank',sorts:[['score','排名分數','Score'],['peg','PEG（低→高）','PEG (low→high)','asc'],['cum_yoy','累計營收年增','YTD growth'],['yoy','單月年增','Month y/y'],['pe','本益比（低→高）','P/E (low→high)','asc'],['rev','月營收','Revenue']],
   cols:[['rank','#','#'],['code','代號','Code'],['name','公司','Company'],['ind','產業','Industry'],['ym','月份','Month'],['rev','月營收（億）','Rev (NT$100m)',1],['cum_yoy','累計年增','YTD y/y',1,'%'],['yoy','單月年增','Month y/y',1,'%'],
    ['streak','連續年增','Streak'],['pe','本益比','P/E',1],['pb','淨值比','P/B',2],['dy','殖利率','Yield',1,'%'],['peg','PEG','PEG',2],['score','分數','Score',0],['st','技術面','Technical']]},
+ ur:{src:'market/growth_us.json',filt:'ind',pre:function(o){return !!o.read;},sorts:[['mcap','市值','Market cap'],['q_yoy','營收年增','Rev y/y'],['accel','成長加速度','Acceleration'],['om_chg','營益率變化','Op margin chg'],['gm_chg','毛利率變化','Gross margin chg']],
+  cols:[['sym','代號','Ticker'],['name','公司','Company'],['ind','產業','Sector'],['per','季別','Qtr'],['mcap','市值（十億）','Cap ($bn)',1,'',1e9],['q_yoy','營收年增','Rev y/y',0,'%'],['accel','加速','Accel',0,'pp'],
+   ['gm_chg','毛利率變化','GM chg',1,'pp'],['om_chg','營益率變化','OM chg',1,'pp'],['tags','判讀標籤','Tags',null,'','','w'],['read','白話判讀','Reading',null,'','','w']]},
  us:{src:'market/ustech.json',filt:'sub',sorts:[['mcap','市值','Market cap'],['yoy','營收年增','Rev y/y'],['gm','毛利率','Gross margin'],['om','營益率','Op margin'],['eps_yoy','EPS 年增','EPS y/y']],
   cols:[['sym','代號','Ticker'],['name','公司','Company'],['sub','子產業','Industry'],['q','季別','Qtr'],['rev','營收（百萬美元）','Rev ($m)',0,'',1e6],['yoy','年增','y/y',1,'%'],['qoq','季增','q/q',1,'%'],
    ['gm','毛利率','GM',1,'%'],['gm_yoy','毛利率年變化','GM Δ',1,'pp'],['om','營益率','OM',1,'%'],['nm','淨利率','NM',1,'%'],['eps','EPS','EPS',2],['eps_yoy','EPS 年增','EPS y/y',1,'%']]}};
@@ -709,7 +725,7 @@ document.querySelectorAll('.jt').forEach(function(w){var sp=SPEC[w.dataset.kind]
   var its=data.items.filter(function(o){return (!f||o[sp.filt]===f)&&(!s||(String(o.code||o.sym)+' '+o.name).toLowerCase().indexOf(s)>=0)&&(!only||o[sp.only]!=null)&&(!sp.pre||sp.pre(o));});
   its.sort(function(a,b){var x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return asc?x-y:y-x;});st.textContent=' '+its.length+(en()?' rows':' 筆');
   var sc=el('div','scroll'),t=el('table','mini'),hr=el('tr');sp.cols.forEach(function(c){hr.appendChild(el('th',null,en()?c[2]:c[1]));});var th=el('thead');th.appendChild(hr);t.appendChild(th);
-  var tb=el('tbody');its.slice(0,shown).forEach(function(o){var tr=el('tr');sp.cols.forEach(function(c){var v=o[c[0]],td=el('td',(c[3]!=null?'r ':'')+(c[4]==='%'||c[4]==='pp'?(v>0?'up':v<0?'dn':''):''),fm(v,c));
+  var tb=el('tbody');its.slice(0,shown).forEach(function(o){var tr=el('tr');sp.cols.forEach(function(c){var v=o[c[0]],td=el('td',(c[6]==='w'?'wrap ':'')+(c[3]!=null?'r ':'')+(c[4]==='%'||c[4]==='pp'?(v>0?'up':v<0?'dn':''):''),fm(v,c));
    if(c[0]==='name'&&o.cur)td.appendChild(el('span','pill','追蹤池'));if(c[0]==='name'&&o.small)td.appendChild(el('span','pill',en()?'early stage':'營收尚小'));if(c[0]==='name'&&o.odd&&!o.small)td.appendChild(el('span','pill',en()?'small base':'基期小'));if(c[0]==='name'&&o.ma)td.appendChild(el('span','pill',en()?'acquisition':'含併購'));if(c[0]==='name'&&o.flag)td.appendChild(el('span','pill warn',o.flag));tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
   if(its.length>shown){var m=el('button','btn',en()?'Show 100 more':'再顯示 100 筆');m.type='button';m.addEventListener('click',function(){shown+=100;render();});body.appendChild(m);}}
  function go(){btn.style.display='none';st.textContent=en()?'Loading…':'載入中…';fetch(sp.src,{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){

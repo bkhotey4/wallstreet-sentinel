@@ -53,9 +53,9 @@ def sec_tw_brief(eng) -> str:
     return card("台灣在說什麼：景氣、利率、資金一句話", "Taiwan at a glance", body, "wide")
 
 
-def load_note() -> list:
+def load_note(path: Path = None) -> list:
     try:
-        d = json.loads(NOTE.read_text(encoding="utf-8"))
+        d = json.loads((path or NOTE).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return []
     out = [n for n in (d.get("notes") if isinstance(d, dict) else None) or [] if isinstance(n, dict) and n.get("summary") and n.get("month")]

@@ -207,7 +207,8 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.
     return rows
 
 
-US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "gav", "basis", "score", "st", "tech", "src", "small", "odd", "ma", "cash", "burn", "runway", "flag", "burn_basis"]
+US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "gav", "basis", "score", "st", "tech", "src", "small", "odd", "ma", "cash", "burn", "runway", "flag", "burn_basis",
+           "gm_chg", "om_chg", "ar_yoy", "inv_yoy", "capex_pct", "tags", "read"]
 TW_COLS = ["rank", "code", "name", "ind", "board", "ym", "rev", "cum_yoy", "yoy", "streak", "pe", "pb", "dy", "peg", "score", "st", "cur"]
 
 
@@ -301,6 +302,12 @@ async def write_us(ed) -> Dict:
         rows = us_rows(ed, items, tmap, tech)
     rows = score_us(rows, float(c.get("growth_min_rev_usd", 2e8)), float(c.get("growth_min_growth", 15)),
                     exclude=tuple(c.get("growth_exclude_sectors", EXCLUDE)))
+    try:                                             # 美股全市場財報判讀: the plain-language reading of each filing
+        from . import usread as UR
+        UR.attach(ed, rows, tmap)
+        UR.add_missing(ed, rows, items, tmap)
+    except Exception:  # noqa: BLE001
+        log.exception("usread failed")
     res = pack(rows, US_COLS, asof=us_today().isoformat(), listed=len(items), ranked=sum(1 for r in rows if r.get("score") is not None))
     if res["available"]:
         OUT_US.write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

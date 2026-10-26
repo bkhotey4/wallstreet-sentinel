@@ -147,7 +147,7 @@ async def _gen(key: str, prompt: str, cache: Dict[str, Dict], max_tokens: int = 
 
 
 async def generate(eng, limit: int = 6, deadline_s: float = 150) -> int:
-    """Write the missing notes: released key events (last 3 days), curated tech reports (last 10 days), the season roll-up (daily).
+    """Write the missing notes: released key events (last 3 days), every curated tech company's latest report, the season roll-up (daily).
     Stops when `deadline_s` seconds have passed overall (a slow model can't hold up the site build / bot loop)."""
     cache = load()
     n = 0
@@ -172,14 +172,14 @@ async def generate(eng, limit: int = 6, deadline_s: float = 150) -> int:
         if await gen(e["id"], event_prompt(e)):
             n += 1
     te = getattr(eng, "techearn", None) or {}
-    import datetime as _dt
-    lim = (_dt.date.fromisoformat(te.get("asof", "2000-01-01")) - _dt.timedelta(days=10)).isoformat() if te.get("asof") else "9999"
-    for r in te.get("rows") or []:
+    # every tracked company's latest report gets one note (cached per report → once a quarter); newest reports first,
+    # the rest fill in over the next builds
+    for r in sorted(te.get("rows") or [], key=lambda x: str(x["s"].get("last_date") or ""), reverse=True):
         if n >= limit or time.monotonic() >= t_end:
             break
         d = r["s"].get("last_date")
         k = f"earn:{r['sym']}:{d}"
-        if not d or d < lim or k in cache or r.get("rev_yoy") is None:
+        if not d or k in cache or r.get("rev_yoy") is None:
             continue
         if await gen(k, earnings_prompt(r)):
             n += 1

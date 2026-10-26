@@ -327,8 +327,9 @@ async def refresh_facts(syms: List[str], reported: Dict[str, str], budget_s: flo
 
 # ============================================================ SEC frames (whole-market US tech, latest quarter)
 FRAME_TAGS = {"rev": REV_TAGS[:3], "gp": ("GrossProfit",), "op": ("OperatingIncomeLoss",), "ni": ("NetIncomeLoss",),
-              "eps": ("EarningsPerShareDiluted",), "ocf": ("NetCashProvidedByUsedInOperatingActivities",)}
-INSTANT_TAGS = ("Goodwill", "CashAndCashEquivalentsAtCarryingValue", "ShortTermInvestments")
+              "eps": ("EarningsPerShareDiluted",), "ocf": ("NetCashProvidedByUsedInOperatingActivities",),
+              "capex": ("PaymentsToAcquirePropertyPlantAndEquipment",)}
+INSTANT_TAGS = ("Goodwill", "CashAndCashEquivalentsAtCarryingValue", "ShortTermInvestments", "AccountsReceivableNetCurrent", "InventoryNet")
 
 
 def cy_quarters(today: date, n: int = 6) -> List[str]:

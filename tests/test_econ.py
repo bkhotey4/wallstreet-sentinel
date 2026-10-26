@@ -446,9 +446,9 @@ def main():
     for e in ev["events"]:                                        # make two releases "recent"
         if e["id"] in ("nfp:2026-10-02", "ism_svc:2026-10-05"):
             e["move"] = {"^NDX": -1.0, "^SOX": -2.0, "^TNX": -6.0, "DX-Y.NYB": -0.3}
-    n1 = asyncio.run(EA.generate(eng))
-    n2 = asyncio.run(EA.generate(eng))
-    assert n1 >= 2 and n2 == 0, (n1, n2)
+    n1 = asyncio.run(EA.generate(eng, limit=50))                  # every tracked company's latest report gets a note
+    n2 = asyncio.run(EA.generate(eng, limit=50))
+    assert n1 >= 2 and n2 == 0, (n1, n2)                          # … once: the second pass finds them all cached
     assert any("非農" in c for c in calls) and any("AMD" in c or "超微" in c for c in calls), "earnings note for a recent reporter"
     EA.attach(eng)
     note = next(e for e in eng.econ_view["events"] if e["id"] == "nfp:2026-10-02")["ai"]["text"]

@@ -49,6 +49,8 @@ from tools import site_cooldown as SCD
 from tools import site_marks as SMK
 from tools import site_bonds as SBD
 from tools import site_twmacro as STW
+from tools import site_intraday as SID
+from tools import site_indnote as SIN2
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -1290,7 +1292,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
-            ("premarket", "開盤前 30 秒", "30s before the open", [SQ.sec_premarket]),
+            ("premarket", "開盤前 30 秒", "30s before the open", [SQ.sec_premarket, SID.sec_intraday]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
@@ -1299,10 +1301,10 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
-            ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech]),
+            ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
-            ("industry", "產業體檢", "Sector health", [SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
+            ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
@@ -1383,7 +1385,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SMK.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{SMK.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1704,7 +1706,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.warning("AI commentary skipped: %s", e)
         try:
             from wsb.ai import econ_ai
-            log.info("econ / earnings AI notes written: %d", await econ_ai.generate(eng))
+            log.info("econ / earnings AI notes written: %d", await econ_ai.generate(eng, limit=12, deadline_s=200))
         except Exception as e:  # noqa: BLE001
             log.warning("econ AI notes skipped: %s", e)
     try:
