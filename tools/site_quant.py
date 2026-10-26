@@ -210,10 +210,10 @@ def sec_premarket(eng) -> str:
              f"經濟數據列出重要度 {'★' * int(d.get('min_imp', 2))} 以上；其他時間美股、台股兩邊都顯示。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
              "No direction call — overnight changes, today’s schedule and the range the market prices, with that range’s track record. "
              f"From {lead} min before each open only that market is shown (next: US {us_from}, Taiwan {tw_from} Taipei; weekends and exchange holidays skipped).")
-    body = (f'<details class="pm" open id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}" data-lead="{lead}" data-after="{int(d.get("after_min", 30))}"><summary><b id="pmhead">{T("盤前整理", "Pre-open roundup")}</b> '
+    body = (f'<details class="pm" open id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}" data-lead="{lead}" data-after="{int(d.get("after_min", 30))}"><summary><b id="pmhead">{T("隔夜變化與今天時程", "Overnight and today")}</b> '
             f'<span class="muted small" id="pmcount"></span></summary>{us}{tw}'
             f'<div class="pmp" id="pmmine" style="display:none"></div><p class="note">{note}　{T("更新", "Built")} {esc(d["built"])}</p></details>')
-    return f'<section class="card wide pmcard">{body}</section>'
+    return f'<section class="card wide pmcard"><h2>{T("盤前整理", "Pre-open roundup")}</h2>{body}</section>'
 
 
 # ------------------------------------------------------------------ 指數 vs 個股
