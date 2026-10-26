@@ -150,6 +150,16 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           node tests_js/quote.test.mjs        # functions/api/quote.js = 即時報價（行情列、盤中門檻、查任何股票）
+          # Cloudflare 版用青綠底＋「即時」圖示與名稱，手機主畫面上和 GitHub 版（黑底）分得開；GitHub 版的檔案上面已打包，不受影響
+          cp tools/static/cf/*.png site/
+          python - <<'EOF'
+          import json
+          p = "site/manifest.webmanifest"
+          m = json.load(open(p, encoding="utf-8"))
+          m.update(name="WallStreet Sentinel 情報站（即時版）", short_name="情報站即時", theme_color="#0d6e68")
+          json.dump(m, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+          EOF
+          sed -i 's/content="#0a0b0d"/content="#0d6e68"/' site/index.html
           npx --yes wrangler@3.114.0 pages project create wallstreet-sentinel --production-branch=main >/dev/null 2>&1 || true
           npx --yes wrangler@3.114.0 pages deploy site --project-name=wallstreet-sentinel --branch=main --commit-dirty=true
 
