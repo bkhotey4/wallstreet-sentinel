@@ -43,6 +43,7 @@ from tools import site_calc as SCA
 from tools import site_live as SLV
 from tools import site_stockcheck as SSC
 from tools import site_dual as SDU
+from tools import site_glossary as SGL
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -1139,7 +1140,8 @@ document.querySelectorAll('.rhit').forEach(function(el){function sh(ev){var p=el
  el.addEventListener('pointermove',sh);el.addEventListener('focus',sh);el.addEventListener('pointerleave',hide);el.addEventListener('blur',hide);});
 function page(k){var ok=document.getElementById('p-'+k);if(!ok){k='overview';}
  document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('on',e.id==='p-'+k);});
- document.querySelectorAll('.ptab').forEach(function(e){e.classList.toggle('on',e.dataset.p===k);});hide();}
+ document.querySelectorAll('.ptab').forEach(function(e){e.classList.toggle('on',e.dataset.p===k);});hide();
+ try{document.dispatchEvent(new CustomEvent('wss:page',{detail:k}));}catch(e){}}
 document.querySelectorAll('.ptab').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();page(a.dataset.p);
  try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){location.hash=a.dataset.p;}window.scrollTo(0,0);});});
 window.addEventListener('hashchange',function(){page(location.hash.slice(1));});if(location.hash)page(location.hash.slice(1));
@@ -1320,14 +1322,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{COMPLY_CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SGL.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:

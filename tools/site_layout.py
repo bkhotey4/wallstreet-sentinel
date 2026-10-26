@@ -310,10 +310,12 @@ WORDS.sort(function(a,b){return b.length-a.length;});
 var esc=function(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');};
 var RE=new RegExp('('+WORDS.map(esc).join('|')+'|第\\s?\\d+\\s?百分位|\\d+(?:\\.\\d+)?\\s?倍|\\d+\\s?次中\\s?\\d+\\s?次|\\d+\\s?／\\s?\\d+\\s?盞)','g');
 var SKIP='th,a,button,script,style,svg,h2,h3,summary,.upd,.kw,.pill,.tile,.ptab,.crumb,label,select,option,input,textarea';
+function vis(el){var p=el.closest('.page');return !p||p.classList.contains('on');}
 function run(root){
  if(document.documentElement.lang==='en')return;
  var scope=(root||document).querySelectorAll('.card p,.card li,.rimp,.card .d,.card td');
  scope.forEach(function(el){
+  if(el.dataset.kwd==='1'||!vis(el))return;el.dataset.kwd='1';
   var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null),nodes=[],n;
   while((n=w.nextNode()))nodes.push(n);
   nodes.forEach(function(t){
@@ -330,9 +332,10 @@ function setKw(on){document.documentElement.classList.toggle('nokw',!on);var b=d
  if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');b.title=on?'重點標示：開（點一下關閉）':'重點標示：關（點一下開啟）';}
  try{localStorage.setItem('kw',on?'1':'0');}catch(e){}}
 setKw(load()!=='0');run();
-var lb=document.getElementById('langBtn');if(lb)lb.addEventListener('click',function(){setTimeout(function(){run();},0);});
+function reset(){document.querySelectorAll('[data-kwd]').forEach(function(e){e.dataset.kwd='';});}
+var lb=document.getElementById('langBtn');if(lb)lb.addEventListener('click',function(){setTimeout(function(){reset();run();},0);});
+document.addEventListener('wss:page',function(){run();});
 var kb=document.getElementById('kwBtn');if(kb)kb.addEventListener('click',function(){setKw(document.documentElement.classList.contains('nokw'));});
-document.addEventListener('toggle',function(ev){if(ev.target&&ev.target.tagName==='DETAILS')run(ev.target);},true);
 })();
 """
 KW_CSS = ':root{--kw:#0a66e0}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--kw:#4db2ff}}:root:not([data-theme="light"]){--kw:#4db2ff}:root[data-theme="light"]{--kw:#0a66e0}.kw{color:var(--kw);font-weight:700}.nokw .kw{color:inherit;font-weight:inherit}#kwBtn{font-weight:700}#kwBtn.on{color:var(--kw);border-color:var(--kw)}'
