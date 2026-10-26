@@ -181,6 +181,41 @@ def sec_cb_brief(eng) -> str:
     return card("公司債在說什麼：借錢給企業的人放不放心", "What corporate bonds are saying", body, "wide")
 
 
+ROT_WORD = {"股跌債漲": "資金從股票轉進國債避險（買債的人多，利率就下降）",
+            "股債雙殺": "股票和國債一起被賣：大家在換現金，不是轉進國債",
+            "賣債買股": "資金從債券轉回股票（風險偏好上升）",
+            "股債齊漲": "股票和國債一起漲：通常是市場預期降息",
+            "沒有明顯轉移": "股市和國債利率都沒有大幅變動，看不出資金大舉從股票轉進國債"}
+NOTE_ROT = ("判斷規則：近一個月標普 500 跌 3% 以上、同時 10 年期國債利率降 20bp 以上＝「股跌債漲」（資金轉進國債）；股跌而利率升 20bp 以上＝「股債雙殺」（換現金）。"
+            "國債被搶買時價格上漲、利率下降，所以看利率方向就知道錢有沒有進國債。"
+            "貨幣市場基金資料來自美國金融研究辦公室（OFR）的貨幣市場基金監測（根據各基金向 SEC 申報，每月、約晚一個月，2010 年起）。"
+            "「最大單日降幅」用來抓單日的避險潮（例如財報或數據引發的恐慌）。這是對數據的描述，不是預測。")
+
+
+def sec_gb_rotation(eng) -> str:
+    r = _r(eng)
+    x = r.get("rot") if r.get("available") else None
+    if not x or not x.get("state"):
+        return ""
+    lead = (f"一句話看懂：{x['state']}——{ROT_WORD[x['state']]}。（近一個月標普 {x['spx_1m']:+.1f}%、10 年期國債利率 {x['d10']:+.0f} bp）")
+    facts = [f"10 年期國債利率 {x['y10']:.2f}%" + (f"、2 年期 {x['y2']:.2f}%" if x.get("y2") is not None else "") + f"（{x['date']}）。"]
+    b = x.get("big")
+    if b and b["bp"] <= -10:
+        facts.append(f"近 20 個交易日最大單日降幅：{b['date']} 10 年期利率 {b['bp']:.0f} bp，是 {b['since']} 以來最大的單日降幅之一：那天有明顯的資金湧入國債避險。")
+    m = x.get("mm")
+    if m:
+        pace = ("增加速度是 " + m["since"] + " 年以來最快的 10% 之一：大量資金停在現金觀望" if m["pct3"] >= 90 else
+                "增加偏快" if m["pct3"] >= 75 else "大致持平" if abs(m["chg3"]) < 1 else "在減少：停在場邊的現金正被拿去投資或花掉" if m["chg3"] < 0 else "穩定增加")
+        facts.append(f"貨幣市場基金（把錢停在短期國庫券等現金工具）總額 {m['now']:.2f} 兆美元（{m['month']}）"
+                     + ("，創歷史新高" if m["high"] else "") + f"；近 3 個月 {m['chg3']:+.1f}%、一年 {m['chg12']:+.1f}%：{pace}。"
+                     + (f"其中 {m['tsy_share']:.0f}% 投資在美國國債。" if m.get("tsy_share") else ""))
+    lis = "".join(f"<li>{T(f, '')}</li>" for f in facts)
+    body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p><ul>{lis}</ul>'
+            f'<p class="small"><a class="golink" href="#overview" data-p="overview">{T("即時燈號裡也有「股市下跌＋國債利率下降」組合 →", "Live pattern light →")}</a></p>'
+            f'<details class="sgx"><summary>{T("怎麼判斷", "How it is judged")}</summary><p class="note">{T(NOTE_ROT, "")}</p></details>')
+    return card("資金往哪跑：從股票轉進國債了嗎", "Is money rotating from stocks into Treasuries?", body, "wide")
+
+
 def sec_gb_sovereign(eng) -> str:
     r = _r(eng)
     return _sov_card(r) if r.get("available") else ""

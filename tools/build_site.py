@@ -51,6 +51,7 @@ from tools import site_bonds as SBD
 from tools import site_twmacro as STW
 from tools import site_intraday as SID
 from tools import site_indnote as SIN2
+from tools import site_preview as SPV
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -1301,7 +1302,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
-            ("tech", "科技財報", "Tech earnings", [S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
+            ("tech", "科技財報", "Tech earnings", [SPV.sec_earn_preview, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
@@ -1309,7 +1310,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBD.sec_gb_brief, SBD.sec_gb_flows]),
+            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBD.sec_gb_brief, SBD.sec_gb_rotation, SBD.sec_gb_flows]),
             ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds, SBD.sec_gb_tic]),
             ("jgb", "日債", "Japanese bonds", [SBD.sec_gb_jgb, SBD.sec_gb_mof]),
             ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),

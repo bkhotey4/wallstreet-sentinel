@@ -348,7 +348,7 @@ CARD: Dict[str, List[str]] = {
     "sec_ssi": ["ssi"], "sec_radar": ["ssi"], "sec_odds": ["ssi"],
     "sec_ai_entry": ["px", "ssi", "ofr"], "sec_cool_check": ["px", "ssi", "ofr"], "sec_cool_history": ["px"], "sec_bull_env": ["px", "fred", "canary"],
     "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"], "sec_gb_brief": ["fred", "bondflows"], "sec_gb_sovereign": ["fred"],
-    "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
+    "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
     "sec_tw_money": ["twmacro", "tw"], "sec_tw_life": ["twmacro"],
@@ -364,7 +364,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note", "sec_industry_note"}   # static content
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note", "sec_industry_note", "sec_earn_preview"}   # static content
 LIVE = {"sec_lookup", "sec_watch", "sec_intraday"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 

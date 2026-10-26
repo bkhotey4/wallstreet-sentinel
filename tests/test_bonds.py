@@ -95,6 +95,34 @@ def test_cards_wording():
     assert LY.GROUP_OF["gbonds"] == LY.GROUP_OF["jgb"] == "bond" and LY.GROUP_OF["cb_us"] == "credit"
 
 
+def test_rotation():
+    import types
+    idx = pd.bdate_range("2025-01-01", periods=400)
+    y = pd.Series(4.5, index=idx)
+    y.iloc[-1] = 4.10                                                   # one big drop on the last day: -40 bp
+    spx = pd.Series(100.0, index=idx)
+    spx.iloc[-10:] = 95.0                                               # -5% within the month
+    eng = types.SimpleNamespace(fred=types.SimpleNamespace(get=lambda s: y if s in ("DGS10", "DGS2") else pd.Series(dtype=float)),
+                                market=types.SimpleNamespace(series=lambda t: spx))
+    r = BD.rotation(eng)
+    assert r["state"] == "股跌債漲" and abs(r["d10"] + 40) < 1e-6 and abs(r["big"]["bp"] + 40) < 1e-6
+    y2 = y.copy()
+    y2.iloc[-1] = 4.9
+    eng.fred.get = lambda s: y2 if s in ("DGS10", "DGS2") else pd.Series(dtype=float)
+    assert BD.rotation(eng)["state"] == "股債雙殺"
+    from tools import site_bonds as SB
+    eng._bonds = {"available": True, "rot": r}
+    h = SB.sec_gb_rotation(eng)
+    assert "一句話看懂：股跌債漲" in h and not [b for b in BANNED if b in h]
+
+
+def test_mmf_view():
+    tot = [[f"{2010 + i // 12}-{i % 12 + 1:02d}", 3e12 * (1.01 ** i)] for i in range(60)]
+    v = BF.mmf_view({"mmf": {"tot": tot, "tsy": [[tot[-1][0], tot[-1][1] * 0.4]]}})
+    assert v["high"] and abs(v["chg1"] - 1) < 1e-6 and abs(v["tsy_share"] - 40) < 1e-6 and v["since"] == "2010"
+    assert BF.mmf_view({"mmf": {"tot": tot[:10]}}) is None
+
+
 def main():
     for k, f in list(globals().items()):
         if k.startswith("test_"):

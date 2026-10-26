@@ -444,7 +444,9 @@ async def refresh_frames(budget_s: float = 150) -> Dict[str, Dict]:
             for i, per in enumerate(pers):
                 key = f"{tag}/{per}"
                 rec = cache.get(key) or {}
-                fresh = 20 * 3600 if (i < 3 or per in years[-2:]) else 7 * 86400
+                # the last 3 quarters daily; the year-ago comparatives every 3 days (new filers — e.g. a recent IPO — add
+                # them with their first 10-Q, long after the frame was first cached); older quarters weekly
+                fresh = 20 * 3600 if (i < 3 or per in years[-2:]) else 3 * 86400 if i < 7 else 7 * 86400
                 if time.time() - float(rec.get("ts", 0)) < fresh:
                     continue
                 if time.time() - t0 > budget_s:

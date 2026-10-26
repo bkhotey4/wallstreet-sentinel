@@ -17,7 +17,9 @@ CORP = [("us_ig", "美國投資級公司債", "BAMLC0A0CM", "BAMLC0A0CMEY", "ig"
         ("us_hy", "美國高收益債（垃圾債）", "BAMLH0A0HYM2", "BAMLH0A0HYM2EY", "hy"), ("us_ccc", "美國 CCC（最弱的公司）", "BAMLH0A3HYC", None, "hy"),
         ("eu_hy", "歐洲高收益債", "BAMLHE00EHYIOAS", "BAMLHE00EHYIEY", "hy"), ("em", "新興市場公司債", "BAMLEMCBPIOAS", None, "ig"),
         ("asia", "亞洲新興市場公司債", "BAMLEMRACRPIASIAOAS", None, "ig"), ("em_hy", "新興市場高收益債", "BAMLEMHBHYCRPIOAS", None, "hy")]
-FRED_IDS = tuple(i for _, _, s, i in SOVEREIGN if s == "fred") + tuple(x for c in CORP for x in (c[2], c[3]) if x)
+# 資金往哪跑: the Treasury curve; cash parked in money-market funds comes from OFR (monthly, see data.bondflows)
+ROT_IDS = ("DGS2", "DGS10", "DGS30")
+FRED_IDS = tuple(i for _, _, s, i in SOVEREIGN if s == "fred") + tuple(x for c in CORP for x in (c[2], c[3]) if x) + ROT_IDS
 
 
 def _fred(eng, sid) -> pd.Series:
@@ -88,9 +90,57 @@ def term_premium(eng) -> Optional[Dict]:
             "pct": float((s.iloc[:-1] < s.iloc[-1]).mean() * 100), "since": s.index[0].strftime("%Y")}
 
 
+def rotation(eng) -> Optional[Dict]:
+    """Is money leaving stocks for Treasuries?  Bonds being bought shows up as FALLING yields while stocks fall; yields
+    rising while stocks fall is a "sell everything for cash" move instead.  Rules on the numbers, not a forecast."""
+    y10, y2 = _fred(eng, "DGS10"), _fred(eng, "DGS2")
+    try:
+        spx = eng.market.series("^GSPC").dropna()
+    except Exception:  # noqa: BLE001
+        spx = pd.Series(dtype=float)
+    if len(y10) < 300 or len(spx) < 300:
+        return None
+    s1 = spx[spx.index <= spx.index[-1] - pd.Timedelta(days=30)]
+    spx_1m = (float(spx.iloc[-1]) / float(s1.iloc[-1]) - 1) * 100 if len(s1) else None
+    y1 = _ago(y10, 30)
+    d10 = None if y1 is None else (float(y10.iloc[-1]) - y1) * 100                    # bp over a month
+    dd = (y10.diff() * 100).dropna()
+    rec = dd.iloc[-20:]
+    big = None
+    if len(rec):
+        k = rec.idxmin()
+        v = float(rec.min())
+        prior = dd[dd.index < k]
+        bigger = prior[prior <= v]
+        big = {"date": k.strftime("%Y-%m-%d"), "bp": v, "since": bigger.index[-1].strftime("%Y-%m") if len(bigger) else prior.index[0].strftime("%Y")}
+    if spx_1m is None or d10 is None:
+        state = None
+    elif spx_1m <= -3 and d10 <= -20:
+        state = "股跌債漲"
+    elif spx_1m <= -3 and d10 >= 20:
+        state = "股債雙殺"
+    elif spx_1m >= 3 and d10 >= 20:
+        state = "賣債買股"
+    elif spx_1m >= 3 and d10 <= -20:
+        state = "股債齊漲"
+    else:
+        state = "沒有明顯轉移"
+    try:
+        from ..data import bondflows as BF
+        mm = BF.mmf_view(BF.load())
+    except Exception:  # noqa: BLE001
+        mm = None
+    return {"mm": mm, "spx_1m": spx_1m, "d10": d10, "y10": float(y10.iloc[-1]), "y2": float(y2.iloc[-1]) if len(y2) else None,
+            "date": y10.index[-1].strftime("%Y-%m-%d"), "big": big, "state": state}
+
+
 def build(eng) -> Dict:
     sv, cp, fl, tp = sovereign(eng), corporate(eng), flows(), term_premium(eng)
-    return {"available": bool(sv or cp), "sov": sv, "corp": cp, "flows": fl, "tp": tp}
+    try:
+        rot = rotation(eng)
+    except Exception:  # noqa: BLE001
+        rot = None
+    return {"available": bool(sv or cp), "sov": sv, "corp": cp, "flows": fl, "tp": tp, "rot": rot}
 
 
 def read(r: Dict) -> Dict:

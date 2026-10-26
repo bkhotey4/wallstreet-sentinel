@@ -27,6 +27,10 @@ FILE = DATA_DIR / "econ_bondflows.json"
 TTL = 12 * 3600
 MOF = "https://www.mof.go.jp/policy/international_policy/reference/itn_transactions_in_securities/week.csv"
 TIC = "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt"
+# OFR Money Market Fund Monitor (from the funds' SEC N-MFP filings, monthly, 2010 onward, US$): total assets and the
+# part held in US Treasuries — the cash parked on the side (free JSON API)
+OFR = "https://data.financialresearch.gov/v1/series/timeseries?mnemonic={}"
+MMF_IDS = {"tot": "MMF-MMF_TOT-M", "tsy": "MMF-MMF_T_TOT-M"}
 UA = {"User-Agent": "Mozilla/5.0 (WallStreet Sentinel research site)"}
 ZH = {"Japan": "日本", "United Kingdom": "英國", "China, Mainland": "中國", "Belgium": "比利時", "Luxembourg": "盧森堡",
       "Cayman Islands": "開曼群島", "Canada": "加拿大", "Switzerland": "瑞士", "Taiwan": "台灣", "Ireland": "愛爾蘭",
@@ -91,7 +95,7 @@ def parse_tic(text: str) -> Dict[str, Dict[str, float]]:
 
 async def refresh(force: bool = False) -> Dict:
     d = load()
-    if not force and time.time() - float(d.get("ts", 0)) < TTL and d.get("mof") and d.get("tic"):
+    if not force and time.time() - float(d.get("ts", 0)) < TTL and d.get("mof") and d.get("tic") and d.get("mmf"):
         return d
     try:
         raw = await http.get(MOF, kind="bytes", headers=UA, timeout=60, retries=1)
@@ -109,6 +113,15 @@ async def refresh(force: bool = False) -> Dict:
             d["tic"] = arc
     except Exception as e:  # noqa: BLE001
         log.info("TIC holders failed: %s", e)
+    try:
+        mm = {}
+        for k, mn in MMF_IDS.items():
+            rows = await http.get(OFR.format(mn), headers=UA, timeout=60, retries=1)
+            mm[k] = [[str(a)[:7], float(b)] for a, b in rows or [] if b is not None]
+        if len(mm.get("tot") or []) > 24:
+            d["mmf"] = mm
+    except Exception as e:  # noqa: BLE001
+        log.info("OFR money market funds failed: %s", e)
     d["ts"] = time.time()
     _save(d)
     return d
@@ -137,6 +150,21 @@ def mof_view(d: Dict) -> Optional[Dict]:
             "pct5": float((s5[:-1] < s5[-1]).mean() * 100), "sum13": float(v[-13:].sum()), "sum52": float(v[-52:].sum()),
             "run": run, "weeks": [[r[0], round(r[2] / 1e4, 2)] for r in rows[-8:]],
             "jgb_in13": float(np.sum(jp[-13:]) / 1e4) if len(jp) >= 13 else None}
+
+
+def mmf_view(d: Dict) -> Optional[Dict]:
+    """Money-market fund assets: level, 1- and 3-month change, where the 3-month change ranks since 2010, Treasury share."""
+    m = d.get("mmf") or {}
+    tot = [r for r in m.get("tot") or [] if r[1]]
+    if len(tot) < 36:
+        return None
+    v = np.array([r[1] for r in tot])
+    c3 = v[3:] / v[:-3] - 1
+    tsy = dict((r[0], r[1]) for r in m.get("tsy") or [])
+    last = tot[-1][0]
+    return {"month": last, "since": tot[0][0][:4], "now": float(v[-1]) / 1e12, "chg1": float(v[-1] / v[-2] - 1) * 100,
+            "chg3": float(c3[-1]) * 100, "pct3": float((c3[:-1] < c3[-1]).mean() * 100), "chg12": float(v[-1] / v[-13] - 1) * 100,
+            "tsy_share": float(tsy[last] / v[-1] * 100) if tsy.get(last) else None, "high": bool(v[-1] >= v.max())}
 
 
 def tic_view(d: Dict, top: int = 8) -> Optional[Dict]:
