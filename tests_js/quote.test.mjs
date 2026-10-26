@@ -1,6 +1,6 @@
 // node tests_js/quote.test.mjs — offline checks with a fake upstream; add LIVE=1 to also hit Yahoo for real.
 import assert from "node:assert/strict";
-import { one, parse, onRequestGet, rsi, tech, volRatio, sdAll } from "../functions/api/quote.js";
+import { one, parse, onRequestGet, rsi, tech, volRatio, sdAll, todayOpen } from "../functions/api/quote.js";
 
 assert.deepEqual(parse("^vix, ^VIX ,bad sym,<x>,2330.TW"), ["^VIX", "2330.TW"]);
 assert.equal(parse(Array.from({ length: 40 }, (_, i) => "A" + i).join(",")).length, 25);
@@ -39,6 +39,8 @@ assert.deepEqual(volRatio(vts.slice(0, 4), vv.slice(0, 4), vc.slice(0, 4), 0), {
 const fakeVol = async () => new Response(JSON.stringify({ chart: { result: [{ meta: { regularMarketPrice: 9, regularMarketTime: vts.at(-1), chartPreviousClose: 1, shortName: "V" },
   timestamp: vts, indicators: { quote: [{ volume: vv, close: vc }] } }] } }));
 const qv = await one("V", fakeVol, false, true);
+assert.equal(todayOpen({ timestamp: vts, indicators: { quote: [{ open: vts.map((_, i) => i + 1) }] }, meta: { gmtoffset: 0 } }), 9);   // first bar of day 3
+assert.equal(todayOpen({ timestamp: [], indicators: {} }), null);
 assert.equal(qv.volx, 2); assert.equal(qv.prev, 11); assert.ok(Math.abs(qv.chg - (9 / 11 - 1) * 100) < 1e-9);
 
 const bad = await onRequestGet({ request: new Request("https://x/api/quote?s=<<") });

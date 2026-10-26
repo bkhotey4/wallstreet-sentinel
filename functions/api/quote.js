@@ -86,6 +86,15 @@ export function volRatio(ts, vols, closes, off) {
   return out;
 }
 
+// first trade of the latest exchange-local day in the 5-minute bars (the session's opening price; null if none yet)
+export function todayOpen(res) {
+  const ts = res.timestamp || [], o = ((((res.indicators || {}).quote || [])[0]) || {}).open || [], off = (res.meta || {}).gmtoffset || 0;
+  if (!ts.length) return null;
+  const day = (s) => Math.floor((s + off) / 86400), last = day(ts[ts.length - 1]);
+  for (let i = 0; i < ts.length; i++) if (day(ts[i]) === last && typeof o[i] === "number") return o[i];
+  return null;
+}
+
 export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
   const q = full ? "range=1y&interval=1d&events=div" : vol ? "range=5d&interval=5m" : "range=1d&interval=5m";
   const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?${q}`, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -95,6 +104,7 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
   if (!m || typeof m.regularMarketPrice !== "number") return null;
   let prev = m.previousClose ?? m.chartPreviousClose;
   const out = { name: m.shortName || m.longName || sym, cur: m.currency || "", t: m.regularMarketTime ?? null, price: m.regularMarketPrice };
+  if (!full) out.open = todayOpen(res);
   if (full) {
     const closes = (((res.indicators || {}).quote || [])[0] || {}).close || [];
     // previous close = last daily bar from an earlier exchange-local day than the latest trade (chartPreviousClose is a year ago)
