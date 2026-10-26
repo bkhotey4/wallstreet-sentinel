@@ -137,10 +137,23 @@ def _bottom(eng, out: List[Dict], now: datetime) -> None:
                 "detail": "極端恐慌的歷史統計，不是投資建議；訊號出現後市場常會再跌一段"})
 
 
+def _stability(eng, out: List[Dict], now: datetime) -> None:
+    """金融穩定監測: short-term funding (SOFR vs reserve rate), Treasury refunding wording, the basis trade, AI capex —
+    the same events the Discord bot sends, now under the bell too (monthly coverage audit left to its own page)."""
+    from ..data import stability as ST
+    v = getattr(eng, "_stability_view", None) or ST.view(eng)
+    for key, sev, title, detail in ST.alerts(v, now.strftime("%Y-%m-%d")):
+        if key.startswith("stab:cover:"):
+            continue
+        out.append({"key": key, "lv": "alert" if "WARNING" in sev else "watch", "tab": "stability",
+                    "zh": f"🏦 {title}", "en": title, "detail": (detail or "")[:240]})
+
+
 def build(eng) -> Dict:
     now = datetime.now(timezone.utc)
     out: List[Dict] = []
-    for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now), lambda: _bottom(eng, out, now)):
+    for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now), lambda: _bottom(eng, out, now),
+              lambda: _stability(eng, out, now)):
         try:
             f()
         except Exception:  # noqa: BLE001  (one broken rule must not hide the others)

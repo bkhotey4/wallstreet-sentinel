@@ -104,6 +104,14 @@ def test_web_alerts():
     print("ok web alerts")
 
 
+def test_stability_under_bell():
+    eng = types.SimpleNamespace(_stability_view={"funding": {"state": "緊繃", "date": "2026-10-23", "sofr": 4.4, "spread": 12.0, "read": "資金緊"},
+                                                 "coverage": {"updated": "2026-10-01", "gaps": [{"risk": "x"}]}})
+    out = []
+    WA._stability(eng, out, pd.Timestamp("2026-10-26", tz="UTC").to_pydatetime())
+    assert len(out) == 1 and out[0]["lv"] == "alert" and out[0]["tab"] == "stability" and "短期資金市場緊繃" in out[0]["zh"]
+
+
 def test_stale_quote():
     """台股 case 2026-10-22: Yahoo throttled, the day-late TWSE file gave 10-21 (+1.28%) while history had 10-22 (−1.81%)."""
     from wsb.data.market import MarketData
@@ -181,4 +189,5 @@ if __name__ == "__main__":
     test_stale_quote()
     test_vix_explain()
     test_web_alerts()
+    test_stability_under_bell()
     print("ALL OK")

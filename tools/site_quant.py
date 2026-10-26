@@ -206,11 +206,11 @@ def sec_premarket(eng) -> str:
     tw_from = _dt.fromtimestamp(d["tw_open"] - lead * 60, _tz).strftime("%m-%d %H:%M")
     note = T("不預測漲跌方向：這裡只整理隔夜變化、今天的時程，以及市場自己定價的波動範圍，並公開這個範圍過去準不準。"
              "「今天的重點」是固定規則對這些數字的解讀（例如跌幅和該指數平常單日波動相比、股債金同步的組合代表什麼），🔴 需要留意、🟡 值得注意、🔵 背景。"
-             f"開盤前 {lead} 分鐘自動展開——下一次：美股 {us_from}、台股 {tw_from}（台北時間，已排除週末與交易所休市日，美國夏令／冬令時間自動換算）；"
-             f"經濟數據列出重要度 {'★' * int(d.get('min_imp', 2))} 以上。其他時間可以點開。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
+             f"開盤前 {lead} 分鐘起只顯示即將開盤的市場——下一次：美股 {us_from}、台股 {tw_from}（台北時間，已排除週末與交易所休市日，美國夏令／冬令時間自動換算）；"
+             f"經濟數據列出重要度 {'★' * int(d.get('min_imp', 2))} 以上；其他時間美股、台股兩邊都顯示。資料每約 20 分鐘更新，期貨等報價約延遲 15 分鐘。",
              "No direction call — overnight changes, today’s schedule and the range the market prices, with that range’s track record. "
-             f"Opens {lead} min before each open (next: US {us_from}, Taiwan {tw_from} Taipei; weekends and exchange holidays skipped).")
-    body = (f'<details class="pm" id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}" data-lead="{lead}" data-after="{int(d.get("after_min", 30))}"><summary><b id="pmhead">{T("開盤前 30 秒", "30 seconds before the open")}</b> '
+             f"From {lead} min before each open only that market is shown (next: US {us_from}, Taiwan {tw_from} Taipei; weekends and exchange holidays skipped).")
+    body = (f'<details class="pm" open id="pmbox" data-us="{d["us_open"]}" data-tw="{d["tw_open"]}" data-lead="{lead}" data-after="{int(d.get("after_min", 30))}"><summary><b id="pmhead">{T("盤前整理", "Pre-open roundup")}</b> '
             f'<span class="muted small" id="pmcount"></span></summary>{us}{tw}'
             f'<div class="pmp" id="pmmine" style="display:none"></div><p class="note">{note}　{T("更新", "Built")} {esc(d["built"])}</p></details>')
     return f'<section class="card wide pmcard">{body}</section>'

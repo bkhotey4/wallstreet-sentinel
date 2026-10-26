@@ -2,6 +2,7 @@
 GitHub Pages 版沒有 /api/quote：第一次請求失敗就安靜停用，頁面維持整點建置的數字。模型結論仍每小時更新，即時層只顯示原始數字與簡單門檻。"""
 from __future__ import annotations
 
+import html
 import json
 
 from tools.sitekit import T, card
@@ -26,14 +27,81 @@ RULES = [
     {"k": "hyg1", "sym": "HYG", "f": "chg", "op": "<=", "v": -1, "dg": 1,
      "zh": "高收益債 ETF 單日跌超過 1%（信用市場緊張）", "en": "HYG down > 1% today (credit stress)"},
 ]
-EXTRA = sorted({r["sym"] for r in RULES} | {r["den"] for r in RULES if r.get("den")})
+# 異常波動掃描: every market here is judged against its OWN normal daily move (1-year standard deviation, computed at
+# each hourly build); |today| >= 2x normal -> yellow, >= 3x -> red.  Index futures trade overnight, so they cover pre-market.
+ANOM = [("ES=F", "標普期貨", "S&P futures"), ("NQ=F", "那指期貨", "Nasdaq futures"), ("^GSPC", "標普 500", "S&P 500"), ("^NDX", "那指 100", "Nasdaq 100"),
+        ("^SOX", "費城半導體", "SOX"), ("^TWII", "台股加權", "TAIEX"), ("^N225", "日經 225", "Nikkei"), ("^KS11", "韓國股市", "KOSPI"),
+        ("^VIX", "VIX", "VIX"), ("^TNX", "美債 10 年殖利率", "10Y yield"), ("DX-Y.NYB", "美元指數", "Dollar index"), ("JPY=X", "美元兌日圓", "USD/JPY"),
+        ("TWD=X", "美元兌台幣", "USD/TWD"), ("GC=F", "黃金", "Gold"), ("BZ=F", "布蘭特原油", "Brent"), ("BTC-USD", "比特幣", "Bitcoin"), ("HYG", "高收益債 ETF", "HYG")]
+ANOM_Y, ANOM_R = 2.0, 3.0
+# 大量賣壓: volume so far today vs the same time of day on the previous 4 days (5-minute bars), with the price direction
+VOLS = [("SPY", "標普 ETF（SPY）", "SPY", "down"), ("QQQ", "那指 ETF（QQQ）", "QQQ", "down"),
+        ("SQQQ", "放空那指 3 倍 ETF（SQQQ）", "SQQQ (3x short Nasdaq)", "up"), ("SOXS", "放空半導體 3 倍 ETF（SOXS）", "SOXS (3x short chips)", "up")]
+VOL_X = 2.0
+# 風向球 baskets (second request; their normal move comes from /api/quote full=1 = one year of daily closes, fetched once
+# per page load): private credit, regional banks, and the debt-funded AI data-center names
+BASKETS = [("bizd", "私募信貸 BDC ETF（BIZD）", "Private-credit BDCs (BIZD)", ["BIZD"]),
+           ("kre", "區域銀行 ETF（KRE）", "Regional banks (KRE)", ["KRE"]),
+           ("neo", "AI 算力中心股（CRWV／NBIS／APLD／IREN 平均）", "AI data-center stocks (avg)", ["CRWV", "NBIS", "APLD", "IREN"])]
+# 組合訊號: patterns across markets, each leg measured in "times its own normal daily move" (z).  One market moving a lot
+# can be noise; several moving together in a known stress pattern is the classic transmission.  (key, zh, en, level 2=red
+# 1=yellow, meaning, legs [(symbol or basket key, ">=" / "<=", z)])
+COMBOS = [
+    ("liq", "股、債、金同時下跌", "Stocks, bonds and gold all down", 2, "資金被抽緊：大家賣掉所有能賣的東西換現金（例如追繳保證金），2020 年 3 月就是這樣",
+     [("^GSPC", "<=", -1.5), ("^TNX", ">=", 1.5), ("GC=F", "<=", -1.5)]),
+    ("carry", "日圓急升＋日股急跌", "Yen surge + Nikkei drop", 2, "日圓套利交易平倉：借便宜日圓去買海外資產的錢被迫收回，2024 年 8 月 5 日就是這樣",
+     [("JPY=X", "<=", -2), ("^N225", "<=", -1.5)]),
+    ("ai_credit", "AI 算力中心股＋私募信貸一起跌", "AI data-center stocks + private credit down", 2, "靠借錢買晶片蓋機房的公司和借錢給它們的私募信貸同時被賣：AI 借貸鏈承壓",
+     [("neo", "<=", -1.5), ("bizd", "<=", -1.5)]),
+    ("credit_first", "信用先跌、股市還沒反應", "Credit falling before stocks", 1, "高收益債（垃圾債）先被賣、股市還平靜：歷史上信用市場常比股市早一步反應",
+     [("HYG", "<=", -2), ("^GSPC", ">=", -1)]),
+    ("hedge", "VIX 大漲但股市沒跌", "VIX jumps, stocks flat", 1, "有人在買保險（選擇權避險）：大資金預期接下來會有波動",
+     [("^VIX", ">=", 2), ("^GSPC", ">=", -0.5)]),
+    ("semi", "半導體領跌", "Chips leading the drop", 1, "費城半導體跌得比大盤兇很多：AI 與科技股是這波的壓力來源，台股和韓股通常會跟著受影響",
+     [("^SOX", "<=", -2), ("^GSPC", ">=", -1)]),
+    ("tw_out", "新台幣貶值＋台股下跌", "TWD weaker + TAIEX down", 1, "外資在賣台股並把錢匯出（新台幣走弱代表美元需求大）",
+     [("TWD=X", ">=", 1.5), ("^TWII", "<=", -1.5)]),
+    ("usd_em", "美元急升＋韓股下跌", "Dollar spike + KOSPI down", 1, "強勢美元把資金從新興市場吸回美國，亞洲出口國首當其衝",
+     [("DX-Y.NYB", ">=", 2), ("^KS11", "<=", -1.5)]),
+    ("banks", "區域銀行急跌", "Regional banks sliding", 1, "美國中小銀行股被賣：存款流失或商業不動產壞帳的擔心，2023 年 3 月矽谷銀行事件前後就是這樣",
+     [("kre", "<=", -2)]),
+]
+EXTRA = sorted({r["sym"] for r in RULES} | {r["den"] for r in RULES if r.get("den")} | {a[0] for a in ANOM} | {v[0] for v in VOLS})
 
 
-def bar_html() -> str:
+def sigmas(eng) -> dict:
+    """{symbol: one-year standard deviation of its daily % change} from the hourly price history (empty if unavailable)."""
+    out = {}
+    try:
+        h = eng.market.history
+    except Exception:  # noqa: BLE001
+        return out
+    if h is None or not hasattr(h, "columns"):
+        return out
+    for sym, _z, _e in ANOM:
+        if sym not in h.columns:
+            continue
+        r = h[sym].dropna()
+        r = r[r > 0].pct_change().dropna().iloc[-252:] * 100
+        if len(r) >= 120 and r.std() > 0:
+            out[sym] = round(float(r.std()), 4)
+    return out
+
+
+def bar_html(eng=None) -> str:
     """Status line + live threshold lights; hidden until the first live quote arrives."""
-    return ('<div class="lqbar" id="lqbar" hidden><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
-            '<div id="lqal" class="lqal"></div>'
-            f'<p class="lqnote">{T("即時門檻是簡單提醒，不是預測；漲跌幅以各市場最近一個交易日計。模型判斷（AI 判斷、泡沫分組等）仍每小時更新。報價：Yahoo Finance，約有數分鐘延遲。", "Simple thresholds, not forecasts; model verdicts still update hourly. Quotes: Yahoo Finance, may be delayed.")}</p></div>')
+    sig = html.escape(json.dumps(sigmas(eng) if eng is not None else {}), quote=True)
+    note = ("三層即時燈號，每分鐘自動檢查：①固定門檻（上面第一排）；②異常波動掃描：17 個市場（含盤前就在交易的標普／那指期貨），"
+            "加上三個風向球（私募信貸 BDC、區域銀行、靠借錢蓋 AI 算力中心的公司），各自和自己過去一年的平常單日波動比，"
+            "再看幾個市場有沒有一起出現已知的壓力組合（股債金同跌、日圓套利平倉、信用先跌、AI 借貸鏈等 9 組，紅色的組合代表歷史上大跌時出現過的型態），"
+            "超過平常 2 倍亮黃燈、3 倍亮紅燈；③大量賣壓：SPY、QQQ 成交量是前 4 天同一時段的 2 倍以上而且下跌，或放空型 ETF（SQQQ、SOXS）成交量暴增而且上漲。"
+            "這是提醒，不是預測；誰在放空的即時明細沒有免費公開資料，所以用成交量與放空型 ETF 代替。漲跌幅以各市場最近一個交易日計，"
+            "模型判斷（AI 判斷、泡沫分組等）仍每小時更新。報價：Yahoo Finance，約有數分鐘延遲。")
+    en = ("Three live layers, checked every minute: fixed thresholds; each market vs its own normal daily move (2x yellow, 3x red, "
+          "index futures included for pre-market); SPY/QQQ volume vs the same time on prior days, and short-ETF volume. Reminders, not forecasts.")
+    return (f'<div class="lqbar" id="lqbar" hidden data-sig="{sig}"><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
+            '<div id="lqal" class="lqal"></div><div id="lqan" class="lqal"></div>'
+            f'<details class="lqd"><summary class="lqnote">{T("燈號規則", "Rules")}</summary><p class="lqnote">{T(note, en)}</p></details></div>')
 
 
 def sec_lookup(eng) -> str:
@@ -65,19 +133,20 @@ CSS = (".lqbar{margin:8px 0 4px;padding:9px 12px;border:1px solid var(--bd);bord
        ".lqhead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}.lqst{font-size:12px;color:var(--mu)}.lqst.on{color:var(--up)}"
        ".lqal{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.lqchip{font-size:12.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--bd)}"
        ".lqchip.hit{border-color:var(--dn);color:var(--dn);font-weight:600}.lqchip.ok{color:var(--mu)}"
+       ".lqchip.warn{border-color:#d97706;color:#b45309;font-weight:600}.lqd summary{cursor:pointer}"
        ".lqnote{margin:4px 0 0;font-size:11.5px;color:var(--mu)}.tile .asof.lv{color:var(--up)}"
        ".wlt td,.wlt th{white-space:nowrap}.wlx{background:none;border:0;color:var(--mu);cursor:pointer;font-size:14px}.wlx:hover{color:var(--dn)}"
        ".lqf{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.lqin{flex:1;min-width:0;max-width:260px;padding:6px 10px;border:1px solid var(--bd);"
        "border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px}.lqout{font-size:15px;margin:6px 0}.lqoff{font-size:12.5px;color:var(--mu)}")
 
 _JS = r"""
-(function(){var R=__RULES__,EX=__EXTRA__,POLL=__POLL__*1000;
+(function(){var R=__RULES__,EX=__EXTRA__,POLL=__POLL__*1000,AN=__ANOM__,VS=__VOLS__,BK=__BASKETS__,CB=__COMBOS__,AY=__AY__,AR=__AR__,VX=__VX__;
  var bar=document.getElementById('lqbar');var tiles=[].slice.call(document.querySelectorAll('.tile[data-lq]'));
  var want={};tiles.forEach(function(t){want[t.getAttribute('data-lq')]=1;});EX.forEach(function(s){want[s]=1;});
  var dead=false,lastOk=0,data={};function en(){return document.documentElement.lang==='en';}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){if(x==null||isNaN(x))return '—';if(Math.abs(x)<0.5*Math.pow(10,-d))x=0;return (x>0?'+':x<0?'':'')+f(x,d);}
- function api(list,full){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
+ function api(list,full,vol){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':'')+(vol?'&vol='+encodeURIComponent(vol):''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
  function hhmm(t){if(!t)return '';var d=new Date(t*1000),p=function(n){return ('0'+n).slice(-2);};var tm=p(d.getHours())+':'+p(d.getMinutes());
    return d.toDateString()===new Date().toDateString()?tm:(d.getMonth()+1)+'/'+d.getDate()+' '+tm;}
  function paintTiles(q){tiles.forEach(function(t){var s=t.getAttribute('data-lq'),x=q[s];if(!x)return;var dg=+t.getAttribute('data-dg')||0;
@@ -86,15 +155,42 @@ _JS = r"""
    if(a){a.textContent=hhmm(x.t);a.classList.add('lv');}});}
  function val(r,q){var x=q[r.sym];if(!x)return null;if(r.f==='lvl')return x.price;if(r.f==='chg')return x.chg;
    if(r.f==='ratio'){var y=q[r.den];return y&&y.price?x.price/y.price:null;}return null;}
+ var SIG={};try{SIG=JSON.parse((bar&&bar.getAttribute('data-sig'))||'{}');}catch(e){}
+ var SD2={},BKS=[];BK.forEach(function(b){b[3].forEach(function(s){if(BKS.indexOf(s)<0)BKS.push(s);});});
+ function scan(q){var out=[];AN.forEach(function(a){var x=q[a[0]],sd=SIG[a[0]];if(!x||x.chg==null||!sd)return;var z=x.chg/sd;
+   out.push({s:a[0],zh:a[1],en:a[2],chg:x.chg,z:z,lv:Math.abs(z)>=AR?2:Math.abs(z)>=AY?1:0});});
+   BK.forEach(function(b){var c=0,d=0,n=0;b[3].forEach(function(s){var x=q[s];if(x&&x.chg!=null&&SD2[s]){c+=x.chg;d+=SD2[s];n++;}});
+   if(!n)return;c/=n;d/=n;var z=c/d;out.push({s:b[0],zh:b[1],en:b[2],chg:c,z:z,lv:Math.abs(z)>=AR?2:Math.abs(z)>=AY?1:0});});
+   VS.forEach(function(v){var x=q[v[0]];if(!x||x.volx==null||x.chg==null)return;var dir=v[3]==='down'?x.chg<0:x.chg>0;
+   out.push({s:v[0],zh:v[1],en:v[2],chg:x.chg,vx:x.volx,lv:x.volx>=VX&&dir?(x.volx>=VX*1.5?2:1):0});});return out;}
+ function combos(sc){var z={};sc.forEach(function(o){if(o.z!=null)z[o.s]=o.z;});var out=[];
+   CB.forEach(function(c){var ok=c[5].every(function(l){var v=z[l[0]];return v!=null&&(l[1]==='>='?v>=l[2]:v<=l[2]);});
+   if(ok)out.push({s:'combo:'+c[0],zh:c[1],en:c[2],lv:c[3],why:c[4],combo:1});});return out;}
+ function paintScan(q){var el=document.getElementById('lqan');if(!el)return [];var sc0=scan(q),cb=combos(sc0),sc=sc0.concat(cb),hits=sc.filter(function(o){return o.lv>0;}),h='';
+   hits.sort(function(a,b){return b.lv-a.lv;}).forEach(function(o){var t=o.combo?(en()?'Pattern: '+o.en:'組合訊號：'+o.zh+'——'+o.why):o.vx!=null?(en()?o.en+': volume '+f(o.vx,1)+'x usual, '+sg(o.chg,2)+'%':o.zh+'：成交量是平常同時段的 '+f(o.vx,1)+' 倍，'+sg(o.chg,2)+'%')
+     :(en()?o.en+' '+sg(o.chg,2)+'% ('+f(Math.abs(o.z),1)+'x normal)':o.zh+(o.chg<0?' 異常大跌 ':' 異常大漲 ')+sg(o.chg,2)+'%（平常的 '+f(Math.abs(o.z),1)+' 倍）');
+     h+='<span class="lqchip '+(o.lv>=2?'hit':'warn')+'">'+(o.lv>=2?'● ':'▲ ')+t+'</span>';});
+   var n=sc.filter(function(o){return o.z!=null;}),top=n.slice().sort(function(a,b){return Math.abs(b.z)-Math.abs(a.z);})[0],
+     vm=sc.filter(function(o){return o.vx!=null;}).sort(function(a,b){return b.vx-a.vx;})[0];
+   if(!hits.length&&n.length)h='<span class="lqchip ok">○ '+(en()?'Unusual-move scan: '+n.length+' markets all within 2x normal'+(top?' (largest: '+top.en+' '+f(Math.abs(top.z),1)+'x)':'')
+     :'異常波動掃描：'+n.length+' 個市場都在平常 2 倍以內'+(top?'（最大：'+top.zh+' '+sg(top.chg,2)+'%，平常的 '+f(Math.abs(top.z),1)+' 倍）':''))+'</span>'
+     +'<span class="lqchip ok">○ '+(en()?'Cross-market patterns: none of '+CB.length:'組合訊號：'+CB.length+' 組壓力型態都沒出現')+'</span>'
+     +(vm?'<span class="lqchip ok">○ '+(en()?'Volume: no heavy selling (max '+vm.en+' '+f(vm.vx,1)+'x)':'大量賣壓：未出現（成交量最高 '+vm.zh+' 平常的 '+f(vm.vx,1)+' 倍）')+'</span>':'');
+   el.innerHTML=h;return hits;}
  function paintRules(q){var hits=[],h='';R.forEach(function(r){var v=val(r,q);if(v==null)return;var hit=r.op==='>='?v>=r.v:v<=r.v;if(hit)hits.push(r);
    h+='<span class="lqchip '+(hit?'hit':'ok')+'">'+(hit?'● ':'○ ')+(en()?r.en:r.zh)+'：'+(r.f==='chg'?sg(v,r.dg)+'%':f(v,r.dg))+'</span>';});
-   document.getElementById('lqal').innerHTML=h;var one=document.getElementById('lqone');
-   one.textContent=hits.length?(en()?'Live: '+hits.length+' threshold(s) hit':'一句話看懂（即時）：觸發 '+hits.length+' 項急跌／恐慌門檻，紅色那幾項')
-     :(en()?'Live: no stress threshold hit':'一句話看懂（即時）：目前沒有觸發任何急跌／恐慌門檻');}
+   document.getElementById('lqal').innerHTML=h;var one=document.getElementById('lqone');var sh=paintScan(q),red=sh.filter(function(o){return o.lv>=2;}).length,yel=sh.length-red;
+   var all=hits.length+red;
+   one.textContent=all?(en()?'Live: '+all+' alert(s) — see the red items':'一句話看懂（即時）：'+all+' 項亮紅燈'+(yel?'、'+yel+' 項黃燈':'')+'，看紅色那幾項')
+     :yel?(en()?'Live: '+yel+' unusual move(s) worth watching':'一句話看懂（即時）：沒有紅燈，但有 '+yel+' 項波動比平常大（黃燈）')
+     :(en()?'Live: no alert — fixed thresholds, unusual-move scan and volume all normal':'一句話看懂（即時）：目前沒有亮燈，固定門檻、異常波動、成交量三層檢查都正常');}
  function ago(){var st=document.getElementById('lqst');if(!st||!lastOk)return;var s=Math.round((Date.now()-lastOk)/1000);
    st.className='lqst on';st.textContent='● '+(en()?'live · updated '+(s<60?s+'s':Math.round(s/60)+'m')+' ago':'即時 · '+(s<60?s+' 秒前':Math.round(s/60)+' 分鐘前')+'更新');}
  function stale(){var st=document.getElementById('lqst');if(st&&lastOk){st.className='lqst';st.textContent=en()?'live paused — showing hourly data':'即時暫停，顯示整點資料';}}
- function pull(){if(dead||document.hidden)return;api(Object.keys(want).join(',')).then(function(d){var q=d.q||{};if(!Object.keys(q).length){stale();return;}data=q;lastOk=Date.now();
+ if(BKS.length)setTimeout(function(){if(!dead)api(BKS.join(','),1).then(function(d){var q=d.q||{};Object.keys(q).forEach(function(s){if(q[s].sd1y)SD2[s]=q[s].sd1y;});if(lastOk)paintRules(data);}).catch(function(){});},800);
+ function pull(){if(dead||document.hidden)return;Promise.all([api(Object.keys(want).join(','),0,VS.map(function(v){return v[0];}).join(',')),
+   BKS.length?api(BKS.join(',')).catch(function(){return {q:{}};}):Promise.resolve({q:{}})]).then(function(r){var d=r[0];var q=d.q||{},q2=r[1].q||{};
+   Object.keys(q2).forEach(function(s){if(!q[s])q[s]=q2[s];});if(!Object.keys(q).length){stale();return;}data=q;lastOk=Date.now();
    if(bar)bar.hidden=false;var off=document.getElementById('lqoff');if(off)off.hidden=true;paintTiles(data);paintRules(data);ago();}).catch(function(){if(!dead)stale();});}
  pull();setInterval(pull,POLL);setInterval(ago,5000);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-lastOk>POLL)pull();});
  var lb=document.getElementById('langBtn');if(lb)lb.addEventListener('click',function(){setTimeout(function(){if(lastOk){paintRules(data);ago();}},0);});
@@ -133,4 +229,8 @@ _JS = r"""
   setTimeout(wdraw,1500);}
 })();
 """
-JS = _JS.replace("__RULES__", json.dumps(RULES, ensure_ascii=False)).replace("__EXTRA__", json.dumps(EXTRA)).replace("__POLL__", str(POLL_S))
+JS = (_JS.replace("__RULES__", json.dumps(RULES, ensure_ascii=False)).replace("__EXTRA__", json.dumps(EXTRA)).replace("__POLL__", str(POLL_S))
+      .replace("__ANOM__", json.dumps(ANOM, ensure_ascii=False)).replace("__VOLS__", json.dumps(VOLS, ensure_ascii=False))
+      .replace("__BASKETS__", json.dumps(BASKETS, ensure_ascii=False))
+      .replace("__COMBOS__", json.dumps(COMBOS, ensure_ascii=False))
+      .replace("__AY__", str(ANOM_Y)).replace("__AR__", str(ANOM_R)).replace("__VX__", str(VOL_X)))

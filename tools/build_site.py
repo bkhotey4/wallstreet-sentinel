@@ -48,6 +48,7 @@ from tools import site_entry as SEN
 from tools import site_cooldown as SCD
 from tools import site_marks as SMK
 from tools import site_bonds as SBD
+from tools import site_twmacro as STW
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -220,7 +221,7 @@ def sec_strip(eng) -> str:
         asof = q.get("asof") if q else s.dropna().index[-1].strftime("%Y-%m-%d")
         tiles.append(f'<div class="tile" data-lq="{esc(t)}" data-dg="{dg}" title="{esc(asof)}"><div class="tl">{T(zh, ASSET_EN.get(t, t))}<span class="asof">{esc(asof[5:])}</span></div>'
                      f'<div class="tv">{num(price, dg)}</div><div class="tc {cls(chg)}">{num(chg, 2, sign=True, pct=True)}</div>{spark(s)}</div>')
-    return f'<div class="strip" aria-label="market strip">{"".join(tiles)}</div>' + SDU.foi_badge(eng) + SLV.bar_html()
+    return f'<div class="strip" aria-label="market strip">{"".join(tiles)}</div>' + SDU.foi_badge(eng) + SLV.bar_html(eng)
 
 
 def sec_ssi(eng) -> str:
@@ -1226,7 +1227,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
   var cand=[[us,zh()?'美股':'US'],[tw,zh()?'台股':'Taiwan']].filter(function(a){return a[0]>now;}).sort(function(a,c){return a[0]-c[0];})[0];
   var c=document.getElementById('pmcount');if(!c)return;
   if(on)c.textContent=zh()?'— '+(inUS?'美股':'台股')+'開盤前重點':'— '+(inUS?'US':'Taiwan')+' pre-open';
-  else if(cand)c.textContent=zh()?'— 下一個開盤：'+cand[1]+' '+hm(cand[0])+'（還有 '+fmt(cand[0]-now)+'）・點開看隔夜變化':'— next open: '+cand[1]+' in '+fmt(cand[0]-now);}
+  else if(cand)c.textContent=zh()?'— 下一個開盤：'+cand[1]+' '+hm(cand[0])+'（還有 '+fmt(cand[0]-now)+'）':'— next open: '+cand[1]+' in '+fmt(cand[0]-now);}
  tick();setInterval(tick,60000);})();
 var dp=null,ib=document.getElementById('installBtn');window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ib)ib.classList.add('show');});
 if(ib)ib.addEventListener('click',function(){if(dp){dp.prompt();dp=null;ib.classList.remove('show');}});
@@ -1287,8 +1288,9 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SEV.sec_event_clock, SQ.sec_premarket, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
+            ("premarket", "開盤前 30 秒", "30s before the open", [SQ.sec_premarket]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
@@ -1319,7 +1321,13 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [SEA.sec_asia, sec_markets]),
+            ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
+            ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
+            ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
+            ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ]),
+            ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money]),
+            ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),

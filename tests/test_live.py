@@ -20,6 +20,27 @@ def test_rules_and_js():
     assert 'id="lqbar" hidden' in SL.bar_html()
 
 
+def test_anomaly_scan():
+    import json
+    import types
+    import numpy as np
+    import pandas as pd
+    rng = np.random.default_rng(0)
+    idx = pd.bdate_range("2025-06-01", periods=300)
+    h = pd.DataFrame({"^GSPC": 100 * np.cumprod(1 + rng.normal(0, 0.01, 300)), "JPY=X": [150.0] * 300}, index=idx)
+    sig = SL.sigmas(types.SimpleNamespace(market=types.SimpleNamespace(history=h)))
+    assert 0.8 < sig["^GSPC"] < 1.2 and "JPY=X" not in sig            # flat series: no normal move to compare against
+    assert SL.sigmas(None) == {} and len(SL.EXTRA) <= 25                 # one /api/quote request carries every symbol
+    bar = SL.bar_html(types.SimpleNamespace(market=types.SimpleNamespace(history=h)))
+    assert "data-sig=" in bar and json.dumps(sig).replace('"', "&quot;") in bar and 'id="lqan"' in bar
+    assert all(a[0] in SL.EXTRA for a in SL.ANOM) and all(v[3] in ("up", "down") for v in SL.VOLS)
+    keys = {a[0] for a in SL.ANOM} | {b[0] for b in SL.BASKETS}
+    for k, zh, en, lv, why, legs in SL.COMBOS:                          # every leg points at a market the scan measures
+        assert lv in (1, 2) and zh and en and why and legs and all(s in keys and op in (">=", "<=") for s, op, _z in legs), k
+    assert len({c[0] for c in SL.COMBOS}) == len(SL.COMBOS) and "組合訊號" in SL.JS and "sd1y" in SL.JS
+    assert "ES=F" in SL.JS and "&vol=" in SL.JS and "異常波動掃描" in SL.JS and "大量賣壓" in SL.JS
+
+
 def test_lookup_card():
     h = SL.sec_lookup(None)
     assert "一句話看懂" in h and 'id="lqf"' in h and "pages.dev" in h and "不是投資建議" in h

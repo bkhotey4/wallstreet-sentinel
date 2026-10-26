@@ -63,3 +63,4 @@ websockets==16.1.1
 yarl==1.25.1
 yfinance==1.7.0
 holidays==0.107
+xlrd==2.0.2

@@ -109,6 +109,17 @@ def _bondflows():
         return None, None
 
 
+def _twmacro():
+    """Taiwan macro (central bank / NDC / TPEx): when fetched and the newest TPEx curve date."""
+    try:
+        from wsb.data import twmacro as TM
+        d = TM.load()
+        daily = sorted(d.get("daily") or {})
+        return d.get("ts"), (daily[-1] if daily else None)
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 def _fund_ts():
     try:
         from wsb.data import fundamentals as F
@@ -285,6 +296,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "jgb": ("日本財務省公債殖利率", "MOF JGB yields", lambda e: (_ts(_g(e, "global_yields", "ts")),
             _d(e.global_yields.jgb.index[-1]) if getattr(getattr(e, "global_yields", None), "jgb", None) is not None and len(e.global_yields.jgb) else None), 5),
     "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 14),
+    "twmacro": ("台灣央行／國發會／櫃買中心", "Taiwan CBC / NDC / TPEx", lambda e: (_ts(_twmacro()[0]), _twmacro()[1]), 7),
     "fullmkt": ("全市場股價與估值", "Full-market scan", lambda e: (_ts(_fm()[0]), _fm()[1]), 4),
     "stocks": ("個股股價", "Stock prices", lambda e: (_ts(_g(e, "stockprices", "ts")), _last(_g(e, "stockprices", "close"))), 4),
     "earnings": ("財報資料", "Earnings data", lambda e: (_ts(_g(e, "earnings", "ts")), None), 0),
@@ -323,7 +335,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
 }
 
 TAB_DEFAULT: Dict[str, List[str]] = {
-    "overview": ["px", "ssi"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
+    "overview": ["px", "ssi"], "premarket": ["px"], "tw_ai": ["twmacro"], "tw_bonds": ["twmacro"], "tw_credit": ["twmacro"], "tw_econ": ["twmacro"], "tw_money": ["twmacro", "tw"], "tw_life": ["twmacro"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
@@ -338,6 +350,8 @@ CARD: Dict[str, List[str]] = {
     "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"], "sec_gb_brief": ["fred", "bondflows"], "sec_gb_sovereign": ["fred"],
     "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
+    "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
+    "sec_tw_money": ["twmacro", "tw"], "sec_tw_life": ["twmacro"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
@@ -350,7 +364,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds"}   # static content
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note"}   # static content
 LIVE = {"sec_lookup", "sec_watch"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 

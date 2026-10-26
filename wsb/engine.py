@@ -60,6 +60,12 @@ async def _bondflows():
     from .data import bondflows as BF
     await BF.refresh()
 
+async def _twmacro():
+    """Taiwan central bank / NDC / TPEx bonds / Taipei housing (台灣 pages)."""
+    from .data import twmacro as TM
+    await TM.refresh()
+
+
 class Engine:
     def __init__(self) -> None:
         self.market = MarketData()
@@ -173,7 +179,7 @@ class Engine:
                  ("stocks", self.stockprices.refresh()), ("stocknews", self.stocknews.refresh()),
                  ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()),
                  ("fedwatch", self.fedwatch.refresh()), ("finra", self.margin_debt.refresh()),
-                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()),
+                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()), ("twmacro", _twmacro()),
                  ("private_credit", self.refresh_private_credit()), ("spx_long", self.long_history.refresh()), ("distress", self.refresh_distress()))
         # each feed gets its own timeout: one hung source can't hold phase 2 (and the bot's loops) forever
         res = await asyncio.gather(*(asyncio.wait_for(c, tmo) for _, c in feeds), return_exceptions=True)

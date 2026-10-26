@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 # group key, zh, en, the question it answers (zh, en), page keys in order
 GROUPS: List[Tuple[str, str, str, str, str, List[str]]] = [
-    ("home", "今日總覽", "Today", "今天市場怎樣、該注意什麼", "Where the market stands today", ["overview"]),
+    ("home", "今日總覽", "Today", "今天市場怎樣、該注意什麼", "Where the market stands today", ["overview", "premarket"]),
     ("risk", "市場風險", "Market risk", "會不會大跌、壓力在哪", "Crash risk and where the stress is",
      ["ai", "stability", "outlook", "risk", "mood", "flows", "valuation", "crisis", "history", "research"]),
     ("macro", "總經與利率", "Macro & rates", "經濟、利率、通膨往哪走", "Economy, rates, inflation", ["econ", "energy", "markets"]),
@@ -25,7 +25,8 @@ GROUPS: List[Tuple[str, str, str, str, str, List[str]]] = [
     ("sector", "產業", "Sectors", "哪些產業順風、哪裡有財務風險", "Which sectors have tailwinds or financial risk",
      ["industry", "rotation", "themes", "tech", "growth"]),
     ("stock", "個股", "Stocks", "哪些公司值得研究", "Companies worth a closer look", ["entry", "scores", "signals", "intel", "gurus", "portfolio"]),
-    ("tw", "台股", "Taiwan", "台股資金與籌碼", "Taiwan flows and positioning", ["taiwan"]),
+    ("tw", "台灣", "Taiwan", "台灣的景氣、利率、資金與台股籌碼", "Taiwan economy, rates, money and stock flows",
+     ["tw_ai", "taiwan", "tw_bonds", "tw_credit", "tw_econ", "tw_money", "tw_life"]),
     ("more", "新聞與說明", "News & about", "背景新聞、數據怎麼來", "Background news, how the data is made", ["news", "tools", "inputs", "about"]),
 ]
 GROUP_OF = {k: g for g, *_x, ks in GROUPS for k in ks}
@@ -93,7 +94,9 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
     "stock": [("overview", r"個股評分前五名 .*?美股 (.*?) 台股", lambda m: f"評分前段（美股）：{_top3(m)}"),
               ("overview", r"個股評分前五名 .*?台股 (.*?) 港股", lambda m: "評分前段（台股）：" + "、".join(n for n, _c, _s in re.findall(r"(\S+) (\d{4}) (\d+)", m[1])[:3])),
               ("gurus", r"內部人賣出（依非計畫性金額排序） .*?最大一筆 \S+ ([A-Z.]+) (\$[\d.]+[BMK])", lambda m: f"內部人賣出最多：{m[1]} {m[2]}")],
-    "tw": [("taiwan", r"外資台指期未平倉 ([-\d,]+) 口 \S* ?(\S+)", lambda m: f"外資台指期未平倉 {m[1]} 口（{m[2]}）"),
+    "tw": [("tw_ai", r"景氣燈號\S*?(黃紅|黃藍|紅|綠|藍)燈（(\d{4}-\d\d)，(\d+) 分）", lambda m: f"景氣燈號 {m[1]}燈 {m[3]} 分（{m[2]}）"),
+           ("tw_bonds", r"台灣 10 年期公債利率 ([\d.]+%)", lambda m: f"台灣 10 年期公債 {m[1]}"),
+           ("taiwan", r"外資台指期未平倉 ([-\d,]+) 口 \S* ?(\S+)", lambda m: f"外資台指期未平倉 {m[1]} 口（{m[2]}）"),
            ("taiwan", r"近 5 日合計 ([-\d.]+) 億", lambda m: f"外資現貨近 5 日 {m[1]} 億"),
            ("taiwan", r"融資餘額與清洗計 ([\d,]+ 億) \(([-+\d.]+%)\)", lambda m: f"融資餘額 {m[1]}（單日 {m[2]}）"),
            ("taiwan", r"Put/Call 未平倉比 ([\d.]+%) \S+ (\S+)", lambda m: f"台指選擇權 P/C {m[1]}（{m[2]}）"),
