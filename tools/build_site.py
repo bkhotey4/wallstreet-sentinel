@@ -1293,7 +1293,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
-            ("premarket", "開盤前 30 秒", "30s before the open", [SQ.sec_premarket, SID.sec_intraday]),
+            ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SID.sec_intraday]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
