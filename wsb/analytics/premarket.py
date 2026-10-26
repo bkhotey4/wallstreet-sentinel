@@ -135,6 +135,12 @@ def takeaways_us(d: Dict) -> List[Dict]:
             elif len(down) == len(xs):
                 out.append({"lv": "watch", "zh": f"{zh_name}全面下跌（{'、'.join(_lab(x) for x in xs)}），但幅度在平常範圍內。",
                             "en": f"{en_name} broadly lower, within normal ranges."})
+            elif not down:
+                strong = [x for x in xs if (_z(x) or 0) >= 2]
+                out.append({"lv": "info", "zh": f"{zh_name}全面上漲（{'、'.join(_lab(x) for x in xs)}）" + (f"，{'、'.join(_lab(x) for x in strong)} 漲幅超過平常單日波動的 2 倍。" if strong else "，幅度在平常範圍內。"),
+                            "en": f"{en_name} broadly higher."})
+            elif all(abs(_z(x) or 0) < 1 for x in xs):
+                out.append({"lv": "info", "zh": f"{zh_name}漲跌互見、都在平常範圍內：隔夜沒有明顯的方向。", "en": f"{en_name} mixed, all within normal ranges."})
     # 4) cross-asset: what kind of selling (or buying) it is
     sp_dn = es is not None and (es.get("ch") or 0) < -0.3
     y, g, b, oil = o.get("^TNX"), o.get("GC=F"), o.get("BTC-USD"), o.get("CL=F")
@@ -186,8 +192,9 @@ def takeaways_tw(d: Dict) -> List[Dict]:
                     "en": f"TSM ADR {tsm['ch']:+.1f}%: TSMC is the TAIEX's largest weight."})
     lk = d.get("tw_link") or {}
     if lk.get("implied") is not None:
-        out.append({"lv": "info", "zh": f"依過去一年的連動，美股前一晚換算台股約 {lk['implied']:+.2f}%（相關係數 {lk.get('corr', 0):.2f}）——只算美股帶來的影響，不含台股自己的消息。",
-                    "en": f"US-implied TAIEX move {lk['implied']:+.2f}% (corr {lk.get('corr', 0):.2f}); US effect only."})
+        cr = f"（相關係數 {lk['corr']:.2f}）" if lk.get("corr") is not None else ""
+        out.append({"lv": "info", "zh": f"依過去一年的連動，美股前一晚換算台股約 {lk['implied']:+.2f}%{cr}——只算美股帶來的影響，不含台股自己的消息。",
+                    "en": f"US-implied TAIEX move {lk['implied']:+.2f}%; US effect only."})
     if twd and twd.get("ch") is not None and abs(twd["ch"]) >= 0.3:
         weak = twd["ch"] > 0
         out.append({"lv": "watch", "zh": f"台幣{'貶值' if weak else '升值'}（美元兌台幣 {twd['ch']:+.2f}%）：{'外資匯出壓力，對權值股不利' if weak else '外資匯入，對權值股有支撐'}；持有美股換算台幣的損益也會{'增加' if weak else '減少'}。",

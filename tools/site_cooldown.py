@@ -13,7 +13,7 @@ NOTE_HIST = ("「退燒日」的兩種算法：①VIX 收盤曾 ≥ 30，之後�
              "在過去半年內曾經只剩 0–1 項正常，之後回到至少 4 項正常（{g_since} 年起）。每一波只算一次。"
              "「之後半年最深再跌」是退燒日之後 6 個月內，標普從當天往下跌最多的幅度；「半年內 VIX 又 ≥ 30」就是假退燒。"
              "最後一列「任何一天」是對照組：如果退燒日的數字沒有比它好，代表等退燒並沒有帶來額外好處，只是比較安心。"
-             "樣本只有十幾次，數字會隨新事件變動。歷史統計，不是預測。")
+             "樣本只有 {n} 次左右，數字會隨新事件變動。歷史統計，不是預測。")
 
 
 def headline(r) -> str:
@@ -102,7 +102,7 @@ def sec_cool_history(eng) -> str:
             f'<tbody>{rows}</tbody></table></div>'
             f'<p class="small muted">{T("最近幾次 VIX 退燒日：" + esc(recent), "")}</p>'
             f'<details class="sgx"><summary>{T("怎麼算的", "Method")}</summary><p class="note">'
-            f'{T(NOTE_HIST.format(v_since=v["since"], g_since=(g or {}).get("since", "—")), "")}</p></details>')
+            f'{T(NOTE_HIST.format(v_since=v["since"], g_since=(g or {}).get("since", "—"), n=len(v["rows"])), "")}</p></details>')
     return card("退燒之後：歷史上標普怎麼走", "After past cool-downs", body, "wide")
 
 

@@ -34,6 +34,16 @@ def test_foi_badge():
     assert "多單 1.5 萬口（一般水準" in SD.foi_badge(None)
 
 
+def test_health_line_turns_positive_by_itself():
+    import types
+    ok = [{"ok": True}] * 5 + [{"ok": False}]
+    e = types.SimpleNamespace(_cooldown={"available": True, "n_ok": 7, "n": 7, "since_hot": 400}, _entry_env={"bull": ok})
+    h = SD.health_line(e)
+    assert "🟢 平時狀態" in h and "環境健康：壓力退了" in h and 'data-p="entry"' in h
+    e2 = types.SimpleNamespace(_cooldown={"available": True, "n_ok": 2, "n": 7, "since_hot": 10}, _entry_env={"bull": ok})
+    assert "🔴 壓力還在" in SD.health_line(e2) and "健康度還不夠" in SD.health_line(e2)
+
+
 def test_pages_ship_new_parts():
     from tools import site_live as SL, site_portfolio as SP, site_layout as LY
     assert "wss_watch_v1" in SL.JS and "full=1" in SL.JS and "自選股" in SL.sec_watch(None)

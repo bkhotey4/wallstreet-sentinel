@@ -1,6 +1,6 @@
 """Step 2/3. Point-in-time panel for the bankruptcy study.
 
-For every company in SEC's companyfacts bulk file and every snapshot date (30 Jun / 31 Dec, 2010-2025) the radar's own
+For every company in SEC's companyfacts bulk file and every snapshot date (30 Jun / 31 Dec, 2010 to a year ago) the radar's own
 parser (wsb.data.distress_data.parse_balance) is run on ONLY the facts filed on or before that date, so each row is
 exactly what the radar would have seen then.  Label = first 8-K item 1.03 filed within the next 365 days.
 Download https://www.sec.gov/Archives/edgar/daily-index/xbrl/companyfacts.zip (~1.4 GB) first.
@@ -13,7 +13,8 @@ from multiprocessing import Pool
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2]))
 
-SNAPS = [date(y, m, d) for y in range(2010, 2026) for (m, d) in ((6, 30), (12, 31)) if date(y, m, d) <= date(2025, 6, 30)]
+_LAST = date.today() - timedelta(days=366)   # a snapshot needs a full year afterwards to know whether the company filed for bankruptcy
+SNAPS = [date(y, m, d) for y in range(2010, _LAST.year + 1) for (m, d) in ((6, 30), (12, 31)) if date(y, m, d) <= _LAST]
 MIN_ASSETS = 5e7            # $50M: below that most filers are shells
 MAX_LAG = 400               # the radar still scores a balance sheet up to 400 days old
 ZIP, FIRST = None, None

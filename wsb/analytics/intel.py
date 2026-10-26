@@ -247,14 +247,14 @@ def macro_pillar(rg: Dict) -> Tuple[Optional[float], List[Tuple[float, str]]]:
     why: List[Tuple[float, str]] = [(base, f"象限 {q}（基準分 {base:.0f}" + ("，位於象限邊界、已依 z 值內插" if edge else "") + "）")]
     liq = rg.get("liquidity_mode") or ""
     if liq.startswith("收縮"):
-        why.append((_PTS["liq_contract"], f"聯準會淨流動性 13 週 {rg.get('net_liquidity_chg_13w_bn', 0):+,.0f}bn，收縮逆風"))
+        why.append((_PTS["liq_contract"], "聯準會淨流動性" + (f" 13 週 {rg['net_liquidity_chg_13w_bn']:+,.0f}bn" if rg.get("net_liquidity_chg_13w_bn") is not None else "") + "，收縮逆風"))
     elif liq.startswith("擴張"):
-        why.append((_PTS["liq_expand"], f"淨流動性 13 週 {rg.get('net_liquidity_chg_13w_bn', 0):+,.0f}bn，擴張順風"))
+        why.append((_PTS["liq_expand"], "淨流動性" + (f" 13 週 {rg['net_liquidity_chg_13w_bn']:+,.0f}bn" if rg.get("net_liquidity_chg_13w_bn") is not None else "") + "，擴張順風"))
     rm = rg.get("risk_mode") or ""
     if rm.startswith("Risk-OFF"):
-        why.append((_PTS["risk_off"], f"風險偏好轉弱（z {rg.get('risk_appetite_z', 0):+.2f}）"))
+        why.append((_PTS["risk_off"], "風險偏好轉弱" + (f"（z {rg['risk_appetite_z']:+.2f}）" if rg.get("risk_appetite_z") is not None else "")))
     elif rm.startswith("Risk-ON"):
-        why.append((_PTS["risk_on"], f"風險偏好強（z {rg.get('risk_appetite_z', 0):+.2f}）"))
+        why.append((_PTS["risk_on"], "風險偏好強" + (f"（z {rg['risk_appetite_z']:+.2f}）" if rg.get("risk_appetite_z") is not None else "")))
     clear = g is not None and i is not None and min(abs(g), abs(i)) >= 0.25   # a flip on z≈0 is noise, not a regime change
     if rg.get("quadrant_changed") and clear:
         base = next((v for k, v in QUAD_RISK.items() if q.startswith(k)), base)

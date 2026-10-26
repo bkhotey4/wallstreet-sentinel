@@ -22,7 +22,8 @@ from . import stockscore as SS
 
 log = logging.getLogger(__name__)
 COLS = ["sym", "code", "name", "ind", "board", "tech", "rank", "r1d", "r1m", "r6", "rsi", "st", "stl", "why", "when",
-        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex", "history_asof", "ma2", "m121", "hi52", "rel6"]
+        "pat", "patl", "str", "zlo", "zhi", "inv", "risk", "tgt", "tgtp", "inz", "px", "pk", "tier", "zb", "tg", "ex", "history_asof", "ma2", "m121", "hi52", "rel6",
+        "vol", "lt", "ldd", "lr", "lv", "vm", "vnow", "vpct", "vp25", "vp50", "vp75", "vn", "vasof"]
 BENCH = {"us": "^GSPC", "tw": "^TWII", "hk": "^HSI"}
 LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 
@@ -31,7 +32,28 @@ def _r(x, d=2):
     return None if x is None or (isinstance(x, float) and not np.isfinite(x)) else round(float(x), d)
 
 
-def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, bench: pd.Series) -> Dict:
+def labels(row: Dict) -> Dict:
+    """Neutral check-up marks from price data alone (descriptions, not recommendations)."""
+    px, ma, hi, mom, rsi = row.get("px"), row.get("ma2"), row.get("hi52"), row.get("m121"), row.get("rsi")
+    out = {}
+    if px and ma:
+        up = px > ma
+        out["lt"] = ("多頭" if up and (mom is None or mom > 0) else "空頭" if not up and (mom is None or mom < 0) else "盤整")
+    if px and hi:
+        out["ldd"] = _r((px / hi - 1) * 100, 1)
+    if rsi is not None:
+        out["lr"] = "偏熱" if rsi >= 70 else "偏冷" if rsi <= 30 else "中性"
+    return out
+
+
+def val_fields(z: Optional[Dict]) -> Dict:
+    if not z:
+        return {}
+    return {"vm": z["metric"], "vnow": _r(z["now"], 2), "vpct": _r(z["pct"], 0), "vp25": _r(z["p25"], 3), "vp50": _r(z["p50"], 3),
+            "vp75": _r(z["p75"], 3), "vn": z["n"], "vasof": z.get("asof")}
+
+
+def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, bench: pd.Series, zones: Optional[Dict] = None) -> Dict:
     cf = FM.cfg()
     zh_names = {s: v[0] for m in universe().values() for s, v in m["symbols"].items()}
     base = SG.base_strengths()
@@ -69,7 +91,7 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
         except Exception:  # noqa: BLE001
             rs = {}
         row = {"ma2": _r(rs.get("ma200"), 3), "m121": _r(rs.get("mom_12_1"), 1), "hi52": _r(rs.get("high_52w"), 3),
-               "rel6": _r(rs.get("rel_6m"), 1),
+               "rel6": _r(rs.get("rel_6m"), 1), "vol": _r(rs.get("vol"), 0),
                "sym": s, "code": it["code"], "name": zh_names.get(s) or it.get("name") or it["code"], "ind": it.get("ind", ""),
                "board": it.get("board", ""), "tech": _r(t, 1), "r1d": _r(f["r1d"], 1), "r1m": _r(f["r1m"], 1), "r6": _r(f["r6"], 0),
                "rsi": _r(f["rsi"], 0), "px": _r(f["price"], 3), "history_asof": f["asof"]}
@@ -107,7 +129,15 @@ def scan(mk: str, items: List[Dict], close: pd.DataFrame, volume: pd.DataFrame, 
                 log.exception("full-market patterns %s", s)
         else:
             row.update({"st": "nodata", "stl": "資料不足", "why": "上市未滿約三個月，資料太少", "str": 0})
+        row.update(labels(row))
+        row.update(val_fields((zones or {}).get(it["code"] if mk == "tw" else s)))
         rows.append(row)
+    vols = sorted(r["vol"] for r in rows if r.get("vol") is not None)       # volatility: thirds within this market
+    if len(vols) >= 30:
+        lo, hi = vols[len(vols) // 3], vols[2 * len(vols) // 3]
+        for r in rows:
+            if r.get("vol") is not None:
+                r["lv"] = "低" if r["vol"] <= lo else "高" if r["vol"] > hi else "中"
     cfp = SG.pick_cfg()                                              # ★ 條件最齊全: top n per market among qualifying signals
     cand = sorted([r for r in rows if r.get("st") == "signal" and SG.pick_ok(
         r.get("pat"), r.get("str"), bool(r.get("inz")), (r["tgtp"] / r["risk"]) if r.get("tgtp") and r.get("risk") else None,
@@ -154,9 +184,23 @@ async def run(eng, budget_s: Optional[float] = None) -> Dict[str, Dict]:
             log.warning("full-market %s prices failed: %s", mk, e)
             st = {"error": str(e)}
         close, volume = FM.load_prices(mk)
+        zones = {}
+        if not close.empty and mk in ("tw", "us"):
+            try:
+                from ..data import valhist as VH
+                last = close.ffill().iloc[-1].dropna()
+                if mk == "tw":
+                    st["val"] = await VH.refresh_tw(float(cf.get("val_budget_tw", 60)))
+                    zones = VH.zones_tw({s.split(".")[0]: float(v) for s, v in last.items()})
+                else:
+                    st["val"] = await VH.refresh_us(list(last.index), float(cf.get("val_budget_us", 100)))
+                    zones = VH.zones_us({s: float(v) for s, v in last.items()})
+                st["val_n"] = len(zones)
+            except Exception:  # noqa: BLE001
+                log.exception("valuation history %s failed", mk)
         if not close.empty:
             try:
-                res = await asyncio.to_thread(scan, mk, items, close, volume, b)
+                res = await asyncio.to_thread(scan, mk, items, close, volume, b, zones)
                 if res.get("available"):
                     res["pending"] = st.get("pending")
                     _out(mk).write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

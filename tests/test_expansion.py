@@ -231,6 +231,11 @@ def test_fullmarket(eng):
     async def fake_lists(force=False):
         return {"us": items, "tw": [], "hk": []}
     FMD.lists = fake_lists
+    from wsb.data import valhist as VH
+
+    async def no_val(*a, **k):                     # valuation history is network-only: tested offline in test_valhist
+        return {}
+    VH.refresh_us = VH.refresh_tw = no_val
     rep = asyncio.run(FS.run(eng, 30))
     assert rep["us"]["scanned"] == 60 and FS.published("us")["n"] == 60
     print("  full-market ok")

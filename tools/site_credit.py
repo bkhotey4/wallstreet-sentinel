@@ -70,10 +70,14 @@ def sec_credit_rates(eng) -> str:
         b = co["baa"]
         pts.append(f"信用利差和股市是「同時」動：{b['since']} 年以來每週 Baa 利差變化和標普報酬的相關係數 {b['same']:+.2f}"
                    + (f"，HYG÷IEF 是 {co['hyief']['same']:+.2f}" if co.get("hyief") else "")
-                   + f"；但看利差變化和 1–8 週後的股市，相關係數最多只有 {b['lead_abs']:.2f}。利差擴大多半是股市下跌的同一件事，不是提前好幾週的預告。")
+                   + f"；看利差變化和 1–8 週後的股市，相關係數最多 {b['lead_abs']:.2f}。"
+                   + ("利差擴大多半是股市下跌的同一件事，不是提前好幾週的預告。" if b["lead_abs"] < abs(b["same"]) / 2 else
+                      "提前的關係不算弱，利差變化對之後幾週的股市有一些領先意義。"))
     if r.get("auc_level") is not None:
-        pts.append(f"真正有預警力的是「利差處在高水位」：Baa 利差在近 3 年的百分位，對之後 3 個月標普跌 ≥10% 的辨識力 AUC {r['auc_level']:.2f}"
-                   f"（0.5＝丟銅板），利差的 3 個月變化只有 {r['auc_chg']:.2f}。目前 Baa 利差在近 3 年第 {r['baa_pct']:.0f} 百分位。")
+        lv_better = r["auc_level"] >= (r.get("auc_chg") or 0)
+        pts.append(("比較有預警力的是「利差處在高水位」" if lv_better else "比較有預警力的是「利差在擴大」")
+                   + f"：Baa 利差在近 3 年的百分位，對之後 3 個月標普跌 ≥10% 的辨識力 AUC {r['auc_level']:.2f}"
+                   f"（0.5＝丟銅板），利差的 3 個月變化 {num(r.get('auc_chg'), 2)}。目前 Baa 利差在近 3 年第 {r['baa_pct']:.0f} 百分位。")
     d = r["div"]
     if d.get("p") is not None:
         verdict = "比平常還低，歷史上不是可靠的崩盤前兆" if d["p"] < d["base"] else "比平常高"
@@ -82,7 +86,7 @@ def sec_credit_rates(eng) -> str:
     sy = r["stock_yield"]
     mood = ("利率上升時股市下跌（類似 2022 年的通膨／升息環境）" if sy["now"] < -0.1 else
             "利率上升時股市也上漲（景氣好、利率跟著上升的環境）" if sy["now"] > 0.1 else "股市和利率之間目前沒有明顯方向")
-    pts.append(f"股市和利率的關係：標普報酬和 10 年期殖利率變化的 52 週相關係數 {sy['now']:+.2f}（1990 年以來中位數 {sy['median']:+.2f}），{mood}。"
+    pts.append(f"股市和利率的關係：標普報酬和 10 年期殖利率變化的 52 週相關係數 {sy['now']:+.2f}（{sy.get('since', '有資料')} 年以來中位數 {sy['median']:+.2f}），{mood}。"
                + (f"10 年期殖利率近 3 個月變化 {r['y10_chg13']:+.2f} 個百分點。" if r.get("y10_chg13") is not None else ""))
     t = r["tiers"]
     lab = {"ccc_bb": "CCC − BB（最弱 vs 次弱）", "hy": "高收益債", "ig": "投資級", "baa": "Baa 公司債"}

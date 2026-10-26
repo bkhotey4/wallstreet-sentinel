@@ -317,7 +317,7 @@ def revision_light(eng, snap: Optional[Dict] = None, today: Optional[date] = Non
 def hike_light(eng) -> Dict:
     row = {"id": "hike_pricing", "group": "資金市場", "zh": "升息定價（聯邦基金期貨）", "en": "Rate-hike pricing (fed funds futures)", "kind": "rule",
            "why": "期貨押注聯準會在高利率下繼續升息時，最弱的借款人與高估值資產壓力最大。",
-           "rule": "看第三次會議後的隱含利率比目前高多少：≥ +25bp（至少一碼）黃燈；≥ +50bp，或一週內再增加 ≥ 15bp 紅燈。期貨歷史從 2026-10 起累積，尚未回測。"}
+           "rule": "看第三次會議後的隱含利率比目前高多少：≥ +25bp（至少一碼）黃燈；≥ +50bp，或一週內再增加 ≥ 15bp 紅燈。期貨歷史仍在累積，資料滿兩年前不回測。"}
     fv = getattr(eng, "fedwatch_view", None) or {}
     ms = fv.get("meetings") or []
     if not fv.get("available") or len(ms) < 1:

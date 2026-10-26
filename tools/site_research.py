@@ -82,7 +82,7 @@ def sections() -> List[Tuple[str, str]]:
 POINTS = [
     ("壓力指標是溫度計，不是預言機",
      ["各國央行的壓力指數（OFR、NFCI、聖路易、堪薩斯）彼此高度重疊，本質上都是「同步」反映現在有多緊。",
-      "這類指標預測崩跌的準確度，學界實測大約就是 AUC 0.7；本站的崩跌模型 0.67–0.70 已在這個水準。",
+      "這類指標預測崩跌的準確度，學界實測大約就是 AUC 0.7；本站崩跌模型的即時樣本外成績列在「風險模型」頁的模型體檢。",
       "機器學習在事件少的美股樣本裡，常常樣本外輸給簡單的邏輯迴歸。"],
      "沒有任何模型能精準預告崩盤。值得看的是「現在的風險是平常的幾倍」，不是「會不會崩」的是非題。"),
     ("真正能提前 1–3 年的，是信用循環",
@@ -98,7 +98,7 @@ POINTS = [
       "CBOE SKEW 這類「黑天鵝指數」沒有可靠的崩跌預測力；CAPE 只說明長期報酬，不能抓時點。"],
      "恐慌高點歷史上常落在相對低點附近，所以本站把這類指標放在「抄底四訊號」，不放進崩跌警報。這是歷史統計，不是買賣建議。"),
     ("看到「準確率九成」先看誤報與樣本數",
-     ["本站危機預警「7 次全亮燈」，但只有 7 個樣本，命中率的 95% 區間約 65%–100%；升溫後真的出事的比例只有約 23%。",
+     ["本站「歷史危機」頁的預警成績單同時列出命中次數、95% 信賴區間、升溫後真的出事的比例與隨機對照組，數字每次建置重算。",
       "近年不少論文宣稱崩跌預測 AUC 0.86–0.89，但多半只在單一段期間測試、事件極少，換個期間就可能失效。"],
      "預警指標一定在「漏掉危機」和「狼來了」之間取捨。好的呈現方式是同時講命中、誤報和不確定性，本站正照這個標準調整。"),
     ("官方 2025–2026 年在擔心的地方，已經不在傳統銀行",
@@ -137,16 +137,24 @@ def now_reading(eng) -> list:
         pass
     hot = {x["k"] for x in vu.get("lights") or [] if x["state"] == "hot"}
     tense = ssi is not None and ssi >= 55
+    prec = None
+    try:                                              # live share of SSI warnings followed by a real ≥10% fall
+        from wsb.analytics import crisis_track as CT
+        ct = getattr(eng, "_crisis_track", None) or CT.build(eng)
+        sm = (ct.get("summary") or {})
+        prec = (sm.get(55) or next(iter(sm.values()), {})).get("prec")
+    except Exception:  # noqa: BLE001
+        pass
     calm_opts = mpd_p is not None and mpd_p <= 30
     fear_opts = mpd_p is not None and mpd_p >= 70
     rich_credit = (ebp_p is not None and ebp_p <= 20) or "spreads" in hot
     if ssi is not None:
         out.append(("即時層（溫度計）", f"壓力指數 SSI {ssi:.0f}，" + ("偏高：市場已經在緊張。" if tense else "在常態範圍。")))
     if mpd_p is not None:
-        out.append(("選擇權層（大家花多少錢買保險）", f"選擇權定價標普 6 個月內跌 20% 以上的機率 {mp[-1][1]:.1f}%，在 2007 年以來第 {mpd_p:.0f} 百分位，"
+        out.append(("選擇權層（大家花多少錢買保險）", f"選擇權定價標普 6 個月內跌 20% 以上的機率 {mp[-1][1]:.1f}%，在 {mp[0][0][:4]} 年以來第 {mpd_p:.0f} 百分位，"
                     + ("偏低：多數人不認為會大跌。" if calm_opts else "偏高：市場在為大跌付高價。" if fear_opts else "中等。")))
     if ebp_p is not None or "spreads" in hot:
-        out.append(("信用層（借錢給企業的人有多放心）", (f"超額債券溢酬在 1973 年以來第 {ebp_p:.0f} 百分位" if ebp_p is not None else "公司債利差在歷史低檔")
+        out.append(("信用層（借錢給企業的人有多放心）", (f"超額債券溢酬在 {eb[0][0][:4]} 年以來第 {ebp_p:.0f} 百分位" if ebp_p is not None else "公司債利差在歷史低檔")
                     + ("：信用定價非常樂觀。" if rich_credit else "：信用定價正常。")))
     if vu.get("lights"):
         out.append(("累積層（底下的燃料）", f"{vu['n']} 盞燈中 {vu['n_hot']} 盞過熱"
@@ -154,7 +162,8 @@ def now_reading(eng) -> list:
     if tense and calm_opts and rich_credit:
         m = ("壓力指數在升溫，但選擇權和信用市場都還很放心。這種「溫度計說熱、保險和借貸市場說沒事」的分歧，代表兩種可能："
              "一是壓力只是局部的（例如集中在低評等債或少數產業），之後會自己消退；二是大市場還沒反應，一旦信用跟著轉弱，修正會比較急。"
-             "歷史上 SSI 升溫後真正跌 10% 以上的只有約四分之一，所以不必恐慌；要盯的是分歧開始收斂的訊號："
+             + (f"歷史上 SSI 升溫後真正跌 10% 以上的約 {prec:.0f}%，所以不必恐慌；" if prec is not None else "SSI 升溫後大多數時候並沒有大跌，所以不必恐慌；")
+             + "要盯的是分歧開始收斂的訊號："
              "投資級利差跟著擴大、選擇權大跌機率升到第 70 百分位以上、超額債券溢酬由負轉正。")
     elif tense and fear_opts:
         m = "壓力指數和選擇權市場同時緊張：各層訊號一致，屬於全面的風險趨避，歷史上這時波動通常會放大。"

@@ -108,7 +108,7 @@ def sec_st_brief(eng) -> str:
                   f"每月對照聯準會／IMF／OFR 報告" + (f"・{cv.get('updated')}" if cv.get("updated") else ""), ""))
     reds = sum(1 for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🔴")
     yel = sum(1 for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🟡")
-    head = ("金融穩定 4 項：" + (f"{reds} 項紅燈、" if reds else "") + (f"{yel} 項黃燈" if yel else "") + ("全部正常" if not reds and not yel else "")).rstrip("、")
+    head = (f"金融穩定 {sum(1 for x in (rf, fu, ba, ai) if x)} 項：" + (f"{reds} 項紅燈、" if reds else "") + (f"{yel} 項黃燈" if yel else "") + ("全部正常" if not reds and not yel else "")).rstrip("、")
     worst = [x["read"] for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🔴"] or [x["read"] for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🟡"]
     dates = rf.get("next") or []
     watch = []
@@ -170,7 +170,7 @@ def sec_st_funding(eng) -> str:
             f'<div class="g3"><div><div class="small muted">SOFR（{fu["date"]}）</div><div class="big">{fu["sofr"]:.2f}%</div>'
             f'<div class="small muted">{T("成交量", "Volume")} ${fu["vol"]:,.0f}B・{T("第 99 百分位成交", "99th pct trade")} {fu["p99"]:.2f}%</div></div>'
             + (f'<div><div class="small muted">{T("SOFR − 準備金利率 IORB", "SOFR minus IORB")}</div><div class="big">{fu["spread"]:+.0f} bp</div>'
-               f'<div class="small muted">IORB {fu["iorb"]:.2f}%・近 20 天有 {fu["days_above"]} 天高於 IORB・2018 年以來第 {num(fu.get("spread_pct"), 0)} 百分位</div>'
+               f'<div class="small muted">IORB {fu["iorb"]:.2f}%・近 20 天有 {fu["days_above"]} 天高於 IORB・{fu.get("since", "有資料")} 年以來第 {num(fu.get("spread_pct"), 0)} 百分位</div>'
                f'{spark(_ser(h)) if len(h) > 5 else ""}</div>' if fu.get("spread") is not None else "")
             + (f'<div><div class="small muted">{T("常設回購 SRF 動用", "Standing repo take-up")}</div><div class="big">${srf["last"][1]:,.1f}B</div>'
                f'<div class="small muted">{srf["last"][0]}・近 20 天最多 ${srf["max20"]:,.1f}B、有 {srf["days_used20"]} 天動用・紀錄 ${srf["max_all"]:,.1f}B（{srf["max_all_date"]}）</div></div>' if srf else "")

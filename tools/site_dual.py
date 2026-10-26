@@ -69,6 +69,33 @@ def headline(t: list, f) -> str:
     return s
 
 
+def health_line(eng) -> str:
+    """The other side of the same card: how healthy the environment is (cool-down checks + healthy-bull gauges), so the
+    overview turns positive by itself once the stress passes."""
+    try:
+        from tools import site_entry as SEN
+        from wsb.analytics import cooldown as CD
+        cool, bull = SEN._cool(eng), (SEN._env(eng).get("bull") or [])
+    except Exception:  # noqa: BLE001
+        return ""
+    if not cool.get("available"):
+        return ""
+    ph = {"stress": "🔴 壓力還在", "cooling": "🟡 退燒中", "mixed": "🟡 部分偏緊", "calm": "🟢 平時狀態"}[CD.phase(cool)]
+    k = sum(1 for x in bull if x["ok"])
+    good = cool["n_ok"] * 2 > cool["n"] and bull and k * 2 > len(bull)
+    if good:
+        tail = "環境健康：壓力退了，漲勢也有廣度"
+    elif cool["n_ok"] * 2 <= cool["n"]:
+        tail = "健康度還不夠：壓力指標未全面回穩"
+    elif not bull:
+        tail = "壓力大致回穩；多頭健康度資料暫缺"
+    else:
+        tail = "健康度還不夠：漲勢集中、資金偏防守"
+    txt = (f"🌤️ 環境健康度：{ph}，退燒檢查 {cool['n_ok']}／{cool['n']} 項回到正常"
+           + (f"、多頭健康度 {k}／{len(bull)} 項健康" if bull else "") + f"——{tail}。")
+    return (f'<p class="small">{T(txt, "")} <a class="golink" href="#entry" data-p="entry">{T("看「AI 視角看進場」→", "Entry view →")}</a></p>')
+
+
 def sec_dual(eng) -> str:
     t, f = thermo(eng), fuel(eng)
     if not t and not f:
@@ -77,7 +104,7 @@ def sec_dual(eng) -> str:
                                  f'<span class="small muted">　{T(txt, "")}</span></li>')
     left = "".join(li(n, h, r) for n, h, r in t)
     right = "".join(li(x["zh"], x["state"] == "hot", x["txt"]) for x in (f or {}).get("lights") or [])
-    body = (f'<p class="rimp big2"><b>{T(headline(t, f), "")}</b></p><div class="dual2">'
+    body = (f'<p class="rimp big2"><b>{T(headline(t, f), "")}</b></p>{health_line(eng)}<div class="dual2">'
             f'<div><h3>{T("🌡️ 即時壓力溫度計：今天市場有多緊", "Real-time stress")}</h3><ul class="dlst">{left}</ul></div>'
             f'<div><h3>{T("⛽ 累積脆弱度燃料箱：底下累積了多少燃料", "Built-up vulnerability")}</h3><ul class="dlst">{right or "<li>—</li>"}</ul>'
             f'<p class="small"><a class="golink" href="#outlook" data-p="outlook">{T("看燃料箱每一盞燈的細節 →", "Details →")}</a></p></div></div>'

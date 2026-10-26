@@ -83,7 +83,7 @@ def build(eng) -> Dict:
     # 4. stocks vs yields
     sb = r.rolling(52).corr(W["y10"].diff())
     cb = W["baa"].diff().rolling(52).corr(W["y10"].diff())
-    out["stock_yield"] = {"now": float(sb.iloc[-1]), "median": float(sb.median()), "pct": _pct(sb, 1560)}
+    out["stock_yield"] = {"now": float(sb.iloc[-1]), "median": float(sb.median()), "pct": _pct(sb, 1560), "since": sb.dropna().index[0].strftime("%Y")}
     out["credit_yield"] = {"now": float(cb.iloc[-1]), "median": float(cb.median())}
     y3 = W["y10"].diff(13).iloc[-1]
     out["y10_chg13"] = float(y3) if pd.notna(y3) else None

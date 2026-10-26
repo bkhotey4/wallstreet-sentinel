@@ -46,6 +46,7 @@ from tools import site_dual as SDU
 from tools import site_glossary as SGL
 from tools import site_entry as SEN
 from tools import site_cooldown as SCD
+from tools import site_marks as SMK
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -316,8 +317,10 @@ def sec_odds(eng) -> str:
     legend = (f'<div class="legend"><span><i class="lk bar"></i>{T("目前機率", "Current odds")}</span>'
               f'<span><i class="lk tick"></i>{T("歷史平常基準", "Historical base rate")}</span></div>')
     aucs = "／".join(num(h.get("model_auc_oos"), 2) for h in hs if h.get("model_auc_oos") is not None)
+    bk_auc = "／".join(num(w.get("auc_oos"), 2) for w in ((getattr(eng, "shock", None) or {}).get("quality") or {}).get("walk_forward", [])
+                      if w.get("auc_oos") is not None) or "—"
     note = (T(f"機率來自邏輯迴歸：用壓力指數預測之後是否大跌，逐年只用當時已有的資料估計，再依樣本外結果校準（樣本自 {since}）。"
-              f"逐年樣本外 AUC {aucs}（0.5＝隨機）。原本的「分區間頻率」法樣本外只有 0.53／0.50／0.23，僅列作參考。倍數 > 1 代表比平常危險；這是統計估計，不是預測。",
+              f"逐年樣本外 AUC {aucs}（0.5＝隨機）。原本的「分區間頻率」法樣本外 AUC {bk_auc}，僅列作參考。倍數 > 1 代表比平常危險；這是統計估計，不是預測。",
               f"Logistic model on the stress index, walk-forward fitted and calibrated (OOS AUC {aucs}). The old bucket frequency is shown for reference. Not a forecast.")
             if logit else
             T(f"SSI 落在「{bucket}」區間時標普 500 之後大跌的歷史頻率（樣本自 {since}），升溫狀態：{state}。倍數 > 1 代表比平常危險；這是歷史頻率，不是預測。",
@@ -803,7 +806,18 @@ def _mv_cell(v, kind):
 
 def sec_crisis(eng) -> str:
     st = eng.stress
-    scen = sorted(SETTINGS.get("stress_scenarios", []), key=lambda x: str(x["start"]))
+    scen = list(SETTINGS.get("stress_scenarios", []))
+    try:                                   # plus every ≥15% drawdown found in the S&P 500 itself, so new crises appear without edits
+        from wsb.analytics import crisis_track as CT
+        ct = getattr(eng, "_crisis_track", None) or CT.build(eng)
+        eng._crisis_track = ct
+        for r in ct.get("rows") or []:
+            a, b = r["peak"], r["trough"]
+            if not any(str(s["start"]) <= b and a <= str(s["end"]) for s in scen):
+                scen.append({"name": f"{r['name']}（自動偵測：標普 {r['dd']:.0f}%" + ("，進行中" if r.get("ongoing") else "") + "）", "start": a, "end": b})
+    except Exception:  # noqa: BLE001
+        log.exception("auto crisis episodes failed")
+    scen = sorted(scen, key=lambda x: str(x["start"]))
     if not scen:
         return ""
     ssi = st.history.dropna() if st else pd.Series(dtype=float)
@@ -873,7 +887,7 @@ def sec_crisis(eng) -> str:
               f'<th class="r">{T("高點時 SSI", "SSI at peak")}</th><th class="r">{T("高點前最高 SSI", "Max SSI before")}</th><th>{T("首次警示", "First warning")}</th>'
               f'<th class="r">{T("領先", "Lead")}</th><th>{T("結果", "Result")}</th></tr></thead><tbody>{ep_rows}</tbody></table></div>')
     note = T("各資產欄位是危機期間的漲跌（美債 10 年為殖利率變化，bp）；「—」代表當時還沒有該資料。壓力指數需要足夠多的指標才計算，"
-             "大約自 2003 年起才有數值，1997、2000 年的危機只能看資產表現。今天那一列是近 20 個交易日，方便和歷次危機比較強度。",
+             f"大約自 {_ssi_start(eng)} 年起才有數值，更早的危機只能看資產表現。今天那一列是近 20 個交易日，方便和歷次危機比較強度。",
              "Asset columns show the move during each crisis (US 10Y = yield change in bp); '—' = no data then. The SSI needs enough inputs "
              "and starts around 2003, so 1997/2000 show asset moves only. The 'today' row is the last 20 trading days for scale.")
     return card("歷史危機對照：金融海嘯、亞洲金融風暴與歷次崩盤", "Past crises: GFC, Asian crisis and other crashes",
@@ -919,6 +933,13 @@ def sec_valuation(eng) -> str:
     return card("估值與泡沫觀察", "Valuation & bubble watch", f'<div class="g3">{"".join(cols)}</div><p class="note">{note}</p>', "wide",
                 sub=T("巴菲特指標、信用週期與投機熱度", "Buffett indicator, credit cycle and speculation"))
 
+
+
+def _ssi_start(eng) -> str:
+    try:
+        return str(eng.stress.history.dropna().index[0].year)
+    except Exception:  # noqa: BLE001
+        return "—"
 
 
 def sec_quality(eng) -> str:
@@ -1257,8 +1278,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
                                                S2.sec_scores_mini, sec_trends]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
-            ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env, SEN.sec_cheap,
-                                                       SEN.sec_phased, SEN.sec_entry_links]),
+            ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
+                                                       SEN.sec_cheap, SEN.sec_phased, SEN.sec_entry_links]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
@@ -1326,14 +1347,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{COMPLY_CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 {SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button></div>
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SMK.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:

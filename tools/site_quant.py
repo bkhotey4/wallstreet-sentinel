@@ -174,8 +174,9 @@ def sec_premarket(eng) -> str:
            f'（{T("一個標準差", "1σ")} {num(rg["lo1"], 0)}～{num(rg["hi1"], 0)}；{T("兩個標準差", "2σ")} {num(rg["lo2"], 0)}～{num(rg["hi2"], 0)}，'
            f'{T("基準", "base")} {esc(rg["base_date"][5:])} {T("收盤", "close")} {num(rg["base"], 0)}）</p>'
            f'<p class="small muted">{_rec(rg.get("record") or {}, "這個範圍", "This band")}'
-           + (T("命中率高於理論的 68%，代表 VIX 長期高估實際波動（選擇權賣方收取的風險溢酬）。", "Hit rate above 68%: VIX has overstated realised volatility.")
-              if ((rg.get("record") or {}).get("all") or {}).get("in1", 0) > 68 else
+           + ("" if ((rg.get("record") or {}).get("all") or {}).get("in1") is None else
+              T("命中率高於理論的 68%，代表 VIX 長期高估實際波動（選擇權賣方收取的風險溢酬）。", "Hit rate above 68%: VIX has overstated realised volatility.")
+              if rg["record"]["all"]["in1"] > 68 else
               T("命中率低於理論的 68%，代表實際波動常比 VIX 預期的大。", "Hit rate below 68%: realised moves often exceeded what VIX priced."))
            + '</p>') if rg else ""
     lv = d.get("levels") or {}

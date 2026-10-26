@@ -82,6 +82,22 @@ def _stab_ts(k: str):
         return None
 
 
+def _fm():
+    """Full-market scan: when the newest market file was written, and the price date it holds."""
+    try:
+        import json as _j
+        from wsb.config import DATA_DIR
+        fs = [DATA_DIR / f"fullmarket_{m}.json" for m in ("us", "tw", "hk")]
+        fs = [f for f in fs if f.exists()]
+        if not fs:
+            return None, None
+        ts = max(f.stat().st_mtime for f in fs)
+        asof = max((_j.loads(f.read_text(encoding="utf-8")).get("asof") or "") for f in fs) or None
+        return ts, asof
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 def _fund_ts():
     try:
         from wsb.data import fundamentals as F
@@ -255,6 +271,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "fedwatch": ("利率期貨", "Fed funds futures", lambda e: (_ts(_g(e, "fedwatch", "ts")), _d(_g(e, "fedwatch_view", "asof"))), 4),
     "options": ("CBOE 選擇權", "CBOE options", lambda e: (_ts(_g(e, "options", "ts")), _d(_g(e, "options", "spx", "asof"))), 4),
     "darkpool": ("FINRA 暗池", "FINRA dark pool", lambda e: (None, _d(_g(e, "darkpool", "result", "asof"))), 7),
+    "fullmkt": ("全市場股價與估值", "Full-market scan", lambda e: (_ts(_fm()[0]), _fm()[1]), 4),
     "stocks": ("個股股價", "Stock prices", lambda e: (_ts(_g(e, "stockprices", "ts")), _last(_g(e, "stockprices", "close"))), 4),
     "earnings": ("財報資料", "Earnings data", lambda e: (_ts(_g(e, "earnings", "ts")), None), 0),
     "sec": ("SEC 申報", "SEC filings", lambda e: (_ts(_g(e, "sec", "ts")), None), 0),
@@ -303,7 +320,7 @@ CARD: Dict[str, List[str]] = {
     "sec_econ_mini": ["econ"], "sec_fg_mini": ["px", "crypto"], "sec_scores_mini": ["stocks"], "sec_trends": ["px"],
     "sec_ssi": ["ssi"], "sec_radar": ["ssi"], "sec_odds": ["ssi"],
     "sec_ai_entry": ["px", "ssi", "ofr"], "sec_cool_check": ["px", "ssi", "ofr"], "sec_cool_history": ["px"], "sec_bull_env": ["px", "fred", "canary"],
-    "sec_cheap": ["fred", "px"], "sec_phased": ["px"],
+    "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],

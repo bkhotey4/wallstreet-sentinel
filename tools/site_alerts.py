@@ -52,7 +52,7 @@ def sec_vix_explain(eng, only_hot: bool = False) -> str:
                  f'{T("上半部出現越多，代表波動在升級；下半部出現，代表恐慌在退潮。這是要觀察的條件，不是買賣建議。", "Top half = escalation, bottom half = calming. Conditions to watch, not advice.")}</p>'
                  f'<table class="mini">{th}<tbody><tr><td colspan="3" class="small muted">{T("⬆ 升級訊號", "⬆ Escalation")}</td></tr>{"".join(wrow(x) for x in up)}'
                  f'<tr><td colspan="3" class="small muted">{T("⬇ 退潮訊號", "⬇ Calming")}</td></tr>{"".join(wrow(x) for x in dn)}</tbody></table>')
-    note = T(f"只用價格數據拆解（新聞不列入）。「大盤跌幅解釋的部分」＝過去 {sv['n'] if sv else 252} 個交易日 VIX 點數變動對標普報酬的迴歸；"
+    note = T(f"只用價格數據拆解（新聞不列入）。「大盤跌幅解釋的部分」＝{('過去 ' + str(sv['n']) + ' 個交易日') if sv else '近一年'} VIX 點數變動對標普報酬的迴歸；"
              "σ＝今天的漲跌是自己近 60 日日波動的幾倍。VIX 25／35 的回測數字來自「大盤警報規則回測」。報價約延遲 15 分鐘。不是預測，也不是投資建議。",
              "Price data only. Explained part = regression of VIX point changes on S&P returns; σ = today's move in units of its own daily vol. Not a forecast or advice.")
     return card("VIX 拆解：恐慌指數為什麼動", "VIX breakdown: why the fear gauge moved", body + f'<p class="note">{note}　{T("資料日", "As of")} {esc(r.get("asof") or "")}</p>', "wide")

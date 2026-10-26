@@ -60,8 +60,15 @@ def sec_tr_fsi(eng) -> str:
         head += f"：歷史上這一檔之後 3 個月跌 ≥10% 的機率 {cur['p']:.0f}%，平常 {f['base']:.0f}%"
     vs, vs_txt = f.get("vs_ssi"), ""
     if vs and vs != "一致":
+        rising = (f.get("chg21") or 0) > 0
+        if f["ssi"] >= 55 and f["now"] <= 0:
+            now_txt = ("現在是「短期變化在升溫、但水準仍低於長期平均」" + ("，OFR 這個月也在往上：壓力正從低處往上爬，還沒到危險區。" if rising else
+                       "，而且 OFR 這個月沒有跟著上升：比較像短期驚嚇，還沒擴散成全面壓力。"))
+        else:
+            now_txt = ("現在是「水準偏高、但短期變化平靜」" + ("，而且 OFR 這個月還在上升：壓力在高處累積。" if rising else
+                       "，OFR 這個月在回落：高壓正在慢慢消退。"))
         vs_txt = (f"和本站壓力指數 SSI（{f['ssi']:.0f}）{vs}。SSI 比較重視短期變化（例如利差一個月擴大多少、VIX 跳升），"
-                  "OFR 看的是和長期平均比的水準；現在是「變化在升溫、但水準仍低」——壓力正從很低的地方往上爬，還沒到危險區。")
+                  "OFR 看的是和長期平均比的水準；" + now_txt)
     parts = "、".join(f"{z} {v:+.2f}" for z, v in f["parts"])
     parts_txt = f"五個分項（越高越緊張）：{parts}；一個月變化 {f['chg21']:+.2f}。"
     rows = ""
@@ -104,8 +111,11 @@ def sec_tr_yen(eng) -> str:
         side = "做多" if y["spec"] > 0 else "放空"
         lines.append(f"CFTC 投機部位（槓桿基金＋資產管理機構）淨{side}日圓 {abs(y['spec']):.1f}%（占未平倉，{y['spec_date']}），歷史第 {y['spec_pct']:.0f} 百分位。")
     if y.get("bt_p") is not None:
+        ratio = y["bt_p"] / y["bt_base"] if y.get("bt_base") else None
+        verdict = ("明顯偏高：日圓急升之後美股比較容易跌，值得當成警訊" if ratio and ratio >= 1.5 else
+                   "略高一些，但樣本少，只當參考" if ratio and ratio >= 1.15 else "差不多，所以本站不把日圓急升當成崩跌警報")
         lines.append(f"回測（{y['bt_since']} 年起）：日圓 20 天急升 ≥5% 的 {y['bt_n']} 天，之後一個月標普跌 ≥5% 的機率 {y['bt_p']:.0f}%，"
-                     f"平常 {y['bt_base']:.0f}%——幾乎一樣，所以本站不把日圓急升當成崩跌警報。")
+                     f"平常 {y['bt_base']:.0f}%——{verdict}。")
     body = (f'<p class="rimp big2"><b>{T(head, "")}</b></p>' + "".join(f'<p class="small">{T(x, "")}</p>' for x in lines)
             + f'<p class="note">{T(YEN_NOTE, "")}</p>')
     return card("日圓套利交易：2024 年 8 月閃崩的引信", "Yen carry trade", body, "wide")
@@ -130,8 +140,13 @@ def sec_tr_dollar(eng) -> str:
     if gn:
         prev = f"（上一季 {gn['prev']:.1f}%）" if gn.get("prev") is not None else ""
         lines.append(f"{gn['emoji']} 亞特蘭大聯準會 GDPNow：{gn['quarter']} 經濟成長估計 {gn['pct']:+.1f}%（年化）{prev}。")
-    head = ("一句話看懂：全球沒有在搶美元，經濟也還在成長。" if sw and sw["emoji"] == "🟢" and gn and gn["pct"] > 0 else
-            "一句話看懂：美元或景氣出現壓力，看下面兩項。")
+    if not sw or not gn:
+        head = "一句話看懂：" + ("換匯額度" if not sw else "GDPNow") + "資料暫時取不到，只看得到另一項。"
+    elif sw["emoji"] == "🟢" and gn["pct"] > 0:
+        head = "一句話看懂：全球沒有在搶美元，經濟也還在成長。"
+    else:
+        head = "一句話看懂：" + ("全球在搶美元" if sw["emoji"] != "🟢" else "") + ("、" if sw["emoji"] != "🟢" and gn["pct"] <= 0 else "") \
+            + ("經濟成長估計轉負" if gn["pct"] <= 0 else "") + "，看下面兩項。"
     body = (f'<p class="rimp big2"><b>{T(head, "")}</b></p>' + "".join(f'<p>{T(x, "")}</p>' for x in lines)
             + f'<details class="sgx"><summary>{T("這兩個是什麼？", "What are these?")}</summary><p class="note">{T(DOLLAR_NOTE, "")}</p></details>')
     return card("美元荒與即時景氣：換匯額度、GDPNow", "Dollar squeeze and GDPNow", body, "wide")

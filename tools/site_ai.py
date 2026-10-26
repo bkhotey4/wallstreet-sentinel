@@ -70,7 +70,7 @@ def lens_lines(ph: dict) -> dict:
     if tur.get("available"):
         st = turb_state(tur)
         out["turb"] = (EMO[st], f"亂流：股、債、匯、商品的走法{'很不尋常' if st == TENSE else '正常' if st == CALM else '有點不尋常'}"
-                                f"（2004 年以來第 {tur['pct']:.0f} 百分位）")
+                                f"（{(tur.get('since') or '')[:4] or '有資料'} 年以來第 {tur['pct']:.0f} 百分位）")
     if flo.get("available"):
         st = flock_state(flo)
         out["flock"] = (EMO[st], "鳥群：" + ("各產業開始一起動，衝擊容易擴散" if st == TENSE else
@@ -450,7 +450,9 @@ def ai_verdict(eng, ph: dict) -> dict:
         ee, eh = elephant_state(bb)
         if ee in ("🟠", "🔴"):
             under.insert(0, ("大錢在減碼", eh, "ai-elephant"))
-        trig.append(("大象開始撤退", "資產管理機構在股指期貨的淨多單 13 週大幅下降、落在歷史最低 10%（回測：之後 3 個月大跌的頻率約是平常的 1.6–1.9 倍）。", "ai-elephant"))
+        rr = [e["exit_rate"] / e["base"] for e in bb["elephants"] if e.get("exit_rate") is not None and e.get("base")]
+        bt_ = (f"（回測：之後 3 個月大跌的頻率約是平常的 {min(rr):.1f}–{max(rr):.1f} 倍）" if rr else "")
+        trig.append(("大象開始撤退", "資產管理機構在股指期貨的淨多單 13 週大幅下降、落在歷史最低 10%" + bt_ + "。", "ai-elephant"))
     if stb.get("funding"):
         trig.append(("資金和信用開始緊", "SOFR 連續高於準備金利率、常設回購被大量動用，或投資級（BBB）利差跟著垃圾債擴大：慢慢累積的燃料開始被點燃。", None))
     trig.append(("出現單日 ≥4% 的大震", "餘震計時器歸零，之後幾天再出現大波動的機率會跳升。", "ai-quake"))
@@ -777,9 +779,10 @@ def sec_ai_analog(eng) -> str:
     note = T("這是最直覺的 AI 方法：k 最近鄰（k-NN）記憶搜尋，不用任何人類理論，只問「過去哪些日子看起來最像今天」。"
              "特徵：標普 1 個月與 3 個月漲跌、離高點距離、1 個月波動、VIX 水準與變化、10 年殖利率、美元、油價、金價的 3 個月變化；"
              "每一天都只用「那天以前」的資料標準化，相似日之間至少相隔 10 個交易日，而且只從結果已經知道的日子裡找。"
-             "回測失敗本身就是發現：大跌常常從「看起來很平靜」的日子開始，而「看起來很緊張」的日子之後反而常反彈，"
-             "所以只比對表面狀態的機器記憶，會系統性猜錯方向。這和學界說的「波動悖論」（低波動時槓桿累積）一致。",
-             "k-NN analogue search on 10 features, past-only scaling. Its walk-forward AUC is below 0.5 — shown as a lesson.")
+             + ("目前的走步回測通過門檻（AUC ≥ 0.55），所以相似日的機率可以當參考，但仍不是預測。" if skill else
+                "回測沒過本身就是發現：大跌常常從「看起來很平靜」的日子開始，而「看起來很緊張」的日子之後反而常反彈，"
+                "所以只比對表面狀態的機器記憶，容易猜錯方向。這和學界說的「波動悖論」（低波動時槓桿累積）一致。"),
+             "k-NN analogue search on 10 features, past-only scaling, walk-forward tested.")
     return card("AI 記憶：歷史上最像今天的日子", "Machine memory: the days most like today", _top(lens_lines(ph)["analog"]) + _fold(body + f'<p class="note">{note}</p>'), "wide")
 
 
@@ -831,7 +834,7 @@ def cross_rows(eng) -> List[dict]:
     hs = human_states(eng)
     aft, flo, tur, ana = (ph.get(k) or {} for k in ("aftershock", "absorption", "turbulence", "analog"))
     ai = [("亂流指數（跨資產走法有多不正常）", turb_state(tur), f"第 {tur['pct']:.0f} 百分位" if tur.get("available") else "—"),
-          ("市場同步度（鳥群）", flock_state(flo), (f"吸收比率第 {flo['ar_pct']:.0f} 百分位" + ("（2000 年以來最低）" if flo['ar_pct'] < 1 else "")) if flo.get("available") else "—"),
+          ("市場同步度（鳥群）", flock_state(flo), (f"吸收比率第 {flo['ar_pct']:.0f} 百分位" + (f"（{flo['since'][:4]} 年以來最低）" if flo['ar_pct'] < 1 else "")) if flo.get("available") else "—"),
           ("餘震計時器（地震學）", quake_state(aft), f"距上次主震 {aft['days_since']} 天" if aft.get("available") else "—"),
           ("相似日搜尋（AI 記憶，回測無預測力）", analog_state(ana), f"{ana['p']:.0f}%（平常 {ana['base']:.0f}%）" if ana.get("available") else "—")]
     dims = ["現在的壓力有多大", "群眾是不是一起動", "是不是剛受過衝擊", "未來 3 個月大跌的機率"]
@@ -854,6 +857,8 @@ def reading(rows: List[dict], ph: dict) -> str:
         parts.append("物理類比指標在緊張、人類的指標卻還平靜：這是比較需要留意的組合，代表結構在變化但大家還沒反應。")
     elif a_t >= 2 and h_t >= 2:
         parts.append("兩邊都在緊張：各種角度一致，波動通常會持續一段時間。")
+    elif h_t == 0 and a_t == 0:
+        parts.append("兩邊都平靜：人類指標和物理類比指標都沒有緊張訊號。")
     else:
         parts.append("兩邊都只有零星的緊張訊號，沒有形成一致的系統性警訊。")
     tur, flo, aft = ph.get("turbulence") or {}, ph.get("absorption") or {}, ph.get("aftershock") or {}
@@ -902,9 +907,10 @@ def sec_ai_intro(eng) -> str:
             + (f"{num(aft['rows'][0]['oos'], 0)}% 一路降到一年以上的 {num(aft['rows'][-1]['oos'], 0)}%" if aft.get("available") else "高檔一路遞減")
             + "）；但哪一邊先動，所有方法都猜不準。"),
            ("結構指標是天氣預報，不是鬧鐘", "亂流與同步度升高時，之後大跌的頻率比平常高，但大多數亮燈之後並沒有大跌。它們適合拿來判斷「現在該把風險放多大」。"),
-           ("機器記憶在這裡失敗了",
-            f"只比對表面狀態的相似日搜尋，樣本外 AUC {num(ana.get('auc'), 2)}，不如亂猜：危機常從平靜的日子開始。"
-            "這也說明為什麼本站不把任何單一模型當成答案。"),
+           (("機器記憶這次通過了回測", f"相似日搜尋樣本外 AUC {num(ana.get('auc'), 2)}，有一定預測力；但單一模型仍不是答案，本站只把它當其中一票。")
+            if ana.get("auc") is not None and ana["auc"] >= 0.55 else
+            ("機器記憶在這裡失敗了", f"只比對表面狀態的相似日搜尋，樣本外 AUC {num(ana.get('auc'), 2)}，沒有預測力：危機常從平靜的日子開始。"
+             "這也說明為什麼本站不把任何單一模型當成答案。")),
            ("跳脫新聞的意義", "新聞與自媒體反映的是人的注意力；這一頁只看價格之間的結構。兩者分歧時，先相信可以回測的那一邊，再看它的假警報率。")]
     lis = "".join(f'<li><b>{T(a, a)}</b>：{T(b, b)}</li>' for a, b in pts)
     return card("從回測學到的 4 件事", "What the machine lens learned from its own back-tests",
@@ -1107,15 +1113,18 @@ def sec_ai_elephant(eng) -> str:
                    f'<td class="r">{num(e["pct"], 0)}</td><td>{T(e["state"], e["state"])}</td>'
                    f'<td class="r">{num(e.get("exit_rate"), 0)}%（{T("平常", "base")} {num(e.get("base"), 0)}%）</td><td class="r">{num(e.get("auc"), 2)}</td></tr>' for e in el)
     lev = "、".join(f'{e["name"]} {num(e.get("auc_lev"), 2)}' for e in el)
+    am_auc = [e["auc"] for e in el if e.get("auc") is not None]
+    lev_auc = [e["auc_lev"] for e in el if e.get("auc_lev") is not None]
     ins = b.get("insiders") or {}
     ins_txt = (f"AI 相關公司內部人（{ins['from']}～{ins['to']}）：賣出約 {(ins['sell'] + ins['sell_plan']) / 1e8:,.1f} 億美元、買進約 {ins['buy'] / 1e8:,.2f} 億美元；"
                "賣最多的是 " + "、".join(f"{s}（{v / 1e8:,.1f} 億）" for s, v in ins.get("top") or []) +
                "。高層賣股多半是事先排定的計畫或稅務、分散需求，買進才比較有資訊；本站只保存幾個月的申報，沒辦法回測，只當背景，不計入判斷。") if ins else ""
     note = T("怎麼看：CFTC 每週公布期貨的持倉，「資產管理機構」是退休基金、共同基金、保險這類長期大錢；它們在股指期貨的淨多單（占未平倉量 %）"
              "13 週內大幅下降、落在自己歷史最低 10%，代表大錢在降低股票曝險。回測 2010 年起每週一筆：這種時候之後 3 個月內跌 ≥10% 的頻率，比平常高；"
-             "AUC 0.56–0.59，有一點預測力但不強，而且每週的樣本彼此重疊，不是獨立事件。避險基金（槓桿基金）的部位回測沒有預測力（AUC "
-             + lev + "，0.5＝亂猜），所以不採用。"
-             "13F 大師持倉（「大師持倉」頁）每季一次、晚 45 天公布，太慢，只適合事後看誰在賣。資料：CFTC 交易者持倉報告（TFF）。不是投資建議。", "")
+             + (f"AUC {min(am_auc):.2f}–{max(am_auc):.2f}，" + ("有一點預測力但不強" if max(am_auc) >= 0.55 else "預測力不明顯") if am_auc else "")
+             + "，而且每週的樣本彼此重疊，不是獨立事件。避險基金（槓桿基金）的部位回測 AUC "
+             + lev + "（0.5＝亂猜）" + ("，沒有預測力，所以不採用。" if not lev_auc or max(lev_auc) < 0.55 else "，部分超過 0.55，但樣本重疊，本站只當參考。")
+             + "13F 大師持倉（「大師持倉」頁）每季一次、晚 45 天公布，太慢，只適合事後看誰在賣。資料：CFTC 交易者持倉報告（TFF）。不是投資建議。", "")
     body = (f'<p class="rimp big2"><b>{emo} {T(head, "")}</b></p>'
             f'<div class="scroll"><table class="mini"><thead><tr><th>{T("期貨", "Futures")}</th><th class="r">{T("資產管理機構淨多單", "Asset-manager net")}</th>'
             f'<th class="r">{T("13 週變化", "13w change")}</th><th class="r">{T("變化的歷史百分位", "Pctile")}</th><th>{T("判讀", "Reading")}</th>'
