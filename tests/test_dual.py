@@ -29,7 +29,9 @@ def test_foi_badge():
     from tools import site_watch2 as SW2
     SW2._tw = lambda e: {"emoji": "🔴", "net": -41234, "band": "空方警戒", "since": "2018", "pct": 3.2, "date": "2026-10-23"}
     h = SD.foi_badge(None)
-    assert "-4.1 萬口" in h and "空方警戒" in h and 'data-p="taiwan"' in h
+    assert "外資台指期空單 4.1 萬口（2018 年來最多・10-23）" in h and 'data-p="taiwan"' in h
+    SW2._tw = lambda e: {"emoji": "🟢", "net": 15000, "band": "", "since": "2018", "pct": 60, "date": "2026-10-23"}
+    assert "多單 1.5 萬口（一般水準" in SD.foi_badge(None)
 
 
 def test_pages_ship_new_parts():

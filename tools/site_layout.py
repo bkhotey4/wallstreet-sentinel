@@ -22,7 +22,7 @@ GROUPS: List[Tuple[str, str, str, str, str, List[str]]] = [
     ("macro", "總經與利率", "Macro & rates", "經濟、利率、通膨往哪走", "Economy, rates, inflation", ["econ", "bonds", "energy", "markets"]),
     ("sector", "產業", "Sectors", "哪些產業順風、哪裡有財務風險", "Which sectors have tailwinds or financial risk",
      ["industry", "rotation", "themes", "tech", "growth"]),
-    ("stock", "個股", "Stocks", "哪些公司值得研究", "Companies worth a closer look", ["scores", "signals", "intel", "gurus", "portfolio"]),
+    ("stock", "個股", "Stocks", "哪些公司值得研究", "Companies worth a closer look", ["entry", "scores", "signals", "intel", "gurus", "portfolio"]),
     ("tw", "台股", "Taiwan", "台股資金與籌碼", "Taiwan flows and positioning", ["taiwan"]),
     ("more", "新聞與說明", "News & about", "背景新聞、數據怎麼來", "Background news, how the data is made", ["news", "tools", "inputs", "about"]),
 ]

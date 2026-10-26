@@ -94,7 +94,10 @@ def foi_badge(eng) -> str:
         v = None
     if not v:
         return ""
-    txt = f"{v['emoji']} 外資台指期淨未平倉 {v['net'] / 1e4:+.1f} 萬口｜{v['band']}（{v['since']} 年以來第 {v['pct']:.0f} 百分位，資料日 {v['date']}）"
+    side = "空單" if v["net"] < 0 else "多單"
+    pct = v["pct"] if v["net"] < 0 else 100 - v["pct"]               # how extreme on its own side
+    where = (f"{v['since']} 年來最多" if pct <= 5 else f"{v['since']} 年來偏多" if pct <= 20 else "一般水準")
+    txt = f"{v['emoji']} 外資台指期{side} {abs(v['net']) / 1e4:.1f} 萬口（{where}・{str(v['date'])[5:]}）"
     return (f'<div class="foib">{T(txt, "")} <a class="golink" href="#taiwan" data-p="taiwan">{T("台股頁 →", "Taiwan →")}</a></div>')
 
 
