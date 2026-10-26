@@ -108,6 +108,38 @@ POINTS = [
 ]
 
 
+# bond research: established, citable findings (compiled with the review, see COMPILED); each with what it means here
+BOND_POINTS = [
+    ("殖利率曲線倒掛常領先衰退",
+     "Estrella & Mishkin（1998）等研究：長短天期利差轉負（倒掛）之後，美國常在 1 年左右進入衰退；紐約聯準會的衰退機率模型就是用 10 年減 3 個月利差。",
+     "倒掛到衰退的間隔從幾個月到兩年都有，不是精準的時鐘；本站「美債」頁的曲線與衰退機率就是這個方法。"),
+    ("長期利率＝預期的短期利率＋期限溢酬",
+     "Adrian、Crump & Moench（2013）把 10 年期殖利率拆成「市場預期的未來短率」和「期限溢酬」（紐約聯準會每天公布）。期限溢酬是投資人為了長期借錢給政府多要的補償。",
+     "期限溢酬上升通常和財政赤字、通膨不確定、長債買家變少有關；本站「AI 視角看債券」會在它處於歷史高檔時提醒。"),
+    ("外國官方買盤會壓低美債利率",
+     "Warnock & Warnock（2009）估計，2000 年代中期外國資金大量買美債，讓 10 年期殖利率低了約 0.8 個百分點。",
+     "反過來說，日本、中國等大持有者減碼時，美國長債少了買家，利率比較容易往上；本站用 TIC 與日本財務省週資料追蹤這股資金。"),
+    ("超額債券溢酬能預告景氣",
+     "Gilchrist & Zakrajšek（2012）把公司債利差裡「違約風險以外」的部分（EBP）分離出來，發現它升高之後，經濟活動常轉弱。",
+     "EBP 代表投資人的風險胃口；本站「美國公司債」頁有聯準會公布的 EBP。"),
+    ("信用市場太放心之後，常常反轉",
+     "López-Salido、Stein & Zakrajšek（2017）：公司債利差很低、低評等公司大量發債的時期，之後約兩年利差常擴大、經濟成長放慢。",
+     "利差低不等於安全，可能是燃料在累積；本站把「公司債利差在歷史低檔」標成「很放心（也可能太放心）」，而不是「健康」。"),
+    ("利差暴衝多半是確認，不是預告",
+     "Krishnamurthy & Muir 等研究：信用利差突然大跳，多半代表壓力已經發生，跳得越大，之後的衰退通常越深。",
+     "等利差暴衝才反應通常已經晚了；比較值得看的是壓力是不是從最弱的 CCC 等級，往 B、BB 再往投資級擴散，本站的公司債頁就是照這個順序排列。"),
+]
+
+
+def sec_research_bonds(eng) -> str:
+    pts = "".join(f'<div class="rpt"><h3>{k}. {T(t, t)}</h3><p>{T(b, b)}</p><p class="rimp"><b>{T("隱含意義", "So what")}</b>：{T(i, i)}</p></div>'
+                  for k, (t, b, i) in enumerate(BOND_POINTS, 1))
+    head = T(f"一句話看懂：債券市場比股市更早反映景氣、通膨與財政的擔心；這 {len(BOND_POINTS)} 個研究結論是本站債券與公司債頁面的判讀依據（整理日期 {COMPILED}）。", "")
+    return card("債券研究重點：學界怎麼看債券市場", "Bond research: key findings",
+                f'<p class="rimp big2"><b>{head}</b></p><details class="sgx"><summary>{T("點開看研究重點", "Show")}</summary>{pts}</details>'
+                f'<p class="note">{T("只列出學界已經有大量實證、被央行廣泛引用的結論；每週新發表的債券研究會出現在下面的「最新學術動態」。不是投資建議。", "")}</p>', "wide")
+
+
 def _fr_data():
     try:
         from wsb.data import fed_research as FR
@@ -250,11 +282,12 @@ def sec_research_feed(eng) -> str:
     esc_ = lambda x: html.escape(str(x or ""))  # noqa: E731
     rows = ""
     for it in items:
-        rows += (f'<div class="rpt"><h3><a href="{esc_(it["url"])}" target="_blank" rel="noopener">{esc_(it["title"])}</a></h3>'
+        tp = f'<span class="pill">{esc_(it["topic"])}</span> ' if it.get("topic") else ""
+        rows += (f'<div class="rpt"><h3>{tp}<a href="{esc_(it["url"])}" target="_blank" rel="noopener">{esc_(it["title"])}</a></h3>'
                  f'<p class="small muted">{esc_(it.get("source"))}・{esc_(it.get("authors"))}・{esc_(it.get("published"))}</p>'
                  f'<p>{esc_(it["summary"])}</p>'
                  + (f'<p class="rimp"><b>隱含意義</b>：{esc_(it.get("implication"))}</p>' if it.get("implication") else "")
                  + (f'<p class="small">與本站的關係：{esc_(it.get("site_relevance"))}</p>' if it.get("site_relevance") else "") + "</div>")
-    note = ("每週一由 AI 研究任務搜尋聯準會、BIS、IMF、NBER、ECB 等新發表的研究，挑出和本站相關的整理成中文重點。"
+    note = ("每週一由 AI 研究任務搜尋聯準會、BIS、IMF、NBER、ECB、日本央行、台灣央行等新發表的研究（風險預警與債券兩大主題），挑出和本站相關的整理成中文重點。"
             "每篇都附原文連結，請以原文為準；AI 摘要可能有誤，也不是投資建議。")
     return card("最新學術動態（每週自動整理）", "Latest research (weekly)", rows + f'<p class="note">{note}</p>', "wide")

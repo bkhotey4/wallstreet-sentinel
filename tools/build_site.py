@@ -47,6 +47,7 @@ from tools import site_glossary as SGL
 from tools import site_entry as SEN
 from tools import site_cooldown as SCD
 from tools import site_marks as SMK
+from tools import site_bonds as SBD
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -1064,7 +1065,10 @@ body{margin:0;background:var(--page);color:var(--tx);font:14px/1.55 system-ui,-a
 .bar{max-width:1320px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{font-weight:800;letter-spacing:.08em;font-size:13px}.brand small{display:block;font-weight:500;letter-spacing:0;color:var(--mu);font-size:12px}
 .live{display:inline-flex;align-items:center;gap:6px;color:var(--mu);font-size:12px;margin-left:auto}.live i{width:8px;height:8px;border-radius:50%;background:var(--up)}
-.fsb{min-width:34px;font-weight:700}.fsb:disabled{opacity:.4;cursor:default}
+.tbtns{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fsg{display:inline-flex}.fsg .fsb{min-width:30px;padding:5px 7px;font-weight:700}.fsg .fsb:first-child{border-radius:8px 0 0 8px}.fsg .fsb:last-child{border-radius:0 8px 8px 0;border-left:0}
+.fsb:disabled{opacity:.4;cursor:default}
+@media(min-width:901px){.bar{flex-wrap:nowrap}.live{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;justify-content:flex-end}}
 .btn{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer;min-width:40px}
 .wrap{max-width:1320px;margin:0 auto;padding:12px 16px 40px}
 .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(148px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
@@ -1301,16 +1305,24 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("bonds", "美債", "Treasuries", [SCR.sec_credit_rates, SSL.sec_ebp, SR.sec_rates_radar, S2.sec_bonds]),
+            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBD.sec_gb_brief, SBD.sec_gb_flows]),
+            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds, SBD.sec_gb_tic]),
+            ("jgb", "日債", "Japanese bonds", [SBD.sec_gb_jgb, SBD.sec_gb_mof]),
+            ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),
+            ("wbonds", "各國債券", "Bonds by country", [SBD.sec_gb_sovereign]),
+            ("cbonds", "AI 視角看公司債", "AI view of corporate bonds", [SBD.sec_cb_brief, SBD.sec_gb_corp]),
+            ("cb_us", "美國公司債", "US corporate bonds", [SBD.sec_cb_us, SCR.sec_credit_rates, SSL.sec_ebp]),
+            ("cb_eu", "歐洲公司債", "European corporate bonds", [SBD.sec_cb_eu]),
+            ("cb_em", "新興與亞洲公司債", "EM & Asian corporate bonds", [SBD.sec_cb_em]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SW2.sec_nh_nl, SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
-            ("markets", "全球行情", "Markets", [SEA.sec_europe, SEA.sec_asia, sec_markets]),
+            ("markets", "全球行情", "Markets", [SEA.sec_asia, sec_markets]),
             ("taiwan", "台股", "Taiwan", [S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
-            ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points]),
+            ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_dollar, STR.sec_tr_yen, SST.sec_st_coverage]),
             ("tools", "工具", "Tools", [SLV.sec_lookup, SLV.sec_watch, SCA.sec_sizing, S4.sec_fees]),
@@ -1359,7 +1371,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
-{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></div>
+<div class="tbtns">{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><span class="fsg"><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></span></div></div>
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}

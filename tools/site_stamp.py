@@ -98,6 +98,17 @@ def _fm():
         return None, None
 
 
+def _bondflows():
+    """Japan MOF weekly + US TIC: when they were fetched and the newest week covered."""
+    try:
+        from wsb.data import bondflows as BF
+        d = BF.load()
+        rows = d.get("mof") or []
+        return d.get("ts"), (rows[-1][1] if rows else None)
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 def _fund_ts():
     try:
         from wsb.data import fundamentals as F
@@ -271,6 +282,9 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "fedwatch": ("利率期貨", "Fed funds futures", lambda e: (_ts(_g(e, "fedwatch", "ts")), _d(_g(e, "fedwatch_view", "asof"))), 4),
     "options": ("CBOE 選擇權", "CBOE options", lambda e: (_ts(_g(e, "options", "ts")), _d(_g(e, "options", "spx", "asof"))), 4),
     "darkpool": ("FINRA 暗池", "FINRA dark pool", lambda e: (None, _d(_g(e, "darkpool", "result", "asof"))), 7),
+    "jgb": ("日本財務省公債殖利率", "MOF JGB yields", lambda e: (_ts(_g(e, "global_yields", "ts")),
+            _d(e.global_yields.jgb.index[-1]) if getattr(getattr(e, "global_yields", None), "jgb", None) is not None and len(e.global_yields.jgb) else None), 5),
+    "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 14),
     "fullmkt": ("全市場股價與估值", "Full-market scan", lambda e: (_ts(_fm()[0]), _fm()[1]), 4),
     "stocks": ("個股股價", "Stock prices", lambda e: (_ts(_g(e, "stockprices", "ts")), _last(_g(e, "stockprices", "close"))), 4),
     "earnings": ("財報資料", "Earnings data", lambda e: (_ts(_g(e, "earnings", "ts")), None), 0),
@@ -313,14 +327,17 @@ TAB_DEFAULT: Dict[str, List[str]] = {
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
-    "news": ["news"], "history": ["ssi"], "entry": ["px", "ssi"], "inputs": ["px", "fred"], "ai": ["px"], "stability": ["funding"],
+    "news": ["news"], "history": ["ssi"], "entry": ["px", "ssi"], "gbonds": ["fred"], "jgb": ["fred"], "ebonds": ["fred"], "wbonds": ["fred"], "cbonds": ["fred"],
+    "cb_us": ["fred"], "cb_eu": ["fred"], "cb_em": ["fred"], "inputs": ["px", "fred"], "ai": ["px"], "stability": ["funding"],
 }
 CARD: Dict[str, List[str]] = {
     "sec_premarket": ["px"], "sec_focus": ["px", "fedwatch", "econ"], "sec_vix_hot": ["px"], "sec_vix_explain": ["px"],
     "sec_econ_mini": ["econ"], "sec_fg_mini": ["px", "crypto"], "sec_scores_mini": ["stocks"], "sec_trends": ["px"],
     "sec_ssi": ["ssi"], "sec_radar": ["ssi"], "sec_odds": ["ssi"],
     "sec_ai_entry": ["px", "ssi", "ofr"], "sec_cool_check": ["px", "ssi", "ofr"], "sec_cool_history": ["px"], "sec_bull_env": ["px", "fred", "canary"],
-    "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"],
+    "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"], "sec_gb_brief": ["fred", "bondflows"], "sec_gb_sovereign": ["fred"],
+    "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
+    "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
@@ -333,7 +350,7 @@ CARD: Dict[str, List[str]] = {
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_tw_rev": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links"}   # static content
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds"}   # static content
 LIVE = {"sec_lookup", "sec_watch"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 
