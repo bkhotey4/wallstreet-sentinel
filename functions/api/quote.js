@@ -131,9 +131,13 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
     const ts = res.timestamp || [], off = m.gmtoffset || 0, day = (s) => Math.floor((s + off) / 86400);
     const today = day(m.regularMarketTime || ts[ts.length - 1] || 0);
     prev = null;
+    const past = [];                                                    // closes of earlier days, newest first
     for (let i = closes.length - 1; i >= 0; i--) {
-      if (typeof closes[i] === "number" && ts[i] != null && day(ts[i]) < today) { prev = closes[i]; break; }
+      if (typeof closes[i] === "number" && ts[i] != null && day(ts[i]) < today) past.push(closes[i]);
     }
+    prev = past.length ? past[0] : null;
+    // the trend up to yesterday's close: yesterday, the day before, 5 and 20 sessions earlier (the page compares today with it)
+    if (past.length > 20) out.trend = { p0: past[0], p1: past[1], p5: past[5], p20: past[20] };
     Object.assign(out, tech(closes, (res.events || {}).dividends, Math.floor(Date.now() / 1000)));
   }
   if (vol && !full) {

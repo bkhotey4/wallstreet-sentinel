@@ -92,3 +92,9 @@ console.log("quote tests ok");
   assert.equal(jumpOf([], [], 0), null);
   console.log("ok jump");
 }
+
+// full mode carries the trend up to yesterday's close (p0 yesterday, p1 the day before, p5 / p20 sessions earlier)
+{
+  assert.deepEqual(f.trend, { p0: 358, p1: 357, p5: 353, p20: 338 });
+  console.log("ok trend");
+}
