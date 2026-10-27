@@ -132,7 +132,10 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
     const today = day(m.regularMarketTime || ts[ts.length - 1] || 0);
     prev = null;
     const past = [];                                                    // closes of earlier days, newest first
+    const vols = (((res.indicators || {}).quote || [])[0] || {}).volume || [];
+    const tw = /.TWO?$/.test(sym);                                     // Yahoo copies the last close onto Taiwan holidays (volume 0)
     for (let i = closes.length - 1; i >= 0; i--) {
+      if (tw && vols[i] === 0) continue;
       if (typeof closes[i] === "number" && ts[i] != null && day(ts[i]) < today) past.push(closes[i]);
     }
     prev = past.length ? past[0] : null;
