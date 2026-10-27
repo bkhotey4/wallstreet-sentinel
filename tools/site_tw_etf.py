@@ -199,47 +199,139 @@ def tool_data(r) -> dict:
     return out
 
 
+def all_rows(eng) -> list:
+    """Every listed ETF from the TWSE NAV feed: [code, name, kind, price, premium, size 億, today net 億, holders]."""
+    from wsb.data import tw_etf as D
+    d = D.load()
+    hd = d.get("holders") or {}
+    last = hd[max(hd)] if hd else {}
+    out = []
+    for k, v in (d.get("nav") or {}).items():
+        aum = v["units"] * v["nav"] / 1e8 if v.get("units") and v.get("nav") else None
+        fl = (v.get("dunits") or 0) * v["nav"] / 1e8 if v.get("dunits") is not None and v.get("nav") else None
+        h = (last.get(k) or [None])[0]
+        out.append([k, v.get("name") or k, D.kind_of(k, v.get("name") or ""), v.get("px"), v.get("prem"),
+                    round(aum, 1) if aum is not None else None, round(fl, 2) if fl is not None else None, h])
+    return sorted(out, key=lambda x: -(x[5] or 0))
+
+
+def sec_etf_all(eng) -> str:
+    r = _r(eng)
+    if not r.get("available"):
+        return ""
+    rows = all_rows(eng)
+    if not rows:
+        return ""
+    from wsb.data import tw_etf as D
+    nav = D.load().get("nav") or {}
+    asof = max((f"{v['date']} {v.get('time') or ''}".strip() for v in nav.values() if v.get("date")), default="")
+    core = {c: k for k, xs in D.CORE.items() for c in xs}
+    js = json.dumps({"rows": rows, "core": core, "asof": asof}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    body = (_lead(f"一句話看懂：台灣目前掛牌的 {len(rows)} 檔 ETF 都在這裡，輸入代號或名稱（例如 00999A、高息、美債）就能查；點「詳情」看一年高低點、配息率和波動。")
+            + f'<form class="lqf" id="etsf" autocomplete="off"><input id="etsq" class="lqin" maxlength="20" placeholder="00999A、高息、美債、主動" aria-label="search"></form>'
+              f'<p class="small muted" id="etsu">🕒 {T("資料時間：", "Data as of ")}{esc(asof or "—")}{T("（網站更新時）", " (site build)")}</p>'
+              f'<p class="small muted" id="etsn"></p><div class="scroll"><table class="mini" id="etst"></table></div>'
+            + f'<script type="application/json" id="etf-all">{js}</script>'
+            + _how("清單、價格、淨值、規模與今天申贖來自證交所「ETF 即時淨值」：在 Cloudflare 版網址打開時直接即時抓（每 2 分鐘更新，新上市的 ETF 會自動出現），"
+                   "其他情況用網站更新時的資料；受益人數來自集保結算所（每週）。"
+                   "沒輸入時列出規模最大的 30 檔。「詳情」會即時向本站的報價服務查一年的日資料（Yahoo），只送出 ETF 代號。"
+                   "類型依代號與名稱自動判斷（B＝債券、L／R＝槓桿反向、A＝主動式、名稱有「息」＝高股息），可能有少數分錯。不是投資建議。"))
+    return card("全部台灣 ETF 查詢", "Search every Taiwan ETF", body, "wide")
+
+
 def sec_etf_tool(eng) -> str:
     r = _r(eng)
     if not r.get("available"):
         return ""
     data = tool_data(r)
-    if not data:
-        return ""
-    opts = "".join(f'<option value="{esc(k)}">{esc(k)} {esc(v["n"])}</option>' for k, v in data.items())
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    body = (_lead("一句話看懂：選一檔 ETF 和一個起始日期，看從那天投入到現在，含配息會變多少（例如你以前持有、後來出場的 ETF，現在會是多少）。")
-            + f'<form class="lqf" id="etff" autocomplete="off"><select id="etfc" class="lqin">{opts}</select>'
-              f'<input id="etfd" class="lqin" type="date" min="{min(v["w"][0][0] for v in data.values())}" aria-label="start">'
+    body = (_lead("一句話看懂：輸入任何台灣 ETF 代號和起始日期，看從那天投入到現在，含配息會變多少（例如你以前持有、後來出場的 ETF，現在會是多少）。")
+            + f'<form class="lqf" id="etff" autocomplete="off"><input id="etfc" class="lqin" maxlength="10" value="0056" list="etfl" aria-label="ETF">'
+              f'<datalist id="etfl"></datalist>'
+              f'<input id="etfd" class="lqin" type="date" aria-label="start">'
               f'<input id="etfa" class="lqin" type="number" min="1000" step="1000" value="100000" aria-label="amount">'
               f'<button class="btn" type="submit">{T("試算", "Calculate")}</button></form><div id="etfo"></div>'
             + f'<script type="application/json" id="etf-data">{js}</script>'
-            + _how("用每週最後一個收盤價計算（起始日對到那一週），配息用實際的除息日與金額。「配息領現金」＝配息不再投入；「配息再投入」＝每次配息在除息那週買回同一檔。"
+            + _how("用每週收盤價計算（起始日對到那一週），配息用實際的除息日與金額，最多回溯 5 年。「配息領現金」＝配息不再投入；「配息再投入」＝每次配息在除息那週買回同一檔。"
+                   "熱門 ETF 用網站內建資料；其他代號會即時向本站的報價服務查（Yahoo，只在 Cloudflare 版網址可用）。"
                    "未計手續費、稅與匯費。輸入的金額與日期只在你的瀏覽器計算，不會送出或保存。這是歷史回顧，不代表未來，也不是投資建議。", "怎麼算的"))
     return card("ETF 回顧試算", "ETF look-back calculator", body, "wide")
 
 
 JS = r"""
-(function(){var f=document.getElementById('etff');if(!f)return;var D;try{D=JSON.parse(document.getElementById('etf-data').textContent);}catch(e){return;}
+(function(){
+ function fm(x,d){return x==null||isNaN(x)?'—':(+x).toLocaleString('zh-TW',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+ function sg(x,d){return x==null||isNaN(x)?'—':(x>=0?'+':'')+fm(x,d==null?1:d)+'%';}
+ function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+ var EA={rows:[],core:{}};try{EA=JSON.parse((document.getElementById('etf-all')||{}).textContent||'{}');}catch(e){}
+ var ALL=EA.rows||[],HOLD={};ALL.forEach(function(r){if(r[7])HOLD[r[0]]=r[7];});
+ function kindOf(c,n){if(EA.core&&EA.core[c])return EA.core[c];if(/B$/.test(c))return '債券';if(/[LR]$/.test(c))return '槓桿反向';if(/A$/.test(c))return '主動式';
+  if(/U$/.test(c)||n.indexOf('期貨')>=0)return '商品期貨';if(n.indexOf('息')>=0||n.indexOf('收益')>=0)return '高股息';return '其他股票型';}
+ var dl=document.getElementById('etfl');
+ var D={};try{D=JSON.parse((document.getElementById('etf-data')||{}).textContent||'{}');}catch(e){}
+ // one live request for both listings (.TW / .TWO); the one Yahoo knows comes back
+ function live(code,mode){return fetch('api/quote?s='+encodeURIComponent(code+'.TW,'+code+'.TWO')+'&'+mode+'=1',{cache:'no-store'})
+   .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var q=d.q||{};return q[code+'.TW']||q[code+'.TWO']||null;});}
+ // ---------------- search every ETF
+ var qi=document.getElementById('etsq'),tb=document.getElementById('etst'),nn=document.getElementById('etsn');
+ if(qi&&tb){
+  function draw(){var s=qi.value.trim().toUpperCase(),hit=s?ALL.filter(function(r){return r[0].toUpperCase().indexOf(s)>=0||r[1].toUpperCase().indexOf(s)>=0||r[2].indexOf(s)>=0;}):ALL;
+   nn.textContent=s?('找到 '+hit.length+' 檔'+(hit.length>60?'，只列前 60 檔':'')):'規模最大的 30 檔（共 '+ALL.length+' 檔，輸入代號或名稱查詢）';
+   hit=hit.slice(0,s?60:30);tb.textContent='';var h=tb.insertRow();
+   ['ETF','類型','價格','折溢價','規模（億）','今天申贖（億）','受益人（萬）',''].forEach(function(x,i){var th=el('th',i>1&&i<7?'r':'',x);h.appendChild(th);});
+   hit.forEach(function(r){var tr=tb.insertRow(),c0=tr.insertCell();c0.appendChild(el('b','',r[0]));c0.appendChild(document.createTextNode(' '+r[1].slice(0,16)));
+    tr.insertCell().textContent=r[2];
+    [[fm(r[3],2),''],[r[4]==null?'—':sg(r[4],2),r[4]!=null&&Math.abs(r[4])>=1?'dn':''],[fm(r[5],0),''],[r[6]==null?'—':(r[6]>=0?'+':'')+fm(r[6],1),r[6]>0?'up':r[6]<0?'dn':''],[r[7]?fm(r[7]/1e4,1):'—','']]
+     .forEach(function(v){var c=tr.insertCell();c.className='r '+v[1];c.textContent=v[0];});
+    var bc=tr.insertCell(),b=el('button','btn','詳情');b.type='button';bc.appendChild(b);
+    b.addEventListener('click',function(){var nx=tr.nextSibling;if(nx&&nx.className==='etsd'){nx.remove();return;}
+     var dr=tb.insertRow(tr.rowIndex+1);dr.className='etsd';var dc=dr.insertCell();dc.colSpan=8;dc.className='small';dc.textContent='查詢中…';
+     live(r[0],'full').then(function(q){if(!q){dc.textContent='報價服務沒有這檔的資料（或只在 Cloudflare 版網址可用）。';return;}
+      var y=q.div12&&q.price?q.div12/q.price*100:null,off=q.hi52?(q.price/q.hi52-1)*100:null;
+      dc.textContent='現價 '+fm(q.price,2)+'；一年高點 '+fm(q.hi52,2)+'、低點 '+fm(q.lo52,2)+(off!=null?'（離高點 '+sg(off)+'）':'')
+       +'；近 12 個月配息 '+fm(q.div12,3)+' 元'+(y!=null?'（配息率約 '+fm(y,1)+'%）':'')+'；近一個月年化波動 '+fm(q.vol20,0)+'%'
+       +(q.ma_gap!=null?'；距 200 日均線 '+sg(q.ma_gap):'')+'。上市未滿一年的，一年數字只涵蓋上市以來。';
+      var go=el('button','btn','用回顧試算');go.type='button';go.style.marginLeft='8px';dc.appendChild(go);
+      go.addEventListener('click',function(){var ci=document.getElementById('etfc');if(ci){ci.value=r[0];ci.scrollIntoView({behavior:'smooth',block:'center'});}});})
+     .catch(function(){dc.textContent='查詢失敗（這個功能只在 Cloudflare 版網址可用：wallstreet-sentinel.pages.dev）。';});});});}
+  qi.addEventListener('input',draw);document.getElementById('etsf').addEventListener('submit',function(e){e.preventDefault();draw();});draw();
+  // live list straight from TWSE through /api/etf: new listings and current prices without waiting for a site build
+  var lu=document.getElementById('etsu'),ldead=false;
+  function pullAll(){if(ldead||document.hidden)return;fetch('api/etf',{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){ldead=true;throw 0;}if(!r.ok)throw 0;return r.json();}).then(function(d){
+    var rs=(d.rows||[]).map(function(x){var aum=x[2]&&x[5]?x[2]*x[5]/1e8:null,fl=x[3]!=null&&x[5]?x[3]*x[5]/1e8:null;
+      return [x[0],x[1],kindOf(x[0],x[1]),x[4],x[6],aum,fl,HOLD[x[0]]||null,(x[7]||'')+' '+(x[8]||'').slice(0,5)];});
+    if(!rs.length)throw 0;rs.sort(function(a,b){return (b[5]||0)-(a[5]||0);});ALL=rs;
+    var t=rs.map(function(r){return r[8];}).sort().pop()||'';
+    if(lu)lu.textContent='🕒 資料時間：證交所 '+t.trim()+'（即時，每 2 分鐘自動更新；共 '+rs.length+' 檔）';
+    if(dl&&dl.options.length!==rs.length){dl.textContent='';rs.forEach(function(r){var o=document.createElement('option');o.value=r[0];o.label=r[1].slice(0,16);dl.appendChild(o);});}
+    draw();}).catch(function(){});}
+  pullAll();setInterval(pullAll,120000);document.addEventListener('visibilitychange',function(){if(!document.hidden)pullAll();});}
+ // ---------------- look-back calculator (any code)
+ var f=document.getElementById('etff');if(!f)return;
+ if(dl)ALL.forEach(function(r){var o=document.createElement('option');o.value=r[0];o.label=r[1].slice(0,16);dl.appendChild(o);});
  var dd=document.getElementById('etfd');try{var t=new Date();t.setFullYear(t.getFullYear()-1);dd.value=t.toISOString().slice(0,10);}catch(e){}
- function fm(x,d){return x==null||isNaN(x)?'—':x.toLocaleString('zh-TW',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
- function sg(x){return (x>=0?'+':'')+fm(x,1)+'%';}
- f.addEventListener('submit',function(ev){ev.preventDefault();var o=document.getElementById('etfo');o.textContent='';
-  var e=D[document.getElementById('etfc').value],s=dd.value,A=+document.getElementById('etfa').value;
-  function line(t,c){var p=document.createElement('p');if(c)p.className=c;p.textContent=t;o.appendChild(p);}
-  if(!e||!s||!(A>0)){line('請選 ETF、起始日期並輸入金額。','muted');return;}
+ function calc(e,s,A,o){function line(t,c){o.appendChild(el('p',c||'',t));}
   var w=e.w,i0=-1;for(var i=0;i<w.length;i++){if(w[i][0]>=s){i0=i;break;}}
-  if(i0<0||i0>=w.length-1){line('起始日期太近或超出資料範圍（資料從 '+w[0][0]+' 開始）。','muted');return;}
+  if(i0<0||i0>=w.length-1){line('起始日期太近或超出資料範圍（這檔資料從 '+w[0][0]+' 開始）。','muted');return;}
   if(s<w[0][0])line('這檔的資料從 '+w[0][0]+' 開始，改從那天計算。','muted');
   var p0=w[i0][1],pn=w[w.length-1][1],sh=A/p0,cash=0,shR=sh,peak=0,mdd=0;
   function px(dt){for(var k=i0;k<w.length;k++){if(w[k][0]>=dt)return w[k][1];}return pn;}
-  e.dv.forEach(function(v){if(v[0]>w[i0][0]&&v[0]<=w[w.length-1][0]){cash+=sh*v[1];shR+=shR*v[1]/px(v[0]);}});
-  for(var k=i0;k<w.length;k++){var val=w[k][1];if(val>peak)peak=val;var dd_=val/peak-1;if(dd_<mdd)mdd=dd_;}
+  (e.dv||[]).forEach(function(v){if(v[0]>w[i0][0]&&v[0]<=w[w.length-1][0]){cash+=sh*v[1];shR+=shR*v[1]/px(v[0]);}});
+  for(var k=i0;k<w.length;k++){var val=w[k][1];if(val>peak)peak=val;var x=val/peak-1;if(x<mdd)mdd=x;}
   var v1=sh*pn+cash,v2=shR*pn;
-  line('從 '+w[i0][0]+'（每單位 '+fm(p0,2)+' 元）投入 NT$ '+fm(A)+'，到 '+w[w.length-1][0]+'（'+fm(pn,2)+' 元）：','');
-  line('• 配息領現金：市值 NT$ '+fm(sh*pn)+' ＋ 領到配息 NT$ '+fm(cash)+' ＝ NT$ '+fm(v1)+'（'+sg((v1/A-1)*100)+'）','');
-  line('• 配息再投入：NT$ '+fm(v2)+'（'+sg((v2/A-1)*100)+'）','');
+  line((e.n?e.n+'：':'')+'從 '+w[i0][0]+'（每單位 '+fm(p0,2)+' 元）投入 NT$ '+fm(A)+'，到 '+w[w.length-1][0]+'（'+fm(pn,2)+' 元）：');
+  line('• 配息領現金：市值 NT$ '+fm(sh*pn)+' ＋ 領到配息 NT$ '+fm(cash)+' ＝ NT$ '+fm(v1)+'（'+sg((v1/A-1)*100)+'）');
+  line('• 配息再投入：NT$ '+fm(v2)+'（'+sg((v2/A-1)*100)+'）');
   line('• 期間價格最大回落 '+fm(mdd*100,1)+'%（以週收盤計）','small muted');
-  line('歷史回顧，未計手續費與稅，不代表未來，不是投資建議。','small muted');});
+  line('歷史回顧，未計手續費與稅，不代表未來，不是投資建議。','small muted');}
+ f.addEventListener('submit',function(ev){ev.preventDefault();var o=document.getElementById('etfo');o.textContent='';
+  var code=document.getElementById('etfc').value.trim().toUpperCase(),s=dd.value,A=+document.getElementById('etfa').value;
+  if(!code||!s||!(A>0)){o.appendChild(el('p','muted','請輸入 ETF 代號、起始日期和金額。'));return;}
+  var nm=(ALL.filter(function(r){return r[0]===code;})[0]||[])[1]||'';
+  if(D[code]){calc(D[code],s,A,o);return;}
+  o.appendChild(el('p','muted','查詢 '+code+' 的歷史資料中…'));
+  live(code,'hist').then(function(h){o.textContent='';if(!h||!h.w||h.w.length<2){o.appendChild(el('p','muted','找不到 '+code+' 的歷史價格（請確認代號，或改用 Cloudflare 版網址）。'));return;}
+   calc({n:code+' '+nm.slice(0,14),w:h.w,dv:h.dv},s,A,o);})
+  .catch(function(){o.textContent='';o.appendChild(el('p','muted','查詢失敗（這檔不在內建清單，需要 Cloudflare 版網址的即時報價服務：wallstreet-sentinel.pages.dev）。'));});});
 })();
 """

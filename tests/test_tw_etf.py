@@ -90,7 +90,28 @@ def test_page():
     assert "一句話看懂" in h and "尚未填息" in h and "0056" in h
     for w in ("目標價", "上漲空間", "低估", "高估", "買進", "賣出"):
         assert w not in h + S.JS, w
+    import json as _j
+    from wsb.data import tw_etf as D
+    D._save(_fixture())
+    h2 = S.sec_etf_all(e) + S.sec_etf_tool(e)
+    assert "全部台灣 ETF 查詢" in h2 and "api/quote" in S.JS and "hist" in S.JS
+    rows = S.all_rows(e)
+    assert rows[0][0] == "0056" and rows[0][7] == 1_741_232                      # largest first, holders attached
+    for w in ("目標價", "上漲空間", "低估", "高估", "買進", "賣出"):
+        assert w not in h2, w
+    from tools import site_intraday as SI
+    assert "為什麼" in SI.sec_intraday(e) and "why(q,c,sec)" in SI.JS and len(SI.CORE + SI.SECTORS + SI.CROSS + SI.MEGA) <= 25
     assert "台灣 ETF" in open(os.path.join(os.path.dirname(S.__file__), "build_site.py"), encoding="utf-8").read()
+
+
+def test_side_menu_zoom():
+    """A+ zooms the content area (side menu included): the menu's viewport-sized height must be divided by the zoom,
+    or at the largest size its lower part sits below the screen and can't be scrolled to."""
+    from tools import site_layout as L
+    src = open(L.__file__, encoding="utf-8").read()
+    assert "max-height:calc((100vh - 110px) / var(--z,1))" in src
+    b = open(os.path.join(os.path.dirname(L.__file__), "build_site.py"), encoding="utf-8").read()
+    assert "setProperty('--z'" in b
 
 
 if __name__ == "__main__":

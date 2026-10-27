@@ -96,7 +96,8 @@ def parse_nav(j: Dict) -> Dict[str, Dict]:
             d = str(r.get("i") or "")
             out[code] = {"name": str(r.get("b") or "").split("(")[0].split("（")[0].strip(), "units": _num(r.get("c")),
                          "dunits": _num(r.get("d")), "px": px or None, "nav": nav or None, "prem": prem,
-                         "prev_nav": _num(r.get("h")), "date": f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) == 8 else None}
+                         "prev_nav": _num(r.get("h")), "date": f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) == 8 else None,
+                         "time": str(r.get("j") or "")[:5] or None}
     return out
 
 

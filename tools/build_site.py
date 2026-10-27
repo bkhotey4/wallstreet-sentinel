@@ -1246,7 +1246,7 @@ document.getElementById('themeBtn').addEventListener('click',function(){setTheme
 if(load('theme')==='light')setTheme('light');if(load('lang')==='en')setLang('en');
 // text size: the page is laid out in px, so scale the content area (the header buttons stay put); remembered per browser
 var FS=[0.9,1,1.15,1.3],FSN=['小','標準','大','特大'];
-function setFs(i){i=Math.max(0,Math.min(FS.length-1,i));var mw=document.querySelector('main.wrap');if(mw)mw.style.zoom=FS[i]===1?'':String(FS[i]);
+function setFs(i){i=Math.max(0,Math.min(FS.length-1,i));var mw=document.querySelector('main.wrap');if(mw){mw.style.zoom=FS[i]===1?'':String(FS[i]);mw.style.setProperty('--z',String(FS[i]));}
  document.documentElement.dataset.fs=i;store('fs',String(i));var a=document.getElementById('fsDn'),b=document.getElementById('fsUp');
  if(a){a.disabled=i===0;a.title='字體縮小（目前：'+FSN[i]+'）';}if(b){b.disabled=i===FS.length-1;b.title='字體放大（目前：'+FSN[i]+'）';}}
 var fs0=parseInt(load('fs'),10);setFs(isNaN(fs0)?1:fs0);
@@ -1333,7 +1333,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ]),
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
-            ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STE.sec_etf_div, STE.sec_etf_traps, STE.sec_etf_tool]),
+            ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STE.sec_etf_div, STE.sec_etf_traps, STE.sec_etf_all, STE.sec_etf_tool]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
