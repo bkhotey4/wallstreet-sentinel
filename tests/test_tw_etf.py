@@ -171,6 +171,29 @@ def test_daily_why_archive():
     assert SI.why_ctx and re.search("cse", open(SI.__file__, encoding="utf-8").read(), re.I)
 
 
+def test_tw_daily_read():
+    """Taiwan: Yahoo's holiday bars are dropped and the index rebuilt from the official TWSE closes; an ex-dividend drop
+    is added back (not read as a fall); the after-close read names industries and last night's US session."""
+    from wsb.analytics import daily_why as DW
+    from tools import site_twlive as TL
+    px = {"2330.TW": {"d": ["2026-10-21", "2026-10-22", "2026-10-23", "2026-10-27"], "c": [2420.0, 2385.0, 2385.0, 2400.0]},
+          "^TWII": {"d": ["2026-10-21", "2026-10-22"], "c": [46887.8, 46041.4]}}
+    DW.tw_fix(px, {"2026-10-21": 46887.8, "2026-10-22": 46041.4, "2026-10-27": 46096.2})
+    assert px["2330.TW"]["d"] == ["2026-10-21", "2026-10-22", "2026-10-27"] and px["^TWII"]["c"][-1] == 46096.2
+    days = [f"2026-{m:02d}-{d:02d}" for m in range(5, 11) for d in range(1, 29)][:120]
+    base = {"d": days, "c": [50.0 + (i % 4) * 0.2 for i in range(120)]}
+    allpx = {s: {"d": days, "c": list(base["c"])} for s in DW.tw_symbols()}
+    allpx["0056.TW"]["c"][-1] = allpx["0056.TW"]["c"][-2] - 1.72                 # ex-dividend day
+    allpx["0056.TW"]["dv"] = [[days[-1], 1.72]]
+    allpx["2603.TW"]["c"][-1] = allpx["2603.TW"]["c"][-2] * 1.08
+    q = DW.quotes(allpx, days[-1])
+    assert abs(q["0056.TW"]["chg"]) < 0.5                                         # dividend added back
+    r = DW.build_day_tw(allpx, {"flows": [{"d": days[-1], "f": -80.4, "t": 236.0}]}, days[-1])
+    assert r and r["one"].startswith("台股") and any("航運" in x for x in r["why"]) and any("外資當天買賣超 -80.4 億" in x for x in r["why"])
+    assert len(TL.LEAD) <= 25 and len(TL.GAUGE) <= 25 and len(TL.TREND) <= 25
+    assert {"金融", "塑化", "航運", "食品", "電信"} <= {k for _s, _n, k in TL.LEAD}
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

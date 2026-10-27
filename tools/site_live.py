@@ -61,7 +61,7 @@ COMBOS = [
     ("flight", "股市下跌＋國債利率下降", "Stocks down, Treasury yields down", 1, "資金從股票逃向國債避險（買債的人多，利率就下降）；如果是股、債一起跌，看上面的「股債金同時下跌」",
      [("^GSPC", "<=", -1.5), ("^TNX", "<=", -1.5)]),
     ("credit_first", "信用先跌、股市還沒反應", "Credit falling before stocks", 1, "高收益債（垃圾債）先被賣、股市還平靜：歷史上信用市場常比股市早一步反應",
-     [("HYG", "<=", -2), ("^GSPC", ">=", -1)]),
+     [("HYG", "<=", -2), ("^GSPC", ">=", -1), ("^TNX", "<=", 1)]),       # not a rate spike: HYG has ~3.5y duration
     ("hedge", "VIX 大漲但股市沒跌", "VIX jumps, stocks flat", 1, "有人在買保險（選擇權避險）：大資金預期接下來會有波動",
      [("^VIX", ">=", 2), ("^GSPC", ">=", -0.5)]),
     ("semi", "半導體領跌", "Chips leading the drop", 1, "費城半導體跌得比大盤兇很多：AI 與科技股是這波的壓力來源，台股和韓股通常會跟著受影響",
@@ -171,7 +171,9 @@ _JS = r"""
  var dead=false,lastOk=0,data={};function en(){return document.documentElement.lang==='en';}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){if(x==null||isNaN(x))return '—';if(Math.abs(x)<0.5*Math.pow(10,-d))x=0;return (x>0?'+':x<0?'':'')+f(x,d);}
- function api(list,full,vol){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':'')+(vol?'&vol='+encodeURIComponent(vol):''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
+ function api1(list,full,vol){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':'')+(vol?'&vol='+encodeURIComponent(vol):''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
+ function api(list,full,vol){var a=String(list).split(',').filter(Boolean),ch=[];for(var i=0;i<a.length;i+=20)ch.push(a.slice(i,i+20).join(','));   // the service takes 25 per request
+   return Promise.all(ch.map(function(c){return api1(c,full,vol);})).then(function(rs){var o={ts:0,q:{}};rs.forEach(function(r){o.ts=Math.max(o.ts,r.ts||0);Object.keys(r.q||{}).forEach(function(k){o.q[k]=r.q[k];});});return o;});}
  function hhmm(t){if(!t)return '';var d=new Date(t*1000),p=function(n){return ('0'+n).slice(-2);};var tm=p(d.getHours())+':'+p(d.getMinutes());
    return d.toDateString()===new Date().toDateString()?tm:(d.getMonth()+1)+'/'+d.getDate()+' '+tm;}
  function paintTiles(q){tiles.forEach(function(t){var s=t.getAttribute('data-lq'),x=q[s];if(!x)return;var dg=+t.getAttribute('data-dg')||0;

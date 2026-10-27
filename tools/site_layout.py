@@ -235,7 +235,8 @@ side.addEventListener('click',function(ev){var b=ev.target.closest('.pcar');
 window.addEventListener('hashchange',function(){setTimeout(sync,0);});
 document.addEventListener('click',function(ev){if(ev.target.closest('[data-p]')||ev.target.closest('#langBtn'))setTimeout(sync,0);
  if(side.classList.contains('open')&&!ev.target.closest('#side')&&!ev.target.closest('#sideBtn'))side.classList.remove('open');});
-function lock(){document.documentElement.style.overflow=side.classList.contains('open')?'hidden':'';}
+function lock(){document.documentElement.style.overflow=side.classList.contains('open')&&window.innerWidth<=900?'hidden':'';}
+window.addEventListener('resize',lock);
 new MutationObserver(lock).observe(side,{attributes:true,attributeFilter:['class']});
 if(btn)btn.addEventListener('click',function(ev){ev.stopPropagation();side.classList.toggle('open');});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape')side.classList.remove('open');});

@@ -183,7 +183,10 @@ def zones_tw(prices: Dict[str, float]) -> Dict[str, Dict]:
 US_Q = 22                              # quarters of history (5 years + the TTM window)
 US_MIN = 12                            # at least 3 years of quarterly readings before a stock gets a range
 US_FRAMES = {"ni": ("us-gaap", "NetIncomeLoss", "USD"), "eq": ("us-gaap", "StockholdersEquity", "USD"),
-             "sh": ("dei", "EntityCommonStockSharesOutstanding", "shares")}
+             "sh": ("dei", "EntityCommonStockSharesOutstanding", "shares"),
+             # fallbacks: multi-class companies (GOOGL, META, BRK-B, V) report cover-page shares per class, so the frame has
+             # no total for them — diluted weighted shares cover every class; some filers (AVGO) tag ProfitLoss, not NetIncomeLoss
+             "sh2": ("us-gaap", "WeightedAverageNumberOfDilutedSharesOutstanding", "shares"), "pl": ("us-gaap", "ProfitLoss", "USD")}
 
 
 def _quarters(today: date, n: int) -> List[str]:
@@ -209,7 +212,7 @@ async def refresh_us(syms: List[str], budget_s: float = 120, today: Optional[dat
     t0, n_fr = time.time(), 0
     pers = _quarters(today, US_Q)
     years = sorted({p[:6] for p in pers})
-    jobs = [(k, p) for p in pers for k in US_FRAMES] + [("ni", y) for y in years]
+    jobs = [(k, p) for p in pers for k in US_FRAMES] + [("ni", y) for y in years] + [("pl", y) for y in years]
     for k, per in jobs:
         if time.time() - t0 > budget_s * 0.4:
             break
@@ -236,7 +239,8 @@ async def refresh_us(syms: List[str], budget_s: float = 120, today: Optional[dat
         fr[key] = rec
         n_fr += 1
         await asyncio.sleep(0.15)                               # SEC allows 10 requests per second
-    keep = {f"{US_FRAMES[k][1]}/{p}{'I' if k in ('eq', 'sh') else ''}" for k in US_FRAMES for p in pers} | {f"NetIncomeLoss/{y}" for y in years}
+    keep = ({f"{US_FRAMES[k][1]}/{p}{'I' if k in ('eq', 'sh') else ''}" for k in US_FRAMES for p in pers}
+            | {f"NetIncomeLoss/{y}" for y in years} | {f"ProfitLoss/{y}" for y in years})
     d["frames"] = {k: v for k, v in fr.items() if k in keep}
     px: Dict[str, Dict] = d.get("px") or {}
     due = [s for s in syms if not px.get(s) or time.time() - float(px[s].get("ts", 0)) > 30 * 86400]
@@ -309,10 +313,13 @@ def zones_us(prices: Dict[str, float], today: Optional[date] = None) -> Dict[str
             continue
         cik = str(info["cik"])
         ni = [rd.tag_val("NetIncomeLoss", cik, q) for q in pers]
-        sh = [((fr.get(f"EntityCommonStockSharesOutstanding/{q}I") or {}).get("v") or {}).get(cik) for q in pers]
+        if not any(x is not None for x in ni):                  # AVGO and others tag ProfitLoss
+            ni = [rd.tag_val("ProfitLoss", cik, q) for q in pers]
+        sh = [((fr.get(f"EntityCommonStockSharesOutstanding/{q}I") or {}).get("v") or {}).get(cik)
+              or ((fr.get(f"WeightedAverageNumberOfDilutedSharesOutstanding/{q}") or {}).get("v") or {}).get(cik) for q in pers]
         eq = [((fr.get(f"StockholdersEquity/{q}I") or {}).get("v") or {}).get(cik) for q in pers]
         pe_h, pb_h = [], []
-        last = {"ttm": None, "sh": None, "eq": None}
+        last = {"ttm": None, "sh": None, "eq": None, "sh_ym": None}
         for i, q in enumerate(pers):
             ym = f"{q[2:6]}-{int(q[-1]) * 3:02d}"
             price = _unadj(p["m"], p.get("sp") or [], ym)
@@ -328,11 +335,15 @@ def zones_us(prices: Dict[str, float], today: Optional[date] = None) -> Dict[str
             if ttm is not None:
                 last["ttm"] = ttm
             if shares:
-                last["sh"] = shares
+                last["sh"], last["sh_ym"] = shares, ym
             if eq[i]:
                 last["eq"] = eq[i]
         if not last["sh"]:
             continue
+        # a split after the quarter the share count comes from: today's price is post-split, so scale the count too
+        for sp_d, ratio in p.get("sp") or []:
+            if str(sp_d)[:7] > last["sh_ym"] and ratio:
+                last["sh"] *= ratio
         mc_now = now_px * last["sh"]
         for metric, hist, den in (("本益比", pe_h, last["ttm"]), ("股價淨值比", pb_h, last["eq"])):
             if not den or den <= 0 or len(hist) < US_MIN:

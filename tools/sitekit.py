@@ -19,7 +19,7 @@ WORD_EN = {"平靜": "Calm", "正常": "Normal", "升溫": "Elevated", "高壓":
 
 def T(zh: str, en: Optional[str] = None, tag: str = "span", cls_: str = "") -> str:
     """Bilingual text node: Chinese by default, English swapped in by the toggle."""
-    en = WORD_EN.get(zh, zh) if en is None else en
+    en = WORD_EN.get(zh, zh) if not en else en          # "" = no translation yet → keep the Chinese in English mode
     c = f' class="{cls_}"' if cls_ else ""
     return f'<{tag}{c} data-en="{esc(en)}">{esc(zh)}</{tag}>'
 

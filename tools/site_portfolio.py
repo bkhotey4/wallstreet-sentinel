@@ -1910,11 +1910,11 @@ if(expCsv)expCsv.addEventListener('click',function(){
  else{lines.push(['Ticker','Name','Shares','Price','Currency','Today(%)','Value','Value_TWD','Cost_Per_Share','Unrealized','Return(%)','Weight(%)'].join(','));}
  for(var r=0;r<tb.rows.length;r++){
   var cells=tb.rows[r].cells;
-  if(cells.length<12)continue;
+  if(cells.length<14)continue;
   var sym=(cells[0].textContent||'').trim();
   var name='"'+(cells[1].textContent||'').replace(/"/g,'""').trim()+'"';
   var shares=(cells[2].textContent||'').replace(/,/g,'').trim();
-  var pStr=(cells[3].textContent||'').trim().split(' ');
+  var pStr=((cells[3].firstChild&&cells[3].firstChild.nodeType===3?cells[3].firstChild.nodeValue:cells[3].textContent)||'').trim().split(' ');
   var px=(pStr[0]||'').replace(/,/g,'').trim(),curStr=pStr[1]||'';
   var chg=(cells[4].textContent||'').replace(/[+%]/g,'').trim();
   var vOrig=(cells[6].textContent||'').replace(/,/g,'').trim();
@@ -1922,7 +1922,7 @@ if(expCsv)expCsv.addEventListener('click',function(){
   var cost=(cells[8].textContent||'').replace(/,/g,'').trim();
   var un=(cells[9].textContent||'').replace(/[+,]/g,'').trim();
   var ret=(cells[10].textContent||'').replace(/[+%,]/g,'').trim();
-  var wt=(cells[12].textContent||'').replace(/%/g,'').trim();
+  var wt=(cells[13].textContent||'').replace(/%/g,'').trim();
   lines.push([sym,name,shares,px,curStr,chg,vOrig,vTwd,cost,un,ret,wt].join(','));
  }
  (d.cash||[]).forEach(function(c){

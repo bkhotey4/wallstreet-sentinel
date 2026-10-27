@@ -51,6 +51,7 @@ from tools import site_bonds as SBD
 from tools import site_twmacro as STW
 from tools import site_tw_etf as STE
 from tools import site_intraday as SID
+from tools import site_twlive as STL
 from tools import site_extgap as SXG
 from tools import site_indnote as SIN2
 from tools import site_preview as SPV
@@ -1237,7 +1238,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
 var dp=null,ib=document.getElementById('installBtn');window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ib)ib.classList.add('show');});
 if(ib)ib.addEventListener('click',function(){if(dp){dp.prompt();dp=null;ib.classList.remove('show');}});
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
-function setLang(l){document.documentElement.lang=l==='en'?'en':'zh-Hant';document.querySelectorAll('[data-en]').forEach(function(e){if(e.dataset.zh===undefined)e.dataset.zh=e.textContent;e.textContent=l==='en'?e.dataset.en:e.dataset.zh;});
+function setLang(l){document.documentElement.lang=l==='en'?'en':'zh-Hant';document.querySelectorAll('[data-en]').forEach(function(e){if(e.dataset.zh===undefined)e.dataset.zh=e.textContent;e.textContent=(l==='en'&&e.dataset.en)?e.dataset.en:e.dataset.zh;});
  document.getElementById('langBtn').textContent=l==='en'?'中文':'EN';store('lang',l);}
 function setTheme(t){if(t==='light')document.documentElement.setAttribute('data-theme','light');else document.documentElement.removeAttribute('data-theme');
  document.getElementById('themeBtn').textContent=t==='light'?'☾':'☀';store('theme',t);}
@@ -1327,7 +1328,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [SEA.sec_asia, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STW.sec_tw_note, STW.sec_tw_calendar]),
-            ("taiwan", "台股", "Taiwan", [S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
+            ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ]),
@@ -1389,7 +1390,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{SXG.JS}{SMK.JS}{STE.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:

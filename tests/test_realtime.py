@@ -160,6 +160,30 @@ def test_extended_gaps():
     assert "盤前／盤後跳空" in X.sec_ext_gaps(None) and "ext=" in X.JS
 
 
+def test_review_fixes():
+    """Second-review fixes: English toggle never blanks a card, the live quote list is split under the service cap,
+    credit_first ignores a pure rate spike, the desktop menu never locks scrolling, the CSV weight column."""
+    from tools import sitekit as K, site_live as SL, site_layout as LY, site_portfolio as PF
+    assert 'data-en="中文說明"' in K.T("中文說明", "")
+    b = open(os.path.join(os.path.dirname(K.__file__), "build_site.py"), encoding="utf-8").read()
+    assert "(l==='en'&&e.dataset.en)" in b
+    assert "i+=20" in SL.JS and "function api1(" in SL.JS
+    cf = next(c for c in SL.COMBOS if c[0] == "credit_first")
+    assert ("^TNX", "<=", 1) in cf[5]
+    assert "window.innerWidth<=900" in open(LY.__file__, encoding="utf-8").read()
+    src = open(PF.__file__, encoding="utf-8").read()
+    assert "cells[13].textContent" in src and "firstChild.nodeType===3" in src
+
+
+def test_valhist_share_fallbacks():
+    """Multi-class companies have no cover-page share total: diluted weighted shares stand in; ProfitLoss stands in for
+    NetIncomeLoss; a split after the share-count quarter scales the count."""
+    from wsb.data import valhist as V
+    assert "sh2" in V.US_FRAMES and "pl" in V.US_FRAMES
+    src = open(V.__file__, encoding="utf-8").read()
+    assert 'WeightedAverageNumberOfDilutedSharesOutstanding/{q}' in src and 'tag_val("ProfitLoss"' in src and 'last["sh"] *= ratio' in src
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
