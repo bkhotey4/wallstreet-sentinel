@@ -91,6 +91,21 @@ export function volRatio(ts, vols, closes, off) {
   return out;
 }
 
+// the fastest 15-minute move (3 five-minute bars) of the latest exchange-local day: when the day's big swing happened
+// ({t: unix end of the window, chg: %}), so the page can line headlines up with it
+export function jumpOf(ts, closes, off) {
+  if (!ts.length) return null;
+  const day = (s) => Math.floor((s + off) / 86400), last = day(ts[ts.length - 1]);
+  const pts = [];
+  for (let i = 0; i < ts.length; i++) if (ts[i] != null && day(ts[i]) === last && typeof closes[i] === "number") pts.push([ts[i], closes[i]]);
+  let best = null;
+  for (let i = 3; i < pts.length; i++) {
+    const c = (pts[i][1] / pts[i - 3][1] - 1) * 100;
+    if (!best || Math.abs(c) > Math.abs(best.chg)) best = { t: pts[i][0], chg: c };
+  }
+  return best;
+}
+
 // first trade of the latest exchange-local day in the 5-minute bars (the session's opening price; null if none yet)
 export function todayOpen(res) {
   const ts = res.timestamp || [], o = ((((res.indicators || {}).quote || [])[0]) || {}).open || [], off = (res.meta || {}).gmtoffset || 0;
@@ -126,6 +141,8 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
     const v = volRatio(res.timestamp || [], qd.volume || [], qd.close || [], m.gmtoffset || 0);
     prev = m.previousClose ?? v.prevDay ?? null;                      // with range=5d, chartPreviousClose is 5 days old
     if (v.volx != null) { out.vol = v.vol; out.volx = v.volx; }
+    const j = jumpOf(res.timestamp || [], qd.close || [], m.gmtoffset || 0);
+    if (j) out.jump = j;
   }
   out.prev = prev ?? null;
   out.chg = prev ? (out.price / prev - 1) * 100 : null;

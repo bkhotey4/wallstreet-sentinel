@@ -80,3 +80,15 @@ console.log("quote tests ok");
   assert.equal(fixSplits([["a", 100], ["b", 55]])[0][1], 100);
   console.log("ok hist");
 }
+
+// fastest 15-minute move of the latest day (earlier days ignored)
+{
+  const { jumpOf } = await import("../functions/api/quote.js");
+  const D = 86400, t0 = 1_000_000 * D;
+  const ts = [t0 - D, t0 - D + 300, t0, t0 + 300, t0 + 600, t0 + 900, t0 + 1200, t0 + 1500];
+  const c = [50, 10, 100, 100.1, 100.2, 99.0, 98.5, 98.6];
+  const j = jumpOf(ts, c, 0);
+  assert.equal(j.t, t0 + 1200); assert.ok(Math.abs(j.chg - (98.5 / 100.1 - 1) * 100) < 1e-9);
+  assert.equal(jumpOf([], [], 0), null);
+  console.log("ok jump");
+}
