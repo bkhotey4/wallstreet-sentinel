@@ -125,7 +125,9 @@ def test_why_news_tags():
     e = Eng()
     e.news_digest = {"items": [{"title": "Nvidia chips rally as TSMC beats", "ts": time.time(), "topics": ["ai"], "syms": ["NVDA"]},
                                {"title": "Anthropic founders share a trait", "ts": time.time(), "topics": ["ai"], "syms": []},
-                               {"title": "Old story", "ts": time.time() - 40 * 3600, "topics": ["market"], "syms": []}]}
+                               {"title": "Old story", "ts": time.time() - 40 * 3600, "topics": ["market"], "syms": []},
+                               {"title": "FLNC SHAREHOLDER NOTICE: Faruqi & Faruqi reminds Fluence Energy investors of class action",
+                                "ts": time.time(), "topics": ["power"], "syms": []}]}
     n = SI.why_ctx(e)["news"]
     assert [x["k"] for x in n] == [["ai", "chip"], ["ai"]]                       # 40 h old dropped; chip names tagged
     assert "x.sc>=2" in SI.JS and "TP.chip" in SI.JS and "jp.t-4500" in SI.JS and "kk.length?3:1" in SI.JS

@@ -49,13 +49,17 @@ def why_ctx(eng) -> dict:
     # a real industry event (listing, filing, deal, results, orders, spending), not a profile or opinion piece
     event = re.compile(r"\b(ipo|s-1|files?|filing|listing|valuation|funding|raises?|deal|acquir\w*|merger|earnings|revenue|guidance|orders?|contracts?|capex|spending|demand|tariffs?|export|ban|probe)\b", re.I)
 
+    # law-firm solicitations and press-release spam name a company but say nothing about why markets moved
+    spam = re.compile(r"class action|shareholder (alert|notice)|investor (alert|notice)|law firm|faruqi|rosen law|pomerantz|"
+                      r"bragar|levi & korsinsky|securities (fraud|litigation)|lawsuit (deadline|reminder)|集體訴訟|律師事務所", re.I)
+
     def tags(title, base):
         k = [x for x in base if x != "other"]
         k += ["chip"] if chip.search(title) else []
         return k + ["event"] if event.search(title) else k
     seen, cand = set(), []
     for i in nd.get("items") or []:
-        if i.get("ts") and now - i["ts"] <= 30 * 3600 and i["title"] not in seen:
+        if i.get("ts") and now - i["ts"] <= 30 * 3600 and i["title"] not in seen and not spam.search(i["title"] + (zh.get(i["title"]) or "")):
             seen.add(i["title"])
             cand.append({"t": guard_safe(zh.get(i["title"]) or i["title"])[:90], "l": i.get("link") or "", "ts": int(i["ts"]),
                          "s": i.get("syms") or [], "k": tags(i["title"], i.get("topics") or [])})
@@ -64,7 +68,7 @@ def why_ctx(eng) -> dict:
     except Exception:  # noqa: BLE001
         names = {}
     for n in getattr(getattr(eng, "news", None), "items", None) or []:          # wire headlines (Reuters, CNBC, …)
-        if n.ts and now - n.ts <= 30 * 3600 and n.title not in seen:
+        if n.ts and now - n.ts <= 30 * 3600 and n.title not in seen and not spam.search(n.title):
             seen.add(n.title)
             cand.append({"t": guard_safe(n.title)[:110], "l": n.link or "", "ts": int(n.ts), "s": ND.companies(n.title, names),
                          "k": tags(n.title, ND.topics(n.title))})
