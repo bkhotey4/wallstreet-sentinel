@@ -17,7 +17,21 @@ SECTORS = [("XLK", "科技", "Tech", "cyc"), ("XLC", "通訊服務", "Comm servi
            ("XLU", "公用事業", "Utilities", "def"), ("XLRE", "不動產", "Real estate", "def")]
 CORE = ["^GSPC", "^VIX", "^SOX", "SPY", "QQQ"]
 CROSS = ["^TNX", "DX-Y.NYB", "CL=F"]                 # 10-year yield, dollar index, crude oil: the usual "why" behind a move
-MEGA = [("NVDA", "輝達"), ("MSFT", "微軟"), ("AAPL", "蘋果"), ("AMZN", "亞馬遜"), ("GOOGL", "Alphabet"), ("META", "Meta")]
+# "和前幾天比": every sector plus cross-asset and theme gauges; the page ranks them by how differently they move today
+TREND = [("^GSPC", "標普 500"), ("XLK", "科技"), ("XLC", "通訊服務"), ("XLY", "非必需消費"), ("XLP", "必需消費"), ("XLE", "能源"),
+         ("XLF", "金融"), ("XLI", "工業"), ("XLB", "原物料"), ("XLV", "醫療保健"), ("XLU", "公用事業"), ("XLRE", "不動產"),
+         ("^SOX", "費城半導體"), ("NVDA", "輝達"), ("CRWV", "CoreWeave"), ("NBIS", "Nebius"), ("IWM", "小型股"),
+         ("HYG", "高收益債"), ("^TNX", "10 年期殖利率"), ("DX-Y.NYB", "美元指數"), ("CL=F", "原油"), ("GC=F", "黃金"), ("^VIX", "VIX")]
+WHY_NOTE = ("這些是同一時間的變化與新聞，幫助理解盤勢，不是確定的因果。「和前幾天比」涵蓋 11 個類股、利率、美元、油價、黃金、高收益債與 AI 主題股，"
+            "依今天和最近 5／20 天方向相反（反轉）或同向大幅加速的程度排序；平常一天＝過去一年每日漲跌的標準差。")
+# the heaviest S&P names of every sector (one request of 25): the "who moved the index" line ranks them by today's move
+MEGA = [("NVDA", "輝達", "科技"), ("MSFT", "微軟", "科技"), ("AAPL", "蘋果", "科技"), ("AVGO", "博通", "科技"),
+        ("GOOGL", "Alphabet", "通訊"), ("META", "Meta", "通訊"), ("AMZN", "亞馬遜", "非必需消費"), ("TSLA", "特斯拉", "非必需消費"),
+        ("HD", "家得寶", "非必需消費"), ("MCD", "麥當勞", "非必需消費"), ("WMT", "沃爾瑪", "必需消費"), ("COST", "好市多", "必需消費"),
+        ("PG", "寶僑", "必需消費"), ("KO", "可口可樂", "必需消費"), ("XOM", "埃克森美孚", "能源"), ("CVX", "雪佛龍", "能源"),
+        ("JPM", "摩根大通", "金融"), ("BRK-B", "波克夏", "金融"), ("V", "Visa", "金融"), ("LLY", "禮來", "醫療"),
+        ("UNH", "聯合健康", "醫療"), ("JNJ", "嬌生", "醫療"), ("CAT", "開拓重工", "工業"), ("GE", "奇異航太", "工業"),
+        ("NEE", "NextEra 能源", "公用事業")]
 
 
 def why_ctx(eng) -> dict:
@@ -51,11 +65,18 @@ def why_ctx(eng) -> dict:
 
     # law-firm solicitations and press-release spam name a company but say nothing about why markets moved
     spam = re.compile(r"class action|shareholder (alert|notice)|investor (alert|notice)|law firm|faruqi|rosen law|pomerantz|"
-                      r"bragar|levi & korsinsky|securities (fraud|litigation)|lawsuit (deadline|reminder)|集體訴訟|律師事務所", re.I)
+                      r"bragar|levi & korsinsky|securities (fraud|litigation)|lawsuit (deadline|reminder)|集體訴訟|律師事務所|"
+                      r"\((cse|otc\w*|tsx-?v?|asx|nasdaq|nyse|nyse american)\s*:", re.I)        # "(OTC: XXXX)" = company press release
+
+    consumer = re.compile(r"\b(retail\w*|consumers?|shoppers?|walmart|costco|target|home depot|mcdonald'?s|starbucks|nike|"
+                          r"restaurants?|holiday sales|consumer spending|grocer\w*|procter|coca-cola|pepsico)\b", re.I)
+    health = re.compile(r"\b(pharma\w*|drugs?|fda|biotech|health ?care|medicare|vaccines?|eli lilly|novo nordisk|unitedhealth|glp-1)\b", re.I)
 
     def tags(title, base):
         k = [x for x in base if x != "other"]
         k += ["chip"] if chip.search(title) else []
+        k += ["consumer"] if consumer.search(title) else []
+        k += ["health"] if health.search(title) else []
         return k + ["event"] if event.search(title) else k
     seen, cand = set(), []
     for i in nd.get("items") or []:
@@ -101,7 +122,8 @@ def sec_intraday(eng) -> str:
             "這裡只描述盤中現況，不預測收盤，也不是投資建議。報價：Yahoo Finance，約有數分鐘延遲。")
     body = (f'<div id="idbox" data-lv="{lv}" data-why="{wy}"><p class="small muted" id="idst">🕒 {T("等待即時報價…", "Waiting for live quotes…")}</p><p class="rimp big2"><b id="idone">{T("一句話看懂：美股開盤後，這裡每分鐘自動整理盤勢。", "Live read of the US session appears here.")}</b></p>'
             f'<div id="idwhyb" hidden><p><b>{T("🤔 為什麼？同時間發生的事", "Why? What moved at the same time")}</b></p><ul id="idwhy"></ul>'
-            f'<p class="small muted">{T("這些是同一時間的變化與新聞，幫助理解盤勢，不是確定的因果。", "Same-time moves and news, not proven causes.")}</p></div>'
+            f'<p><b>{T("📅 和前幾天比：今天哪裡變了方向", "Compared with recent days")}</b></p><ul id="idtr"><li class="muted">{T("載入最近 20 天的走勢…", "Loading the last 20 days…")}</li></ul>'
+            f'<p class="small muted">{T(WHY_NOTE, "Same-time moves and news, not proven causes.")}</p></div>'
             '<ul id="idlist"></ul><div class="scroll"><table class="mini" id="idsec" hidden></table></div></div>'
             f'<p class="lqoff" id="idoff">{T("即時盤勢只在 Cloudflare 版網址可用：", "Live only on the Cloudflare site: ")}'
             f'<a href="{CF_URL}/#premarket" target="_blank" rel="noopener">{CF_URL.replace("https://", "")}</a></p>'
@@ -110,7 +132,7 @@ def sec_intraday(eng) -> str:
 
 
 _JS = r"""
-(function(){var box=document.getElementById('idbox');if(!box)return;var SEC=__SEC__,CORE=__CORE__,CROSS=__CROSS__,MEGA=__MEGA__,LV={},WHY={};
+(function(){var box=document.getElementById('idbox');if(!box)return;var SEC=__SEC__,CORE=__CORE__,CROSS=__CROSS__,MEGA=__MEGA__,TREND=__TREND__,LV={},WHY={};
  try{WHY=JSON.parse(box.getAttribute('data-why')||'{}');}catch(e){}
  try{LV=JSON.parse(box.getAttribute('data-lv')||'{}');}catch(e){}
  function en(){return document.documentElement.lang==='en';}
@@ -148,12 +170,21 @@ _JS = r"""
  // "why": mega caps moving with / against the index, rates, dollar, oil, VIX, then today's data releases and headlines
  function why(q,c,sec){var W=[],up=c>=0,big=Math.abs(c)>=0.3;
    if(!big)W.push(en()?'The move is small: ordinary day-to-day noise, no single driver.':'漲跌幅很小，屬於平常的波動，沒有單一主因；下面是今天比較明顯的變化。');
-   var mg=MEGA.map(function(m){var y=q[m[0]];return y&&y.chg!=null?{s:m[0],n:m[1],c:y.chg}:null;}).filter(Boolean);
-   var w=mg.filter(function(x){return (x.c>0)===up&&Math.abs(x.c)>=1;}).sort(function(a,b){return Math.abs(b.c)-Math.abs(a.c);}),
-       a=mg.filter(function(x){return (x.c>0)!==up&&Math.abs(x.c)>=1;});
-   if(w.length)W.push((en()?'Mega caps '+(up?'lifting':'dragging')+': ':'權值大股'+(up?'帶頭漲':'帶頭跌')+'：')+w.slice(0,3).map(function(x){return (en()?x.s:x.n+' '+x.s)+' '+sg(x.c,1)+'%';}).join('、')
-     +(en()?'':'（這幾檔佔指數比重大，影響最直接）')+(a.length?(en()?'; against: ':'；反向：')+a.slice(0,2).map(function(x){return x.s+' '+sg(x.c,1)+'%';}).join('、'):'')+(en()?'.':'。'));
-   if(sec&&sec.length>=8){var ld=up?sec[0]:sec[sec.length-1];if(Math.abs(ld.c)>=0.8)W.push(en()?'Sector: '+ld.en+' '+sg(ld.c,1)+'%.':'類股：'+ld.zh+' '+sg(ld.c,1)+'% '+(up?'漲最多':'跌最多')+'。');}
+   var mg=MEGA.map(function(m){var y=q[m[0]];return y&&y.chg!=null?{s:m[0],n:m[1],k:m[2],c:y.chg}:null;}).filter(Boolean);
+   var byAbs=function(a,b){return Math.abs(b.c)-Math.abs(a.c);},nm=function(x){return (en()?x.s:x.k+'・'+x.n+' '+x.s)+' '+sg(x.c,1)+'%';};
+   var w=mg.filter(function(x){return (x.c>0)===up&&Math.abs(x.c)>=1;}).sort(byAbs),
+       a=mg.filter(function(x){return (x.c>0)!==up&&Math.abs(x.c)>=1;}).sort(byAbs);
+   if(w.length||a.length)W.push((en()?'Heavyweights '+(up?'lifting':'dragging')+': ':'各產業權值股'+(up?'帶頭漲':'帶頭跌')+'：')+(w.length?w.slice(0,4).map(nm).join('、'):'沒有')
+     +(en()?'':'（25 檔各產業最大的公司中，今天動最大的）')+(a.length?(en()?'; against: ':'；反方向：')+a.slice(0,3).map(nm).join('、'):'')+(en()?'.':'。'));
+   // sectors: the best and the worst, each with the same-day clue that usually goes with it (oil, rates, a move to defensives)
+   if(sec&&sec.length>=8){var oil0=q['CL=F'],tn0=q['^TNX'],bp0=tn0&&tn0.prev?(tn0.price-tn0.prev)*100:null;
+     var clue=function(x){if(x.s==='XLE'&&oil0&&oil0.chg!=null&&Math.abs(oil0.chg)>=1&&(oil0.chg>0)===(x.c>0))return '，跟著原油 '+sg(oil0.chg,1)+'%';
+       if((x.s==='XLF'||x.s==='XLRE'||x.s==='XLU')&&bp0!=null&&Math.abs(bp0)>=3)return '，10 年期殖利率 '+sg(bp0,0)+' bp'+(x.s==='XLF'?'（利率影響銀行利差）':'（利率敏感型類股）');
+       if(x.k==='def'&&x.c>0&&c<0)return '，大盤跌時資金躲進防禦型';
+       if(x.k==='def'&&x.c<0&&c>0.3)return '，大盤漲時資金離開防禦型、轉向景氣循環股';return '';};
+     var hi=sec[0],lo=sec[sec.length-1];
+     if(Math.abs(hi.c)>=0.8||Math.abs(lo.c)>=0.8)W.push(en()?'Sectors: best '+hi.en+' '+sg(hi.c,1)+'%, worst '+lo.en+' '+sg(lo.c,1)+'%.'
+       :'類股：'+hi.zh+' '+sg(hi.c,1)+'% 漲最多'+clue(hi)+'；'+lo.zh+' '+sg(lo.c,1)+'% '+(lo.c<0?'跌最多':'漲最少')+clue(lo)+'。');}
    var tn=q['^TNX'];if(tn&&tn.prev){var bp=(tn.price-tn.prev)*100;if(Math.abs(bp)>=4)W.push(en()?'10-year yield '+sg(bp,0)+' bp.'
      :'美國 10 年期公債殖利率 '+sg(bp,0)+' bp（'+f(tn.price,2)+'%）：'+(bp<0?'利率下降，未來獲利折現回來更值錢，通常有利科技成長股。':'利率上升，股票的相對吸引力下降，高本益比的成長股最受壓。'));}
    var dx=q['DX-Y.NYB'];if(dx&&dx.chg!=null&&Math.abs(dx.chg)>=0.4)W.push(en()?'Dollar '+sg(dx.chg,1)+'%.':'美元指數 '+sg(dx.chg,1)+'%：'+(dx.chg>0?'美元走強，資金偏保守，也不利新台幣與新興市場。':'美元走弱，資金較願意承擔風險，新台幣與新興市場通常受惠。'));
@@ -168,8 +199,25 @@ _JS = r"""
  // matches an asset that moved (+2: chip names when chips beat / lag the index, 10-year yield, oil / energy, financials;
  // +1: generic AI talk — +2 when it reports a real event such as a listing, deal or results — or a broad market move),
  // or they came out within the hour before the day's fastest 15-minute swing (+2, only with a topic or name).  Score ≥ 2.
+ // 和前幾天比: today's move against the trend up to yesterday (from /api/quote full=1, refreshed every 10 minutes).
+ // A reversal = today ≥1 normal day against a 5- or 20-day trend that was itself ≥1σ; an acceleration = ≥2 normal days with it.
+ var TRD={},trAt=0,TOPIC={XLE:'power',XLU:'power','CL=F':'power',XLF:'credit',HYG:'credit',XLP:'consumer',XLY:'consumer',XLV:'health',
+   XLK:'chip','^SOX':'chip','^TNX':'fed','DX-Y.NYB':'fed','GC=F':'fed',IWM:'market','^GSPC':'market'},STOCK={NVDA:1,CRWV:1,NBIS:1};
+ function trend(q){var out=[];
+   TREND.forEach(function(m){var s=m[0],x=TRD[s];if(!x||!x.trend||!x.sd1y)return;var t=x.trend,lq=q[s]||x,bp=s==='^TNX';
+     var pr=lq.price,pv=lq.prev||t.p0;if(pr==null||!pv)return;
+     var ch=function(a,b){return bp?(a-b)*100:(a/b-1)*100;},td=ch(pr,pv),d1=ch(t.p0,t.p1),r5=ch(t.p0,t.p5),r20=ch(t.p0,t.p20),sd=bp?x.sd1y*t.p0:x.sd1y;
+     var zt=td/sd,z5=r5/(sd*Math.sqrt(5)),z20=r20/(sd*Math.sqrt(20)),opp=function(r,z){return Math.abs(z)>=1&&(td>0)!==(r>0);};
+     var rev=Math.abs(zt)>=1&&(opp(r5,z5)||opp(r20,z20)),acc=!rev&&Math.abs(zt)>=2&&(td>0)===(r5>0);
+     if(rev||acc)out.push({s:s,n:m[1],td:td,d1:d1,r5:r5,r20:r20,sd:sd,bp:bp,rev:rev,sc:Math.abs(zt)*(rev?1.5:1)});});
+   out.sort(function(a,b){return b.sc-a.sc;});return out.slice(0,6);}
+ function trTxt(x){var u=x.bp?' bp':'%',g=function(v){return sg(v,x.bp?0:1)+u;};
+   return x.n+'：今天 '+g(x.td)+'（平常一天 ±'+f(x.sd,x.bp?0:1)+u+'）；昨天 '+g(x.d1)+'、近 5 天 '+g(x.r5)+'、近 20 天 '+g(x.r20)+' → '
+     +(x.rev?(x.td>0?'由跌轉漲':'由漲轉跌')+'，和最近的方向相反。':(x.td>0?'同方向加速上漲':'同方向加速下跌')+'，延續最近的走勢而且變快。');}
  function news(q,c,sec,mg){var MV={},TP={},R=[];
    mg.forEach(function(x){if(Math.abs(x.c)>=1)MV[x.s]=x.n+' '+x.s+' '+sg(x.c,1)+'%';});
+   trend(q).forEach(function(x){var lab=x.n+' '+(x.rev?(x.td>0?'由跌轉漲':'由漲轉跌'):'加速'+(x.td>0?'上漲':'下跌'));
+     if(STOCK[x.s])MV[x.s]=lab;else if(TOPIC[x.s]&&!TP[TOPIC[x.s]])TP[TOPIC[x.s]]=[lab,2];});
    var so=q['^SOX'];if(so&&so.chg!=null&&Math.abs(so.chg-c)>=0.7){TP.chip=['費城半導體 '+sg(so.chg,1)+'%',2];TP.ai=['費城半導體 '+sg(so.chg,1)+'%',1];}
    var tn=q['^TNX'];if(tn&&tn.prev&&Math.abs((tn.price-tn.prev)*100)>=4)TP.fed=['10 年期殖利率 '+sg((tn.price-tn.prev)*100,0)+' bp',2];
    if(!TP.fed&&(WHY.ev||[]).length)TP.fed=['今天有經濟數據公布',2];
@@ -194,8 +242,10 @@ _JS = r"""
      :'新聞：沒有找到和今天實際大動的股票、資產或時間點對得上的新聞，所以不列，避免把無關的新聞當成原因。');
    return R;}
  function pull(){if(dead||document.hidden)return;var ss=session(),off=document.getElementById('idoff');
-   var syms=CORE.concat(SEC.map(function(x){return x[0];}),CROSS,MEGA.map(function(x){return x[0];})).slice(0,25);
-   fetch('api/quote?s='+encodeURIComponent(syms.join(','))+'&vol=SPY,QQQ',{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();}).then(function(d){
+   var syms=CORE.concat(SEC.map(function(x){return x[0];}),CROSS).slice(0,25);
+   var lead=fetch('api/quote?s='+encodeURIComponent(MEGA.map(function(x){return x[0];}).join(',')),{cache:'no-store'}).then(function(r){return r.ok?r.json():{q:{}};}).catch(function(){return {q:{}};});
+   fetch('api/quote?s='+encodeURIComponent(syms.join(','))+'&vol=SPY,QQQ',{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();})
+   .then(function(d){return lead.then(function(l){var m={};Object.keys(l.q||{}).forEach(function(k){m[k]=l.q[k];});Object.keys(d.q||{}).forEach(function(k){m[k]=d.q[k];});d.q=m;return d;});}).then(function(d){
      if(off)off.hidden=true;var q=d.q||{},o=read(q),one=document.getElementById('idone'),ul=document.getElementById('idlist');if(!o)return;
      var tag=ss==='open'?'':(en()?' (market closed — last session)':'（美股目前'+(ss==='pre'?'尚未開盤':'已收盤')+'，以下是最近一個交易日）');
      one.textContent=o.one+tag;var st=document.getElementById('idst'),qt=(q['^GSPC']||{}).t;
@@ -203,9 +253,55 @@ _JS = r"""
       st.textContent='🕒 '+(en()?'Updated '+tp(n)+' Taipei'+(tq?' · S&P quote '+tp(tq):'')+' · refreshes every minute'
         :'最後更新 '+tp(n)+'（台北）'+(tq?'・標普報價時間 '+tp(tq):'')+'・每分鐘自動更新');}var wb=document.getElementById('idwhyb'),wu=document.getElementById('idwhy');if(wb&&wu){wu.textContent='';o.W.forEach(function(x){var li=document.createElement('li');
        if(typeof x==='string')li.textContent=x;else if(x.l){var a=document.createElement('a');a.href=x.l;a.target='_blank';a.rel='noopener';a.textContent=x.t;li.appendChild(a);}else li.textContent=x.t;wu.appendChild(li);});wb.hidden=!o.W.length;}
-     ul.innerHTML=o.L.map(function(x){var li=document.createElement('li');li.textContent=x;return li.outerHTML;}).join('');}).catch(function(){});}
+     ul.innerHTML=o.L.map(function(x){var li=document.createElement('li');li.textContent=x;return li.outerHTML;}).join('');
+     var drawTr=function(){var tu=document.getElementById('idtr');if(!tu)return;var T=trend(q);tu.textContent='';
+       var nm2=function(a){return a.map(function(x){return x.n;}).join('、');},ru=T.filter(function(x){return x.rev&&x.td>0;}),rd=T.filter(function(x){return x.rev&&x.td<0;});
+       var sum=(ru.length||rd.length)?['和最近不同的是：'+(ru.length?nm2(ru)+' 由跌轉漲':'')+(ru.length&&rd.length?'；':'')+(rd.length?nm2(rd)+' 由漲轉跌':'')+'。']:[];
+       (T.length?sum.concat(T.map(trTxt)):[Object.keys(TRD).length?'今天各類股、利率、油價、美元和 AI 主題股大致延續最近的走勢，沒有明顯的反轉或加速。':'最近 20 天的走勢暫時取不到。'])
+       .forEach(function(s){var li=document.createElement('li');li.textContent=s;tu.appendChild(li);});};
+     if(Date.now()-trAt>600000){trAt=Date.now();fetch('api/quote?s='+encodeURIComponent(TREND.map(function(x){return x[0];}).join(','))+'&full=1',{cache:'no-store'})
+       .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d2){TRD=d2.q||{};var o2=read(q);if(o2&&wu){wu.textContent='';o2.W.forEach(function(x){var li=document.createElement('li');
+         if(typeof x==='string')li.textContent=x;else if(x.l){var a=document.createElement('a');a.href=x.l;a.target='_blank';a.rel='noopener';a.textContent=x.t;li.appendChild(a);}else li.textContent=x.t;wu.appendChild(li);});}drawTr();})
+       .catch(function(){trAt=0;});}else drawTr();}).catch(function(){});}
  pull();setInterval(pull,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)pull();});
 })();
 """
 JS = (_JS.replace("__SEC__", json.dumps(SECTORS, ensure_ascii=False)).replace("__CORE__", json.dumps(CORE))
-      .replace("__CROSS__", json.dumps(CROSS)).replace("__MEGA__", json.dumps(MEGA, ensure_ascii=False)))
+      .replace("__CROSS__", json.dumps(CROSS)).replace("__MEGA__", json.dumps(MEGA, ensure_ascii=False)).replace("__TREND__", json.dumps(TREND, ensure_ascii=False)))
+
+
+WD = "一二三四五六日"
+
+
+def sec_why_days(eng) -> str:
+    """每日盤勢解讀: the archived after-close read of each US session (newest first, the latest opened)."""
+    from datetime import date as _d
+    from wsb.analytics import daily_why as DW
+    try:
+        arc = DW.update(eng)
+    except Exception:  # noqa: BLE001
+        arc = DW._load(DW.DAYS)
+    if not arc:
+        return card("每日盤勢解讀", "Daily session read", f'<p class="muted">{T("第一份會在美股收盤後的下一次網站更新產生。", "The first record appears after the next US close.")}</p>', "wide")
+    parts = []
+    for i, (day, r) in enumerate(sorted(arc.items(), reverse=True)):
+        wd = WD[_d.fromisoformat(day).weekday()]
+        news = "".join(f'<li><a href="{html.escape(n["l"])}" target="_blank" rel="noopener">{html.escape(n["t"])}</a>'
+                       f'<span class="small muted">（對得上：{html.escape("、".join(n["why"]))}）</span></li>' if n.get("l") else
+                       f'<li>{html.escape(n["t"])}<span class="small muted">（對得上：{html.escape("、".join(n["why"]))}）</span></li>'
+                       for n in r.get("news") or [])
+        body = ("<ul>" + "".join(f"<li>{html.escape(x)}</li>" for x in r.get("why") or [])
+                + (news or ('<li class="muted">新聞：這一天是網站開始存檔前補建的，只有價格資料，沒有當時的新聞可以比對。</li>' if r.get("backfill")
+                            else '<li class="muted">新聞：沒有找到和當天實際大動的股票、資產或時間點對得上的新聞。</li>')) + "</ul>"
+                + f'<p><b>{T("📅 和之前比", "Against the days before")}</b></p><ul>'
+                + ("".join(f"<li>{html.escape(x)}</li>" for x in r["trend"]) if r.get("trend")
+                   else "<li>各類股、利率、油價、美元和 AI 主題股大致延續之前的走勢，沒有明顯的反轉或加速。</li>") + "</ul>")
+        parts.append(f'<details class="sgx"{" open" if i == 0 else ""}><summary><b>{day[5:]}（{wd}）</b> {html.escape(r["one"])}</summary>{body}</details>')
+    lead = f"一句話看懂：每天美股收盤後自動存一份當天的盤勢解讀，可以往回對照前幾天（目前存了 {len(arc)} 天，最多保留 {DW.KEEP} 天）。"
+    how = ("規則和上面的「開盤後即時盤勢」相同，只是改用收盤價計算：各產業 25 檔權值股、11 個類股與對應線索（油價、利率、資金轉向防禦型）、"
+           "利率／美元／油價／VIX、當天的經濟數據、和實際大動的東西對得上的新聞，以及和前 5／20 天比的反轉或加速。"
+           "美股收盤（美東 16:15）後的網站更新會寫入當天紀錄，之後的更新會再補上晚到的新聞，直到下一個交易日開始。"
+           "日期是美東交易日。這些是同一時間的變化與新聞，不是確定的因果，也不是投資建議。")
+    return card("每日盤勢解讀（可往回看）", "Daily session read (archive)",
+                f'<p class="rimp big2"><b>{T(lead, "")}</b></p>' + "".join(parts)
+                + f'<details class="sgx"><summary>{T("怎麼產生的", "How it is made")}</summary><p class="note">{T(how, "")}</p></details>', "wide")

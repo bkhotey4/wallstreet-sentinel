@@ -100,7 +100,10 @@ def test_page():
     for w in ("目標價", "上漲空間", "低估", "高估", "買進", "賣出"):
         assert w not in h2, w
     from tools import site_intraday as SI
-    assert "為什麼" in SI.sec_intraday(e) and "why(q,c,sec)" in SI.JS and len(SI.CORE + SI.SECTORS + SI.CROSS + SI.MEGA) <= 25
+    assert "為什麼" in SI.sec_intraday(e) and "why(q,c,sec)" in SI.JS and len(SI.CORE + SI.SECTORS + SI.CROSS) <= 25
+    assert len(SI.MEGA) <= 25 and len(SI.TREND) <= 25                          # one request each (quote service cap)
+    assert {"能源", "必需消費", "金融", "醫療"} <= {m[2] for m in SI.MEGA}       # every sector's heavyweights, not only tech
+    assert {"XLE", "XLP", "CRWV"} <= {t[0] for t in SI.TREND} and "由跌轉漲" in SI.JS
     assert "台灣 ETF" in open(os.path.join(os.path.dirname(S.__file__), "build_site.py"), encoding="utf-8").read()
 
 
@@ -132,6 +135,40 @@ def test_why_news_tags():
     assert [x["k"] for x in n] == [["ai", "chip"], ["ai"]]                       # 40 h old dropped; chip names tagged
     assert "x.sc>=2" in SI.JS and "TP.chip" in SI.JS and "jp.t-4500" in SI.JS and "kk.length?3:1" in SI.JS
     assert chr(8) not in open(SI.__file__, encoding="utf-8").read()
+
+
+def test_daily_why_archive():
+    """The after-close read is stored per US session (newest rewritten until the next one), older sessions are back-filled
+    from prices on the first run, and a reversal against the last 20 sessions is called out."""
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    from tools import site_intraday as SI
+    from wsb.analytics import daily_why as DW
+    days = [(datetime(2026, 1, 1) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(80)]
+    px = {}
+    for s in DW._symbols():
+        c = [100.0 + (i % 3) * 0.3 for i in range(80)]
+        if s == "CRWV":                                  # slides for 20 sessions, then jumps on the last day
+            c = [100.0 - 2 * max(0, i - 58) + (i % 2) * 0.5 for i in range(79)] + [70.0]
+        if s == "^GSPC":
+            c[-1] = c[-2] * 1.007
+        px[s] = {"d": days, "c": c}
+    DW._save(DW.PX, {"px": px, "day": days[-1], "jump": None, "ts": 0})
+    if DW.DAYS.exists():
+        DW.DAYS.unlink()
+
+    class Eng:
+        pass
+    arc = DW.update(Eng(), now=datetime(2026, 3, 22, 17, 0, tzinfo=ZoneInfo("America/New_York")))
+    assert days[-1] in arc and not arc[days[-1]].get("backfill") and len(arc) == 6
+    assert all(arc[d].get("backfill") for d in days[-6:-1])
+    r = arc[days[-1]]
+    assert r["one"].startswith("美股"), r
+    assert any("CoreWeave" in x and "由跌轉漲" in x for x in r["trend"]), r["trend"]
+    h = SI.sec_why_days(Eng())
+    assert "每日盤勢解讀" in h and "補建" in h and "<details" in h
+    import re
+    assert SI.why_ctx and re.search("cse", open(SI.__file__, encoding="utf-8").read(), re.I)
 
 
 if __name__ == "__main__":

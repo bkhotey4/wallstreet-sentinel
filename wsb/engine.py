@@ -60,6 +60,12 @@ async def _bondflows():
     from .data import bondflows as BF
     await BF.refresh()
 
+async def _daily_why():
+    """Daily closes of every gauge + SPY intraday bars for the archived 每日盤勢解讀 (site build only)."""
+    from .analytics import daily_why as DW
+    await DW.refresh()
+
+
 async def _tw_etf():
     """Taiwan ETFs: TWSE NAV / units, ex-dividend notices, TDCC holders, Yahoo prices (台灣 ETF page)."""
     from .data import tw_etf as TE
@@ -189,6 +195,8 @@ class Engine:
                  ("fedwatch", self.fedwatch.refresh()), ("finra", self.margin_debt.refresh()),
                  ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()), ("twmacro", _twmacro()), ("tw_etf", _tw_etf()),
                  ("private_credit", self.refresh_private_credit()), ("spx_long", self.long_history.refresh()), ("distress", self.refresh_distress()))
+        if self.site_mode:
+            feeds += (("daily_why", _daily_why()),)
         # each feed gets its own timeout: one hung source can't hold phase 2 (and the bot's loops) forever
         res = await asyncio.gather(*(asyncio.wait_for(c, tmo) for _, c in feeds), return_exceptions=True)
         if not self.site_mode:                           # the site build forces its own (frames) earnings refresh later
