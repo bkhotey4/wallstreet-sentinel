@@ -404,7 +404,7 @@ def _fm_summary() -> str:
 def sec_fullmarket(eng, mode: str = "score") -> str:
     """Shell for the client-side full-market table (data loaded from market/<mk>.json only when opened)."""
     title = ("全市場排行（美股市值 10 億美元以上、台股上市＋上櫃、港股主板）", "Full-market ranking") if mode == "score" else \
-        ("全市場個股・支撐／次級支撐參考區（美股約 2,500 檔、台股、港股）", "Every stock: entry / add-on zones")
+        ("全市場個股・支撐／次級支撐參考區（美股全市場、台股、港股）", "Every stock: entry / add-on zones")
     note = T("全市場資料每天收盤後更新，只算技術面（情報面只有上方追蹤池才有）。分數在同一個市場內排名；族群為交易所／Nasdaq 官方產業分類。"
              "搜尋框輸入任何代號或名稱都會一起查全市場。", "Updated daily, technical only; ranks within each market; official industry groups.")
     if mode != "score":
@@ -647,8 +647,8 @@ def sec_bonds(eng) -> str:
     rows = "".join(
         f'<tr><td class="nw">{esc(a["date"])}</td><td class="nw">{esc(a["label"])}{_REOPEN if a["reopen"] else ""}</td>'
         f'<td class="r">{a["high_yield"]:.3f}%</td><td class="r">{a["btc"]:.2f}<span class="muted small"> / {num(a.get("btc_avg"), 2)}</span></td>'
-        f'<td class="r">{a["indirect"]:.0f}%<span class="muted small"> / {num(a.get("indirect_avg"), 0)}%</span></td>'
-        f'<td class="r">{a["dealer"]:.0f}%<span class="muted small"> / {num(a.get("dealer_avg"), 0)}%</span></td>'
+        f'<td class="r">{num(a.get("indirect"), 0)}%<span class="muted small"> / {num(a.get("indirect_avg"), 0)}%</span></td>'
+        f'<td class="r">{num(a.get("dealer"), 0)}%<span class="muted small"> / {num(a.get("dealer_avg"), 0)}%</span></td>'
         f'<td class="r">{a["size_bn"]:.0f}B</td>'
         f'<td>{_verdict(a.get("verdict"))}</td></tr>' for a in b.get("auctions", []))
     table = (f'<h3>{T("最近的公債標售", "Recent coupon auctions")}</h3><div class="scroll"><table class="mini"><thead><tr>'
@@ -685,6 +685,8 @@ _REOPEN = ' <span class="pill">' + T("增額", "reopen") + "</span>"
 def _verdict(v: Optional[str]) -> str:
     if not v:
         return f'<span class="muted">{T("樣本不足", "n/a")}</span>'
+    if v == "資料不足":                                     # a missing or inconsistent award field: not judged
+        return f'<span class="muted">{T("資料不足", "incomplete")}</span>'
     col = {"偏弱": "#d03b3b", "偏強": "#0ca30c", "正常": "#6b7280"}[v]
     return f'<span class="pill"><i class="sw" style="background:{col}"></i>{T(v, {"偏弱": "Weak", "偏強": "Strong", "正常": "Normal"}[v])}</span>'
 
@@ -1187,7 +1189,7 @@ def _bk_table(dz) -> str:
             f"（Z'' 只抓到 {_v(o, 'top5_recall_z', '.0f', 100)}%），但這 5% 裡只有約 {_v(o, 'top5_precision', '.0f', 100)}% 真的在一年內破產："
             f"多數高機率公司最後並沒有破產。一般公司的一年破產率約 {_v(o, 'base_rate_pct', '.1f')}%。"
             f"限制：沒有用股價（已下市公司沒有股價資料），銀行不適用，2013–14 年訓練資料太少時模型失效（AUC {_v(o, 'auc_all_years', '.2f')} 是含那兩年的整體值），"
-            "財報一季才更新。≥ 10%（約前 1%）紅、≥ 2%（約前 10%）黃；機率顯示在每家公司的警訊裡，但不計入燈號點數（同一批財報比率，避免重複計算）。",
+            "財報一季才更新。≥ 10% 紅、≥ 2% 黃（固定門檻；落在全體的第幾名會隨每季重新訓練而變）；機率顯示在每家公司的警訊裡，但不計入燈號點數（同一批財報比率，避免重複計算）。",
             f"Logistic bankruptcy model on SEC filings ({m.get('sample', '')}); out-of-sample AUC {_v(o, 'auc', '.2f')} vs Altman Z'' "
             f"{_v(o, 'auc_z', '.2f')}. Top 5% catches {_v(o, 'top5_recall', '.0f', 100)}% of bankruptcies; most high-probability firms do not fail.")
     return (f'<h3>{T("模型：12 個月內申報破產的機率最高", "Model: highest 12-month bankruptcy probability")}</h3>{old}'

@@ -62,7 +62,7 @@ box.querySelector('.mkload').addEventListener('click',function(){this.hidden=tru
 
 def sec_marks(eng) -> str:
     btns = "".join(f'<button class="tab{" on" if k == "us" else ""}" data-mk="{k}" type="button">{T(z, e)}</button>'
-                   for k, z, e in (("us", "美股（約 2,500 檔）", "US"), ("tw", "台股（上市＋上櫃）", "Taiwan"), ("hk", "港股（主板）", "Hong Kong")))
+                   for k, z, e in (("us", "美股（全市場）", "US"), ("tw", "台股（上市＋上櫃）", "Taiwan"), ("hk", "港股（主板）", "Hong Kong")))
     ctl = ('<input class="btn mkq" type="search" placeholder="搜尋代號／名稱" data-en-ph="Search" style="min-width:140px">'
            '<select class="btn mkt"><option value="">趨勢：全部</option><option value="多頭">多頭</option><option value="盤整">盤整</option><option value="空頭">空頭</option></select>'
            '<select class="btn mkv"><option value="">估值位置：全部</option><option value="歷史低檔">在自己歷史的低檔</option><option value="歷史中段">中段</option>'

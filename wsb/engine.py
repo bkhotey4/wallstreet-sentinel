@@ -114,6 +114,8 @@ class Engine:
         self.rotation: Dict = {}          # 類股輪動與市場寬度
         self.signals: Dict = {}           # 技術型態觀察（規則篩選）
         self.econ_view: Dict = {}         # 財經日曆（FOMC、CPI、PPI…＋影響劇本）
+        from .data.events import OfficialEvents
+        self.events = OfficialEvents()    # 官方事件快速通道：Nasdaq 停牌、Fed 貨幣政策新聞稿、台股重大訊息
         from .data.fedwatch import FedWatch
         self.fedwatch = FedWatch()        # 聯邦基金期貨 → FOMC 結果機率
         self.fedwatch_view: Dict = {}

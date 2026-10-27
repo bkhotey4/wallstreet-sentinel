@@ -55,7 +55,8 @@ def parse_auctions(rows: List[Dict]) -> List[Dict]:
         btc, hy = _n(x.get("bidToCoverRatio")), _n(x.get("highYield"))
         if not comp or btc is None or hy is None:          # announced but not yet auctioned
             continue
-        share = lambda *k: (_n(pick(x, *k)) or 0) / comp * 100  # noqa: E731
+        # a missing award stays None (0 would read as "dealers took almost nothing" = strong demand)
+        share = lambda *k: None if _n(pick(x, *k)) is None else _n(pick(x, *k)) / comp * 100  # noqa: E731
         out.append({"date": str(pick(x, "auctionDate", "competitiveAuctionCloseDate") or "")[:10],
                     "term": x.get("originalSecurityTerm") or x.get("securityTerm"),
                     "label": x.get("securityTerm"), "reopen": str(x.get("reopening", "No")).lower() == "yes",
@@ -63,6 +64,10 @@ def parse_auctions(rows: List[Dict]) -> List[Dict]:
                     "indirect": share("indirectBidderAccepted", "indirectBiddersCompetitiveParAwarded"),
                     "direct": share("directBidderAccepted", "directBiddersCompetitiveParAwarded"),
                     "size_bn": (_n(x.get("offeringAmount")) or 0) / 1e9, "cusip": x.get("cusip")})
+        a = out[-1]
+        parts = [a["dealer"], a["indirect"], a["direct"]]
+        # the three bidder groups must add up to the competitive total; a file that doesn't is not judged on shares
+        a["shares_ok"] = None not in parts and 95 <= sum(parts) <= 105
     return sorted({(a["date"], a["cusip"]): a for a in out}.values(), key=lambda a: a["date"], reverse=True)
 
 
@@ -77,24 +82,44 @@ def judge(auctions: List[Dict], window: int = 6) -> List[Dict]:
         r = dict(a, n_prev=len(prev), verdict=None)
         if len(prev) >= 3:
             r["btc_avg"] = float(np.mean([p["btc"] for p in prev]))
-            r["dealer_avg"] = float(np.mean([p["dealer"] for p in prev]))
-            r["indirect_avg"] = float(np.mean([p["indirect"] for p in prev]))
-            weak = (r["btc"] <= r["btc_avg"] - drop) + (r["dealer"] >= r["dealer_avg"] + pp)
-            strong = (r["btc"] >= r["btc_avg"] + drop) + (r["dealer"] <= r["dealer_avg"] - pp)
-            r["verdict"] = "偏弱" if weak and not strong else "偏強" if strong and not weak else "正常"
+            dl = [p["dealer"] for p in prev if p.get("dealer") is not None and p.get("shares_ok", True)]
+            ind = [p["indirect"] for p in prev if p.get("indirect") is not None and p.get("shares_ok", True)]
+            r["dealer_avg"] = float(np.mean(dl)) if len(dl) >= 3 else None
+            r["indirect_avg"] = float(np.mean(ind)) if len(ind) >= 3 else None
+            if r.get("dealer") is None or r["dealer_avg"] is None or not r.get("shares_ok", True):
+                r["verdict"] = "資料不足"                   # judged only on complete figures
+            else:
+                weak = (r["btc"] <= r["btc_avg"] - drop) + (r["dealer"] >= r["dealer_avg"] + pp)
+                strong = (r["btc"] >= r["btc_avg"] + drop) + (r["dealer"] <= r["dealer_avg"] - pp)
+                r["verdict"] = "偏弱" if weak and not strong else "偏強" if strong and not weak else "正常"
         by[a["term"]].append(a)
         out.append(r)
     return sorted(out, key=lambda a: a["date"], reverse=True)
 
 
+def upcoming(rows) -> List[str]:
+    """Dates (YYYY-MM-DD) of coupon auctions that are announced but have no result yet."""
+    out = set()
+    for x in rows or []:
+        if any(str(x.get(k) or "No").lower() == "yes" for k in ("tips", "inflationProtected", "floatingRate")):
+            continue
+        if _n(x.get("bidToCoverRatio")) is None:
+            d = str(x.get("auctionDate") or x.get("competitiveAuctionCloseDate") or "")[:10]
+            if d:
+                out.add(d)
+    return sorted(out)
+
+
 class Treasury:
     def __init__(self) -> None:
         self.auctions: List[Dict] = []
+        self.upcoming: List[str] = []
         self.ts = 0.0
         try:
             if _FILE.exists():
                 d = json.loads(_FILE.read_text(encoding="utf-8"))
                 self.auctions, self.ts = d.get("auctions", []), float(d.get("ts", 0))
+                self.upcoming = list(d.get("upcoming") or [])
         except Exception as e:  # noqa: BLE001
             log.warning("auction cache unreadable: %s", e)
 
@@ -114,8 +139,10 @@ class Treasury:
             if not parsed:
                 raise RuntimeError("no auctions parsed")
             self.auctions, self.ts = judge(parsed), time.time()
+            self.upcoming = upcoming(rows)
             tmp = _FILE.with_suffix(_FILE.suffix + ".tmp")          # atomic: a cancelled run can't truncate it
-            tmp.write_text(json.dumps({"ts": self.ts, "auctions": self.auctions}, ensure_ascii=False), encoding="utf-8")
+            tmp.write_text(json.dumps({"ts": self.ts, "auctions": self.auctions, "upcoming": self.upcoming},
+                                      ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, _FILE)
             HEALTH.ok("treasury_auctions", len(parsed), every=every)
         except Exception as e:  # noqa: BLE001
@@ -189,7 +216,9 @@ def summary_lines(t: Dict) -> List[str]:
     if t.get("term_premium"):
         L.append(f"10 年期限溢價 {t['term_premium']['value']:.2f}%（歷史百分位 {t['term_premium']['pctile']:.0f}）")
     for a in t.get("auctions", [])[:4]:
-        if a.get("verdict"):
+        if a.get("verdict") == "資料不足" or (a.get("verdict") and (a.get("dealer") is None or a.get("dealer_avg") is None)):
+            L.append(f"{a['date']} {a['label']} 標售：得標 {a['high_yield']:.3f}%、倍數 {a['btc']:.2f} → 承接資料不足，未判斷需求")
+        elif a.get("verdict"):
             L.append(f"{a['date']} {a['label']} 標售：得標 {a['high_yield']:.3f}%、倍數 {a['btc']:.2f}（近期均 {a['btc_avg']:.2f}）、"
                      f"交易商承接 {a['dealer']:.0f}%（均 {a['dealer_avg']:.0f}%）→ {a['verdict']}")
     return L

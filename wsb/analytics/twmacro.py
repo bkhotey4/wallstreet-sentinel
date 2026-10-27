@@ -86,12 +86,14 @@ def _curves(d: Dict) -> pd.DataFrame:
 
 def _state(pct: Optional[float], chg3: Optional[float], chg_pct: Optional[float]) -> str:
     """Taiwan spreads are dealer quotes and move little, so "rapid" is judged against Taiwan's own history of 3-month moves."""
+    if pct is None:                                      # too little history to rank: unknown, not "normal"
+        return "資料不足"
     if chg3 is not None and chg3 > 0 and chg_pct is not None and chg_pct >= 90 and (pct or 0) >= 50:
         return "急速擴大"
     if pct is not None and pct >= 80:
         return "緊張"
     if pct is not None and pct <= 20:
-        return "很放心"
+        return "利差偏低"
     return "正常"
 
 
@@ -329,12 +331,14 @@ def read(r: Dict) -> Dict:
     if e:
         parts.append(f"景氣燈號{e['ico']}{e['light']}燈（{e['month']}，{e['score']:.0f} 分）" + ("，" + f"已連續 {e['run']} 個月" if e["run"] >= 3 else ""))
     if g:
-        lvl = ("在歷史低檔" if (g["pct10"] or 50) <= 20 else "在歷史高檔" if (g["pct10"] or 50) >= 80 else "在歷史中間")
+        p10 = g.get("pct10")
+        lvl = ("歷史位置資料不足" if p10 is None else "在歷史低檔" if p10 <= 20 else "在歷史高檔" if p10 >= 80 else "在歷史中間")
         parts.append(f"台灣 10 年期公債利率 {g['now10']:.2f}%（{lvl}）")
     if c:
         bbb = next((x for x in c["rows"] if x["k"] == "twBBB"), None)
         if bbb:
-            parts.append({"急速擴大": "公司債利差急速擴大", "緊張": "公司債利差偏高", "很放心": "公司債利差很低（市場很放心）", "正常": "公司債利差正常"}[bbb["state"]])
+            parts.append({"急速擴大": "公司債利差急速擴大", "緊張": "公司債利差偏高", "利差偏低": "公司債利差偏低（違約補償偏低，不等於安全）", "正常": "公司債利差正常",
+                          "資料不足": "公司債利差歷史資料不足，暫不判斷"}[bbb["state"]])
     head = "一句話看懂：" + "；".join(parts) + "。"
     if e:
         if e["light"] in ("紅", "黃紅"):

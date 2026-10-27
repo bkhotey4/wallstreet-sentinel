@@ -26,7 +26,7 @@ def sec_ebp(eng) -> str:
     last, prev3 = rows[-1], rows[-4]
     ebp_all = [r[2] for r in rows]
     p = _pct(ebp_all[:-1], last[2])
-    mood = ("風險胃納偏高：投資人要求的額外報酬低於平常，信用定價偏樂觀（研究顯示這種時候 1–2 年後經濟較易轉弱）" if last[2] < 0 and (p or 50) <= 25 else
+    mood = ("風險胃納偏高：投資人要求的額外報酬低於平常，信用定價偏樂觀（研究顯示這種時候 1–2 年後經濟較易轉弱）" if last[2] < 0 and p is not None and p <= 25 else
             "風險胃納偏低：信用市場在要求額外補償，通常伴隨景氣轉弱" if last[2] > 0.5 else "在常態範圍")
     s = pd.Series([r[2] for r in rows[-120:]], index=pd.to_datetime([r[0] + "-01" for r in rows[-120:]]))
     pr = pd.Series([r[3] for r in rows[-120:]], index=s.index)

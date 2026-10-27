@@ -8,8 +8,8 @@ from tools.sitekit import T, card, cls, esc, num
 
 NOTE_SOV = ("10 年期公債殖利率＝政府借 10 年要付的利率，也是房貸、企業借款和股票估值的「地基」。"
             "美國與日本是每日資料（美國：FRED；日本：財務省），其他國家是 OECD 每月平均（FRED），所以日期不同。"
-            "百分位是和自己的歷史比；「比美國」為正代表那國借錢比美國貴。歐元區國家另列「比德國」：南歐比德國多付越多，市場越擔心那國的財政。")
-NOTE_CORP = ("利差＝公司債殖利率減同年期公債，是借錢給企業的人要求的「違約風險補償」。利差越低＝越放心（也可能太放心），急速擴大＝開始擔心違約。"
+            "百分位是和自己的歷史比；「比美國」為正代表那國借錢比美國貴。兩邊都是每日資料時用同一天相減，否則改用兩邊都有資料的最近一個月的月均值相減（格內註明月份），不拿昨天的美債和上個月的歐債直接比。歐元區國家另列「比德國」：南歐比德國多付越多，市場越擔心那國的財政。")
+NOTE_CORP = ("利差＝公司債殖利率減同年期公債，是借錢給企業的人要求的「違約風險補償」。利差越低＝市場要求的補償越少（不等於安全：也可能是估值偏貴、緩衝變薄），急速擴大＝開始擔心違約。"
              "投資級是體質較好的公司（BBB 是其中最低一級，最常被降成垃圾債），高收益債（垃圾債）是體質較弱的公司，CCC 是最弱的一群。"
              "資料：ICE 美銀債券指數（FRED），FRED 只提供近 3 年，本站每次抓取都會存檔，所以百分位的比較期間會越來越長（欄位註明起算月）。"
              "「急速擴大」＝3 個月內擴大超過原本的四分之一。殖利率是公司實際要付的利率，直接影響再融資壓力。")
@@ -17,6 +17,11 @@ NOTE_FLOW = ("日本財務省每週四公布「對外及對內證券買賣」（
              "週資料波動很大，看連續幾週與 5 週合計在歷史上的位置比較有意義。"
              "美國財政部 TIC 每月公布各國持有美國公債的金額（約晚 6 週）；持有金額的變化同時包含買賣與價格漲跌（利率上升時，同樣的債券市值會變小），"
              "所以減少不全等於有人在賣。外國官方＝各國央行與政府機構。")
+
+
+def _mon(m) -> str:
+    """The month a cross-country gap was measured on, when the two series could not be compared on the same day."""
+    return f'<div class="small muted">{T(f"{m} 月均", f"{m} avg")}</div>' if m else ""
 
 
 def _sov_card(r, keys=None, title=("各國公債：美國、日本、歐洲、亞太", "Government bonds by market")) -> str:
@@ -30,7 +35,8 @@ def _sov_card(r, keys=None, title=("各國公債：美國、日本、歐洲、�
         rows += (f'<tr><td class="nw"><b>{T(x["zh"], "")}</b></td><td class="r"><b>{x["now"]:.2f}%</b></td>'
                  f'<td class="r {cls(x["chg1y"])}">{num(x["chg1y"], 2, sign=True)}</td>'
                  f'<td class="r">{T(pct, "")}<div class="small muted">{x["since"]} {T("年起", "")}</div></td>'
-                 f'<td class="r">{num(x["vs_us"], 2, sign=True)}</td><td class="r">{num(x["vs_de"], 2, sign=True)}</td>'
+                 f'<td class="r">{num(x["vs_us"], 2, sign=True)}{_mon(x.get("vs_us_m"))}</td>'
+                 f'<td class="r">{num(x["vs_de"], 2, sign=True)}{_mon(x.get("vs_de_m"))}</td>'
                  f'<td class="small muted">{esc(x["date"])}{T(mon, "")}</td></tr>')
     up = [x["zh"] for x in sv if (x["chg1y"] or 0) >= 0.25]
     hi = [x["zh"] for x in sv if x["pct"] >= 90]
@@ -48,7 +54,7 @@ def _corp_card(r, keys=None, title=("公司債：美國、歐洲、新興市場�
     cp = [x for x in r["corp"] if keys is None or x["k"] in keys]
     if not cp:
         return ""
-    col = {"急速擴大": "dn", "緊張": "dn", "很放心": "up", "正常": ""}
+    col = {"急速擴大": "dn", "緊張": "dn", "利差偏低": "up", "正常": ""}
     rows = ""
     for x in cp:
         pct = f"第 {x['pct']:.0f}"
@@ -59,15 +65,28 @@ def _corp_card(r, keys=None, title=("公司債：美國、歐洲、新興市場�
                  f'<td class="r">{T(pct, "")}<div class="small muted">{x["since"]} {T("起", "")}</div></td>'
                  f'<td><b class="{col[x["state"]]}">{T(x["state"], "")}</b></td><td class="r">{ey}</td></tr>')
     wide = [x["zh"] for x in cp if x["state"] in ("緊張", "急速擴大")]
-    calm = [x["zh"] for x in cp if x["state"] == "很放心"]
+    calm = [x["zh"] for x in cp if x["state"] == "利差偏低"]
     lead = ("一句話看懂：" + (f"{'、'.join(wide)} 的利差在擴大或處在高檔，債市開始擔心這些企業還不出錢。" if wide else
-                         f"{len(cp)} 類公司債中有 {len(calm)} 類利差在自己歷史的低檔：借錢給企業的人很放心，也可能太放心。" if calm else
+                         f"{len(cp)} 類公司債中有 {len(calm)} 類利差在自己歷史的低檔：市場要求的違約補償偏低，這不等於安全（估值偏貴、緩衝變薄）。" if calm else
                          "各類公司債利差都在正常範圍。"))
+    dec = ""
+    for x in cp:
+        d = x.get("dec")
+        if not d:
+            continue
+        main = "主要來自公債利率" if abs(d["rate"]) > abs(d["spread"]) else "主要來自信用利差"
+        dec += (f'<li>{T(x["zh"], "")}：近 3 個月企業借錢利率 {d["total"] * 100:+.0f} bp ＝ 公債利率 {d["rate"] * 100:+.0f} bp ＋ '
+                f'信用利差 {d["spread"] * 100:+.0f} bp，{main}。</li>')
+    if dec:
+        how = ("指數殖利率＝同期公債利率＋利差（OAS），所以兩者變化相減就是公債利率的部分。這是整個指數的拆解，不是單一檔債券；"
+               "利差擴大才是市場在擔心違約，單純利率上升是整體借錢成本變貴。")
+        dec = (f'<details class="sgx"><summary>{T("公司債利率變動拆解：是利率還是信用？", "Rates vs credit")}</summary><ul class="small">{dec}</ul>'
+               f'<p class="note">{T(how, "")}</p></details>')
     body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("類別", "Type")}</th>'
             f'<th class="r">{T("利差", "Spread")}</th><th class="r">{T("3 個月變化", "3m chg")}</th><th class="r">{T("歷史百分位", "Pct")}</th>'
             f'<th>{T("狀態", "State")}</th><th class="r">{T("企業實際借錢利率", "Yield")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
             f'<p class="small"><a class="golink" href="#cb_us" data-p="cb_us">{T("美國信用利差回測與 EBP →", "US credit detail →")}</a>　'
-            f'<a class="golink" href="#industry" data-p="industry">{T("各產業公司財務體檢 →", "Sector credit →")}</a></p>'
+            f'<a class="golink" href="#industry" data-p="industry">{T("各產業公司財務體檢 →", "Sector credit →")}</a></p>{dec}'
             f'<details class="sgx"><summary>{T("這張表怎麼看", "How to read")}</summary><p class="note">{T(NOTE_CORP, "")}</p></details>')
     return card(*title, body, "wide")
 
@@ -156,7 +175,7 @@ def _jgb_card(eng) -> str:
                  f'<td class="r">{T(ptxt, "")}<div class="small muted">{s.index[0].strftime("%Y")} {T("年起", "")}</div></td></tr>')
     if not rows:
         return ""
-    lead = ("一句話看懂：" + (f"日本 10 年期公債殖利率 {ten[0]:.2f}%，比一年前{'高' if (ten[1] or 0) >= 0 else '低'} {abs(ten[1] or 0):.2f} 個百分點，"
+    lead = ("一句話看懂：" + (f"日本 10 年期公債殖利率 {ten[0]:.2f}%" + (f"，比一年前{'高' if ten[1] >= 0 else '低'} {abs(ten[1]):.2f} 個百分點" if ten[1] is not None else "") + f"，"
                          f"在 {ten[3]} 年以來第 {ten[2]:.0f} 百分位。" if ten else "")
             + "日本國內利率越高，日本的壽險、銀行和退休基金越不需要出國買外國債券。")
     note = ("日本公債殖利率來自日本財務省每日公布的固定期限殖利率。日本曾經長期零利率甚至負利率，所以日本資金大量買美債與歐債賺利差；"
@@ -181,15 +200,17 @@ def sec_cb_brief(eng) -> str:
     return card("公司債在說什麼：借錢給企業的人放不放心", "What corporate bonds are saying", body, "wide")
 
 
-ROT_WORD = {"股跌債漲": "資金從股票轉進國債避險（買債的人多，利率就下降）",
-            "股債雙殺": "股票和國債一起被賣：大家在換現金，不是轉進國債",
-            "賣債買股": "資金從債券轉回股票（風險偏好上升）",
+# prices only: these describe how the two markets moved, which fits (but does not prove) money moving between them
+ROT_WORD = {"股跌債漲": "股票跌、國債漲（利率降）：符合資金避險轉進國債的表現",
+            "股債雙殺": "股票和國債一起被賣：符合換現金的表現，不像轉進國債",
+            "股漲債跌": "股票漲、國債跌（利率升）：符合風險偏好升溫的表現",
             "股債齊漲": "股票和國債一起漲：通常是市場預期降息",
             "沒有明顯轉移": "股市和國債利率都沒有大幅變動，看不出資金大舉從股票轉進國債"}
 NOTE_ROT = ("判斷規則：近一個月標普 500 跌 3% 以上、同時 10 年期國債利率降 20bp 以上＝「股跌債漲」（資金轉進國債）；股跌而利率升 20bp 以上＝「股債雙殺」（換現金）。"
             "國債被搶買時價格上漲、利率下降，所以看利率方向就知道錢有沒有進國債。"
             "貨幣市場基金資料來自美國金融研究辦公室（OFR）的貨幣市場基金監測（根據各基金向 SEC 申報，每月、約晚一個月，2010 年起）。"
-            "「最大單日降幅」用來抓單日的避險潮（例如財報或數據引發的恐慌）。這是對數據的描述，不是預測。")
+            "「最大單日降幅」用來抓單日的避險潮（例如財報或數據引發的恐慌）。"
+            "這些狀態只看價格，價格同向變動「符合」資金移動，但不等於已證實有資金從一邊搬到另一邊；實際資金流請看下方的資金流資料與其期間。這是對數據的描述，不是預測。")
 
 
 def sec_gb_rotation(eng) -> str:

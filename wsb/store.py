@@ -36,6 +36,8 @@ with _LOCK:
         CREATE TABLE IF NOT EXISTS intel_heat (ts REAL, channel TEXT, heat REAL, n INTEGER);
         CREATE INDEX IF NOT EXISTS ix_intel_heat ON intel_heat (channel, ts);
         CREATE TABLE IF NOT EXISTS news_tags (uid TEXT PRIMARY KEY, ts REAL, tags TEXT);
+        CREATE TABLE IF NOT EXISTS event_log (key TEXT PRIMARY KEY, src TEXT, title TEXT, event_ts REAL, first_ts REAL,
+                                              sent_ts REAL, tries INTEGER DEFAULT 0, last_err TEXT);
         """
     )
     _C.commit()
@@ -80,13 +82,39 @@ def alert_mark(key: str, severity: str, title: str, kind: str | None = None,
         _C.commit()
 
 
+def event_seen(key: str, src: str, title: str, event_ts: float | None) -> None:
+    """An event became a candidate alert (first time only): its source time and when we first had it."""
+    with _LOCK:
+        _C.execute("INSERT OR IGNORE INTO event_log (key, src, title, event_ts, first_ts, tries) VALUES (?,?,?,?,?,0)",
+                   (key, src, title[:200], event_ts, time.time()))
+        _C.commit()
+
+
+def event_result(keys: List[str], ok: bool, err: str = "") -> None:
+    with _LOCK:
+        for k in keys:
+            if ok:
+                _C.execute("UPDATE event_log SET sent_ts=COALESCE(sent_ts, ?), tries=tries+1 WHERE key=?", (time.time(), k))
+            else:
+                _C.execute("UPDATE event_log SET tries=tries+1, last_err=? WHERE key=?", (err[:200], k))
+        _C.execute("DELETE FROM event_log WHERE first_ts<?", (time.time() - 30 * 86400,))
+        _C.commit()
+
+
+def event_rows(hours: float = 24) -> List[Tuple]:
+    """(key, src, title, event_ts, first_ts, sent_ts, tries, last_err) for events first seen in the window."""
+    with _LOCK:
+        return _C.execute("SELECT key, src, title, event_ts, first_ts, sent_ts, tries, last_err FROM event_log "
+                          "WHERE first_ts>? ORDER BY first_ts DESC", (time.time() - hours * 3600,)).fetchall()
+
+
 def tracked_alerts(days: float = 365) -> List[Tuple]:
     with _LOCK:
         return _C.execute("SELECT ts, key, kind, severity, title, spx, ssi FROM alert_track WHERE ts>? ORDER BY ts",
                           (time.time() - days * 86400,)).fetchall()
 
 
-PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:", "rules:")      # holdings-derived → owner DM only, never listed publicly
+PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:", "rules:", "halt_pf:", "mops_pf:", "sec_pf:")      # holdings-derived → owner DM only, never listed publicly
 
 
 def is_private_alert(key: str) -> bool:

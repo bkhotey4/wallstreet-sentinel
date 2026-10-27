@@ -59,8 +59,9 @@ def checks(eng) -> List[Dict]:
     vix, v3 = _s(eng, "^VIX"), _s(eng, "^VIX3M")
     if len(vix):
         out.append({"k": "vix", "short": "VIX", "zh": "恐慌指數 VIX 回到 20 以下", "ok": float(vix.iloc[-1]) < 20, "txt": f"VIX {vix.iloc[-1]:.1f}"})
-    if len(vix) and len(v3):
-        r = float(vix.iloc[-1] / v3.iloc[-1])
+    jv = pd.concat([vix, v3], axis=1).dropna() if len(vix) and len(v3) else pd.DataFrame()
+    if len(jv):                                   # same day on both: a stale VIX3M is never divided into today's VIX
+        r = float(jv.iloc[-1, 0] / jv.iloc[-1, 1])
         out.append({"k": "term", "short": "期限結構", "zh": "VIX 期限結構恢復正常（近月比遠月低）", "ok": r < 0.95, "txt": f"VIX÷VIX3M {r:.2f}"})
     hyg = _s(eng, "HYG")
     if len(hyg) > 60:

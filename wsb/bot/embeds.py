@@ -275,7 +275,7 @@ def stability(engine) -> discord.Embed:
                     value=(f"槓桿基金淨空單 ${ba['net']:,.0f}B（{ba['date']}，{ba['since']} 年以來第 {ba['pct']:.0f} 百分位；一年前 ${ba['yago']:,.0f}B）\n{ba['read']}")[:1024], inline=False)
     if ai:
         e.add_field(name=f"{ai['emoji']} AI 資本支出：{ai['state']}",
-                    value=(f"6 家合計資本支出÷營業現金流 {ai['ratio']:.2f} 倍" + (f"；>1 倍：{'、'.join(ai['over1'])}" if ai["over1"] else "")
+                    value=(f"{ai.get('n', len(ai.get('rows') or []))} 家合計資本支出÷營業現金流 " + (f"{ai['ratio']:.2f}" if ai.get("ratio") is not None else "—") + " 倍" + (f"；>1 倍：{'、'.join(ai['over1'])}" if ai["over1"] else "")
                            + f"\n{ai['read']}")[:1024], inline=False)
     if not (rf or fu or ba or ai):
         e.description = "資料載入中（每 6 小時更新一次）"
@@ -363,6 +363,39 @@ def calendar(engine, show_holdings: bool = False) -> discord.Embed:
              if show_holdings or ev.get("type") != "earnings"]
     e.description = "\n".join(lines)[:4000] or "暫無事件（FRED 行事曆需 FRED_API_KEY）"
     return footer(e, engine)
+
+
+def inbox(rows, private: bool = False, now: float | None = None) -> discord.Embed:
+    """事件收件匣 + 即時事件成績單 from the event log: what came in, when it happened at the source, when we had it,
+    when it was delivered, and what is still waiting.  Holdings-derived events only in a DM."""
+    import statistics
+    import time as _t
+    now = now or _t.time()
+    rows = [r for r in rows if private or not store.is_private_alert(r[0])]
+    e = discord.Embed(title="📥 事件收件匣（近 24 小時）", color=0x2C3E50)
+    if not rows:
+        e.description = "近 24 小時沒有官方事件或新聞進入通知流程。"
+        return e
+    by: dict = {}
+    for key, src, title, ev_ts, first, sent, tries, err in rows:
+        by.setdefault(src, []).append((key, title, ev_ts, first, sent, tries, err))
+    lines = []
+    for src, xs in sorted(by.items()):
+        done = [x for x in xs if x[4]]
+        lag = [(x[4] - x[2]) / 60 for x in done if x[2]]                     # source time → delivered (minutes)
+        pend = [x for x in xs if not x[4]]
+        retry = sum(1 for x in xs if (x[5] or 0) > 1)
+        med = f"中位 {statistics.median(lag):.0f} 分" if lag else "—"
+        worst = f"最慢 {max(lag):.0f} 分" if lag else ""
+        lines.append(f"**{src}**：{len(xs)} 件 · 已送達 {len(done)} · 待送 {len(pend)} · 重試過 {retry} · 來源→送達 {med} {worst}")
+    e.add_field(name="成績單", value="\n".join(lines)[:1024], inline=False)
+    pend = [(src, x) for src, xs in by.items() for x in xs if not x[4]]
+    if pend:
+        e.add_field(name=f"待送（{len(pend)}）", value="\n".join(
+            f"• {src}｜{x[1][:70]}｜等了 {(now - x[3]) / 60:.0f} 分，試 {x[5] or 0} 次" + (f"（{x[6][:40]}）" if x[6] else "")
+            for src, x in pend[:8])[:1024], inline=False)
+    e.set_footer(text="延遲＝來源發布時間到 Discord 送達；沒有來源時間的不計入。待送＝還沒成功送出（失敗、靜音或超過單次上限），下一輪會再送。")
+    return e
 
 
 def status(engine) -> discord.Embed:

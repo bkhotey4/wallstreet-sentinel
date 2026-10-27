@@ -443,7 +443,7 @@ def embed_shock(engine) -> discord.Embed:
 
 
 # ------------------------------------------------------------------ /intel: news × prices × macro fusion
-FUSE_COL = {"確認": RED, "無聲壓力": ORANGE, "敘事領先": YELLOW, "平靜": GREEN}
+FUSE_COL = {"確認": RED, "無聲壓力": ORANGE, "敘事領先": YELLOW, "平靜": GREEN, "資料缺": MUTED}
 LEVEL_COL = {"高": RED, "偏高": ORANGE, "中性": YELLOW, "低": GREEN}
 _ID_RE = None
 
@@ -483,13 +483,15 @@ def _i_verdict(engine, tag: str) -> Slide:
            + ((f"（一個月前「{q1}」，已轉換）" if rg.get("quadrant_changed") else "（與一個月前相同）") if q1 else "")
            + (f"；{rg['drift']}" if rg.get("drift") else "") + f"；{rg.get('risk_mode') or '—'}；流動性 {rg.get('liquidity_mode') or '—'}")
     y = s.paragraph(txt, 760, y + 40, W - M - 760, size=30, color=MUTED) + 44
-    lead = next((r for r in itl.get("channels", []) if r["state"] != "平靜"), None)
+    lead = next((r for r in itl.get("channels", []) if r["state"] not in ("平靜", "資料缺")), None)
+    n_miss = sum(1 for r in itl.get("channels", []) if r["state"] == "資料缺")
     s.d.text((760, y), "主軸", font=font(34, True), fill=TEXT, anchor="lm")
     if lead:
         s.paragraph(f"{lead['channel']}［{lead['state']}］— {lead['explain']}", 760, y + 40, W - M - 760, size=30,
                     color=FUSE_COL[lead["state"]])
     else:
-        s.paragraph("六條傳導路徑的新聞與價格都沒有異常。", 760, y + 40, W - M - 760, size=30, color=GREEN)
+        s.paragraph(f"{n_miss} 條傳導路徑的價格資料暫缺，其餘新聞與價格都沒有異常。" if n_miss else "六條傳導路徑的新聞與價格都沒有異常。",
+                    760, y + 40, W - M - 760, size=30, color=MUTED if n_miss else GREEN)
     return s
 
 
@@ -506,7 +508,7 @@ def _i_channels(engine, tag: str) -> Slide:
                      (f"{r['fused']:.0f}", level_color(r["fused"]))])
     y = s.table(["傳導路徑", "狀態", "市場點火", "新聞熱度", "融合"], rows, 235, [0.3, 0.17, 0.15, 0.22, 0.16],
                 size=34, row_h=74, align=["l", "c", "r", "r", "r"]) + 30
-    for r in [x for x in itl.get("channels", []) if x["state"] != "平靜"][:2]:
+    for r in [x for x in itl.get("channels", []) if x["state"] not in ("平靜", "資料缺")][:2]:
         if y > 960:
             break
         s.d.text((M, y), f"{r['channel']}［{r['state']}］", font=font(32, True), fill=FUSE_COL[r["state"]])

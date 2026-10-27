@@ -68,6 +68,33 @@ class Alert:
     severity: str   # "🚨 CRITICAL" | "⚠️ WARNING" | "ℹ️ INFO"
     title: str
     detail: str
+    event_ts: Optional[float] = None   # when it happened at the source (filing accepted, halt time, release time)
+
+
+# event sources whose delivery is tracked in /inbox (key prefix → label)
+EVENT_SRC = {"news:": "新聞", "sec:": "SEC 公告", "sec_pf:": "SEC 公告", "halt:": "停牌", "halt_pf:": "停牌", "fed:": "Fed 公告",
+             "mops:": "台股重大訊息", "mops_pf:": "台股重大訊息", "push:auction:": "公債標售"}
+
+
+def _band_line(name: str, v: dict) -> str:
+    """The back-test of the band the gauge sits in now: "this band → x% fell ≥10% within 3 months vs y% normally"."""
+    row = next((r for r in v.get("rows") or [] if r.get("now")), None)
+    if not row or row.get("p") is None or v.get("base") is None:
+        return f"{name}這個區間的歷史回測暫時算不出來；"
+    return (f"{name}在這個區間（{row['band']}）時，歷史上美股 3 個月內跌 ≥10% 的比例 {row['p']:.0f}%（{row['n']:,} 天），"
+            f"平常 {v['base']:.0f}%；")
+
+
+def _sec_ts(f: dict) -> Optional[float]:
+    """EDGAR acceptance time ("2026-10-27 16:05:12 UTC") → Unix time."""
+    try:
+        return datetime.strptime(f.get("accepted", "")[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
+    except ValueError:
+        return None
+
+
+def _event_src(key: str) -> Optional[str]:
+    return next((v for k, v in EVENT_SRC.items() if key.startswith(k)), None)
 
 
 class Sentinel(commands.Bot):
@@ -238,60 +265,92 @@ class Sentinel(commands.Bot):
         async def crypto():
             await eng.crypto.refresh()
 
-        async def news_alerts(fresh):
+        async def news_alerts(fresh=None):
             if not A.get("news_alerts", False):            # headlines can exaggerate: no push alerts from news by default
                 return
-            recent = time.time() - 6 * 3600                  # only genuinely new stories (not old ones seen late)
+            # every story of the last 6 h is a candidate (not only those first seen this round): the key is marked only
+            # once delivered, so a failed send, a mute window or the per-round cap of 4 leaves it queued for next round
+            recent = time.time() - 6 * 3600
+            cand = sorted((n for n in eng.news.items if n.score >= A["news_score"] and n.ts >= recent),
+                          key=lambda n: (n.score, n.ts), reverse=True)
             await self._run_alerts([
                 Alert(f"news:{n.uid}", "⚠️ WARNING" if n.score < A["news_score"] + 4 else "🚨 CRITICAL",
-                      f"情報：{n.title[:180]}", f"來源 {n.source} · 風險分數 {n.score} · 關鍵字 {', '.join(n.hits)}\n{n.link}")
-                for n in fresh if n.score >= A["news_score"] and n.ts >= recent][:4])
+                      f"情報：{n.title[:180]}", f"來源 {n.source}（{n.outlets} 個獨立媒體）· 風險分數 {n.score} · 關鍵字 {', '.join(n.hits)}\n{n.link}",
+                      n.ts or None)
+                for n in cand], limit=4)
 
         async def news():
-            fresh = await eng.news.refresh()
+            await eng.news.refresh()
+            await news_alerts()                            # facts first: the alert never waits for the AI reading
             try:
                 await eng.news_ai.classify(eng.news.items)     # AI reads only headlines it has not seen
             except Exception:  # noqa: BLE001
                 log.exception("news AI classify failed")
-            await news_alerts(fresh)
 
         async def options():
             await eng.options.refresh()
             await self._run_alerts(self._gamma_alerts())
 
-        async def sec_process(fresh):
+        async def sec_process(fresh=None):
             from datetime import date as _date
             cutoff = (_date.today() - timedelta(days=3)).isoformat()
-            fresh = [f for f in fresh if f.get("date", "") >= cutoff]      # ignore old filings seen for the first time
+            # every filing of the last 3 days is a candidate (not only those first seen this round): the alert key is
+            # marked only once delivered, so a failed send, a mute window or the cap of 6 per round leaves it queued
+            rec = [f for f in (eng.sec.recent or []) + list(fresh or []) if f.get("date", "") >= cutoff]
+            rec = list({f["acc"]: f for f in rec}.values())
             important = {"8-K", "6-K", "SC 13D", "SCHEDULE 13D", "S-1", "S-3", "424B5", "NT 10-Q", "NT 10-K", "4"}
+            rank = {"NT 10-K": 0, "NT 10-Q": 0, "8-K": 1, "6-K": 1, "SC 13D": 2, "SCHEDULE 13D": 2, "S-1": 3, "S-3": 3, "424B5": 3}
+            held = set(eng.holding_tickers())
+            # insider Form 4s and earnings notes stay for holdings; watchlist names alert on material events only
+            cand = sorted((f for f in rec if f["form"] in important and not f.get("earnings")
+                           and (f["form"] != "4" or f["ticker"] in held)),
+                          key=lambda f: f.get("accepted") or f["date"], reverse=True)
+            cand.sort(key=lambda f: rank.get(f["form"], 9))            # late-filing warnings and 8-Ks first, newest first
             await self._run_alerts([
-                Alert(f"sec:{f['url']}", "ℹ️ INFO", f"SEC：{f['ticker']} 提交 {f['form']}（{f['label']}）",
-                      f"{f['date']} {f.get('desc') or ''}\n{f['url']}")
-                for f in fresh if f["form"] in important and not f.get("earnings")][:6])
-            pend = store.kv_get("earn_pending", []) or []                 # failed earlier → retried on later rounds
-            cands = {x["acc"]: x for x in pend + [x for x in fresh if x.get("earnings")]}
-            for f in list(cands.values())[:3]:
-                if store.kv_get(f"earn_done:{f['acc']}"):
-                    continue
-                tries = int(store.kv_get(f"earn_try:{f['acc']}", 0) or 0)
-                if tries >= 3:                                     # give up after 3 failed attempts (no endless retry)
-                    continue
-                store.kv_set(f"earn_try:{f['acc']}", tries + 1)
+                # a holding's filing names the holding → owner DM only (sec_pf:); one already sent as sec: is not resent
+                Alert(f"{'sec_pf' if f['ticker'] in held else 'sec'}:{f['url']}", "ℹ️ INFO", f"SEC：{f['ticker']} 提交 {f['form']}（{f['label']}）",
+                      f"{(f.get('accepted') or f['date'])} {f.get('desc') or ''}\n{f['url']}", _sec_ts(f))
+                for f in cand if not store.alert_sent(f"sec:{f['url']}")], limit=6)
+            pend = store.kv_get("earn_pending", []) or []                 # not sent earlier → retried on later rounds
+            cands = {x["acc"]: x for x in pend + [x for x in rec if x.get("earnings") and x["ticker"] in held]}
+            week = (_date.today() - timedelta(days=7)).isoformat()
+            live = [x for x in cands.values() if not store.kv_get(f"earn_done:{x['acc']}")
+                    and (store.kv_get(f"earn_txt:{x['acc']}") or int(store.kv_get(f"earn_try:{x['acc']}", 0) or 0) < 3)]
+            for f in live[:3]:                                   # given-up notes never hold one of the 3 slots
+                key = f"earn_txt:{f['acc']}"
                 try:
-                    txt = await ER.analyze_release(eng, f)
-                    for t in [d for d in [await self._owner_dm()] if d]:
-                        await P.deliver(t, text=txt, title=f"{f['ticker']} 財報快評")
-                    store.kv_set(f"earn_done:{f['acc']}", True)   # mark done only after it was analysed and sent
+                    txt = store.kv_get(key)                        # analysed before but not delivered → reuse the text
+                    if not txt:
+                        tries = int(store.kv_get(f"earn_try:{f['acc']}", 0) or 0)
+                        if tries >= 3:                             # the AI failed 3 times: give up (no endless retry)
+                            continue
+                        store.kv_set(f"earn_try:{f['acc']}", tries + 1)
+                        txt = await ER.analyze_release(eng, f)
+                        store.kv_set(key, txt)
+                    dm = await self._owner_dm()
+                    if not dm or not await P.deliver(dm, text=txt, title=f"{f['ticker']} 財報快評"):
+                        raise RuntimeError("no owner DM reachable" if not dm else "DM not delivered")
+                    store.kv_set(f"earn_done:{f['acc']}", True)   # done only after it was analysed AND delivered
+                    store.kv_set(key, None)
                     pend = [x for x in pend if x.get("acc") != f["acc"]]
-                except Exception:  # noqa: BLE001
-                    log.exception("earnings analysis for %s failed (attempt %d/3)", f.get("ticker"), tries + 1)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("earnings note for %s not delivered yet (%s); kept for retry", f.get("ticker"), e)
                     if all(x.get("acc") != f["acc"] for x in pend):
                         pend.append({k: v for k, v in f.items() if isinstance(v, (str, int, float, bool, type(None)))})
-            pend = [x for x in pend if int(store.kv_get(f"earn_try:{x.get('acc')}", 0) or 0) < 3]
+            # keep a pending note while it is under a week old and either analysed (send retries) or still analysable
+            pend = [x for x in pend if x.get("date", "") >= week and not store.kv_get(f"earn_done:{x.get('acc')}")
+                    and (store.kv_get(f"earn_txt:{x.get('acc')}") or int(store.kv_get(f"earn_try:{x.get('acc')}", 0) or 0) < 3)]
             store.kv_set("earn_pending", pend[-10:])
 
         async def sec():
-            await sec_process(await eng.sec.refresh([t for t in extra() if "." not in t]))
+            # holdings + an independent watchlist (names we follow without owning them)
+            watch = list(dict.fromkeys(extra() + [str(t).upper() for t in (SETTINGS.get("sec_watch") or [])]))
+            await sec_process(await eng.sec.refresh([t for t in watch if "." not in t]))
+
+        async def official():
+            await eng.events.refresh()
+            await self._run_alerts(self._official_alerts(), limit=10)
+            await self._auction_fast_lane()
 
         async def taiwan():
             await eng.taiwan.refresh()
@@ -424,6 +483,7 @@ class Sentinel(commands.Bot):
             ("news", R["news"], news, 5),
             ("options", R["options_gamma"], options, R["options_gamma"]),
             ("sec", R["sec"], sec, 30),
+            ("official", R.get("official_events", 120), official, 45),
             ("calendar", R["calendar"], cal, R["calendar"]),
             ("taiwan", SETTINGS.get("taiwan", {}).get("refresh_seconds", 7200), taiwan,
              SETTINGS.get("taiwan", {}).get("refresh_seconds", 7200)),
@@ -678,7 +738,7 @@ class Sentinel(commands.Bot):
                 store.kv_set(bk, True)
             elif not store.kv_get(bk) and not store.alert_sent(bk):
                 out.append(Alert(bk, "⚠️ WARNING", f"🏚️ 破產機率模型：{r['zh']}（{r['sym']}）{p * 100:.1f}%",
-                                 f"12 個月內申報破產的模型機率進入最高約 1%（財報 {r.get('bs_end') or '—'}）。"
+                                 f"12 個月內申報破產的模型機率達到紅燈門檻 ≥ 10%（財報 {r.get('bs_end') or '—'}）。"
                                  "多數高機率公司最後並未破產；這是統計估計，不是預測。"))
         if bk_first:
             store.kv_set("distress_bk_baseline", dz.get("asof") or True)
@@ -720,8 +780,8 @@ class Sentinel(commands.Bot):
         for t in tickers:
             sg = eng.market.sigma_move(t)
             q = eng.market.q(t)
-            if sg is None or q is None or abs(sg) < thr or q.get("asof", "") < fresh_cut:
-                continue
+            if sg is None or q is None or abs(sg) < thr or q.get("asof", "") < fresh_cut or q.get("stale"):
+                continue                                   # a bar older than the market's last session is not a new move
             if not (q.get("chg_pct") == q.get("chg_pct")) or np.sign(sg) != np.sign(q["chg_pct"]):
                 continue                                   # quote and history disagree on direction → data glitch, don't alert
             hs = eng.market.series(t).dropna()
@@ -905,15 +965,7 @@ class Sentinel(commands.Bot):
                             out.append(Alert(f"push:val:{i['key']}:{i['grade']}:{week}", "⚠️ WARNING",
                                              f"估值／信用警示：{i['label']} 進入「{i['grade']}」",
                                              f"目前 {i['value']:.2f}{i['unit']}，自 {i['hist_start']} 年以來第 {i['pctile']:.0f} 百分位。{i['what']}"))
-        bonds = getattr(eng, "bonds", None) or {}
-        if cfg.get("weak_auction", True):
-            cut = (now - timedelta(days=3)).strftime("%Y-%m-%d")
-            for a in bonds.get("weak", []):
-                if a["date"] >= cut:
-                    out.append(Alert(f"push:auction:{a['cusip']}:{a['date']}", "⚠️ WARNING",
-                                     f"美債標售需求偏弱：{a['date']} {a['label']}",
-                                     f"得標殖利率 {a['high_yield']:.3f}%，投標倍數 {a['btc']:.2f}（同天期近 6 次均 {a['btc_avg']:.2f}），"
-                                     f"初級交易商承接 {a['dealer']:.0f}%（均 {a['dealer_avg']:.0f}%）→ 終端買家縮手，長端利率可能承壓"))
+        out += self._auction_alerts()
         thr = cfg.get("breadth_drop")
         br = ((getattr(eng, "rotation", None) or {}).get("breadth") or {}).get("us")
         if thr and br:
@@ -1033,16 +1085,18 @@ class Sentinel(commands.Bot):
                 if e["state"] == "撤退":
                     out.append(Alert(f"elephant:{e['name']}:{e['date']}", "⚠️ WARNING",
                                      f"大象撤退：資產管理機構在{e['name']}期貨 13 週大幅減碼（歷史第 {e['pct']:.0f} 百分位）",
-                                     f"淨多單 {e['am']:+.1f}%（13 週 {e['chg13']:+.1f}）。回測 2010 年起，這種時候之後 3 個月內跌 ≥10% 的頻率約 "
-                                     f"{e.get('exit_rate') or 0:.0f}%，平常 {e.get('base') or 0:.0f}%；預測力有限（AUC {e.get('auc') or 0:.2f}）。"))
+                                     f"淨多單 {e['am']:+.1f}%（13 週 {e['chg13']:+.1f}）。"
+                                     + (f"回測 2010 年起，這種時候之後 3 個月內跌 ≥10% 的頻率約 {e['exit_rate']:.0f}%，平常 {e['base']:.0f}%"
+                                        + (f"；預測力有限（AUC {e['auc']:.2f}）。" if e.get("auc") is not None else "。")
+                                        if e.get("exit_rate") is not None and e.get("base") is not None else "回測數字暫時算不出來。")))
             cs = bub.credit_state(bub.load().get("credit") or {})          # 信用利差開始擴大（每月一次的資料）
             if cs is not None and len(cs.dropna()):
                 last = cs.dropna().iloc[-1]
                 mon = cs.dropna().index[-1].strftime("%Y-%m")
                 if last["ch6"] > 0:
                     out.append(Alert(f"credit_widen:{mon}", "⚠️ WARNING", f"信用利差開始擴大：穆迪 Baa−Aaa 6 個月 {last['ch6']:+.2f} 個百分點",
-                                     f"現在 {last['sp']:.2f}（歷史第 {last['pct']:.0f} 百分位）。歷史上價格泡沫遇到信用開始變緊時，先破裂的比例明顯較高；"
-                                     "看網站「AI 視角看風險」→ AI 泡沫計時器的信用條件。"))
+                                     f"現在 {last['sp']:.2f}（歷史第 {last['pct']:.0f} 百分位）。價格泡沫遇到信用變緊時先破裂的歷史比例，"
+                                     "看網站「AI 視角看風險」→ AI 泡沫計時器的信用條件（每次建置重算）。"))
         except Exception:  # noqa: BLE001
             log.exception("elephant alert failed")
         try:                                     # OFR 官方壓力指數升破 2（壓力高）、外國央行託管美債 13 週減少落在歷史最低 5%
@@ -1051,13 +1105,13 @@ class Sentinel(commands.Bot):
             f, c = tv.get("fsi") or {}, tv.get("custody") or {}
             if f.get("now") is not None and f["now"] > 2:
                 out.append(Alert(f"ofr_fsi:{f['date'][:7]}", "⚠️ WARNING", f"官方金融壓力指數升到 {f['now']:+.2f}（{f['band']}）",
-                                 "OFR 金融壓力指數高於 2 時，歷史上之後 3 個月跌 ≥10% 的頻率明顯高於平常；看網站「金融穩定監測」頁。"))
+                                 _band_line("OFR 金融壓力指數", f) + "看網站「金融穩定監測」頁。"))
             from ..data import euro_asia as ead
             eu = ead.view(self.engine).get("europe") or {}
             ci = eu.get("ciss") or {}
             if ci.get("now") is not None and ci["now"] >= 0.1:
                 out.append(Alert(f"ciss:{ci['date'][:7]}", "⚠️ WARNING", f"歐元區系統性壓力升溫：CISS {ci['now']:.2f}（{ci['band']}）",
-                                 "CISS 超過 0.1 時，歷史上美股 3 個月內跌 ≥10% 的頻率約是平常的 1.5 倍；看網站「全球行情」頁。"))
+                                 _band_line("CISS", ci) + "看網站「全球行情」頁。"))
             for x in eu.get("spreads") or []:
                 if x["pct"] >= 99:
                     out.append(Alert(f"eu_spread:{x['code']}:{x['month']}", "⚠️ WARNING", f"{x['zh']}公債利差創 1999 年以來新高區：比德國多 {x['spread']:.2f} 個百分點",
@@ -1125,11 +1179,95 @@ class Sentinel(commands.Bot):
                           "造市商進入負 Gamma：避險行為轉為順勢，日內波動放大機率上升")]
         return []
 
-    async def _run_alerts(self, alerts: List[Alert]) -> None:
+    def _auction_alerts(self) -> List[Alert]:
+        if not (SETTINGS.get("push", {}) or {}).get("weak_auction", True):
+            return []
+        out = []
+        cut = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%d")
+        for a in (getattr(self.engine, "bonds", None) or {}).get("weak", []):
+            if a["date"] >= cut:
+                out.append(Alert(f"push:auction:{a['cusip']}:{a['date']}", "⚠️ WARNING",
+                                 f"美債標售需求偏弱：{a['date']} {a['label']}",
+                                 f"得標殖利率 {a['high_yield']:.3f}%，投標倍數 {a['btc']:.2f}（同天期近 6 次均 {a['btc_avg']:.2f}），"
+                                 f"初級交易商承接 {a['dealer']:.0f}%（均 {a['dealer_avg']:.0f}%）→ 終端買家縮手，長端利率可能承壓"))
+        return out
+
+    async def _auction_fast_lane(self) -> None:
+        """On a day with an announced coupon auction, re-read TreasuryDirect every 5 min from the 13:00 ET close until the
+        result is in (normally ~13:02), instead of waiting for the 6-hour cache.  Other days and hours: nothing."""
+        from zoneinfo import ZoneInfo
+        from ..data import treasury as tsy
+        eng = self.engine
+        et = datetime.now(ZoneInfo("America/New_York"))
+        today = et.strftime("%Y-%m-%d")
+        if today not in (getattr(eng.treasury, "upcoming", None) or []) or not (13 <= et.hour < 15):
+            return
+        if time.time() - float(store.kv_get("auction_fast_ts", 0) or 0) < 300:
+            return
+        store.kv_set("auction_fast_ts", time.time())
+        await eng.treasury.refresh(force=True)
+        if any(a.get("date") == today for a in eng.treasury.auctions):
+            eng.bonds = await asyncio.to_thread(tsy.build, eng)
+            await self._run_alerts(self._auction_alerts())
+
+    def _official_alerts(self) -> List[Alert]:
+        """Facts first, from official feeds: a halt of a stock we follow (or any market-wide circuit breaker), a Fed
+        monetary-policy release, a Taiwan material announcement of a company we follow.  No AI step in front."""
+        if not A.get("official_events", True):
+            return []
+        eng, out, now = self.engine, [], time.time()
+        ev = getattr(eng, "events", None)
+        if ev is None:
+            return out
+        held = {t.upper() for t in eng.holding_tickers()}
+        watch = {str(t).upper() for t in (SETTINGS.get("sec_watch") or [])} | {str(t).upper() for t in (SETTINGS.get("street", {}) or {}).get("watchlist", [])}
+        mwc = set()
+        for h in ev.halts:
+            if now - h["ts"] > 6 * 3600:
+                continue
+            mw = h["code"].startswith("MWC")
+            if mw:
+                k = f"halt:{h['code']}:{int(h['ts']) // 60}"
+                if k not in mwc:
+                    mwc.add(k)
+                    out.append(Alert(k, "🚨 CRITICAL", f"全市場熔斷：{h['reason']}", f"停止交易時間 {h['when']}（Nasdaq 公告）"
+                                     "\nhttps://www.nasdaqtrader.com/trader.aspx?id=TradeHalts", h["ts"]))
+                continue
+            if not (mw or h["sym"] in held or h["sym"] in watch):
+                continue
+            pre = "halt_pf:" if h["sym"] in held and not mw else "halt:"
+            out.append(Alert(f"{pre}{h['sym']}:{int(h['ts'])}", "🚨 CRITICAL" if mw or h["code"] in ("H10", "T1", "T12") else "⚠️ WARNING",
+                             f"停牌：{h['sym']} {h['name'][:60]}（{h['reason']}）",
+                             f"停牌時間 {h['when']} · 代碼 {h['code']} · 市場 {h['market']}"
+                             + (f" · 恢復交易 {h['resume']}" if h["resume"] else " · 尚未公布恢復時間")
+                             + "\nhttps://www.nasdaqtrader.com/trader.aspx?id=TradeHalts", h["ts"]))
+        for f in ev.fed:
+            if now - f["ts"] <= 6 * 3600:
+                out.append(Alert(f"fed:{f['link']}", "⚠️ WARNING", f"Fed 貨幣政策公告：{f['title'][:180]}",
+                                 "原文（先發事實，分析稍後）：\n" + f["link"], f["ts"]))
+        tw_held = {t.split(".")[0] for t in held if t.endswith((".TW", ".TWO"))}
+        tw_watch = {str(c) for c in (SETTINGS.get("taiwan", {}) or {}).get("watch_stocks", [])}
+        for m in ev.mops:
+            if now - m["ts"] > 24 * 3600 or not (m["code"] in tw_held or m["code"] in tw_watch):
+                continue
+            pre = "mops_pf:" if m["code"] in tw_held else "mops:"
+            out.append(Alert(f"{pre}{m['code']}:{int(m['ts'])}", "ℹ️ INFO", f"台股重大訊息：{m['code']} {m['name']}",
+                             f"{m['when']}（台北）{m['market']} · {m['clause']}\n{m['subject'][:400]}\nhttps://mops.twse.com.tw/mops/#/web/t05sr01_1",
+                             m["ts"]))
+        return out
+
+    async def _run_alerts(self, alerts: List[Alert], limit: Optional[int] = None) -> None:
         cooldown = float(A.get("cooldown_minutes", 240)) * 60
         # a key that carries a bar-date / news-id / day / week ("sigma:^AXJO:2026-10-01:-1") already says "this event";
         # re-sending it every cooldown period just repeats the same alert → those are one-shot
         fire = [a for a in alerts if store.alert_allowed(a.key, ONE_SHOT_S if ":" in a.key else cooldown)]
+        for a in fire:
+            if _event_src(a.key):
+                store.event_seen(a.key, _event_src(a.key), a.title, a.event_ts)
+        limit = min(limit or 10, 10)                          # one embed shows 10 fields: what isn't shown isn't marked
+        if len(fire) > limit:                                 # the rest stay unmarked → they go out on the next rounds
+            log.info("alert cap %d: %d queued for next round", limit, len(fire) - limit)
+            fire = fire[:limit]
         if not fire:
             return
         priv = [a for a in fire if store.is_private_alert(a.key)]       # holdings-derived: owner DM only
@@ -1140,7 +1278,9 @@ class Sentinel(commands.Bot):
                 e_ = discord.Embed(title="🔒 持倉警報（僅你可見）", color=0xE67E22, timestamp=datetime.now(timezone.utc))
                 for a in priv[:10]:
                     e_.add_field(name=f"{a.severity} {a.title}"[:256], value=a.detail[:1024] or "—", inline=False)
-                if await self._safe_send(dm, embed=e_):          # not delivered → not marked → retried next round
+                ok_ = await self._safe_send(dm, embed=e_)
+                store.event_result([a.key for a in priv if _event_src(a.key)], ok_, "owner DM failed")
+                if ok_:                                         # not delivered → not marked → retried next round
                     for a in priv:
                         store.alert_mark(a.key, a.severity, a.title, kind=_alert_kind(a.key),
                                          spx=(self.engine.market.q("^GSPC") or {}).get("price"),
@@ -1166,6 +1306,7 @@ class Sentinel(commands.Bot):
         for t in targets:
             delivered = bool(await P.deliver(t, slides=lambda: S.deck_alert("緊急風險警報" if crit else "市場警報", rows, ssi),
                                              embeds=lambda: e, content=link_txt if P.style() == "slides" else None)) or delivered
+        store.event_result([a.key for a in fire if _event_src(a.key)], delivered, "no reachable target")
         if not delivered:                                   # nothing went out → keys stay unmarked and fire again next round
             log.warning("alerts not delivered (no reachable target); will retry: %s", ", ".join(a.key for a in fire)[:300])
             return
@@ -1900,6 +2041,10 @@ def register_commands(bot: Sentinel) -> None:
         if (getattr(eng, "model_health", None) or {}).get("models"):
             embeds.append(E.model_health(eng))                      # 模型近期失準 rides along with data health
         await it.response.send_message(embeds=embeds)
+
+    @tree.command(name="inbox", description="事件收件匣：最近 24 小時的官方事件、送達與延遲、待送與重試")
+    async def inbox(it: discord.Interaction):
+        await it.response.send_message(embed=E.inbox(store.event_rows(24), private=it.guild is None))
 
     @tree.command(name="setchannel", description="把目前頻道設為 警報 / 定時簡報 推播頻道")
     @app_commands.choices(kind=[app_commands.Choice(name="即時警報", value="alerts"),

@@ -125,7 +125,7 @@ def test_cards_and_layout():
     ST._save(st)
     e = _Eng(3.90)
     h = SST.sec_st_brief(e)
-    assert 'id="st-top"' in h and h.count('class="aitile"') >= 4 and re.search(r"金融穩定 [1-4] 項：", h)
+    assert 'id="st-top"' in h and h.count('class="aitile"') >= 4 and re.search(r"金融穩定 ([1-4] 項|[0-4]/4 項有資料)：", h)
     for k in ("st-refund", "st-funding", "st-basis", "st-cover"):
         assert f'data-jump="{k}"' in h
     r = SST.sec_st_refunding(e)

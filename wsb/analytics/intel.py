@@ -79,6 +79,7 @@ STATE_TEXT = {
     "敘事領先": "新聞很吵、價格還沒反應——可能是早期訊號，也可能只是雜訊；盯住相關區塊是否跟上",
     "無聲壓力": "價格已在施壓、新聞卻安靜——常見於部位／融資驅動的賣壓，容易被低估",
     "平靜": "新聞與價格都沒有異常",
+    "資料缺": "這條路徑的價格分數暫時取不到，無法判斷（不代表平靜）",
 }
 
 
@@ -200,8 +201,10 @@ def fuse(heat: Dict[str, Dict], shock: Dict, st=None) -> List[Dict]:
         if m_hot:
             min_n = int(_cfg("min_confirm_news", 2))             # one headline is an anecdote, not confirmation
             state = "確認" if ns in ("熱", "溫") and d["n"] >= min_n else "無聲壓力"
+        elif ns == "熱":
+            state = "敘事領先"
         else:
-            state = "敘事領先" if ns == "熱" else "平靜"
+            state = "平靜" if p is not None else "資料缺"     # no price path: unknown, never "calm"
         mk = max(0.0, min(100.0, ign)) if ign is not None else None
         fused = d["level"] if mk is None else wm * mk + (1 - wm) * d["level"]
         blocks = p["blocks"] if p else []
@@ -219,7 +222,7 @@ def fuse(heat: Dict[str, Dict], shock: Dict, st=None) -> List[Dict]:
                      "relief_n": d["n_relief"], "easing": d["easing"], "warmup": d["warmup"],
                      "ignition": ign, "market_state": p["state"] if p else None, "blocks": blocks,
                      "watch": watch, "top": d["top"], "story": p.get("story", "") if p else ""})
-    order = {"確認": 0, "無聲壓力": 1, "敘事領先": 2, "平靜": 3}
+    order = {"確認": 0, "無聲壓力": 1, "敘事領先": 2, "平靜": 3, "資料缺": 4}
     return sorted(rows, key=lambda r: (order[r["state"]], -r["fused"]))
 
 
@@ -273,7 +276,7 @@ def macro_pillar(rg: Dict) -> Tuple[Optional[float], List[Tuple[float, str]]]:
 
 
 def watchlist(rg: Dict, fused: List[Dict]) -> List[str]:
-    out = [f"{r['channel']}［{r['state']}］：{r['watch']}" for r in fused if r["state"] != "平靜" and r["watch"]][:4]
+    out = [f"{r['channel']}［{r['state']}］：{r['watch']}" for r in fused if r["state"] not in ("平靜", "資料缺") and r["watch"]][:4]
     g, i = rg.get("growth_z"), rg.get("inflation_z")
     edge = float(_cfg("quadrant_edge_z", 0.3))
     if g is not None and i is not None:
@@ -362,9 +365,11 @@ def verdict(st, rg: Dict, fused: List[Dict], odds: Optional[Dict] = None) -> Dic
         if missing:
             caveats.append("缺少：" + "、".join(missing))
     label, emoji = level_of(score)
-    lead = fused[0] if fused and fused[0]["state"] != "平靜" else None
+    lead = fused[0] if fused and fused[0]["state"] not in ("平靜", "資料缺") else None
+    n_miss = sum(1 for r in fused if r["state"] == "資料缺")
     headline = (f"情報融合指數 {emoji}{label}（{score:.0f}）｜" + " / ".join(f"{k} {v:.0f}" for k, v in avail.items())
-                + (f"｜主軸：{lead['channel']}［{lead['state']}］" if lead else "｜六條傳導路徑皆平靜"))
+                + (f"｜主軸：{lead['channel']}［{lead['state']}］" if lead else
+                   f"｜{n_miss} 條傳導路徑資料缺，其餘平靜" if n_miss else "｜六條傳導路徑皆平靜"))
     return {"available": True, "score": score, "base": base, "bonus": bonus, "label": label, "emoji": emoji,
             "pillars": pillars, "sides": side, "weights": w, "consensus": consensus,
             "confidence": conf, "caveats": caveats, "ledger": ledger, "headline": headline}

@@ -101,8 +101,11 @@ def headline(ph: dict, hs: list) -> str:
         h = "市場結構平靜，沒有系統性警訊"
     else:
         h = "結構訊號混合，沒有一致的系統性警訊"
-    a_t = sum(x == TENSE for x in (t, f, quake_state(ph.get("aftershock") or {})))
+    a3 = (t, f, quake_state(ph.get("aftershock") or {}))
+    a_t = sum(x == TENSE for x in a3)
     h_t = sum(x[1] == TENSE for x in hs)
+    if sum(x is not None for x in a3) < 2 or sum(x[1] is not None for x in hs) < 2:
+        return h                                         # too few readings on one side to compare the two
     if h_t > a_t:
         h += "；人心比數據更緊張"
     elif a_t > h_t:
@@ -470,12 +473,28 @@ def ai_verdict(eng, ph: dict) -> dict:
             "trig": trig, "fb": fb, "since": live.get("since"), "history": live.get("history"), "changes": live.get("changes") or []}
 
 
+def _crash_split(u: dict, d: dict) -> str:
+    gap = abs(u["crash"] - d["crash"])
+    return (f"3 個月後先漲的那組 {u['crash']:.0f}% 最後破 −40%，先跌的那組 {d['crash']:.0f}%："
+            + ("短期漲跌幾乎不影響會不會大跌，" if gap < 10 else "短期漲跌對會不會大跌有影響，") + "但很能分辨「能不能回到高點」。")
+
+
+def _ratio_txt(el) -> str:
+    rr = [e["exit_rate"] / e["base"] for e in el if e.get("exit_rate") is not None and e.get("base")]
+    if not rr:
+        return "回測數字暫時算不出來；"
+    lo, hi = min(rr), max(rr)
+    word = "比平常高" if lo > 1 else "不一定比平常高" if hi > 1 else "沒有比平常高"
+    return f"這種時候之後 3 個月內跌 ≥10% 的頻率是平常的 {lo:.1f}–{hi:.1f} 倍（{word}）；"
+
+
 def ai_layer(eng) -> dict:
     """AI supply-chain stress from four independent pieces of evidence; 2+ = the fear is grounded."""
-    ev = []
+    ev, ok = [], 0                                   # ok = pieces that could actually be evaluated
     try:
         bb = _bub(eng)
         be, _bh, bl = bubble_state(bb)
+        ok += bool(bl)
         if bl and bl["group"] in ("hot_fall_vol", "hot_fall"):
             ev.append(f"{bl['name']}落在歷史上泡沫破裂比例最高的一組（離高點 {bl['off']:+.0f}%）")
     except Exception:  # noqa: BLE001
@@ -484,6 +503,7 @@ def ai_layer(eng) -> dict:
         from tools import site_chain as SCH
         now_c = (SCH._ac(eng) or {}).get("now") or {}
         mem = next((g for g in now_c.get("groups") or [] if g["zh"] == "記憶體"), None)
+        ok += bool(mem)
         if mem and mem["off"] <= -20:
             ev.append(f"記憶體股離一年高點 {mem['off']:+.0f}%（產業鏈最敏感的一環）")
     except Exception:  # noqa: BLE001
@@ -491,6 +511,7 @@ def ai_layer(eng) -> dict:
     try:
         from wsb.data import euro_asia as EAD
         kr = next((r for r in ((EAD.view(eng).get("asia") or {}).get("rows") or []) if r["sym"] == "^KS11"), None)
+        ok += bool(kr)
         if kr and (kr["m1"] <= -10 or kr["off"] <= -25):
             ev.append(f"以記憶體股為主的韓國股市一個月 {kr['m1']:+.0f}%")
     except Exception:  # noqa: BLE001
@@ -499,14 +520,18 @@ def ai_layer(eng) -> dict:
         from tools import site_capex as SCX
         cb = SCX._cl() or {}
         dep = [r for r in cb.get("rows") or [] if r["corr"] >= 0.5 and r["n"] >= 12 and r["if_flat"] < r["rev_yoy"] - 20]
-        if dep and cb.get("capex_yoy", 0) >= 40:
+        ok += bool(cb.get("rows")) and cb.get("capex_yoy") is not None
+        if dep and (cb.get("capex_yoy") or 0) >= 40:
             ev.append(f"{len(dep)} 家供應商的營收綁在巨頭資本支出上（巨頭支出已年增 {cb['capex_yoy']:.0f}%，很難再更快）")
     except Exception:  # noqa: BLE001
         pass
     n = len(ev)
+    if n == 0 and ok < 2:                            # "calm" needs evidence that was checked, not missing caches
+        return {"label": "AI 族群資料不足", "text": f"四項證據只有 {ok} 項取得到資料，暫時無法判斷。", "evidence": ev, "n": n, "ok": ok}
     label = "AI 族群的壓力是真的" if n >= 2 else "AI 族群有局部壓力" if n == 1 else "AI 族群目前平穩"
-    text = ("、".join(ev) + "——這一塊的擔心有數據根據。" if n >= 2 else ("、".join(ev) + "。" if n else "泡沫計時器、產業鏈與亞洲記憶體股都沒有明顯壓力。"))
-    return {"label": label, "text": text, "evidence": ev, "n": n}
+    text = ("、".join(ev) + "——這一塊的擔心有數據根據。" if n >= 2 else ("、".join(ev) + "。" if n else
+            f"四項證據中有 {ok} 項取得到資料：泡沫計時器、產業鏈與亞洲記憶體股都沒有明顯壓力。"))
+    return {"label": label, "text": text, "evidence": ev, "n": n, "ok": ok}
 
 
 def trend_svg(df) -> str:
@@ -857,6 +882,8 @@ def reading(rows: List[dict], ph: dict) -> str:
         parts.append("物理類比指標在緊張、人類的指標卻還平靜：這是比較需要留意的組合，代表結構在變化但大家還沒反應。")
     elif a_t >= 2 and h_t >= 2:
         parts.append("兩邊都在緊張：各種角度一致，波動通常會持續一段時間。")
+    elif h_t == 0 and a_t == 0 and (sum(r["h"][1] is not None for r in rows) < 2 or sum(r["a"][1] is not None for r in rows[:3]) < 2):
+        parts.append("兩邊目前都沒有緊張訊號，但有讀數的指標太少，還不能說平靜。")     # missing gauges are not calm ones
     elif h_t == 0 and a_t == 0:
         parts.append("兩邊都平靜：人類指標和物理類比指標都沒有緊張訊號。")
     else:
@@ -1035,7 +1062,7 @@ def scenario_block(b: dict) -> str:
            f"跌破 {d10_s}（再跌 10%）：{d10['n']} 次裡 {d10['newhi']:.0f}% 回到高點"]
     check = (f"<b>{T('關鍵檢查點：' + lv['check_date'] + '（3 個月後）', '')}</b><ul class='small'>"
              + "".join(f"<li>{T(x, '')}</li>" for x in lis) + "</ul>"
-             f"<p class='small muted'>{T('短期漲跌幾乎不影響「會不會破 −40%」（兩邊都約四成），但很能分辨「能不能回到高點」。', '')}</p>")
+             + (f"<p class='small muted'>{T(_crash_split(u, d), '')}</p>" if u.get("crash") is not None and d.get("crash") is not None else ""))
     head = (f"{name}：2 年漲超過一倍、已從 {lv['high_d']} 的高點 {lv['high']:,.0f} 跌了 {-lv['off']:.0f}%。"
             f"歷史上 {sc['n']} 次類似情況（{sc['since']} 年起，2 年漲 ≥100%、已從高點跌 ≥15%），接下來 2 年先發生哪一件事：")
     return (f'<p class="rimp big2"><b>{T(head, "")}</b></p>{bar}'
@@ -1120,7 +1147,7 @@ def sec_ai_elephant(eng) -> str:
                "賣最多的是 " + "、".join(f"{s}（{v / 1e8:,.1f} 億）" for s, v in ins.get("top") or []) +
                "。高層賣股多半是事先排定的計畫或稅務、分散需求，買進才比較有資訊；本站只保存幾個月的申報，沒辦法回測，只當背景，不計入判斷。") if ins else ""
     note = T("怎麼看：CFTC 每週公布期貨的持倉，「資產管理機構」是退休基金、共同基金、保險這類長期大錢；它們在股指期貨的淨多單（占未平倉量 %）"
-             "13 週內大幅下降、落在自己歷史最低 10%，代表大錢在降低股票曝險。回測 2010 年起每週一筆：這種時候之後 3 個月內跌 ≥10% 的頻率，比平常高；"
+             "13 週內大幅下降、落在自己歷史最低 10%，代表大錢在降低股票曝險。回測 2010 年起每週一筆：" + _ratio_txt(el)
              + (f"AUC {min(am_auc):.2f}–{max(am_auc):.2f}，" + ("有一點預測力但不強" if max(am_auc) >= 0.55 else "預測力不明顯") if am_auc else "")
              + "，而且每週的樣本彼此重疊，不是獨立事件。避險基金（槓桿基金）的部位回測 AUC "
              + lev + "（0.5＝亂猜）" + ("，沒有預測力，所以不採用。" if not lev_auc or max(lev_auc) < 0.55 else "，部分超過 0.55，但樣本重疊，本站只當參考。")

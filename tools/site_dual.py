@@ -48,7 +48,11 @@ def fuel(eng):
 
 def combo(hot_t: int, n_t: int, hot_f: int, n_f: int, rzone: bool = False) -> str:
     """Fuel has three levels: full = at least half the lights or the R-zone (credit and asset prices hot together)."""
-    warm = hot_t >= max(2, (n_t + 1) // 2)
+    if n_t == 0 or (n_f == 0 and not rzone):            # no readings on a side: say so, never "both calm"
+        miss = "、".join(x for x, n in (("溫度計", n_t), ("燃料", n_f)) if n == 0)
+        return f"{miss}資料暫缺，無法完整判斷"
+    need = n_t if n_t <= 2 else max(2, (n_t + 1) // 2)   # one gauge alone can still say "warm"
+    warm = hot_t >= need
     fuel_lv = "full" if rzone or hot_f * 2 >= n_f else "some" if hot_f >= 2 else "low"
     return {(False, "full"): "表面平靜、底下燃料多：研究上危機前最常見的組合，但可能還要好幾年才出事",
             (True, "full"): "正在升溫，而且底下燃料多：這種時候下跌比較容易變大",

@@ -377,14 +377,20 @@ def ai_view(fund: Optional[Dict] = None) -> Optional[Dict]:
     if len(rows) < 3:
         return None
     cap = sum(r["capex"] for r in rows)
-    capp = sum(r["capex_prev"] or 0 for r in rows)
+    gr = [r for r in rows if r["capex_prev"]]               # growth only over names with both years (like for like)
+    capp = sum(r["capex_prev"] for r in gr)
+    capg = sum(r["capex"] for r in gr)
     ocf = sum(r["ocf"] for r in rows)
     dt = [r for r in rows if r["debt"] is not None and r["debt_prev"]]
     debt, debtp = sum(r["debt"] for r in dt), sum(r["debt_prev"] for r in dt)
-    out = {"rows": rows, "capex": cap, "capex_growth": (cap / capp - 1) * 100 if capp else None, "ocf": ocf, "ratio": cap / ocf if ocf else None,
+    out = {"rows": rows, "capex": cap, "capex_growth": (capg / capp - 1) * 100 if capp else None, "n": len(rows), "ocf": ocf, "ratio": cap / ocf if ocf else None,
            "fcf": ocf - cap, "debt": debt, "debt_add": debt - debtp, "debt_growth": (debt / debtp - 1) * 100 if debtp else None,
            "over1": [r["name"] for r in rows if r["ratio"] is not None and r["ratio"] > 1]}
-    ratio = out["ratio"] or 0
+    ratio = out["ratio"]
+    if ratio is None:                                       # no cash-flow total: unknown, never "can pay for it"
+        out["state"], out["emoji"] = "資料缺", "⚪"
+        out["read"] = "營業現金流資料不足，暫時無法判斷 AI 巨頭的資本支出是不是靠借錢。"
+        return out
     if ratio > 1:
         out["state"], out["emoji"] = "靠借錢", "🔴"
         out["read"] = "這幾家合計的資本支出已經超過營業現金流：整體 AI 建設要靠借錢或動用存款支撐，利率愈高壓力愈大。"

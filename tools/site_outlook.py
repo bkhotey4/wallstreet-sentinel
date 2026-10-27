@@ -9,8 +9,8 @@ import pandas as pd
 from tools.sitekit import T, card, esc, line_chart, num
 
 LV_COL = {"高": "#d03b3b", "偏高": "#ec835a", "中性": "#fab219", "低": "#0ca30c", "資料缺": "#6b7280"}
-ST_COL = {"確認": "#d03b3b", "無聲壓力": "#ec835a", "敘事領先": "#fab219", "平靜": "#0ca30c"}
-ST_EN = {"確認": "Confirmed", "無聲壓力": "Silent stress", "敘事領先": "Narrative only", "平靜": "Calm"}
+ST_COL = {"確認": "#d03b3b", "無聲壓力": "#ec835a", "敘事領先": "#fab219", "平靜": "#0ca30c", "資料缺": "#9ca3af"}
+ST_EN = {"確認": "Confirmed", "無聲壓力": "Silent stress", "敘事領先": "Narrative only", "平靜": "Calm", "資料缺": "No data"}
 
 CSS = """
 .olh{display:flex;flex-wrap:wrap;gap:18px;align-items:center}.olbig{font-size:64px;font-weight:800;line-height:1;color:var(--lv)}
@@ -134,9 +134,11 @@ def sec_intel(eng) -> str:
              "Confirmed = headlines and prices both flag it; Narrative only = headlines without price confirmation; "
              "Silent stress = prices under stress while headlines are quiet. Ignition = shock-radar price score; heat = news volume "
              "percentile vs its own 30 days (count in brackets).")
-    lead = next((r for r in itl.get("channels", []) if r["state"] != "平靜"), None)
+    lead = next((r for r in itl.get("channels", []) if r["state"] not in ("平靜", "資料缺")), None)
+    n_miss = sum(1 for r in itl.get("channels", []) if r["state"] == "資料缺")
     lead_txt = (T(f"主軸：{lead['channel']}［{lead['state']}］", f"Lead path: {lead['channel']} [{ST_EN.get(lead['state'], lead['state'])}]")
-                if lead else T("六條傳導路徑皆平靜", "All six paths calm"))
+                if lead else T(f"{n_miss} 條路徑的價格資料缺，其餘平靜", f"{n_miss} paths without price data, the rest calm") if n_miss
+                else T("六條傳導路徑皆平靜", "All six paths calm"))
     return card("新聞背景（不計入風險分數）", "News context (not part of the risk score)",
                 f'<p class="small muted">{lead_txt} · {ai}</p><table class="olt"><thead><tr><th>{T("傳導路徑", "Path")}</th>'
                 f'<th>{T("狀態", "State")}</th><th>{T("市場點火", "Ignition")}</th><th>{T("新聞熱度", "News heat")}</th><th>{T("融合", "Fused")}</th>'

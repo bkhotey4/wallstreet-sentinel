@@ -192,9 +192,12 @@ async def main():
     q["asof"] = "2020-01-01"
     assert not [a for a in bot._market_alerts() if a.key.startswith("sigma:")]
 
-    # 2) all fired alerts are marked (not just first 10)
+    # 2) 10 per round (what one message shows); the rest stay unmarked and go out next round, so none is lost
     run_id = int(time.time())                           # unique keys: the sqlite store persists between test runs
     many = [APP.Alert(f"t{run_id}_{i}", "⚠️ WARNING", f"title {i}", "d\nhttps://example.com/{i}") for i in range(14)]
+    await bot._run_alerts(many)
+    assert all(not store.alert_allowed(f"t{run_id}_{i}", 3600) for i in range(10))
+    assert all(store.alert_allowed(f"t{run_id}_{i}", 3600) for i in range(10, 14))
     await bot._run_alerts(many)
     assert all(not store.alert_allowed(f"t{run_id}_{i}", 3600) for i in range(14))
     # event-keyed alerts (key contains ':') are one-shot: not re-sent after the normal cooldown has passed

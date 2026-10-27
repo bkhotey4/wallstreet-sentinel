@@ -128,7 +128,7 @@ def _models(eng, out: List[Dict], now: datetime) -> None:
 def _bottom(eng, out: List[Dict], now: datetime) -> None:
     """抄底四訊號: 3 of 4 → pop-up; 2 of 4 → listed under the bell."""
     from . import bottom as BT
-    r = BT.build(eng)
+    r = BT.build(eng, today=now.date())           # judged against the alert clock, not the wall clock
     if not r.get("available") or r["n_hit"] < 2:
         return
     hit = "、".join(f"{s['zh']} {s['fmt'].format(s['v'])}" for s in r["signals"] if s["hit"])

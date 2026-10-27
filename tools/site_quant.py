@@ -185,8 +185,8 @@ def sec_premarket(eng) -> str:
            f'<span class="muted small">（{T("現價低於翻轉點時，造市商避險傾向放大波動", "below the flip, dealer hedging tends to amplify moves")}）</span></p>') if lv else ""
     us = (f'<div class="pmp" data-pm="us"><h3>🇺🇸 {T("美股開盤前", "Before the US open")}　<span class="muted small">{T("台北", "Taipei")} {esc(d["us_open_tpe"])}</span></h3>'
           f'{_takeaways(d.get("take_us"))}<div class="pmg">{_mv_rows(d.get("overnight", []))}</div>{rng}{lvl}'
-          f'<div class="pm2"><div><h4>{T("今天的數據（台北時間）", "Today’s data (Taipei time)")}</h4><ul class="small">{ev or "<li class=muted>" + T("沒有重要數據", "No key releases") + "</li>"}</ul></div>'
-          f'<div><h4>{T("今天的財報", "Today’s earnings")}</h4><ul class="small">{er or "<li class=muted>" + T("追蹤名單今天沒有財報", "None in the tracked list") + "</li>"}</ul></div></div></div>')
+          f'<div class="pm2"><div><h4>{T("今天的數據（台北時間）", "Today’s data (Taipei time)")}</h4><ul class="small">{ev or "<li class=muted>" + (T("沒有重要數據", "No key releases") if d.get("events_ok", True) else T("經濟日曆暫時取不到", "Calendar unavailable")) + "</li>"}</ul></div>'
+          f'<div><h4>{T("今天的財報", "Today’s earnings")}</h4><ul class="small">{er or "<li class=muted>" + (T("追蹤名單今天沒有財報", "None in the tracked list") if d.get("earnings_ok", True) else T("財報日曆暫時取不到", "Earnings calendar unavailable")) + "</li>"}</ul></div></div></div>')
     # ---- Taiwan panel
     tr = d.get("tw_range") or {}
     lk = d.get("tw_link") or {}

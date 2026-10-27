@@ -220,6 +220,7 @@ class MarketData:
         tickers = sorted(tracked)
         official_task = asyncio.create_task(TQ.refresh())
         every = SETTINGS["refresh"]["quotes"]
+        backup: set = set()                       # columns filled by the Stooq backup this round
         try:
             df = await asyncio.to_thread(_download, tickers, period="7d", interval="1d") if tickers else pd.DataFrame()
             if df.empty:
@@ -248,6 +249,7 @@ class MarketData:
                             if not sd.empty and fill:
                                 df = df.drop(columns=[c for c in fill if c in df.columns])     # all-NaN yfinance columns
                                 df = df.join(sd[fill], how="outer").sort_index()
+                                backup |= set(fill)
                                 HEALTH.ok("stooq_backup", len(fill), every=every * 6)
                                 log.info("stooq backup filled: %s", ", ".join(fill))
                     except Exception as e:  # noqa: BLE001
@@ -264,8 +266,11 @@ class MarketData:
                     "price": last,
                     "prev": prev,
                     "chg_pct": (last / prev - 1) * 100 if prev else np.nan,
-                    "asof": s.index[-1].strftime("%Y-%m-%d"),
-                    "fetched": time.time(),
+                    "asof": s.index[-1].strftime("%Y-%m-%d"),      # the bar's own date (daily bars carry no time)
+                    "fetched": time.time(),                          # when we downloaded it — not the market time
+                    "src": "stooq" if t in backup else "yahoo",
+                    "fallback": t in backup,
+                    "bar": "1d",
                 }
                 fresh += 1
             self.quotes = quotes
@@ -282,7 +287,7 @@ class MarketData:
                 official = await official_task
                 # only tracked tickers (the official file has ~2,300 symbols), and only when the official bar is
                 # newer than — or the same day as — what Yahoo already gave us
-                fresh = {s: q for s, q in official.items()
+                fresh = {s: {"src": "twse", "fallback": False, "bar": "1d", **q} for s, q in official.items()
                          if s in tracked and q.get("asof", "") >= (self.quotes.get(s) or {}).get("asof", "")}
                 self.quotes = {**self.quotes, **fresh}
                 index = TQ.index_frame(official)
@@ -328,6 +333,7 @@ class MarketData:
     def q(self, ticker: str) -> Optional[dict]:
         """The live quote — unless the history already has a newer bar (e.g. Yahoo throttled this round and the
         TWSE file, a day late, filled in): then the newest bar's close / change, so price, % and σ describe one day."""
+        from . import freshness as F
         qt = self.quotes.get(ticker)
         if not qt:
             return qt
@@ -337,8 +343,9 @@ class MarketData:
             last_d = s.index[-1].strftime("%Y-%m-%d")
             if str(qt.get("asof", ""))[:10] < last_d:
                 last, prev = float(s.iloc[-1]), float(s.iloc[-2])
-                return {**qt, "price": last, "prev": prev, "chg_pct": (last / prev - 1) * 100, "asof": last_d, "src": "history"}
-        return qt
+                qt = {**qt, "price": last, "prev": prev, "chg_pct": (last / prev - 1) * 100, "asof": last_d, "src": "history"}
+        # stale = the bar is older than the market's last session: shown, but never a "new move" alert
+        return {**qt, "stale": F.stale(ticker, qt.get("asof", "")), "session": F.session(ticker)}
 
     def sigma_move(self, ticker: str, lookback: int = 60) -> Optional[float]:
         """Today's return measured in units of the asset's own recent daily vol."""

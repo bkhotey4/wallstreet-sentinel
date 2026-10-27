@@ -283,8 +283,13 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         L.append("## 新聞標題（僅供理解行情背景；可能誇大，不得作為風險高低的依據）")
         for n in engine.news.top(18):
             L.append(f"[{n.score}] {n.source}: {n.title}")
-    if engine.sec.recent:
-        L.append("## SEC 持股公告 " + "; ".join(f"{s['date']} {s['ticker']} {s['form']}({s['label']})" for s in engine.sec.recent[:10]))
+    held = set(engine.holding_tickers()) if hasattr(engine, "holding_tickers") else set()
+    sec_rows = [s for s in engine.sec.recent if s["ticker"] in held] if private else []
+    if sec_rows:                                  # holdings' filings name the holdings → private packs only
+        L.append("## SEC 持股公告 " + "; ".join(f"{s['date']} {s['ticker']} {s['form']}({s['label']})" for s in sec_rows[:10]))
+    watch = [s for s in engine.sec.recent if s["ticker"] not in held and s["form"] != "4"]
+    if watch:
+        L.append("## SEC 觀察清單公告（非持股） " + "; ".join(f"{s['date']} {s['ticker']} {s['form']}({s['label']})" for s in watch[:10]))
     al = store.recent_alerts(24, include_private=private)
     if al:
         L.append("## 過去24h警報 " + "; ".join(t for _, _, t in al[:10]))

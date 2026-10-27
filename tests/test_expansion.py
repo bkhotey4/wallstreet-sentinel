@@ -100,13 +100,22 @@ def test_parsers():
         rows.append({**base, "cusip": f"C{i}", "auctionDate": f"2026-0{i + 3}-10T00:00:00", "securityTerm": "10-Year",
                      "originalSecurityTerm": "10-Year", "highYield": "4.5", "bidToCoverRatio": "2.6" if i < 6 else "2.2",
                      "competitiveAccepted": "39000000000", "primaryDealerAccepted": "5000000000" if i < 6 else "9000000000",
-                     "indirectBidderAccepted": "26000000000", "directBidderAccepted": "8000000000"})
+                     "indirectBidderAccepted": "26000000000" if i < 6 else "22000000000", "directBidderAccepted": "8000000000"})
     rows.append({**base, "cusip": "TIPS", "tips": "Yes", "auctionDate": "2026-09-20", "originalSecurityTerm": "10-Year",
                  "highYield": "2", "bidToCoverRatio": "2", "competitiveAccepted": "1"})
     rows.append({**base, "cusip": "FUT", "auctionDate": "2026-10-20", "originalSecurityTerm": "10-Year", "highYield": "",
                  "bidToCoverRatio": "", "competitiveAccepted": ""})
     j = TR.judge(TR.parse_auctions(rows))
     assert len(j) == 7 and j[0]["verdict"] == "偏弱" and j[1]["verdict"] == "正常" and j[-1]["verdict"] is None
+    # a missing dealer field stays None and is not judged (0 would read as "dealers took nothing" = strong demand);
+    # bidder groups that do not add up to the competitive total are not judged either
+    miss = [dict(r) for r in rows[:7]]
+    miss[6].pop("primaryDealerAccepted")
+    jm = TR.judge(TR.parse_auctions(miss))
+    assert jm[0]["dealer"] is None and jm[0]["verdict"] == "資料不足"
+    bad = [dict(r) for r in rows[:7]]
+    bad[6]["indirectBidderAccepted"] = "30000000000"
+    assert TR.judge(TR.parse_auctions(bad))[0]["verdict"] == "資料不足"
     # TreasuryDirect's Oct-2026 schema: old fields empty, new ...CompetitiveParAwarded / competitiveAuctionCloseDate filled
     new = [{"securityType": "Note", "floatingRate": "No", "inflationProtected": None, "auctionDate": None, "competitiveAccepted": None,
             "competitiveAuctionCloseDate": "2026-10-07T00:00:00", "securityTerm": "9-Year 10-Month", "originalSecurityTerm": "10-Year",

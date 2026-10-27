@@ -66,7 +66,11 @@ def build(eng) -> Dict:
     out["co"] = co
     # 2. warning power of the Baa spread level
     lvl = W["baa"].rolling(156, min_periods=104).apply(lambda v: (v < v[-1]).mean(), raw=True)
-    y = dd13 <= -10
+    # the last 13 weeks have no full look-ahead yet: NaN, not "no fall" (a NaN compared with <= is False, which used to
+    # count those weeks as calm outcomes and flatter the AUC)
+    y = (dd13 <= -10).where(dd13.notna())
+    out["auc_n"] = int(pd.concat([lvl, y], axis=1).dropna().shape[0])
+    out["auc_end"] = dd13.dropna().index[-1].strftime("%Y-%m-%d") if dd13.notna().any() else None
     out["auc_level"] = _auc(lvl, y)
     out["auc_chg"] = _auc(W["baa"].diff(13), y)
     out["baa_pct"] = float(lvl.dropna().iloc[-1] * 100) if lvl.notna().any() else None
@@ -99,8 +103,10 @@ def build(eng) -> Dict:
     out["tiers"] = tiers
     lo_q = (tiers.get("ccc_bb") or {}).get("pct")
     # investment grade: the ICE index when it is there (Baa − 10y also moves with the 10-year yield itself)
-    hi_q = ((tiers.get("ig") or tiers.get("baa") or {}).get("pct")) or 0
-    out["pattern"] = ("low" if lo_q is not None and lo_q >= 80 and hi_q < 60 else
-                      "broad" if lo_q is not None and lo_q >= 80 and hi_q >= 80 else
-                      "calm" if (lo_q or 0) < 60 and hi_q < 60 else "mixed")
+    hi_q = (tiers.get("ig") or tiers.get("baa") or {}).get("pct")
+    # a missing tier is "unknown", never a 0th percentile: missing data must not read as a calm credit market
+    out["pattern"] = ("unknown" if lo_q is None or hi_q is None else
+                      "low" if lo_q >= 80 and hi_q < 60 else
+                      "broad" if lo_q >= 80 and hi_q >= 80 else
+                      "calm" if lo_q < 60 and hi_q < 60 else "mixed")
     return out

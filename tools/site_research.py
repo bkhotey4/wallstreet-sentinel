@@ -124,7 +124,7 @@ BOND_POINTS = [
      "EBP 代表投資人的風險胃口；本站「美國公司債」頁有聯準會公布的 EBP。"),
     ("信用市場太放心之後，常常反轉",
      "López-Salido、Stein & Zakrajšek（2017）：公司債利差很低、低評等公司大量發債的時期，之後約兩年利差常擴大、經濟成長放慢。",
-     "利差低不等於安全，可能是燃料在累積；本站把「公司債利差在歷史低檔」標成「很放心（也可能太放心）」，而不是「健康」。"),
+     "利差低不等於安全，可能是燃料在累積；本站把「公司債利差在歷史低檔」標成「利差偏低（不等於安全）」，而不是「健康」。"),
     ("利差暴衝多半是確認，不是預告",
      "Krishnamurthy & Muir 等研究：信用利差突然大跳，多半代表壓力已經發生，跳得越大，之後的衰退通常越深。",
      "等利差暴衝才反應通常已經晚了；比較值得看的是壓力是不是從最弱的 CCC 等級，往 B、BB 再往投資級擴散，本站的公司債頁就是照這個順序排列。"),
@@ -194,14 +194,17 @@ def now_reading(eng) -> list:
     if tense and calm_opts and rich_credit:
         m = ("壓力指數在升溫，但選擇權和信用市場都還很放心。這種「溫度計說熱、保險和借貸市場說沒事」的分歧，代表兩種可能："
              "一是壓力只是局部的（例如集中在低評等債或少數產業），之後會自己消退；二是大市場還沒反應，一旦信用跟著轉弱，修正會比較急。"
-             + (f"歷史上 SSI 升溫後真正跌 10% 以上的約 {prec:.0f}%，所以不必恐慌；" if prec is not None else "SSI 升溫後大多數時候並沒有大跌，所以不必恐慌；")
+             + (f"歷史上 SSI 升溫後真正跌 10% 以上的約 {prec:.0f}%，所以不必恐慌；" if prec is not None else "SSI 升溫後的實際準確率暫時算不出來；")
              + "要盯的是分歧開始收斂的訊號："
              "投資級利差跟著擴大、選擇權大跌機率升到第 70 百分位以上、超額債券溢酬由負轉正。")
     elif tense and fear_opts:
         m = "壓力指數和選擇權市場同時緊張：各層訊號一致，屬於全面的風險趨避，歷史上這時波動通常會放大。"
-    elif not tense and (rich_credit or "rzone" in hot):
+    elif ssi is not None and not tense and (rich_credit or "rzone" in hot):
         m = ("即時壓力不高，但信用定價樂觀、燃料在累積：這正是研究說的「最危險的平靜」。它抓不準時點，可能持續好幾年，"
              "但代表一旦出事，跌幅可能比平常深。")
+    elif not tense and (ssi is None or sum(x is not None for x in (mpd_p, ebp_p)) < 1):
+        k = sum(x is not None for x in (ssi, mpd_p, ebp_p))       # missing layers are not calm layers
+        m = f"資料不足：三層（即時壓力、選擇權、信用）只有 {k} 層有讀數，還不能說各層平靜。"
     elif not tense:
         m = "各層大致平靜：即時壓力、選擇權和信用市場都沒有明顯警訊。"
     else:

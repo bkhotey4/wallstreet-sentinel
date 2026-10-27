@@ -28,11 +28,32 @@ class NewsItem:
     score: int = 0
     hits: List[str] = field(default_factory=list)
     new: bool = False
+    pubs: set = field(default_factory=set)        # independent publishers carrying it (not feeds, not re-posts)
+
+    @property
+    def outlets(self) -> int:
+        return max(1, len(self.pubs))
 
     @property
     def uid(self) -> str:
         norm = re.sub(r"[^a-z0-9一-鿿]+", "", self.title.lower())[:120]
         return hashlib.sha1(norm.encode()).hexdigest()
+
+
+def publisher(feed: str, title: str) -> str:
+    """Who actually wrote it.  Google News items end in " - Outlet"; two feeds of one house (CNBC / CNBC Finance) are
+    one publisher, so the same wire story seen twice is never counted as independent confirmation."""
+    if feed.lower().startswith("gnews"):
+        m = re.search(r"\s[-–—]\s([^-–—]{2,60})$", title)
+        if m:
+            return m.group(1).strip().lower()
+    return feed.split()[0].lower()
+
+
+def story_key(title: str) -> str:
+    """Merge key for one story across outlets: the title without Google News' trailing " - Outlet"."""
+    t = re.sub(r"\s[-–—]\s[^-–—]{2,60}$", "", title)
+    return re.sub(r"[^a-z0-9一-鿿]+", "", t.lower())[:120]
 
 
 def score_title(title: str, keywords: Dict[str, int]) -> tuple[int, List[str]]:
@@ -93,11 +114,18 @@ class NewsWire:
             HEALTH.ok(f"news:{f['name']}", len(r), every=every)
             for it in r:
                 it.score, it.hits = score_title(it.title, kw)
-                prev = merged.get(it.uid)
+                pub = publisher(f["name"], it.title)
+                mk = story_key(it.title)
+                prev = merged.get(mk)
                 if prev is None:
-                    merged[it.uid] = it
-                else:  # same story from multiple outlets → corroboration bonus
-                    prev.score += 1
+                    it.pubs = {pub}
+                    merged[mk] = it
+                else:
+                    # only a different publisher counts as corroboration (+1 each, at most +2): a re-post on the same
+                    # site or a second feed of the same house is popularity, not independent evidence
+                    if pub not in prev.pubs and len(prev.pubs) < 3:
+                        prev.score += 1
+                    prev.pubs.add(pub)
                     if f["name"] not in prev.source:
                         prev.source += f"/{f['name']}"
         cutoff = time.time() - 36 * 3600

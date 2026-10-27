@@ -47,9 +47,9 @@ class SecWatcher:
         n = len(r.get("form", []))
         col = lambda k: (r.get(k) or [""] * n)  # noqa: E731
         out = []
-        for form, dt, acc, desc, items, doc in list(zip(
+        for form, dt, acc, desc, items, doc, acpt in list(zip(
                 col("form"), col("filingDate"), col("accessionNumber"),
-                col("primaryDocDescription"), col("items"), col("primaryDocument")))[:25]:
+                col("primaryDocDescription"), col("items"), col("primaryDocument"), col("acceptanceDateTime")))[:25]:
             if form not in WATCH_FORMS:
                 continue
             earnings = (form == "8-K" and "2.02" in (items or "")) or \
@@ -57,6 +57,8 @@ class SecWatcher:
             out.append({"ticker": t, "form": form, "label": "財報公布" if earnings else WATCH_FORMS[form],
                         "date": dt, "desc": desc, "items": items, "earnings": earnings,
                         "cik": int(cik), "acc": acc, "doc": doc,
+                        # when EDGAR accepted it (UTC): the event time, so the delay to our alert can be measured
+                        "accepted": (acpt or "")[:19].replace("T", " ") + (" UTC" if acpt else ""),
                         "url": f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc.replace('-', '')}/"})
         return out
 
@@ -90,7 +92,7 @@ class SecWatcher:
                         fresh.append(item)
                 await asyncio.sleep(0.12)  # SEC fair-access: <10 req/s
             recent.sort(key=lambda x: x["date"], reverse=True)
-            self.recent = recent[:60]
+            self.recent = recent[:300]           # holdings + watchlist: a 60 cap let megacap Form 4s push holdings out
             self.last_fresh = fresh
             if failed:
                 log.warning("SEC: %d ticker(s) failed this round: %s", len(failed), ", ".join(failed[:10]))

@@ -69,7 +69,7 @@ def sec_credit_rates(eng) -> str:
     if co.get("baa"):
         b = co["baa"]
         pts.append(f"信用利差和股市是「同時」動：{b['since']} 年以來每週 Baa 利差變化和標普報酬的相關係數 {b['same']:+.2f}"
-                   + (f"，HYG÷IEF 是 {co['hyief']['same']:+.2f}" if co.get("hyief") else "")
+                   + (f"，HYG÷IEF（ETF 代理指標，不等於單一債券的利差）是 {co['hyief']['same']:+.2f}" if co.get("hyief") else "")
                    + f"；看利差變化和 1–8 週後的股市，相關係數最多 {b['lead_abs']:.2f}。"
                    + ("利差擴大多半是股市下跌的同一件事，不是提前好幾週的預告。" if b["lead_abs"] < abs(b["same"]) / 2 else
                       "提前的關係不算弱，利差變化對之後幾週的股市有一些領先意義。"))
@@ -77,7 +77,9 @@ def sec_credit_rates(eng) -> str:
         lv_better = r["auc_level"] >= (r.get("auc_chg") or 0)
         pts.append(("比較有預警力的是「利差處在高水位」" if lv_better else "比較有預警力的是「利差在擴大」")
                    + f"：Baa 利差在近 3 年的百分位，對之後 3 個月標普跌 ≥10% 的辨識力 AUC {r['auc_level']:.2f}"
-                   f"（0.5＝丟銅板），利差的 3 個月變化 {num(r.get('auc_chg'), 2)}。目前 Baa 利差在近 3 年第 {r['baa_pct']:.0f} 百分位。")
+                   f"（0.5＝丟銅板），利差的 3 個月變化 {num(r.get('auc_chg'), 2)}。目前 Baa 利差在近 3 年第 {r['baa_pct']:.0f} 百分位。"
+                   + (f"（有效樣本 {r['auc_n']:,} 週，只用之後 13 週已經走完的週，截至 {r['auc_end']}；這是全期間的事後描述，不是樣本外預測成績）"
+                      if r.get("auc_n") and r.get("auc_end") else ""))
     d = r["div"]
     if d.get("p") is not None:
         verdict = "比平常還低，歷史上不是可靠的崩盤前兆" if d["p"] < d["base"] else "比平常高"
@@ -93,7 +95,8 @@ def sec_credit_rates(eng) -> str:
     tier_txt = "、".join(f"{lab[k]} 第 {v['pct']:.0f} 百分位" for k, v in t.items() if v.get("pct") is not None)
     pat = {"low": "壓力集中在最弱的公司（低評等先擴大、投資級還平靜）：信用循環早期常見的型態。",
            "broad": "高低評等一起擴大：壓力已經擴散到整個信用市場。",
-           "calm": "各評等利差都在常態範圍。", "mixed": "各評等方向不一致。"}[r["pattern"]]
+           "calm": "各評等利差都在常態範圍。", "mixed": "各評等方向不一致。",
+           "unknown": "部分評等的資料不足，這次無法判斷型態（缺資料不代表平靜）。"}.get(r["pattern"], "")
     if tier_txt:
         pts.append(f"壓力在哪一層（3 個月變化在近 3 年的百分位）：{tier_txt}。{pat}")
     lis = "".join(f"<li>{T(x, x)}</li>" for x in pts)

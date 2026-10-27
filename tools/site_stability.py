@@ -108,7 +108,11 @@ def sec_st_brief(eng) -> str:
                   f"每月對照聯準會／IMF／OFR 報告" + (f"・{cv.get('updated')}" if cv.get("updated") else ""), ""))
     reds = sum(1 for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🔴")
     yel = sum(1 for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🟡")
-    head = (f"金融穩定 {sum(1 for x in (rf, fu, ba, ai) if x)} 項：" + (f"{reds} 項紅燈、" if reds else "") + (f"{yel} 項黃燈" if yel else "") + ("全部正常" if not reds and not yel else "")).rstrip("、")
+    four = (("標售規模", rf), ("短期資金", fu), ("基差交易", ba), ("AI 資本支出", ai))
+    have = [z for z, x in four if x and x.get("emoji") != "⚪"]
+    miss = [z for z, x in four if not x or x.get("emoji") == "⚪"]
+    # "全部正常" only when all four were actually read; otherwise say how many and which are missing
+    head = (f"金融穩定 {len(have)} 項：" if not miss else f"金融穩定 {len(have)}/4 項有資料：")         + ((f"{reds} 項紅燈、" if reds else "") + (f"{yel} 項黃燈" if yel else "")).rstrip("、")         + ("全部正常" if not reds and not yel and not miss else "其餘正常" if not reds and not yel and have else "")         + (f"（缺：{'、'.join(miss)}）" if miss else "")
     worst = [x["read"] for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🔴"] or [x["read"] for x in (rf, fu, ba, ai) if x and x.get("emoji") == "🟡"]
     dates = rf.get("next") or []
     watch = []

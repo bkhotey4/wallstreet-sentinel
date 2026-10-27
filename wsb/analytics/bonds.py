@@ -34,8 +34,21 @@ def _ago(s: pd.Series, days: int) -> Optional[float]:
     return float(p.iloc[-1]) if len(p) else None
 
 
+def _gap(a: pd.Series, ra: Dict, b: pd.Series, rb: Dict):
+    """a − b on the same date when both are daily and within 4 days; otherwise on the latest month both have (monthly
+    averages), so a daily US yield is never subtracted from a month-old European average.  (value, "YYYY-MM" or None)"""
+    if ra["daily"] and rb["daily"] and abs((pd.Timestamp(ra["date"]) - pd.Timestamp(rb["date"])).days) <= 4:
+        return ra["now"] - rb["now"], None
+    ma, mb = a.resample("MS").mean().dropna(), b.resample("MS").mean().dropna()
+    common = ma.index.intersection(mb.index)
+    if not len(common):
+        return None, None
+    m = common[-1]
+    return float(ma[m] - mb[m]), m.strftime("%Y-%m")
+
+
 def sovereign(eng) -> List[Dict]:
-    out = []
+    out, ser = [], {}
     for k, zh, src, sid in SOVEREIGN:
         if src == "jgb":
             try:
@@ -46,6 +59,7 @@ def sovereign(eng) -> List[Dict]:
             s = _fred(eng, sid)
         if len(s) < 24:
             continue
+        ser[k] = s
         now, y1 = float(s.iloc[-1]), _ago(s, 365)
         out.append({"k": k, "zh": zh, "now": now, "date": s.index[-1].strftime("%Y-%m-%d"), "chg1y": None if y1 is None else now - y1,
                     "pct": float((s.iloc[:-1] < now).mean() * 100), "since": s.index[0].strftime("%Y"),
@@ -53,8 +67,8 @@ def sovereign(eng) -> List[Dict]:
     us = next((r for r in out if r["k"] == "us"), None)
     de = next((r for r in out if r["k"] == "de"), None)
     for r in out:
-        r["vs_us"] = None if not us or r is us else r["now"] - us["now"]
-        r["vs_de"] = r["now"] - de["now"] if de and r["k"] in ("fr", "it", "es", "gr") else None
+        r["vs_us"], r["vs_us_m"] = (None, None) if not us or r is us else _gap(ser[r["k"]], r, ser["us"], us)
+        r["vs_de"], r["vs_de_m"] = _gap(ser[r["k"]], r, ser["de"], de) if de and r["k"] in ("fr", "it", "es", "gr") else (None, None)
     return out
 
 
@@ -68,9 +82,16 @@ def corporate(eng) -> List[Dict]:
         ch = None if m3 is None else now - m3
         pct = float((s.iloc[:-1] < now).mean() * 100)
         fast = ch is not None and m3 and ch / m3 >= 0.25 and ch >= (0.3 if kind == "hy" else 0.1)
-        state = "急速擴大" if fast else "緊張" if pct >= 80 else "很放心" if pct <= 20 else "正常"
+        state = "急速擴大" if fast else "緊張" if pct >= 80 else "利差偏低" if pct <= 20 else "正常"
         ey = _fred(eng, ey_id) if ey_id else pd.Series(dtype=float)
-        out.append({"k": k, "zh": zh, "kind": kind, "oas": now, "chg3m": ch, "pct": pct, "since": s.index[0].strftime("%Y-%m"),
+        # rate vs credit: the index yield = government yield + spread (OAS), so over the same 3 months the yield change
+        # splits into the spread part (credit) and the rest (Treasury rates); only where both series share the window
+        dec = None
+        e3 = _ago(ey, 91) if len(ey) > 60 else None
+        if e3 is not None and ch is not None and abs((ey.index[-1] - s.index[-1]).days) <= 4:
+            tot = float(ey.iloc[-1]) - e3
+            dec = {"total": tot, "spread": ch, "rate": tot - ch}
+        out.append({"dec": dec, "k": k, "zh": zh, "kind": kind, "oas": now, "chg3m": ch, "pct": pct, "since": s.index[0].strftime("%Y-%m"),
                     "date": s.index[-1].strftime("%Y-%m-%d"), "state": state,
                     "ey": float(ey.iloc[-1]) if len(ey) else None, "ey_1y": (float(ey.iloc[-1]) - _ago(ey, 365)) if len(ey) > 260 and _ago(ey, 365) is not None else None})
     return out
@@ -120,7 +141,7 @@ def rotation(eng) -> Optional[Dict]:
     elif spx_1m <= -3 and d10 >= 20:
         state = "股債雙殺"
     elif spx_1m >= 3 and d10 >= 20:
-        state = "賣債買股"
+        state = "股漲債跌"
     elif spx_1m >= 3 and d10 <= -20:
         state = "股債齊漲"
     else:
@@ -150,7 +171,7 @@ def read(r: Dict) -> Dict:
     dn = [x for x in sv if (x["chg1y"] or 0) <= -0.25]
     hy = [x for x in cp if x["kind"] == "hy"]
     wide = [x for x in cp if x["state"] in ("緊張", "急速擴大")]
-    calm = [x for x in cp if x["state"] == "很放心"]
+    calm = [x for x in cp if x["state"] == "利差偏低"]
     mof, tic = fl.get("mof") or {}, fl.get("tic") or {}
     jp = next((x for x in tic.get("rows") or [] if x["name"] == "Japan"), None)
     parts = []
@@ -161,7 +182,7 @@ def read(r: Dict) -> Dict:
         weak_only = wide and all(x["kind"] == "hy" or x["k"] in ("asia", "em") for x in wide) and not any(x["k"] in ("us_ig", "us_bbb") for x in wide)
         parts.append(("體質較弱的公司（垃圾債）利差在擴大，好公司還正常：債市開始擔心弱體質企業還不出錢" if weak_only else
                       "公司債利差在擴大：債市開始擔心企業還不出錢") if wide else
-                     "公司債利差在歷史低檔：借錢給企業的人很放心" if len(calm) * 2 >= len(cp) else "公司債利差正常")
+                     "公司債利差在歷史低檔：市場要求的違約補償偏低（不等於安全）" if len(calm) * 2 >= len(cp) else "公司債利差正常")
     if mof.get("sum5") is not None and mof["pct5"] <= 10 and mof["sum5"] < 0:
         parts.append(f"日本資金在回家（5 週賣超外國債券 {abs(mof['sum5']):.1f} 兆日圓）")
     elif mof.get("sum5") is not None and mof["pct5"] >= 90 and mof["sum5"] > 0:
@@ -175,7 +196,7 @@ def read(r: Dict) -> Dict:
     if jp and (jp.get("chg6") or 0) <= -5:
         imp.append(f"日本是美債最大的海外持有者，半年減少 {abs(jp['chg6']):.0f}%：美國長債少了一個大買家，長天期利率比較容易往上。")
     if calm and up and not wide:
-        imp.append("政府借錢成本在升、公司債利差卻還很低：市場對企業違約相當放心，也可能太放心；經濟一轉弱，利差常會一次補漲（擴大）。")
+        imp.append("政府借錢成本在升、公司債利差卻還很低：市場要求的違約補償偏低，利差被壓縮時估值偏貴、緩衝變薄；經濟一轉弱，利差常會一次補漲（擴大）。")
     if wide:
         imp.append("公司債利差擴大通常和股市下跌同時發生，代表資金開始避開體質較弱的公司；最弱的 CCC 等級先動時要特別留意。")
     if any(x["k"] in ("it", "gr") and (x["vs_de"] or 0) >= 2 for x in sv):
@@ -189,14 +210,14 @@ def corp_read(r: Dict) -> Dict:
     cp = r["corp"]
     by = {x["k"]: x for x in cp}
     wide = [x for x in cp if x["state"] in ("緊張", "急速擴大")]
-    calm = [x for x in cp if x["state"] == "很放心"]
+    calm = [x for x in cp if x["state"] == "利差偏低"]
     good_ok = all(by[k]["state"] not in ("緊張", "急速擴大") for k in ("us_ig", "us_bbb") if k in by)
     if wide and good_ok:
         head = "一句話看懂：體質較弱的公司借錢變難了（垃圾債利差在擴大），體質好的公司還很正常：壓力集中在最弱的那一群。"
     elif wide:
         head = "一句話看懂：連體質好的公司都被要求付更高的利息：信用壓力已經不只在最弱的公司。"
     elif calm and len(calm) * 2 >= len(cp):
-        head = "一句話看懂：借錢給企業的人很放心，各類公司債利差大多在自己歷史的低檔；放心也可能代表太放心。"
+        head = "一句話看懂：各類公司債利差大多在自己歷史的低檔，市場要求的違約補償偏低；這不等於安全，利差壓縮時一有壞消息常會快速擴大。"
     else:
         head = "一句話看懂：公司債利差大致正常，沒有明顯的違約擔心。"
     imp = []

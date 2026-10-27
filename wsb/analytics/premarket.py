@@ -124,7 +124,8 @@ def takeaways_us(d: Dict) -> List[Dict]:
                     "en": "Nasdaq futures weaker than the S&P: pressure is concentrated in tech." if tech_down else "Nasdaq futures stronger than the S&P."})
     # 3) Asia / Europe: how many fell, and how unusual the moves were vs each index's own normal day
     for grp, zh_name, en_name in ((ASIA, "亞股", "Asia"), (EUROPE, "歐股", "Europe")):
-        xs = [o[t] for t in grp if t in o and o[t].get("ch") is not None]
+        xs = [o[t] for t in grp if t in o and o[t].get("ch") is not None and not o[t].get("stale")]
+        known = all(_z(x) is not None for x in xs)       # "normal range" only when every move has its own σ
         if len(xs) >= 2:
             down = [x for x in xs if x["ch"] < 0]
             big = [x for x in xs if (_z(x) or 0) <= -2]
@@ -133,13 +134,13 @@ def takeaways_us(d: Dict) -> List[Dict]:
                             "zh": f"{zh_name}全面下跌，其中 {'、'.join(_lab(x) for x in big)} 跌幅超過自己平常單日波動的 2 倍——不是一般的震盪，而是明顯的賣壓。",
                             "en": f"{en_name} broadly lower; {', '.join(x['en'] for x in big)} fell more than twice their normal daily move."})
             elif len(down) == len(xs):
-                out.append({"lv": "watch", "zh": f"{zh_name}全面下跌（{'、'.join(_lab(x) for x in xs)}），但幅度在平常範圍內。",
+                out.append({"lv": "watch", "zh": f"{zh_name}全面下跌（{'、'.join(_lab(x) for x in xs)}）" + ("，但幅度在平常範圍內。" if known else "。"),
                             "en": f"{en_name} broadly lower, within normal ranges."})
             elif not down:
                 strong = [x for x in xs if (_z(x) or 0) >= 2]
-                out.append({"lv": "info", "zh": f"{zh_name}全面上漲（{'、'.join(_lab(x) for x in xs)}）" + (f"，{'、'.join(_lab(x) for x in strong)} 漲幅超過平常單日波動的 2 倍。" if strong else "，幅度在平常範圍內。"),
+                out.append({"lv": "info", "zh": f"{zh_name}全面上漲（{'、'.join(_lab(x) for x in xs)}）" + (f"，{'、'.join(_lab(x) for x in strong)} 漲幅超過平常單日波動的 2 倍。" if strong else "，幅度在平常範圍內。" if known else "。"),
                             "en": f"{en_name} broadly higher."})
-            elif all(abs(_z(x) or 0) < 1 for x in xs):
+            elif known and all(abs(_z(x)) < 1 for x in xs):
                 out.append({"lv": "info", "zh": f"{zh_name}漲跌互見、都在平常範圍內：隔夜沒有明顯的方向。", "en": f"{en_name} mixed, all within normal ranges."})
     # 4) cross-asset: what kind of selling (or buying) it is
     sp_dn = es is not None and (es.get("ch") or 0) < -0.3
@@ -168,7 +169,10 @@ def takeaways_us(d: Dict) -> List[Dict]:
     # 6) the schedule
     ev, er = d.get("events") or [], d.get("earnings") or []
     big = [x for x in er if (x.get("mv") or 0) >= 4]
-    if not ev:
+    if not ev and not d.get("events_ok", True):
+        out.append({"lv": "watch", "zh": "經濟日曆暫時取不到，無法確認今天有沒有重要數據：請以官方行事曆為準。",
+                    "en": "Economic calendar unavailable right now; today's releases could not be checked."})
+    elif not ev:
         out.append({"lv": "info", "zh": "今天沒有重要經濟數據：走勢主要由隔夜情緒和財報決定。"
                     + (f"選擇權預期波動較大的財報：{'、'.join(_mvl(x) for x in big)}。" if big else ""),
                     "en": "No key data today: overnight mood and earnings drive the session."})
@@ -222,16 +226,20 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
                  "after_min": c["after_open_min"], "min_imp": c["min_imp"],
                  "us_open": int(us_open.timestamp()), "tw_open": int(tw_open.timestamp()),
                  "us_open_tpe": us_open.astimezone(TPE).strftime("%m-%d %H:%M"), "us_date": us_open.strftime("%Y-%m-%d")}
-    out["overnight"] = [{"t": t, "zh": zh, "en": en, "px": q["price"], "ch": q.get("chg_pct"), "asof": q.get("asof"), "sigma": _sigma(m, t)}
+    out["overnight"] = [{"t": t, "zh": zh, "en": en, "px": q["price"], "ch": q.get("chg_pct"), "asof": q.get("asof"), "sigma": _sigma(m, t),
+                         "stale": bool(q.get("stale"))}
                         for t, zh, en in OVERNIGHT if (q := _q(m, t))]
     out["us_close"] = [{"t": t, "zh": zh, "en": en, "px": q["price"], "ch": q.get("chg_pct"), "asof": q.get("asof")}
                        for t, zh, en in US_CLOSE if (q := _q(m, t))]
     # today's scheduled events (US date of the next open)
-    ev = (getattr(eng, "econ_view", None) or {}).get("events") or []
+    evv = getattr(eng, "econ_view", None) or {}
+    ev = evv.get("events") or []
+    out["events_ok"] = bool(evv.get("available"))          # an unloaded calendar is not "no data today"
     out["events"] = [{"zh": e.get("zh"), "en": e.get("en"), "tpe": e.get("tpe"), "imp": e.get("imp"), "sep": bool(e.get("sep"))}
                      for e in ev if e.get("date") == out["us_date"] and not e.get("released") and int(e.get("imp") or 0) >= int(c["min_imp"])]
     te = getattr(eng, "techearn", None)
     cal = ((te.get("calendar") or {}).get("up") or []) if isinstance(te, dict) else []
+    out["earnings_ok"] = isinstance(te, dict) and bool(te.get("calendar"))
     mv = {r.get("sym"): r for r in ((getattr(eng, "sx", None) or {}).get("earn") or []) if isinstance(r, dict)}
     out["earnings"] = [{"sym": c["sym"], "name": c.get("name") or "", "time": c.get("time") or "", "mv": (mv.get(c["sym"]) or {}).get("mv")}
                        for c in cal if str(c.get("date"))[:10] == out["us_date"]][:12]

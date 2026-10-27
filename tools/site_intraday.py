@@ -21,7 +21,17 @@ CORE = ["^GSPC", "^VIX", "^SOX", "SPY", "QQQ"]
 def levels(eng) -> dict:
     """Gamma flip / call wall / put wall from the hourly CBOE options snapshot (empty when unavailable)."""
     op = getattr(getattr(eng, "options", None), "spx", None) or {}
-    return {k: float(op[k]) for k in ("zero_gamma", "call_wall", "put_wall") if op.get(k)}
+    out = {k: float(op[k]) for k in ("zero_gamma", "call_wall", "put_wall") if op.get(k)}
+    try:                                   # measured, not assumed: share of the last year's days outside the 1σ VIX range
+        import math
+        from wsb.analytics.premarket import band_record
+        m = eng.market
+        rec = band_record(m.series("^GSPC").dropna(), m.series("^VIX").dropna() / math.sqrt(252))
+        if rec.get("y1"):
+            out["out1"] = round(100 - rec["y1"]["in1"], 1)
+    except Exception:  # noqa: BLE001
+        pass
+    return out
 
 
 def sec_intraday(eng) -> str:
@@ -49,9 +59,9 @@ _JS = r"""
  function session(){var t=et();if(t.wd==='Sat'||t.wd==='Sun')return 'closed';if(t.m>=570&&t.m<960)return 'open';return t.m<570?'pre':'post';}
  var dead=false;
  function read(q){var L=[],one='',spx=q['^GSPC'],vix=q['^VIX'],sox=q['^SOX'],spy=q['SPY'],qq=q['QQQ'];if(!spx||spx.chg==null)return null;
-   var c=spx.chg,s=vix&&vix.price?vix.price/Math.sqrt(252):null,used=s?Math.abs(c)/s*100:null;
+   var v0=vix&&(vix.prev||vix.price),c=spx.chg,s=v0?v0/Math.sqrt(252):null,used=s?Math.abs(c)/s*100:null;
    if(s){L.push(en()?'S&P '+sg(c,2)+'%: '+f(used,0)+'% of today’s priced move (±'+f(s,2)+'%).'
-     :'標普 '+sg(c,2)+'%，用掉今天預期波動（±'+f(s,2)+'%）的 '+f(used,0)+'%：'+(used<50?'走勢平穩。':used<100?'波動偏大，但還在預期範圍內。':'已經超出選擇權預期的範圍，一年中只有約三分之一的日子會這樣。'));}
+     :'標普 '+sg(c,2)+'%，用掉今天預期波動（±'+f(s,2)+'%）的 '+f(used,0)+'%：'+(used<50?'走勢平穩。':used<100?'波動偏大，但還在預期範圍內。':'已經超出選擇權預期的範圍'+(LV.out1!=null?'（過去一年約 '+f(LV.out1,0)+'% 的日子會這樣）。':'。')));}
    if(LV.zero_gamma&&spx.price){var above=spx.price>=LV.zero_gamma;L.push(en()?'S&P '+(above?'above':'below')+' the gamma flip '+f(LV.zero_gamma,0)+'.'
      :'標普 '+f(spx.price,0)+' 在 Gamma 翻轉點 '+f(LV.zero_gamma,0)+(above?' 之上：造市商避險傾向「低買高賣」，波動通常較小。':' 之下：造市商避險傾向「追漲殺跌」，漲跌容易被放大。')
      +(LV.put_wall&&spx.price<=LV.put_wall*1.003?(en()?'':'已接近 Put 牆 '+f(LV.put_wall,0)+'（選擇權最大支撐區）。'):LV.call_wall&&spx.price>=LV.call_wall*0.997?(en()?'':'已接近 Call 牆 '+f(LV.call_wall,0)+'（選擇權最大壓力區）。'):''));}

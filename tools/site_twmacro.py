@@ -106,7 +106,8 @@ def sec_tw_gov(eng) -> str:
         return ""
     cur = g["curve"]
     rows = "".join(f'<tr><td>{T(k + " 年", k + "Y")}</td><td class="r"><b>{cur[k]:.2f}%</b></td></tr>' for k in ("2", "5", "10", "20", "30") if k in cur)
-    lvl = "在歷史低檔" if (g["pct10"] or 50) <= 20 else "在歷史高檔" if (g["pct10"] or 50) >= 80 else "在歷史中間位置"
+    p10 = g.get("pct10")
+    lvl = "歷史位置資料不足" if p10 is None else "在歷史低檔" if p10 <= 20 else "在歷史高檔" if p10 >= 80 else "在歷史中間位置"
     lead = (f"一句話看懂：台灣 10 年期公債利率 {g['now10']:.2f}%" + (f"，比一年前{'高' if g['chg1y'] >= 0 else '低'} {abs(g['chg1y']):.2f} 個百分點" if g.get("chg1y") is not None else "")
             + f"，{lvl}" + (f"（{g['since10']} 年以來第 {g['pct10']:.0f} 百分位）" if g.get("pct10") is not None else "")
             + (f"；仍比美國低 {g['gap_us']:.2f} 個百分點" if (g.get("gap_us") or 0) > 0 else "") + "。")
@@ -137,7 +138,7 @@ def sec_tw_corp(eng) -> str:
     c = r.get("corp") if r.get("available") else None
     if not c:
         return ""
-    col = {"急速擴大": "dn", "緊張": "dn", "很放心": "up", "正常": ""}
+    col = {"急速擴大": "dn", "緊張": "dn", "利差偏低": "up", "正常": "", "資料不足": "muted"}
     rows = ""
     for x in c["rows"]:
         rows += (f'<tr><td class="nw">{T(x["zh"], x["k"])}</td><td class="r"><b>{x["y"]:.2f}%</b>'
@@ -145,7 +146,8 @@ def sec_tw_corp(eng) -> str:
                  f'<td class="r">{x["spread"]:.0f} bp</td><td class="r {cls(-(x["chg3"] or 0))}">{num(x["chg3"], 0, sign=True)}{" bp" if x.get("chg3") is not None else ""}</td>'
                  f'<td class="r">{_pctx(x["pct"], x["since"])}</td><td><b class="{col[x["state"]]}">{T(x["state"], "")}</b></td></tr>')
     bbb = next((x for x in c["rows"] if x["k"] == "twBBB"), c["rows"][-1])
-    word = {"急速擴大": "急速擴大，市場開始擔心較弱的企業", "緊張": "偏高，市場對較弱的企業有疑慮", "很放心": "在歷史低檔，借錢給企業的人很放心", "正常": "在正常範圍"}[bbb["state"]]
+    word = {"急速擴大": "急速擴大，市場開始擔心較弱的企業", "緊張": "偏高，市場對較弱的企業有疑慮", "利差偏低": "在歷史低檔，市場要求的違約補償偏低（不等於安全）", "正常": "在正常範圍",
+            "資料不足": "的歷史資料還不夠長，暫不判斷高低"}[bbb["state"]]
     lead = f"一句話看懂：台灣 BBB 級公司借 5 年要付 {bbb['y']:.2f}%，比政府多 {bbb['spread']:.0f} bp，利差{word}。"
     facts = []
     tr = c.get("tier")
@@ -160,7 +162,7 @@ def sec_tw_corp(eng) -> str:
     fl = "".join(f"<li>{T(x, '')}</li>" for x in facts)
     how = ("台灣沒有像美國那樣的公開公司債指數，這裡用櫃買中心每天公布的「公司債參考利率」：17 家銀行、票券與證券商對各評等虛擬 5 年期債券的報價，"
            "去掉最高與最低後平均（是報價，不是成交價）。利差＝公司債利率減同年期公債。台灣公司債多由台積電、電力、電信等大型企業發行，"
-           "多數由壽險與銀行持有到期，所以利差比美國平穩很多；違約率等資料沒有免費來源。狀態：3 個月的擴大幅度排在台灣自己歷史的前 10%、而且利差在中位數以上為「急速擴大」，利差第 80 百分位以上「緊張」，第 20 以下「很放心」。")
+           "多數由壽險與銀行持有到期，所以利差比美國平穩很多；違約率等資料沒有免費來源。狀態：3 個月的擴大幅度排在台灣自己歷史的前 10%、而且利差在中位數以上為「急速擴大」，利差第 80 百分位以上「緊張」，第 20 以下「利差偏低」。")
     body = (_lead(lead) + f'<div class="scroll"><table class="mini"><thead><tr><th>{T("評等", "Rating")}</th><th class="r">{T("5 年期利率", "5Y yield")}</th>'
             f'<th class="r">{T("比公債多（利差）", "Spread")}</th><th class="r">{T("3 個月變化", "3m chg")}</th><th class="r">{T("歷史百分位", "Pct")}</th><th>{T("狀態", "State")}</th></tr></thead>'
             f'<tbody>{rows}</tbody></table></div><p class="small muted">{T("資料日", "As of")} {esc(c["date"])}・{T("同年期公債", "5Y gov")} {c["g5"]:.2f}%</p><ul>{fl}</ul>'

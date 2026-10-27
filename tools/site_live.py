@@ -190,9 +190,9 @@ _JS = r"""
    if(!n)return;c/=n;d/=n;var z=c/d,L=lvl(b[0],z);out.push({s:b[0],zh:b[1],en:b[2],chg:c,z:z,lv:L[0],good:L[1]});});
    VS.forEach(function(v){var x=q[v[0]];if(!x||x.volx==null||x.chg==null)return;var dir=v[3]==='down'?x.chg<0:x.chg>0;
    out.push({s:v[0],zh:v[1],en:v[2],chg:x.chg,vx:x.volx,lv:x.volx>=VX&&dir?(x.volx>=VX*1.5?2:1):0});});return out;}
- function combos(sc){var z={};sc.forEach(function(o){if(o.z!=null)z[o.s]=o.z;});var out=[];
-   CB.forEach(function(c){var ok=c[5].every(function(l){var v=z[l[0]];return v!=null&&(l[1]==='>='?v>=l[2]:v<=l[2]);});
-   if(ok)out.push({s:'combo:'+c[0],zh:c[1],en:c[2],lv:c[3]>0?c[3]:0,good:c[3]<0?1:0,info:c[3]===0?1:0,why:c[4],combo:1});});return out;}
+ function combos(sc){var z={};sc.forEach(function(o){if(o.z!=null)z[o.s]=o.z;});var out=[],ev=0;
+   CB.forEach(function(c){if(c[5].every(function(l){return z[l[0]]!=null;}))ev++;var ok=c[5].every(function(l){var v=z[l[0]];return v!=null&&(l[1]==='>='?v>=l[2]:v<=l[2]);});
+   if(ok)out.push({s:'combo:'+c[0],zh:c[1],en:c[2],lv:c[3]>0?c[3]:0,good:c[3]<0?1:0,info:c[3]===0?1:0,why:c[4],combo:1});});window.__lqcb=ev;return out;}
  function paintScan(q){var el=document.getElementById('lqan');if(!el)return [];var sc0=scan(q),cb=combos(sc0),sc=sc0.concat(cb),hits=sc.filter(function(o){return o.lv>0;}),h='';
    hits.sort(function(a,b){return b.lv-a.lv;}).forEach(function(o){var t=o.combo?(en()?'Pattern: '+o.en:'組合訊號：'+o.zh+'——'+o.why):o.vx!=null?(en()?o.en+': volume '+f(o.vx,1)+'x usual, '+sg(o.chg,2)+'%':o.zh+'：成交量是平常同時段的 '+f(o.vx,1)+' 倍，'+sg(o.chg,2)+'%')
      :(en()?o.en+' '+sg(o.chg,2)+'% ('+f(Math.abs(o.z),1)+'x normal)':o.zh+(o.chg<0?' 異常大跌 ':' 異常大漲 ')+sg(o.chg,2)+'%（平常的 '+f(Math.abs(o.z),1)+' 倍）');
@@ -203,20 +203,24 @@ _JS = r"""
      h+='<span class="lqchip '+(o.info?'info':'good')+'">'+(o.info?'ℹ ':'✓ ')+t+'</span>';});
    window.__lqgood=goods;
    var n=sc.filter(function(o){return o.z!=null;}),top=n.slice().sort(function(a,b){return Math.abs(b.z)-Math.abs(a.z);})[0],
-     vm=sc.filter(function(o){return o.vx!=null;}).sort(function(a,b){return b.vx-a.vx;})[0];
+     vms=sc.filter(function(o){return o.vx!=null;}),vm=vms.slice().sort(function(a,b){return b.vx-a.vx;})[0];
+   window.__lqcov={sc:n.length,vol:vms.length,cb:window.__lqcb||0};
    if(!hits.length&&n.length)h+='<span class="lqchip ok">○ '+(en()?'Unusual-move scan: '+n.length+' markets all within 2x normal'+(top?' (largest: '+top.en+' '+f(Math.abs(top.z),1)+'x)':'')
      :'異常波動掃描：'+n.length+' 個市場都在平常 2 倍以內'+(top?'（最大：'+top.zh+' '+sg(top.chg,2)+'%，平常的 '+f(Math.abs(top.z),1)+' 倍）':''))+'</span>'
-     +(goods.some(function(o){return o.combo;})?'':'<span class="lqchip ok">○ '+(en()?'Cross-market patterns: none of '+CB.length:'組合訊號：'+CB.length+' 組型態都沒出現')+'</span>')
+     +(goods.some(function(o){return o.combo;})?'':'<span class="lqchip ok">○ '+(en()?'Cross-market patterns: none of '+(window.__lqcb||0)+'/'+CB.length+' checkable':'組合訊號：'+CB.length+' 組中 '+(window.__lqcb||0)+' 組有資料可判斷，都沒出現')+'</span>')
      +(vm?'<span class="lqchip ok">○ '+(en()?'Volume: no heavy selling (max '+vm.en+' '+f(vm.vx,1)+'x)':'大量賣壓：未出現（成交量最高 '+vm.zh+' 平常的 '+f(vm.vx,1)+' 倍）')+'</span>':'');
    el.innerHTML=h;return hits;}
- function paintRules(q){var hits=[],h='';R.forEach(function(r){var v=val(r,q);if(v==null)return;var hit=r.op==='>='?v>=r.v:v<=r.v;if(hit)hits.push(r);
+ function paintRules(q){var hits=[],h='',nr=0;R.forEach(function(r){var v=val(r,q);if(v==null)return;nr++;var hit=r.op==='>='?v>=r.v:v<=r.v;if(hit)hits.push(r);
    h+='<span class="lqchip '+(hit?'hit':'ok')+'">'+(hit?'● ':'○ ')+(en()?r.en:r.zh)+'：'+(r.f==='chg'?sg(v,r.dg)+'%':f(v,r.dg))+'</span>';});
    document.getElementById('lqal').innerHTML=h;var one=document.getElementById('lqone');var sh=paintScan(q),red=sh.filter(function(o){return o.lv>=2;}).length,yel=sh.length-red;
-   var all=hits.length+red,gd=(window.__lqgood||[]),gc=gd.filter(function(o){return o.combo;})[0];
+   var all=hits.length+red,gd=(window.__lqgood||[]),gc=gd.filter(function(o){return o.combo;})[0],cv=window.__lqcov||{sc:0,vol:0,cb:0},
+     lay=(nr?1:0)+(cv.sc?1:0)+(cv.cb?1:0)+(cv.vol?1:0);
    one.textContent=all?(en()?'Live: '+all+' alert(s) — see the red items':'一句話看懂（即時）：🔴 偵測到異常——'+all+' 項亮紅燈'+(yel?'、'+yel+' 項黃燈':'')+'，看紅色那幾項')
      :yel?(en()?'Live: '+yel+' unusual move(s) worth watching':'一句話看懂（即時）：⚠️ 沒有紅燈，但有 '+yel+' 項波動比平常大（黃燈），值得留意')
      :gc?(en()?'Live: no stress signal — '+gc.en:'一句話看懂（即時）：✅ 目前無偵測到異常；'+gc.zh+'——'+gc.why)
      :gd.length?(en()?'Live: no stress signal; '+gd.length+' big move(s) in the healthy direction':'一句話看懂（即時）：✅ 目前無偵測到異常；'+gd.length+' 個市場往好的方向大幅變動（綠色）')
+     :!nr||!cv.sc?(en()?'Live: not enough live data to judge ('+nr+' thresholds, '+cv.sc+' markets with quotes)':'一句話看懂（即時）：⚪ 資料不足，暫時無法判斷——有報價的固定門檻 '+nr+' 項、異常波動 '+cv.sc+' 個市場')
+     :lay<4?(en()?'Live: no alert in the '+lay+' of 4 layers that have data':'一句話看懂（即時）：✅ 目前無偵測到異常（四層檢查中 '+lay+' 層有資料'+(cv.vol?'':'，成交量暫缺')+(cv.cb?'':'，組合型態暫缺')+'）')
      :(en()?'Live: no alert — fixed thresholds, unusual-move scan and volume all normal':'一句話看懂（即時）：✅ 目前無偵測到異常——固定門檻、異常波動、組合型態、成交量四層檢查都正常');}
  function ago(){var st=document.getElementById('lqst');if(!st||!lastOk)return;var s=Math.round((Date.now()-lastOk)/1000);
    st.className='lqst on';st.textContent='● '+(en()?'live · updated '+(s<60?s+'s':Math.round(s/60)+'m')+' ago':'即時 · '+(s<60?s+' 秒前':Math.round(s/60)+' 分鐘前')+'更新');}
