@@ -193,6 +193,15 @@ def test_tw_daily_read():
     assert len(TL.LEAD) <= 25 and len(TL.GAUGE) <= 25 and len(TL.TREND) <= 25
     assert {"金融", "塑化", "航運", "食品", "電信"} <= {k for _s, _n, k in TL.LEAD}
 
+    class Tw:                                                                     # TaiwanData keeps the newest flow first
+        flows = [{"date": "2026-10-27", "foreign": -80.4, "trust": 236.0}, {"date": "2026-10-22", "foreign": -815.8, "trust": 94.9}]
+        futures = {}
+
+    class Eng:
+        taiwan = Tw()
+    assert TL.tw_ctx(Eng())["flows"][-1]["d"] == "2026-10-27"                     # the page reads the last one as the latest
+    assert "soxB" in TL.JS and "較舊" in TL.JS                                    # tonight's US session never explains the earlier Taiwan day
+
 
 if __name__ == "__main__":
     for name, fn in list(globals().items()):

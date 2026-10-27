@@ -41,7 +41,8 @@ def tw_ctx(eng) -> dict:
     tw = getattr(eng, "taiwan", None)
     out = {"flows": [], "news": []}
     if tw is not None:
-        out["flows"] = [{"d": f.get("date"), "f": f.get("foreign"), "t": f.get("trust")} for f in (tw.flows or [])[-5:] if f.get("foreign") is not None]
+        out["flows"] = sorted([{"d": f.get("date"), "f": f.get("foreign"), "t": f.get("trust")} for f in (tw.flows or [])
+                               if f.get("foreign") is not None], key=lambda x: x["d"] or "")[-5:]      # oldest → newest
         fu = tw.futures or {}
         if fu.get("oi_foreign") is not None:
             out["fut"] = {"oi": fu.get("oi_foreign"), "chg": fu.get("oi_foreign_chg")}
@@ -126,8 +127,8 @@ _JS = r"""
    if(w.length||a.length)W.push('各產業權值股'+(up?'帶頭漲':'帶頭跌')+'：'+(w.length?w.slice(0,4).map(nm).join('、'):'沒有')+(a.length?'；反方向：'+a.slice(0,3).map(nm).join('、'):'')+'。');
    // industries: average of their heavyweights, the best and the worst with the clue that usually goes with them
    var g={};mg.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x.c);});var ind=Object.keys(g).map(function(k){return {k:k,c:g[k].reduce(function(s,v){return s+v;},0)/g[k].length};}).sort(function(a,b){return b.c-a.c;});
-   var sox=q['^SOX'],oil=q['CL=F'];
-   var clue=function(x){var t=CLUE[x.k];if(t==='chip'&&sox&&sox.chg!=null&&Math.abs(sox.chg)>=1&&(sox.chg>0)===(x.c>0))return '，呼應昨晚費城半導體 '+sg(sox.chg,1)+'%';
+   var sox=q['^SOX'],oil=q['CL=F'],tmn0=tpe().m,usNow=tmn0>=1290||tmn0<300,soxB=usNow?null:sox;   // tonight's US session came after this Taiwan session
+   var clue=function(x){var t=CLUE[x.k];if(t==='chip'&&soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1&&(soxB.chg>0)===(x.c>0))return '，呼應昨晚費城半導體 '+sg(soxB.chg,1)+'%';
      if(t==='oil'&&oil&&oil.chg!=null&&Math.abs(oil.chg)>=1&&(oil.chg>0)===(x.c>0))return '，跟著原油 '+sg(oil.chg,1)+'%';
      if((x.k==='金融'||x.k==='電信'||x.k==='食品')&&x.c>0&&c<0)return '，大盤跌時資金躲進防禦型';return '';};
    if(ind.length>=6){var hi=ind[0],lo=ind[ind.length-1];if(Math.abs(hi.c)>=0.8||Math.abs(lo.c)>=0.8)W.push('產業：'+hi.k+' '+sg(hi.c,1)+'% 最強'+clue(hi)+'；'+lo.k+' '+sg(lo.c,1)+'% 最弱'+clue(lo)+'。');}
@@ -138,11 +139,11 @@ _JS = r"""
      +(Math.abs(sox.chg)>=1.5?'：'+(sox.chg>0?'半導體大漲，台股電子權值股'+(usLive?'明天':'')+'通常跟著開高。':'半導體大跌，台股電子權值股'+(usLive?'明天':'')+'通常跟著承壓。'):'。'));
    if(tsm&&t2&&fx&&t2.price){var pm=(tsm.price*fx.price/(t2.price*5)-1)*100;if(Math.abs(pm)>=8)W.push('台積電 ADR 溢價 '+sg(pm,0)+'%：'+(pm>0?'美國投資人願意付比台股更高的價格，代表外資對台積電看法偏正面。':'ADR 比台股便宜，外資態度偏保守。'));}
    if(fx&&fx.chg!=null&&Math.abs(fx.chg)>=0.3)W.push('美元兌台幣 '+sg(fx.chg,2)+'%：'+(fx.chg>0?'台幣貶值，外資可能在匯出（賣台股換美元）。':'台幣升值，常伴隨外資匯入買台股。'));
-   var fl=C.flows||[];if(fl.length){var L=fl[fl.length-1],s5=fl.reduce(function(s,x){return s+(x.f||0);},0);
-     W.push('外資（'+String(L.d).slice(5)+'）買賣超 '+sg(L.f,1)+' 億、近 '+fl.length+' 日合計 '+sg(s5,0)+' 億'+(C.fut&&C.fut.oi!=null?'；外資台指期淨'+(C.fut.oi>=0?'多':'空')+'單 '+f(Math.abs(C.fut.oi),0)+' 口':'')+'。');}
+   var fl=C.flows||[];if(fl.length){var L=fl[fl.length-1],s5=fl.reduce(function(s,x){return s+(x.f||0);},0),age=(Date.now()-new Date(L.d+'T15:00:00+08:00'))/864e5;
+     W.push((age>5?'（外資資料停在 '+String(L.d).slice(5)+'，較舊）':'')+'外資（'+String(L.d).slice(5)+'）買賣超 '+sg(L.f,1)+' 億、近 '+fl.length+' 日合計 '+sg(s5,0)+' 億'+(C.fut&&C.fut.oi!=null?'；外資台指期淨'+(C.fut.oi>=0?'多':'空')+'單 '+f(Math.abs(C.fut.oi),0)+' 口':'')+'。');}
    // headlines that name a mover (Chinese names matched at build time) or a moving theme
    var MV={};mg.forEach(function(x){if(Math.abs(x.c)>=1)MV[x.s]=x.n+' '+sg(x.c,1)+'%';});
-   var TP={};if(sox&&sox.chg!=null&&Math.abs(sox.chg)>=1.5){TP.chip=['昨晚費半 '+sg(sox.chg,1)+'%',2];TP.ai=['昨晚費半 '+sg(sox.chg,1)+'%',1];}
+   var TP={};if(soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1.5){TP.chip=['昨晚費半 '+sg(soxB.chg,1)+'%',2];TP.ai=['昨晚費半 '+sg(soxB.chg,1)+'%',1];}
    if(Math.abs(c)>=1)TP.tw=['台股 '+sg(c,1)+'%',2];if(oil&&oil.chg!=null&&Math.abs(oil.chg)>=2)TP.power=['原油 '+sg(oil.chg,1)+'%',2];
    var tm=tpe(),cut=Date.now()/1000-(tm.m+600)*60;                       // since 13:30 Taipei the day before
    var hit=(C.news||[]).filter(function(n){return n.ts>=cut;}).map(function(n){var sc=0,why=[],kk=n.k||[];
