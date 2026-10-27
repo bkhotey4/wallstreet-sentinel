@@ -3,6 +3,8 @@
 // RSI(14) and recent volatility (portfolio dividend box, drawdown column, the browser-side watchlist).
 // Add &vol=SPY,QQQ for those symbols' volume today vs the average of the previous days up to the same time (5-minute bars,
 // 5 days): the live "heavy selling" light.
+// Add &ext=NVDA,TSM for the pre-market / after-hours price of those symbols (US listings): ext = {px, chg vs the last
+// regular close, sess "pre" | "post", t}.  Absent while the regular session is trading or when there is no extended trade.
 // Public market data only (Yahoo chart); no keys, nothing stored. Each symbol set is cached 30 s (full: 10 min) at the edge.
 const OK = /^[A-Za-z0-9^=.\-]{1,15}$/;
 const MAX = 25;
@@ -127,6 +129,26 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
   return out;
 }
 
+// last extended-hours trade in a 1-day, 5-minute, includePrePost chart (null inside the regular session or without one)
+export function extFrom(res) {
+  const m = res?.meta, reg = m?.currentTradingPeriod?.regular;
+  if (!m || typeof m.regularMarketPrice !== "number" || !reg) return null;
+  const ts = res.timestamp || [], c = ((((res.indicators || {}).quote || [])[0]) || {}).close || [];
+  for (let i = ts.length - 1; i >= 0; i--) {
+    if (typeof c[i] !== "number" || ts[i] == null) continue;
+    const sess = ts[i] >= reg.end ? "post" : ts[i] < reg.start ? "pre" : null;
+    if (!sess) return null;                                           // latest trade is a regular-session one
+    return { px: c[i], chg: (c[i] / m.regularMarketPrice - 1) * 100, sess, t: ts[i], base: m.regularMarketPrice };
+  }
+  return null;
+}
+
+export async function ext(sym, fetchImpl = fetch) {
+  const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=true`, { headers: { "User-Agent": "Mozilla/5.0" } });
+  if (!r.ok) return null;
+  return extFrom((((await r.json()).chart || {}).result || [])[0]);
+}
+
 export function parse(q) {
   return [...new Set((q || "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => OK.test(s)))].slice(0, MAX);
 }
@@ -136,9 +158,10 @@ export async function onRequestGet({ request, waitUntil }) {
   const syms = parse(u.searchParams.get("s"));
   const full = u.searchParams.get("full") === "1";
   const vols = new Set(parse(u.searchParams.get("vol")));
+  const exts = new Set(parse(u.searchParams.get("ext")));
   if (!syms.length) return json({ error: "no symbols" }, 400, 0);
   const cache = typeof caches !== "undefined" ? caches.default : null;
-  const key = new Request(`https://quote.cache/${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}`);
+  const key = new Request(`https://quote.cache/${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}${exts.size ? "/e/" + [...exts].sort().join(",") : ""}`);
   if (cache) {
     const hit = await cache.match(key);
     if (hit) return hit;
@@ -146,8 +169,8 @@ export async function onRequestGet({ request, waitUntil }) {
   const out = {};
   await Promise.all(syms.map(async (s) => {
     try {
-      const q = await one(s, fetch, full, vols.has(s));
-      if (q) out[s] = q;
+      const [q, e] = await Promise.all([one(s, fetch, full, vols.has(s)), exts.has(s) && !full ? ext(s).catch(() => null) : null]);
+      if (q) out[s] = e ? { ...q, ext: e } : q;
     } catch (e) { /* one bad symbol never breaks the rest */ }
   }));
   // unknown tickers just come back missing from q (200), so the page can say "not found" instead of "source down"

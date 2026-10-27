@@ -58,3 +58,14 @@ if (process.env.LIVE) {
   console.log("live:", JSON.stringify(d.q["^VIX"]), JSON.stringify(r2.q["00878.TW"]), JSON.stringify(r3.q["SPY"]));
 }
 console.log("quote tests ok");
+
+// extended hours: a post-market bar after the regular close, then the same chart with the last bar inside the session
+{
+  const { extFrom } = await import("../functions/api/quote.js");
+  const meta = { regularMarketPrice: 100, currentTradingPeriod: { regular: { start: 1000, end: 2000 } } };
+  const e = extFrom({ meta, timestamp: [1500, 2100], indicators: { quote: [{ close: [99, 104] }] } });
+  assert.equal(e.sess, "post"); assert.ok(Math.abs(e.chg - 4) < 1e-9);
+  assert.equal(extFrom({ meta, timestamp: [500, 1500], indicators: { quote: [{ close: [97, 99] }] } }), null);
+  assert.equal(extFrom({ meta, timestamp: [500], indicators: { quote: [{ close: [97] }] } }).sess, "pre");
+  console.log("ok ext");
+}
