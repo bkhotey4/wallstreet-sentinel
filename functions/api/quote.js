@@ -5,6 +5,9 @@
 // 5 days): the live "heavy selling" light.
 // Add &ext=NVDA,TSM for the pre-market / after-hours price of those symbols (US listings): ext = {px, chg vs the last
 // regular close, sess "pre" | "post", t}.  Absent while the regular session is trading or when there is no extended trade.
+// Add &hist=1 for five years of weekly closes and every cash dividend (w = [[date, close]], dv = [[date, amount]]): the ETF
+// look-back calculator.  A one-week move of −40 % or +100 % within 5 % of a whole-number ratio is treated as a split Yahoo
+// missed and earlier closes are rescaled (Taiwan ETF splits are often not recorded).
 // Public market data only (Yahoo chart); no keys, nothing stored. Each symbol set is cached 30 s (full: 10 min) at the edge.
 const OK = /^[A-Za-z0-9^=.\-]{1,15}$/;
 const MAX = 25;
@@ -149,6 +152,38 @@ export async function ext(sym, fetchImpl = fetch) {
   return extFrom((((await r.json()).chart || {}).result || [])[0]);
 }
 
+export function fixSplits(w, divDays = new Set()) {
+  const out = w.map((x) => [x[0], x[1]]);
+  for (let i = 1; i < out.length; i++) {
+    const a = out[i - 1][1], b = out[i][1];
+    if (!a || !b || divDays.has(out[i][0])) continue;
+    const k = b < a ? a / b : b / a, r = Math.round(k);
+    if ((b / a <= 0.6 || b / a >= 2) && r >= 2 && Math.abs(k / r - 1) <= 0.05) {
+      const f = b < a ? r : 1 / r;
+      for (let j = 0; j < i; j++) out[j][1] = Math.round((out[j][1] / f) * 1e4) / 1e4;
+    }
+  }
+  return out;
+}
+
+export function histFrom(res) {
+  const m = res?.meta;
+  if (!m) return null;
+  const off = m.gmtoffset || 0, d = (t) => new Date((t + off) * 1000).toISOString().slice(0, 10);
+  const ts = res.timestamp || [], c = ((((res.indicators || {}).quote || [])[0]) || {}).close || [];
+  const dv = Object.values((res.events || {}).dividends || {}).filter((x) => x && x.amount).map((x) => [d(x.date), x.amount]).sort();
+  const w = [];
+  for (let i = 0; i < ts.length; i++) if (typeof c[i] === "number" && ts[i] != null) w.push([d(ts[i]), Math.round(c[i] * 1e4) / 1e4]);
+  if (w.length < 5) return null;
+  return { name: m.shortName || m.longName || "", w: fixSplits(w, new Set(dv.map((x) => x[0]))), dv };
+}
+
+export async function hist(sym, fetchImpl = fetch) {
+  const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=5y&interval=1wk&events=div`, { headers: { "User-Agent": "Mozilla/5.0" } });
+  if (!r.ok) return null;
+  return histFrom((((await r.json()).chart || {}).result || [])[0]);
+}
+
 export function parse(q) {
   return [...new Set((q || "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => OK.test(s)))].slice(0, MAX);
 }
@@ -157,16 +192,25 @@ export async function onRequestGet({ request, waitUntil }) {
   const u = new URL(request.url);
   const syms = parse(u.searchParams.get("s"));
   const full = u.searchParams.get("full") === "1";
+  const hst = u.searchParams.get("hist") === "1";
   const vols = new Set(parse(u.searchParams.get("vol")));
   const exts = new Set(parse(u.searchParams.get("ext")));
   if (!syms.length) return json({ error: "no symbols" }, 400, 0);
   const cache = typeof caches !== "undefined" ? caches.default : null;
-  const key = new Request(`https://quote.cache/${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}${exts.size ? "/e/" + [...exts].sort().join(",") : ""}`);
+  const key = new Request(`https://quote.cache/${hst ? "h/" : ""}${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}${exts.size ? "/e/" + [...exts].sort().join(",") : ""}`);
   if (cache) {
     const hit = await cache.match(key);
     if (hit) return hit;
   }
   const out = {};
+  if (hst) {
+    await Promise.all(syms.slice(0, 5).map(async (s) => {
+      try { const h = await hist(s); if (h) out[s] = h; } catch (e) { /* skip */ }
+    }));
+    const hr = json({ ts: Math.floor(Date.now() / 1000), q: out }, 200, Object.keys(out).length ? TTL_FULL : 0);
+    if (cache && Object.keys(out).length) { const put = cache.put(key, hr.clone()); if (waitUntil) waitUntil(put); else await put; }
+    return hr;
+  }
   await Promise.all(syms.map(async (s) => {
     try {
       const [q, e] = await Promise.all([one(s, fetch, full, vols.has(s)), exts.has(s) && !full ? ext(s).catch(() => null) : null]);

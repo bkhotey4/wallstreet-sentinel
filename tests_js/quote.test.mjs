@@ -69,3 +69,14 @@ console.log("quote tests ok");
   assert.equal(extFrom({ meta, timestamp: [500], indicators: { quote: [{ close: [97] }] } }).sess, "pre");
   console.log("ok ext");
 }
+
+// weekly history for the look-back calculator: a missed 1:7 split is repaired, dividends come back as [date, amount]
+{
+  const { histFrom, fixSplits } = await import("../functions/api/quote.js");
+  const W = 7 * 86400, t0 = 1_700_000_000;
+  const h = histFrom({ meta: { gmtoffset: 0, shortName: "X" }, timestamp: [0, 1, 2, 3, 4, 5].map((i) => t0 + i * W),
+    indicators: { quote: [{ close: [350, 352, 50.4, 51, 52, 53] }] }, events: { dividends: { a: { amount: 1, date: t0 + 4 * W } } } });
+  assert.ok(Math.abs(h.w[0][1] - 50) < 0.01 && h.w[2][1] === 50.4 && h.dv.length === 1);
+  assert.equal(fixSplits([["a", 100], ["b", 55]])[0][1], 100);
+  console.log("ok hist");
+}
