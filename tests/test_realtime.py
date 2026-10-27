@@ -97,6 +97,69 @@ def test_missing_is_not_calm():
     assert "資料不足，暫時無法判斷" in SL.JS and "層有資料" in SL.JS
 
 
+def test_small_fixes():
+    from datetime import date
+    from wsb.analytics import canary as C
+    r = {"id": "dash_for_cash", "kind": "rule", "state": "ok", "asof": "2026-10-01"}
+    C._age_check(r, today=date(2026, 10, 27))
+    assert r["state"] == "stale" and "2026-10-01" in r["note"]                 # old data cannot say "ok"
+    r = {"id": "margin_debt", "kind": "rule", "state": "ok", "asof": "2026-09"}
+    C._age_check(r, today=date(2026, 10, 27))
+    assert r["state"] == "ok"                                                  # monthly series, normal lag
+    from wsb.data import fundamentals as FU
+    assert not FU.evaluable({}) and FU.evaluable({"capex_ocf": 0.5, "int_burden": 5, "debt_growth": 2})
+    from wsb.analytics import sector_brief as SB
+    cache = {f"S{i}": {"p": {"x": 1}, "m": {"rev_growth": 3.0}} for i in range(5)}
+    fd = SB.fund_block(list(cache), cache)
+    assert fd["n"] == 5 and fd["strain_pct"] is None                           # no data is not "0% strain"
+    assert any("暫不判斷" in x for x in SB.risk_text(fd, {}, None))
+    import time
+    from wsb import store
+    from wsb.bot import embeds as E
+    store.event_seen("news:old1", "新聞", "舊新聞", None)
+    with store._LOCK:
+        store._C.execute("UPDATE event_log SET last_ts=? WHERE key='news:old1'", (time.time() - 7200,))
+        store._C.commit()
+    em = E.inbox(store.event_rows(24), private=True)
+    assert any(f.name.startswith("過期未送") and "舊新聞" in f.value for f in em.fields)
+
+
+def test_extended_gaps():
+    import pandas as pd
+    from wsb.data import extended as XT
+    meta = {"regularMarketPrice": 100.0, "currentTradingPeriod": {"regular": {"start": 1000, "end": 2000}}}
+    e = XT.parse({"meta": meta, "timestamp": [500, 900], "indicators": {"quote": [{"close": [99.0, 94.0]}]}})
+    assert e["sess"] == "pre" and abs(e["chg"] + 6) < 1e-9
+    assert XT.parse({"meta": meta, "timestamp": [1500], "indicators": {"quote": [{"close": [99.0]}]}}) is None
+    assert XT.us_ext_session(datetime(2026, 10, 27, 12, 0, tzinfo=timezone.utc)) == "pre"      # 08:00 New York
+    assert XT.us_ext_session(datetime(2026, 10, 27, 16, 0, tzinfo=timezone.utc)) is None       # regular session
+    assert XT.us_ext_session(datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc)) is None       # Sunday
+    from wsb.bot.app import Sentinel
+    idx = pd.bdate_range("2025-09-01", periods=300)
+    s = pd.Series([100 * (1.01 if i % 2 else 0.99) ** (i % 7) for i in range(300)], index=idx)
+
+    class M:
+        def series(self, t):
+            return s
+
+    class Eng:
+        market = M()
+
+        def holding_tickers(self):
+            return ["NVDA", "2330.TW"]
+    b = Sentinel.__new__(Sentinel)
+    b.engine = Eng()
+    assert "2330.TW" not in b._ext_symbols() and "NVDA" in b._ext_symbols()
+    sd = float(s.pct_change().dropna().iloc[-252:].std() * 100)
+    al = b._ext_gap_alerts({"NVDA": {"px": 90, "chg": -3.5 * sd, "sess": "pre", "t": 1793106535, "base": 100},
+                            "SPY": {"px": 100, "chg": 0.5 * sd, "sess": "pre", "t": 1793106535, "base": 100}})
+    assert len(al) == 1 and al[0].key.startswith("gap_pf:NVDA:") and al[0].key.endswith(":3")
+    from wsb import store
+    assert store.is_private_alert(al[0].key)                            # holdings gap → owner DM only
+    from tools import site_extgap as X
+    assert "盤前／盤後跳空" in X.sec_ext_gaps(None) and "ext=" in X.JS
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -159,11 +159,11 @@ def actions(stage: int, portfolio: Dict, derisk: Optional[List[Dict]] = None, sh
     elif stage == 1:
         out += ["停止加碼高 β、高集中度的部位，新資金優先分批或放在低相關資產。", "把 /hedge 的避險成本記下來——壓力升高時保險會變貴，現在是相對便宜的時候。"]
     elif stage == 2:
-        out += [f"將組合 β 降到約 {tgt:.2f}（目前 {beta:.2f}，×{BETA_FACTOR[2]:.2f}）。" if tgt else "將組合 β 降低約 15%。",
+        out += [f"將組合 β 降到約 {tgt:.2f}（目前 {beta:.2f}，×{BETA_FACTOR[2]:.2f}）。" if tgt else f"將組合 β 降低約 {(1 - BETA_FACTOR[2]) * 100:.0f}%。",
                 "減碼風險貢獻最高的持股，或買 5–10% 價外、45–90 天的賣權（/hedge 可算成本）。",
                 "未來 2 週有事件日（FOMC／四巫日／大額標售）前不要重壓。"]
     else:
-        out += [f"目標 β ≈ {tgt:.2f}（目前 {beta:.2f}，×{BETA_FACTOR[3]:.2f}）：優先『減碼』而非追買賣權（此時保險費已貴）。" if tgt else "大幅降低 β（約 35%）：優先減碼。",
+        out += [f"目標 β ≈ {tgt:.2f}（目前 {beta:.2f}，×{BETA_FACTOR[3]:.2f}）：優先『減碼』而非追買賣權（此時保險費已貴）。" if tgt else f"大幅降低 β（約 {(1 - BETA_FACTOR[3]) * 100:.0f}%）：優先減碼。",
                 "保留現金／短債作為彈藥；槓桿與保證金部位先降下來。",
                 "設定明確的再進場條件（例如 SSI 回落到 60 以下且升溫速度轉『降溫』），避免情緒化來回操作。"]
     if stage >= 2 and derisk:

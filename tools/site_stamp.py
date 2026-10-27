@@ -109,6 +109,17 @@ def _bondflows():
         return None, None
 
 
+def _tw_etf():
+    """Taiwan ETFs: when fetched and the TWSE NAV date."""
+    try:
+        from wsb.data import tw_etf as TE
+        d = TE.load()
+        days = sorted(d.get("daily") or {})
+        return d.get("ts"), (days[-1] if days else None)
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 def _twmacro():
     """Taiwan macro (central bank / NDC / TPEx): when fetched and the newest TPEx curve date."""
     try:
@@ -296,6 +307,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "jgb": ("日本財務省公債殖利率", "MOF JGB yields", lambda e: (_ts(_g(e, "global_yields", "ts")),
             _d(e.global_yields.jgb.index[-1]) if getattr(getattr(e, "global_yields", None), "jgb", None) is not None and len(e.global_yields.jgb) else None), 5),
     "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 14),
+    "twetf": ("證交所 ETF 淨值／集保", "TWSE ETF NAV / TDCC", lambda e: (_ts(_tw_etf()[0]), _tw_etf()[1]), 4),
     "twmacro": ("台灣央行／國發會／櫃買中心", "Taiwan CBC / NDC / TPEx", lambda e: (_ts(_twmacro()[0]), _twmacro()[1]), 7),
     "fullmkt": ("全市場股價與估值", "Full-market scan", lambda e: (_ts(_fm()[0]), _fm()[1]), 4),
     "stocks": ("個股股價", "Stock prices", lambda e: (_ts(_g(e, "stockprices", "ts")), _last(_g(e, "stockprices", "close"))), 4),
@@ -335,7 +347,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
 }
 
 TAB_DEFAULT: Dict[str, List[str]] = {
-    "overview": ["px", "ssi"], "premarket": ["px"], "tw_ai": ["twmacro"], "tw_bonds": ["twmacro"], "tw_credit": ["twmacro"], "tw_econ": ["twmacro"], "tw_money": ["twmacro", "tw"], "tw_life": ["twmacro"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
+    "overview": ["px", "ssi"], "premarket": ["px"], "tw_ai": ["twmacro"], "tw_bonds": ["twmacro"], "tw_credit": ["twmacro"], "tw_econ": ["twmacro"], "tw_money": ["twmacro", "tw"], "tw_life": ["twmacro"], "tw_etf": ["twetf", "tw"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],

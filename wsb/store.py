@@ -40,6 +40,10 @@ with _LOCK:
                                               sent_ts REAL, tries INTEGER DEFAULT 0, last_err TEXT);
         """
     )
+    try:                                                    # added later: last round the event was still a candidate
+        _C.execute("ALTER TABLE event_log ADD COLUMN last_ts REAL")
+    except sqlite3.OperationalError:
+        pass
     _C.commit()
 
 
@@ -87,6 +91,7 @@ def event_seen(key: str, src: str, title: str, event_ts: float | None) -> None:
     with _LOCK:
         _C.execute("INSERT OR IGNORE INTO event_log (key, src, title, event_ts, first_ts, tries) VALUES (?,?,?,?,?,0)",
                    (key, src, title[:200], event_ts, time.time()))
+        _C.execute("UPDATE event_log SET last_ts=? WHERE key=?", (time.time(), key))
         _C.commit()
 
 
@@ -102,9 +107,9 @@ def event_result(keys: List[str], ok: bool, err: str = "") -> None:
 
 
 def event_rows(hours: float = 24) -> List[Tuple]:
-    """(key, src, title, event_ts, first_ts, sent_ts, tries, last_err) for events first seen in the window."""
+    """(key, src, title, event_ts, first_ts, sent_ts, tries, last_err, last_ts) for events first seen in the window."""
     with _LOCK:
-        return _C.execute("SELECT key, src, title, event_ts, first_ts, sent_ts, tries, last_err FROM event_log "
+        return _C.execute("SELECT key, src, title, event_ts, first_ts, sent_ts, tries, last_err, last_ts FROM event_log "
                           "WHERE first_ts>? ORDER BY first_ts DESC", (time.time() - hours * 3600,)).fetchall()
 
 
@@ -114,7 +119,7 @@ def tracked_alerts(days: float = 365) -> List[Tuple]:
                           (time.time() - days * 86400,)).fetchall()
 
 
-PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:", "rules:", "halt_pf:", "mops_pf:", "sec_pf:")      # holdings-derived → owner DM only, never listed publicly
+PRIVATE_ALERT_PREFIXES = ("pf_dd", "stop:", "conc:", "rules:", "halt_pf:", "mops_pf:", "sec_pf:", "gap_pf:")      # holdings-derived → owner DM only, never listed publicly
 
 
 def is_private_alert(key: str) -> bool:

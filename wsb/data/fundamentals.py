@@ -159,6 +159,14 @@ RULES = [("gap", "資金缺口：資本支出大於營運現金流", "Funding ga
           lambda m: m.get("debt_growth") is not None and m["debt_growth"] >= 30)]
 
 
+RULE_INPUTS = ("capex_ocf", "cip_share", "inv_minus_rev", "dso", "int_burden", "debt_growth")
+
+
+def evaluable(m: Dict, need: int = 3) -> bool:
+    """Enough inputs to judge the rules at all: a company with no data raises no flag, which is not the same as clean."""
+    return bool(flags(m)) or sum(m.get(k) is not None for k in RULE_INPUTS) >= need
+
+
 def flags(m: Dict) -> List[str]:
     return [k for k, _zh, _en, f in RULES if f(m)]
 

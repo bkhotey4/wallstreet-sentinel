@@ -421,7 +421,7 @@ def fund_block(syms: List[str], cache: Dict, min_n: int = 3) -> Dict:
     """SEC companyfacts of the sector's largest members: growth, margin trend, investment cycle, balance-sheet strain."""
     from ..data import fundamentals as FU
     rg, mg, mgc, cg, co, dg, ib = [], [], [], [], [], [], []
-    n, gap, strain, gap_n, strain_n = 0, 0, 0, [], []
+    n, n_ev, gap, strain, gap_n, strain_n = 0, 0, 0, 0, [], []
     for s in syms:
         rec = cache.get(s) or cache.get(s.replace("-", ".")) or cache.get(s.replace(".", "-")) or {}
         p, m = rec.get("p"), rec.get("m")
@@ -442,6 +442,7 @@ def fund_block(syms: List[str], cache: Dict, min_n: int = 3) -> Dict:
         dg.append(m.get("debt_growth"))
         ib.append(m.get("int_burden"))
         fl = FU.flags(m)
+        n_ev += FU.evaluable(m)
         if "gap" in fl:
             gap += 1
             gap_n.append(s)
@@ -451,7 +452,8 @@ def fund_block(syms: List[str], cache: Dict, min_n: int = 3) -> Dict:
     if n < min_n:
         return {"n": n}
     return {"n": n, "rev_g": _med(rg), "margin": _med(mg), "margin_chg": _med(mgc), "capex_g": _med(cg), "capex_ocf": _med(co),
-            "debt_g": _med(dg), "int_burden": _med(ib), "gap_pct": gap / n * 100, "strain_pct": strain / n * 100,
+            "debt_g": _med(dg), "int_burden": _med(ib), "n_eval": n_ev,
+            "gap_pct": gap / n_ev * 100 if n_ev >= min_n else None, "strain_pct": strain / n_ev * 100 if n_ev >= min_n else None,
             "strain_names": strain_n[:6], "gap_names": gap_n[:6]}
 
 
@@ -547,10 +549,14 @@ def risk_text(fd: Dict, sv: Dict, p: Optional[Dict]) -> List[str]:
             s.append(f"利息佔營業利益 {fd['int_burden']:.0f}%")
         if fd.get("capex_ocf") is not None:
             s.append(f"資本支出／營運現金流 {fd['capex_ocf']:.2f} 倍")
-        sp = fd.get("strain_pct") or 0
-        lvl = "偏高" if sp >= 40 else "中等" if sp >= 20 else "低"
-        out.append("資產負債表：" + ("、".join(s) + "；" if s else "") + f"{sp:.0f}% 的公司至少出現一項財報壓力（{lvl}）"
-                   + (f"，例如 {'、'.join(fd['strain_names'][:4])}" if fd.get("strain_names") else "") + "。")
+        sp = fd.get("strain_pct")
+        if sp is None:
+            out.append("資產負債表：" + ("、".join(s) + "；" if s else "") + "財報欄位齊全的公司不足 3 家，財報壓力比例暫不判斷。")
+        else:
+            lvl = "偏高" if sp >= 40 else "中等" if sp >= 20 else "低"
+            out.append("資產負債表：" + ("、".join(s) + "；" if s else "")
+                       + f"可判讀的 {fd.get('n_eval', fd['n'])} 家中 {sp:.0f}% 至少出現一項財報壓力（{lvl}）"
+                       + (f"，例如 {'、'.join(fd['strain_names'][:4])}" if fd.get("strain_names") else "") + "。")
         if (fd.get("gap_pct") or 0) >= 30:
             out.append(f"資金缺口：{fd['gap_pct']:.0f}% 的公司資本支出超過營運現金流，要靠借錢或發股支應，信用收緊時最先受壓。")
     if sv.get("rate_rel") is not None:
@@ -599,9 +605,11 @@ def highlights(secs: List[Dict], eng) -> List[str]:
         b, w = max(rv, key=lambda s: s["rev"]["net"]), min(rv, key=lambda s: s["rev"]["net"])
         out.append(f"分析師預估：上修最多的是{b['zh']}（淨 {b['rev']['net']:+.0f}%），下修最多的是{w['zh']}（淨 {w['rev']['net']:+.0f}%）。")
     fd = [s for s in secs if (s.get("fund") or {}).get("n", 0) >= 3]
-    if fd:
-        st = sorted(fd, key=lambda s: -(s["fund"].get("strain_pct") or 0))[:2]
+    sp = [s for s in fd if s["fund"].get("strain_pct") is not None]
+    if sp:
+        st = sorted(sp, key=lambda s: -s["fund"]["strain_pct"])[:2]
         out.append("財報壓力最普遍：" + "、".join(f"{s['zh']}（{s['fund']['strain_pct']:.0f}% 公司）" for s in st) + "。")
+    if fd:
         mg = [s for s in fd if s["fund"].get("margin_chg") is not None]
         if len(mg) >= 2:
             hi, lo = max(mg, key=lambda s: s["fund"]["margin_chg"]), min(mg, key=lambda s: s["fund"]["margin_chg"])

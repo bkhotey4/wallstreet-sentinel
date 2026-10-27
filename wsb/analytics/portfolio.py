@@ -144,8 +144,8 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
         r["corr_spx_60d"] = float(ra.iloc[-60:].corr(b.iloc[-60:])) if ra.iloc[-60:].notna().sum() > 40 else None
         if ra.notna().mean() < 0.9:
             proxied.append(s)
-            ra = ra.fillna(b * (beta if beta is not None else 1.0))
-        rets[s] = ra.fillna(0)
+        # any gap (holiday mismatch, a missing bar) takes the beta-scaled benchmark move, not 0 (0 understates vol and beta)
+        rets[s] = ra.fillna(b * (beta if beta is not None else 1.0)).fillna(0)
     R = pd.DataFrame(rets)
     w = np.array([r["weight"] / 100 for r in valid])
     port = R.values @ w

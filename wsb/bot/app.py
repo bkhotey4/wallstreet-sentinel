@@ -73,7 +73,11 @@ class Alert:
 
 # event sources whose delivery is tracked in /inbox (key prefix → label)
 EVENT_SRC = {"news:": "新聞", "sec:": "SEC 公告", "sec_pf:": "SEC 公告", "halt:": "停牌", "halt_pf:": "停牌", "fed:": "Fed 公告",
-             "mops:": "台股重大訊息", "mops_pf:": "台股重大訊息", "push:auction:": "公債標售"}
+             "mops:": "台股重大訊息", "mops_pf:": "台股重大訊息", "push:auction:": "公債標售", "gap:": "盤前盤後跳空", "gap_pf:": "盤前盤後跳空"}
+
+
+def _cov_note(st) -> str:
+    return f"\n⚠️ 資料涵蓋僅 {st.coverage * 100:.0f}%，部分指標缺資料，讀數僅供參考。" if st.coverage < 0.7 else ""
 
 
 def _band_line(name: str, v: dict) -> str:
@@ -355,6 +359,19 @@ class Sentinel(commands.Bot):
         async def taiwan():
             await eng.taiwan.refresh()
 
+        async def ext_gap():
+            from ..data import extended as XT
+            if not A.get("ext_gap", True) or not XT.us_ext_session():
+                return
+            syms = self._ext_symbols()
+            await self._run_alerts(self._ext_gap_alerts(await XT.fetch(syms)))
+
+        async def tw_etf():
+            from ..data import tw_etf as TE
+            await TE.refresh()
+            if A.get("tw_etf", True):
+                await self._run_alerts(self._tw_etf_alerts())
+
         async def cal():
             await eng.calendar.refresh(extra())
             await self._run_alerts(self._liquidity_alerts())
@@ -485,6 +502,8 @@ class Sentinel(commands.Bot):
             ("sec", R["sec"], sec, 30),
             ("official", R.get("official_events", 120), official, 45),
             ("calendar", R["calendar"], cal, R["calendar"]),
+            ("tw_etf", R.get("tw_etf", 1800), tw_etf, 600),
+            ("ext_gap", R.get("ext_gap", 300), ext_gap, 60),
             ("taiwan", SETTINGS.get("taiwan", {}).get("refresh_seconds", 7200), taiwan,
              SETTINGS.get("taiwan", {}).get("refresh_seconds", 7200)),
         ]
@@ -765,14 +784,14 @@ class Sentinel(commands.Bot):
                 sev = "🚨 CRITICAL" if idx >= 3 else "⚠️ WARNING"
                 drv = ", ".join(f"{c.id}({c.score:.0f})" for c in st.drivers(4))
                 out.append(Alert(f"ssi_level_{idx}", sev, f"系統性壓力升級 → {st.emoji} {st.label}（SSI {st.score:.1f}）",
-                                 f"主要推升：{drv}"))
+                                 f"主要推升：{drv}" + _cov_note(st)))
             # hysteresis: only step down after 3 pts below the boundary
             if prev is None or idx >= prev or st.score < levels[idx]["max"] - 3:
                 store.kv_set("ssi_level_idx", idx)
             bar = st.history.index[-1].strftime("%Y%m%d") if len(st.history) else "na"
             if st.chg_1d is not None and st.chg_1d >= A.get("stress_jump_points", 8):
                 out.append(Alert(f"ssi_jump:{bar}", "⚠️ WARNING", f"SSI 單日跳升 {st.chg_1d:+.1f} 點 → {st.score:.1f}",
-                                 "區塊：" + ", ".join(f"{k} {v:.0f}" for k, v in sorted(st.blocks.items(), key=lambda x: -x[1])[:4])))
+                                 "區塊：" + ", ".join(f"{k} {v:.0f}" for k, v in sorted(st.blocks.items(), key=lambda x: -x[1])[:4]) + _cov_note(st)))
         names = SETTINGS.names()
         tickers = A.get("key_assets", []) if A.get("sigma_move_key_only") else list(set(SETTINGS.names()) | set(eng.holding_tickers()))
         thr = float(A.get("sigma_move", 3.0))
@@ -933,6 +952,76 @@ class Sentinel(commands.Bot):
             if q_prev and q_prev != rg["quadrant"] and cfg.get("alert_quadrant_change", True):
                 out.append(Alert(f"intel:quad:{rg['quadrant']}:{week}", "ℹ️ INFO", f"總經象限轉換：{q_prev} → {rg['quadrant']}",
                                  f"{rg.get('drift') or ''}；{(self.engine.regime or {}).get('playbook', '')}"))
+        return out
+
+    EXT_KEY = ["SPY", "QQQ", "SMH", "NVDA", "TSM", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "AMD", "TSLA"]
+
+    def _ext_symbols(self) -> List[str]:
+        held = [t for t in self.engine.holding_tickers() if t and "." not in t and not t.startswith("^") and "=" not in t]
+        return list(dict.fromkeys(self.EXT_KEY + held))
+
+    def _ext_gap_alerts(self, ext: Dict[str, Dict], now: Optional[datetime] = None) -> List[Alert]:
+        """盤前／盤後跳空: the extended-hours move vs the stock's own normal daily move (one-year std of daily % changes).
+        ≥ 2× normal → alert (holdings: owner DM only).  One alert per symbol, session and day; a later, bigger step
+        (≥ 3×) in the same session alerts once more.  Low-volume prices: the text says so."""
+        eng, out = self.engine, []
+        held = set(eng.holding_tickers())
+        for s, e in ext.items():
+            h = eng.market.series(s)
+            r = h.pct_change().dropna().iloc[-252:] * 100 if len(h) > 60 else None
+            sd = float(r.std()) if r is not None and len(r) >= 60 else None
+            if not sd:
+                continue
+            k = abs(e["chg"]) / sd
+            if k < 2:
+                continue
+            day = datetime.fromtimestamp(e["t"], timezone.utc).astimezone(E.TZ).strftime("%Y%m%d")
+            step = 3 if k >= 3 else 2
+            pre = "gap_pf" if s in held else "gap"
+            sess = "盤前" if e["sess"] == "pre" else "盤後"
+            out.append(Alert(f"{pre}:{s}:{day}:{e['sess']}:{step}", "⚠️ WARNING" if step == 3 else "ℹ️ INFO",
+                             f"{sess}跳空：{s} {e['chg']:+.1f}%（平常單日波動的 {k:.1f} 倍）" + ("［持股］" if s in held else ""),
+                             f"{sess}價 {e['px']:.2f}，前一交易日收盤 {e['base']:.2f}；{s} 過去一年平常單日波動 ±{sd:.1f}%。"
+                             f"{sess}成交量小，價格容易誇大，開盤後常常修正。即時表：網站「開盤前 30 秒與即時情勢」→ 盤前／盤後跳空。",
+                             float(e["t"])))
+        return out
+
+    def _tw_etf_alerts(self, r: Optional[dict] = None, now: Optional[datetime] = None) -> List[Alert]:
+        """台灣 ETF rules (self-designed, all data-driven):
+        * premium: a tracked ETF trades ≥ 2 % away from NAV, or ≥ 1 % and ≥ 3σ beyond its own premium history;
+        * flows: a kind's creations − redemptions today ≥ 3σ from its own daily history (only after 17:30 Taipei,
+          when the day's units are final, and only once 40 days of history exist);
+        * holders: a tracked ETF's weekly holder change ≥ 3σ from its own weekly history (12 weeks minimum)."""
+        from ..analytics import tw_etf as TA
+        r = r if r is not None else TA.build(self.engine)
+        if not r.get("available"):
+            return []
+        now = now or datetime.now(E.TZ)
+        out, day = [], r.get("asof") or now.strftime("%Y-%m-%d")
+        for x in r.get("rows") or []:
+            p, z = x.get("prem"), x.get("prem_z")
+            if p is None or (x.get("aum") or 0) < TA.MIN_AUM:
+                continue
+            if abs(p) >= 2 or (abs(p) >= 1 and z is not None and abs(z) >= 3):
+                out.append(Alert(f"etf_prem:{x['code']}:{day}", "ℹ️ INFO",
+                                 f"台灣 ETF 折溢價：{x['code']} {x['name']} 市價比淨值{'貴' if p > 0 else '便宜'} {abs(p):.2f}%",
+                                 (f"自身歷史 {z:+.1f}σ。" if z is not None else "")
+                                 + ("溢價＝付的價格比 ETF 裡的資產貴，溢價收斂時就算資產沒跌，市價也會跌。" if p > 0 else
+                                    "折價＝市價比資產便宜，常見於賣壓集中或海外市場休市。") + "看網站「台灣 ETF」頁。"))
+        if now.hour * 60 + now.minute >= 17 * 60 + 30:
+            for kind, g in (r.get("kinds") or {}).items():
+                z = g.get("z")
+                if z is not None and abs(z) >= 3 and abs(g["flow"]) >= 5:
+                    out.append(Alert(f"etf_flow:{kind}:{day}", "ℹ️ INFO",
+                                     f"台灣{kind} ETF 單日淨{'申購' if g['flow'] > 0 else '贖回'} {abs(g['flow']):,.0f} 億元（自身歷史 {z:+.1f}σ）",
+                                     f"這類 {g['n']} 檔 ETF 合計規模 {g['aum']:,.0f} 億元" + (f"，近 20 日 {g['flow20']:+,.0f} 億元" if g.get("flow20") is not None else "")
+                                     + "。資料：證交所 ETF 流通單位數變化 × 淨值。"))
+        for x in r.get("rows") or []:
+            hz = x.get("holders_z")
+            if hz is not None and abs(hz) >= 3 and x.get("holders_1w"):
+                out.append(Alert(f"etf_hold:{x['code']}:{x.get('holders_date')}", "ℹ️ INFO",
+                                 f"{x['code']} {x['name']} 受益人一週{'增加' if x['holders_1w'] > 0 else '減少'} {abs(x['holders_1w']):,.0f} 人（自身歷史 {hz:+.1f}σ）",
+                                 f"目前 {x['holders']:,.0f} 人（集保結算所 {x.get('holders_date')}）。人數急增常代表散戶湧入。"))
         return out
 
     def _extras_alerts(self) -> List[Alert]:
@@ -1260,10 +1349,10 @@ class Sentinel(commands.Bot):
         cooldown = float(A.get("cooldown_minutes", 240)) * 60
         # a key that carries a bar-date / news-id / day / week ("sigma:^AXJO:2026-10-01:-1") already says "this event";
         # re-sending it every cooldown period just repeats the same alert → those are one-shot
-        fire = [a for a in alerts if store.alert_allowed(a.key, ONE_SHOT_S if ":" in a.key else cooldown)]
-        for a in fire:
-            if _event_src(a.key):
+        for a in alerts:                                      # log every undelivered candidate, muted ones too, so /inbox
+            if _event_src(a.key) and not store.alert_sent(a.key):     # can show what a mute or failure let expire
                 store.event_seen(a.key, _event_src(a.key), a.title, a.event_ts)
+        fire = [a for a in alerts if store.alert_allowed(a.key, ONE_SHOT_S if ":" in a.key else cooldown)]
         limit = min(limit or 10, 10)                          # one embed shows 10 fields: what isn't shown isn't marked
         if len(fire) > limit:                                 # the rest stay unmarked → they go out on the next rounds
             log.info("alert cap %d: %d queued for next round", limit, len(fire) - limit)

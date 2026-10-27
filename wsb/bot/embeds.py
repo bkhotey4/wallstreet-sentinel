@@ -365,6 +365,9 @@ def calendar(engine, show_holdings: bool = False) -> discord.Embed:
     return footer(e, engine)
 
 
+EXPIRE_S = 30 * 60          # not a candidate for 30 min → it aged out of its alert window
+
+
 def inbox(rows, private: bool = False, now: float | None = None) -> discord.Embed:
     """事件收件匣 + 即時事件成績單 from the event log: what came in, when it happened at the source, when we had it,
     when it was delivered, and what is still waiting.  Holdings-derived events only in a DM."""
@@ -377,24 +380,35 @@ def inbox(rows, private: bool = False, now: float | None = None) -> discord.Embe
         e.description = "近 24 小時沒有官方事件或新聞進入通知流程。"
         return e
     by: dict = {}
-    for key, src, title, ev_ts, first, sent, tries, err in rows:
-        by.setdefault(src, []).append((key, title, ev_ts, first, sent, tries, err))
+    for r in rows:
+        key, src, title, ev_ts, first, sent, tries, err = r[:8]
+        last = r[8] if len(r) > 8 and r[8] else first
+        by.setdefault(src, []).append((key, title, ev_ts, first, sent, tries, err, last))
+    live = lambda x: now - x[7] < EXPIRE_S                                    # noqa: E731  still a candidate last rounds
     lines = []
     for src, xs in sorted(by.items()):
         done = [x for x in xs if x[4]]
         lag = [(x[4] - x[2]) / 60 for x in done if x[2]]                     # source time → delivered (minutes)
-        pend = [x for x in xs if not x[4]]
+        pend = [x for x in xs if not x[4] and live(x)]
+        gone = [x for x in xs if not x[4] and not live(x)]
         retry = sum(1 for x in xs if (x[5] or 0) > 1)
         med = f"中位 {statistics.median(lag):.0f} 分" if lag else "—"
         worst = f"最慢 {max(lag):.0f} 分" if lag else ""
-        lines.append(f"**{src}**：{len(xs)} 件 · 已送達 {len(done)} · 待送 {len(pend)} · 重試過 {retry} · 來源→送達 {med} {worst}")
+        lines.append(f"**{src}**：{len(xs)} 件 · 已送達 {len(done)} · 待送 {len(pend)} · 過期未送 {len(gone)} · 重試過 {retry} · 來源→送達 {med} {worst}")
     e.add_field(name="成績單", value="\n".join(lines)[:1024], inline=False)
-    pend = [(src, x) for src, xs in by.items() for x in xs if not x[4]]
+    pend = [(src, x) for src, xs in by.items() for x in xs if not x[4] and live(x)]
+    gone = [(src, x) for src, xs in by.items() for x in xs if not x[4] and not live(x)]
     if pend:
         e.add_field(name=f"待送（{len(pend)}）", value="\n".join(
             f"• {src}｜{x[1][:70]}｜等了 {(now - x[3]) / 60:.0f} 分，試 {x[5] or 0} 次" + (f"（{x[6][:40]}）" if x[6] else "")
             for src, x in pend[:8])[:1024], inline=False)
-    e.set_footer(text="延遲＝來源發布時間到 Discord 送達；沒有來源時間的不計入。待送＝還沒成功送出（失敗、靜音或超過單次上限），下一輪會再送。")
+    if gone:
+        e.add_field(name=f"過期未送（{len(gone)}）", value="\n".join(
+            f"• {src}｜{x[1][:70]}｜" + (f"失敗：{x[6][:40]}" if x[6] else "期間靜音或排隊中") for src, x in gone[:8])[:1024], inline=False)
+    muted = store.kv_get("mute_until", 0) or 0
+    e.set_footer(text=("🔕 目前靜音中，事件先記錄、解除後再送。\n" if muted > now else "")
+                 + "延遲＝來源發布時間到 Discord 送達；沒有來源時間的不計入。待送＝還沒成功送出（失敗、靜音或超過單次上限），下一輪會再送。"
+                 "過期未送＝事件已超出通知時效（例如新聞 6 小時、公告 1–3 天）還沒送出，不會再送，列在這裡讓你知道漏了什麼。")
     return e
 
 

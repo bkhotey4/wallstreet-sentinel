@@ -99,7 +99,7 @@ def nh_nl(eng) -> Optional[Dict]:
     out = {"src": src, "date": diff.index[-1].strftime("%Y-%m-%d"), "nh": int(nh.iloc[-1]), "nl": int(nl.iloc[-1]), "diff": int(diff.iloc[-1]),
            "avg10": float(diff.tail(10).mean()), "n": int(valid.iloc[-1] and hi.notna().iloc[-1].sum()),
            "hist": [[i.strftime("%Y-%m-%d"), int(x)] for i, x in diff.tail(120).items()]}
-    sig = "沒有背離"
+    sig = "沒有背離" if len(spx) > 260 else "標普歷史資料不足，無法判斷背離"
     if len(spx) > 260:
         s = spx[spx.index <= diff.index[-1]]
         near_hi = s.iloc[-1] >= s.tail(252).max() * 0.98

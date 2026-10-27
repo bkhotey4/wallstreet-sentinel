@@ -297,6 +297,9 @@ class StressEngine:
         if not live:
             return None
         wl = sum(live[i].weight for i in live)
+        if wl / W.sum() < 0.4:                     # same floor as a historical point: too few inputs for an index reading
+            log.warning("SSI coverage %.0f%% below 40%% — no reading", wl / W.sum() * 100)
+            return None
         cur = sum(live[i].weight * live[i].score for i in live) / wl
         cur_blocks = {}
         for b, ids in blocks.items():

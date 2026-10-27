@@ -26,7 +26,7 @@ GROUPS: List[Tuple[str, str, str, str, str, List[str]]] = [
      ["industry", "rotation", "themes", "tech", "growth"]),
     ("stock", "個股", "Stocks", "哪些公司值得研究", "Companies worth a closer look", ["entry", "scores", "signals", "intel", "gurus", "portfolio"]),
     ("tw", "台灣", "Taiwan", "台灣的景氣、利率、資金與台股籌碼", "Taiwan economy, rates, money and stock flows",
-     ["tw_ai", "taiwan", "tw_bonds", "tw_credit", "tw_econ", "tw_money", "tw_life"]),
+     ["tw_ai", "taiwan", "tw_bonds", "tw_credit", "tw_econ", "tw_money", "tw_life", "tw_etf"]),
     ("more", "新聞與說明", "News & about", "背景新聞、數據怎麼來", "Background news, how the data is made", ["news", "tools", "inputs", "about"]),
 ]
 GROUP_OF = {k: g for g, *_x, ks in GROUPS for k in ks}

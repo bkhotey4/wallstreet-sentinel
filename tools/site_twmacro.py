@@ -47,7 +47,7 @@ def sec_tw_brief(eng) -> str:
     rd = r["read"]
     lis = "".join(f"<li>{T(x, '')}</li>" for x in rd["imp"])
     links = " ".join(f'<a class="golink" href="#{k}" data-p="{k}">{T(z, "")} →</a>' for k, z in
-                     (("tw_bonds", "台灣債市"), ("tw_credit", "台灣公司債"), ("tw_econ", "台灣經濟"), ("tw_money", "央行與資金"), ("tw_life", "壽險・房市・外資"), ("taiwan", "台股籌碼")))
+                     (("tw_bonds", "台灣債市"), ("tw_credit", "台灣公司債"), ("tw_econ", "台灣經濟"), ("tw_money", "央行與資金"), ("tw_life", "壽險・房市・外資"), ("tw_etf", "台灣 ETF"), ("taiwan", "台股籌碼")))
     body = (_lead(rd["head"]) + f'<h3>{T("白話：這對我們代表什麼", "What it means")}</h3><ul>{lis}</ul><p class="small">{links}</p>'
             f'<p class="note">{T("每一句都依下面各頁的官方數據自動選出（央行、國發會、櫃買中心、臺北市政府），數字變了句子會跟著變。描述現況與歷史，不是預測，也不是投資建議。", "")}</p>')
     return card("台灣在說什麼：景氣、利率、資金一句話", "Taiwan at a glance", body, "wide")

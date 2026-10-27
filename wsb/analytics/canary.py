@@ -372,6 +372,30 @@ def vix1d_light(eng) -> Dict:
             "value_txt": f"VIX1D {cur_v1:.1f}、比值 {cur_r:.2f}（自身歷史百分位 {pct:.0f}%）{ev}"}
 
 
+# rule lights read their own series, so they need the same "old data is not ok" check the score lights get from the SSI
+RULE_MAX_AGE = {"rrp_buffer": 14, "margin_debt": 80}       # weekly reserves; monthly FINRA data published ~4 weeks late
+
+
+def _age_check(r: Dict, today: Optional[date] = None) -> None:
+    if r.get("kind") != "rule" or r.get("state") in ("na", "stale", "warmup") or not r.get("asof"):
+        return
+    a = str(r["asof"])
+    try:
+        d = date.fromisoformat(a if len(a) > 7 else a + "-28")    # a "YYYY-MM" month counts from its end
+    except ValueError:
+        return
+    from .stress import _today
+    age = ((today or _today().date()) - d).days
+    lim = RULE_MAX_AGE.get(r["id"], 7)
+    if age <= lim:
+        return
+    if r["state"] == "ok":                                    # old data cannot vouch for "nothing wrong"
+        r["state"] = "stale"
+        r["note"] = f"資料停在 {a}，超過 {lim} 天沒有更新，暫不判斷"
+    else:
+        r["value_txt"] = (r.get("value_txt") or "") + f"（資料停在 {a}）"
+
+
 def build(eng, close: Optional[pd.DataFrame] = None) -> Dict:
     rows = []
     for fn in (lambda: score_lights(eng), lambda: [rrp_light(eng)], lambda: [margin_light(eng)], lambda: [cash_dash_light(eng)],
@@ -381,7 +405,9 @@ def build(eng, close: Optional[pd.DataFrame] = None) -> Dict:
             rows += fn()
         except Exception:  # noqa: BLE001
             log.exception("canary light failed")
-    order = {"alert": 0, "watch": 1, "ok": 2, "warmup": 3, "stale": 4, "na": 5}
+    for r in rows:
+        _age_check(r)
+    order ={"alert": 0, "watch": 1, "ok": 2, "warmup": 3, "stale": 4, "na": 5}
     rows.sort(key=lambda r: (order.get(r["state"], 9), r["group"]))
     return {"available": bool(rows), "rows": rows, "ts": time.time(),
             "n_alert": sum(r["state"] == "alert" for r in rows), "n_watch": sum(r["state"] == "watch" for r in rows)}

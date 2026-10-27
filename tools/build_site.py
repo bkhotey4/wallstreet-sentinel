@@ -49,7 +49,9 @@ from tools import site_cooldown as SCD
 from tools import site_marks as SMK
 from tools import site_bonds as SBD
 from tools import site_twmacro as STW
+from tools import site_tw_etf as STE
 from tools import site_intraday as SID
+from tools import site_extgap as SXG
 from tools import site_indnote as SIN2
 from tools import site_preview as SPV
 from tools import site_transmission as STR
@@ -253,7 +255,7 @@ def sec_ssi(eng) -> str:
 <h2>{T("系統性壓力指數 SSI", "Systemic Stress Index")}</h2>
 <div class="hero"><div class="big" style="--lv:{col}">{st.score:.0f}</div>
 <div><div class="lvl"><i class="sw" style="background:{col}"></i>{T(str(st.label))}</div>
-<div class="muted">{T("歷史百分位", "Historical pct")} {num(st.pctile_all, 0)}% · {T("資料涵蓋", "Coverage")} {st.coverage * 100:.0f}%</div>
+<div class="muted">{T("歷史百分位", "Historical pct")} {num(st.pctile_all, 0)}% · {T("資料涵蓋", "Coverage")} {st.coverage * 100:.0f}%{(" · <b>⚠ " + T("涵蓋偏低，讀數僅供參考", "low coverage, read with care") + "</b>") if st.coverage < 0.7 else ""}</div>
 <div class="chips">{chips}</div></div>
 <div class="stage" style="--sc:{sc}"><div class="sl">{T("風險階段", "Risk stage")}</div>
 <div class="sv">{esc(pb.get("emoji", ""))} {T(str(pb.get("name", "—")))}</div><div class="muted">{T("風險分", "Score")} {pb.get("points", "—")}</div>{warn}</div></div>
@@ -1293,7 +1295,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
-            ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SID.sec_intraday]),
+            ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
@@ -1331,6 +1333,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ]),
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
+            ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STE.sec_etf_div, STE.sec_etf_traps, STE.sec_etf_tool]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
@@ -1386,7 +1389,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 {SLY.topnav()}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{SMK.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{SXG.JS}{SMK.JS}{STE.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:

@@ -1265,7 +1265,7 @@ function renderDiv(rows,totV){var x=document.getElementById('pfdiv');if(!x)retur
  function paint(){x.textContent='';var h=el('h3','');h.appendChild(L('💰 預估年度股息現金流','Estimated dividend cash flow'));x.appendChild(h);
   if(DIVDEAD){var p0=el('p','small muted');p0.appendChild(L('股息估算需要即時報價，只在 Cloudflare 版網址可用：wallstreet-sentinel.pages.dev','Needs the live quote service: wallstreet-sentinel.pages.dev'));x.appendChild(p0);return;}
   var ann=0,val=0,yc=0,cost=0,miss=0,top=[];
-  live.forEach(function(r){var q=DIVQ[r.p.sym],f=fxv(r.cur);if(q===undefined||f==null){miss++;return;}var d=(q&&q.div12)||0,a=d*r.h.n*f;ann+=a;val+=r.vt;
+  live.forEach(function(r){var q=DIVQ[r.p.sym],f=fxv(r.cur);if(!q||q.div12==null||f==null){miss++;return;}var d=q.div12,a=d*r.h.n*f;ann+=a;val+=r.vt;
    if(r.h.c>0){yc+=a;cost+=r.h.c*r.h.n*f;}if(a>0)top.push([r.p.sym,a,d/r.p.px*100]);});
   if(!val){var p1=el('p','small muted');p1.appendChild(L('載入股息資料中…','Loading dividends…'));x.appendChild(p1);return;}
   var g=el('div','pfdivg');function k(zh,e,v,sub){var b=el('div','pfk');b.appendChild(el('div','s')).appendChild(L(zh,e));b.appendChild(el('div','v',v));if(sub)b.appendChild(el('div','s',sub));g.appendChild(b);}
@@ -1755,16 +1755,28 @@ function rowIssues(r, latest){var h=r.h,p=r.p,o=[];
  if(p.ch!=null&&Math.abs(p.ch)>=CHK.jump)o.push(['單日 '+sgn(p.ch,1,true)+'：可能是拆股或報價錯誤，請先核對',sgn(p.ch,1,true)+' in a day: split or bad tick?']);
  var ref=latest[r.cur];if(p.asof&&ref){var g=(new Date(ref)-new Date(p.asof))/864e5;if(g>=CHK.stale)o.push(['報價停在 '+p.asof+'（同市場最新 '+ref+'）：可能停牌或資料中斷','Quote stuck at '+p.asof+' (market '+ref+'): halted or feed gap']);}
  return o;}
+// the trading day a fresh quote should carry: today after the open, else the previous weekday (holidays allowed for below)
+function expBar(mk){var tz=mk==='tw'?'Asia/Taipei':mk==='us'?'America/New_York':null,open=mk==='tw'?540:570;if(!tz)return null;
+ var p={};new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})
+  .formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});
+ var d=new Date(Date.UTC(+p.year,+p.month-1,+p.day));if((+p.hour)*60+(+p.minute)<open)d.setUTCDate(d.getUTCDate()-1);
+ while(d.getUTCDay()===0||d.getUTCDay()===6)d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10);}
+function bdays(a,b){var d=new Date(a+'T00:00:00Z'),e=new Date(b+'T00:00:00Z'),n=0;while(d<e){d.setUTCDate(d.getUTCDate()+1);if(d.getUTCDay()%6)n++;}return n;}
 function renderChecks(rows){
  var x=document.getElementById('pfchk');if(!x)return;x.textContent='';
  if(!rows.length){x.style.display='none';return;}
  var latest={};rows.forEach(function(r){var a=r.p&&r.p.asof;if(a&&(!latest[r.cur]||a>latest[r.cur]))latest[r.cur]=a;});
- var all=[];rows.forEach(function(r){rowIssues(r,latest).forEach(function(i){all.push([((r.p&&r.p.sym)||r.h.s),i]);});});
+ var all=[];rows.forEach(function(r){rowIssues(r,latest).forEach(function(i){all.push([((r.p&&r.p.sym)||r.h.s),i]);});
+  if(r.p&&r.p.src!=='manual'&&!r.p.asof)all.push([r.p.sym,['報價沒有日期：無法確認是不是最新','Quote has no date: freshness unknown']]);});
+ // every quote of a market equally old still means stale: compare the market's newest quote with the session it should show
+ var mkl={};rows.forEach(function(r){var a=r.p&&r.p.src!=='manual'&&r.p.asof;if(a&&(!mkl[r.mk]||a>mkl[r.mk]))mkl[r.mk]=a;});
+ Object.keys(mkl).forEach(function(mk){var e=expBar(mk);if(e&&bdays(mkl[mk],e)>=2)all.push([mk==='tw'?'台股報價':'美股報價',
+  ['最新報價停在 '+mkl[mk]+'，應有的交易日是 '+e+'：整批報價可能沒更新（遇連假可忽略）','Newest quote '+mkl[mk]+', expected '+e+': quotes may not have updated (ignore over holidays)']]);});
  if(!FXOK)all.push(['USD/TWD',['美元兌台幣匯率暫缺：台幣合計無法計算','USD/TWD rate missing: no TWD totals']]);
  x.style.display='block';
  var hd=el('h3');hd.appendChild(L('🔎 資料檢查','🔎 Data checks'));x.appendChild(hd);
- if(!all.length){var ok=el('p','ok');ok.appendChild(L('✅ 全部正常：每檔都有報價、成本與現價差距合理、沒有異常單日漲跌、報價日期一致'+(FXOK&&FX.asof?'；匯率日期 '+FX.asof:''),
-  '✅ All clear: every holding has a quote, costs look plausible, no abnormal one-day move, quote dates agree'+(FXOK&&FX.asof?'; FX as of '+FX.asof:'')));x.appendChild(ok);return;}
+ if(!all.length){var ok=el('p','ok');ok.appendChild(L('✅ 全部正常：每檔都有報價、成本與現價差距合理、沒有異常單日漲跌、報價是最新交易日'+(FXOK&&FX.asof?'；匯率日期 '+FX.asof:''),
+  '✅ All clear: every holding has a quote, costs look plausible, no abnormal one-day move, quotes are from the latest session'+(FXOK&&FX.asof?'; FX as of '+FX.asof:'')));x.appendChild(ok);return;}
  var ul=el('ul');all.forEach(function(a){var li=el('li');li.appendChild(el('b','',a[0]+'：'));li.appendChild(L(a[1][0],a[1][1]));ul.appendChild(li);});x.appendChild(ul);
  var nt=el('p','muted small');nt.appendChild(L('只檢查資料是否合理（成本差 '+CHK.ratio+' 倍以上、單日漲跌 '+CHK.jump+'% 以上、報價落後 '+CHK.stale+' 天以上），不是買賣建議。',
   'Checks data plausibility only (cost ≥'+CHK.ratio+'× off, one-day move ≥'+CHK.jump+'%, quote ≥'+CHK.stale+' days behind) — not advice.'));x.appendChild(nt);
