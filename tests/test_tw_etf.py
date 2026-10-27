@@ -114,6 +114,24 @@ def test_side_menu_zoom():
     assert "setProperty('--z'" in b
 
 
+def test_why_news_tags():
+    """'Why' headlines are candidates tagged with companies and topics; the page keeps only those that line up with what
+    moved (a mover named, a matching asset, or the minutes before the day's fastest swing)."""
+    import time
+    from tools import site_intraday as SI
+
+    class Eng:
+        pass
+    e = Eng()
+    e.news_digest = {"items": [{"title": "Nvidia chips rally as TSMC beats", "ts": time.time(), "topics": ["ai"], "syms": ["NVDA"]},
+                               {"title": "Anthropic founders share a trait", "ts": time.time(), "topics": ["ai"], "syms": []},
+                               {"title": "Old story", "ts": time.time() - 40 * 3600, "topics": ["market"], "syms": []}]}
+    n = SI.why_ctx(e)["news"]
+    assert [x["k"] for x in n] == [["ai", "chip"], ["ai"]]                       # 40 h old dropped; chip names tagged
+    assert "x.sc>=2" in SI.JS and "TP.chip" in SI.JS and "jp.t-4500" in SI.JS and "kk.length?3:1" in SI.JS
+    assert chr(8) not in open(SI.__file__, encoding="utf-8").read()
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

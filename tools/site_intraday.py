@@ -39,10 +39,36 @@ def why_ctx(eng) -> dict:
     nd = getattr(eng, "news_digest", None) or {}
     zh = nd.get("zh") or {}
     now = time.time()
-    items = [i for i in nd.get("items") or [] if i.get("ts") and now - i["ts"] <= 18 * 3600]
-    items.sort(key=lambda i: (-(len(i.get("syms") or []) > 0), -i["ts"]))
     from tools.sitekit import guard_safe
-    out["news"] = [{"t": guard_safe(zh.get(i["title"]) or i["title"])[:90], "l": i.get("link") or ""} for i in items[:3]]
+    from wsb.data import news_digest as ND
+    # candidates only — the page keeps a headline only if it names what actually moved today or was published just before
+    # the day's fastest swing; tags: s = companies named, k = topics (ai / power / fed / credit / earnings / market)
+    import re
+    chip = re.compile(r"\b(nvidia|chips?|semiconductors?|gpus?|tsmc|broadcom|amd|micron|asml|foundry|memory|hbm)\b", re.I)
+
+    # a real industry event (listing, filing, deal, results, orders, spending), not a profile or opinion piece
+    event = re.compile(r"\b(ipo|s-1|files?|filing|listing|valuation|funding|raises?|deal|acquir\w*|merger|earnings|revenue|guidance|orders?|contracts?|capex|spending|demand|tariffs?|export|ban|probe)\b", re.I)
+
+    def tags(title, base):
+        k = [x for x in base if x != "other"]
+        k += ["chip"] if chip.search(title) else []
+        return k + ["event"] if event.search(title) else k
+    seen, cand = set(), []
+    for i in nd.get("items") or []:
+        if i.get("ts") and now - i["ts"] <= 30 * 3600 and i["title"] not in seen:
+            seen.add(i["title"])
+            cand.append({"t": guard_safe(zh.get(i["title"]) or i["title"])[:90], "l": i.get("link") or "", "ts": int(i["ts"]),
+                         "s": i.get("syms") or [], "k": tags(i["title"], i.get("topics") or [])})
+    try:
+        names = ND.name_map()
+    except Exception:  # noqa: BLE001
+        names = {}
+    for n in getattr(getattr(eng, "news", None), "items", None) or []:          # wire headlines (Reuters, CNBC, …)
+        if n.ts and now - n.ts <= 30 * 3600 and n.title not in seen:
+            seen.add(n.title)
+            cand.append({"t": guard_safe(n.title)[:110], "l": n.link or "", "ts": int(n.ts), "s": ND.companies(n.title, names),
+                         "k": tags(n.title, ND.topics(n.title))})
+    out["news"] = sorted(cand, key=lambda x: -x["ts"])[:60]
     return out
 
 
@@ -130,9 +156,39 @@ _JS = r"""
    var oil=q['CL=F'];if(oil&&oil.chg!=null&&Math.abs(oil.chg)>=2)W.push(en()?'Oil '+sg(oil.chg,1)+'%.':'原油 '+sg(oil.chg,1)+'%：'+(oil.chg>0?'能源股受惠，但油價上漲會加重通膨疑慮。':'能源股承壓，但油價下跌減輕通膨壓力。'));
    var vx=q['^VIX'];if(vx&&vx.chg!=null&&(up?vx.chg<=-5:vx.chg>=8))W.push(en()?'VIX '+sg(vx.chg,1)+'%.':'恐慌指數 VIX '+sg(vx.chg,1)+'%：'+(up?'避險需求退潮，買盤回來。':'避險需求升高，市場在找保護。'));
    (WHY.ev||[]).forEach(function(e){W.push(en()?'Data: '+e.zh:'經濟數據（'+e.date.slice(5)+' 公布）：'+e.zh+' '+e.lab+'。');});
-   (WHY.news||[]).forEach(function(n){W.push({t:(en()?'Headline: ':'新聞：')+n.t,l:n.l});});
+   W=W.concat(news(q,c,sec,mg));
    if(W.length===(big?0:1))W.push(en()?'No clear driver in rates, dollar, oil or mega caps.':'利率、美元、油價和權值股都沒有特別大的變化：比較像一般的資金進出，不是單一事件造成。');
    return W;}
+ // headlines are kept only when they line up with the tape: they name a stock that moved ≥1 % today (+3 if the headline
+ // is about business at all, +1 if it only mentions the name), their topic
+ // matches an asset that moved (+2: chip names when chips beat / lag the index, 10-year yield, oil / energy, financials;
+ // +1: generic AI talk — +2 when it reports a real event such as a listing, deal or results — or a broad market move),
+ // or they came out within the hour before the day's fastest 15-minute swing (+2, only with a topic or name).  Score ≥ 2.
+ function news(q,c,sec,mg){var MV={},TP={},R=[];
+   mg.forEach(function(x){if(Math.abs(x.c)>=1)MV[x.s]=x.n+' '+x.s+' '+sg(x.c,1)+'%';});
+   var so=q['^SOX'];if(so&&so.chg!=null&&Math.abs(so.chg-c)>=0.7){TP.chip=['費城半導體 '+sg(so.chg,1)+'%',2];TP.ai=['費城半導體 '+sg(so.chg,1)+'%',1];}
+   var tn=q['^TNX'];if(tn&&tn.prev&&Math.abs((tn.price-tn.prev)*100)>=4)TP.fed=['10 年期殖利率 '+sg((tn.price-tn.prev)*100,0)+' bp',2];
+   if(!TP.fed&&(WHY.ev||[]).length)TP.fed=['今天有經濟數據公布',2];
+   var oil=q['CL=F'];if(oil&&oil.chg!=null&&Math.abs(oil.chg)>=2)TP.power=['原油 '+sg(oil.chg,1)+'%',2];
+   (sec||[]).forEach(function(x){if((x.s==='XLE'||x.s==='XLU')&&Math.abs(x.c)>=1.2&&!TP.power)TP.power=[x.zh+'類股 '+sg(x.c,1)+'%',2];
+     if(x.s==='XLF'&&Math.abs(x.c)>=1)TP.credit=['金融類股 '+sg(x.c,1)+'%',2];});
+   if(Math.abs(c)>=0.8)TP.market=['大盤 '+sg(c,2)+'%',1];
+   var sp=q['SPY'],jp=sp&&sp.jump&&Math.abs(sp.jump.chg)>=0.25?sp.jump:null;
+   var hm=function(t){return new Date(t*1000).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'});};
+   if(jp)R.push(en()?'Fastest swing: '+sg(jp.chg,2)+'% in the 15 min to '+hm(jp.t)+' Taipei.':'今天最快的一波：台北 '+hm(jp.t)+' 前 15 分鐘，標普 ETF '+sg(jp.chg,2)+'%。');
+   var t=et(),cut=Date.now()/1000-(t.m+480+(t.wd==='Mon'?2880:0))*60;          // since the previous US close
+   var hit=(WHY.news||[]).filter(function(n){return n.ts>=cut;}).map(function(n){var sc=0,why=[];
+     var kk=n.k||[];
+     (n.s||[]).forEach(function(s){if(MV[s]){sc+=kk.length?3:1;why.push('提到 '+MV[s]);}});       // a name with no business topic is weak
+     (n.k||[]).forEach(function(k){if(TP[k]){sc+=TP[k][1];why.push(TP[k][0]);}});
+     if(TP.ai&&kk.indexOf('ai')>=0&&kk.indexOf('event')>=0&&kk.indexOf('chip')<0){sc+=1;why.push('AI 產業大事');}
+     if(jp&&(sc>0||(n.k||[]).length)&&n.ts<=jp.t&&n.ts>=jp.t-4500){sc+=2;why.push('發布於最快一波前 '+Math.max(1,Math.round((jp.t-n.ts)/60))+' 分鐘');}
+     return {n:n,sc:sc,why:why};}).filter(function(x){return x.sc>=2;})
+     .sort(function(a,b){return b.sc-a.sc||b.n.ts-a.n.ts;}).slice(0,3);
+   hit.forEach(function(x){R.push({t:(en()?'Headline: ':'新聞：')+x.n.t+'（對得上：'+x.why.filter(function(v,i,a){return a.indexOf(v)===i;}).join('、')+'）',l:x.n.l});});
+   if(!hit.length)R.push(en()?'No headline lines up with what moved or when it moved, so none is shown.'
+     :'新聞：沒有找到和今天實際大動的股票、資產或時間點對得上的新聞，所以不列，避免把無關的新聞當成原因。');
+   return R;}
  function pull(){if(dead||document.hidden)return;var ss=session(),off=document.getElementById('idoff');
    var syms=CORE.concat(SEC.map(function(x){return x[0];}),CROSS,MEGA.map(function(x){return x[0];})).slice(0,25);
    fetch('api/quote?s='+encodeURIComponent(syms.join(','))+'&vol=SPY,QQQ',{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();}).then(function(d){
