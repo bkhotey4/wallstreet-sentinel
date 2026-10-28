@@ -111,7 +111,53 @@ def build(eng) -> Dict:
                     px, asof = float(q["price"]), str(q["asof"])[:10]
                 out["next"].update({"start": s.index[i].strftime("%Y-%m-%d"), "p0": p0, "px": px, "asof": asof,
                                     "so_far": (px / p0 - 1) * 100, "vix_start": float(v_al.iloc[i]) if v_al.iloc[i] == v_al.iloc[i] else None})
+    try:
+        out["after"] = after(m, s, v_al, live, stats)
+    except Exception:  # noqa: BLE001
+        out["after"] = None
     return out
+
+
+AFTER_N = 7          # keep the follow-up on the page for 7 sessions after the decision (the 5-day window + 2)
+
+
+def after(m, s: pd.Series, v: pd.Series, live: List[str], stats: Dict) -> Optional[Dict]:
+    """會後追蹤: the latest decision already in the data — decision-day move, the S&P since that close, and the 10-year
+    yield / dollar / VIX since the close before the decision, next to the historical 5-day-after average."""
+    done = [d for d in sorted(live) if pd.Timestamp(d) in s.index]
+    if not done:
+        return None
+    d = done[-1]
+    i = s.index.get_loc(pd.Timestamp(d))
+    n = len(s) - 1 - i
+    if i == 0 or n > AFTER_N:
+        return None
+    px, asof = float(s.iloc[-1]), s.index[-1].strftime("%Y-%m-%d")
+    q = m.q("^GSPC")
+    if q and q.get("price") and str(q.get("asof", ""))[:10] > asof:
+        px, asof, n = float(q["price"]), str(q["asof"])[:10], n + 1
+    res = {"date": d, "n": int(n), "asof": asof, "day": (float(s.iloc[i]) / float(s.iloc[i - 1]) - 1) * 100,
+           "since": (px / float(s.iloc[i]) - 1) * 100 if n else None}
+    t0 = s.index[i - 1]
+    for k, sym, kind in (("tnx", "^TNX", "bp"), ("dxy", "DX-Y.NYB", "pct"), ("vix", "^VIX", "lvl")):
+        try:
+            x = m.series(sym).dropna()
+            x = x[x > 0]
+            b = x[x.index <= t0]
+            if x.empty or b.empty:
+                continue
+            last = float(x.iloc[-1])
+            qq = m.q(sym)
+            if qq and qq.get("price") and str(qq.get("asof", ""))[:10] > x.index[-1].strftime("%Y-%m-%d"):
+                last = float(qq["price"])
+            res[k] = {"from": float(b.iloc[-1]), "now": last,
+                      "chg": (last - float(b.iloc[-1])) * 100 if kind == "bp" else (last / float(b.iloc[-1]) - 1) * 100 if kind == "pct" else last - float(b.iloc[-1])}
+        except Exception:  # noqa: BLE001
+            continue
+    vs = float(v.iloc[i - 1]) if i >= 1 and v.iloc[i - 1] == v.iloc[i - 1] else None
+    g = "hi" if vs is not None and vs >= 20 else "lo"
+    res["hist"] = {"all": (stats.get("all") or {}).get("post"), "grp": (stats.get(g) or {}).get("post"), "grp_zh": (stats.get(g) or {}).get("zh")}
+    return res
 
 
 def _sig(st: Optional[Dict]) -> str:
@@ -144,6 +190,25 @@ def readings(r: Dict) -> List[Dict]:
         L.append({"zh": f"會前 VIX ≥ 20 的 {hi['n']} 次：會前 5 日平均 {hi['mean']:+.2f}%、上漲 {hi['up']:.0f}%；會後 5 日平均 "
                         f"{(S['hi']['post'] or {}).get('mean', float('nan')):+.2f}%（VIX < 20 時 {(S['lo']['post'] or {}).get('mean', float('nan')):+.2f}%）。",
                   "en": f"With VIX ≥ 20 at the start ({hi['n']}): pre {hi['mean']:+.2f}%, up {hi['up']:.0f}%."})
+    af = r.get("after")
+    if af:
+        bits = [f"決議當天標普 {af['day']:+.2f}%"]
+        if af.get("since") is not None:
+            bits.append(f"之後 {af['n']} 個交易日 {af['since']:+.2f}%")
+        if af.get("tnx"):
+            bits.append(f"10 年期殖利率從會前 {af['tnx']['from']:.2f}% 到 {af['tnx']['now']:.2f}%（{af['tnx']['chg']:+.0f}bp）")
+        if af.get("dxy"):
+            bits.append(f"美元指數 {af['dxy']['chg']:+.2f}%")
+        if af.get("vix"):
+            bits.append(f"VIX {af['vix']['from']:.1f} → {af['vix']['now']:.1f}")
+        ha, hg = (af.get("hist") or {}).get("all"), (af.get("hist") or {}).get("grp")
+        tail = ""
+        if ha:
+            tail = f"。歷史上會後 5 日標普平均 {ha['mean']:+.2f}%、上漲 {ha['up']:.0f}%"
+            if hg:
+                tail += f"（{af['hist']['grp_zh']} {hg['mean']:+.2f}%）"
+        L.append({"zh": f"會後追蹤（{af['date'][5:]} 決議，到 {af['asof'][5:]}）：" + "、".join(bits) + tail + "。會後 5 日的歷史平均和平常差不多，只是參考。",
+                  "en": f"After the {af['date']} decision: day {af['day']:+.2f}%" + (f", since {af['since']:+.2f}% ({af['n']} sessions)" if af.get("since") is not None else "") + "."})
     nx = r.get("next")
     if nx and nx.get("so_far") is not None:
         L.append({"zh": f"這次（{nx['date'][5:]} 決議）的會前窗口從 {nx['start'][5:]} 收盤算起，到 {nx['asof'][5:]} 標普已 {nx['so_far']:+.2f}%"

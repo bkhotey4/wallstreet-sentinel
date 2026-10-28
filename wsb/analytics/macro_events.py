@@ -542,6 +542,12 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
             if e["key"] == "fomc":
                 from ..data import fedwatch as FW
                 e["fw_pre"] = FW.priced_before(eng, e["date"])
+    try:                                                           # 公布前估算／公布後比對（GDP、PCE、非農）
+        from . import nowcast as NC
+        from ..data import nowcast as NCD
+        NC.attach(window, NCD.load().get("log") or {})
+    except Exception:  # noqa: BLE001
+        log.exception("nowcast attach failed")
     window.sort(key=lambda e: (e["date"], e.get("utc") or "", -e["imp"]))
     nxt_fomc = next((e for e in upcoming if e["key"] == "fomc"), None)
     wk_end = (today + timedelta(days=7)).isoformat()

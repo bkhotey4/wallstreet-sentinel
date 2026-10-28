@@ -348,6 +348,11 @@ class Engine:
             await trm.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("transmission data failed: %s", e)
+        try:                                                    # 公布前估算：GDP／PCE／非農（FRED，12 小時一次）
+            from .data import nowcast as ncd
+            await ncd.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("nowcast data failed: %s", e)
         try:                                                    # 重大事件倒數：CPI／非農官方發布日
             from .analytics import event_clock as evc
             await evc.refresh()

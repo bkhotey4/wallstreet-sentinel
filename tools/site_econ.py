@@ -76,6 +76,34 @@ def sec_econ_week(eng) -> str:
     return card("本週重要經濟數據", "This week's key releases", body + f'<p class="note">{note}</p>', "wide")
 
 
+def sec_nowcast(eng) -> str:
+    """公布前估算：GDP／PCE／非農 — upcoming estimates and the latest estimate-vs-actual checks (wsb/analytics/nowcast.py)."""
+    ev = getattr(eng, "econ_view", None) or {}
+    if not ev.get("available"):
+        return ""
+    today = ev["asof"]
+    items = [e for e in ev["events"] if e.get("nowcast") and (_days_to(e["date"], today) or 0) >= -7]
+    if not items:
+        body = f'<p class="muted">{T("目前沒有待公布的 GDP、PCE、非農估算（資料暫時取不到或還沒到估算時間）", "No pending estimates")}</p>'
+    else:
+        rows = []
+        for e in sorted(items, key=lambda x: (x["released"], x["date"])):
+            dd = _days_to(e["date"], today)
+            when = (T("已公布", "Released") if e["released"] else T("今天", "Today") if dd == 0 else T("明天", "Tomorrow") if dd == 1
+                    else T(f"{dd} 天後", f"in {dd}d"))
+            rows.append(f'<li><a href="#ev-{esc(e["id"].replace(":", "-"))}"><b>{T(e["zh"], e["en"])}</b></a>'
+                        f'<span class="muted small">（{esc(e["date"][5:])}・{when}）</span><br>{T(e["nowcast"]["zh"], e["nowcast"]["en"])}</li>')
+        body = '<ul class="takeaways">' + "".join(rows) + "</ul>"
+    lead = T("一句話看懂：真正的數字公布前沒有人知道，但可以用已經公布的數據估個大概；市場在意的是「公布值和估算差多少」。",
+             "Nobody knows the number before release, but earlier data give a rough estimate.")
+    note = T("PCE：用同月已公布的 CPI、PPI 推算（三項中最準）。非農：用 ADP 民間就業與初領失業金推算（誤差很大，常有意外）。"
+             "GDP：亞特蘭大聯準會 GDPNow。誤差是最近 36 個月（GDP 為 24 季）的走步樣本外測試，用的是修正後的歷史數字，實際使用時誤差通常更大。"
+             "資料：FRED（免費）。描述用的估算，不是預測，也不是買賣建議。",
+             "PCE from CPI/PPI; payrolls from ADP and claims (large error); GDP from GDPNow. Walk-forward errors on revised data. Not a forecast.")
+    return card("公布前估算：GDP、PCE、非農", "Pre-release estimates: GDP, PCE, payrolls",
+                f'<p><b>{lead}</b></p>{body}<p class="note">{note}</p>', "wide")
+
+
 def _fed_proxy(eng, rate: Optional[float]) -> str:
     fr = getattr(eng, "fred", None)
     s = (getattr(fr, "series", {}) or {}).get("DGS2") if fr is not None else None
@@ -268,7 +296,9 @@ def _ev_row(e: Dict, today: str) -> str:
             pre = T(f"會前期貨隱含（{fp['asof']}）：{_fw_probs(fp['probs'])}。", f"Priced beforehand: {_fw_probs(fp['probs'])}. ")
         concl = (f'<div class="concl"><b>{T("結論", "Conclusion")}</b><p>{T(e["conclusion"]["zh"], e["conclusion"]["en"])}{pre}</p>'
                  f'<p class="small muted">{T("由數據組成：結果對預期、當天收盤、台股隔日、過去同類結果之後的平均走勢。不是預測。", "Built from data only. Not a forecast.")}</p></div>')
-    body = concl + tbl + mvl + ai + ctx + (_scen_block(e["key"], e["scen"], e.get("dir")) if e.get("scen") else "") + (_hist_block(e["stats"]) if e.get("stats") else "")
+    nc = (f'<div class="concl"><b>{T("公布前估算", "Pre-release estimate")}</b><p>{T(e["nowcast"]["zh"], e["nowcast"]["en"])}</p></div>'
+          if e.get("nowcast") else "")
+    body = concl + nc + tbl + mvl + ai + ctx + (_scen_block(e["key"], e["scen"], e.get("dir")) if e.get("scen") else "") + (_hist_block(e["stats"]) if e.get("stats") else "")
     dd = _days_to(e["date"], today)
     st = (_dir_badge(e) if e["released"] and e.get("dir") else
           f'<span class="pill">{T("已公布", "Out")}</span>' if e["released"] else
