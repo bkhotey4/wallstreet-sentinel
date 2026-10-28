@@ -5,6 +5,8 @@
 // 5 days): the live "heavy selling" light.
 // Add &ext=NVDA,TSM for the pre-market / after-hours price of those symbols (US listings): ext = {px, chg vs the last
 // regular close, sess "pre" | "post", t}.  Absent while the regular session is trading or when there is no extended trade.
+// Add &iv=HYG,^TNX for an intraday picture from one month of 5-minute bars (see intraFrom): same-time relative volume,
+// VWAP and the last three bars against it, 15 / 60-minute moves vs their own history, a close-high-low spread estimate.
 // Add &hist=1 for five years of weekly closes and every cash dividend (w = [[date, close]], dv = [[date, amount]]): the ETF
 // look-back calculator.  A one-week move of −40 % or +100 % within 5 % of a whole-number ratio is treated as a split Yahoo
 // missed and earlier closes are rescaled (Taiwan ETF splits are often not recorded).
@@ -104,6 +106,83 @@ export function jumpOf(ts, closes, off) {
     if (!best || Math.abs(c) > Math.abs(best.chg)) best = { t: pts[i][0], chg: c };
   }
   return best;
+}
+
+const median = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), k = s.length >> 1; return s.length % 2 ? s[k] : (s[k - 1] + s[k]) / 2; };
+const sdOf = (a) => { if (a.length < 30) return null; const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1)); };
+
+// Abdi & Ranaldo (2017) close-high-low spread estimate for one day of 5-minute bars, in basis points (a stand-in: free
+// data has no bid/ask).  s² = 4·mean[(c_t − η_t)(c_t − η_t+1)], η = mid of log high and log low; negative → 0
+export function chlSpread(bars) {
+  const p = [];
+  for (let i = 0; i + 1 < bars.length; i++) {
+    const a = bars[i], b = bars[i + 1];
+    if (!(a.h > 0 && a.l > 0 && a.c > 0 && b.h > 0 && b.l > 0)) continue;
+    const c = Math.log(a.c), e0 = (Math.log(a.h) + Math.log(a.l)) / 2, e1 = (Math.log(b.h) + Math.log(b.l)) / 2;
+    p.push((c - e0) * (c - e1));
+  }
+  if (p.length < 6) return null;
+  const s2 = 4 * p.reduce((x, y) => x + y, 0) / p.length;
+  return Math.sqrt(Math.max(s2, 0)) * 1e4;
+}
+
+// one month of regular-session 5-minute bars → today's intraday picture, each piece against the same stock's own history:
+//   rvol   volume so far ÷ the median volume of the previous (≤ 20) days up to the same time of day
+//   vwap   Σ(typical price × volume) / Σ volume today; vgap = last vs vwap (%); below3 / above3 = the last three COMPLETED bars
+//          all closed below / above the running vwap (the newest bar is still forming)
+//   m15 / m60  the last 15 / 60 minutes (% for prices, basis points for yields), sd15 / sd60 the spread of that window on
+//          earlier days (non-overlapping), so the page can say "x times its normal 15-minute move"
+//   spr    today's close-high-low spread estimate (bp); sprx = ÷ median of earlier days, sprp = share of earlier days below it
+export function intraFrom(res, yieldBp = false) {
+  const m = res?.meta, ts = res?.timestamp || [];
+  if (!m || ts.length < 50) return null;
+  const qd = ((res.indicators || {}).quote || [])[0] || {}, off = m.gmtoffset || 0;
+  const day = (s) => Math.floor((s + off) / 86400), tod = (s) => (s + off) % 86400;
+  const byDay = new Map();
+  for (let i = 0; i < ts.length; i++) {
+    const c = qd.close?.[i];
+    if (ts[i] == null || typeof c !== "number") continue;
+    const d = day(ts[i]);
+    if (!byDay.has(d)) byDay.set(d, []);
+    byDay.get(d).push({ t: ts[i], k: tod(ts[i]), c, h: qd.high?.[i], l: qd.low?.[i], v: typeof qd.volume?.[i] === "number" ? qd.volume[i] : 0 });
+  }
+  const days = [...byDay.keys()].sort((a, b) => a - b);
+  if (days.length < 6) return null;
+  const today = byDay.get(days[days.length - 1]), past = days.slice(0, -1).slice(-20).map((d) => byDay.get(d));
+  const cut = today[today.length - 1].k, out = { t: today[today.length - 1].t, n_days: past.length, bars: today.length };
+  const mv = (a, b) => (yieldBp ? (a - b) * 100 : (a / b - 1) * 100);
+  const vol = (bars) => bars.filter((b) => b.k <= cut).reduce((a, b) => a + b.v, 0);
+  const pv = past.map(vol).filter((v) => v > 0), vt = vol(today);
+  if (!yieldBp && pv.length >= 5 && vt > 0) out.rvol = vt / median(pv);
+  if (!yieldBp && vt > 0) {
+    let pvSum = 0, vSum = 0;
+    const run = today.map((b) => { const tp = b.h > 0 && b.l > 0 ? (b.h + b.l + b.c) / 3 : b.c; pvSum += tp * b.v; vSum += b.v; return vSum ? pvSum / vSum : null; });
+    out.vwap = run[run.length - 1];
+    if (out.vwap) out.vgap = (today[today.length - 1].c / out.vwap - 1) * 100;
+    if (today.length >= 5) {
+      const done = [1, 2, 3].map((j) => today.length - 1 - j);              // the three bars before the forming one
+      out.below3 = done.every((i) => run[i] && today[i].c < run[i]);
+      out.above3 = done.every((i) => run[i] && today[i].c > run[i]);
+      out.was_below = today.slice(0, -4).some((b, i) => run[i] && b.c < run[i]);   // earlier today it traded under vwap
+    }
+  }
+  const last = today[today.length - 1].c;
+  if (today.length > 3) out.m15 = mv(last, today[today.length - 4].c);
+  if (today.length > 12) out.m60 = mv(last, today[today.length - 13].c);
+  const w15 = [], w60 = [];
+  past.forEach((bars) => { for (let i = 3; i < bars.length; i += 3) w15.push(mv(bars[i].c, bars[i - 3].c)); for (let i = 12; i < bars.length; i += 12) w60.push(mv(bars[i].c, bars[i - 12].c)); });
+  out.sd15 = sdOf(w15); out.sd60 = sdOf(w60);
+  if (!yieldBp) {
+    const sp = chlSpread(today.slice(0, -1)), ps = past.map((b) => chlSpread(b)).filter((x) => x != null);
+    if (sp != null && ps.length >= 10) { out.spr = sp; const md = median(ps); out.sprx = md ? sp / md : null; out.sprp = ps.filter((x) => x < sp).length / ps.length; }
+  }
+  return out;
+}
+
+export async function intra(sym, fetchImpl = fetch) {
+  const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1mo&interval=5m`, { headers: { "User-Agent": "Mozilla/5.0" } });
+  if (!r.ok) return null;
+  return intraFrom((((await r.json()).chart || {}).result || [])[0], /^\^(IRX|FVX|TNX|TYX)$/.test(sym));
 }
 
 // first trade of the latest exchange-local day in the 5-minute bars (the session's opening price; null if none yet)
@@ -219,9 +298,10 @@ export async function onRequestGet({ request, waitUntil }) {
   const hst = u.searchParams.get("hist") === "1";
   const vols = new Set(parse(u.searchParams.get("vol")));
   const exts = new Set(parse(u.searchParams.get("ext")));
+  const ivs = new Set(parse(u.searchParams.get("iv")));
   if (!syms.length) return json({ error: "no symbols" }, 400, 0);
   const cache = typeof caches !== "undefined" ? caches.default : null;
-  const key = new Request(`https://quote.cache/${hst ? "h/" : ""}${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}${exts.size ? "/e/" + [...exts].sort().join(",") : ""}`);
+  const key = new Request(`https://quote.cache/${hst ? "h/" : ""}${full ? "f/" : ""}${syms.slice().sort().join(",")}${vols.size ? "/v/" + [...vols].sort().join(",") : ""}${exts.size ? "/e/" + [...exts].sort().join(",") : ""}${ivs.size ? "/i/" + [...ivs].sort().join(",") : ""}`);
   if (cache) {
     const hit = await cache.match(key);
     if (hit) return hit;
@@ -237,8 +317,9 @@ export async function onRequestGet({ request, waitUntil }) {
   }
   await Promise.all(syms.map(async (s) => {
     try {
-      const [q, e] = await Promise.all([one(s, fetch, full, vols.has(s)), exts.has(s) && !full ? ext(s).catch(() => null) : null]);
-      if (q) out[s] = e ? { ...q, ext: e } : q;
+      const [q, e, iv] = await Promise.all([one(s, fetch, full, vols.has(s)), exts.has(s) && !full ? ext(s).catch(() => null) : null,
+        ivs.has(s) && !full ? intra(s).catch(() => null) : null]);
+      if (q) out[s] = { ...q, ...(e ? { ext: e } : {}), ...(iv ? { iv } : {}) };
     } catch (e) { /* one bad symbol never breaks the rest */ }
   }));
   // unknown tickers just come back missing from q (200), so the page can say "not found" instead of "source down"
