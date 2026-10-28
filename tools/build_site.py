@@ -55,6 +55,7 @@ from tools import site_twlive as STL
 from tools import site_extgap as SXG
 from tools import site_indnote as SIN2
 from tools import site_preview as SPV
+from tools import site_after as SAF
 from tools import site_transmission as STR
 from tools import site_observer as SOB
 from tools import site_watch2 as SW2
@@ -1305,8 +1306,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
-            ("tech", "科技財報", "Tech earnings", [SPV.sec_earn_preview, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
+            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
+            ("tech", "科技財報", "Tech earnings", [SPV.sec_earn_preview, SAF.sec_earn_after_tech, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
