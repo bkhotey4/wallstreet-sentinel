@@ -44,11 +44,12 @@ def test_rules():
     ch = RB.check("2330.TW", {"weight": 5.0}, {"cost": 100.0}, strong, None, None, None, 10.0, 45.0)
     unk = [c for c in ch if c["met"] is None]
     assert {c["id"] for c in unk} >= {"distress", "earnings", "quality", "beat", "risk"}
-    assert RB.summarize(ch)["state"] in ("hold", "add")
+    s2 = RB.summarize(ch)
+    assert s2["state"] in ("hold", "pend") and not s2["add_all"]          # "quality" unknown → never 全部成立
     # unknown theme → the concentration check is 'no data', never a made-up group; no history → price rules 'no data'
     ch = RB.check("NEWX", {"weight": 5.0}, {"cost": 10.0}, {"price": 12.0}, None, None, None, None, 45.0)
     assert {c["id"]: c["met"] for c in ch}["theme"] is None and {c["id"]: c["met"] for c in ch}["trend"] is None
-    assert {c["id"]: c["met"] for c in ch}["trail"] is None and RB.summarize(ch)["state"] == "hold"
+    assert {c["id"]: c["met"] for c in ch}["trail"] is None and RB.summarize(ch)["state"] in ("hold", "pend")
     assert "標普 500" in next(c["txt"] for c in RB.check("AAA", {"weight": 5.0}, {"cost": 1.0}, weak, None, None, None, 5.0, 40.0, "x", "標普 500") if c["id"] == "trend")
     assert set(RB.DEFAULTS) <= set(RB.cfg())
     # thresholds come from settings

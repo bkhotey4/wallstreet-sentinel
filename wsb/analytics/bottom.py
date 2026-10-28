@@ -88,14 +88,19 @@ def forward(spx: pd.Series, days: pd.DatetimeIndex) -> Dict:
     for lab, n in (("1m", 21), ("3m", 63), ("6m", 126), ("12m", 252)):
         r = [(spx.iloc[i + n] / spx.iloc[i] - 1) * 100 for i in (spx.index.get_loc(d) for d in days) if i + n < len(spx)]
         out[lab] = {"med": float(np.median(r)) if r else None, "win": float(np.mean(np.array(r) > 0) * 100) if r else None, "n": len(r)}
-    dd = []
+    dd, open_dd = [], []
     for d in days:
         i = spx.index.get_loc(d)
         seg = spx.iloc[i:i + 64]
-        if len(seg) > 5:
+        if len(seg) == 64:                                           # only signals with a full 3 months after them count
             dd.append((float(seg.min()) / float(seg.iloc[0]) - 1) * 100)
+        elif len(seg) > 1:                                           # still running: shown apart, "so far"
+            open_dd.append({"date": d.strftime("%Y-%m-%d"), "so_far": (float(seg.min()) / float(seg.iloc[0]) - 1) * 100,
+                            "days": len(seg) - 1})
     out["further"] = float(np.median(dd)) if dd else None          # how much lower it went first (median, 3 months)
     out["worst"] = float(np.min(dd)) if dd else None
+    out["further_n"] = len(dd)
+    out["open"] = open_dd
     return out
 
 

@@ -630,14 +630,16 @@ def deck_hedge(engine, res: dict) -> List[bytes]:
         for st_ in [x for x in sts if x["dte"] == longest]:
             cap = f"上檔封頂 +{st_['cap_pct']:.1f}%" if st_.get("cap_pct") is not None else f"最多補 {fmt(st_['max_cover'], 0, money=True)}"
             srows.append([(f"{u} {st_['label']}", TEXT), (f"{st_['dte']}天", TEXT), (st_["legs"], TEXT),
-                          (fmt(st_["net_cost"], 0, money=True, sign=True), ORANGE if st_["net_cost"] > 0 else GREEN),
+                          # executable estimate (pay the ask, receive the bid), not the friendlier mid
+                          (fmt(st_.get("net_cost_exec", st_["net_cost"]), 0, money=True, sign=True),
+                           ORANGE if st_.get("net_cost_exec", st_["net_cost"]) > 0 else GREEN),
                           (fmt(st_["pnl"][-20], 0, money=True, sign=True), pn(st_["pnl"][-20])),
                           (fmt(st_["pnl"][10], 0, money=True, sign=True), pn(st_["pnl"][10])), (cap, MUTED)])
     if srows:
-        s3 = Slide("進階避險結構：賣權價差與領口", "2/3", "損益只算避險部位本身（對指數 −20% ／ +10%）；領口用賣出上檔買權換免費保險")
+        s3 = Slide("進階避險結構：賣權價差與領口", "2/3", "損益只算避險部位本身（對指數 −20% ／ +10%）；領口只在你持有足夠的同一檔 ETF 時才列出")
         s3.table(["方案", "期限", "組合", "淨成本", "指數−20%", "指數+10%", "限制"], srows[:6], 235,
                  [0.16, 0.08, 0.22, 0.12, 0.13, 0.13, 0.16], size=28, row_h=84)
-        s3.paragraph("賣權價差：保費比單買賣權便宜，但跌破下方履約價後不再賠償。領口：幾乎零成本，但大漲時上檔被封頂——適合『不想賣股、只怕短期大跌』。",
+        s3.paragraph("賣權價差：保費比單買賣權便宜，但跌破下方履約價後不再賠償。領口：賣出買權的收入抵掉部分保費（淨成本以「買的那腳付賣價、賣的那腳收買價」估算，比中價保守），大漲時上檔被封頂；必須真的持有同一檔 ETF，用一籃股票當擔保等於沒有擔保的賣出買權，大漲時虧損沒有上限。",
                      M, 235 + 84 * (len(srows[:6]) + 1) + 40, W - 2 * M, size=30, color=MUTED)
         out.append(s3.png())
     s2 = Slide("其他避險方式", f"{len(out) + 1}/{len(out) + 1}")

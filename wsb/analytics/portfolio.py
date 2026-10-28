@@ -47,7 +47,8 @@ def load_holdings() -> Dict[str, dict]:
         except Exception as e:  # noqa: BLE001  (one malformed entry must not stop the engine from becoming ready)
             log.warning("holdings file %s malformed: %s", p, e)
             continue
-        if not raw:
+        if raw is None:                                   # not a holdings file at all → try the fallback
+            log.warning("holdings file %s has no holdings list — trying the fallback", p)
             continue
         out = {}
         for sym, e in raw.items():
@@ -59,9 +60,8 @@ def load_holdings() -> Dict[str, dict]:
             if sh > 0 and cost > 0:
                 cur = e.get("currency") or ("TWD" if sym.endswith((".TW", ".TWO")) else "HKD" if sym.endswith(".HK") else "USD")
                 out[sym] = {"shares": sh, "cost": cost, "currency": cur, "name": e.get("name", sym)}
-        if out:
-            return out
-    return {}
+        return out                                        # a valid file, even an empty one, is the answer: an emptied
+    return {}                                             # portfolio must not bring back the fallback's old positions
 
 
 def _beta(r: pd.Series, b: pd.Series) -> Optional[float]:
@@ -79,13 +79,15 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
     if not holdings:
         return {"error": "找不到持倉檔或持倉為空"}
     # local currency per 1 USD, from Yahoo (TWD=X, HKD=X …); a currency without a rate is never treated as dollars
-    fx_ser, fx_now = {}, {"USD": 1.0}
+    fx_ser, fx_now, fx_prev = {}, {"USD": 1.0}, {"USD": 1.0}
     for c in {h["currency"] for h in holdings.values()} - {"USD"}:
         t = f"{c}=X"
         ser_c = market.series(t)
         q_c = market.q(t)
         fx_ser[c] = ser_c
         fx_now[c] = float(q_c["price"]) if q_c and q_c.get("price") else (float(ser_c.iloc[-1]) if len(ser_c) else None)
+        pv = (q_c or {}).get("prev") or (q_c or {}).get("prev_close")
+        fx_prev[c] = float(pv) if pv else (float(ser_c.iloc[-2]) if len(ser_c) > 1 else fx_now[c])
     usdtwd = fx_now.get("TWD")
     if usdtwd is None and market.q("TWD=X"):
         usdtwd = float(market.q("TWD=X")["price"])
@@ -111,13 +113,16 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
             rows.append({"sym": s, "error": f"缺 USD/{h['currency']} 匯率"})
             continue
         val = price_local * h["shares"] / conv
-        cost = h["cost"] * h["shares"] / conv
+        cost = h["cost"] * h["shares"] / conv             # cost at TODAY's rate: price P&L in USD, not the FX at purchase
+        d1 = q["chg_pct"] if q and q.get("chg_pct") == q.get("chg_pct") else None      # NaN → unknown
+        # today's USD change includes the currency move: yesterday's value at yesterday's rate
+        day_usd = (val - price_local / (1 + d1 / 100) * h["shares"] / (fx_prev.get(h["currency"]) or conv)) if d1 is not None else None
         total_val += val
         total_cost += cost
         rows.append({"sym": s, "name": h.get("name", s), "shares": h["shares"], "price": price_local,
                      "currency": h["currency"], "value_usd": val, "cost_usd": cost,
                      "pnl_usd": val - cost, "pnl_pct": (val / cost - 1) * 100,
-                     "d1_pct": q["chg_pct"] if q else None, "sigma": market.sigma_move(s)})
+                     "d1_pct": d1, "day_usd": day_usd, "sigma": market.sigma_move(s)})
     valid = [r for r in rows if "value_usd" in r]
     for r in valid:
         r["weight"] = r["value_usd"] / total_val * 100 if total_val else 0
@@ -207,8 +212,9 @@ def analyze(market, holdings: Dict[str, dict]) -> Dict:
         "total_value_usd": total_val, "total_cost_usd": total_cost,
         "pnl_usd": total_val - total_cost, "pnl_pct": (total_val / total_cost - 1) * 100 if total_cost else None,
         # today's P&L only over holdings with a known daily change; the rest are counted, never assumed flat
-        "day_pnl_usd": sum(r["value_usd"] * r["d1_pct"] / (100 + r["d1_pct"]) for r in valid if r.get("d1_pct") is not None)
-                       if any(r.get("d1_pct") is not None for r in valid) else None,
+        "day_pnl_usd": sum(r["day_usd"] for r in valid if r.get("day_usd") is not None)
+                       if any(r.get("day_usd") is not None for r in valid) else None,
+        "pnl_basis": "price P&L at today's FX (purchase-date FX not recorded)",
         "day_pnl_missing": [r["sym"] for r in valid if r.get("d1_pct") is None],
         "unpriced": [r["sym"] for r in rows if "error" in r],
         "positions": sorted(rows, key=lambda r: -r.get("value_usd", 0)),

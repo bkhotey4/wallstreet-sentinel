@@ -37,7 +37,7 @@ def sec_bottom(eng) -> str:
     for k, z, e in labs:
         x = bt[k]
         brow += (f'<tr><td>{T(z, e)}</td><td class="r">{x["n"]}</td>' + "".join(f'<td class="r">{_cell(x[h])}</td>' for h in ("1m", "3m", "6m", "12m"))
-                 + f'<td class="r">{num(x.get("further"), 1, pct=True)}<div class="small muted">{T("最深", "worst")} {num(x.get("worst"), 1, pct=True)}</div></td></tr>')
+                 + f'<td class="r">{num(x.get("further"), 1, pct=True)}<div class="small muted">{T("最深", "worst")} {num(x.get("worst"), 1, pct=True)}{"（走完 3 個月的 " + str(x["further_n"]) + " 次）" if x.get("further_n") is not None else ""}</div></td></tr>')
     a = bt["all"]
     brow += (f'<tr><td class="muted">{T("任何一天（對照）", "Any day (baseline)")}</td><td class="r muted">—</td>'
              + "".join(f'<td class="r">{_cell(a[h])}</td>' for h in ("1m", "3m", "6m", "12m")) + '<td class="r muted">—</td></tr>')

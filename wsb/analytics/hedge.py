@@ -69,9 +69,12 @@ def _opt_near(rows: List[dict], expiry: str, typ: str, strike_target: float) -> 
     return min(cands, key=lambda r: abs(r["strike"] - strike_target)) if cands else None
 
 
-def structures(chain: Dict, notional: float, underlying: str) -> List[dict]:
+def structures(chain: Dict, notional: float, underlying: str, held_shares: float = 0.0) -> List[dict]:
     """Cheaper alternatives to a naked put: put spread (give up deep crash cover for a lower premium) and
-    zero-cost-ish collar (sell an upside call to pay for the put).  Payoff = hedge leg only, at index -20/-10/+10%."""
+    zero-cost-ish collar (sell an upside call to pay for the put).  Payoff = hedge leg only, at index -20/-10/+10%.
+    A collar's short call is only covered by shares of the same underlying: a basket of stocks with the same beta is not
+    cover (if the index rallies and the basket does not, the short call loses without limit), so the collar is offered
+    only when `held_shares` of the underlying cover every contract."""
     spot, rows = chain["spot"], chain["rows"]
     contracts = max(1, round(notional / (spot * 100)))
     mult = 100 * contracts
@@ -89,18 +92,20 @@ def structures(chain: Dict, notional: float, underlying: str) -> List[dict]:
         if lp and sp and sp["strike"] < lp["strike"]:
             legs = [("P", lp["strike"], lp["mid"], +1), ("P", sp["strike"], sp["mid"], -1)]
             net = (lp["mid"] - sp["mid"]) * mult
-            out.append({"kind": "put spread", "label": "賣權價差", "underlying": underlying, "expiry": lp["expiry"], "dte": round(lp["dte"]),
+            net_exec = (lp["ask"] - sp["bid"]) * mult            # pay the ask on the leg you buy, get the bid on the leg you sell
+            out.append({"kind": "put spread", "net_cost_exec": net_exec, "label": "賣權價差", "underlying": underlying, "expiry": lp["expiry"], "dte": round(lp["dte"]),
                         "legs": f"買 {lp['strike']:.0f}P／賣 {sp['strike']:.0f}P", "contracts": contracts, "net_cost": net,
                         "max_cover": (lp["strike"] - sp["strike"]) * mult - net,
                         "pnl": {k: hedge_pnl(legs, spot * (1 + k / 100)) for k in (-20, -10, 10)}, "spot": spot})
         put = _opt_near(rows, exp, "P", spot * 0.95)
-        if put:
+        if put and held_shares >= mult:
             calls = [r for r in rows if r["expiry"] == exp and r["type"] == "C" and r["strike"] > spot and r["mid"] > 0]
             if calls:
                 call = min(calls, key=lambda r: abs(r["mid"] - put["mid"]))       # premium closest to the put's → ~zero cost
                 legs = [("P", put["strike"], put["mid"], +1), ("C", call["strike"], call["mid"], -1)]
                 net = (put["mid"] - call["mid"]) * mult
-                out.append({"kind": "collar", "label": "領口（Collar）", "underlying": underlying, "expiry": put["expiry"], "dte": round(put["dte"]),
+                net_exec = (put["ask"] - call["bid"]) * mult
+                out.append({"kind": "collar", "net_cost_exec": net_exec, "label": "領口（Collar）", "underlying": underlying, "expiry": put["expiry"], "dte": round(put["dte"]),
                             "legs": f"買 {put['strike']:.0f}P／賣 {call['strike']:.0f}C", "contracts": contracts, "net_cost": net,
                             "max_cover": None, "cap_pct": (call["strike"] / spot - 1) * 100,
                             "pnl": {k: hedge_pnl(legs, spot * (1 + k / 100)) for k in (-20, -10, 10)}, "spot": spot})
@@ -123,7 +128,8 @@ def analyze(portfolio: Dict, chains: Dict[str, Dict], stress_score: Optional[flo
             pl["cost_pct"] = pl["cost"] / V * 100
             pl["cost_pct_ann"] = pl["cost_pct"] * 365 / pl["dte"]
         try:
-            structs = structures(chain, notional, u)
+            held = sum(float(p.get("shares") or 0) for p in portfolio.get("positions") or [] if p.get("sym") == u)
+            structs = structures(chain, notional, u, held)
         except Exception:  # noqa: BLE001
             structs = []
         inv_sym, inv_name = INVERSE.get(u, (None, None))

@@ -832,7 +832,8 @@ class Sentinel(commands.Bot):
         out += self._rule_alerts()
         pf = eng.portfolio
         if pf and not pf.get("error") and pf.get("total_value_usd") and pf.get("day_pnl_usd") is not None:
-            dd = pf["day_pnl_usd"] / pf["total_value_usd"] * 100
+            prev_v = pf["total_value_usd"] - pf["day_pnl_usd"]            # return on yesterday's value: 100→97 is −3 %
+            dd = pf["day_pnl_usd"] / prev_v * 100 if prev_v > 0 else 0.0
             if dd <= -abs(A.get("portfolio_drawdown_pct", 3)):
                 worst = sorted([p for p in pf["positions"] if p.get("d1_pct") is not None], key=lambda p: p["d1_pct"])[:3]
                 bar_day = max((q_.get("asof", "") for q_ in (eng.market.q(p["sym"]) for p in pf["positions"]) if q_), default="na")
@@ -1118,8 +1119,8 @@ class Sentinel(commands.Bot):
             k = f"rules_state:{r['sym']}"
             prev = store.kv_get(k)
             store.kv_set(k, r["state"])
-            if prev is None or prev == r["state"] or r["state"] == "hold":
-                continue
+            if prev is None or prev == r["state"] or r["state"] in ("hold", "pend"):
+                continue                                   # "pend" (required data missing) is not an add signal
             hit = [c for c in r["checks"] if c["met"] is True and c["group"] == {"exit2": "exit", "exit1": "exit", "trim": "trim", "add": "add"}[r["state"]]]
             if r["state"] == "exit1" and prev == "exit2":
                 continue                                   # easing from two exit hits to one is not news
@@ -1312,8 +1313,9 @@ class Sentinel(commands.Bot):
         watch = {str(t).upper() for t in (SETTINGS.get("sec_watch") or [])} | {str(t).upper() for t in (SETTINGS.get("street", {}) or {}).get("watchlist", [])}
         mwc = set()
         for h in ev.halts:
-            if now - h["ts"] > 6 * 3600:
-                continue
+            age = now - h["ts"]
+            if age > 48 * 3600 or (age > 6 * 3600 and not h.get("resume")):
+                continue                                   # an older halt stays only to announce its resumption
             mw = h["code"].startswith("MWC")
             if mw:
                 k = f"halt:{h['code']}:{int(h['ts']) // 60}"
@@ -1325,6 +1327,12 @@ class Sentinel(commands.Bot):
             if not (mw or h["sym"] in held or h["sym"] in watch):
                 continue
             pre = "halt_pf:" if h["sym"] in held and not mw else "halt:"
+            if h.get("resume"):                            # an update of the same halt: its own key, sent once
+                out.append(Alert(f"{pre}{h['sym']}:{int(h['ts'])}:resume", "ℹ️ INFO", f"恢復交易時間公布：{h['sym']} {h['name'][:60]}",
+                                 f"停牌時間 {h['when']}（{h['reason']}）→ 恢復交易 {h['resume']}（Nasdaq 公告）"
+                                 "\nhttps://www.nasdaqtrader.com/trader.aspx?id=TradeHalts", h["ts"]))
+            if age > 6 * 3600:
+                continue
             out.append(Alert(f"{pre}{h['sym']}:{int(h['ts'])}", "🚨 CRITICAL" if mw or h["code"] in ("H10", "T1", "T12") else "⚠️ WARNING",
                              f"停牌：{h['sym']} {h['name'][:60]}（{h['reason']}）",
                              f"停牌時間 {h['when']} · 代碼 {h['code']} · 市場 {h['market']}"
@@ -1340,12 +1348,47 @@ class Sentinel(commands.Bot):
             if now - m["ts"] > 24 * 3600 or not (m["code"] in tw_held or m["code"] in tw_watch):
                 continue
             pre = "mops_pf:" if m["code"] in tw_held else "mops:"
-            out.append(Alert(f"{pre}{m['code']}:{int(m['ts'])}", "ℹ️ INFO", f"台股重大訊息：{m['code']} {m['name']}",
+            old = f"{pre}{m['code']}:{int(m['ts'])}"           # two announcements in the same second must not share a key
+            if store.alert_sent(old):                          # (sent under the old key format before this change)
+                continue
+            fp = hashlib.sha1((m["subject"] + "|" + m["clause"]).encode("utf-8")).hexdigest()[:8]
+            out.append(Alert(f"{old}:{fp}", "ℹ️ INFO", f"台股重大訊息：{m['code']} {m['name']}",
                              f"{m['when']}（台北）{m['market']} · {m['clause']}\n{m['subject'][:400]}\nhttps://mops.twse.com.tw/mops/#/web/t05sr01_1",
                              m["ts"]))
         return out
 
+    PENDING_S = 24 * 3600
+
     async def _run_alerts(self, alerts: List[Alert], limit: Optional[int] = None) -> None:
+        """Durable outbox for one-shot alerts.  Edge-triggered rules (Gamma, VIX, SSI, playbook, holdings rules…) record
+        their new state when they build the alert, so an alert that is muted, capped or fails to send would never be
+        built again; it is kept here until it is marked delivered (or 24 h pass) and goes out on a later round."""
+        now = time.time()
+        pend = store.kv_get("alert_pending") or {}
+        for a in alerts:
+            if ":" in a.key and a.key not in pend and not store.alert_sent(a.key):
+                pend[a.key] = {"s": a.severity, "t": a.title, "d": a.detail, "e": a.event_ts, "ts": now}
+        stale = [k for k, v in pend.items() if store.alert_sent(k) or now - v["ts"] > self.PENDING_S]
+        for k in stale:
+            if not store.alert_sent(k):
+                log.warning("alert %s not delivered within 24 h — dropped from the outbox", k)
+            pend.pop(k, None)
+        store.kv_set("alert_pending", pend)
+        have = {a.key for a in alerts}
+        late = lambda v: (f"⏱ 延遲送達（原始 {datetime.fromtimestamp(v['ts'], E.TZ):%m-%d %H:%M}）" if now - v["ts"] > 600 else "")   # noqa: E731
+        alerts = list(alerts) + [Alert(k, v["s"], late(v) + v["t"], v["d"], v.get("e")) for k, v in pend.items() if k not in have]
+        inflight = getattr(self, "_inflight", None)
+        if inflight is None:
+            inflight = self._inflight = set()
+        alerts = [a for a in alerts if a.key not in inflight]      # another loop is sending it right now
+        keys = {a.key for a in alerts}
+        inflight |= keys
+        try:
+            await self._run_alerts_once(alerts, limit)
+        finally:
+            inflight -= keys
+
+    async def _run_alerts_once(self, alerts: List[Alert], limit: Optional[int] = None) -> None:
         cooldown = float(A.get("cooldown_minutes", 240)) * 60
         # a key that carries a bar-date / news-id / day / week ("sigma:^AXJO:2026-10-01:-1") already says "this event";
         # re-sending it every cooldown period just repeats the same alert → those are one-shot
@@ -1664,7 +1707,7 @@ PUBLIC_COMMANDS = {"dashboard", "risk", "crash", "market", "macro", "gamma", "ne
                    "scorecard", "earnings_week", "shock", "intel", "outlook", "alert", "alerts", "alert_remove", "status"}
 
 
-_RB_ICON = {"exit2": "🔴", "exit1": "🟠", "trim": "🟡", "add": "🟢", "hold": "⚪"}
+_RB_ICON = {"exit2": "🔴", "exit1": "🟠", "trim": "🟡", "add": "🟢", "pend": "⏳", "hold": "⚪"}
 
 
 def personal_embed(d: Dict) -> "discord.Embed":

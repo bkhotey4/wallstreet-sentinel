@@ -166,7 +166,8 @@ def test_hedge_structures():
             rows.append({"type": "P", "strike": float(k), "expiry": exp, "dte": float(dte), "bid": put, "ask": put, "mid": put, "iv": .2, "oi": 1, "delta": 0})
             rows.append({"type": "C", "strike": float(k), "expiry": exp, "dte": float(dte), "bid": call, "ask": call, "mid": call, "iv": .2, "oi": 1, "delta": 0})
     ch = {"spot": spot, "rows": rows}
-    sts = HG.structures(ch, 100000.0, "SPY")
+    assert {x["kind"] for x in HG.structures(ch, 100000.0, "SPY")} == {"put spread"}    # no SPY shares → no collar
+    sts = HG.structures(ch, 100000.0, "SPY", held_shares=10_000)                        # covered → collar offered
     kinds = {x["kind"] for x in sts}
     assert kinds == {"put spread", "collar"}, kinds
     ps = next(x for x in sts if x["kind"] == "put spread")

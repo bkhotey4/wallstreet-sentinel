@@ -13,8 +13,16 @@ TW = ("Asia/Taipei", dtime(13, 45))
 
 
 def market_of(sym: str):
-    s = str(sym)
-    return TW if s.endswith((".TW", ".TWO")) or s == "^TWII" else US
+    """(time zone, settled-close time) from the one market table in wsb.data.freshness (HK, JP, EU… not just US / TW);
+    a bar counts as final 15 minutes after the close.  Exchange holidays are not modelled here."""
+    from datetime import date as _date, datetime as _dt, timedelta as _td
+    from ..data.freshness import MARKETS, market_of as _m
+    m = _m(str(sym))
+    if m in ("fx", "crypto"):
+        return US
+    tz, _open, close, _wk = MARKETS[m]
+    settle = (_dt.combine(_date(2000, 1, 1), close) + _td(minutes=15)).time()
+    return tz, settle
 
 
 def completed(px: pd.Series, sym: str = "", now: Optional[datetime] = None) -> pd.Series:

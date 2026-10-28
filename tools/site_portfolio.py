@@ -1064,15 +1064,19 @@ function rbCheck(px, cost, w, themeW, S, Z, E, GB, C, ssi, bname){
  ck('add','部位還在上限內',w<cap,'佔比 '+w.toFixed(1)+'%（上限 '+cap+'%）');
  ck('add','站上 200 日線',ma==null?null:px>ma,ma==null?'—':px.toFixed(2)+' vs '+ma.toFixed(2));
  ck('add','12-1 動能為正',mom==null?null:mom>0,mom==null?'—':(mom>=0?'+':'')+Math.round(mom)+'%');
- if(Z)ck('add','財務體質無警訊',Z[0]==='ok'&&(Z[1]==null||Z[1]<bka),'危機雷達'+(Z[0]==='ok'?'無燈號':'有燈號')+(Z[1]!=null?'，破產機率 '+(Z[1]*100).toFixed(1)+'%':''));
+ if(Z)ck('add','財務體質無警訊',Z[0]==='ok'&&Z[1]==null?null:Z[0]==='ok'&&Z[1]<bka,'危機雷達'+(Z[0]==='ok'?'無燈號':'有燈號')+(Z[1]!=null?'，破產機率 '+(Z[1]*100).toFixed(1)+'%':''));
  else ck('add','財務體質無警訊',null,'不在危機雷達的掃描名單');
  ck('add','最近財報不低於預期',E?E[2]>=0:null,E?'EPS 驚喜 '+(E[2]>=0?'+':'')+(+E[2]).toFixed(1)+'%':'—');
  ck('add','壓力指數 < '+smax,ssi==null?null:ssi<smax,ssi==null?'—':'壓力指數 '+Math.round(ssi));
  return o;}
-function rbSum(ch, minKnown){var ex=ch.filter(function(c){return c.g==='exit';}),tr=ch.filter(function(c){return c.g==='trim';}),ad=ch.filter(function(c){return c.g==='add'&&c.met!==null;});
+// same rule as wsb/analytics/rulebook.summarize: a required add condition with no data → 待確認, never 全部成立
+var RB_REQ=['部位還在上限內','站上 200 日線','財務體質無警訊','壓力指數'];
+function rbSum(ch, minKnown){var ex=ch.filter(function(c){return c.g==='exit';}),tr=ch.filter(function(c){return c.g==='trim';}),all0=ch.filter(function(c){return c.g==='add';}),ad=all0.filter(function(c){return c.met!==null;});
  var nx=ex.filter(function(c){return c.met===true;}).length,nt=tr.filter(function(c){return c.met===true;}).length,na=ad.filter(function(c){return c.met===true;}).length;
- var all=ad.length>=(minKnown||0)&&ad.length>0&&na===ad.length,st=nx>=2?'exit2':nx===1?'exit1':nt?'trim':all?'add':'hold';
- var zh={exit2:'出場檢查：'+nx+' 項觸發',exit1:'出場檢查：1 項觸發',trim:'減碼檢查：'+nt+' 項觸發',add:'加碼條件：全部成立',hold:'沒有規則觸發'}[st];
+ var req=all0.filter(function(c){return c.met===null&&RB_REQ.some(function(r){return c.zh.indexOf(r)===0;});}).map(function(c){return c.zh;});
+ var ok=ad.length>0&&na===ad.length,all=ok&&!req.length&&ad.length>=(minKnown||0),pend=ok&&!all,st=nx>=2?'exit2':nx===1?'exit1':nt?'trim':all?'add':pend?'pend':'hold';
+ var zh={exit2:'出場檢查：'+nx+' 項觸發',exit1:'出場檢查：1 項觸發',trim:'減碼檢查：'+nt+' 項觸發',add:'加碼條件：'+all0.length+' 項全部成立',
+  pend:'加碼條件：已知 '+na+'/'+all0.length+' 項成立，'+(req.length?'必備資料待確認（'+req.join('、')+'）':'有資料的項目不足 '+minKnown+' 項'),hold:'沒有規則觸發'}[st];
  return {st:st,zh:zh,nx:nx,nex:ex.length,nt:nt,ntr:tr.length,na:na,nad:ad.length};}
 function renderRules(rows, totV){
  var x=document.getElementById('pfrules');if(!x)return;x.textContent='';
@@ -1094,7 +1098,7 @@ function renderRules(rows, totV){
   var E=rbLook(RBK.surp,sym,r.h);if(E===undefined)E=rbLook(RBK.surpc,sym,r.h);
   var ch=rbCheck(r.p.px,r.h.c>0?r.h.c:0,r._w,S&&S[4]?themeW[S[4]]:null,S,rbLook(RBK.dz,sym,r.h),E,rbLook(RBK.gb,sym,r.h),RBK.cfg,RBK.ssi,(RBK.bench||{})[r.mk]);
   items.push({sym:sym,name:(r.p&&r.p.name)||'',w:r._w,ch:ch,s:rbSum(ch,(RBK.cfg||{}).add_min_known)});});
- var ord={exit2:0,exit1:1,trim:2,add:3,hold:4},ico={exit2:'🔴',exit1:'🟠',trim:'🟡',add:'🟢',hold:'⚪'},col={exit2:'var(--dn)',exit1:'#ec835a',trim:'var(--warn)',add:'var(--up)',hold:'var(--mu)'};
+ var ord={exit2:0,exit1:1,trim:2,add:3,pend:4,hold:5},ico={exit2:'🔴',exit1:'🟠',trim:'🟡',add:'🟢',pend:'⏳',hold:'⚪'},col={exit2:'var(--dn)',exit1:'#ec835a',trim:'var(--warn)',add:'var(--up)',pend:'var(--mu)',hold:'var(--mu)'};
  items.sort(function(a,b){return ord[a.s.st]-ord[b.s.st]||b.w-a.w;});
  items.forEach(function(it){var d=document.createElement('details');d.className='pfrl';var sm=document.createElement('summary');
   sm.appendChild(el('b','',ico[it.s.st]+' '+it.sym));sm.appendChild(el('span','small muted',it.name+'｜佔比 '+it.w.toFixed(1)+'%'));

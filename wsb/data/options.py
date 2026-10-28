@@ -150,7 +150,10 @@ def parse_quotes(js: Dict[str, Any]) -> Dict[str, Any]:
             continue
         bid, ask = float(o.get("bid") or 0), float(o.get("ask") or 0)
         last = float(o.get("last_trade_price") or 0)
-        mid = (bid + ask) / 2 if bid > 0 and ask > 0 else (ask or last or 0)
+        # a mid only from a real two-sided, uncrossed, not absurdly wide quote; a one-sided ask or a stale last trade is
+        # not a price you could trade at both ways → 0, and every plan skips rows with mid 0
+        two = bid > 0 and ask >= bid and (ask - bid) <= 0.5 * (ask + bid) / 2 * 2
+        mid = (bid + ask) / 2 if two else 0.0
         rows.append({"type": m.group(3), "strike": int(m.group(4)) / 1000, "expiry": exp.date().isoformat(),
                      "dte": dte, "bid": bid, "ask": ask, "mid": mid, "iv": float(o.get("iv") or 0),
                      "oi": float(o.get("open_interest") or 0), "delta": float(o.get("delta") or 0)})

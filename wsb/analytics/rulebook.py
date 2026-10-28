@@ -156,7 +156,8 @@ def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: O
     out.append(_chk("add", "mom", "12-1 動能為正", None if ps.get("mom_12_1") is None else ps["mom_12_1"] > 0,
                     "—" if ps.get("mom_12_1") is None else f"{ps['mom_12_1']:+.0f}%", SOURCES["trend"]))
     if dz is not None:
-        ok = st == "ok" and (bk is None or bk * 100 < float(c["bk_add_max_pct"]))
+        # no bankruptcy probability = the "low bankruptcy risk" half is unknown, not passed
+        ok = None if bk is None and st == "ok" else (st == "ok" and bk * 100 < float(c["bk_add_max_pct"]))
         out.append(_chk("add", "quality", "財務體質無警訊", ok, f"危機雷達{'無燈號' if st == 'ok' else '有燈號'}" +
                         (f"，破產機率 {bk * 100:.1f}%" if bk is not None else ""), SOURCES["thesis"]))
     else:
@@ -169,6 +170,9 @@ def check(sym: str, pos: Dict, hold: Dict, ps: Dict, dz: Optional[Dict], surp: O
     return out
 
 
+ADD_REQUIRED = ("room", "ma200", "quality", "macro")      # unknown → "待確認", never "全部成立"
+
+
 def summarize(checks: List[Dict]) -> Dict:
     def g(name):
         return [x for x in checks if x["group"] == name]
@@ -176,7 +180,10 @@ def summarize(checks: List[Dict]) -> Dict:
     n_ex, n_tr = sum(x["met"] is True for x in ex), sum(x["met"] is True for x in tr)
     ad_known = [x for x in ad if x["met"] is not None]
     n_ad = sum(x["met"] is True for x in ad_known)
-    all_add = bool(ad_known) and n_ad == len(ad_known) and len(ad_known) >= int(cfg()["add_min_known"])  # enough known
+    req_unknown = [x["zh"] for x in ad if x.get("id") in ADD_REQUIRED and x["met"] is None]
+    all_known_ok = bool(ad_known) and n_ad == len(ad_known)
+    all_add = all_known_ok and not req_unknown and len(ad_known) >= int(cfg()["add_min_known"])
+    pend = all_known_ok and not all_add                   # nothing failed, but required data are missing
     if n_ex >= 2:
         st, zh = "exit2", f"出場檢查：{n_ex} 項觸發"
     elif n_ex == 1:
@@ -184,14 +191,18 @@ def summarize(checks: List[Dict]) -> Dict:
     elif n_tr:
         st, zh = "trim", f"減碼檢查：{n_tr} 項觸發"
     elif all_add:
-        st, zh = "add", "加碼條件：全部成立"
+        st, zh = "add", f"加碼條件：{len(ad)} 項全部成立"
+    elif pend:
+        st, zh = "pend", (f"加碼條件：已知 {n_ad}/{len(ad)} 項成立，" + (f"必備資料待確認（{'、'.join(req_unknown)}）" if req_unknown
+                                                                    else f"有資料的項目不足 {int(cfg()['add_min_known'])} 項"))
     else:
         st, zh = "hold", "沒有規則觸發"
     return {"state": st, "zh": zh, "exit_hits": n_ex, "exit_n": len(ex), "trim_hits": n_tr, "trim_n": len(tr),
-            "add_met": n_ad, "add_n": len(ad_known), "add_all": all_add}
+            "add_met": n_ad, "add_n": len(ad_known), "add_total": len(ad), "add_unknown": len(ad) - len(ad_known),
+            "add_all": all_add, "add_pending": req_unknown}
 
 
-ORDER = {"exit2": 0, "exit1": 1, "trim": 2, "add": 3, "hold": 4}
+ORDER = {"exit2": 0, "exit1": 1, "trim": 2, "add": 3, "pend": 4, "hold": 5}
 
 
 def build(eng) -> Dict:

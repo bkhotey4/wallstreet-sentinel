@@ -114,17 +114,19 @@ class OfficialEvents:
         async def fed():
             return parse_fed(await http.get(FED_URL, kind="bytes", retries=1))
 
-        async def mops():
-            a, b = await asyncio.gather(http.get(TWSE_URL, timeout=30, retries=1), http.get(TPEX_URL, timeout=30, retries=1),
-                                        return_exceptions=True)
-            if isinstance(a, Exception) and isinstance(b, Exception):
-                raise a
-            return (parse_mops(a, "上市") if not isinstance(a, Exception) else []) + (parse_mops(b, "上櫃") if not isinstance(b, Exception) else [])
+        async def listed():
+            return parse_mops(await http.get(TWSE_URL, timeout=30, retries=1), "上市")
 
-        h, f, m = await asyncio.gather(self._one("nasdaq_halts", halts(), every), self._one("fed_monetary", fed(), every),
-                                       self._one("tw_mops", mops(), every * 5))
+        async def otc():
+            return parse_mops(await http.get(TPEX_URL, timeout=30, retries=1), "上櫃")
+
+        # 上市 and 上櫃 are separate sources: each has its own health light and keeps its own last good list
+        h, f, m1, m2 = await asyncio.gather(self._one("nasdaq_halts", halts(), every), self._one("fed_monetary", fed(), every),
+                                            self._one("tw_mops_listed", listed(), every * 5), self._one("tw_mops_otc", otc(), every * 5))
         # a failed source keeps its last good list (shown as stale by /status), never an empty "nothing happened"
         self.halts = h if h is not None else self.halts
         self.fed = f if f is not None else self.fed
-        self.mops = m if m is not None else self.mops
+        self._m1 = m1 if m1 is not None else getattr(self, "_m1", [x for x in self.mops if x.get("market") == "上市"])
+        self._m2 = m2 if m2 is not None else getattr(self, "_m2", [x for x in self.mops if x.get("market") == "上櫃"])
+        self.mops = self._m1 + self._m2
         self.ts = time.time()
