@@ -88,31 +88,43 @@ CSS = """.bell{position:relative}.bell #bellN{position:absolute;top:-6px;right:-
 .alhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:16px}
 .alit{border-left:3px solid var(--mu);padding:6px 10px;margin:6px 0;background:var(--card2);border-radius:6px}.alit.alert{border-color:var(--dn)}.alit.new{box-shadow:0 0 0 1px var(--dn) inset}
 .alit .t{font-weight:600;line-height:1.45}.alit .d{font-size:12px;color:var(--tx2);margin-top:3px;line-height:1.5}.alit a{font-size:12px}
-.albtn{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}"""
+.albtn{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.alit.t-good{border-color:var(--up)}.alit.t-regime{border-color:var(--ac)}.alit.t-watch{border-color:#d97706}.alit.t-risk{border-color:var(--dn)}
+.bell.good #bellN{background:var(--up)}
+.alrib{display:flex;align-items:center;gap:6px;padding:4px max(16px,env(safe-area-inset-right,0px)) 4px max(16px,env(safe-area-inset-left,0px));border-top:1px solid var(--bd);font-size:12.5px;min-height:30px}
+.alrib[hidden]{display:none}.alrib .rbtn{background:none;border:1px solid var(--bd);border-radius:6px;color:var(--tx2);cursor:pointer;padding:0 7px;line-height:20px;flex:none}
+.alrib .rtrk{display:flex;gap:8px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;flex:1;min-width:0}.alrib .rtrk::-webkit-scrollbar{display:none}
+.alrib .rit{flex:none;white-space:nowrap;border:1px solid var(--bd);border-left-width:3px;border-radius:6px;padding:2px 8px;background:var(--card);color:var(--tx);cursor:pointer;font-size:12.5px}
+.alrib .rit.t-risk{border-left-color:var(--dn)}.alrib .rit.t-good{border-left-color:var(--up)}.alrib .rit.t-regime{border-left-color:var(--ac)}.alrib .rit.t-watch{border-left-color:#d97706}
+.alrib .rlab{flex:none;color:var(--mu);font-size:11.5px}"""
+
+RIBBON_HTML = '<div id="alrib" class="alrib" hidden><span class="rlab" id="alribl"></span><button class="rbtn" id="alribp" type="button" aria-label="previous">◀</button><div class="rtrk" id="alribt"></div><button class="rbtn" id="alribn" type="button" aria-label="next">▶</button></div>'
 
 JS = r"""
 // 網頁警示: the alert list rides in the page; alerts.json is polled every 3 min even in a background tab
 (function(){var el=document.getElementById('alert-data'),btn=document.getElementById('bellBtn'),md=document.getElementById('almodal');if(!el||!btn||!md)return;
+ var ICON={risk:'🔴',watch:'🟡',good:'🟢',regime:'🔵'};
  var SK='wss_alert_seen_v1',cur={items:[]};try{cur=JSON.parse(el.textContent)||cur;}catch(e){}
  function zh(){return document.documentElement.lang!=='en';}
  function seen(){try{return JSON.parse(localStorage.getItem(SK)||'{}');}catch(e){return {};}}
  function save(s){try{var k=Object.keys(s);if(k.length>300){k.sort(function(a,b){return s[a]-s[b];});k.slice(0,k.length-300).forEach(function(x){delete s[x];});}
   localStorage.setItem(SK,JSON.stringify(s));}catch(e){}}
  function esc(t){return String(t||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
- function fresh(d){var s=seen();return (d.items||[]).filter(function(x){return x.lv==='alert'&&!s[x.key];});}
+ function fresh(d){var s=seen();return (d.items||[]).filter(function(x){return x.lv==='alert'&&!s[x.key];});}   // only risk items pop up
  function badge(d){var s=seen(),it=d.items||[],a=it.filter(function(x){return x.lv==='alert';}).length,
-  un=it.filter(function(x){return !s[x.key];}),ua=un.filter(function(x){return x.lv==='alert';}).length;
-  document.getElementById('bellN').textContent=un.length?String(ua||un.length):'';btn.classList.toggle('quiet',!ua);
+  un=it.filter(function(x){return !s[x.key];}),ua=un.filter(function(x){return x.lv==='alert';}).length,
+  ug=un.filter(function(x){return x.tone==='good'||x.tone==='regime';}).length;
+  document.getElementById('bellN').textContent=un.length?String(ua||un.length):'';btn.classList.toggle('quiet',!ua&&!ug);btn.classList.toggle('good',!ua&&ug>0);
   btn.title=zh()?(a?a+' 則警示':'目前沒有警示'):(a?a+' alerts':'No alerts');}
  function open(d,news){var s=seen(),L=document.getElementById('allist');
   document.getElementById('alttl').textContent=zh()?(news.length?'⚠️ 市場警示（'+news.length+' 則新的）':'🔔 目前的市場警示'):(news.length?'⚠️ Market alerts ('+news.length+' new)':'🔔 Current market alerts');
   L.innerHTML=(d.items||[]).length?(d.items||[]).map(function(x){var nw=x.lv==='alert'&&!s[x.key];
-   return '<div class="alit '+x.lv+(nw?' new':'')+'"><div class="t">'+(x.lv==='alert'?'🔴 ':'🟡 ')+esc(zh()?x.zh:(x.en||x.zh))+'</div>'+(x.detail&&zh()?'<div class="d">'+esc(x.detail)+'</div>':'')
+   return '<div class="alit '+x.lv+' t-'+esc(x.tone||'watch')+(nw?' new':'')+'"><div class="t">'+(ICON[x.tone]||'🟡')+' '+esc(zh()?x.zh:(x.en||x.zh))+'</div>'+(x.detail&&zh()?'<div class="d">'+esc(x.detail)+'</div>':'')
     +(x.tab?'<a href="#'+esc(x.tab)+'" class="algo" data-p="'+esc(x.tab)+'">'+(zh()?'看相關卡片 →':'Open the card →')+'</a>':'')+'</div>';}).join('')
    :'<p class="muted">'+(zh()?'目前沒有觸發任何警示規則。':'No alert rule is firing right now.')+'</p>';
   L.querySelectorAll('a.algo').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();close(d);if(typeof page==='function')page(a.dataset.p);else location.hash=a.dataset.p;
    try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){}window.scrollTo(0,0);});});
-  document.getElementById('alfoot').textContent=zh()?'規則與 Discord 警報相同、只用公開市場數據（不含持股，新聞不列入）；網站約每 20 分鐘更新、報價約延遲 15 分鐘。這是風險提示，不是預測，也不是買賣建議。'
+  document.getElementById('alfoot').textContent=zh()?'🔴 風險 🟡 觀察 🟢 好的方向（大漲、恐慌退潮、型態成立）🔵 環境轉好。只有紅色會跳出視窗。只用公開市場數據（不含持股，新聞不列入）；網站約每 20 分鐘更新、報價約延遲 15 分鐘。描述現象，不是預測，也不是買賣建議。'
    :'Same rules as the Discord alerts, public market data only. Updated ~20 min, quotes ~15 min delayed. A risk notice, not a forecast or advice.';
   var nb=document.getElementById('alnotify');
   if(!('Notification' in window)){nb.hidden=true;}else{nb.hidden=Notification.permission==='granted';
@@ -122,7 +134,21 @@ JS = r"""
  function notify(list){if(!('Notification' in window)||Notification.permission!=='granted'||!list.length)return;
   try{var n=new Notification(zh()?'⚠️ WallStreet Sentinel 市場警示':'⚠️ WallStreet Sentinel alert',{body:list.map(function(x){return zh()?x.zh:(x.en||x.zh);}).slice(0,4).join('\n'),tag:'wss-'+list[0].key,icon:'favicon-64.png'});
    n.onclick=function(){window.focus();open(cur,list);n.close();};}catch(e){}}
- function show(d){cur=d;badge(d);var nw=fresh(d);if(nw.length){if(document.hidden)notify(nw);open(d,nw);}}
+ function go(tab){if(!tab)return;if(typeof page==='function')page(tab);else location.hash=tab;try{history.replaceState(null,'','#'+tab);}catch(e){}window.scrollTo(0,0);}
+ var rb=document.getElementById('alrib'),rt=document.getElementById('alribt'),hold=0;
+ function ribbon(d){if(!rb||!rt)return;var it=(d.items||[]);rb.hidden=!it.length;if(!it.length)return;
+  var n={risk:0,watch:0,good:0,regime:0};it.forEach(function(x){n[x.tone||'watch']=(n[x.tone||'watch']||0)+1;});
+  document.getElementById('alribl').textContent=(zh()?'即時通知 ':'Live ')+['risk','watch','good','regime'].filter(function(k){return n[k];}).map(function(k){return ICON[k]+n[k];}).join(' ');
+  rt.innerHTML=it.map(function(x){return '<button type="button" class="rit t-'+esc(x.tone||'watch')+'" data-p="'+esc(x.tab||'')+'" title="'+esc(zh()?(x.detail||''):'')+'">'+(ICON[x.tone]||'🟡')+' '+esc(zh()?x.zh:(x.en||x.zh))+'</button>';}).join('');
+  rt.querySelectorAll('.rit').forEach(function(b){b.addEventListener('click',function(){go(b.dataset.p);});});}
+ function step(dir){if(!rt)return;var w=rt.clientWidth*0.8,m=rt.scrollWidth-rt.clientWidth;if(m<=0)return;
+  var x=rt.scrollLeft+dir*w;rt.scrollLeft=x>m+2?0:x<-2?m:x;}
+ if(rb){document.getElementById('alribp').addEventListener('click',function(){hold=Date.now();step(-1);});document.getElementById('alribn').addEventListener('click',function(){hold=Date.now();step(1);});
+  rb.addEventListener('mouseenter',function(){hold=Date.now()+1e9;});rb.addEventListener('mouseleave',function(){hold=Date.now();});rb.addEventListener('touchstart',function(){hold=Date.now();},{passive:true});
+  var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!calm)setInterval(function(){if(!document.hidden&&Date.now()-hold>8000)step(1);},5000);}
+ var lb0=document.getElementById('langBtn');if(lb0)lb0.addEventListener('click',function(){setTimeout(function(){ribbon(cur);},0);});
+ function show(d){cur=d;badge(d);ribbon(d);var nw=fresh(d);if(nw.length){if(document.hidden)notify(nw);open(d,nw);}}
  btn.addEventListener('click',function(){open(cur,fresh(cur));});
  document.getElementById('alok').addEventListener('click',function(){close(cur);});document.getElementById('alclose').addEventListener('click',function(){close(cur);});
  md.addEventListener('click',function(ev){if(ev.target===md)close(cur);});

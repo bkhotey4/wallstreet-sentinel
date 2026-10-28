@@ -5,6 +5,9 @@ which keys it has already shown (localStorage) and pops up only the new ones.  H
 stops, the personal rulebook, concentration) are never evaluated here — they stay in the private Discord DM.
 
 lv "alert" = pop-up (+ desktop notification if the viewer allowed it); "watch" = listed under the bell only.
+tone (colour on the page): "risk" red, "good" green (a big move in the healthy direction), "watch" yellow (worth watching,
+e.g. oversold), "regime" blue (the market backdrop turning healthier).  Only risk items pop up; good news is shown in the
+bell and the top ribbon so the page is not silent on rallies.
 Every rule is a fixed threshold on model data (news headlines are not an input).  Descriptive, not a forecast."""
 from __future__ import annotations
 
@@ -14,6 +17,11 @@ from typing import Dict, List
 import numpy as np
 
 from ..config import SETTINGS
+
+
+# which direction is the stress for a market (default: a fall) — same idea as the live layer (tools/site_live.py)
+BAD_UP = ("^VIX", "^VIX3M", "^TNX", "^TYX", "^FVX", "^IRX", "DX-Y.NYB", "TWD=X", "BZ=F", "CL=F")
+NEUTRAL = ("GC=F", "JPY=X")
 
 
 def _week(now: datetime) -> str:
@@ -86,9 +94,14 @@ def _vol(eng, out: List[Dict], now: datetime) -> None:
             from .vix_explain import _bp
             b_ = _bp(x)
             mv = f"{b_:+.0f}bp" if b_ is not None else mv
-        out.append({"key": f"sigma:{t}:{x['asof']}:{int(np.sign(sg))}", "lv": "alert", "tab": "markets",
-                    "zh": f"異常波動：{names.get(t, t)} {mv}（{sg:+.1f}σ）", "en": f"Unusual move: {t} {mv} ({sg:+.1f}σ)",
-                    "detail": f"單日變動是自己近 60 日波動的 {abs(sg):.1f} 倍"})
+        bad = t not in NEUTRAL and ((sg > 0) if t in BAD_UP else (sg < 0))
+        good = t not in NEUTRAL and not bad
+        lab = "大幅變動（好的方向）" if good else "異常波動"
+        out.append({"key": f"sigma:{t}:{x['asof']}:{int(np.sign(sg))}", "lv": "watch" if good else "alert", "tab": "markets",
+                    "tone": "good" if good else "risk" if bad else "watch",
+                    "zh": f"{lab}：{names.get(t, t)} {mv}（{sg:+.1f}σ）",
+                    "en": f"{'Big move (healthy direction)' if good else 'Unusual move'}: {t} {mv} ({sg:+.1f}σ)",
+                    "detail": f"單日變動是自己近 60 日波動的 {abs(sg):.1f} 倍" + ("；往好的方向，不是警示" if good else "")})
     op = getattr(getattr(eng, "options", None), "spx", None) or {}
     if op.get("zero_gamma") and op.get("spot") and op["spot"] < op["zero_gamma"]:
         out.append({"key": f"gamma:{now:%Y%m%d}", "lv": "watch", "tab": "flows",
@@ -149,14 +162,113 @@ def _stability(eng, out: List[Dict], now: datetime) -> None:
                     "zh": f"🏦 {title}", "en": title, "detail": (detail or "")[:240]})
 
 
+def _momentum(eng, out: List[Dict], now: datetime) -> None:
+    """強勢上漲: a main index up >= 2x its own normal daily move (one-year std), or a heavyweight up >= 2.5x with >= 1.5x
+    volume.  The 3-sigma moves are already in _vol; this adds the 2-sigma rallies so the page is not silent when markets surge."""
+    q = eng.market.q
+    names = SETTINGS.names()
+    cut = (now - timedelta(days=4)).strftime("%Y-%m-%d")
+    have = {x["key"].rsplit(":", 2)[0] for x in out if x["key"].startswith("sigma:")}
+    idx = ("^GSPC", "^NDX", "^SOX", "^TWII")
+    heavy = ("NVDA", "MSFT", "AAPL", "AMZN", "GOOGL", "META", "AVGO", "TSM", "2330.TW")
+    for t in idx + heavy:
+        x, h = q(t), eng.market.series(t).dropna()
+        if not x or x.get("chg_pct") is None or str(x.get("asof", "")) < cut or len(h) < 260 or f"sigma:{t}" in have:
+            continue
+        r = h[h > 0].pct_change().dropna().iloc[-253:-1] * 100
+        sd = float(r.std()) if len(r) > 120 else None
+        if not sd:
+            continue
+        z = x["chg_pct"] / sd
+        if z < (2.0 if t in idx else 2.5):
+            continue
+        vx = None
+        if t in heavy:
+            try:
+                v = eng.stockprices.vol(t).dropna()            # the stock universe keeps daily volume
+                base = float(v.iloc[-51:-1].mean()) if len(v) > 51 else 0.0
+                vx = float(v.iloc[-1]) / base if base > 0 else None
+            except Exception:  # noqa: BLE001
+                vx = None
+            if vx is None or vx < 1.5:
+                continue
+        nm = names.get(t, t)
+        tail = f"，成交量 {vx:.1f} 倍）" if vx else "）"
+        out.append({"key": f"mom:{t}:{x['asof']}", "lv": "watch", "tone": "good", "tab": "premarket" if t in idx else "signals",
+                    "zh": f"強勢上漲：{nm} {x['chg_pct']:+.2f}%（平常單日波動的 {z:.1f} 倍" + tail,
+                    "en": f"Strong rally: {t} {x['chg_pct']:+.2f}% ({z:.1f}x normal)",
+                    "detail": "和自己過去一年的平常漲跌比；大漲常伴隨空單回補，隔天不一定延續。描述現象，不是買賣建議。"})
+
+
+def _regime(eng, out: List[Dict], now: datetime) -> None:
+    """多頭環境轉好 (blue): at least 4 of the healthy-market checks hold and breadth (share above the 200-day) >= 60 %."""
+    from .entry_env import bull_env
+    rows = [r for r in bull_env(eng) if r.get("ok") is not None]
+    ok = [r for r in rows if r["ok"]]
+    br = (((getattr(eng, "rotation", None) or {}).get("breadth") or {}).get("us") or {}).get("now")
+    if len(rows) >= 5 and len(ok) >= 4 and br is not None and br >= 60:
+        names = "、".join(r["zh"].split("：")[0].split("（")[0] for r in ok[:6])
+        out.append({"key": f"regime:{len(ok)}:{_week(now)}", "lv": "watch", "tone": "regime", "tab": "entry",
+                    "zh": f"多頭環境轉好：健康檢查 {len(ok)}/{len(rows)} 項成立，{br:.0f}% 股票站上 200 日線",
+                    "en": f"Healthier backdrop: {len(ok)}/{len(rows)} checks, breadth {br:.0f}%",
+                    "detail": f"成立：{names}。環境描述，不保證接下來會漲。"})
+
+
+def _dip(eng, out: List[Dict], now: datetime) -> None:
+    """兩段式超跌觀察 (instead of waiting for VIX 40): (1) 超跌 — S&P RSI(14) < 30 or a 5-day fall >= 2x its normal 5-day
+    move; (2) 恐慌退潮 — within 5 sessions of (1), VIX >= 10 % below its 5-day high and the S&P up on the day."""
+    from .signals import rsi_series
+    spx, vix = eng.market.series("^GSPC").dropna(), eng.market.series("^VIX").dropna()
+    if len(spx) < 300 or len(vix) < 10:
+        return
+    rsi = rsi_series(spx)
+    r5 = (spx / spx.shift(5) - 1) * 100
+    sd5 = float(r5.iloc[-1000:-6].std())
+    deep = (rsi < 30) | (r5 <= -2 * sd5)
+    if bool(deep.iloc[-1]):
+        out.append({"key": f"dip1:{spx.index[-1]:%Y%m%d}", "lv": "watch", "tone": "watch", "tab": "mood",
+                    "zh": f"超跌觀察：標普 RSI {rsi.iloc[-1]:.0f}、5 日 {r5.iloc[-1]:+.1f}%（平常 5 日波動 ±{sd5:.1f}%）",
+                    "en": "Oversold watch: S&P RSI / 5-day drop",
+                    "detail": "第一段：跌得比平常深。歷史上超跌後常再震盪，第二段「恐慌退潮」出現前不代表止跌。"})
+    elif bool(deep.iloc[-6:-1].any()):
+        hi5 = float(vix.iloc[-6:].max())
+        if vix.iloc[-1] <= hi5 * 0.9 and spx.iloc[-1] > spx.iloc[-2]:
+            out.append({"key": f"dip2:{spx.index[-1]:%Y%m%d}", "lv": "watch", "tone": "good", "tab": "mood",
+                        "zh": f"恐慌退潮觀察：VIX 從 5 日高點 {hi5:.1f} 回落到 {vix.iloc[-1]:.1f}（{(vix.iloc[-1] / hi5 - 1) * 100:+.0f}%），標普收漲",
+                        "en": "Fear receding after an oversold stretch",
+                        "detail": "第二段：超跌後恐慌開始退。不代表已經見底，之後仍可能再測低點。"})
+
+
+def _patterns(eng, out: List[Dict], now: datetime) -> None:
+    """型態成立 (green, at most 3 a day across markets): the strongest new 技術型態觀察 rows of tier A with strength >= 65.
+    The key carries the date the pattern first appeared, so the same stock and pattern shows once, not every day."""
+    sg = getattr(eng, "signals", None) or {}
+    rows = []
+    for mk in (sg.get("markets") or {}).values():
+        for r in mk.get("rows") or []:
+            if r.get("tier") == "A" and (r.get("strength") or 0) >= 65 and r.get("new") and r.get("patterns"):
+                rows.append(r)
+    for r in sorted(rows, key=lambda r: -r["strength"])[:3]:
+        p = r["patterns"][0]
+        inv = f"，失效線 {r['inv']:.2f}" if r.get("inv") else ""
+        out.append({"key": f"pat:{r['sym']}:{p['pattern']}:{r.get('since')}", "lv": "watch", "tone": "good", "tab": "signals",
+                    "zh": f"型態成立：{r['name']}（{r['code']}）{p['label']}，強度 {r['strength']:.0f}{inv}",
+                    "en": f"Pattern: {r.get('name_en') or r['sym']} {p.get('label_en', '')}",
+                    "detail": "規則篩選出的技術型態，收盤跌破失效線代表型態失敗；歷史成績看「技術型態觀察」頁。描述型態，不是買賣建議。"})
+
+
 def build(eng) -> Dict:
     now = datetime.now(timezone.utc)
     out: List[Dict] = []
     for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now), lambda: _bottom(eng, out, now),
-              lambda: _stability(eng, out, now)):
+              lambda: _stability(eng, out, now), lambda: _momentum(eng, out, now), lambda: _regime(eng, out, now),
+              lambda: _dip(eng, out, now), lambda: _patterns(eng, out, now)):
         try:
             f()
         except Exception:  # noqa: BLE001  (one broken rule must not hide the others)
             pass
-    out.sort(key=lambda x: 0 if x["lv"] == "alert" else 1)
+    for x in out:
+        x.setdefault("tone", "risk" if x["lv"] == "alert" else "watch")
+    order = {"risk": 0, "watch": 1, "good": 2, "regime": 3}
+    out.sort(key=lambda x: (0 if x["lv"] == "alert" else 1, order.get(x["tone"], 1)))
     return {"ts": int(now.timestamp()), "items": out}
