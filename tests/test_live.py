@@ -34,7 +34,7 @@ def test_anomaly_scan():
     bar = SL.bar_html(types.SimpleNamespace(market=types.SimpleNamespace(history=h)))
     assert "data-sig=" in bar and json.dumps(sig).replace('"', "&quot;") in bar and 'id="lqan"' in bar
     assert all(a[0] in SL.EXTRA for a in SL.ANOM) and all(v[3] in ("up", "down") for v in SL.VOLS)
-    keys = {a[0] for a in SL.ANOM} | {b[0] for b in SL.BASKETS}
+    keys = {a[0] for a in SL.ANOM} | {b[0] for b in SL.BASKETS} | {c[1] for c in SL.CREDIT}
     for k, zh, en, lv, why, legs in SL.COMBOS:                          # every leg points at a market the scan measures
         assert lv in (-1, 0, 1, 2) and zh and en and why and legs and all(s in keys and op in (">=", "<=") for s, op, _z in legs), k
     assert {c[3] for c in SL.COMBOS} >= {-1, 0, 1, 2} and all(s in keys for s in SL.BAD_UP + SL.NEUTRAL)

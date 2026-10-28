@@ -32,7 +32,8 @@ RULES = [
 ANOM = [("ES=F", "標普期貨", "S&P futures"), ("NQ=F", "那指期貨", "Nasdaq futures"), ("^GSPC", "標普 500", "S&P 500"), ("^NDX", "那指 100", "Nasdaq 100"),
         ("^SOX", "費城半導體", "SOX"), ("^TWII", "台股加權", "TAIEX"), ("^N225", "日經 225", "Nikkei"), ("^KS11", "韓國股市", "KOSPI"),
         ("^VIX", "VIX", "VIX"), ("^TNX", "美債 10 年殖利率", "10Y yield"), ("DX-Y.NYB", "美元指數", "Dollar index"), ("JPY=X", "美元兌日圓", "USD/JPY"),
-        ("TWD=X", "美元兌台幣", "USD/TWD"), ("GC=F", "黃金", "Gold"), ("BZ=F", "布蘭特原油", "Brent"), ("BTC-USD", "比特幣", "Bitcoin"), ("HYG", "高收益債 ETF", "HYG")]
+        ("TWD=X", "美元兌台幣", "USD/TWD"), ("GC=F", "黃金", "Gold"), ("BZ=F", "布蘭特原油", "Brent"), ("BTC-USD", "比特幣", "Bitcoin"), ("HYG", "高收益債 ETF", "HYG"),
+        ("IEF", "7–10 年美債 ETF", "IEF (7-10y Treasuries)"), ("TLT", "20 年以上長債 ETF", "TLT (20y+ Treasuries)")]
 ANOM_Y, ANOM_R = 2.0, 3.0
 # which direction is the stress for each market (default: a fall).  A big move the other way is shown green, not as a warning
 BAD_UP = ("^VIX", "^TNX", "DX-Y.NYB", "TWD=X", "BZ=F")       # fear, rates, dollar, TWD weakness, oil spikes
@@ -41,6 +42,15 @@ NEUTRAL = ("GC=F",)                                           # gold: a spike ca
 VOLS = [("SPY", "標普 ETF（SPY）", "SPY", "down"), ("QQQ", "那指 ETF（QQQ）", "QQQ", "down"),
         ("SQQQ", "放空那指 3 倍 ETF（SQQQ）", "SQQQ (3x short Nasdaq)", "up"), ("SOXS", "放空半導體 3 倍 ETF（SOXS）", "SOXS (3x short chips)", "up")]
 VOL_X = 2.0
+# 盤中細項 (/api/quote?iv=, one month of 5-minute bars, refreshed every 3 minutes): yields' 15/60-minute speed, VWAP and
+# same-time relative volume, a close-high-low spread estimate — each against the same market's own earlier days
+IV_Y = [("^FVX", "美債 5 年殖利率", "5Y yield"), ("^TNX", "美債 10 年殖利率", "10Y yield"), ("^TYX", "美債 30 年殖利率", "30Y yield")]
+IV_P = [("SPY", "標普 ETF（SPY）", "SPY"), ("QQQ", "那指 ETF（QQQ）", "QQQ"), ("HYG", "高收益債 ETF（HYG）", "HYG"), ("LQD", "投資級公司債 ETF（LQD）", "LQD")]
+IV_RVOL = 1.5                       # VWAP lights need at least this much same-time volume (a quiet drift under VWAP is not news)
+SPR_P, SPR_X, SPR_MIN = 0.95, 2.0, 3.0   # spread estimate: above 95 % of earlier days, 2x their median, and ≥ 3 bp
+# 信用壓力（扣掉利率）: credit ETF move − β × IEF move, β and the residual's normal daily size from one year of closes
+CREDIT = [("HYG", "cr_hy", "高收益債（扣掉利率影響）", "High-yield credit (rates removed)"),
+          ("LQD", "cr_ig", "投資級公司債（扣掉利率影響）", "Investment-grade credit (rates removed)")]
 # 風向球 baskets (second request; their normal move comes from /api/quote full=1 = one year of daily closes, fetched once
 # per page load): private credit, regional banks, and the debt-funded AI data-center names
 BASKETS = [("bizd", "私募信貸 BDC ETF（BIZD）", "Private-credit BDCs (BIZD)", ["BIZD"]),
@@ -61,7 +71,13 @@ COMBOS = [
     ("flight", "股市下跌＋國債利率下降", "Stocks down, Treasury yields down", 1, "資金從股票逃向國債避險（買債的人多，利率就下降）；如果是股、債一起跌，看上面的「股債金同時下跌」",
      [("^GSPC", "<=", -1.5), ("^TNX", "<=", -1.5)]),
     ("credit_first", "信用先跌、股市還沒反應", "Credit falling before stocks", 1, "高收益債（垃圾債）先被賣、股市還平靜：歷史上信用市場常比股市早一步反應",
-     [("HYG", "<=", -2), ("^GSPC", ">=", -1), ("^TNX", "<=", 1)]),       # not a rate spike: HYG has ~3.5y duration
+     [("cr_hy", "<=", -2), ("^GSPC", ">=", -1)]),       # the rate part of HYG's move is taken out (see CREDIT)
+    ("credit_both", "高收益與投資級信用一起轉弱", "High-yield and investment-grade credit both weaker", 2,
+     "扣掉利率影響後，垃圾債和投資級公司債都在被賣：不是只有體質差的公司，連好公司借錢的成本也在上升",
+     [("cr_hy", "<=", -2), ("cr_ig", "<=", -1.5)]),
+    ("divfail", "股票和公債一起跌（分散失效）", "Stocks and Treasuries falling together", 1,
+     "平常股票跌時公債會漲來抵銷，今天兩邊一起跌：股債配置的保護暫時失效，通常和利率急升（通膨或債券供給擔憂）有關",
+     [("^GSPC", "<=", -1.5), ("IEF", "<=", -1.5)]),
     ("hedge", "VIX 大漲但股市沒跌", "VIX jumps, stocks flat", 1, "有人在買保險（選擇權避險）：大資金預期接下來會有波動",
      [("^VIX", ">=", 2), ("^GSPC", ">=", -0.5)]),
     ("semi", "半導體領跌", "Chips leading the drop", 1, "費城半導體跌得比大盤兇很多：AI 與科技股是這波的壓力來源，台股和韓股通常會跟著受影響",
@@ -88,7 +104,7 @@ COMBOS = [
     ("healthy_dip", "健康震盪", "Ordinary pullback", 0, "股市下跌但 VIX 沒有跳升、垃圾債沒有被賣：比較像正常的獲利了結，不是壓力",
      [("^GSPC", "<=", -1), ("^VIX", "<=", 1.5), ("HYG", ">=", -1)]),
 ]
-EXTRA = sorted({r["sym"] for r in RULES} | {r["den"] for r in RULES if r.get("den")} | {a[0] for a in ANOM} | {v[0] for v in VOLS})
+EXTRA = sorted({c[0] for c in CREDIT} | {r["sym"] for r in RULES} | {r["den"] for r in RULES if r.get("den")} | {a[0] for a in ANOM} | {v[0] for v in VOLS})
 
 
 def sigmas(eng) -> dict:
@@ -110,20 +126,50 @@ def sigmas(eng) -> dict:
     return out
 
 
+def credit_betas(eng) -> dict:
+    """{HYG / LQD: {b: rate beta on IEF, sd: daily std of the residual (%)}} from one year of daily closes — data-driven
+    instead of hard-coded durations (both drift as the funds' holdings change)."""
+    out = {}
+    try:
+        h = eng.market.history
+    except Exception:  # noqa: BLE001
+        return out
+    if h is None or not hasattr(h, "columns") or "IEF" not in h.columns:
+        return out
+    for sym, *_ in CREDIT:
+        if sym not in h.columns:
+            continue
+        j = h[[sym, "IEF"]].dropna()
+        j = j[(j > 0).all(axis=1)].pct_change().dropna().iloc[-252:] * 100
+        if len(j) < 120 or j["IEF"].var() <= 0:
+            continue
+        b = float(j[sym].cov(j["IEF"]) / j["IEF"].var())
+        sd = float((j[sym] - b * j["IEF"]).std())
+        if sd > 0:
+            out[sym] = {"b": round(b, 4), "sd": round(sd, 4)}
+    return out
+
+
 def bar_html(eng=None) -> str:
     """Status line + live threshold lights; hidden until the first live quote arrives."""
     sig = html.escape(json.dumps(sigmas(eng) if eng is not None else {}), quote=True)
-    note = ("三層即時燈號，每分鐘自動檢查：①固定門檻（上面第一排）；②異常波動掃描：17 個市場（含盤前就在交易的標普／那指期貨），"
+    crb = html.escape(json.dumps(credit_betas(eng) if eng is not None else {}), quote=True)
+    note = ("四層即時燈號，每分鐘自動檢查：①固定門檻（上面第一排）；②異常波動掃描：17 個市場（含盤前就在交易的標普／那指期貨），"
             "加上三個風向球（私募信貸 BDC、區域銀行、靠借錢蓋 AI 算力中心的公司），各自和自己過去一年的平常單日波動比，"
             f"再看幾個市場有沒有一起出現已知的組合（股債金同跌、日圓套利平倉、股跌債漲、信用先跌、AI 借貸鏈等 {sum(1 for c in COMBOS if c[3] > 0)} 組壓力型態，"
             "紅色的組合代表歷史上大跌時出現過的型態；另有恐慌退潮的大漲、全面風險偏好、健康震盪等正面型態，用綠色或藍色顯示），"
             "往「好的方向」的大波動（例如股市大漲、VIX 大跌）顯示為綠色，不算警示，"
             "超過平常 2 倍亮黃燈、3 倍亮紅燈；③大量賣壓：SPY、QQQ 成交量是前 4 天同一時段的 2 倍以上而且下跌，或放空型 ETF（SQQQ、SOXS）成交量暴增而且上漲。"
+            "④盤中細項（每 3 分鐘，用過去約 20 天的 5 分鐘 K 線當基準）：美債 5／10／30 年殖利率 15 或 60 分鐘的變動速度（超過平常同長度變動 2 倍黃燈、3 倍紅燈）；"
+            "SPY、QQQ、HYG、LQD 連續 3 根 5 分鐘 K 線收在今日成交量加權均價（VWAP）之下、而且成交量是過去同時段的 1.5 倍以上（站回來則列為修復候選，不代表風險已解除）；"
+            "以及由高低價推算的買賣價差（免費資料沒有買賣報價，所以用 Abdi–Ranaldo 2017 的推算法；高於過去 95% 的日子且為平常 2 倍以上才亮燈）。"
+            "信用壓力改成「扣掉利率影響」：HYG、LQD 的漲跌減去它們對 7–10 年公債 ETF（IEF）的敏感度 × IEF 漲跌，敏感度由過去一年資料估計，剩下的才算信用；"
+            "股票和公債一起跌時，列為「分散失效」。資料取不到時顯示「資料異常」，不當作正常。"
             "這是提醒，不是預測；誰在放空的即時明細沒有免費公開資料，所以用成交量與放空型 ETF 代替。漲跌幅以各市場最近一個交易日計，"
             "模型判斷（AI 判斷、泡沫分組等）仍每小時更新。報價：Yahoo Finance，約有數分鐘延遲。")
     en = ("Three live layers, checked every minute: fixed thresholds; each market vs its own normal daily move (2x yellow, 3x red, "
           "index futures included for pre-market); SPY/QQQ volume vs the same time on prior days, and short-ETF volume. Reminders, not forecasts.")
-    return (f'<div class="lqbar" id="lqbar" hidden data-sig="{sig}"><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
+    return (f'<div class="lqbar" id="lqbar" hidden data-sig="{sig}" data-cr="{crb}"><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
             '<div id="lqal" class="lqal"></div><div id="lqan" class="lqal"></div>'
             f'<details class="lqd"><summary class="lqnote">{T("燈號規則", "Rules")}</summary><p class="lqnote">{T(note, en)}</p></details></div>')
 
@@ -165,13 +211,13 @@ CSS = (".lqbar{margin:8px 0 4px;padding:9px 12px;border:1px solid var(--bd);bord
        "border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px}.lqout{font-size:15px;margin:6px 0}.lqoff{font-size:12.5px;color:var(--mu)}")
 
 _JS = r"""
-(function(){var R=__RULES__,EX=__EXTRA__,POLL=__POLL__*1000,AN=__ANOM__,VS=__VOLS__,BK=__BASKETS__,CB=__COMBOS__,BUP=__BUP__,NEU=__NEU__,AY=__AY__,AR=__AR__,VX=__VX__;
+(function(){var R=__RULES__,EX=__EXTRA__,POLL=__POLL__*1000,AN=__ANOM__,VS=__VOLS__,BK=__BASKETS__,CB=__COMBOS__,BUP=__BUP__,NEU=__NEU__,AY=__AY__,AR=__AR__,VX=__VX__,IVY=__IVY__,IVP=__IVP__,CR=__CREDIT__,IVR=__IVR__,SPP=__SPP__,SPX=__SPX__,SPM=__SPM__,ivq={},ivT=0,ivBad=0;
  var bar=document.getElementById('lqbar');var tiles=[].slice.call(document.querySelectorAll('.tile[data-lq]'));
  var want={};tiles.forEach(function(t){want[t.getAttribute('data-lq')]=1;});EX.forEach(function(s){want[s]=1;});
  var dead=false,lastOk=0,data={};function en(){return document.documentElement.lang==='en';}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){if(x==null||isNaN(x))return '—';if(Math.abs(x)<0.5*Math.pow(10,-d))x=0;return (x>0?'+':x<0?'':'')+f(x,d);}
- function api1(list,full,vol){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':'')+(vol?'&vol='+encodeURIComponent(vol):''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
+ function api1(list,full,vol,iv){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':'')+(vol?'&vol='+encodeURIComponent(vol):'')+(iv?'&iv='+encodeURIComponent(iv):''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
  function api(list,full,vol){var a=String(list).split(',').filter(Boolean),ch=[];for(var i=0;i<a.length;i+=20)ch.push(a.slice(i,i+20).join(','));   // the service takes 25 per request
    return Promise.all(ch.map(function(c){return api1(c,full,vol);})).then(function(rs){var o={ts:0,q:{}};rs.forEach(function(r){o.ts=Math.max(o.ts,r.ts||0);Object.keys(r.q||{}).forEach(function(k){o.q[k]=r.q[k];});});return o;});}
  function hhmm(t){if(!t)return '';var d=new Date(t*1000),p=function(n){return ('0'+n).slice(-2);};var tm=p(d.getHours())+':'+p(d.getMinutes());
@@ -182,7 +228,7 @@ _JS = r"""
    if(a){a.textContent=hhmm(x.t);a.classList.add('lv');}});}
  function val(r,q){var x=q[r.sym];if(!x)return null;if(r.f==='lvl')return x.price;if(r.f==='chg')return x.chg;
    if(r.f==='ratio'){var y=q[r.den];return y&&y.price?x.price/y.price:null;}return null;}
- var SIG={};try{SIG=JSON.parse((bar&&bar.getAttribute('data-sig'))||'{}');}catch(e){}
+ var SIG={},CRB={};try{SIG=JSON.parse((bar&&bar.getAttribute('data-sig'))||'{}');CRB=JSON.parse((bar&&bar.getAttribute('data-cr'))||'{}');}catch(e){}
  var SD2={},BKS=[];BK.forEach(function(b){b[3].forEach(function(s){if(BKS.indexOf(s)<0)BKS.push(s);});});
  function lvl(s,z){var a=Math.abs(z),big=a>=AR?2:a>=AY?1:0;if(!big)return [0,0];if(NEU.indexOf(s)>=0)return [big,0];
    var bad=BUP.indexOf(s)>=0?z>0:z<0;return bad?[big,0]:[0,big];}
@@ -191,16 +237,35 @@ _JS = r"""
    BK.forEach(function(b){var c=0,d=0,n=0;b[3].forEach(function(s){var x=q[s];if(x&&x.chg!=null&&SD2[s]){c+=x.chg;d+=SD2[s];n++;}});
    if(!n)return;c/=n;d/=n;var z=c/d,L=lvl(b[0],z);out.push({s:b[0],zh:b[1],en:b[2],chg:c,z:z,lv:L[0],good:L[1]});});
    VS.forEach(function(v){var x=q[v[0]];if(!x||x.volx==null||x.chg==null)return;var dir=v[3]==='down'?x.chg<0:x.chg>0;
-   out.push({s:v[0],zh:v[1],en:v[2],chg:x.chg,vx:x.volx,lv:x.volx>=VX&&dir?(x.volx>=VX*1.5?2:1):0});});return out;}
+   out.push({s:v[0],zh:v[1],en:v[2],chg:x.chg,vx:x.volx,lv:x.volx>=VX&&dir?(x.volx>=VX*1.5?2:1):0});});
+   // credit with the rate part taken out: move − β × IEF move, in units of the residual's normal daily size
+   var ief=q['IEF'];CR.forEach(function(c){var x=q[c[0]],b=CRB[c[0]];if(!x||x.chg==null||!b||!ief||ief.chg==null)return;var r=x.chg-b.b*ief.chg,z=r/b.sd,L=lvl(c[1],z);
+     out.push({s:c[1],zh:c[2],en:c[3],chg:r,z:z,lv:L[0],good:L[1],cr:1});});
+   return out.concat(ivScan());}
+ function hm(t){return t?hhmm(t):'';}
+ // 盤中細項: yields' speed, VWAP + same-time volume, spread estimate (each vs the same market's own earlier days)
+ function ivScan(){var out=[];if(!ivT)return out;
+   IVY.forEach(function(y){var v=(ivq[y[0]]||{}).iv;if(!v)return;var a=v.m15!=null&&v.sd15?v.m15/v.sd15:null,b=v.m60!=null&&v.sd60?v.m60/v.sd60:null,
+     k=(b!=null&&(a==null||Math.abs(b)>=Math.abs(a)))?60:15,z=k===60?b:a,m=k===60?v.m60:v.m15;if(z==null)return;var A=Math.abs(z),L=A>=AR?2:A>=AY?1:0;
+     out.push({s:'iv:'+y[0],iz:z,lv:L,txt:en()?y[2]+' '+sg(m,1)+' bp in '+k+' min ('+f(A,1)+'x its normal '+k+'-minute move, '+hm(v.t)+')'
+       :y[1]+' '+k+' 分鐘內'+(m>0?'急升 ':'急降 ')+sg(m,1)+' 個基點（平常 '+k+' 分鐘的 '+f(A,1)+' 倍；'+(m>0?'借錢成本快速上升，股票估值承壓':'資金湧入公債避險或景氣擔憂')+'；行情 '+hm(v.t)+'）'});});
+   IVP.forEach(function(p){var x=ivq[p[0]]||{},v=x.iv;if(!v)return;
+     if(v.below3&&v.rvol!=null&&v.rvol>=IVR&&x.chg!=null&&x.chg<0)out.push({s:'vw:'+p[0],lv:1,txt:en()?p[2]+': 3 bars under VWAP on '+f(v.rvol,1)+'x same-time volume ('+hm(v.t)+')'
+       :p[1]+'：連續 3 根 5 分鐘 K 線收在今日均價（VWAP）之下，成交量是過去同時段的 '+f(v.rvol,1)+' 倍——有人持續賣（觀察；行情 '+hm(v.t)+'）'});
+     else if(v.above3&&v.was_below&&v.rvol!=null&&v.rvol>=IVR)out.push({s:'vw:'+p[0],lv:0,good:1,txt:en()?p[2]+': back above VWAP for 3 bars (recovery candidate)'
+       :p[1]+'：跌破後連續 3 根 5 分鐘 K 線站回今日均價（修復候選，不代表風險已解除；行情 '+hm(v.t)+'）'});
+     if(v.spr!=null&&v.sprp>=SPP&&v.sprx>=SPX&&v.spr>=SPM)out.push({s:'sp:'+p[0],lv:1,txt:en()?p[2]+': estimated trading spread '+f(v.spr,1)+' bp, '+f(v.sprx,1)+'x usual (from highs/lows, an estimate)'
+       :p[1]+'：推算的買賣價差 '+f(v.spr,1)+' 個基點，是平常的 '+f(v.sprx,1)+' 倍、高於過去 '+f(v.sprp*100,0)+'% 的日子——交易成本變高、流動性變差（由高低價推算，不是實際報價）'});});
+   return out;}
  function combos(sc){var z={};sc.forEach(function(o){if(o.z!=null)z[o.s]=o.z;});var out=[],ev=0;
    CB.forEach(function(c){if(c[5].every(function(l){return z[l[0]]!=null;}))ev++;var ok=c[5].every(function(l){var v=z[l[0]];return v!=null&&(l[1]==='>='?v>=l[2]:v<=l[2]);});
    if(ok)out.push({s:'combo:'+c[0],zh:c[1],en:c[2],lv:c[3]>0?c[3]:0,good:c[3]<0?1:0,info:c[3]===0?1:0,why:c[4],combo:1});});window.__lqcb=ev;return out;}
  function paintScan(q){var el=document.getElementById('lqan');if(!el)return [];var sc0=scan(q),cb=combos(sc0),sc=sc0.concat(cb),hits=sc.filter(function(o){return o.lv>0;}),h='';
-   hits.sort(function(a,b){return b.lv-a.lv;}).forEach(function(o){var t=o.combo?(en()?'Pattern: '+o.en:'組合訊號：'+o.zh+'——'+o.why):o.vx!=null?(en()?o.en+': volume '+f(o.vx,1)+'x usual, '+sg(o.chg,2)+'%':o.zh+'：成交量是平常同時段的 '+f(o.vx,1)+' 倍，'+sg(o.chg,2)+'%')
+   hits.sort(function(a,b){return b.lv-a.lv;}).forEach(function(o){var t=o.txt?o.txt:o.combo?(en()?'Pattern: '+o.en:'組合訊號：'+o.zh+'——'+o.why):o.vx!=null?(en()?o.en+': volume '+f(o.vx,1)+'x usual, '+sg(o.chg,2)+'%':o.zh+'：成交量是平常同時段的 '+f(o.vx,1)+' 倍，'+sg(o.chg,2)+'%')
      :(en()?o.en+' '+sg(o.chg,2)+'% ('+f(Math.abs(o.z),1)+'x normal)':o.zh+(o.chg<0?' 異常大跌 ':' 異常大漲 ')+sg(o.chg,2)+'%（平常的 '+f(Math.abs(o.z),1)+' 倍）');
      h+='<span class="lqchip '+(o.lv>=2?'hit':'warn')+'">'+(o.lv>=2?'● ':'▲ ')+t+'</span>';});
    var goods=sc.filter(function(o){return o.good||o.info;});
-   goods.forEach(function(o){var t=o.combo?(en()?'Pattern: '+o.en:'組合訊號：'+o.zh+'——'+o.why)
+   goods.forEach(function(o){var t=o.txt?o.txt:o.combo?(en()?'Pattern: '+o.en:'組合訊號：'+o.zh+'——'+o.why)
      :(en()?o.en+' '+sg(o.chg,2)+'% ('+f(Math.abs(o.z),1)+'x normal, the healthy direction)':o.zh+(o.chg<0?' 大跌 ':' 大漲 ')+sg(o.chg,2)+'%（平常的 '+f(Math.abs(o.z),1)+' 倍，往好的方向）');
      h+='<span class="lqchip '+(o.info?'info':'good')+'">'+(o.info?'ℹ ':'✓ ')+t+'</span>';});
    window.__lqgood=goods;
@@ -211,6 +276,10 @@ _JS = r"""
      :'異常波動掃描：'+n.length+' 個市場都在平常 2 倍以內'+(top?'（最大：'+top.zh+' '+sg(top.chg,2)+'%，平常的 '+f(Math.abs(top.z),1)+' 倍）':''))+'</span>'
      +(goods.some(function(o){return o.combo;})?'':'<span class="lqchip ok">○ '+(en()?'Cross-market patterns: none of '+(window.__lqcb||0)+'/'+CB.length+' checkable':'組合訊號：'+CB.length+' 組中 '+(window.__lqcb||0)+' 組有資料可判斷，都沒出現')+'</span>')
      +(vm?'<span class="lqchip ok">○ '+(en()?'Volume: no heavy selling (max '+vm.en+' '+f(vm.vx,1)+'x)':'大量賣壓：未出現（成交量最高 '+vm.zh+' 平常的 '+f(vm.vx,1)+' 倍）')+'</span>':'');
+   var ivn=IVY.concat(IVP).filter(function(y){return (ivq[y[0]]||{}).iv;}).length;
+   if(ivBad&&!ivn)h+='<span class="lqchip warn">⚠ '+(en()?'Intraday detail: data unavailable (not "normal")':'盤中細項：資料暫時取不到（資料異常，不代表正常）')+'</span>';
+   else if(ivn&&!sc.some(function(o){return o.txt&&(o.lv>0||o.good);}))h+='<span class="lqchip ok">○ '+(en()?'Intraday detail: '+ivn+' markets, yield speed, VWAP and spreads normal'
+     :'盤中細項：'+ivn+' 檔有 5 分鐘資料，利率速度、均價（VWAP）、推算價差都正常')+'</span>';
    el.innerHTML=h;return hits;}
  function paintRules(q){var hits=[],h='',nr=0;R.forEach(function(r){var v=val(r,q);if(v==null)return;nr++;var hit=r.op==='>='?v>=r.v:v<=r.v;if(hit)hits.push(r);
    h+='<span class="lqchip '+(hit?'hit':'ok')+'">'+(hit?'● ':'○ ')+(en()?r.en:r.zh)+'：'+(r.f==='chg'?sg(v,r.dg)+'%':f(v,r.dg))+'</span>';});
@@ -232,6 +301,9 @@ _JS = r"""
    BKS.length?api(BKS.join(',')).catch(function(){return {q:{}};}):Promise.resolve({q:{}})]).then(function(r){var d=r[0];var q=d.q||{},q2=r[1].q||{};
    Object.keys(q2).forEach(function(s){if(!q[s])q[s]=q2[s];});if(!Object.keys(q).length){stale();return;}data=q;lastOk=Date.now();
    if(bar)bar.hidden=false;var off=document.getElementById('lqoff');if(off)off.hidden=true;paintTiles(data);paintRules(data);ago();}).catch(function(){if(!dead)stale();});}
+ function pullIv(){if(dead||document.hidden)return;var L=IVY.concat(IVP).map(function(y){return y[0];}).join(',');
+   api1(L,0,null,L).then(function(d){ivq=d.q||{};ivT=Date.now();ivBad=0;if(lastOk)paintRules(data);}).catch(function(){ivBad=1;if(lastOk)paintRules(data);});}
+ setTimeout(pullIv,1500);setInterval(pullIv,3*POLL);
  pull();setInterval(pull,POLL);setInterval(ago,5000);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-lastOk>POLL)pull();});
  var lb=document.getElementById('langBtn');if(lb)lb.addEventListener('click',function(){setTimeout(function(){if(lastOk){paintRules(data);ago();}},0);});
  var fm=document.getElementById('lqf');if(fm){fm.addEventListener('submit',function(e){e.preventDefault();var s=(document.getElementById('lqin').value||'').trim().toUpperCase();
@@ -273,4 +345,7 @@ JS = (_JS.replace("__RULES__", json.dumps(RULES, ensure_ascii=False)).replace("_
       .replace("__ANOM__", json.dumps(ANOM, ensure_ascii=False)).replace("__VOLS__", json.dumps(VOLS, ensure_ascii=False))
       .replace("__BASKETS__", json.dumps(BASKETS, ensure_ascii=False))
       .replace("__COMBOS__", json.dumps(COMBOS, ensure_ascii=False)).replace("__BUP__", json.dumps(BAD_UP)).replace("__NEU__", json.dumps(NEUTRAL))
+      .replace("__IVY__", json.dumps(IV_Y, ensure_ascii=False)).replace("__IVP__", json.dumps(IV_P, ensure_ascii=False))
+      .replace("__CREDIT__", json.dumps(CREDIT, ensure_ascii=False)).replace("__IVR__", str(IV_RVOL)).replace("__SPP__", str(SPR_P))
+      .replace("__SPX__", str(SPR_X)).replace("__SPM__", str(SPR_MIN))
       .replace("__AY__", str(ANOM_Y)).replace("__AR__", str(ANOM_R)).replace("__VX__", str(VOL_X)))

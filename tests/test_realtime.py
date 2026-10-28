@@ -169,7 +169,7 @@ def test_review_fixes():
     assert "(l==='en'&&e.dataset.en)" in b
     assert "i+=20" in SL.JS and "function api1(" in SL.JS
     cf = next(c for c in SL.COMBOS if c[0] == "credit_first")
-    assert ("^TNX", "<=", 1) in cf[5]
+    assert ("cr_hy", "<=", -2) in cf[5]                  # rate part removed (credit residual), not a TNX filter
     assert "window.innerWidth<=900" in open(LY.__file__, encoding="utf-8").read()
     src = open(PF.__file__, encoding="utf-8").read()
     assert "cells[13].textContent" in src and "firstChild.nodeType===3" in src

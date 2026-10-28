@@ -73,7 +73,7 @@ class Alert:
 
 # event sources whose delivery is tracked in /inbox (key prefix → label)
 EVENT_SRC = {"news:": "新聞", "sec:": "SEC 公告", "sec_pf:": "SEC 公告", "halt:": "停牌", "halt_pf:": "停牌", "fed:": "Fed 公告",
-             "mops:": "台股重大訊息", "mops_pf:": "台股重大訊息", "push:auction:": "公債標售", "gap:": "盤前盤後跳空", "gap_pf:": "盤前盤後跳空"}
+             "mops:": "台股重大訊息", "mops_pf:": "台股重大訊息", "push:auction:": "公債標售", "gap:": "盤前盤後跳空", "gap_pf:": "盤前盤後跳空", "iv_pf:": "持股盤中異常"}
 
 
 def _cov_note(st) -> str:
@@ -366,6 +366,13 @@ class Sentinel(commands.Bot):
             syms = self._ext_symbols()
             await self._run_alerts(self._ext_gap_alerts(await XT.fetch(syms)))
 
+        async def holdings_iv():
+            from ..data import intraday as IV
+            syms = [s for s in eng.holding_tickers() if not s.startswith("^")][:40]
+            if not A.get("holdings_iv", True) or not syms:
+                return
+            await self._run_alerts(self._holdings_iv_alerts(await IV.fetch(syms)))
+
         async def tw_etf():
             from ..data import tw_etf as TE
             await TE.refresh()
@@ -504,6 +511,7 @@ class Sentinel(commands.Bot):
             ("calendar", R["calendar"], cal, R["calendar"]),
             ("tw_etf", R.get("tw_etf", 1800), tw_etf, 600),
             ("ext_gap", R.get("ext_gap", 300), ext_gap, 60),
+            ("holdings_iv", R.get("holdings_iv", 300), holdings_iv, 90),
             ("taiwan", SETTINGS.get("taiwan", {}).get("refresh_seconds", 7200), taiwan,
              SETTINGS.get("taiwan", {}).get("refresh_seconds", 7200)),
         ]
@@ -985,6 +993,32 @@ class Sentinel(commands.Bot):
                              f"{sess}價 {e['px']:.2f}，前一交易日收盤 {e['base']:.2f}；{s} 過去一年平常單日波動 ±{sd:.1f}%。"
                              f"{sess}成交量小，價格容易誇大，開盤後常常修正。即時表：網站「開盤前 30 秒與即時情勢」→ 盤前／盤後跳空。",
                              float(e["t"])))
+        return out
+
+    IV_RVOL, IV_RVOL_OK = 2.0, 1.5
+
+    def _holdings_iv_alerts(self, iv: Dict[str, Dict]) -> List[Alert]:
+        """持股盤中異常 (owner DM only, iv_pf:): a holding with same-time volume ≥ 2× its earlier days' median whose last
+        three completed 5-minute bars all closed under today's VWAP while it is down on the day → 觀察.  Once that went
+        out today, three bars back over VWAP on ≥ 1.5× volume → 修復候選 (not a buy signal).  Only markets trading now."""
+        out = []
+        for s, v in iv.items():
+            if v.get("rvol") is None or v.get("chg") is None or not v.get("vwap"):
+                continue
+            day = datetime.fromtimestamp(v["t"], timezone.utc).astimezone(E.TZ).strftime("%Y%m%d")
+            bar = datetime.fromtimestamp(v["t"], timezone.utc).astimezone(E.TZ).strftime("%H:%M")
+            now = datetime.now(E.TZ).strftime("%H:%M")
+            weak = f"iv_pf:{s}:{day}:weak"
+            if v.get("below3") and v["rvol"] >= self.IV_RVOL and v["chg"] < 0:
+                out.append(Alert(weak, "ℹ️ INFO", f"【觀察／持股 {s}】放量且連 3 根 5 分鐘 K 線在今日均價之下",
+                                 f"今日 {v['chg']:+.2f}%，成交量是過去 {v['n_days']} 天同時段中位數的 {v['rvol']:.1f} 倍；"
+                                 f"現價 {v['price']:.2f}，今日成交量加權均價（VWAP）{v['vwap']:.2f}（{v['vgap']:+.2f}%）。\n"
+                                 f"行情時間 {bar}（台北），偵測 {now}；Yahoo 5 分鐘資料，約有數分鐘延遲。\n"
+                                 "解除條件：連續 3 根 5 分鐘 K 線站回 VWAP。這是盤中觀察，不是賣出指令。", float(v["t"])))
+            elif v.get("above3") and v["rvol"] >= self.IV_RVOL_OK and store.alert_sent(weak):
+                out.append(Alert(f"iv_pf:{s}:{day}:recover", "ℹ️ INFO", f"【修復候選／持股 {s}】連 3 根 5 分鐘 K 線站回今日均價",
+                                 f"今日 {v['chg']:+.2f}%，成交量是過去同時段的 {v['rvol']:.1f} 倍；現價 {v['price']:.2f} vs VWAP {v['vwap']:.2f}。\n"
+                                 f"行情時間 {bar}（台北）。站回均價不代表風險已解除；要再看大盤廣度與信用是否同步改善。", float(v["t"])))
         return out
 
     def _tw_etf_alerts(self, r: Optional[dict] = None, now: Optional[datetime] = None) -> List[Alert]:
