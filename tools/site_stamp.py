@@ -210,7 +210,7 @@ def _ncd(k: str):
 
 
 def _ncd_date() -> Optional[str]:
-    v = _ncd("CPILFESL") or {}
+    v = _ncd("ICSA") or {}                          # weekly; the monthly series are dated the 1st and would look stale
     return max(v) if v else None
 
 
