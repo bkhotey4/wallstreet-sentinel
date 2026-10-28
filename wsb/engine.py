@@ -375,6 +375,7 @@ class Engine:
     async def recompute(self, skip_quality: bool = False) -> None:
         async with self._lock:
             try:
+                self.odds = None                              # a failed / not-computable SSI must not leave yesterday's odds on show
                 self.stress = await asyncio.to_thread(self.stress_engine.compute)
                 if self.stress:
                     store.stress_record(self.stress.score, self.stress.blocks)
@@ -385,6 +386,7 @@ class Engine:
                         self.stress.chg_20d)
             except Exception:  # noqa: BLE001
                 log.exception("stress compute failed")
+                self.stress, self.odds = None, None
             try:
                 if self.stress:
                     bench = SETTINGS.get("crash_odds", {}).get("benchmark", "^GSPC")
@@ -449,7 +451,9 @@ class Engine:
             except Exception:  # noqa: BLE001
                 log.exception("intel fusion failed")
             try:
-                self.holdings = pf.load_holdings() or self.holdings
+                h = pf.load_holdings()
+                if pf.LOAD_OK or not self.holdings:            # emptied / disabled → empty; only an unreadable file keeps the last good set
+                    self.holdings = h
                 self.portfolio = await asyncio.to_thread(pf.analyze, self.market, self.holdings)
             except Exception:  # noqa: BLE001
                 log.exception("portfolio failed")

@@ -184,7 +184,8 @@ def build(eng=None, d: Optional[Dict] = None, today: Optional[date] = None) -> D
             tlt, twd = eng.market.series("TLT").dropna(), eng.market.series("TWD=X").dropna()
             rt, rx = _ret(tlt, 365), _ret(twd, 365)
             if rt is not None and rx is not None:
-                fx = {"etf": bnd["r1y"], "usd": rt, "fx": rx, "combo": ((1 + rt / 100) * (1 + rx / 100) - 1) * 100}
+                fx = {"etf": bnd["tr1y"] if bnd.get("tr1y") is not None else bnd["r1y"], "usd": rt,     # both with dividends (TLT is adjusted)
+                      "fx": rx, "combo": ((1 + rt / 100) * (1 + rx / 100) - 1) * 100}
         except Exception:  # noqa: BLE001
             fx = None
     flow_all = sum(g["flow"] for g in kinds.values()) if kinds else None

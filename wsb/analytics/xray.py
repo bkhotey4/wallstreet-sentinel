@@ -29,6 +29,20 @@ def _rets(market, sym: str, n: int = 504) -> pd.Series:
     return np.log(s).diff().dropna().iloc[-n:]
 
 
+def _rets_usd(market, p: Dict, n: int = 504) -> pd.Series:
+    """Daily log returns in US dollars, like the main portfolio: a Taiwan stock that is flat while TWD falls loses money."""
+    r = _rets(market, p["sym"], n + 5)
+    cur = p.get("currency") or "USD"
+    if cur == "USD" or not len(r):
+        return r.iloc[-n:]
+    fx = market.series(f"{cur}=X")
+    fx = fx[fx > 0]
+    if len(fx) < 60:
+        return pd.Series(dtype=float)                          # no rate → unknown, never "dollars"
+    lf = np.log(fx).reindex(r.index.union(fx.index)).ffill().reindex(r.index)
+    return (r - lf.diff()).dropna().iloc[-n:]                # local per USD rising = the local currency weakening
+
+
 def _positions(portfolio: Dict) -> List[Dict]:
     return [p for p in (portfolio or {}).get("positions", []) if p.get("value_usd")] if portfolio and not portfolio.get("error") else []
 
@@ -151,17 +165,22 @@ def scenarios(market, portfolio: Dict) -> Dict:
             est[p["sym"]] = e
     out = []
     for sc in CFG.get("scenarios", DEFAULT_SCENARIOS):
-        rows = []
+        rows, missing = [], []
+        need = [f for f, x in sc["shocks"].items() if x]
         for p in pos:
             e = est.get(p["sym"])
-            if not e:
+            if not e or any(f not in e["b"] for f in need):     # no estimate for a shocked factor ≠ zero exposure
+                missing.append(p["sym"])
                 continue
-            ret = sum(e["b"].get(f, 0.0) * x for f, x in sc["shocks"].items())
-            rows.append({"sym": p["sym"], "ret_pct": ret * 100, "usd": ret * p["value_usd"]})
+            ret = sum(e["b"][f] * x for f, x in sc["shocks"].items() if x)
+            rows.append({"sym": p["sym"], "ret_pct": ret * 100, "usd": ret * p["value_usd"], "value": p["value_usd"]})
+        covered = sum(r["value"] for r in rows)
+        cov = covered / total if total else 0.0
         pnl = sum(r["usd"] for r in rows)
         rows.sort(key=lambda r: r["usd"])
-        out.append({"name": sc["name"], "pnl_usd": pnl, "pnl_pct": pnl / total * 100 if total else 0.0,
-                    "worst": rows[:3], "shocks": sc["shocks"]})
+        ok = cov >= 0.5                                      # below half the portfolio a single number would mislead
+        out.append({"name": sc["name"], "pnl_usd": pnl if ok else None, "pnl_pct": pnl / covered * 100 if ok and covered else None,
+                    "cov_pct": cov * 100, "missing": missing, "worst": rows[:3], "shocks": sc["shocks"]})
     wr2 = [(est[p["sym"]]["r2"], p["value_usd"]) for p in pos if p["sym"] in est and est[p["sym"]]["r2"] is not None]
     r2 = sum(a * b for a, b in wr2) / sum(b for _, b in wr2) if wr2 else None
     return {"available": True, "scenarios": out, "r2": r2, "factors": list(F.columns), "total": total,
@@ -173,15 +192,19 @@ def stops(market, portfolio: Dict, mult: Optional[float] = None, lookback: int =
     mult = float(mult if mult is not None else CFG.get("stop_atr_mult", 3.0))
     out = []
     for p in _positions(portfolio):
-        s = market.series(p["sym"])
+        from .sessions import completed
+        s = completed(market.series(p["sym"]).dropna(), p["sym"])     # only finished sessions: "closes below" means a close
         if len(s) < lookback + atr_n + 2:
             continue
         hi = float(s.iloc[-lookback:].max())
-        atr = float(s.diff().abs().iloc[-atr_n:].mean())
+        atr = float(s.diff().abs().iloc[-atr_n:].mean())     # close-to-close proxy (no daily high/low here), not a true-range ATR
         stop = hi - mult * atr
-        px = float(p.get("price") or s.iloc[-1])
-        out.append({"sym": p["sym"], "price": px, "high": hi, "stop": stop, "dist_pct": (px / stop - 1) * 100,
-                    "breached": px < stop, "weight": float(p.get("weight") or 0), "asof": str(s.index[-1])[:10]})
+        if stop <= 0:
+            continue
+        close = float(s.iloc[-1])
+        px = float(p.get("price") or close)
+        out.append({"sym": p["sym"], "price": px, "close": close, "high": hi, "stop": stop, "dist_pct": (px / stop - 1) * 100,
+                    "breached": close < stop, "below_now": px < stop, "weight": float(p.get("weight") or 0), "asof": str(s.index[-1])[:10]})
     out.sort(key=lambda r: r["dist_pct"])
     return out
 
@@ -199,7 +222,7 @@ def event_exposure(portfolio: Dict, events: List[Dict]) -> Dict:
 # ---------------------------------------------------------------- 5) volatility targeting
 def vol_target(market, portfolio: Dict, target_pct: Optional[float] = None) -> Dict:
     pos = _positions(portfolio)
-    cols = {p["sym"]: _rets(market, p["sym"], 260) for p in pos}
+    cols = {p["sym"]: _rets_usd(market, p, 260) for p in pos}
     cols = {k: v for k, v in cols.items() if len(v) >= 60}
     if not cols:
         return {"available": False}
@@ -208,6 +231,7 @@ def vol_target(market, portfolio: Dict, target_pct: Optional[float] = None) -> D
         return {"available": False}
     w = np.array([next(p["value_usd"] for p in pos if p["sym"] == s) for s in R.columns], dtype=float)
     total = float(sum(p["value_usd"] for p in pos))
+    covered = float(w.sum())
     w = w / w.sum()
     pr = pd.Series(R.values @ w, index=R.index)
     ann = math.sqrt(252)
@@ -217,7 +241,8 @@ def vol_target(market, portfolio: Dict, target_pct: Optional[float] = None) -> D
     cur = max(v20, v60)                                      # be conservative: the higher of short / medium windows
     scale = min(1.0, tgt / cur) if cur > 0 else 1.0
     return {"available": True, "vol20": v20, "vol60": v60, "vol252": v252, "target": tgt, "current": cur,
-            "scale": scale, "trim_pct": (1 - scale) * 100, "trim_usd": total * (1 - scale)}
+            "scale": scale, "trim_pct": (1 - scale) * 100, "trim_usd": covered * (1 - scale),
+            "cov_pct": covered / total * 100 if total else None, "n_missing": len(pos) - len(R.columns)}
 
 
 def build(engine) -> Dict:

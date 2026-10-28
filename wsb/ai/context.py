@@ -61,10 +61,14 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         L.append(f"SSI 20日變化 {f(mom.get('chg20'), 1, sign=True)} 點，歷史百分位 {f(mom.get('pctile'), 0)}，升溫狀態={mom.get('state') or 'NA'}"
                  f"（門檻：升溫≥{f(mom.get('th_rising'), 1, sign=True)}、降溫≤{f(mom.get('th_falling'), 1, sign=True)}）")
         for h in engine.odds["horizons"]:
-            L.append(f"{h['days']}交易日內跌≥{h['drawdown_pct']:.0f}%: 含升溫速度機率 {f(h.get('adjusted'), 1)}% "
+            lg = h.get("method") == "logit"
+            L.append(f"{h['days']}交易日內跌≥{h['drawdown_pct']:.0f}%: " + (f"主機率（只用今日 SSI 的邏輯迴歸，樣本外 AUC {f(h.get('model_auc_oos'), 2)}）"
+                     if lg else "主機率（SSI 區間＋升溫速度的歷史頻率）") + f" {f(h.get('adjusted'), 1)}% "
+                     + (f"| 區間＋升溫速度頻率 {f(h.get('bucket_adjusted'), 1)}% " if lg else "") +
                      f"(倍數 {f(h.get('lift_adj'), 2)}) | 僅看水準 {f(h['conditional'], 1)}% (倍數 {f(h['lift'], 2)}) | 基準 {f(h['base_rate'], 1)}% "
                      f"| 區間天數 {h['obs_in_zone']}, 獨立事件 {h['episodes_in_zone']}, 同升溫狀態天數 {h.get('cell_days')}")
-        L.append("解讀規則：倍數>1 代表比歷史平常更危險，<1 代表較安全；以『含升溫速度』機率為主要數字。")
+        L.append("解讀規則：倍數>1 代表比歷史平常更危險，<1 代表較安全；以『主機率』為主要數字。主機率若標示邏輯迴歸，它只用今日 SSI 水準，"
+                 "不含升溫速度——不要說它是升溫速度造成的。")
     sk = getattr(engine, "shock", None) or {}
     if sk.get("radar"):
         L.append("## 衝擊雷達（下一次衝擊可能從哪裡點火；水準＋升溫速度）")
@@ -110,7 +114,7 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
                      + ("；群聚：" + "；".join(f"{'+'.join(c['members'])} 合計{c['weight']:.0f}%" for c in d["clusters"][:3]) if d["clusters"] else ""))
         sc_ = xr_.get("scen") or {}
         if sc_.get("available"):
-            L.append("自訂情境損益: " + "；".join(f"{r['name'][:14]} {r['pnl_pct']:+.1f}%" for r in sc_["scenarios"]))
+            L.append("自訂情境損益: " + "；".join(f"{r['name'][:14]} " + (f"{r['pnl_pct']:+.1f}%（已估部位 {r.get('cov_pct', 100):.0f}%）" if r.get("pnl_pct") is not None else "資料不足") for r in sc_["scenarios"]))
         br = [r["sym"] for r in xr_.get("stops", []) if r["breached"]]
         if br:
             L.append("已跌破波動停損線: " + "、".join(br))

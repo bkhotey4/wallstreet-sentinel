@@ -329,18 +329,23 @@ def _x_scen(x: dict, tag: str) -> Slide:
     rows = []
     for r in sc["scenarios"]:
         worst = "、".join(f"{w['sym']} {w['ret_pct']:+.0f}%" for w in r["worst"][:2])
-        rows.append([(r["name"][:26], TEXT), (f"{r['pnl_pct']:+.1f}%", pn(r["pnl_pct"])), (fmt(r["pnl_usd"], 0, money=True, sign=True), pn(r["pnl_usd"])),
+        cov = r.get("cov_pct", 100)
+        nm = r["name"][:26] + (f"（已估 {cov:.0f}%）" if cov < 99.5 else "")
+        if r.get("pnl_pct") is None:
+            rows.append([(nm, TEXT), ("—", MUTED), ("資料不足", MUTED), (worst, MUTED)])
+            continue
+        rows.append([(nm, TEXT), (f"{r['pnl_pct']:+.1f}%", pn(r["pnl_pct"])), (fmt(r["pnl_usd"], 0, money=True, sign=True), pn(r["pnl_usd"])),
                      (worst, MUTED)])
     y = s.table(["情境", "持倉損益", "金額", "最受傷"], rows, 235, [0.38, 0.14, 0.18, 0.30], size=30, row_h=84, align=["l", "r", "r", "r"])
     r2 = sc.get("r2")
     s.paragraph(f"模型解釋力 R² 約 {r2 * 100:.0f}%（越低，情境估計越不可靠）。" if r2 is not None else "", M, y + 40, W - 2 * M, size=30, color=MUTED)
     if sc.get("n_proxy"):
-        s.paragraph(f"{sc['n_proxy']} 檔歷史不足，以大盤 β 估計。", M, y + 100, W - 2 * M, size=28, color=MUTED)
+        s.paragraph(f"{sc['n_proxy']} 檔歷史不足，只用大盤 β 估計（利率、美元等情境不計入，改標「已估 N%」，% 以已估部位為分母）。", M, y + 100, W - 2 * M, size=28, color=MUTED)
     return s
 
 
 def _x_stops(x: dict, tag: str) -> Slide:
-    s = Slide("持倉 X 光③：波動停損線與波動率目標", tag, "停損線 = 22 日最高收盤 − 3 × 14 日平均波幅（由波動決定，不是固定百分比）")
+    s = Slide("持倉 X 光③：波動停損線與波動率目標", tag, "停損線 = 22 日最高收盤 − 3 × 近 14 日平均每日收盤變動（由波動決定，不是固定百分比；以收盤判斷）")
     rows = []
     for r in (x.get("stops") or [])[:8]:
         rows.append([(r["sym"], TEXT), (fmt(r["price"], 2), TEXT), (fmt(r["stop"], 2), MUTED),
@@ -350,7 +355,8 @@ def _x_stops(x: dict, tag: str) -> Slide:
     v = x.get("vol") or {}
     if v.get("available"):
         col = RED if v["scale"] < 0.8 else ORANGE if v["scale"] < 1 else GREEN
-        line = (f"持倉年化波動：20 日 {v['vol20']:.0f}%、60 日 {v['vol60']:.0f}%、1 年 {v['vol252']:.0f}%；目標 {v['target']:.0f}%。")
+        line = (f"持倉年化波動：20 日 {v['vol20']:.0f}%、60 日 {v['vol60']:.0f}%、1 年 {v['vol252']:.0f}%；目標 {v['target']:.0f}%（以美元計"
+                + (f"，只涵蓋 {v['cov_pct']:.0f}% 部位，減碼金額也只算這部分" if (v.get("cov_pct") or 100) < 99.5 else "") + "）。")
         line2 = (f"波動已超標：依目標建議把曝險縮到 {v['scale'] * 100:.0f}%（減 {fmt(v['trim_usd'], 0, money=True)}）。" if v["scale"] < 1
                  else "波動在目標之內，不需要縮減曝險。")
         s.paragraph(line, M, y + 40, W - 2 * M, size=30, color=TEXT)

@@ -105,6 +105,8 @@ _JS = r"""
  try{C=JSON.parse(box.getAttribute('data-ctx')||'{}');}catch(e){}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){return x==null||isNaN(x)?'—':(x>0?'+':'')+f(x,d);}
+ function nyLive(){var p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),o={};
+   p.forEach(function(x){o[x.type]=x.value;});var m=(+o.hour%24)*60+(+o.minute);return o.weekday!=='Sat'&&o.weekday!=='Sun'&&m>=570&&m<1020;}   // 09:30–17:00 New York (DST-safe)
  function tpe(){var p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),o={};
    p.forEach(function(x){o[x.type]=x.value;});return {wd:o.weekday,m:(+o.hour%24)*60+(+o.minute)};}
  function session(){var t=tpe();if(t.wd==='Sat'||t.wd==='Sun')return 'closed';return t.m>=540&&t.m<810?'open':t.m<540?'pre':'post';}
@@ -127,14 +129,14 @@ _JS = r"""
    if(w.length||a.length)W.push('各產業權值股'+(up?'帶頭漲':'帶頭跌')+'：'+(w.length?w.slice(0,4).map(nm).join('、'):'沒有')+(a.length?'；反方向：'+a.slice(0,3).map(nm).join('、'):'')+'。');
    // industries: average of their heavyweights, the best and the worst with the clue that usually goes with them
    var g={};mg.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x.c);});var ind=Object.keys(g).map(function(k){return {k:k,c:g[k].reduce(function(s,v){return s+v;},0)/g[k].length};}).sort(function(a,b){return b.c-a.c;});
-   var sox=q['^SOX'],oil=q['CL=F'],tmn0=tpe().m,usNow=tmn0>=1290||tmn0<300,soxB=usNow?null:sox;   // tonight's US session came after this Taiwan session
+   var sox=q['^SOX'],oil=q['CL=F'],usNow=nyLive(),soxB=usNow?null:sox;   // tonight's US session came after this Taiwan session
    var clue=function(x){var t=CLUE[x.k];if(t==='chip'&&soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1&&(soxB.chg>0)===(x.c>0))return '，呼應昨晚費城半導體 '+sg(soxB.chg,1)+'%';
      if(t==='oil'&&oil&&oil.chg!=null&&Math.abs(oil.chg)>=1&&(oil.chg>0)===(x.c>0))return '，跟著原油 '+sg(oil.chg,1)+'%';
      if((x.k==='金融'||x.k==='電信'||x.k==='食品')&&x.c>0&&c<0)return '，大盤跌時資金躲進防禦型';return '';};
    if(ind.length>=6){var hi=ind[0],lo=ind[ind.length-1];if(Math.abs(hi.c)>=0.8||Math.abs(lo.c)>=0.8)W.push('產業：'+hi.k+' '+sg(hi.c,1)+'% 最強'+clue(hi)+'；'+lo.k+' '+sg(lo.c,1)+'% 最弱'+clue(lo)+'。');}
    // last night in New York and the TSMC ADR premium (ADR = 5 shares)
    var tsm=q['TSM'],t2=q['2330.TW'],fx=q['TWD=X'],gs=q['^GSPC'];
-   var tmn=tpe().m,usLive=tmn>=1290||tmn<300;                          // 21:30–05:00 Taipei: New York is trading now
+   var usLive=usNow;                                                   // New York is trading now (its own clock, so DST is handled)
    if(sox&&sox.chg!=null&&gs&&gs.chg!=null)W.push((usLive?'美股盤中（今晚）':'昨晚美股')+'：標普 '+sg(gs.chg,1)+'%、費城半導體 '+sg(sox.chg,1)+'%'+(tsm&&tsm.chg!=null?'、台積電 ADR '+sg(tsm.chg,1)+'%':'')
      +(Math.abs(sox.chg)>=1.5?'：'+(sox.chg>0?'半導體大漲，台股電子權值股'+(usLive?'明天':'')+'通常跟著開高。':'半導體大跌，台股電子權值股'+(usLive?'明天':'')+'通常跟著承壓。'):'。'));
    if(tsm&&t2&&fx&&t2.price){var pm=(tsm.price*fx.price/(t2.price*5)-1)*100;if(Math.abs(pm)>=8)W.push('台積電 ADR 溢價 '+sg(pm,0)+'%：'+(pm>0?'美國投資人願意付比台股更高的價格，代表外資對台積電看法偏正面。':'ADR 比台股便宜，外資態度偏保守。'));}

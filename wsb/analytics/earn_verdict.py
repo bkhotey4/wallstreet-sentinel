@@ -59,6 +59,24 @@ def _load_implied() -> Dict[str, Dict]:
         return {}
 
 
+def _before_report(asof, day: str, when: str) -> bool:
+    """The quote was taken before the report: by New York time, before the report day for pre-market / unknown times,
+    before 16:00 ET on the day for after-close reports.  A stamp without a clock time only counts if it is the day before."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+    a = str(asof or "")
+    if len(a) < 10:
+        return False
+    if len(a) < 16:
+        return a[:10] < day
+    try:
+        t = _dt.strptime(a[:16], "%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("America/New_York"))
+    except ValueError:
+        return a[:10] < day
+    d = t.strftime("%Y-%m-%d")
+    return d < day or (d == day and when == "after" and t.hour < 16)
+
+
 def remember_implied(eng) -> Dict[str, Dict]:
     """Save each upcoming report's options-implied move (computed by the site build) so it can be compared afterwards."""
     snap = _load_implied()
@@ -68,8 +86,7 @@ def remember_implied(eng) -> Dict[str, Dict]:
             continue
         # only a quote taken BEFORE the report counts as "what options priced": the day before, or the same day for
         # after-close reports (pre-market and foreign reporters such as TSMC publish before the US open)
-        qd = str(r.get("asof") or "")[:10]
-        if not qd or not (qd < r["date"] or (qd == r["date"] and r.get("time") == "after")):
+        if not _before_report(r.get("asof"), r["date"], r.get("time", "")):
             continue
         k = f'{r["sym"]}|{r["date"]}'
         if (snap.get(k) or {}).get("mv") != r["mv"]:
@@ -77,8 +94,7 @@ def remember_implied(eng) -> Dict[str, Dict]:
             changed = True
     # drop snapshots that were not taken before the report (older entries were saved before this rule existed)
     for k in [k for k, v in snap.items()
-              if not (str(v.get("asof") or "")[:10] < k.split("|")[-1]
-                      or (str(v.get("asof") or "")[:10] == k.split("|")[-1] and v.get("time") == "after"))]:
+              if not _before_report(v.get("asof"), k.split("|")[-1], v.get("time", ""))]:
         snap.pop(k)
         changed = True
     cutoff = (date.today() - timedelta(days=90)).isoformat()

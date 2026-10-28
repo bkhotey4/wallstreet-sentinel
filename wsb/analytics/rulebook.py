@@ -180,7 +180,10 @@ def summarize(checks: List[Dict]) -> Dict:
     n_ex, n_tr = sum(x["met"] is True for x in ex), sum(x["met"] is True for x in tr)
     ad_known = [x for x in ad if x["met"] is not None]
     n_ad = sum(x["met"] is True for x in ad_known)
-    req_unknown = [x["zh"] for x in ad if x.get("id") in ADD_REQUIRED and x["met"] is None]
+    have = {x.get("id") for x in ad}
+    req_unknown = [x["zh"] for x in ad if x.get("id") in ADD_REQUIRED and x["met"] is None] +         ([i for i in ADD_REQUIRED if i not in have] if ad else [])     # a required check that is not even listed is missing
+    opt = [x for x in ad if x.get("id") not in ADD_REQUIRED]
+    opt_known = [x for x in opt if x["met"] is not None]
     all_known_ok = bool(ad_known) and n_ad == len(ad_known)
     all_add = all_known_ok and not req_unknown and len(ad_known) >= int(cfg()["add_min_known"])
     pend = all_known_ok and not all_add                   # nothing failed, but required data are missing
@@ -191,7 +194,8 @@ def summarize(checks: List[Dict]) -> Dict:
     elif n_tr:
         st, zh = "trim", f"減碼檢查：{n_tr} 項觸發"
     elif all_add:
-        st, zh = "add", f"加碼條件：{len(ad)} 項全部成立"
+        st, zh = "add", (f"加碼條件：{len(ad)} 項全部成立" if len(ad_known) == len(ad) else
+                         f"加碼條件：必備 {len(ad) - len(opt)}/{len(ad) - len(opt)} 項成立，參考項 {len(opt_known)}/{len(opt)} 項有資料且成立")
     elif pend:
         st, zh = "pend", (f"加碼條件：已知 {n_ad}/{len(ad)} 項成立，" + (f"必備資料待確認（{'、'.join(req_unknown)}）" if req_unknown
                                                                     else f"有資料的項目不足 {int(cfg()['add_min_known'])} 項"))
@@ -223,7 +227,8 @@ def build(eng) -> Dict:
         rel = ER.load()
     except Exception:  # noqa: BLE001
         rel = {}
-    ssi = eng.stress.score if getattr(eng, "stress", None) else None
+    st_ = getattr(eng, "stress", None)
+    ssi = st_.score if st_ and (getattr(st_, "coverage", None) or 0) >= 0.6 else None   # a thin SSI is not a macro all-clear
     pos = {p["sym"]: p for p in pf.get("positions", []) if not p.get("error")}
     themes = {s: _theme(s) for s in pos}
     theme_w: Dict[str, float] = {}
@@ -238,6 +243,8 @@ def build(eng) -> Dict:
         ps = price_stats(px, bench)
         if not ps:                                     # no history yet (a holding just added): price from the portfolio,
             ps = {"price": p.get("price"), "asof": None}  # every price rule shows "no data" instead of the row vanishing
+        elif ps.get("asof") and (today - date.fromisoformat(ps["asof"])).days > 7:   # history stopped updating:
+            ps = {"price": p.get("price"), "asof": ps["asof"], "stale": True}       # its MA / momentum are not today's
         dz = None
         rec = cache.get(s) or {}
         if rec.get("bs"):

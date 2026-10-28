@@ -1075,7 +1075,8 @@ function rbSum(ch, minKnown){var ex=ch.filter(function(c){return c.g==='exit';})
  var nx=ex.filter(function(c){return c.met===true;}).length,nt=tr.filter(function(c){return c.met===true;}).length,na=ad.filter(function(c){return c.met===true;}).length;
  var req=all0.filter(function(c){return c.met===null&&RB_REQ.some(function(r){return c.zh.indexOf(r)===0;});}).map(function(c){return c.zh;});
  var ok=ad.length>0&&na===ad.length,all=ok&&!req.length&&ad.length>=(minKnown||0),pend=ok&&!all,st=nx>=2?'exit2':nx===1?'exit1':nt?'trim':all?'add':pend?'pend':'hold';
- var zh={exit2:'出場檢查：'+nx+' 項觸發',exit1:'出場檢查：1 項觸發',trim:'減碼檢查：'+nt+' 項觸發',add:'加碼條件：'+all0.length+' 項全部成立',
+ var zh={exit2:'出場檢查：'+nx+' 項觸發',exit1:'出場檢查：1 項觸發',trim:'減碼檢查：'+nt+' 項觸發',add:ad.length===all0.length?'加碼條件：'+all0.length+' 項全部成立':(function(){var nr=all0.filter(function(c){return RB_REQ.some(function(r){return c.zh.indexOf(r)===0;});}).length,no=all0.length-nr,ok2=ad.length-nr;
+   return '加碼條件：必備 '+nr+'/'+nr+' 項成立，參考項 '+ok2+'/'+no+' 項有資料且成立';})(),
   pend:'加碼條件：已知 '+na+'/'+all0.length+' 項成立，'+(req.length?'必備資料待確認（'+req.join('、')+'）':'有資料的項目不足 '+minKnown+' 項'),hold:'沒有規則觸發'}[st];
  return {st:st,zh:zh,nx:nx,nex:ex.length,nt:nt,ntr:tr.length,na:na,nad:ad.length};}
 function renderRules(rows, totV){

@@ -201,13 +201,16 @@ def crash(engine) -> discord.Embed:
     e.description = (f"問題：**歷史上 SSI 落在今天的區間（{od['bucket']}）、且升溫速度相同（{mom.get('state') or '—'}）時，標普 500 之後跌到門檻的頻率？**\n"
                      f"SSI 20 日變化 {f(mom.get('chg20'),1,sign=True)} 點（歷史 {f(mom.get('pctile'),0)} 百分位）。"
                      f"倍數 >1 比平常危險、<1 比平常安全。\n"
-                     f"樣本起點 {od['sample_start']} · {od['n_days']} 個交易日。重疊視窗會高估樣本數，請看『獨立事件』欄位。")
+                     f"樣本起點 {od['sample_start']} · {od['n_days']} 個交易日。重疊視窗會高估樣本數，請看『獨立事件』欄位。"
+                     + ("\n標題的主數字是只用今日 SSI 的邏輯迴歸校準機率（走步樣本外驗證，不含升溫速度）；區間＋升溫速度的歷史頻率列在各欄內。"
+                        if any(h.get("method") == "logit" for h in od["horizons"]) else ""))
     for h in od["horizons"]:
         tbl = "\n".join(f"`{t['zone']:>7}` {bar(t['prob'], 8)} {t['prob']:5.1f}% ({t['days']}天)" for t in h["table"])
         e.add_field(
             name=(f"{h['days']}交易日內 −{h['drawdown_pct']:.0f}%：{f(h.get('adjusted'),1)}%（{h.get('lift_adj_text','')}）"
                   f"・僅看水準 {f(h['conditional'],1)}%・基準 {f(h['base_rate'],1)}%")[:256],
-            value=(drift_note(h).strip() + "\n" if h.get("drift") else "") + (f"區間天數 {h['obs_in_zone']} · 獨立事件 {h['episodes_in_zone']} · 區間中位最深回撤 {f(h['median_fwd_min_in_zone'],1)}%\n{tbl}")[:1024],
+            value=(drift_note(h).strip() + "\n" if h.get("drift") else "")
+            + (f"區間＋升溫速度頻率 {f(h.get('bucket_adjusted'),1)}%\n" if h.get("method") == "logit" else "") + (f"區間天數 {h['obs_in_zone']} · 獨立事件 {h['episodes_in_zone']} · 區間中位最深回撤 {f(h['median_fwd_min_in_zone'],1)}%\n{tbl}")[:1024],
             inline=False)
     return footer(e, engine)
 

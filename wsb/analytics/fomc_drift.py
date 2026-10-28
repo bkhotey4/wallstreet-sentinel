@@ -94,8 +94,12 @@ def build(eng) -> Dict:
     nxt = next((d for d in sorted(live) if d >= today), None)
     if nxt:
         t = pd.Timestamp(nxt)
-        start = (t - pd.offsets.BDay(6)).normalize()             # business days (exchange holidays not removed)
-        out["next"] = {"date": nxt, "start": start.strftime("%Y-%m-%d"), "end": (t - pd.offsets.BDay(1)).strftime("%Y-%m-%d"),
+        # the same window as the history table: the close 6 trading bars before the decision day.  Bars already in the
+        # data are real NYSE sessions (holidays excluded); only days still ahead fall back to weekdays
+        days = list(s.index[s.index < t]) + list(pd.bdate_range(s.index[-1] + pd.Timedelta(days=1), t - pd.Timedelta(days=1)))
+        start = pd.Timestamp(days[-6]).normalize() if len(days) >= 6 else (t - pd.offsets.BDay(6)).normalize()
+        end = pd.Timestamp(days[-1]) if days else t - pd.offsets.BDay(1)
+        out["next"] = {"date": nxt, "start": start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d"),
                        "vix_start": None, "so_far": None}
         if start <= s.index[-1]:
             i = s.index.searchsorted(start)

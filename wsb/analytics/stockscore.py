@@ -89,6 +89,7 @@ def features(c: pd.Series, v: pd.Series, bench: pd.Series) -> Optional[Dict]:
             "new_low": p <= float(yr.min()) * 1.001,
             "vol60": float(lr.tail(60).std() * math.sqrt(252) * 100) if len(lr) >= 60 else None,
             "rsi": rsi(c), "accum": (upv / dnv) if dnv > 0 else (2.0 if upv > 0 else None),
+            "accum_rank": (upv / dnv) if dnv > 0 else (1e9 if upv > 0 else None),   # no down day at all ranks at the top
             "asof": c.index[-1].strftime("%Y-%m-%d")}
 
 
@@ -194,7 +195,7 @@ def technical_scores(feats: Dict[str, Dict]) -> Dict[str, tuple]:
     rk = {"momentum": mom,
           "relative": _rank({k: f["rel3"] for k, f in feats.items()}),
           "near_high": _rank({k: f["dist_high"] for k, f in feats.items()}),
-          "accumulation": _rank({k: f["accum"] for k, f in feats.items()}),
+          "accumulation": _rank({k: f.get("accum_rank", f["accum"]) for k, f in feats.items()}),
           "low_vol": _rank({k: f["vol60"] for k, f in feats.items()}, higher_better=False)}
     out = {}
     for sym, f in feats.items():

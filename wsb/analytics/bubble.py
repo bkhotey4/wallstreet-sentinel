@@ -208,7 +208,7 @@ def episodes(ff: Dict[str, Dict[str, float]], test, start: str = "1926") -> List
                 continue
             peak = np.maximum(fut.cummax().values, hi12.iloc[t])
             dd = fut.values / peak - 1
-            hit = np.where(dd <= -DD)[0]
+            hit = np.where(dd[1:] <= -DD)[0] + 1              # from the next month on: the signal month itself is not "later"
             out.append({"ind": ind, "date": px.index[t].strftime("%Y-%m"), "run": float(x["run"]), "off": float(x["off"]),
                         "crash": bool(len(hit)), "months": int(hit[0]) if len(hit) else None,
                         "ret1y": float(fut.iloc[12] / fut.iloc[0] - 1), "ret2y": float(fut.iloc[-1] / fut.iloc[0] - 1)})
@@ -280,7 +280,7 @@ def scenarios(ff: Dict[str, Dict[str, float]], credit: Optional[Dict[str, float]
                 continue
             pk, fut = hi12.iloc[i], px.iloc[i:i + H + 1]
             dd = fut.values / np.maximum(fut.cummax().values, pk) - 1
-            hit = np.where(dd <= -DD)[0]
+            hit = np.where(dd[1:] <= -DD)[0] + 1              # from the next month on: the signal month itself is not "later"
             nh = np.where(fut.values >= pk)[0]
             m_c = int(hit[0]) if len(hit) else None
             m_h = int(nh[0]) if len(nh) else None

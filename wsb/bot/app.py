@@ -783,7 +783,7 @@ class Sentinel(commands.Bot):
             if A.get("stress_level_cross") and prev is not None and idx > prev and idx >= 2:
                 sev = "🚨 CRITICAL" if idx >= 3 else "⚠️ WARNING"
                 drv = ", ".join(f"{c.id}({c.score:.0f})" for c in st.drivers(4))
-                out.append(Alert(f"ssi_level_{idx}", sev, f"系統性壓力升級 → {st.emoji} {st.label}（SSI {st.score:.1f}）",
+                out.append(Alert(f"ssi_level_{idx}:{datetime.now(E.TZ):%Y%m%d%H%M}", sev, f"系統性壓力升級 → {st.emoji} {st.label}（SSI {st.score:.1f}）",
                                  f"主要推升：{drv}" + _cov_note(st)))
             # hysteresis: only step down after 3 pts below the boundary
             if prev is None or idx >= prev or st.score < levels[idx]["max"] - 3:
@@ -1159,8 +1159,8 @@ class Sentinel(commands.Bot):
             was = store.kv_get(k)
             store.kv_set(k, bool(r["breached"]))
             if r["breached"] and was is False and r["weight"] >= min_w:
-                out.append(Alert(f"stop:{r['sym']}:{r['asof']}", "⚠️ WARNING", f"{r['sym']} 跌破波動停損線（{r['price']:.2f} < {r['stop']:.2f}）",
-                                 f"權重 {r['weight']:.0f}%；22 日高點 {r['high']:.2f}，停損 = 高點 − 3×平均波幅。這是紀律提醒，不是賣出指令（/xray 看全部）"))
+                out.append(Alert(f"stop:{r['sym']}:{r['asof']}", "⚠️ WARNING", f"{r['sym']} 收盤跌破波動停損線（{r['asof']} 收 {r.get('close', r['price']):.2f} < {r['stop']:.2f}）",
+                                 f"權重 {r['weight']:.0f}%；22 日最高收盤 {r['high']:.2f}，停損 = 高點 − 3×近 14 日平均每日收盤變動。這是紀律提醒，不是賣出指令（/xray 看全部）"))
         return out
 
     def _stability_alerts(self) -> List[Alert]:
@@ -1265,7 +1265,7 @@ class Sentinel(commands.Bot):
         prev = store.kv_get("gamma_below")
         store.kv_set("gamma_below", below)
         if below and prev is False:
-            return [Alert("gamma_flip", "⚠️ WARNING", f"SPX 跌破零 Gamma 翻轉點 {op['zero_gamma']:.0f}（現 {op['spot']:.0f}）",
+            return [Alert(f"gamma_flip:{datetime.now(E.TZ):%Y%m%d%H%M}", "⚠️ WARNING", f"SPX 跌破零 Gamma 翻轉點 {op['zero_gamma']:.0f}（現 {op['spot']:.0f}）",
                           "造市商進入負 Gamma：避險行為轉為順勢，日內波動放大機率上升")]
         return []
 
@@ -1359,6 +1359,25 @@ class Sentinel(commands.Bot):
 
     PENDING_S = 24 * 3600
 
+    @staticmethod
+    def _still_holds(key: str) -> bool:
+        """A queued *state* signal (holdings rule, volatility stop, Gamma, SSI level) is only re-offered while that state
+        still holds: yesterday's "add" must not arrive after the holding turned to "trim".  Facts (filings, halts, news)
+        always hold."""
+        p = key.split(":")
+        if p[0] == "rules" and len(p) >= 3:
+            return store.kv_get(f"rules_state:{p[1]}") == p[2]
+        if p[0] == "stop" and len(p) >= 2:
+            return store.kv_get(f"stop_state:{p[1]}") is True
+        if p[0] == "gamma_flip":
+            return store.kv_get("gamma_below") is True
+        if p[0].startswith("ssi_level_"):
+            try:
+                return (store.kv_get("ssi_level_idx") or 0) >= int(p[0][len("ssi_level_"):])
+            except ValueError:
+                return True
+        return True
+
     async def _run_alerts(self, alerts: List[Alert], limit: Optional[int] = None) -> None:
         """Durable outbox for one-shot alerts.  Edge-triggered rules (Gamma, VIX, SSI, playbook, holdings rules…) record
         their new state when they build the alert, so an alert that is muted, capped or fails to send would never be
@@ -1366,12 +1385,14 @@ class Sentinel(commands.Bot):
         now = time.time()
         pend = store.kv_get("alert_pending") or {}
         for a in alerts:
-            if ":" in a.key and a.key not in pend and not store.alert_sent(a.key):
+            if ":" in a.key and a.key not in pend and not store.alert_sent(a.key):    # edge events (incl. gamma_flip / ssi_level) carry a stamp
                 pend[a.key] = {"s": a.severity, "t": a.title, "d": a.detail, "e": a.event_ts, "ts": now}
-        stale = [k for k, v in pend.items() if store.alert_sent(k) or now - v["ts"] > self.PENDING_S]
+        have0 = {a.key for a in alerts}
+        stale = [k for k, v in pend.items() if store.alert_sent(k) or now - v["ts"] > self.PENDING_S
+                 or (k not in have0 and not self._still_holds(k))]
         for k in stale:
             if not store.alert_sent(k):
-                log.warning("alert %s not delivered within 24 h — dropped from the outbox", k)
+                log.warning("alert %s not delivered (expired after 24 h or its state no longer holds) — dropped from the outbox", k)
             pend.pop(k, None)
         store.kv_set("alert_pending", pend)
         have = {a.key for a in alerts}

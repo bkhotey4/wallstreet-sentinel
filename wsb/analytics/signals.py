@@ -52,7 +52,10 @@ def rsi_series(c: pd.Series, n: int = 14) -> pd.Series:
     d = c.diff()
     up = d.clip(lower=0).ewm(alpha=1 / n, adjust=False).mean()
     dn = (-d.clip(upper=0)).ewm(alpha=1 / n, adjust=False).mean()
-    return 100 - 100 / (1 + up / dn.replace(0, np.nan))
+    r = 100 - 100 / (1 + up / dn.replace(0, np.nan))
+    r[(dn == 0) & (up > 0)] = 100.0                       # only gains: the formula's limit, not "unknown"
+    r[(dn == 0) & (up == 0)] = 50.0                       # perfectly flat
+    return r.where(d.notna())
 
 
 def base_strengths() -> Dict[str, float]:

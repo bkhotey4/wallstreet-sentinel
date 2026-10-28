@@ -28,9 +28,15 @@ def _raw_holdings(data, acct: str):
     return None
 
 
+LOAD_OK = False                                           # last load_holdings() got a real answer (a file, or disabled)
+
+
 def load_holdings() -> Dict[str, dict]:
+    global LOAD_OK
+    LOAD_OK = False
     cfg = SETTINGS.get("portfolio", {})
     if not cfg.get("enabled", True):                    # 情報站模式：完全不讀取任何持倉
+        LOAD_OK = True
         return {}
     acct = env(cfg.get("account_id_env", "PRIMARY_PORTFOLIO_USER_ID"))
     for key in ("file", "fallback_file"):
@@ -60,6 +66,7 @@ def load_holdings() -> Dict[str, dict]:
             if sh > 0 and cost > 0:
                 cur = e.get("currency") or ("TWD" if sym.endswith((".TW", ".TWO")) else "HKD" if sym.endswith(".HK") else "USD")
                 out[sym] = {"shares": sh, "cost": cost, "currency": cur, "name": e.get("name", sym)}
+        LOAD_OK = True
         return out                                        # a valid file, even an empty one, is the answer: an emptied
     return {}                                             # portfolio must not bring back the fallback's old positions
 
