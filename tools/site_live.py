@@ -300,7 +300,7 @@ _JS = r"""
  function pull(){if(dead||document.hidden)return;Promise.all([api(Object.keys(want).join(','),0,VS.map(function(v){return v[0];}).join(',')),
    BKS.length?api(BKS.join(',')).catch(function(){return {q:{}};}):Promise.resolve({q:{}})]).then(function(r){var d=r[0];var q=d.q||{},q2=r[1].q||{};
    Object.keys(q2).forEach(function(s){if(!q[s])q[s]=q2[s];});if(!Object.keys(q).length){stale();return;}data=q;lastOk=Date.now();
-   if(bar)bar.hidden=false;var off=document.getElementById('lqoff');if(off)off.hidden=true;paintTiles(data);paintRules(data);ago();}).catch(function(){if(!dead)stale();});}
+   if(bar)bar.hidden=false;var off=document.getElementById('lqoff');if(off)off.hidden=true;paintTiles(data);paintRules(data);ago();if(Date.now()-ivT>3*POLL)pullIv();}).catch(function(){if(!dead)stale();});}
  function pullIv(){if(dead||document.hidden)return;var L=IVY.concat(IVP).map(function(y){return y[0];}).join(',');
    api1(L,0,null,L).then(function(d){ivq=d.q||{};ivT=Date.now();ivBad=0;if(lastOk)paintRules(data);}).catch(function(){ivBad=1;if(lastOk)paintRules(data);});}
  setTimeout(pullIv,1500);setInterval(pullIv,3*POLL);
