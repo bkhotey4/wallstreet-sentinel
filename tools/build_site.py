@@ -1642,6 +1642,13 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(TRM.refresh(), 120)
     except Exception as e:  # noqa: BLE001
         log.warning("transmission data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 公布前估算：GDP／PCE／非農（FRED，12 小時一次）
+        from wsb.data import nowcast as NCD
+        d = await asyncio.wait_for(NCD.refresh(), 150)
+        from wsb.analytics import nowcast as NC     # the calendar was built in bootstrap, before this refresh
+        NC.attach((getattr(eng, "econ_view", None) or {}).get("events") or [], d.get("log") or {})
+    except Exception as e:  # noqa: BLE001
+        log.warning("nowcast data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 重大事件倒數：FRED 的 CPI／非農發布日（7 天一次）
         from wsb.analytics import event_clock as EVC
         await asyncio.wait_for(EVC.refresh(), 60)
