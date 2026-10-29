@@ -240,75 +240,99 @@ def _row(e: Dict, label: str) -> Dict:
     return next((r for r in e.get("rows") or [] if r.get("label") == label), {})
 
 
-def _vs_cons(est: float, cons: Optional[float], rmse: float, unit: str, hot: str, cold: str) -> str:
-    if cons is None:
-        return ""
-    gap = est - cons
-    if abs(gap) < 0.5 * rmse:
-        return f"；和市場預期 {cons:g}{unit} 差不多（差距小於估算誤差的一半）"
-    return f"；比市場預期 {cons:g}{unit} {'高' if gap > 0 else '低'}，估算偏向「{hot if gap > 0 else cold}」，但誤差不小，只當方向參考"
+# plain-language meaning of a hot / in-line / cool print (written as transmission, not a forecast)
+MEAN = {
+    "pce": {"what": "PCE 是聯準會最看重的物價數字，看「東西一個月漲了多少」。聯準會希望一年只漲 2%。",
+            "unit": "%", "nm": "核心 PCE 月增",
+            "hot": "物價還在加速 → 聯準會更可能升息、更晚降息 → 美債殖利率往上、美元偏強；要很久才回本的科技股、AI 股通常壓力最大，台股電子跟著費半。",
+            "mid": "和大家預期的差不多 → 市場鬆一口氣，影響通常不大，焦點回到財報。",
+            "cool": "物價降溫 → 升息壓力變小 → 殖利率回落；成長股、半導體通常受惠。如果同時消費也明顯轉弱，市場會轉而擔心景氣。",
+            "next": "接下來看：殖利率是不是跟著動、12 月升息機率有沒有變（財經日曆 FOMC 卡）。"},
+    "gdp": {"what": "GDP 是美國經濟這一季成長多快（換算成一年的速度）。2% 左右算正常，0 以下代表萎縮。",
+            "unit": "%", "nm": "GDP",
+            "hot": "經濟比想像熱 → 聯準會更不需要降息、甚至可能升息 → 殖利率往上；景氣循環股、金融股相對受惠，估值高的科技股承壓。",
+            "mid": "和預期差不多 → 影響通常有限，市場更在意同一時間公布的 PCE 物價。",
+            "cool": "經濟放緩 → 衰退擔憂上升 → 殖利率回落、防禦類股相對抗跌；如果主要是庫存或進出口拖累，市場通常不太在意。",
+            "next": "接下來看：扣掉庫存和進出口後的「最終銷售」，那才是真正的需求。"},
+    "nfp": {"what": "非農就業是美國上個月多了多少工作（不含農業）。數字越大代表就業市場越熱。",
+            "unit": "K", "nm": "非農新增就業（千人）",
+            "hot": "就業很熱 → 薪水和物價壓力大 → 升息機會變高、殖利率往上；如果時薪也偏高，對股市更不利。",
+            "mid": "和預期差不多 → 看失業率和時薪，失業率持平市場通常鬆一口氣。",
+            "cool": "就業轉弱 → 升息壓力變小、殖利率回落；但如果失業率也明顯跳升，市場會轉為擔心衰退，股市可能跟著跌。",
+            "next": "接下來看：失業率、時薪，以及前兩個月有沒有被大幅修正。"},
+}
 
 
-def _surprise(a: float, est: float, rmse: float) -> str:
-    z = (a - est) / rmse if rmse else 0
-    return ("在估算誤差內（不算意外）" if abs(z) < 1 else "超出估算誤差（明顯意外）") + f"，差 {z:+.1f} 倍誤差"
+WIDTH = {"pce": 0.1, "gdp": 0.5, "nfp": 50.0}     # how far from the consensus a print must be for markets to call it a surprise
 
 
-def describe(e: Dict, log: Dict[str, Dict]) -> Optional[Dict[str, str]]:
-    """One plain-language line for an event card: the pre-release estimate (upcoming) or estimate-vs-actual (released)."""
+def _band(center: float, key: str) -> Tuple[float, float]:
+    w = WIDTH[key]
+    if key == "nfp":
+        c = round(center / 10) * 10
+        return c - w, c + w
+    c = round(center, 1)
+    return round(c - w, 1), round(c + w, 1)
+
+
+def _fmt(v: float, key: str) -> str:
+    return f"{v:+,.0f}K" if key == "nfp" else f"{v:.1f}%"
+
+
+def describe(e: Dict, log: Dict[str, Dict]) -> Optional[Dict]:
+    """A plain-language explainer for one event: what it is, the estimate, what a high / middle / low print would mean
+    (upcoming), or what the actual print means (released).  "zh" is a one-line version for the calendar row."""
     tk = target_for(e["key"], e["date"])
     rec = (log or {}).get(tk) if tk else None
     if not rec:
         return None
-    est = rec["est"]
-    if e["key"] == "pce":
+    k, est = e["key"], rec["est"]
+    mn = MEAN[k]
+    if k == "pce":
         c = est.get("core") or {}
-        h = est.get("head") or {}
-        if not c and not h:
+        if not c:
             return None
-        if e.get("released"):
-            a = _num(_row(e, "核心 PCE 月增").get("actual"))
-            if a is None or not c:
-                return None
-            return {"zh": f"事前估算：核心 PCE 月增 {c['mm']:.2f}%（誤差約 ±{c['rmse']:.2f}）→ 公布 {a:g}%，{_surprise(a, c['mm'], c['rmse'])}。"
-                          "公布值只到小數一位，0.05 以內的差距可能只是四捨五入。",
-                    "en": f"Estimate: core PCE m/m {c['mm']:.2f}% (±{c['rmse']:.2f}) → actual {a:g}%."}
-        cons = _num(_row(e, "核心 PCE 月增").get("cons"))
-        s = (f"公布前估算（用已公布的 {c['month']} CPI、PPI 推算）：核心 PCE 月增約 {c['mm']:.2f}%"
-             + (f"、年增約 {c['yy']:.1f}%" if c.get("yy") is not None else "") + f"（過去 36 個月誤差約 ±{c['rmse']:.2f}）") if c else ""
-        if h:
-            s += f"；整體 PCE 月增約 {h['mm']:.2f}%" + (f"、年增約 {h['yy']:.1f}%" if h.get("yy") is not None else "")
-        if c:
-            s += _vs_cons(c["mm"], cons, c["rmse"], "%", "通膨偏熱", "通膨降溫")
-        return {"zh": s + "。", "en": f"Pre-release estimate: core PCE m/m ~{c.get('mm', float('nan')):.2f}% (±{c.get('rmse', float('nan')):.2f})."}
-    if e["key"] == "nfp":
-        if e.get("released"):
-            a = _num(_row(e, "非農新增就業（千人）").get("actual"))
-            if a is None:
-                return None
-            return {"zh": f"事前估算：非農新增約 {est['est']:+,}K（誤差約 ±{est['rmse']:,}K）→ 公布 {a:+,.0f}K，{_surprise(a, est['est'], est['rmse'])}。",
-                    "en": f"Estimate {est['est']:+,}k (±{est['rmse']:,}k) → actual {a:+,.0f}k."}
-        cons = _num(_row(e, "非農新增就業（千人）").get("cons"))
+        v, rmse = c["mm"], c["rmse"]
+        say = f"網站估 {c['month'][5:].lstrip('0')} 月核心物價比上個月漲約 {v:.2f}%" + (f"（一年約漲 {c['yy']:.1f}%）" if c.get("yy") is not None else "")
+        how = (f"用同月已公布的 CPI、PPI 推算（PCE 的大部分成分這兩份已經有了）。核心 = 扣掉食物和能源。平常誤差約 ±{rmse:.2f} 個百分點"
+               "（最近 36 個月走步樣本外測試，用修正後的歷史數字，實際誤差通常更大）。"
+               + (f"整體 PCE（含食物能源）估月增約 {est['head']['mm']:.2f}%" + (f"、年增約 {est['head']['yy']:.1f}%" if est['head'].get('yy') is not None else "") + "。" if est.get("head") else ""))
+    elif k == "gdp":
+        v, rmse = est["est"], est.get("rmse") or 1.0
+        say = f"亞特蘭大聯準會的即時估算（GDPNow）：第 {est['quarter'][-1]} 季經濟成長約 {v:.1f}%"
+        how = f"GDPNow 隨每筆新數據自動更新。過去 {est.get('n', 0)} 季平均誤差約 ±{rmse:.1f} 個百分點（對照修正後的 GDP）。"
+    else:
+        v, rmse = float(est["est"]), float(est["rmse"])
+        say = f"網站估 {est['month'][5:].lstrip('0')} 月新增約 {v / 10:+.0f} 萬個工作"
         src = est.get("src") or ("weekly" if est.get("weekly") else "adp")
-        lead = (f"ADP 還沒公布，只用近 3 個月非農平均 {est.get('lag', 0):+,}K 和初領失業金，最不準" if src == "claims" else
-                f"ADP 每週資料（月資料還沒出來，較不準）變動 {est['adp']:+,}K" if src == "weekly" else f"ADP 月資料變動 {est['adp']:+,}K")
-        s = (f"公布前估算（{lead}；初領失業金月均變動 {est['claims']:+.1f}K，本月已有 {est['weeks']} 週）："
-             f"非農新增約 {est['est']:+,}K（過去 36 個月誤差約 ±{est['rmse']:,}K，誤差很大）")
-        s += _vs_cons(est["est"], cons, est["rmse"], "K", "就業偏強", "就業偏弱")
-        return {"zh": s + "。", "en": f"Pre-release estimate: payrolls ~{est['est']:+,}k (±{est['rmse']:,}k)."}
-    if e["key"] == "gdp":
-        err = f"（過去 {est['n']} 季誤差約 ±{est['rmse']:.1f}）" if est.get("rmse") else ""
-        if e.get("released"):
-            a = _num(_row(e, "GDP").get("actual"))
-            if a is None:
-                return None
-            return {"zh": f"事前估算：GDPNow {est['est']:.1f}%{err} → 公布 {a:g}%，" + (_surprise(a, est["est"], est["rmse"]) if est.get("rmse") else f"差 {a - est['est']:+.1f} 個百分點") + "。",
-                    "en": f"GDPNow {est['est']:.1f}% → actual {a:g}%."}
-        cons = _num(_row(e, "GDP").get("cons"))
-        s = f"公布前估算：亞特蘭大聯準會 GDPNow 估 {est['quarter']} 年化成長 {est['est']:.1f}%{err}"
-        s += _vs_cons(est["est"], cons, est.get("rmse") or 1.0, "%", "成長偏強", "成長偏弱")
-        return {"zh": s + "。", "en": f"GDPNow {est['quarter']}: {est['est']:.1f}%."}
-    return None
+        how = ((f"ADP 還沒公布，只用近 3 個月平均（{est.get('lag', 0):+,}K）和初領失業金推算，最不準。" if src == "claims" else
+                "用 ADP 每週資料（月資料還沒出來）和初領失業金推算。" if src == "weekly" else "用 ADP 民間就業和初領失業金推算。")
+               + f"平常誤差約 ±{rmse:,.0f}K（±{rmse / 10:.0f} 萬個），非農常有意外。")
+    cons = _num(_row(e, mn["nm"]).get("cons"))
+    ref = cons if cons is not None else v
+    lo, hi = _band(ref, k)
+    rn = "市場預期" if cons is not None else "網站估算"
+    if k == "pce":                                  # PCE prints to one decimal: high / exactly the middle / low
+        mid_lab = f"{_fmt((lo + hi) / 2, k)}（和{rn}一樣）"
+        hot_lab, cool_lab = f"{_fmt(hi, k)} 以上（高於{rn}）", f"{_fmt(lo, k)} 以下（低於{rn}）"
+    else:
+        mid_lab = f"{_fmt(lo, k)} ～ {_fmt(hi, k)}（和{rn}差不多）"
+        hot_lab, cool_lab = f"高於 {_fmt(hi, k)}（明顯高於{rn}）", f"低於 {_fmt(lo, k)}（明顯低於{rn}）"
+    out = {"key": k, "what": mn["what"], "say": say, "how": how, "cons": cons, "next": mn["next"],
+           "bands": [(hot_lab, mn["hot"]), (mid_lab, mn["mid"]), (cool_lab, mn["cool"])]}
+    if e.get("released"):
+        a = _num(_row(e, mn["nm"]).get("actual"))
+        if a is None:
+            return None
+        side = "hot" if a >= hi - 1e-9 and (k == "pce" or a > hi) else "cool" if a <= lo + 1e-9 and (k == "pce" or a < lo) else "mid"
+        word = {"hot": f"高於{rn}", "cool": f"低於{rn}", "mid": f"和{rn}差不多"}[side]
+        out["result"] = f"公布 {_fmt(a, k)}（網站事前估 {_fmt(v, k)}）：{word}。代表：{mn[side]}"
+        out["side"] = side
+        out["zh"] = f"事前估算 {_fmt(v, k)} → 公布 {_fmt(a, k)}，{word}。"
+    else:
+        out["zh"] = say + f"（平常誤差 ±{_fmt(rmse, k).lstrip('+')}）" + ("" if cons is None else f"，市場預期 {_fmt(cons, k)}") + "。"
+    out["en"] = f"Estimate {_fmt(v, k)} (±{rmse:g})."
+    return out
 
 
 def attach(events: List[Dict], log: Dict[str, Dict]) -> None:

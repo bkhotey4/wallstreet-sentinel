@@ -69,17 +69,20 @@ def test_log_freezes_after_actual_and_cards():
     up = {"key": "pce", "date": "2026-10-30", "released": False,
           "rows": [{"label": "核心 PCE 月增", "cons": "0.2%", "actual": ""}]}
     NC.attach([up], lg)
-    assert "公布前估算" in up["nowcast"]["zh"] and "誤差" in up["nowcast"]["zh"]
+    n = up["nowcast"]
+    assert "網站估" in n["say"] and "誤差" in n["zh"] and len(n["bands"]) == 3 and "聯準會" in n["what"]
+    assert n["bands"][0][0] == "0.3% 以上（高於市場預期）" and "升息" in n["bands"][0][1]
     done = dict(up, released=True, rows=[{"label": "核心 PCE 月增", "cons": "0.2%", "actual": "0.3%"}])
     done.pop("nowcast")
     NC.attach([done], lg)
-    assert "事前估算" in done["nowcast"]["zh"] and "倍誤差" in done["nowcast"]["zh"]
+    assert "事前估算" in done["nowcast"]["zh"] and done["nowcast"]["result"].startswith("公布 0.3%") and "高於市場預期" in done["nowcast"]["result"] and "代表" in done["nowcast"]["result"]
     g = {"key": "gdp", "date": "2026-10-29", "released": False, "rows": [{"label": "GDP", "cons": "2.8%", "actual": ""}]}
     NC.attach([g], lg)
-    assert "GDPNow" in g["nowcast"]["zh"] and "2026Q3" in g["nowcast"]["zh"]
+    assert "GDPNow" in g["nowcast"]["say"] and "第 3 季" in g["nowcast"]["say"]
     for x in (up, done, g):
         for w in ("買進", "賣出", "目標價", "低估", "高估", "買點"):
-            assert w not in x["nowcast"]["zh"]
+            n = x["nowcast"]
+            assert w not in n["zh"] + n["say"] + n["how"] + n.get("result", "") + "".join(c + m for c, m in n["bands"])
 
 
 def test_target_mapping():
