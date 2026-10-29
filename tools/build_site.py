@@ -1304,7 +1304,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
                                                        SEN.sec_cheap, SEN.sec_phased, SEN.sec_entry_links]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
-            ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
+            ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, SQ.sec_rule_sim, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
             ("tech", "科技財報", "Tech earnings", [SPV.sec_earn_preview, SAF.sec_earn_after_tech, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),

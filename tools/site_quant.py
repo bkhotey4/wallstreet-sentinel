@@ -119,6 +119,62 @@ def sec_signal_scorecard(eng) -> str:
     return card("訊號成績單：有沒有贏過隨機亂挑", "Signal scorecard: better than a random pick?", "".join(parts) + f'<p class="note">{note}</p>', "wide")
 
 
+# ------------------------------------------------------------------ 規則的歷史成績單（1 萬次模擬）
+def _rs_cell(x: Dict) -> str:
+    if not x:
+        return '<td class="r muted">—</td>'
+    tip = f'平均 90% 區間 {x["lo"]:+.1f}～{x["hi"]:+.1f}%；上漲比例 {x["win"]:.0f}%；平均持有 {x["days"]:.0f} 天；連做 20 次的中位數 {x["seq_med"]:+.0f}%（最差 5% {x["seq_p5"]:+.0f}%）'
+    return (f'<td class="r" title="{esc(tip)}"><b class="{cls(x["avg"])}">{x["avg"]:+.1f}%</b>'
+            f'<div class="small muted">{T("最差 5%", "worst 5%")} {x["worst5"]:+.0f}%</div>'
+            f'<div class="small">{T("連做 20 次虧", "20-in-a-row loss")} {x["seq_loss"]:.0f}%</div></td>')
+
+
+def sec_rule_sim(eng) -> str:
+    from wsb.analytics import rule_sim as RS
+    from wsb.analytics.signals import PATTERNS
+    sg = getattr(eng, "signals", None) or {}
+    if not sg.get("available"):
+        return ""
+    parts, leads = [], []
+    for mk, m in sg["markets"].items():
+        rs = (m.get("rulesim") or {}).get("patterns") or {}
+        if not rs:
+            continue
+        head = "".join(f'<th class="r">{T(*RS.RULES[r])}</th>' for r in RS.RULES)
+        body = ""
+        for k in list(PATTERNS) + ["_all"]:
+            rec = rs.get(k) or {}
+            lab = T("全部型態", "All patterns") if k == "_all" else T(*PATTERNS[k])
+            rr = rec.get("rules")
+            if not rr:
+                body += f'<tr><td>{lab}<div class="small muted">{rec.get("n", 0)} {T("次，樣本不足", "cases, too few")}</div></td>' + '<td class="r muted">—</td>' * len(RS.RULES) + "</tr>"
+                continue
+            b = rr.get("base") or {}
+            body += (f'<tr><td>{lab}<div class="small muted">{rec["n"]} {T("次", "cases")}・{T("隨機挑一檔", "random pick")} {b.get("avg", 0):+.1f}%</div></td>'
+                     + "".join(_rs_cell(rr.get(r)) for r in RS.RULES) + "</tr>")
+        al = rs.get("_all") or {}
+        p = RS.plain(MKT.get(mk, (mk, mk))[0] + "全部型態", al) if al.get("rules") else None
+        if p:
+            leads.append(f"<li>{esc(p)}</li>")
+        parts.append(f'<h3>{T(*MKT.get(mk, (mk, mk)))}<span class="muted small">（{esc(al.get("from") or "")}～{esc(al.get("to") or "")}）</span></h3>'
+                     f'<div class="scroll"><table class="mini"><thead><tr><th>{T("型態", "Pattern")}</th>{head}</tr></thead><tbody>{body}</tbody></table></div>')
+    if not parts:
+        return ""
+    lead = T("一句話看懂：用過去約兩年的資料，把每個型態出現後「照固定規則做」重演一次，再隨機重抽 1 萬次，看平均賺賠、最壞情況，"
+             "和連續照做 20 次最後虧錢的機率。重點是比較：停損通常不會讓平均變高，但會把最壞的虧損縮小。",
+             "Each pattern replayed under fixed exit rules over ~2 years, then resampled 10,000 times.")
+    how = T("怎麼看：每格大字＝每次平均報酬（已扣交易成本）；「最差 5%」＝100 次裡最慘的 5 次大概虧多少；「連做 20 次虧」＝照這個規則連續做 20 次（每次全部資金、依序複利），"
+            "1 萬次模擬裡最後是虧錢的比例。「隨機挑一檔」＝同一天在同一份名單所有股票的平均（不是單一一檔，所以波動小很多，只拿平均來比）。"
+            "停利＝漲到「起點減失效線」的 2 倍就出場。滑鼠移到格子上可看 90% 區間與平均持有天數。"
+            "限制：只有約兩年資料、而且這段期間多頭居多（樣本內）；名單是現在的成分股（倖存者偏差：下市的股票不在裡面）；以收盤價成交、沒算跳空滑價；"
+            "同一段時間的訊號會一起漲跌，所以以「月份」為單位重抽。這是規則的歷史統計，不是預測，也不是買賣建議。",
+            "Cell = average net return; worst 5% = the 5th percentile trade; 20-in-a-row loss = share of 10,000 simulated 20-trade sequences that end negative. "
+            "In-sample (~2 years, mostly a bull market), survivorship bias, close-only fills. Not advice.")
+    body = (f'<p><b>{lead}</b></p>' + (f'<ul class="takeaways">{"".join(leads)}</ul>' if leads else "") + "".join(parts)
+            + f'<details class="small"><summary>{T("怎麼看、限制", "How to read, limits")}</summary><p class="note">{how}</p></details>')
+    return card("規則的歷史成績單：照規則做 1 萬次會怎樣", "Rule record: 10,000 simulated runs", body, "wide")
+
+
 # ------------------------------------------------------------------ 開盤前 30 秒
 def _mv_rows(items, en_=False):
     out = ""

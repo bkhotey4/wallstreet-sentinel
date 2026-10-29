@@ -469,6 +469,8 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
                        "tiers": {t: sum(1 for r in allrows if r.get("tier") == t) for t in TIERS}}
         try:                                                 # 訊號成績單: in-sample replay + the live out-of-sample ledger
             markets[mk]["replay"] = SL.replay(series, mk)
+            from . import rule_sim as RS                     # 規則的歷史成績單（1 萬次模擬）
+            markets[mk]["rulesim"] = RS.simulate(series, SL._cost(mk))
             if persist:
                 ledger = SL.record(ledger, mk, asof, out_rows, allrows)
             markets[mk]["ledger"] = SL.evaluate(ledger, mk, {s_: next(iter(p_.values()))["close"] for s_, p_ in series.items()})
