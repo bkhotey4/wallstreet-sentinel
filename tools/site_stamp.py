@@ -345,7 +345,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "ff49": ("產業歷史（Ken French，每月更新）", "Ken French industries", lambda e: (_ts(_bub_ts("ts_check")), _bub_end()), 75),
     "baa": ("穆迪公司債利差（FRED，每月）", "Moody's Baa−Aaa", lambda e: (_ts(_bub_ts("ts_check")), _bub_credit_month()), 75),
     "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 10),
-    "nowcast": ("FRED CPI／PPI／PCE／ADP／初領／GDPNow", "FRED nowcast inputs", lambda e: (_ts(_ncd("ts")), _ncd_date()), 45),
+    "nowcast": ("FRED CPI／PPI／PCE／ADP／初領／GDPNow", "FRED nowcast inputs", lambda e: (_ts(_ncd("ts")), _ncd_date()), 14),
     "rel": ("FRED 發布日程", "FRED release dates", lambda e: (_ts(_rel_ts()), None), 0),
     "ofr": ("OFR 金融壓力指數（每日）", "OFR FSI", lambda e: (_ts(_trm("ts_check")), _trm_date("fsi")), 7),
     "custody": ("紐約聯準會託管美債（每週）", "Fed custody holdings", lambda e: (_ts(_trm("ts_check")), _trm_date("custody")), 14),

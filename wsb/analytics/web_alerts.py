@@ -273,7 +273,8 @@ def rate_pressure(tnx, ndx) -> Optional[Dict]:
     prior = y.iloc[-61:-1]
     out = {"y": now, "chg20": chg, "sd": sd, "z": chg / sd, "asof": y.index[-1].strftime("%Y-%m-%d"),
            "hi60": now > float(prior.max()), "lo60": now < float(prior.min()),
-           "pct10y": float((y.iloc[-2520:] < now).mean() * 100)}
+           "pct10y": float((y.iloc[-2520:] < now).mean() * 100),
+           "yrs": round((y.index[-1] - y.iloc[-2520:].index[0]).days / 365.25)}
     n = ndx.dropna()
     j = pd.concat([n.pct_change() * 100, y.diff() * 100], axis=1, join="inner").dropna().iloc[-252:]
     if len(j) > 150 and float(j.iloc[:, 1].var()) > 0:
@@ -291,7 +292,7 @@ def _rates(eng, out: List[Dict], now: datetime) -> None:
     sens = ""
     if r.get("ndx_per10") is not None:
         sens = f"過去一年 10 年債每升 10bp，那指同日平均 {r['ndx_per10']:+.2f}%（相關係數 {r['r']:.2f}）。"
-    lvl = f"目前 {r['y']:.2f}%，高於過去 10 年 {r['pct10y']:.0f}% 的日子"
+    lvl = f"目前 {r['y']:.2f}%，高於過去 {r['yrs']} 年 {r['pct10y']:.0f}% 的日子"
     if r["z"] <= -1.5 and r["lo60"]:
         out.append({"key": f"rate:dn:{r['asof']}", "lv": "watch", "tone": "good", "tab": "bonds",
                     "zh": f"利率壓力減輕：10 年債 20 天降 {abs(r['chg20']):.0f}bp（平常 ±{r['sd']:.0f}bp），創 60 天新低",

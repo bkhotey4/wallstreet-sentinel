@@ -85,6 +85,25 @@ def test_log_freezes_after_actual_and_cards():
             assert w not in n["zh"] + n["say"] + n["how"] + n.get("result", "") + "".join(c + m for c, m in n["bands"])
 
 
+def test_log_trim_keeps_every_kind():
+    d = _data()
+    d["log"] = {f"nfp:{y}-{m:02d}": {"est": {}, "asof": "x", "actual": {"v": 1}} for y in (2024, 2025) for m in range(1, 13)}
+    d["log"].update({f"pce:{y}-{m:02d}": {"est": {}, "asof": "x", "actual": {"core": 1}} for y in (2024, 2025) for m in range(1, 13)})
+    lg = NC.update_log(d)
+    assert "gdp:2026Q3" in lg                                   # an alphabetical trim used to drop every GDP entry first
+    assert sum(k.startswith("nfp:") for k in lg) == NC.KEEP and "nfp:2024-01" not in lg
+
+
+def test_bands_and_gdp_without_error():
+    assert NC._width("pce", 0.077) == 0.1 and NC._width("nfp", 102) == 50 and abs(NC._width("gdp", 1.67) - 0.8) < 1e-9
+    assert NC._width("gdp", None) == 0.1
+    g = {"key": "gdp", "date": "2026-10-29", "released": False, "rows": [{"label": "GDP", "cons": "2.8%", "actual": ""}]}
+    NC.attach([g], {"gdp:2026Q3": {"est": {"quarter": "2026Q3", "est": 3.3, "rmse": None, "n": 4, "norm": 2.4, "norm_n": 40}}})
+    n = g["nowcast"]
+    assert "尚未量測" in n["how"] and "±1.0" not in n["how"] + n["zh"] and "中位數 2.4%" in n["say"]
+    assert "12 月" not in NC.MEAN["pce"]["next"]
+
+
 def test_target_mapping():
     assert NC.target_for("nfp", "2026-11-06") == "nfp:2026-10"
     assert NC.target_for("pce", "2026-10-30") == "pce:2026-09"

@@ -145,5 +145,5 @@ def plain(k_label: str, rec: Dict) -> Optional[str]:
     if b:
         vs = f"；同一天隨機挑一檔抱 20 天平均 {b['avg']:+.1f}%"
     return (f"{k_label}：過去 {rec['n']} 次。抱滿 20 天平均每次 {h['avg']:+.1f}%，最差的 5% 會虧 {abs(min(h['worst5'], 0)):.0f}% 以上；"
-            f"跌破失效線就出場，平均 {s['avg']:+.1f}%，最差 5% 縮小到虧 {abs(min(s['worst5'], 0)):.0f}%{vs}。"
+            f"跌破失效線就出場，平均 {s['avg']:+.1f}%，最差 5% {'縮小到' if s['worst5'] > h['worst5'] else '是'}虧 {abs(min(s['worst5'], 0)):.0f}%{vs}。"
             f"照「失效線停損」連續做 20 次，1 萬次模擬裡有 {s['seq_loss']:.0f}% 的機率最後是虧的，中間通常會先回落約 {abs(s['seq_mdd']):.0f}%。")

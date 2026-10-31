@@ -207,7 +207,9 @@ def readings(r: Dict) -> List[Dict]:
             tail = f"。歷史上會後 5 日標普平均 {ha['mean']:+.2f}%、上漲 {ha['up']:.0f}%"
             if hg:
                 tail += f"（{af['hist']['grp_zh']} {hg['mean']:+.2f}%）"
-        L.append({"zh": f"會後追蹤（{af['date'][5:]} 決議，到 {af['asof'][5:]}）：" + "、".join(bits) + tail + "。會後 5 日的歷史平均和平常差不多，只是參考。",
+            if ha.get("base_mean") is not None:
+                tail += f"；同期間任意 5 天平均 {ha['base_mean']:+.2f}%，差異{_sig(ha)}"
+        L.append({"zh": f"會後追蹤（{af['date'][5:]} 決議，到 {af['asof'][5:]}）：" + "、".join(bits) + tail + "。歷史平均只是參考。",
                   "en": f"After the {af['date']} decision: day {af['day']:+.2f}%" + (f", since {af['since']:+.2f}% ({af['n']} sessions)" if af.get("since") is not None else "") + "."})
     nx = r.get("next")
     if nx and nx.get("so_far") is not None:

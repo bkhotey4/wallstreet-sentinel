@@ -129,13 +129,45 @@ def _rs_cell(x: Dict) -> str:
             f'<div class="small">{T("連做 20 次虧", "20-in-a-row loss")} {x["seq_loss"]:.0f}%</div></td>')
 
 
+def _rs_summary(alls):
+    """Span, the stop-vs-hold verdict and the market backdrop, all read from the simulation itself."""
+    fr = [a["from"] for _, a in alls if a.get("from")]
+    to = [a["to"] for _, a in alls if a.get("to")]
+    span = "這段期間"
+    if fr and to:
+        m = (int(max(to)[:4]) - int(min(fr)[:4])) * 12 + int(max(to)[5:7]) - int(min(fr)[5:7]) + 1
+        span = f"約 {m} 個月（{min(fr)}～{max(to)}）"
+    lower, smaller, n = 0, 0, 0
+    for _, a in alls:
+        h, st = a["rules"].get("hold20"), a["rules"].get("stop")
+        if h and st:
+            n += 1
+            lower += st["avg"] <= h["avg"]
+            smaller += st["worst5"] > h["worst5"]
+    if not n:
+        verdict = ""
+    else:
+        verdict = (f"{n} 個市場裡，失效線停損讓最壞 5% 的虧損縮小的有 {smaller} 個、讓平均報酬變低（或一樣）的有 {lower} 個"
+                   + ("：停損主要是在縮小最壞情況，不是提高平均。" if smaller == n and lower == n else "。"))
+    bs = [a["rules"]["base"]["avg"] for _, a in alls if a["rules"].get("base")]
+    if not bs:
+        backdrop = "市場背景未知"
+    elif min(bs) > 0:
+        backdrop = f"這段期間同名單隨機挑一檔抱 20 天平均都是賺的（{min(bs):+.1f}%～{max(bs):+.1f}%），偏多頭"
+    elif max(bs) < 0:
+        backdrop = f"這段期間同名單隨機挑一檔抱 20 天平均都是虧的（{min(bs):+.1f}%～{max(bs):+.1f}%），偏空頭"
+    else:
+        backdrop = f"這段期間各市場有漲有跌（隨機挑一檔平均 {min(bs):+.1f}%～{max(bs):+.1f}%）"
+    return span, verdict, backdrop
+
+
 def sec_rule_sim(eng) -> str:
     from wsb.analytics import rule_sim as RS
     from wsb.analytics.signals import PATTERNS
     sg = getattr(eng, "signals", None) or {}
     if not sg.get("available"):
         return ""
-    parts, leads = [], []
+    parts, leads, alls = [], [], []
     for mk, m in sg["markets"].items():
         rs = (m.get("rulesim") or {}).get("patterns") or {}
         if not rs:
@@ -156,20 +188,22 @@ def sec_rule_sim(eng) -> str:
         p = RS.plain(MKT.get(mk, (mk, mk))[0] + "全部型態", al) if al.get("rules") else None
         if p:
             leads.append(f"<li>{esc(p)}</li>")
+            alls.append((MKT.get(mk, (mk, mk))[0], al))
         parts.append(f'<h3>{T(*MKT.get(mk, (mk, mk)))}<span class="muted small">（{esc(al.get("from") or "")}～{esc(al.get("to") or "")}）</span></h3>'
                      f'<div class="scroll"><table class="mini"><thead><tr><th>{T("型態", "Pattern")}</th>{head}</tr></thead><tbody>{body}</tbody></table></div>')
     if not parts:
         return ""
-    lead = T("一句話看懂：用過去約兩年的資料，把每個型態出現後「照固定規則做」重演一次，再隨機重抽 1 萬次，看平均賺賠、最壞情況，"
-             "和連續照做 20 次最後虧錢的機率。重點是比較：停損通常不會讓平均變高，但會把最壞的虧損縮小。",
-             "Each pattern replayed under fixed exit rules over ~2 years, then resampled 10,000 times.")
+    span, verdict, backdrop = _rs_summary(alls)
+    lead = T(f"一句話看懂：用過去{span}的資料，把每個型態出現後「照固定規則做」重演一次，再隨機重抽 1 萬次，看平均賺賠、最壞情況，"
+             f"和連續照做 20 次最後虧錢的機率。{verdict}",
+             f"Each pattern replayed under fixed exit rules over {span}, then resampled 10,000 times.")
     how = T("怎麼看：每格大字＝每次平均報酬（已扣交易成本）；「最差 5%」＝100 次裡最慘的 5 次大概虧多少；「連做 20 次虧」＝照這個規則連續做 20 次（每次全部資金、依序複利），"
             "1 萬次模擬裡最後是虧錢的比例。「隨機挑一檔」＝同一天在同一份名單所有股票的平均（不是單一一檔，所以波動小很多，只拿平均來比）。"
-            "停利＝漲到「起點減失效線」的 2 倍就出場。滑鼠移到格子上可看 90% 區間與平均持有天數。"
-            "限制：只有約兩年資料、而且這段期間多頭居多（樣本內）；名單是現在的成分股（倖存者偏差：下市的股票不在裡面）；以收盤價成交、沒算跳空滑價；"
+            f"停利＝漲到「起點減失效線」的 {RS.TP_R:g} 倍就出場。滑鼠移到格子上可看 90% 區間與平均持有天數。"
+            f"限制：只有{span}資料、{backdrop}（樣本內）；名單是現在的成分股（倖存者偏差：下市的股票不在裡面）；以收盤價成交、沒算跳空滑價；"
             "同一段時間的訊號會一起漲跌，所以以「月份」為單位重抽。這是規則的歷史統計，不是預測，也不是買賣建議。",
             "Cell = average net return; worst 5% = the 5th percentile trade; 20-in-a-row loss = share of 10,000 simulated 20-trade sequences that end negative. "
-            "In-sample (~2 years, mostly a bull market), survivorship bias, close-only fills. Not advice.")
+            f"In-sample ({span}), survivorship bias, close-only fills. Not advice.")
     body = (f'<p><b>{lead}</b></p>' + (f'<ul class="takeaways">{"".join(leads)}</ul>' if leads else "") + "".join(parts)
             + f'<details class="small"><summary>{T("怎麼看、限制", "How to read, limits")}</summary><p class="note">{how}</p></details>')
     return card("規則的歷史成績單：照規則做 1 萬次會怎樣", "Rule record: 10,000 simulated runs", body, "wide")

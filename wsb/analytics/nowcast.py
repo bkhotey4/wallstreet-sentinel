@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 OOS_N = 36
+KEEP = 12           # targets kept per kind (12 months of PCE / payrolls, 3 years of GDP quarters)
 COVID = ("2020-03-01", "2021-06-01")
 
 
@@ -155,8 +156,9 @@ def gdp(d: Dict) -> Optional[Dict]:
         return None
     both = pd.concat([gn.rename("n"), act.rename("a")], axis=1).dropna().tail(24)
     rmse = float(np.sqrt(np.mean(np.square(both["a"] - both["n"])))) if len(both) >= 12 else None
+    calm = act[(act.index < COVID[0]) | (act.index > COVID[1])].tail(40)          # the last 10 years outside Covid
     return {"quarter": f"{q.year}Q{(q.month - 1) // 3 + 1}", "est": round(float(gn[q]), 2), "rmse": None if rmse is None else round(rmse, 2),
-            "n": int(len(both))}
+            "n": int(len(both)), "norm": round(float(calm.median()), 1) if len(calm) >= 12 else None, "norm_n": int(len(calm))}
 
 
 def _qkey(t: pd.Timestamp) -> str:
@@ -216,8 +218,8 @@ def update_log(d: Dict, today: Optional[date] = None) -> Dict[str, Dict]:
         rec = log.get(k) or {}
         if rec.get("actual") is None:
             log[k] = {"est": est, "asof": asof}
-    keep = sorted(log)[-24:]
-    return {k: log[k] for k in keep}
+    keep = [k for kind in {x.split(":", 1)[0] for x in log} for k in sorted(x for x in log if x.startswith(kind + ":"))[-KEEP:]]
+    return {k: log[k] for k in sorted(keep)}
 
 
 # ───────────────────────── 對應到財經日曆事件 ─────────────────────────
@@ -247,8 +249,8 @@ MEAN = {
             "hot": "物價還在加速 → 聯準會更可能升息、更晚降息 → 美債殖利率往上、美元偏強；要很久才回本的科技股、AI 股通常壓力最大，台股電子跟著費半。",
             "mid": "和大家預期的差不多 → 市場鬆一口氣，影響通常不大，焦點回到財報。",
             "cool": "物價降溫 → 升息壓力變小 → 殖利率回落；成長股、半導體通常受惠。如果同時消費也明顯轉弱，市場會轉而擔心景氣。",
-            "next": "接下來看：殖利率是不是跟著動、12 月升息機率有沒有變（財經日曆 FOMC 卡）。"},
-    "gdp": {"what": "GDP 是美國經濟這一季成長多快（換算成一年的速度）。2% 左右算正常，0 以下代表萎縮。",
+            "next": "接下來看：殖利率是不是跟著動、下次 FOMC 的升息／降息機率有沒有變（財經日曆 FOMC 卡）。"},
+    "gdp": {"what": "GDP 是美國經濟這一季成長多快（換算成一年的速度）。0 以下代表萎縮。",
             "unit": "%", "nm": "GDP",
             "hot": "經濟比想像熱 → 聯準會更不需要降息、甚至可能升息 → 殖利率往上；景氣循環股、金融股相對受惠，估值高的科技股承壓。",
             "mid": "和預期差不多 → 影響通常有限，市場更在意同一時間公布的 PCE 物價。",
@@ -263,15 +265,23 @@ MEAN = {
 }
 
 
-WIDTH = {"pce": 0.1, "gdp": 0.5, "nfp": 50.0}     # how far from the consensus a print must be for markets to call it a surprise
+TICK = {"pce": 0.1, "gdp": 0.1, "nfp": 10.0}      # the precision each release is printed to
 
 
-def _band(center: float, key: str) -> Tuple[float, float]:
-    w = WIDTH[key]
+def _width(key: str, rmse: Optional[float]) -> float:
+    """How far from the consensus a print counts as clearly above / below it: half the measured estimate error (a rough
+    stand-in for how far prints usually land from forecasts), never finer than the printed precision."""
+    t = TICK[key]
+    if not rmse:
+        return t
+    return max(t, round(rmse / 2 / t) * t)
+
+
+def _band(center: float, key: str, rmse: Optional[float] = None) -> Tuple[float, float]:
+    w, t = _width(key, rmse), TICK[key]
+    c = round(center / t) * t
     if key == "nfp":
-        c = round(center / 10) * 10
         return c - w, c + w
-    c = round(center, 1)
     return round(c - w, 1), round(c + w, 1)
 
 
@@ -298,9 +308,11 @@ def describe(e: Dict, log: Dict[str, Dict]) -> Optional[Dict]:
                "（最近 36 個月走步樣本外測試，用修正後的歷史數字，實際誤差通常更大）。"
                + (f"整體 PCE（含食物能源）估月增約 {est['head']['mm']:.2f}%" + (f"、年增約 {est['head']['yy']:.1f}%" if est['head'].get('yy') is not None else "") + "。" if est.get("head") else ""))
     elif k == "gdp":
-        v, rmse = est["est"], est.get("rmse") or 1.0
+        v, rmse = est["est"], est.get("rmse")
         say = f"亞特蘭大聯準會的即時估算（GDPNow）：第 {est['quarter'][-1]} 季經濟成長約 {v:.1f}%"
-        how = f"GDPNow 隨每筆新數據自動更新。過去 {est.get('n', 0)} 季平均誤差約 ±{rmse:.1f} 個百分點（對照修正後的 GDP）。"
+        how = "GDPNow 隨每筆新數據自動更新。" + (f"過去 {est.get('n', 0)} 季平均誤差約 ±{rmse:.1f} 個百分點（對照修正後的 GDP）。" if rmse else "誤差：可對照的季數不足，尚未量測。")
+        if est.get("norm") is not None:
+            say += f"（過去 {est['norm_n'] // 4} 年不含疫情的中位數 {est['norm']:.1f}%）"
     else:
         v, rmse = float(est["est"]), float(est["rmse"])
         say = f"網站估 {est['month'][5:].lstrip('0')} 月新增約 {v / 10:+.0f} 萬個工作"
@@ -310,9 +322,11 @@ def describe(e: Dict, log: Dict[str, Dict]) -> Optional[Dict]:
                + f"平常誤差約 ±{rmse:,.0f}K（±{rmse / 10:.0f} 萬個），非農常有意外。")
     cons = _num(_row(e, mn["nm"]).get("cons"))
     ref = cons if cons is not None else v
-    lo, hi = _band(ref, k)
+    lo, hi = _band(ref, k, rmse)
+    how += f"「高於／低於」的門檻：差 {_fmt(_width(k, rmse), k).lstrip('+')} 以上（估算誤差的一半，至少一個公布單位）。"
     rn = "市場預期" if cons is not None else "網站估算"
-    if k == "pce":                                  # PCE prints to one decimal: high / exactly the middle / low
+    exact = _width(k, rmse) == TICK[k] and k == "pce"   # one tick either side: high / exactly the middle / low
+    if exact:
         mid_lab = f"{_fmt((lo + hi) / 2, k)}（和{rn}一樣）"
         hot_lab, cool_lab = f"{_fmt(hi, k)} 以上（高於{rn}）", f"{_fmt(lo, k)} 以下（低於{rn}）"
     else:
@@ -324,14 +338,14 @@ def describe(e: Dict, log: Dict[str, Dict]) -> Optional[Dict]:
         a = _num(_row(e, mn["nm"]).get("actual"))
         if a is None:
             return None
-        side = "hot" if a >= hi - 1e-9 and (k == "pce" or a > hi) else "cool" if a <= lo + 1e-9 and (k == "pce" or a < lo) else "mid"
+        side = "hot" if a >= hi - 1e-9 and (exact or a > hi) else "cool" if a <= lo + 1e-9 and (exact or a < lo) else "mid"
         word = {"hot": f"高於{rn}", "cool": f"低於{rn}", "mid": f"和{rn}差不多"}[side]
         out["result"] = f"公布 {_fmt(a, k)}（網站事前估 {_fmt(v, k)}）：{word}。代表：{mn[side]}"
         out["side"] = side
         out["zh"] = f"事前估算 {_fmt(v, k)} → 公布 {_fmt(a, k)}，{word}。"
     else:
-        out["zh"] = say + f"（平常誤差 ±{_fmt(rmse, k).lstrip('+')}）" + ("" if cons is None else f"，市場預期 {_fmt(cons, k)}") + "。"
-    out["en"] = f"Estimate {_fmt(v, k)} (±{rmse:g})."
+        out["zh"] = say + (f"（平常誤差 ±{_fmt(rmse, k).lstrip('+')}）" if rmse else "") + ("" if cons is None else f"，市場預期 {_fmt(cons, k)}") + "。"
+    out["en"] = f"Estimate {_fmt(v, k)}" + (f" (±{rmse:g})." if rmse else ".")
     return out
 
 
