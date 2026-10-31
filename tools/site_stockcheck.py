@@ -81,7 +81,7 @@ def sec_stock_check(eng) -> str:
     f_rows = "".join(
         f'<tr><td>{T(_zh(r), r["sym"])} <span class="tk">{esc(r["sym"])}</span></td>'
         f'<td>{_g(r["g_grade"])} <span class="small">{num(r["rev_yoy"], 0, sign=True, pct=True)}</span></td>'
-        f'<td>{_g(r["s_grade"])} <span class="small muted">{"" if r.get("bank") else T("自由現金流 " + (num(r["fcf"] / 1e9, 1) + " 億美元" if r.get("fcf") is not None else "—"), "")}</span></td>'
+        f'<td>{_g(r["s_grade"])} <span class="small muted">{"" if r.get("bank") else T("自由現金流 " + (num(r["fcf"] / 1e8, 0) + " 億美元" if r.get("fcf") is not None else "—"), "")}</span></td>'
         f'<td>{_g(r["p_grade"])} <span class="small">ROE {num(r["roe"], 0, pct=True)}{"、毛利率 " + num(r["gm"], 0, pct=True) if r.get("gm") is not None else ""}</span></td>'
         f'<td class="r small muted">{esc(r["end"])}</td></tr>' for r in rows)
     v_rows = ""
@@ -112,3 +112,67 @@ def sec_stock_check(eng) -> str:
             f'<details class="sgx"><summary>{T("看每一欄怎麼算、有什麼限制", "Method and limits")}</summary>'
             f'<p class="note">{T(NOTE_FACES, "")}</p><p class="note">{T(NOTE_PE, "")}</p><p class="note">{T(NOTE_DCF, "")}</p><p class="note">{T(NOTE_SCEN, "")}</p></details>')
     return card("個股估值體檢（大型美股）", "Stock health & valuation check", body, "wide")
+
+
+# ------------------------------------------------------------------ 財報走向判斷
+_ARROW = {1: ('<b class="up">↑</b>', "up"), -1: ('<b class="dn">↓</b>', "dn"), 0: ('<span class="muted">→</span>', "")}
+
+
+def _sig_cell(r: dict, k: str) -> str:
+    v, s = r.get(k), r.get("s_" + k)
+    if v is None or s is None:
+        return '<td class="r muted">—</td>'
+    return f'<td class="r">{_ARROW[s][0]} <span class="small">{num(v, 1, sign=True)}</span></td>'
+
+
+def sec_fund_trend(eng) -> str:
+    """財報走向判斷: only the company's own SEC filings — improving / mixed / weakening, next-quarter revenue growth with
+    its measured error, what to watch next time, and how this judgment has done historically."""
+    from wsb.analytics import fund_trend as F
+    try:
+        b = F.build()
+    except Exception:  # noqa: BLE001
+        b = None
+    if not b or not b.get("rows"):
+        return ""
+    rows, m, tr = b["rows"], b.get("model") or {}, b.get("track") or {}
+    cnt = {k: [r for r in rows if r["label"] == k] for k in ("up", "flat", "down")}
+    nm = lambda r: ZH.get(r["sym"], r["sym"])  # noqa: E731
+    lead = (f"一句話看懂：只看各公司自己的財報，追蹤的 {len(rows)} 家裡，本業正在改善的 {len(cnt['up'])} 家"
+            + (f"（{'、'.join(nm(r) for r in cnt['up'])}）" if cnt["up"] else "")
+            + f"、轉弱的 {len(cnt['down'])} 家" + (f"（{'、'.join(nm(r) for r in cnt['down'])}）" if cnt["down"] else "")
+            + f"，其餘 {len(cnt['flat'])} 家訊號互相抵銷。")
+    up, dn = tr.get("up") or {}, tr.get("down") or {}
+    hist = ""
+    if up.get("nm_hit") is not None and dn.get("nm_hit") is not None:
+        hist = (f"過去判斷為「改善中」的，兩季後淨利率真的比較高的有 {up['nm_hit']:.0f}%（「轉弱中」只有 {dn['nm_hit']:.0f}%），"
+                "代表本業的方向通常會延續一段時間。")
+    if up.get("ex") is not None:
+        sig = up["ex_lo"] > 0 or up["ex_hi"] < 0
+        hist += (f"但股價不一定跟著走：財報公布後半年，「改善中」平均比同名單 {up['ex']:+.1f}%（90% 區間 {up['ex_lo']:+.1f}～{up['ex_hi']:+.1f}%）"
+                 + (f"、「轉弱中」{dn['ex']:+.1f}%" if dn.get("ex") is not None else "")
+                 + ("，差異統計上明顯。" if sig else "，區間包含 0，看不出穩定的差別——好財報常常早就反映在股價裡。"))
+    trs = ""
+    for r in rows:
+        lab = F.LABEL.get(r["label"], ("訊號不足", "n/a"))
+        c = {"up": "up", "down": "dn"}.get(r["label"], "")
+        nx = f'{num(r["next_g"], 0, sign=True)}%' if r.get("next_g") is not None else "—"
+        trs += (f'<tr><td>{T(nm(r), r["sym"])} <span class="tk">{esc(r["sym"])}</span><div class="small muted">{esc(r["q"])}</div></td>'
+                f'<td><b class="{c}">{T(*lab)}</b></td><td class="r">{num(r["g"], 0, sign=True)}%</td>'
+                + "".join(_sig_cell(r, k) for k in F.SIGS)
+                + f'<td class="r">{num(r["cx_ocf"], 0) + "%" if r.get("cx_ocf") is not None else "—"}</td><td class="r">{nx}</td>'
+                f'<td class="small">{esc(r["watch"])}</td></tr>')
+    head = (f'<tr><th>{T("公司", "Company")}</th><th>{T("走向", "Trend")}</th><th class="r">{T("營收年增", "Rev YoY")}</th>'
+            + "".join(f'<th class="r">{T(*F.SIGS[k])}</th>' for k in F.SIGS)
+            + f'<th class="r">{T("資本支出／營運現金流", "Capex / OCF")}</th><th class="r">{T("下一季營收年增", "Next-Q rev")}</th><th>{T("下次財報看什麼", "Watch next")}</th></tr>')
+    fc = (f"下一季營收年增：{'用迴歸估算' if m.get('model') else '迴歸模型在走步測試裡沒有比「下一季＝本季」更準，所以直接用本季年增'}，"
+          f"過去 {m.get('n_oos', 0)} 次樣本外的誤差約 ±{m.get('rmse', 0):.0f} 個百分點。" if m else "")
+    how = ("四個訊號（近 12 個月合計，避免季節性）：營收成長加速＝最近 2 季營收年增率平均減前 2 季；毛利率、淨利率、自由現金流率＝和一年前比（百分點）。"
+           f"每個訊號和這家公司自己過去的平常變動比，小於平常的 {F.DEAD:g} 倍當作持平；加總 +2 以上＝改善中、−2 以下＝轉弱中。"
+           "銀行沒有毛利率與自由現金流，只用營收與淨利率。" + fc
+           + f"歷史成績用 {tr.get('n', 0)} 次過去的判斷（股價部分只有 {up.get('from', '')}～{up.get('to', '')}，財報公布日以季末後 {F.PUB_LAG} 天估），以季為單位重抽 1 萬次算區間。"
+           "限制：名單是現在的大型股（倖存者偏差）、家數少、財報是修正後的數字。這是描述與歷史統計，不是股價預測，也不是買賣建議。")
+    body = (f'<p><b>{esc(lead)}</b></p>' + (f'<p>{esc(hist)}</p>' if hist else "")
+            + f'<div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{trs}</tbody></table></div>'
+            + f'<details class="small"><summary>{T("怎麼判斷、歷史成績、限制", "Method, track record, limits")}</summary><p class="note">{esc(how)}</p></details>')
+    return card("財報走向判斷：本業正在變好還是變差", "Earnings trend: is the business getting better?", body, "wide")

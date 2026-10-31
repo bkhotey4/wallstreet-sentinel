@@ -46,7 +46,15 @@ def _item(it: Dict) -> str:
     parts = [f'<p class="rimp"><b>{_esc(it.get("one"))}</b></p>']
     if mv.get("why"):
         parts.append(f'<p class="small">股價反應：{_esc(mv.get("why"))}</p>')
+    tr = it.get("trend") if isinstance(it.get("trend"), dict) else {}
+    if tr.get("label"):
+        c = {"改善中": "up", "轉弱中": "dn"}.get(tr["label"], "")
+        parts.append(f'<p class="small"><b class="{c}">本業走向：{_esc(tr["label"])}</b>'
+                     + (f'——{_esc(tr.get("why"))}' if tr.get("why") else "") + "</p>")
     det = ""
+    if tr.get("outlook") or tr.get("next"):
+        det += ("<h4>接下來（公司財測與要看的事）</h4><ul>" + (f'<li>{_esc(tr["outlook"])}</li>' if tr.get("outlook") else "")
+                + (f'<li>下次財報看：{_esc(tr["next"])}</li>' if tr.get("next") else "") + "</ul>")
     if it.get("company"):
         det += f"<h4>公司本身（不只看有沒有賺錢）</h4><ul>{_list(it.get('company'))}</ul>"
     if spill:
@@ -56,7 +64,7 @@ def _item(it: Dict) -> str:
     if src:
         det += f'<h4>來源</h4><ul class="small">{src}</ul>'
     if det:
-        parts.append(f'<details class="sgx"><summary>展開：公司、連帶影響、大環境</summary>{det}</details>')
+        parts.append(f'<details class="sgx"><summary>展開：公司、走向、連帶影響、大環境</summary>{det}</details>')
     return f'<div class="rpt">{head}{"".join(parts)}</div>'
 
 
