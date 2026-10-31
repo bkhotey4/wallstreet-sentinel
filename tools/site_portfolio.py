@@ -417,6 +417,7 @@ table.pft tfoot td{font-weight:700;border-top:2px solid var(--bd)}table.pft inpu
 .pfdx h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:6px}
 .pfdx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
 .pfdx-k{background:var(--card2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+.pfbe-bar{height:6px;border-radius:3px;background:var(--bd);margin:4px 0;overflow:hidden}.pfbe-bar i{display:block;height:100%;background:var(--up,#2e9d5b)}
 .pfdx-k .lbl{font-size:11px;color:var(--mu);margin-bottom:2px}
 .pfdx-k .val{font-size:17px;font-weight:700}
 .pfdx-k .sub{font-size:11px;color:var(--mu);margin-top:2px}
@@ -1033,7 +1034,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
  var noCost = rows.filter(function(r){ return r.vt != null && !(r.h.c > 0); }).length;
  renderNav(d, tot, FM, miss === 0 && !cashMiss && rows.every(function(r){ return r.vt != null; }),
            { cost: totCost, costV: costV, cash: cashT, noCost: noCost, ok: totCost > 0 && !cashMiss });
- renderDx(rows, tot, totV, cashT);
+ renderDx(rows, tot, totV, cashT, { cost: totCost, costV: costV, noCost: noCost });
  renderRules(rows, totV);
 }
 
@@ -1114,7 +1115,7 @@ function renderRules(rows, totV){
   'Ask: with cash today, would I buy this much at this price? "－" = no data, never counted as met.'));x.appendChild(ft);}
 
 // ---------------------------------------------------------------- Diagnostics
-function renderDx(rows, tot, totV, cashT){
+function renderDx(rows, tot, totV, cashT, CB){
  var x = document.getElementById('pfdx');
  if(!x) return;
  x.textContent = '';
@@ -1186,6 +1187,26 @@ function renderDx(rows, tot, totV, cashT){
  var val4 = k4.appendChild(el('div', 'val ' + (cashPct < 5 ? 'dn' : (cashPct < 15 ? 'warn' : 'up')), num(cashPct, 1) + '%'));
  k4.appendChild(el('div', 'sub')).appendChild(L(cashPct < 5 ? '無防守緩衝 ⚠️' : (cashPct < 15 ? '緩衝適中' : '充裕'), cashPct < 5 ? 'Low liquidity' : 'Adequate'));
  grid.appendChild(k4);
+ // 回本進度: how far the whole account (not one stock) is from its cost; beta turns it into a rough index move
+ if(CB && CB.cost > 0){
+  var gap = CB.cost - CB.costV, need = tot > 0 ? gap / tot * 100 : null;
+  var k5 = el('div', 'pfdx-k');
+  k5.appendChild(el('div', 'lbl')).appendChild(L(CB.noCost ? '回本進度（有填成本者）' : '回本進度', 'Back to cost'));
+  if(gap <= 0){
+   k5.appendChild(el('div', 'val up')).appendChild(L('已高於成本 ✓', 'Above cost ✓'));
+   k5.appendChild(el('div', 'sub')).appendChild(L('高出 NT$ ' + num(-gap, 0), 'NT$ ' + num(-gap, 0) + ' above'));
+  } else {
+   var pr = Math.max(0, Math.min(100, CB.costV / CB.cost * 100));
+   k5.appendChild(el('div', 'val warn', '+' + num(need, 1) + '%'));
+   var bar = k5.appendChild(el('div', 'pfbe-bar')); bar.appendChild(el('i', '')).style.width = pr.toFixed(1) + '%';
+   var idx = pfBeta != null && pfBeta > 0.3 ? need / pfBeta : null;
+   k5.appendChild(el('div', 'sub')).appendChild(L('整個帳戶再漲 ' + num(need, 1) + '%（NT$ ' + num(gap, 0) + '）回到成本' + (idx != null ? '；以 Beta ' + num(pfBeta, 2) + ' 粗估，約等於標普再漲 ' + num(idx, 1) + '%' : ''),
+                                                  'Account needs +' + num(need, 1) + '% (NT$ ' + num(gap, 0) + ')' + (idx != null ? '; with beta ' + num(pfBeta, 2) + ' ≈ S&P +' + num(idx, 1) + '%' : '')));
+   k5.appendChild(el('div', 'sub muted')).appendChild(L('換成別的股票，這個百分比不會變小，變的只是漲跌幅度和風險。Beta 只是平均關係，個股不會照比例走。',
+                                                        'Switching holdings does not shrink this percentage; it changes the size of the swings. Beta is an average, not a promise.'));
+  }
+  grid.appendChild(k5);
+ }
  x.appendChild(grid);
 
  var secBox = el('div', 'pfdx-sec');

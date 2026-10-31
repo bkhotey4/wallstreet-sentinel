@@ -97,6 +97,7 @@ def main():
         assert r.returncode == 0 and "ALL SIM PASS" in r.stdout, r.stdout[-2000:] + r.stderr[-2000:]
     else:
         print("node not installed: sync simulation skipped")
+    assert "回本進度" in SP.JS and "換成別的股票，這個百分比不會變小" in SP.JS      # whole-account break-even, computed in the browser
     print("PORTFOLIO PAGE TESTS PASSED [OK]")
 
 

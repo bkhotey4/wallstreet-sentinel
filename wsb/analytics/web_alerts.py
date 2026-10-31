@@ -12,9 +12,10 @@ Every rule is a fixed threshold on model data (news headlines are not an input).
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import numpy as np
+import pandas as pd
 
 from ..config import SETTINGS
 
@@ -257,12 +258,58 @@ def _patterns(eng, out: List[Dict], now: datetime) -> None:
                     "detail": "規則篩選出的技術型態，收盤跌破失效線代表型態失敗；歷史成績看「技術型態觀察」頁。描述型態，不是買賣建議。"})
 
 
+def rate_pressure(tnx, ndx) -> Optional[Dict]:
+    """10 年債利率壓力: the 20-day change of the 10-year yield against its own 3-year spread of 20-day changes, whether
+    it just made a 60-day high/low, and how much the Nasdaq-100 has moved per 10 bp over the past year (measured, so no
+    fixed 4.5 % / 4.8 % lines)."""
+    y = tnx.dropna()
+    if len(y) < 800:
+        return None
+    c20 = (y - y.shift(20)) * 100                                  # bp
+    sd = float(c20.iloc[-756:-1].std())
+    if not sd:
+        return None
+    now, chg = float(y.iloc[-1]), float(c20.iloc[-1])
+    prior = y.iloc[-61:-1]
+    out = {"y": now, "chg20": chg, "sd": sd, "z": chg / sd, "asof": y.index[-1].strftime("%Y-%m-%d"),
+           "hi60": now > float(prior.max()), "lo60": now < float(prior.min()),
+           "pct10y": float((y.iloc[-2520:] < now).mean() * 100)}
+    n = ndx.dropna()
+    j = pd.concat([n.pct_change() * 100, y.diff() * 100], axis=1, join="inner").dropna().iloc[-252:]
+    if len(j) > 150 and float(j.iloc[:, 1].var()) > 0:
+        b = float(np.cov(j.iloc[:, 0], j.iloc[:, 1])[0, 1] / j.iloc[:, 1].var())
+        out["ndx_per10"] = b * 10
+        out["r"] = float(j.corr().iloc[0, 1])
+    return out
+
+
+def _rates(eng, out: List[Dict], now: datetime) -> None:
+    """利率壓力減輕 (green) / 升高 (yellow): a 20-day yield move >= 1.5x its normal size that also sets a 60-day low/high."""
+    r = rate_pressure(eng.market.series("^TNX"), eng.market.series("^NDX"))
+    if not r:
+        return
+    sens = ""
+    if r.get("ndx_per10") is not None:
+        sens = f"過去一年 10 年債每升 10bp，那指同日平均 {r['ndx_per10']:+.2f}%（相關係數 {r['r']:.2f}）。"
+    lvl = f"目前 {r['y']:.2f}%，高於過去 10 年 {r['pct10y']:.0f}% 的日子"
+    if r["z"] <= -1.5 and r["lo60"]:
+        out.append({"key": f"rate:dn:{r['asof']}", "lv": "watch", "tone": "good", "tab": "bonds",
+                    "zh": f"利率壓力減輕：10 年債 20 天降 {abs(r['chg20']):.0f}bp（平常 ±{r['sd']:.0f}bp），創 60 天新低",
+                    "en": f"10Y yield down {abs(r['chg20']):.0f}bp in 20 days, 60-day low",
+                    "detail": f"{lvl}。{sens}利率下來對估值高的成長股壓力較小，但若是因為景氣轉差而降，股市不一定漲。描述現象，不是買賣建議。"})
+    elif r["z"] >= 1.5 and r["hi60"]:
+        out.append({"key": f"rate:up:{r['asof']}", "lv": "watch", "tone": "watch", "tab": "bonds",
+                    "zh": f"利率壓力升高：10 年債 20 天升 {r['chg20']:.0f}bp（平常 ±{r['sd']:.0f}bp），創 60 天新高",
+                    "en": f"10Y yield up {r['chg20']:.0f}bp in 20 days, 60-day high",
+                    "detail": f"{lvl}。{sens}利率上升時，還沒賺錢、靠未來成長撐估值的股票通常受壓較大。描述現象，不是買賣建議。"})
+
+
 def build(eng) -> Dict:
     now = datetime.now(timezone.utc)
     out: List[Dict] = []
     for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now), lambda: _bottom(eng, out, now),
               lambda: _stability(eng, out, now), lambda: _momentum(eng, out, now), lambda: _regime(eng, out, now),
-              lambda: _dip(eng, out, now), lambda: _patterns(eng, out, now)):
+              lambda: _dip(eng, out, now), lambda: _patterns(eng, out, now), lambda: _rates(eng, out, now)):
         try:
             f()
         except Exception:  # noqa: BLE001  (one broken rule must not hide the others)
