@@ -474,7 +474,7 @@ def main():
     # site
     out = tmp / "site"
     from unittest.mock import AsyncMock, patch
-    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})):
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})), patch("wsb.data.fund_global.refresh", AsyncMock(return_value={})):
         asyncio.run(B.build(out, use_ai=False, engine=eng))
     page = (out / "index.html").read_text(encoding="utf-8")
     for s in ("財經日曆", "科技財報", "FOMC 聯準會利率決議", "本週重要經濟數據", "美國經濟日曆", "美股財報日曆", "科技／半導體財報分析",

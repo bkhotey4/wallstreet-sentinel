@@ -67,6 +67,63 @@ def test_card_plain():
         assert w not in txt + F.watch({"s_accel": -1}, False)
 
 
+def test_finmind_cashflow_split_and_tw_universe():
+    from wsb.data import fund_global as G
+    inc = [{"date": f"2025-{m:02d}-{d}", "type": t, "value": v} for (m, d) in ((3, 31), (6, 30), (9, 30), (12, 31))
+           for t, v in (("Revenue", 100.0), ("GrossProfit", 40.0), ("IncomeAfterTaxes", 10.0))]
+    inc += [{"date": f"{y}-03-31", "type": "Revenue", "value": 90.0} for y in range(2018, 2025)]
+    cfl = [{"date": "2025-03-31", "type": "NetCashInflowFromOperatingActivities", "value": 30.0},
+           {"date": "2025-06-30", "type": "NetCashInflowFromOperatingActivities", "value": 70.0},
+           {"date": "2025-06-30", "type": "PropertyAndPlantAndEquipment", "value": -50.0},
+           {"date": "2025-03-31", "type": "PropertyAndPlantAndEquipment", "value": -20.0}]
+    p = G.parse_finmind(inc, cfl)
+    assert p["ocf"]["2025Q1"] == 30 and p["ocf"]["2025Q2"] == 40          # year-to-date split back into quarters
+    assert p["capex"]["2025Q2"] == 30 and p["rev"]["2025Q4"] == 100
+    rows = [{"sym": "2330.TW", "code": "2330", "ind": "半導體"}, {"sym": "2881.TW", "code": "2881", "ind": G.TW_FIN},
+            {"sym": "1101.TW", "code": "1101", "ind": "水泥"}]
+    u = G.tw_universe(rows, {"2330": 26e9, "2881": 13e9, "1101": 7e9}, {"2330": 1000, "2881": 90, "1101": 25}, 5)
+    assert [r["code"] for r in u] == ["2330", "1101"]                        # financials kept out, biggest first
+
+
+def _hk(seed, up):
+    rng = np.random.default_rng(seed)
+    ys = [f"FY{y}" for y in range(2021, 2026)]
+    rev = 100 * np.cumprod(1 + (np.array([0.02, 0.03, 0.05, 0.09, 0.15]) if up else np.array([0.1, 0.06, 0.03, 0.0, -0.04])) + rng.normal(0, 0.005, 5))
+    nm = np.linspace(0.1, 0.16, 5) if up else np.linspace(0.16, 0.1, 5)
+    return {"rev": dict(zip(ys, rev)), "gp": dict(zip(ys, rev * (nm + 0.3))), "ni": dict(zip(ys, rev * nm)),
+            "ocf": dict(zip(ys, rev * (nm + 0.05))), "capex": dict(zip(ys, rev * 0.03))}
+
+
+def test_hk_annual_uses_peer_scale():
+    uni = [{"sym": f"{i:04d}.HK", "name": f"H{i}", "ind": "港股"} for i in range(12)]
+    facts = {u["sym"]: _hk(i, i % 2 == 0) for i, u in enumerate(uni)}
+    b = F.build_market("hk", uni, facts)
+    assert b and b["annual"] and b["model"] is None and not b["track"] and b["scale"]
+    lab = {r["sym"]: r["label"] for r in b["rows"]}
+    assert lab["0000.HK"] == "up" and lab["0001.HK"] == "down"
+    from tools import site_stockcheck as S
+    j = S.market_json(b)
+    assert j["cols"] == S.FT_COLS and len(j["rows"]) == 12 and "0000" in [r[0] for r in j["rows"]]
+
+
+def test_card_three_markets(monkeypatch=None):
+    from tools import site_stockcheck as S
+    uni = [{"sym": f"{i:04d}.HK", "name": f"H{i}", "ind": "港股"} for i in range(12)]
+    hk = F.build_market("hk", uni, {u["sym"]: _hk(i, i % 2 == 0) for i, u in enumerate(uni)})
+    us_uni = [{"sym": f"S{i}", "name": f"S{i}", "ind": "科技"} for i in range(12)]
+    us = F.build_market("us", us_uni, {f"S{i}": _co(i, improve=i < 4) for i in range(12)})
+    old = F.build
+    F.build = lambda *a, **k: {"markets": {"us": us, "hk": hk}, "skip": {"us": 3}, "tw_fin": 40}
+    try:
+        h = S.sec_fund_trend(None)
+    finally:
+        F.build = old
+    assert "美股 12 家裡" in h and "港股" in h and "年報" in h and 'data-kind="ftus"' in h and 'data-kind="fthk"' in h
+    assert "3 家沒列" in h and "40 家" in h
+    for w in BANNED:
+        assert w not in h
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

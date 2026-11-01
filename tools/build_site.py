@@ -1637,6 +1637,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(TWF.refresh(), 90)
     except Exception as e:  # noqa: BLE001
         log.warning("TW foreign OI failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 財報走向判斷：美股 SEC／台股 FinMind／港股 Yahoo 年報（7～14 天）＋每週股價
+        from wsb.data import fund_global as FG
+        await asyncio.wait_for(FG.refresh(budget_s=float(FG.cfg().get("budget_s", 150))), float(FG.cfg().get("budget_s", 150)) + 60)
+    except Exception as e:  # noqa: BLE001
+        log.warning("fund trend data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 第二意見與傳導管道：OFR 壓力指數、外國央行託管美債、日圓套利
         from wsb.data import transmission as TRM
         await asyncio.wait_for(TRM.refresh(), 120)
@@ -1763,6 +1768,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         published = FS.published(mk)
         if published:
             (out / "market" / f"{mk}.json").write_text(json.dumps(published, ensure_ascii=False), encoding="utf-8")
+    try:                                   # 財報走向判斷：全部名單（美股／台股／港股）
+        SSC.publish(out / "market")
+    except Exception:  # noqa: BLE001
+        log.exception("fund trend lists failed")
     for src, name in ((TE.OUT_US, "ustech.json"), (TE.OUT_TW, "twrev.json"), (GR.OUT_US, "growth_us.json"), (GR.OUT_TW, "growth_tw.json")):
         if src.exists():
             (out / "market" / name).write_text(GR.clean_text(src.read_text(encoding="utf-8")), encoding="utf-8")

@@ -1178,3 +1178,10 @@ site:
   ai_commentary_minutes: 55    # 網頁每 20 分鐘重建，但 AI 市場評論最多每 55 分鐘重寫一次（省 API 額度）
   ai_commentary_ssi_jump: 3    # …壓力指數變動 ≥ 3 點時立刻重寫
   google_client_id: "402042061508-8b7fbpqmpub69qmaj87v39c0r7j2pkdd.apps.googleusercontent.com"   # Google Cloud Console → OAuth 用戶端 ID（Web application）。用戶端 ID 本來就是公開資訊；留空＝只用本機瀏覽器儲存
+
+fund_trend:                  # 財報走向判斷（美股／台股／港股）
+  us_min_mcap: 20000000000   # 美股：市值 ≥ 200 億美元（和財報後解讀同一條線）＋觀察名單
+  tw_top: 150                # 台股：已發行股數 × 收盤價排前 150 家（金融保險業不評）
+  tw_per_run: 60             # 台股：每次建置最多抓 60 家（FinMind 免費額度每小時約 300 次，留給台指期資料）
+  hk_top: 100                # 港股：近 60 日平均成交額前 100 家（年報版本）
+  budget_s: 150              # 每次建置最多花幾秒抓財報與股價（第一次會分好幾次建置補滿）

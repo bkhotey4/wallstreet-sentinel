@@ -598,7 +598,8 @@ def sec_tw_rev(eng) -> str:
 
 
 JT_PH = {"ur": "搜尋代號或名稱，例如 SPCX、NVDA、Costco", "tw": "搜尋代號或名稱，例如 2330、聯發科", "us": "搜尋代號或名稱，例如 NVDA、Snowflake",
-         "gus": "搜尋代號或名稱，例如 NU、SMR、HOOD", "gearly": "搜尋代號或名稱，例如 SMR、OKLO、RKLB", "gtw": "搜尋代號或名稱，例如 2330、奇鋐"}
+         "gus": "搜尋代號或名稱，例如 NU、SMR、HOOD", "gearly": "搜尋代號或名稱，例如 SMR、OKLO、RKLB", "gtw": "搜尋代號或名稱，例如 2330、奇鋐",
+         "ftus": "搜尋代號或名稱，例如 NVDA、Costco", "fttw": "搜尋代號或名稱，例如 2330、鴻海", "fthk": "搜尋代號或名稱，例如 0700、騰訊"}
 
 
 def _jt(kind: str, only: bool = False, autoload: bool = False) -> str:
@@ -746,6 +747,12 @@ var SPEC={tw:{src:'market/twrev.json',filt:'ind',sorts:[['yoy','年增率','y/y'
  ur:{src:'market/growth_us.json',filt:'ind',pre:function(o){return !!o.read;},sorts:[['mcap','市值','Market cap'],['q_yoy','營收年增','Rev y/y'],['accel','成長加速度','Acceleration'],['om_chg','營益率變化','Op margin chg'],['gm_chg','毛利率變化','Gross margin chg']],
   cols:[['sym','代號','Ticker'],['name','公司','Company'],['ind','產業','Sector'],['per','季別','Qtr'],['mcap','市值（十億）','Cap ($bn)',1,'',1e9],['q_yoy','營收年增','Rev y/y',0,'%'],['accel','加速','Accel',0,'pp'],
    ['gm_chg','毛利率變化','GM chg',1,'pp'],['om_chg','營益率變化','OM chg',1,'pp'],['tags','判讀標籤','Tags',null,'','','w'],['read','白話判讀','Reading',null,'','','w']]},
+ ftus:{src:'market/fundtrend_us.json',filt:'ind',sorts:[['z','改善程度（高→低）','Improving most'],['zl','轉弱程度（高→低）','Weakening most'],['mcap','市值','Market cap'],['g','營收年增','Rev y/y'],['accel','成長加速','Acceleration'],['nm','淨利率變化','NM chg']],
+  cols:[['sym','代號','Ticker'],['name','公司','Company'],['ind','產業','Industry'],['q','期間','Period'],['label','走向','Trend'],['g','營收年增','Rev y/y',0,'%'],['accel','成長加速','Accel',1,'pp'],['gm','毛利率變化','GM chg',1,'pp'],['nm','淨利率變化','NM chg',1,'pp'],['fcf','自由現金流率變化','FCF chg',1,'pp'],['next_g','下一季營收年增','Next-Q rev',0,'%'],['watch','下次財報看什麼','Watch next',null,'','','w']]},
+ fttw:{src:'market/fundtrend_tw.json',filt:'ind',sorts:[['z','改善程度（高→低）','Improving most'],['zl','轉弱程度（高→低）','Weakening most'],['mcap','市值','Market cap'],['g','營收年增','Rev y/y'],['accel','成長加速','Acceleration'],['nm','淨利率變化','NM chg']],
+  cols:[['sym','代號','Ticker'],['name','公司','Company'],['ind','產業','Industry'],['q','期間','Period'],['label','走向','Trend'],['g','營收年增','Rev y/y',0,'%'],['accel','成長加速','Accel',1,'pp'],['gm','毛利率變化','GM chg',1,'pp'],['nm','淨利率變化','NM chg',1,'pp'],['fcf','自由現金流率變化','FCF chg',1,'pp'],['next_g','下一季營收年增','Next-Q rev',0,'%'],['watch','下次財報看什麼','Watch next',null,'','','w']]},
+ fthk:{src:'market/fundtrend_hk.json',filt:'label',sorts:[['z','改善程度（高→低）','Improving most'],['zl','轉弱程度（高→低）','Weakening most'],['g','營收年增','Rev y/y'],['accel','成長加速','Acceleration'],['nm','淨利率變化','NM chg']],
+  cols:[['sym','代號','Ticker'],['name','公司','Company'],['q','期間','Period'],['label','走向','Trend'],['g','營收年增','Rev y/y',0,'%'],['accel','成長加速','Accel',1,'pp'],['gm','毛利率變化','GM chg',1,'pp'],['nm','淨利率變化','NM chg',1,'pp'],['fcf','自由現金流率變化','FCF chg',1,'pp'],['watch','下次財報看什麼','Watch next',null,'','','w']]},
  us:{src:'market/ustech.json',filt:'sub',sorts:[['mcap','市值','Market cap'],['yoy','營收年增','Rev y/y'],['gm','毛利率','Gross margin'],['om','營益率','Op margin'],['eps_yoy','EPS 年增','EPS y/y']],
   cols:[['sym','代號','Ticker'],['name','公司','Company'],['sub','子產業','Industry'],['q','季別','Qtr'],['rev','營收（百萬美元）','Rev ($m)',0,'',1e6],['yoy','年增','y/y',1,'%'],['qoq','季增','q/q',1,'%'],
    ['gm','毛利率','GM',1,'%'],['gm_yoy','毛利率年變化','GM Δ',1,'pp'],['om','營益率','OM',1,'%'],['nm','淨利率','NM',1,'%'],['eps','EPS','EPS',2],['eps_yoy','EPS 年增','EPS y/y',1,'%']]}};
@@ -763,7 +770,7 @@ document.querySelectorAll('.jt').forEach(function(w){var sp=SPEC[w.dataset.kind]
    if(c[0]==='name'&&o.cur)td.appendChild(el('span','pill','追蹤池'));if(c[0]==='name'&&o.small)td.appendChild(el('span','pill',en()?'early stage':'營收尚小'));if(c[0]==='name'&&o.odd&&!o.small)td.appendChild(el('span','pill',en()?'small base':'基期小'));if(c[0]==='name'&&o.ma)td.appendChild(el('span','pill',en()?'acquisition':'含併購'));if(c[0]==='name'&&o.flag)td.appendChild(el('span','pill warn',o.flag));tr.appendChild(td);});tb.appendChild(tr);});t.appendChild(tb);sc.appendChild(t);body.appendChild(sc);
   if(its.length>shown){var m=el('button','btn',en()?'Show 100 more':'再顯示 100 筆');m.type='button';m.addEventListener('click',function(){shown+=100;render();});body.appendChild(m);}}
  function go(){btn.style.display='none';st.textContent=en()?'Loading…':'載入中…';fetch(sp.src,{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
-  d.items=d.rows.map(function(a){var o={};d.cols.forEach(function(k,i){o[k]=a[i];});return o;});data=d;var cnt={};d.items.forEach(function(o){if(sp.pre&&!sp.pre(o))return;var v=o[sp.filt];if(v)cnt[v]=(cnt[v]||0)+1;});
+  d.items=d.rows.map(function(a){var o={};d.cols.forEach(function(k,i){o[k]=a[i];});if(o.z!=null)o.zl=-o.z;return o;});data=d;var cnt={};d.items.forEach(function(o){if(sp.pre&&!sp.pre(o))return;var v=o[sp.filt];if(v)cnt[v]=(cnt[v]||0)+1;});
   Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];}).forEach(function(v){var o=el('option',null,v+' ('+cnt[v]+')');o.value=v;fs.appendChild(o);});render();})
   .catch(function(){st.textContent=en()?'Data not available yet.':'資料尚未建立。';});}
  btn.addEventListener('click',go);[q].forEach(function(x){x.addEventListener('input',function(){if(!data)go();else{shown=100;render();}});});

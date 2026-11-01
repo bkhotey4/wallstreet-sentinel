@@ -1,19 +1,24 @@
-"""財報走向判斷：只看公司自己的 SEC 季報，判斷「本業正在變好還是變差」，估下一季營收成長，並公開這套判斷過去的成績。
+"""財報走向判斷：只看公司自己的財報，判斷「本業正在變好還是變差」，估下一季營收成長，並公開這套判斷過去的成績。
 
-資料：個股估值體檢（stock_check）同一份 SEC XBRL 季資料（大型美股觀察名單）與每週股價，不另抓資料。
+資料（wsb/data/fund_global.py）：
+  美股  市值 ≥ 200 億美元＋觀察名單，SEC XBRL 季資料
+  台股  市值前 150 大（金融保險業除外），FinMind 季報
+  港股  成交額前 100 大，Yahoo 年報（多數港股半年才公布一次，免費資料只有年報，所以用「年度」版本）
 
-① 四個訊號（每季，近 12 個月合計，避免季節性）
-     營收成長加速：最近 2 季營收年增率的平均 − 前 2 季的平均
+① 四個訊號（季資料用近 12 個月合計，避免季節性）
+     營收成長加速：最近 2 季營收年增率的平均 − 前 2 季的平均（年度版：今年年增 − 去年年增）
      毛利率變化、淨利率變化、自由現金流率變化：近 12 個月 vs 一年前（百分點）
    每個訊號和「這家公司自己過去這個訊號的平常變動」比：變動小於平常的 1/4 當作持平（死區由資料決定，不寫死門檻）。
-   加總：+2 以上＝改善中、−2 以下＝轉弱中、其他＝持平／分歧。銀行沒有毛利率與自由現金流，只用其餘訊號。
-② 下一季營收年增率估算：全部公司一起估一條簡單迴歸（下一季年增 ≈ a + b×本季年增 + c×加速度），走步樣本外測試
-   （每次只用當時以前的資料）算誤差；若沒有比「下一季＝本季」更準，就直接用本季年增並照實標示。
-③ 判斷的歷史成績：過去每一季做同樣判斷，看
+   港股年報只有 4～5 年，自己的歷史太短，改和「同市場所有公司的平常變動」比。
+   加總：+2 以上＝改善中、−2 以下＝轉弱中、其他＝持平／分歧。金融業沒有毛利率與自由現金流，只用其餘訊號。
+② 下一季營收年增率估算（美股、台股各自估）：全部公司一起估一條簡單迴歸（下一季年增 ≈ a + b×本季年增 + c×加速度），
+   走步樣本外測試（每次只用當時以前的資料）算誤差；若沒有比「下一季＝本季」更準，就直接用本季年增並照實標示。
+③ 判斷的歷史成績（美股、台股）：過去每一季做同樣判斷，看
      兩季後淨利率真的比較高的比例（基本面有沒有說中）
-     財報公布後（季末 + 45 天）26 週，股價比同名單平均多或少多少（以季為單位重抽 1 萬次算 90% 區間）
-限制：名單是現在的大型股（倖存者偏差）、只有約 20 家、股價只有約 6 年；財報數字是修正後的版本；這是描述與歷史統計，
-不是預測股價，也不是買賣建議。"""
+     財報公布後 26 週，股價比同市場名單平均多或少多少（以季為單位重抽 1 萬次算 90% 區間）
+     公布日：第 1～3 季以季末 + 45 天估，第 4 季（年報）美股 + 60 天、台股 + 90 天（法定期限）
+限制：名單是現在的大型股（倖存者偏差）、股價只有約 6 年；財報數字是修正後的版本；港股樣本太短，沒有歷史成績；
+這是描述與歷史統計，不是預測股價，也不是買賣建議。"""
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
@@ -47,7 +52,7 @@ def _ratio(p: Dict, num: str, den: str, q: str, sub: Optional[str] = None) -> Op
 
 def _yoy(p: Dict, q: str) -> Optional[float]:
     a, b = _qv(p, "rev", q), _qv(p, "rev", _qs(q, 5)[0])
-    return (a / b - 1) * 100 if a is not None and b and b > 0 else None
+    return (a / b - 1) * 100 if a and a > 0 and b and b > 0 else None   # a non-positive quarter is a filing artefact
 
 
 def panel(p: Dict, bank: bool = False) -> pd.DataFrame:
@@ -76,21 +81,65 @@ def panel(p: Dict, bank: bool = False) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("q") if rows else pd.DataFrame()
 
 
-def score(df: pd.DataFrame, bank: bool = False) -> pd.DataFrame:
-    """Each signal → +1 / 0 / −1 against the company's own usual change (dead band from the data), then the label."""
+def panel_y(p: Dict, bank: bool = False) -> pd.DataFrame:
+    """Annual version (Hong Kong): one row per fiscal year — revenue growth, its change from last year, margin changes."""
+    rev = p.get("rev") or {}
+    ys = sorted(rev)
+    lv: Dict[str, Dict[str, Optional[float]]] = {}
+    for y in ys:
+        r = rev[y]
+        if not r or r <= 0:
+            continue
+        g_, n_, o_, c_ = ((p.get(k) or {}).get(y) for k in ("gp", "ni", "ocf", "capex"))
+        lv[y] = {"gm": None if bank or g_ is None else g_ / r * 100, "nm": None if n_ is None else n_ / r * 100,
+                 "fcf": None if bank or o_ is None or c_ is None else (o_ - c_) / r * 100,
+                 "cx_ocf": c_ / o_ * 100 if not bank and o_ and o_ > 0 and c_ is not None else None}
+    rows, gs = [], {}
+    for y in ys:
+        prev = f"FY{int(y[2:]) - 1}"
+        if y not in lv or prev not in lv:
+            continue
+        gs[y] = (rev[y] / rev[prev] - 1) * 100
+        r = {"q": y, "g": gs[y], "accel": gs[y] - gs[prev] if prev in gs else None, "cx_ocf": lv[y]["cx_ocf"]}
+        for k in ("gm", "nm", "fcf"):
+            a, b = lv[y][k], lv[prev][k]
+            r[k] = a - b if a is not None and b is not None else None
+            r[k + "_lv"] = a
+        rows.append(r)
+    return pd.DataFrame(rows).set_index("q") if rows else pd.DataFrame()
+
+
+def peer_scale(panels: Dict[str, pd.DataFrame]) -> Dict[str, float]:
+    """The usual size of each signal across every company in the market (robust: 1.4826 × median absolute deviation)."""
+    out = {}
+    for k in SIGS:
+        v = pd.concat([df[k] for df in panels.values() if k in df], ignore_index=True).dropna().astype(float) if panels else pd.Series(dtype=float)
+        if len(v) >= 20:
+            out[k] = float(1.4826 * (v - v.median()).abs().median()) or float(v.std())
+    return out
+
+
+def score(df: pd.DataFrame, bank: bool = False, scale: Optional[Dict[str, float]] = None) -> pd.DataFrame:
+    """Each signal → +1 / 0 / −1 against the company's own usual change (dead band from the data), then the label.
+    scale: a fixed usual change per signal (peers), for histories too short to have their own."""
     df = df.copy()
-    pts = []
+    pts, zs = [], []
     for k in SIGS:
         x = df[k].astype(float) if k in df else pd.Series(np.nan, index=df.index)
-        sd = x.expanding(8).std().shift(1)                       # only what was known before this quarter
+        if scale is not None:
+            sd = pd.Series(scale.get(k, np.nan), index=df.index, dtype=float)
+        else:
+            sd = x.expanding(8).std().shift(1)                   # only what was known before this quarter
         band = DEAD * sd
         s = pd.Series(np.where(x > band, 1, np.where(x < -band, -1, 0)), index=df.index, dtype=float)
         s[x.isna() | sd.isna()] = np.nan
         df["s_" + k] = s
         pts.append(s)
+        zs.append((x / sd.replace(0, np.nan)).clip(-3, 3))
     m = pd.concat(pts, axis=1)
     df["n_sig"] = m.notna().sum(axis=1)
     df["score"] = m.sum(axis=1, min_count=1)
+    df["z"] = pd.concat(zs, axis=1).sum(axis=1, min_count=1)        # how far from usual, for ordering only
     need = 2 if bank else 3                                       # banks have revenue and net margin only
     df["label"] = np.where(df["n_sig"] < need, None, np.where(df["score"] >= 2, "up", np.where(df["score"] <= -2, "down", "flat")))
     return df
@@ -150,7 +199,12 @@ def _qend(q: str) -> pd.Timestamp:
     return pd.Timestamp(year=int(q[:4]), month=int(q[-1]) * 3, day=1) + pd.offsets.MonthEnd(0)
 
 
-def track(scored: Dict[str, pd.DataFrame], px: Dict[str, pd.Series]) -> Dict:
+def _pub(q: str, lag4: int) -> pd.Timestamp:
+    """When the quarter's numbers were public: 45 days for interim quarters, the annual-report deadline for Q4."""
+    return _qend(q) + pd.Timedelta(days=lag4 if q.endswith("Q4") else PUB_LAG)
+
+
+def track(scored: Dict[str, pd.DataFrame], px: Dict[str, pd.Series], lag4: int = PUB_LAG) -> Dict:
     """For every past label: did the net margin two quarters later come in higher, and the 26-week return after the
     report vs the same list's average (equal weight, same dates)."""
     closes = pd.DataFrame({s: v for s, v in px.items() if len(v)}).sort_index()
@@ -166,7 +220,7 @@ def track(scored: Dict[str, pd.DataFrame], px: Dict[str, pd.Series]) -> Dict:
             hit = None if nm_now is None or nm_fut is None or pd.isna(nm_now) or pd.isna(nm_fut) else bool(nm_fut > nm_now)
             ex = None
             if sym in closes and not closes.empty:
-                t0 = _qend(q) + pd.Timedelta(days=PUB_LAG)
+                t0 = _pub(q, lag4)
                 i0 = closes.index.searchsorted(t0)
                 if t0 < closes.index[0] or i0 >= len(closes):          # before the price history starts: no return
                     i0 = len(closes)
@@ -200,6 +254,8 @@ def track(scored: Dict[str, pd.DataFrame], px: Dict[str, pd.Series]) -> Dict:
 # ------------------------------------------------------------------ what to watch at the next report
 def watch(r: Dict, bank: bool) -> str:
     """The weakest signal decides what to look at next time — a checklist, not a call."""
+    if r.get("g") is not None and abs(r["g"]) >= 100:
+        return "營收年增超過 100%（基期小、併購或景氣循環高峰），各種比率的變化會被放大：看下一季營收能否維持，以及利潤率是不是跟著站穩。"
     if r.get("cx_ocf") is not None and r["cx_ocf"] >= 80:
         return f"資本支出已吃掉營運現金流的 {r['cx_ocf']:.0f}%：看下次的資本支出指引與自由現金流能否轉正或維持。"
     weak = [k for k in SIGS if r.get("s_" + k) == -1]
@@ -219,49 +275,112 @@ def watch(r: Dict, bank: bool) -> str:
 LABEL = {"up": ("改善中", "Improving"), "flat": ("持平／分歧", "Mixed"), "down": ("轉弱中", "Weakening")}
 
 
-def build(d: Optional[Dict] = None) -> Optional[Dict]:
-    from . import stock_check as SCK
-    d = d if d is not None else SCK.load()
-    facts, pxd = d.get("facts") or {}, d.get("px") or {}
-    panels, scored, px, names = {}, {}, {}, {}
-    for sym in SCK.universe():
-        p = facts.get(sym)
+MARKETS = {"us": ("美股", "US", 60), "tw": ("台股", "Taiwan", 90), "hk": ("港股", "Hong Kong", None)}   # Q4 publication lag
+STALE_DAYS = {"us": 300, "tw": 300, "hk": 600}
+MIN_ROWS = {"us": 12, "tw": 12, "hk": 2}
+
+
+def _row(sym: str, meta: Dict, df: pd.DataFrame, mk: str, m: Optional[Dict]) -> Optional[Dict]:
+    ok = df.dropna(subset=["g"])
+    if ok.empty:
+        return None
+    last, q = ok.iloc[-1], ok.index[-1]
+    end = _qend(q) if "Q" in q else pd.Timestamp(year=int(q[2:]), month=12, day=31)
+    if (pd.Timestamp.today() - end).days > STALE_DAYS[mk]:             # stale filer — blank rather than old
+        return None
+    bank = bool(meta.get("fin"))
+    r = {"sym": sym, "name": meta.get("name") or sym, "ind": meta.get("ind") or "", "mk": mk, "q": q, "bank": bank,
+         "g": float(last["g"]), "label": last["label"], "score": None if pd.isna(last["score"]) else int(last["score"]),
+         "z": None if pd.isna(last.get("z")) else float(last["z"]), "mcap": meta.get("mcap")}
+    for k in SIGS:
+        v = last.get(k)
+        r[k] = None if v is None or pd.isna(v) else float(v)
+        sv = last.get("s_" + k)
+        r["s_" + k] = None if sv is None or pd.isna(sv) else int(sv)
+    r["cx_ocf"] = None if pd.isna(last.get("cx_ocf")) else float(last["cx_ocf"])
+    if m:
+        r["next_g"] = predict(m, r["g"], r["accel"])
+    r["watch"] = watch(r, bank)
+    return r
+
+
+def industries(rows: List[Dict], min_n: int = 3) -> List[Dict]:
+    """Share improving / weakening per industry — where the fundamentals are turning, not only which company."""
+    by: Dict[str, List[Dict]] = {}
+    for r in rows:
+        if r["label"] and r.get("ind") and r["ind"] != "港股":
+            by.setdefault(r["ind"], []).append(r)
+    out = []
+    for ind, rs in by.items():
+        if len(rs) < min_n:
+            continue
+        up, dn = sum(r["label"] == "up" for r in rs), sum(r["label"] == "down" for r in rs)
+        out.append({"ind": ind, "n": len(rs), "up": up / len(rs) * 100, "down": dn / len(rs) * 100, "net": (up - dn) / len(rs) * 100,
+                    "g": float(np.median([r["g"] for r in rs]))})
+    return sorted(out, key=lambda x: -x["net"])
+
+
+def build_market(mk: str, uni: List[Dict], facts: Dict[str, Dict], closes: Optional[pd.DataFrame] = None) -> Optional[Dict]:
+    annual = mk == "hk"
+    panels, metas = {}, {}
+    for meta in uni:
+        p = facts.get(meta["sym"])
         if not p:
             continue
-        df = panel(p, sym in BANKS)
-        if len(df) < 12:
+        bank = bool(meta.get("fin")) or (annual and not (p.get("gp") or {}))     # Yahoo has no gross profit for banks / insurers
+        meta = {**meta, "fin": bank}
+        df = panel_y(p, bank) if annual else panel(p, bank)
+        if len(df) < MIN_ROWS[mk]:
             continue
-        panels[sym] = df
-        scored[sym] = score(df, sym in BANKS)
-        names[sym] = p.get("name") or sym
-        s = pd.Series(pxd.get(sym) or {}, dtype=float)
-        s.index = pd.to_datetime(s.index)
-        px[sym] = s.sort_index()
-    if not scored:
+        panels[meta["sym"]], metas[meta["sym"]] = df, meta
+    if not panels:
         return None
-    m = forecast_model(panels)
-    rows = []
-    today = pd.Timestamp.today()
-    for sym, df in scored.items():
-        last = df.dropna(subset=["g"]).iloc[-1]
-        q = df.dropna(subset=["g"]).index[-1]
-        if (today - _qend(q)).days > 300:                       # stale filer — blank rather than old
-            continue
-        r = {"sym": sym, "name": names[sym], "q": q, "bank": sym in BANKS, "g": float(last["g"]),
-             "label": last["label"], "score": None if pd.isna(last["score"]) else int(last["score"])}
-        for k in SIGS:
-            v = last.get(k)
-            r[k] = None if v is None or pd.isna(v) else float(v)
-            sv = last.get("s_" + k)
-            r["s_" + k] = None if sv is None or pd.isna(sv) else int(sv)
-        r["cx_ocf"] = None if pd.isna(last.get("cx_ocf")) else float(last["cx_ocf"])
-        if m:
-            r["next_g"] = predict(m, r["g"], r["accel"])
-        r["watch"] = watch(r, r["bank"])
-        rows.append(r)
+    scale = peer_scale(panels) if annual else None
+    scored = {s: score(df, metas[s]["fin"], scale) for s, df in panels.items()}
+    m = None if annual else forecast_model(panels)
+    rows = [r for r in (_row(s, metas[s], df, mk, m) for s, df in scored.items()) if r]
     order = {"up": 0, "flat": 1, "down": 2, None: 3}
-    rows.sort(key=lambda r: (order.get(r["label"], 3), -(r["score"] or 0)))
-    return {"rows": rows, "model": m, "track": track(scored, px), "n": len(rows)}
+    rows.sort(key=lambda r: (order.get(r["label"], 3), -(r["z"] or 0)))
+    tr: Dict = {}
+    if not annual and closes is not None and not closes.empty:
+        px = {s: closes[s].dropna() for s in scored if s in closes}
+        tr = track(scored, px, MARKETS[mk][2] or PUB_LAG)
+    return {"rows": rows, "model": m, "track": tr, "n": len(rows), "inds": industries(rows), "annual": annual,
+            "scale": scale, "uni": len(uni)}
+
+
+_MEMO: Dict = {}
+
+
+def build(d: Optional[Dict] = None, px: Optional[Dict[str, pd.DataFrame]] = None) -> Optional[Dict]:
+    """{"markets": {us|tw|hk: build_market(...)}}; memoised on the cache files' modification times."""
+    from ..data import fund_global as G
+    key = None
+    if d is None and px is None:
+        try:
+            key = (G.FILE.stat().st_mtime if G.FILE.exists() else 0, G.PX_FILE.stat().st_mtime if G.PX_FILE.exists() else 0)
+        except OSError:
+            key = None
+        if key and _MEMO.get("key") == key:
+            return _MEMO["v"]
+    d = d if d is not None else G.load()
+    px = px if px is not None else G.load_px()
+    uni, facts = d.get("uni") or {}, d.get("facts") or {}
+    out: Dict = {"markets": {}, "skip": {m: len(v) for m, v in (d.get("skip") or {}).items()}, "tw_fin": uni.get("tw_fin"),
+                 "ts": d.get("ts")}
+    for mk in MARKETS:
+        try:
+            b = build_market(mk, uni.get(mk) or [], facts.get(mk) or {}, (px or {}).get(mk))
+        except Exception:  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).exception("fund trend %s failed", mk)
+            b = None
+        if b:
+            out["markets"][mk] = b
+    v = out if out["markets"] else None
+    if key:
+        _MEMO.update(key=key, v=v)
+    return v
 
 
 def plain(r: Dict, name: Optional[str] = None, m: Optional[Dict] = None) -> str:

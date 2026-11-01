@@ -125,39 +125,118 @@ def _sig_cell(r: dict, k: str) -> str:
     return f'<td class="r">{_ARROW[s][0]} <span class="small">{num(v, 1, sign=True)}</span></td>'
 
 
-def sec_fund_trend(eng) -> str:
-    """財報走向判斷: only the company's own SEC filings — improving / mixed / weakening, next-quarter revenue growth with
-    its measured error, what to watch next time, and how this judgment has done historically."""
-    from wsb.analytics import fund_trend as F
-    try:
-        b = F.build()
-    except Exception:  # noqa: BLE001
-        b = None
-    if not b or not b.get("rows"):
-        return ""
-    rows, m, tr = b["rows"], b.get("model") or {}, b.get("track") or {}
-    cnt = {k: [r for r in rows if r["label"] == k] for k in ("up", "flat", "down")}
-    nm = lambda r: ZH.get(r["sym"], r["sym"])  # noqa: E731
-    lead = (f"一句話看懂：只看各公司自己的財報，追蹤的 {len(rows)} 家裡，本業正在改善的 {len(cnt['up'])} 家"
-            + (f"（{'、'.join(nm(r) for r in cnt['up'])}）" if cnt["up"] else "")
-            + f"、轉弱的 {len(cnt['down'])} 家" + (f"（{'、'.join(nm(r) for r in cnt['down'])}）" if cnt["down"] else "")
-            + f"，其餘 {len(cnt['flat'])} 家訊號互相抵銷。")
+def _nm(r: dict) -> str:
+    return ZH.get(r["sym"], r["name"]) if r["mk"] == "us" else r["name"]
+
+
+def _hist(tr: dict) -> str:
     up, dn = tr.get("up") or {}, tr.get("down") or {}
-    hist = ""
+    h = ""
     if up.get("nm_hit") is not None and dn.get("nm_hit") is not None:
-        hist = (f"過去判斷為「改善中」的，兩季後淨利率真的比較高的有 {up['nm_hit']:.0f}%（「轉弱中」只有 {dn['nm_hit']:.0f}%），"
-                "代表本業的方向通常會延續一段時間。")
+        h = (f"過去判斷為「改善中」的，兩季後淨利率真的比較高的有 {up['nm_hit']:.0f}%（「轉弱中」只有 {dn['nm_hit']:.0f}%）"
+             + ("，代表本業的方向通常會延續一段時間。" if up["nm_hit"] > dn["nm_hit"] + 5 else "，差別不大，方向不一定延續。"))
     if up.get("ex") is not None:
         sig = up["ex_lo"] > 0 or up["ex_hi"] < 0
-        hist += (f"但股價不一定跟著走：財報公布後半年，「改善中」平均比同名單 {up['ex']:+.1f}%（90% 區間 {up['ex_lo']:+.1f}～{up['ex_hi']:+.1f}%）"
-                 + (f"、「轉弱中」{dn['ex']:+.1f}%" if dn.get("ex") is not None else "")
-                 + ("，差異統計上明顯。" if sig else "，區間包含 0，看不出穩定的差別——好財報常常早就反映在股價裡。"))
+        h += (f"股價方面，財報公布後半年，「改善中」平均比同市場名單 {up['ex']:+.1f}%（90% 區間 {up['ex_lo']:+.1f}～{up['ex_hi']:+.1f}%）"
+              + (f"、「轉弱中」{dn['ex']:+.1f}%" if dn.get("ex") is not None else "")
+              + ("，差異統計上明顯；不過名單是現在還存在的大型股，下市或變小的公司不在裡面（倖存者偏差），實際差距可能比較小，也不代表以後一定如此。" if sig else "，區間包含 0，看不出穩定的差別——好財報常常早就反映在股價裡。"))
+    return h
+
+
+def _top_table(rs: list) -> str:
+    from wsb.analytics import fund_trend as F
     trs = ""
-    for r in rows:
+    for r in rs:
+        lab = F.LABEL.get(r["label"], ("訊號不足", "n/a"))
+        c = {"up": "up", "down": "dn"}.get(r["label"], "")
+        sub = " ".join(x for x in (r["ind"] if r["ind"] != "港股" else "", r["q"]) if x)
+        trs += (f'<tr><td class="nw"><b>{esc(_nm(r)[:24])}</b> <span class="tk">{esc(r["sym"].split(".")[0])}</span>'
+                f'<div class="small muted">{esc(sub)}</div></td>'
+                f'<td><b class="{c}">{T(*lab)}</b></td><td class="r">{num(r["g"], 0, sign=True)}%</td>'
+                + "".join(_sig_cell(r, k) for k in F.SIGS)
+                + f'<td class="small">{esc(r["watch"])}</td></tr>')
+    head = (f'<tr><th>{T("公司", "Company")}</th><th>{T("走向", "Trend")}</th><th class="r">{T("營收年增", "Rev YoY")}</th>'
+            + "".join(f'<th class="r">{T(*F.SIGS[k])}</th>' for k in F.SIGS)
+            + f'<th>{T("下次財報看什麼", "Watch next")}</th></tr>')
+    return f'<div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{trs}</tbody></table></div>'
+
+
+def _inds(inds: list) -> str:
+    if not inds:
+        return ""
+    best, worst = inds[0], inds[-1]
+    rows = "".join(f'<tr><td>{esc(x["ind"])} <span class="muted small">{x["n"]}</span></td><td class="r up">{x["up"]:.0f}%</td>'
+                   f'<td class="r dn">{x["down"]:.0f}%</td><td class="r {"up" if x["net"] > 0 else "dn" if x["net"] < 0 else ""}">{x["net"]:+.0f}</td>'
+                   f'<td class="r">{num(x["g"], 0, sign=True)}%</td></tr>' for x in inds)
+    say = (f"產業來看，改善比例最高的是{best['ind']}（{best['up']:.0f}% 改善）、轉弱比例最高的是"
+           f"{max(inds, key=lambda x: x['down'])['ind']}（{max(x['down'] for x in inds):.0f}% 轉弱）。"
+           "同一個產業一起轉好或轉壞，通常是需求或成本的共同變化，上下游供應鏈也會跟著受影響。")
+    return (f'<p class="small">{T(say, "")}</p>'
+            f'<details class="sgx"><summary>{T("看各產業", "By industry")}</summary><div class="scroll"><table class="mini"><thead><tr>'
+            f'<th>{T("產業（家數）", "Industry (n)")}</th><th class="r">{T("改善中", "Improving")}</th><th class="r">{T("轉弱中", "Weakening")}</th>'
+            f'<th class="r">{T("差距（百分點）", "Net (pp)")}</th><th class="r">{T("營收年增中位數", "Median rev YoY")}</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div></details>')
+
+
+def _market(mk: str, b: dict, n_top: int = 8) -> str:
+    from tools import site_econ as S3
+    from wsb.analytics import fund_trend as F
+    rows, m = b["rows"], b.get("model") or {}
+    lab = [r for r in rows if r["label"]]
+    up = [r for r in lab if r["label"] == "up"]
+    dn = sorted((r for r in lab if r["label"] == "down"), key=lambda r: r["z"] or 0)
+    pct = (lambda a: f"{len(a) / len(lab) * 100:.0f}%") if lab else (lambda a: "—")
+    summ = f'{F.MARKETS[mk][0]}{"（年報）" if b.get("annual") else ""} {len(rows)} 家：改善中 {len(up)} 家（{pct(up)}）、轉弱中 {len(dn)} 家（{pct(dn)}）'
+    if b.get("annual"):
+        h = ("港股多數半年才公布一次財報，免費資料只有 4～5 年的年報，所以這裡是「今年 vs 去年」，每個訊號和同市場所有公司的平常變動比；"
+             "年數太少，沒辦法回測歷史成績。")
+    else:
+        h = _hist(b.get("track") or {})
+    body = (f'<p>{T(h, "")}</p>' if h else "") + _inds(b.get("inds") or [])
+    if up:
+        body += f'<h4>{T("改善最明顯", "Improving the most")}</h4>' + _top_table(up[:n_top])
+    if dn:
+        body += f'<h4>{T("轉弱最明顯", "Weakening the most")}</h4>' + _top_table(dn[:n_top])
+    body += f'<h4>{T("全部名單（可搜尋、篩選、排序）", "Full list")}</h4>' + S3._jt("ft" + mk)
+    if m:
+        fc = ("下一季營收年增：" + ("用迴歸估算" if m.get("model") else "迴歸模型在走步測試裡沒有比「下一季＝本季」更準，所以直接用本季年增")
+              + f"，過去 {m.get('n_oos', 0)} 次樣本外的誤差約 ±{m.get('rmse', 0):.0f} 個百分點。")
+        body += f'<p class="small muted">{T(fc, "")}</p>'
+    return f'<details class="sgx"{" open" if mk == "us" else ""}><summary><b>{T(summ, "")}</b></summary>{body}</details>'
+
+
+FT_COLS = ["sym", "name", "ind", "q", "label", "g", "accel", "gm", "nm", "fcf", "next_g", "z", "mcap", "watch"]
+
+
+def market_json(b: dict) -> dict:
+    """market/fundtrend_{mk}.json for the searchable table (Hong Kong has no industry, so it filters by trend)."""
+    from wsb.analytics import fund_trend as F
+    out = []
+    for r in b["rows"]:
+        o = {**r, "sym": r["sym"].split(".")[0], "name": _nm(r), "label": F.LABEL.get(r["label"], ("訊號不足",))[0]}
+        out.append([round(o[c], 1) if isinstance(o.get(c), float) else o.get(c) for c in FT_COLS])
+    return {"cols": FT_COLS, "rows": out}
+
+
+def publish(out_dir) -> None:
+    """Write market/fundtrend_{us,tw,hk}.json (build_site calls this next to the other market files)."""
+    import json
+    from wsb.analytics import fund_trend as F
+    for mk, v in ((F.build() or {}).get("markets") or {}).items():
+        (out_dir / f"fundtrend_{mk}.json").write_text(json.dumps(market_json(v), ensure_ascii=False), encoding="utf-8")
+
+
+def _watchlist(rows: list) -> str:
+    from wsb.analytics import fund_trend as F
+    wl = [r for r in rows if r["sym"] in ZH]
+    if not wl:
+        return ""
+    trs = ""
+    for r in wl:
         lab = F.LABEL.get(r["label"], ("訊號不足", "n/a"))
         c = {"up": "up", "down": "dn"}.get(r["label"], "")
         nx = f'{num(r["next_g"], 0, sign=True)}%' if r.get("next_g") is not None else "—"
-        trs += (f'<tr><td>{T(nm(r), r["sym"])} <span class="tk">{esc(r["sym"])}</span><div class="small muted">{esc(r["q"])}</div></td>'
+        trs += (f'<tr><td>{T(_nm(r), r["sym"])} <span class="tk">{esc(r["sym"])}</span><div class="small muted">{esc(r["q"])}</div></td>'
                 f'<td><b class="{c}">{T(*lab)}</b></td><td class="r">{num(r["g"], 0, sign=True)}%</td>'
                 + "".join(_sig_cell(r, k) for k in F.SIGS)
                 + f'<td class="r">{num(r["cx_ocf"], 0) + "%" if r.get("cx_ocf") is not None else "—"}</td><td class="r">{nx}</td>'
@@ -165,14 +244,45 @@ def sec_fund_trend(eng) -> str:
     head = (f'<tr><th>{T("公司", "Company")}</th><th>{T("走向", "Trend")}</th><th class="r">{T("營收年增", "Rev YoY")}</th>'
             + "".join(f'<th class="r">{T(*F.SIGS[k])}</th>' for k in F.SIGS)
             + f'<th class="r">{T("資本支出／營運現金流", "Capex / OCF")}</th><th class="r">{T("下一季營收年增", "Next-Q rev")}</th><th>{T("下次財報看什麼", "Watch next")}</th></tr>')
-    fc = (f"下一季營收年增：{'用迴歸估算' if m.get('model') else '迴歸模型在走步測試裡沒有比「下一季＝本季」更準，所以直接用本季年增'}，"
-          f"過去 {m.get('n_oos', 0)} 次樣本外的誤差約 ±{m.get('rmse', 0):.0f} 個百分點。" if m else "")
-    how = ("四個訊號（近 12 個月合計，避免季節性）：營收成長加速＝最近 2 季營收年增率平均減前 2 季；毛利率、淨利率、自由現金流率＝和一年前比（百分點）。"
+    return (f'<details class="sgx"><summary>{T(f"美股觀察名單 {len(wl)} 家的細節（含資本支出與下一季估算）", "Watchlist details")}</summary>'
+            f'<div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{trs}</tbody></table></div></details>')
+
+
+def sec_fund_trend(eng) -> str:
+    """財報走向判斷（美股／台股／港股）: only each company's own reports — improving / mixed / weakening, by industry,
+    next-quarter revenue growth with its measured error, what to watch next time, and how this judgment has done."""
+    from wsb.analytics import fund_trend as F
+    try:
+        b = F.build()
+    except Exception:  # noqa: BLE001
+        b = None
+    mks = (b or {}).get("markets") or {}
+    if not mks:
+        return ""
+    parts, better, worse = [], [], []
+    for mk, v in mks.items():
+        lab = [r for r in v["rows"] if r["label"]]
+        if lab:
+            u = sum(r["label"] == "up" for r in lab) / len(lab) * 100
+            d = sum(r["label"] == "down" for r in lab) / len(lab) * 100
+            parts.append(f"{F.MARKETS[mk][0]} {len(v['rows'])} 家裡 {u:.0f}% 改善、{d:.0f}% 轉弱")
+            (better if u > d else worse if d > u else []).append(F.MARKETS[mk][0])
+    tail = ("改善的公司比轉弱的多，" + "、".join(better) + "整體本業還在變好" if better else "")
+    tail += ("；" if better and worse else "") + ("、".join(worse) + "轉弱的比改善的多，本業在變差" if worse else "")
+    lead = "一句話看懂：只看各公司自己的財報，" + "；".join(parts) + "。" + (tail + "。" if tail else "")
+    body = (f'<p class="rimp big2"><b>{esc(lead)}</b></p>' + "".join(_market(mk, v) for mk, v in mks.items())
+            + _watchlist((mks.get("us") or {}).get("rows") or []))
+    sk, lim = b.get("skip") or {}, []
+    if sk.get("us"):
+        lim.append(f"美股有 {sk['us']} 家沒列（多半是用國際會計準則申報的外國公司，SEC 沒有季資料，例如台積電 ADR、艾司摩爾）")
+    if b.get("tw_fin"):
+        lim.append(f"台股金融保險業（{b['tw_fin']} 家）的營收是利息、保費與投資收益，這套訊號不適用，所以不評")
+    how = ("四個訊號（季資料用近 12 個月合計，避免季節性）：營收成長加速＝最近 2 季營收年增率平均減前 2 季；毛利率、淨利率、自由現金流率＝和一年前比（百分點）。"
            f"每個訊號和這家公司自己過去的平常變動比，小於平常的 {F.DEAD:g} 倍當作持平；加總 +2 以上＝改善中、−2 以下＝轉弱中。"
-           "銀行沒有毛利率與自由現金流，只用營收與淨利率。" + fc
-           + f"歷史成績用 {tr.get('n', 0)} 次過去的判斷（股價部分只有 {up.get('from', '')}～{up.get('to', '')}，財報公布日以季末後 {F.PUB_LAG} 天估），以季為單位重抽 1 萬次算區間。"
-           "限制：名單是現在的大型股（倖存者偏差）、家數少、財報是修正後的數字。這是描述與歷史統計，不是股價預測，也不是買賣建議。")
-    body = (f'<p><b>{esc(lead)}</b></p>' + (f'<p>{esc(hist)}</p>' if hist else "")
-            + f'<div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{trs}</tbody></table></div>'
-            + f'<details class="small"><summary>{T("怎麼判斷、歷史成績、限制", "Method, track record, limits")}</summary><p class="note">{esc(how)}</p></details>')
-    return card("財報走向判斷：本業正在變好還是變差", "Earnings trend: is the business getting better?", body, "wide")
+           "金融業沒有毛利率與自由現金流，只用營收與淨利率。港股用年報：成長加速＝今年營收年增減去年，平常變動用同市場所有公司估。"
+           f"歷史成績：美股、台股過去每一季做同樣判斷，財報公布日以季末後 {F.PUB_LAG} 天估（第 4 季年報：美股 60 天、台股 90 天），以季為單位重抽 1 萬次算區間。"
+           "名單：美股市值 200 億美元以上、台股市值前 150 大、港股成交額前 100 大。資料：SEC EDGAR、FinMind（台股財報）、Yahoo Finance（港股年報、股價）。"
+           + "".join(x + "。" for x in lim)
+           + "限制：名單是現在的大型股（倖存者偏差）、財報是修正後的數字。這是描述與歷史統計，不是股價預測，也不是買賣建議。")
+    body += f'<details class="small"><summary>{T("怎麼判斷、歷史成績、限制", "Method, track record, limits")}</summary><p class="note">{esc(how)}</p></details>'
+    return card("財報走向判斷：本業正在變好還是變差（美股／台股／港股）", "Earnings trend: is the business getting better? (US / Taiwan / HK)", body, "wide")

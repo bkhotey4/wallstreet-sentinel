@@ -260,6 +260,14 @@ def _sck(k: str):
         return None
 
 
+def _fgl(k: str):
+    try:
+        from wsb.data import fund_global as FG
+        return FG.load().get(k)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _twf(k: str):
     try:
         from wsb.data import tw_futures as TWF
@@ -354,6 +362,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "ecb": ("歐洲央行 CISS＋各國公債（FRED 月資料）", "ECB CISS / FRED", lambda e: (_ts(_ead("ts_check")), _ead_date()), 7),
     "capexq": ("SEC 季報（資本支出／營收）", "SEC quarterly", lambda e: (_ts(_cxl("ts_check")), None), 0),
     "stockchk": ("SEC 季報＋每週股價（個股體檢）", "SEC filings + weekly prices", lambda e: (_ts(_sck("ts_check")), None), 0),
+    "fundgl": ("財報（SEC／FinMind／Yahoo 年報）", "Filings (SEC / FinMind / Yahoo)", lambda e: (_ts(_fgl("ts_check")), None), 0),
     "twfoi": ("外資台指期部位（FinMind）", "TAIFEX foreign OI", lambda e: (_ts(_twf("ts_check")), _twf_date()), 5),
     "observer": ("獨立 AI 觀察員", "AI observer", lambda e: (_ts(_stab_ts("ai_view")), _obs_date()), 4),
     "cover": ("覆蓋盤點", "Coverage audit", lambda e: (_ts(_stab_ts("coverage")), _cover_date()), 40),
@@ -381,7 +390,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_fund_trend": ["stockchk"], "sec_crisis": ["px"], "sec_timemachine": ["ssi"], "sec_dual": ["ssi", "px", "fred", "ofr"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_fund_trend": ["fundgl"], "sec_crisis": ["px"], "sec_timemachine": ["ssi"], "sec_dual": ["ssi", "px", "fred", "ofr"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],
@@ -392,7 +401,7 @@ CARD: Dict[str, List[str]] = {
 }
 NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note", "sec_industry_note", "sec_earn_preview"}   # static content
 LIVE = {"sec_lookup", "sec_watch", "sec_intraday"}
-MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
+MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 
 
 def sources_for(fname: str, tab: str) -> List[str]:

@@ -1,5 +1,6 @@
-"""財報後白話解讀 (top of 財經日曆, and the tech ones on 科技財報): after US companies report, a cloud routine writes
-research_feed/earn_after.json — for every company of any sector that reported (market cap ≥ 200 億美元), a plain sentence,
+"""財報後白話解讀 (top of 財經日曆, and the tech ones on 科技財報): after US / Taiwan / Hong Kong companies report, a cloud
+routine writes research_feed/earn_after.json — for every company of any sector that reported (US market cap ≥ 200 億美元,
+the site's Taiwan top-150 and Hong Kong top-100 lists), a plain sentence,
 what the numbers say beyond "beat / miss", who else is affected (suppliers, rivals, customers, Taiwan supply chain), the
 macro / bond backdrop it lands in, and the after-hours move explained only with news that matches it.  Not advice."""
 from __future__ import annotations
@@ -14,6 +15,7 @@ from tools.sitekit import card, guard_safe
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "earn_after.json"   # public repo only
 BANNED = ("目標價", "上漲空間", "低估", "高估", "買進", "賣出")
 TECH = ("科技", "半導體", "通訊", "軟體", "雲端", "AI")
+MK = {"us": "美股", "tw": "台股", "hk": "港股"}
 
 
 def load() -> Dict:
@@ -40,7 +42,7 @@ def _item(it: Dict) -> str:
     pct = mv.get("pct")
     cl = "up" if isinstance(pct, (int, float)) and pct > 0 else "dn" if isinstance(pct, (int, float)) and pct < 0 else ""
     head = (f'<h3>{_esc(it.get("name") or it.get("sym"))} <span class="muted small">{_esc(it.get("sym"))}・{_esc(it.get("sector"))}・'
-            f'{_esc(it.get("date"))}</span>' + (f' <b class="{cl}">{pct:+.1f}%</b>' if isinstance(pct, (int, float)) else "") + "</h3>")
+            f'{_esc(it.get("date"))}・{MK.get(it.get("mk") or "us", "美股")}</span>' + (f' <b class="{cl}">{pct:+.1f}%</b>' if isinstance(pct, (int, float)) else "") + "</h3>")
     spill = "".join(f'<li><b>{_esc(s.get("who"))}</b>：{_esc(s.get("how"))}</li>' for s in (it.get("spill") or []) if isinstance(s, dict))
     src = _list(it.get("sources"))
     parts = [f'<p class="rimp"><b>{_esc(it.get("one"))}</b></p>']
@@ -84,8 +86,8 @@ def _card(items: List[Dict], title: str, en: str, n: int) -> str:
     latest = [x for x in items if x["date"] == day]
     lead = f'一句話看懂：{day} 公布的 {len(latest)} 家：' + "；".join(f'{x.get("name") or x["sym"]}——{x.get("one")}' for x in latest[:3])
     bg = d.get("backdrop")
-    note = ("每天台北早上 7 點與晚上 9 點，由 AI 分析任務讀取公司官方財報新聞稿與可靠報導，替前一段時間公布財報、市值 200 億美元以上的美股公司"
-            "（所有產業，不只科技）寫白話解讀：除了有沒有賺錢，還看營收品質、利潤率、財測、現金流，對供應商／競爭對手／客戶／台灣供應鏈的連帶影響，"
+    note = ("每天台北早上 7 點與晚上 9 點，由 AI 分析任務讀取公司官方財報新聞稿、公開資訊觀測站、港交所公告與可靠報導，替前一段時間公布財報的公司"
+            "（美股市值 200 億美元以上、台股市值前 150 大、港股成交額前 100 大，所有產業，不只科技）寫白話解讀：除了有沒有賺錢，還看營收品質、利潤率、財測、現金流，對供應商／競爭對手／客戶／台灣供應鏈的連帶影響，"
             "以及當時的總經、利率、信用環境。股價反應只用時間對得上的新聞解釋。這是解讀，不是投資建議。")
     body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>'
             + (f'<p class="small"><b>大環境：</b>{_esc(bg)}</p>' if bg else "")
@@ -95,7 +97,7 @@ def _card(items: List[Dict], title: str, en: str, n: int) -> str:
 
 
 def sec_earn_after(eng) -> str:
-    return _card(_items(), "財報後白話解讀（所有美股）", "After the report: plain-language reads (all US stocks)", 12)
+    return _card(_items(), "財報後白話解讀（美股／台股／港股）", "After the report: plain-language reads (US / Taiwan / HK)", 12)
 
 
 def sec_earn_after_tech(eng) -> str:
