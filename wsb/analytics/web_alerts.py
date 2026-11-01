@@ -170,6 +170,7 @@ def _momentum(eng, out: List[Dict], now: datetime) -> None:
     names = SETTINGS.names()
     cut = (now - timedelta(days=4)).strftime("%Y-%m-%d")
     have = {x["key"].rsplit(":", 2)[0] for x in out if x["key"].startswith("sigma:")}
+    have |= {"sigma:" + {"us": "^GSPC", "tw": "^TWII"}[x["key"].split(":")[1]] for x in out if x["key"].startswith("rally:")}
     idx = ("^GSPC", "^NDX", "^SOX", "^TWII")
     heavy = ("NVDA", "MSFT", "AAPL", "AMZN", "GOOGL", "META", "AVGO", "TSM", "2330.TW")
     for t in idx + heavy:
@@ -199,6 +200,19 @@ def _momentum(eng, out: List[Dict], now: datetime) -> None:
                     "zh": f"強勢上漲：{nm} {x['chg_pct']:+.2f}%（平常單日波動的 {z:.1f} 倍" + tail,
                     "en": f"Strong rally: {t} {x['chg_pct']:+.2f}% ({z:.1f}x normal)",
                     "detail": "和自己過去一年的平常漲跌比；大漲常伴隨空單回補，隔天不一定延續。描述現象，不是買賣建議。"})
+
+
+def _rally(eng, out: List[Dict], now: datetime) -> None:
+    """盤中全面上漲 (green): the benchmark up >= 1.5x its own normal move with >= 70 % of names up; level 2 when
+    volatility, credit or FX confirm too (wsb/analytics/rally.py).  One item per market and day, upgraded in place."""
+    from . import rally as RL
+    for r in RL.scan(eng, now):
+        b = r["bench"]
+        out.append({"key": f"rally:{r['market']}:{r['day']}:{r['level']}", "lv": "watch", "tone": "good", "tab": "overview",
+                    "zh": f"{r['zh']}{r['name']}：大盤 {b['chg']:+.2f}%（平常的 {b['z']:.1f} 倍）"
+                          + (f"，{r['breadth']['label']} {r['breadth']['up']}/{r['breadth']['n']} 上漲" if r.get("breadth") else ""),
+                    "en": f"{r['market'].upper()} broad rally [{r['level']}]: benchmark {b['chg']:+.2f}% ({b['z']:.1f}x normal)",
+                    "detail": RL.detail(r, r.get("hist"))})
 
 
 def _regime(eng, out: List[Dict], now: datetime) -> None:
@@ -309,7 +323,7 @@ def build(eng) -> Dict:
     now = datetime.now(timezone.utc)
     out: List[Dict] = []
     for f in (lambda: _danger(eng, out), lambda: _stress(eng, out, now), lambda: _vol(eng, out, now), lambda: _models(eng, out, now), lambda: _bottom(eng, out, now),
-              lambda: _stability(eng, out, now), lambda: _momentum(eng, out, now), lambda: _regime(eng, out, now),
+              lambda: _stability(eng, out, now), lambda: _rally(eng, out, now), lambda: _momentum(eng, out, now), lambda: _regime(eng, out, now),
               lambda: _dip(eng, out, now), lambda: _patterns(eng, out, now), lambda: _rates(eng, out, now)):
         try:
             f()
