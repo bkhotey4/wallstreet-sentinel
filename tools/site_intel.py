@@ -153,6 +153,44 @@ def sec_filings(eng) -> str:
                 f'<div><span class="muted">{T("留意", "Medium")}</span><b>{k["n_mid"]}</b></div></div>' + body, "wide")
 
 
+def _earn_lead(rows: list, lg: dict) -> str:
+    """一句話: how many reports are coming, which are priced for bigger / smaller moves than their own past, and the scorecard."""
+    w = [r for r in rows if r.get("ratio") is not None]
+    big = sorted((r for r in w if r["ratio"] >= 1.25), key=lambda r: -r["ratio"])
+    small = [r for r in w if r["ratio"] <= 0.8]
+    s = f"一句話看懂：未來 14 天 {len(rows)} 家公布財報"
+    if w:
+        s += f"，有選擇權報價的 {len(w)} 家裡，{len(big)} 家被預期波動比自己過去大、{len(small)} 家比過去小"
+        if big:
+            s += "（" + "、".join(f"{r['name']} ±{r['mv']:.0f}%" for r in big[:3]) + "）"
+    s += "。"
+    if lg.get("n", 0) >= 20 and lg.get("lo") is not None:
+        o, f = lg["over_pct"], lg["fair_over"]
+        s += (f"本站記錄的 {lg['n']} 次財報，實際漲跌超過選擇權預期的佔 {o:.0f}%（90% 區間 {lg['lo']:.0f}～{lg['hi']:.0f}%；預期若剛好約 {f:.0f}%），"
+              + ("選擇權大致把財報波動定價得偏多。" if lg["hi"] < f else "選擇權大致低估了財報波動。" if lg["lo"] > f else "和理論差不多，看不出系統性偏貴或偏便宜。"))
+    else:
+        st = f"（從 {lg['start']} 的財報開始）" if lg.get("start") else ""
+        s += f"財報跳空成績單剛開始記錄{st}，已完成 {lg.get('n', 0)} 次，累積 20 次後才顯示準不準。"
+    return s
+
+
+def _earn_log_html(lg: dict) -> str:
+    rec = lg.get("recent") or []
+    if not rec:
+        return ""
+    tr = "".join(f'<tr><td class="nw">{esc(x["date"][5:])}</td><td class="nw">{esc(x["name"])} <span class="tk">{esc(x["sym"])}</span></td>'
+                 f'<td class="r">±{num(x["mv"], 1)}%</td><td class="r"><b class="{cls(x["act"])}">{num(x["act"], 1, sign=True)}%</b></td>'
+                 f'<td>{T("超過預期", "Bigger") if abs(x["act"]) > x["mv"] else T("在預期內", "Within")}</td></tr>' for x in rec)
+    sm = (f'{lg["n"]} 次中 {lg["over"]} 次超過預期（{lg["over_pct"]:.0f}%）；實際幅度 ÷ 預期的中位數 {lg["med_ratio"]:.2f}（預期剛好約 {lg["fair_med"]:.2f}）。'
+          if lg.get("n") else "")
+    cnt = f"已完成 {lg.get('n', 0)} 次・等待公布 {lg.get('pending', 0)} 次"
+    return (f'<details class="sgx"><summary><b>{T("財報跳空成績單：選擇權預期 vs 實際", "Scorecard: implied vs actual")}</b> '
+            f'<span class="muted small">{T(cnt, "")}</span></summary>'
+            f'<p class="small">{T(sm + "預期＝財報前最後一次記錄的隱含波動；實際＝財報前一日收盤到財報後一日收盤。「超過預期」比例若明顯低於理論值，代表選擇權常把財報波動定價得比實際大。", "")}</p>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("財報日", "Date")}</th><th>{T("個股", "Stock")}</th>'
+            f'<th class="r">{T("選擇權預期", "Implied")}</th><th class="r">{T("實際", "Actual")}</th><th></th></tr></thead><tbody>{tr}</tbody></table></div></details>')
+
+
 def sec_earn_moves(eng) -> str:
     rows = _sx(eng).get("earn") or []
     if not rows:
@@ -183,8 +221,10 @@ def sec_earn_moves(eng) -> str:
              + (f"（報價時間 {asof[-1]}）" if asof else "") + "。這是市場預期的整理，不是投資建議。",
              "Implied move = straddle at spot (first expiry on/after the day after the report) ÷ price, covering the same two sessions as "
              "the past reactions (close before → close after the report). Not advice.")
+    lead = _earn_lead(rows, _sx(eng).get("earn_log") or {})
     return card("財報前隱含波動 vs 歷史反應（未來 14 天）", "Earnings implied move vs history (next 14 days)",
-                f'<p class="small muted">{note}</p><div class="scroll"><table class="mini srt"><thead><tr>{_th("財報日", "Report", False)}'
+                f'<p class="rimp big2"><b>{T(lead, "")}</b></p>' + _earn_log_html(_sx(eng).get("earn_log") or {})
+                + f'<details class="small"><summary>{T("怎麼算", "Method")}</summary><p class="note">{note}</p></details><div class="scroll"><table class="mini srt"><thead><tr>{_th("財報日", "Report", False)}'
                 f'{_th("個股", "Stock", False)}{_th("隱含波動", "Implied")}<th>{T("到期日", "Expiry")}</th><th>{T("過去 4 次反應", "Last 4 reactions")}</th>'
                 f'{_th("過去平均幅度", "Avg |move|")}<th>{T("比較", "Read")}</th></tr></thead><tbody>{tr}</tbody></table></div>', "wide")
 
@@ -340,8 +380,44 @@ def gap_line(eng, lk: dict):
     except Exception:  # noqa: BLE001
         return None
     pts = lvl * r["implied"] / 100
+    tk = ((_sx(eng).get("otrack") or {}).get(r["us_n"]) or {})
+    trk = (f"過去 {tk['n']} 個交易日用同樣方法推估，推估漲跌 ≥ 0.3% 時方向對了 {tk['hit']:.0f}%，"
+           f"平均誤差 {tk['mae']:.2f}%（直接猜「不漲不跌」是 {tk['mae0']:.2f}%）。" if tk.get("hit") is not None else "")
     return (f"一句話看懂：依{r['us_n']}前一晚 {r['us_ret'] if 'us_ret' in r else r['us']:+.2f}% 與過去的連動（Beta {r['beta']:.2f}），"
-            f"推估加權指數開盤約 {r['implied']:+.2f}%（約 {pts:+,.0f} 點）。這是歷史平均關係的換算，實際開盤常常不一樣。")
+            f"推估加權指數約 {r['implied']:+.2f}%（約 {pts:+,.0f} 點）。{trk}這是歷史平均關係的換算，實際常常不一樣。")
+
+
+def _stock_link_html(tl: dict) -> str:
+    """個股: the US partner each Taiwan stock follows, picked on older data and judged on the last year it was not picked on."""
+    rows = [r for r in tl.get("rows") or [] if r.get("ok")]
+    if not tl.get("available"):
+        return ""
+    lead = (f"一句話看懂：本站 {tl['n']} 檔台股裡，{tl['n_ok']} 檔找得到美股前一晚能帶動它的對象，而且在沒參與挑選的最近一年仍然有效"
+            f"（其中 {tl['n_beat_sox']} 檔比只看費城半導體更準）；其他 {tl['n'] - tl['n_ok']} 檔用美股前一晚推估並不可靠。")
+
+    def tr(r):
+        tw = (f'<b class="{cls(r["tw"])}">{num(r["tw"], 1, sign=True)}%</b> <span class="muted small">{esc((r.get("tw_d") or "")[5:])}</span>'
+              if r.get("tw") is not None else f'<span class="muted">{T("待台股開盤", "TW not yet open")}</span>')
+        bs = (T("對象就是費半", "Is SOX") if r["p"] == "^SOX" else "—" if r.get("r2_sox") is None else T("更準", "Better") if r["r2"] > r["r2_sox"] else T("差不多或較差", "No better"))
+        return (f'<tr><td class="nw"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["sym"].split(".")[0])}</span>'
+                f'<div class="small muted">{esc(r.get("theme") or "")}</div></td>'
+                f'<td class="nw">{esc(r["p_name"])} <span class="tk">{esc(r["p"])}</span></td>'
+                f'<td class="r">{num(r.get("us"), 1, sign=True) + "%" if r.get("us") is not None else "—"}</td>'
+                f'<td class="r {cls(r.get("implied"))}">{num(r.get("implied"), 1, sign=True) + "%" if r.get("implied") is not None else "—"}</td>'
+                f'<td class="r">{tw}</td><td class="r">{num(r["corr"], 2)}<div class="small muted">{T("挑選期", "fit")} {num(r["train_corr"], 2)}</div></td>'
+                f'<td class="r">{num(r.get("same"), 0)}%</td><td class="small">{bs}</td></tr>')
+    head = (f'<thead><tr><th>{T("台股", "Taiwan")}</th><th>{T("最能帶動它的美股", "US partner")}</th><th class="r">{T("美股前一晚", "US last night")}</th>'
+            f'<th class="r">{T("推估台股", "Implied")}</th><th class="r">{T("台股實際", "Actual")}</th><th class="r">{T("驗證期相關", "Test corr")}</th>'
+            f'<th class="r">{T("大波動同向", "Same way")}</th><th>{T("比只看費半", "vs SOX")}</th></tr></thead>')
+    how = (f"每檔台股從本站 {tl['n_us']} 檔美股與三大指數中，挑「{tl['from']}～{tl['split']} 前」相關係數最高的當對象，"
+           f"再只用沒參與挑選的 {tl['split']}～{tl['to']}（{tl['test']} 個交易日）檢驗：驗證期相關 ≥ {0.25:.2f} 而且「Beta × 美股前一晚」比直接猜 0 更準才列出。"
+           "推估台股＝挑選期 Beta × 美股前一晚（台股休市時累計）漲跌；大波動同向＝美股前一晚漲跌超過自己平常幅度時，台股同方向的比例。"
+           "比只看費半＝同樣方法用費城半導體推估，看誤差是否更小。相關不代表因果，也會隨產業循環改變。")
+    tb = (f'<div class="scroll"><table class="mini srt">{head}<tbody>{"".join(tr(r) for r in rows)}</tbody></table></div>' if rows
+          else f'<p class="muted small">{T("目前沒有在驗證期仍有效的個股配對。", "")}</p>')
+    return (f'<h3>{T("個股：美股前一晚帶動哪些台股（用資料挑、樣本外驗證）", "Stocks: which US name leads each Taiwan stock")}</h3>'
+            f'<p class="rimp"><b>{T(lead, "")}</b></p>{tb}<details class="small"><summary>{T("怎麼挑、怎麼驗證", "Method")}</summary>'
+            f'<p class="note">{T(how, "")}</p></details>')
 
 
 def sec_link(eng) -> str:
@@ -374,6 +450,7 @@ def sec_link(eng) -> str:
                  f'<div><span class="muted">{T("一年區間", "1y range")}</span><b>{num(a["lo"], 0)}% ~ {num(a["hi"], 0)}%</b></div>'
                  f'<div><span class="muted">{T("一年百分位", "1y percentile")}</span><b>{num(a["pct"], 0)}</b></div></div>'
                  + f'<div class="chartbox">{line_chart("adrprem", s, "TSM ADR 溢價 %", 1)}</div>')
+    body += _stock_link_html(_sx(eng).get("tlink") or {})
     note = T("台股每個交易日對應「上一個台股交易日之後」的美股交易日（台北時間；台股休市時把中間幾晚的美股漲跌複利累計，"
              "美股休市、中間沒有美股交易的台股交易日不列入），用近一年資料算相關係數與 Beta；推估台股＝Beta × 美股前一晚（累計）漲跌。"
              "族群用本站追蹤池等權平均（括號內為檔數）。大波動同向率＝美股前一晚漲跌 ≥ 2% 時台股同方向的比例。"

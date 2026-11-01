@@ -17,6 +17,7 @@ import pandas as pd
 
 from ..config import DATA_DIR, SETTINGS
 from ..data import earnings_data as ED
+from . import tw_link as TL
 from ..data import geo as GEO
 from ..data import stockinfo as SI
 from ..data.econcal import us_today
@@ -246,12 +247,20 @@ def build(eng) -> Dict:
                   ("earn", lambda: earnings_moves(upcoming(getattr(eng, "earnings", None), list((u.get("us") or {}).get("symbols", {})), today=today),
                                                   allc["opt"], ED._load(ED.F_SURP), sp, u)),
                   ("fg", lambda: MO.fear_greed(h)), ("rules", lambda: MO.rule_backtest(h)), ("link", lambda: MO.linkage(sp, u, h)),
+                  ("tlink", lambda: TL.stock_link(sp, _names(u), h)),
+                  ("otrack", lambda: {zh: TL.open_track(h[t], h["^TWII"]) for t, zh in TL.INDEX if h is not None and t in h and "^TWII" in h}),
                   ("em", lambda: MO.expected_move(allc["opt"], h)), ("geo", lambda: geo_view(GEO.load(), h))):
         try:
             res[k] = fn()
         except Exception:  # noqa: BLE001
             log.exception("site extras %s failed", k)
             res[k] = {}
+    try:                                                       # 財報跳空成績單: implied move before → actual move after
+        from . import implied_log as IL
+        res["earn_log"] = IL.update(res.get("earn") or [], sp.series if sp is not None else (lambda s: None), today)
+    except Exception:  # noqa: BLE001
+        log.exception("site extras earn_log failed")
+        res["earn_log"] = {}
     db = _load_debate()
     top = _growth_top()
     res["debate"] = [{**r, "ai": db.get(r["sym"]) if (db.get(r["sym"]) or {}).get("bull") else None} for r in top]
