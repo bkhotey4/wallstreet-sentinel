@@ -346,7 +346,7 @@ def build_market(mk: str, uni: List[Dict], facts: Dict[str, Dict], closes: Optio
         px = {s: closes[s].dropna() for s in scored if s in closes}
         tr = track(scored, px, MARKETS[mk][2] or PUB_LAG)
     return {"rows": rows, "model": m, "track": tr, "n": len(rows), "inds": industries(rows), "annual": annual,
-            "scale": scale, "uni": len(uni)}
+            "scale": scale, "uni": len(uni), "scored": scored, "metas": metas}
 
 
 _MEMO: Dict = {}

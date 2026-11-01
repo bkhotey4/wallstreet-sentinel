@@ -42,6 +42,7 @@ from tools import site_events as SEV
 from tools import site_calc as SCA
 from tools import site_live as SLV
 from tools import site_stockcheck as SSC
+from tools import site_drop as SDC
 from tools import site_dual as SDU
 from tools import site_glossary as SGL
 from tools import site_entry as SEN
@@ -1311,7 +1312,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
-            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
+            ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SDC.sec_drop_check, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
