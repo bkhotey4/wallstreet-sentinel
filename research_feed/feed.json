@@ -1,6 +1,30 @@
 {
-  "updated": "2026-10-26",
+  "updated": "2026-11-02",
   "items": [
+    {
+      "title": "Treasury Issuance and Dealer Balance Sheets",
+      "authors": "Jonathan Glicoes, Lubomir Petrasek, Zack Saravay, Mary Tian",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-10-30",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/treasury-issuance-and-dealer-balance-sheets-20261030.html",
+      "added": "2026-11-02",
+      "summary": "研究主要交易商（dealer）在美債標售前後如何調整資產負債表。使用 8 家大型銀行系交易商 2016 年至 2025 年 6 月的每日資料，發現每 1 美元的附息公債發行，交易商資產負債表約增加 21 美分；交易商約吃下一半的短期國庫券與五分之一的附息公債，多數存貨 3 到 5 天內賣出，但融資需求停留較久。縮表（QT）期間影響通常更大；交易商的補充槓桿率（SLR）空間超過 5 兆美元，整體影響看來不大。",
+      "implication": "美債發行量增加，會讓交易商的承接能力吃緊，但目前緩衝仍然充足。若之後發行量大增或交易商空間縮小，美債市場流動性可能先出現壓力。",
+      "site_relevance": "與本站「美債」頁及壓力指數 SSI 的資金市場成分有關，建議觀察標售規模與交易商融資（repo）變化。",
+      "topic": "債券"
+    },
+    {
+      "title": "Beyond the Current Account: U.S. Financial Flows and Global Imbalances",
+      "authors": "Cody Kallen, Alexandra Tabova",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-10-09",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/beyond-the-current-account-u-s-financial-flows-and-global-imbalances-20261009.html",
+      "added": "2026-11-02",
+      "summary": "檢視美國國際收支的金融面，使用 BEA 與 TIC 資料。發現流入與流出的總額遠大於經常帳赤字；1990 年代中期與 2000 年代中期主要靠外國官方買美債融資，2015 年後則以民間資金為主。近年美國對外淨負債惡化，主要是美股表現強勁造成的估值變化；日本是美債與美國企業債的重要持有人，中國則集中在美債。",
+      "implication": "外國資金現在較多來自民間，而民間資金比官方資金更容易隨風險情緒進出。海外買盤改變，可能影響美債與美元的穩定度。",
+      "site_relevance": "與本站「美債」與「各國債券」頁有關，可考慮加入外國持有美債的資金流向說明。",
+      "topic": "債券"
+    },
     {
       "title": "Bank liquidity regulation and the growth of private credit",
       "authors": "Sebastian Doerr, Gaston Gelos, Vesa Pursiainen",
