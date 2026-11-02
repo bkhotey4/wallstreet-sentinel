@@ -43,6 +43,7 @@ from tools import site_calc as SCA
 from tools import site_live as SLV
 from tools import site_stockcheck as SSC
 from tools import site_drop as SDC
+from tools import site_ipo as SIPO
 from tools import site_dual as SDU
 from tools import site_glossary as SGL
 from tools import site_entry as SEN
@@ -1307,7 +1308,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, SQ.sec_rule_sim, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal]),
+            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
             ("tech", "科技財報", "Tech earnings", [SPV.sec_earn_preview, SAF.sec_earn_after_tech, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
@@ -1643,6 +1644,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(FG.refresh(budget_s=float(FG.cfg().get("budget_s", 150))), float(FG.cfg().get("budget_s", 150)) + 60)
     except Exception as e:  # noqa: BLE001
         log.warning("fund trend data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # IPO 觀察：SEC S-1／F-1／424B4、證交所公開申購、櫃買興櫃、FinMind
+        from wsb.data import ipo_data as IPD
+        await asyncio.wait_for(IPD.refresh(budget_s=120), 200)
+    except Exception as e:  # noqa: BLE001
+        log.warning("IPO data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 第二意見與傳導管道：OFR 壓力指數、外國央行託管美債、日圓套利
         from wsb.data import transmission as TRM
         await asyncio.wait_for(TRM.refresh(), 120)
@@ -1724,6 +1730,15 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             ai_text, ai_engine = await ai_commentary_cached(eng)
         except Exception as e:  # noqa: BLE001
             log.warning("AI commentary skipped: %s", e)
+        try:                                       # 招股書重點：each pending IPO's newest filing, once
+            from wsb.analytics import ipo as IPA
+            from wsb.ai import ipo_ai
+            from wsb.data import ipo_data as IPD
+            b0 = IPA.build(eng)
+            if b0:
+                log.info("IPO prospectus notes written: %d", await ipo_ai.generate(b0["us"]["pending"], IPD.load(IPD.DOCS), limit=3, deadline_s=150))
+        except Exception as e:  # noqa: BLE001
+            log.warning("IPO prospectus notes skipped: %s", e)
         try:
             from wsb.ai import econ_ai
             log.info("econ / earnings AI notes written: %d", await econ_ai.generate(eng, limit=12, deadline_s=200))
@@ -1735,6 +1750,12 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         econ_ai.attach(eng)
     except Exception:  # noqa: BLE001
         log.exception("econ AI attach failed")
+    try:
+        from wsb.analytics import ipo as IPA
+        eng.ipo = IPA.build(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("IPO view failed")
+        eng.ipo = None
     try:
         eng.sx = SX.build(eng)
     except Exception:  # noqa: BLE001
