@@ -138,6 +138,8 @@ def test_card_and_ai_parse():
     assert "第一天收盤比發行價中位數 +15%" in out and "60 天後比加權指數 -19%" in out
     for w in BANNED[:-1]:
         assert w not in out, w
+    b["us"]["filling"] = True
+    assert "第一次建立" in S.lead(b)
     p = ipo_ai.parse("業務：做 AI 模型。\n財務：營收 4,585 百萬美元。\n資金用途：一般營運。\n主要風險：競爭。\n要留意：建議買進。")
     assert p and set(p) == {"業務", "財務", "資金用途", "主要風險"}                      # the advice sentence is scrubbed
 

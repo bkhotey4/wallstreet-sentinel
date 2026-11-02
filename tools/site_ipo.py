@@ -13,7 +13,11 @@ def _md(s: Optional[str]) -> str:
 
 
 def _pc(v, d=0) -> str:
-    return f'<b class="{cls(v)}">{num(v, d, sign=True)}%</b>' if v is not None else "—"
+    return f'<b class="{cls(v)}">{num(v, max(d, 1) if v is not None and abs(v) < 1 else d, sign=True)}%</b>' if v is not None else "—"
+
+
+def _p1(v) -> str:
+    return f"{num(v, 1)}%" if v is not None else "—"
 
 
 def _stat(x: Optional[Dict], what: str, pos: str) -> str:
@@ -74,7 +78,7 @@ def _tw_up(t: Dict) -> str:
     tr = ""
     for r in rows:
         f = r.get("fin") or {}
-        fin = (f'{T("營收年增", "Rev YoY")} {_pc(f.get("yoy"))}<div class="small muted">{T("近四季淨利率", "TTM margin")} {num(f.get("nm_ttm"), 1)}%</div>'
+        fin = (f'{T("營收年增", "Rev YoY")} {_pc(f.get("yoy"))}<div class="small muted">{T("近四季淨利率", "TTM margin")} {_p1(f.get("nm_ttm"))}</div>'
                if f.get("yoy") is not None or f.get("nm_ttm") is not None else "—")
         esb = (f'{num(r["esb_avg"], 1)}<div class="small muted">{T("承銷價低", "Offer below by")} {num(-r["disc"], 0)}%</div>' if r.get("disc") is not None else "—")
         pre = "" if r.get("final") else f'<div class="small muted">{T("暫定", "prelim")}</div>'
@@ -93,10 +97,10 @@ def _tw_apply(t: Dict) -> str:
     if not rows:
         return ""
     tr = "".join(
-        f'<tr><td class="nw"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["code"])}</span></td><td>{esc(r.get("to") or "")}</td>'
+        f'<tr><td class="nw"><b>{esc(r["name"])}</b> <span class="tk">{esc(r["code"])}</span></td><td>{esc(r.get("to") or "—")}</td>'
         f'<td class="nw">{esc(r["apply"])}<div class="small muted">{T("已過", "")} {r["since"]} {T("天", "d")}</div></td>'
-        f'<td class="r">{num(r.get("avg"), 1)}</td><td class="r">{_pc((r.get("fin") or {}).get("yoy"))}</td>'
-        f'<td class="r">{num((r.get("fin") or {}).get("nm_ttm"), 1)}%</td></tr>' for r in rows)
+        f'<td class="r">{num(r.get("avg"), 1) if r.get("avg") else "—"}</td><td class="r">{_pc((r.get("fin") or {}).get("yoy"))}</td>'
+        f'<td class="r">{_p1((r.get("fin") or {}).get("nm_ttm"))}</td></tr>' for r in rows)
     head = (f'<thead><tr><th>{T("公司", "Company")}</th><th>{T("申請", "To")}</th><th>{T("申請日", "Applied")}</th><th class="r">{T("興櫃均價", "Emerging avg")}</th>'
             f'<th class="r">{T("營收年增", "Rev YoY")}</th><th class="r">{T("近四季淨利率", "TTM margin")}</th></tr></thead>')
     return f'<div class="scroll"><table class="mini srt">{head}<tbody>{tr}</tbody></table></div>'
@@ -106,7 +110,8 @@ def lead(b: Dict) -> str:
     u, t = b["us"], b["tw"]
     pend = u.get("pending") or []
     rng = [r for r in pend if r.get("lo")]
-    s = f"一句話看懂：美股目前 {len(pend)} 家公司公開申請、要在主要交易所掛牌"
+    s = ("一句話看懂：美股的 SEC 申報資料正在第一次建立（每 20 分鐘補一批，約需一天），完成前申請中的名單不完整"
+         if u.get("filling") else f"一句話看懂：美股目前 {len(pend)} 家公司公開申請、要在主要交易所掛牌")
     if rng:
         s += f"，其中 {len(rng)} 家已公布價格區間、最接近定價（" + "、".join(r["name"] for r in rng[:3]) + "）"
     up = t.get("upcoming") or []

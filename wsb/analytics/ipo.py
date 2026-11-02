@@ -127,7 +127,11 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
     st["big"] = stats_us([r for r in done if (r.get("raise") or 0) >= BIG_RAISE])
     st["small"] = stats_us([r for r in done if r.get("raise") is not None and r["raise"] < BIG_RAISE])
     soon = [r for r in done if r.get("lock") and today.isoformat() <= r["lock"] <= (today + timedelta(days=30)).isoformat()]
-    return {"pending": pend, "other": other, "recent": [r for r in done if r["priced"] >= (today - timedelta(days=120)).isoformat()],
+    covers_left = sum(1 for f in fl.values() if f.get("kind") == "ipo" and not f.get("priced") and not f.get("rw") and f.get("doc")
+                      and f.get("last", "") >= lo_act and f.get("cover_acc") != f["doc"].get("acc"))
+    filling = (not fl or any("kind" not in f for f in fl.values()) or (d.get("us") or {}).get("disc_to", "") < str(today - timedelta(days=3))
+               or covers_left > 20)
+    return {"pending": pend, "other": other, "filling": filling, "recent": [r for r in done if r["priced"] >= (today - timedelta(days=120)).isoformat()],
             "n_priced": len(priced), "t_first": tf, "t_last": tl, "stats": st, "lock_soon": sorted(soon, key=lambda r: r["lock"]),
             "from": min((f["priced"] for f in priced), default=None)}
 
