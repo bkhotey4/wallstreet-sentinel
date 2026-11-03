@@ -1,0 +1,58 @@
+{
+ "updated": "2026-11-03",
+ "sources": [
+  "Fed FSR 2026-05",
+  "IMF GFSR 2026-04（僅標題與摘要）",
+  "紐約聯準會 Liberty Street 2026-10/11 近期文章"
+ ],
+ "gaps": [
+  {
+   "risk": "避險基金槓桿集中",
+   "source": "Fed FSR 2026-05",
+   "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf",
+   "have": "美債基差交易規模（CFTC）",
+   "suggest": "加入避險基金總槓桿與前幾大基金集中度，用自身歷史百分位判讀；槓桿創高且基差交易同時偏大時標黃燈。",
+   "data": "OFR Hedge Fund Monitor API（Form PF、FICC 擔保回購）"
+  },
+  {
+   "risk": "汽車貸款與 FHA/VA 房貸逾期",
+   "source": "Fed FSR 2026-05",
+   "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf",
+   "have": "信用卡與房貸逾期率（FRED）",
+   "suggest": "新增分貸款類型的嚴重逾期比率，與自身 10 年百分位比較；報告指出這幾類壓力高於過去十年水準。",
+   "data": "紐約聯準會家庭債務與信用報告（季度 Excel）"
+  },
+  {
+   "risk": "銀行未實現證券損失與無保險存款",
+   "source": "Fed FSR 2026-05",
+   "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf",
+   "have": "銀行存款總額（FRED）",
+   "suggest": "新增銀行業證券未實現損失占資本比率，以及無保險存款占比；用歷史百分位判讀，高點為 2022–2023 年。",
+   "data": "FDIC Quarterly Banking Profile / BankFind API"
+  },
+  {
+   "risk": "房價租金比",
+   "source": "Fed FSR 2026-05",
+   "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf",
+   "have": "Case-Shiller 房價指數",
+   "suggest": "用房價指數除以 CPI 房租指數，建立比值並看歷史百分位；報告稱比值仍在歷史高檔。",
+   "data": "FRED: CSUSHPISA, CUSR0000SEHA"
+  },
+  {
+   "risk": "美債市場深度",
+   "source": "Fed FSR 2026-05",
+   "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf",
+   "have": "無",
+   "suggest": "追蹤 2 年期等流通券的市場深度與買賣價差，低於自身歷史低百分位時提示；波動期常見短暫變差。",
+   "data": "無免費資料"
+  },
+  {
+   "risk": "壽險業槓桿與非傳統負債",
+   "source": "Fed FSR 2026-05",
+   "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf",
+   "have": "無",
+   "suggest": "追蹤大型壽險公司槓桿與資金協議、退休年金等非傳統負債成長；報告稱負債成長快於資產。",
+   "data": "無免費資料"
+  }
+ ]
+}
