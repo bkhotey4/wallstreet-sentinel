@@ -116,10 +116,13 @@ def test_fixes():
     us = lambda n, t: {"country": "United States", "eventName": n, "gmt": t, "actual": "", "consensus": "", "previous": ""}  # noqa: E731
     w = EC.parse_nasdaq(FX["econ"]["2024-01-05"], date(2024, 1, 4))
     assert next(r for r in w if r["name"] == "Initial Jobless Claims")["utc"] == "2024-01-04T13:30:00Z", "winter, Nasdaq on UTC-4 (09:30)"
-    et = EC.parse_nasdaq({"data": {"rows": [us("CPI", "08:30"), us("Fed Interest Rate Decision", "14:00")]}}, date(2026, 12, 10))
-    assert [r["utc"] for r in et] == ["2026-12-10T13:30:00Z", "2026-12-10T19:00:00Z"], "Nasdaq switched to US Eastern (EST)"
-    old = EC.parse_nasdaq({"data": {"rows": [us("CPI", "09:30"), us("Fed Interest Rate Decision", "15:00")]}}, date(2026, 12, 10))
-    assert [r["utc"] for r in old] == ["2026-12-10T13:30:00Z", "2026-12-10T19:00:00Z"], "Nasdaq still on fixed UTC-4"
+    # two agreeing anchors (CPI + jobless claims, both 08:30 ET) are needed before a whole day is shifted
+    et = EC.parse_nasdaq({"data": {"rows": [us("CPI", "08:30"), us("Initial Jobless Claims", "08:30"),
+                                            us("Fed Interest Rate Decision", "14:00")]}}, date(2026, 12, 10))
+    assert [r["utc"] for r in et] == ["2026-12-10T13:30:00Z", "2026-12-10T13:30:00Z", "2026-12-10T19:00:00Z"], "Nasdaq switched to US Eastern (EST)"
+    old = EC.parse_nasdaq({"data": {"rows": [us("CPI", "09:30"), us("Initial Jobless Claims", "09:30"),
+                                             us("Fed Interest Rate Decision", "15:00")]}}, date(2026, 12, 10))
+    assert [r["utc"] for r in old][::2] == ["2026-12-10T13:30:00Z", "2026-12-10T19:00:00Z"], "Nasdaq still on fixed UTC-4"
     mixed = EC.parse_nasdaq({"data": {"rows": [us("CPI", "08:30"), us("ISM Manufacturing PMI", "11:00"), us("X", "14:00")]}}, date(2026, 12, 1))
     assert mixed[-1]["utc"] == "2026-12-01T18:00:00Z", "anchors disagree → UTC-4"
     assert EC.parse_nasdaq({"data": {"rows": [us("X", "14:00")]}}, date(2026, 12, 1))[0]["utc"] == "2026-12-01T18:00:00Z"
@@ -477,7 +480,7 @@ def main():
     with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})), patch("wsb.data.fund_global.refresh", AsyncMock(return_value={})), patch("wsb.data.ipo_data.refresh", AsyncMock(return_value={})):
         asyncio.run(B.build(out, use_ai=False, engine=eng))
     page = (out / "index.html").read_text(encoding="utf-8")
-    for s in ("財經日曆", "科技財報", "FOMC 聯準會利率決議", "本週重要經濟數據", "美國經濟日曆", "美股財報日曆", "科技／半導體財報分析",
+    for s in ("財經日曆", "美股財報", "FOMC 聯準會利率決議", "本週重要經濟數據", "美國經濟日曆", "美股財報日曆", "科技／半導體財報分析",
               "台股電子業月營收", "美股全市場科技股", 'id="ev-cpi-2026-10-14"', "若高於預期", "過去同類數據公布當天", "class=\"qchart\"",
               "接下來的重要經濟數據", "成長股估值篩選", 'data-kind="gus"', 'data-kind="gtw"', 'data-kind="gearly"', "Nu Holdings", "現金跑道"):
         assert s in page, s
@@ -501,6 +504,7 @@ def test_bot(eng):
 
     async def fake_deliver(dest, **kw):
         sent.append(kw["embeds"]())
+        return True                                  # deliver() reports success; a False return is a failed send
     P.deliver = fake_deliver
 
     class Bot:
@@ -574,6 +578,7 @@ def test_bot(eng):
         if fail["on"]:
             raise RuntimeError("discord down")
         sent.append(kw["embeds"]())
+        return True
     P.deliver = flaky_deliver
     EP.AI_TIMEOUT_S = 0.2
     import wsb.ai.llm as LLM
@@ -590,6 +595,25 @@ def test_bot(eng):
     asyncio.run(EP.tick(Bot(), now=now))
     assert store.kv_get(f"econ_res:{rid}") and any(e.title.startswith("📢 零售銷售") for e in sent[n:]), [e.title for e in sent[n:]]
     assert not any(e.title.startswith("🧠 零售銷售") for e in sent[n:]) and time.time() - t0 < 4, "AI timed out → skipped"
+    # deliver() swallowing the error and returning False is a failed send too (was recorded as sent)
+    async def false_deliver(dest, **kw):
+        return False
+    P.deliver = false_deliver
+    assert asyncio.run(EP._send(Bot(), EP.econ_week_embed(eng.econ_view))) is False
+    # the calendar moves an event after it was listed (ISM 11/03 → 11/04): re-checked right before the reminder → not sent
+    P.deliver = fake_deliver
+    base3 = [{"name": "ISM Non-Manufacturing PMI", "utc": iso(now + timedelta(hours=1)), "actual": "", "cons": "54.8", "prev": "54.9"}]
+    eng.econ.days[day]["rows"] = list(eng.econ.days[day]["rows"]) + base3
+
+    async def poll3(d):                                # the source now has no such row on this day
+        rows = [dict(r) for r in eng.econ.days[d.isoformat()]["rows"] if r["name"] != "ISM Non-Manufacturing PMI"]
+        eng.econ.days[d.isoformat()] = {"ts": time.time(), "rows": rows}
+        return rows
+    eng.econ_view = ME.build(eng)
+    eng.econ.poll_day = poll3
+    m0 = len(sent)
+    asyncio.run(EP.tick(Bot(), now=now))
+    assert not any("ISM" in e.title for e in sent[m0:]), [e.title for e in sent[m0:]]
     em = EP.econ_week_embed(eng.econ_view)
     assert em.fields and EP.tech_embed(eng.techearn["rows"][0]).fields
     print(f"  discord pushes ok ({n})")

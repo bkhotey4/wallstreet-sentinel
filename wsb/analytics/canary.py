@@ -56,7 +56,7 @@ SCORE_LIGHTS = [
     ("eu_hy_oas", "信用品質", ("歐洲高收益債利差", "Euro high-yield spread"),
      "看信用壓力有沒有擴散到海外。歐美利差同時擴大＝全球性的信用收緊，不只是美國問題。", "%", 1),
     ("infl_5y5y", "外部衝擊", ("5 年後 5 年通膨預期（5y5y）", "5y5y inflation expectation"),
-     "市場對「長期通膨」的看法。持續升高＝聯準會的通膨可信度下降，長債與高估值股票最受傷。", "%", 1),
+     "市場對「長期通膨」的看法。持續升高＝聯準會的通膨可信度下降，長債與估值偏高的股票最受傷。", "%", 1),
     ("homebuilders", "景氣類股", ("房屋建商 vs 大盤（60 日）", "Homebuilders vs S&P (60d)"),
      "房市對利率最敏感，常是景氣循環最早轉向的產業。", "%", 100),
 ]
@@ -187,6 +187,14 @@ def rrp_light(eng) -> Dict:
             "value_txt": f"逆回購 US${rrp.iloc[-1]:,.0f}B（近 3 年高點 US${hi:,.0f}B）；銀行準備金 4 週 {ch.iloc[-1]:+.1f}%（近 3 年百分位 {pct:.0f}%）"}
 
 
+MARGIN_LAG_DAYS = 25             # FINRA margin statistics: about the third / fourth week after the month ends
+
+
+def margin_release(d) -> pd.Timestamp:
+    """Approximate public release date of month `d`'s FINRA margin figure (month-end + ~25 days)."""
+    return pd.Timestamp(d).normalize() + pd.offsets.MonthEnd(0) + pd.Timedelta(days=MARGIN_LAG_DAYS)
+
+
 def margin_light(eng) -> Dict:
     md = getattr(eng, "margin_debt", None)
     row = {"id": "margin_debt", "group": "槓桿", "zh": "融資餘額年增率（FINRA）", "en": "Margin debt, YoY (FINRA)", "kind": "rule",
@@ -203,7 +211,8 @@ def margin_light(eng) -> Dict:
     g = eng.market.series("^GSPC").dropna()
     fw = []
     for d in y[y >= 40].index:
-        a, b = g[g.index >= d], g[g.index >= d + pd.DateOffset(months=12)]
+        rel = margin_release(d)                  # FINRA publishes ~3–4 weeks after month-end: outcomes start then
+        a, b = g[g.index >= rel], g[g.index >= rel + pd.DateOffset(months=12)]
         if len(a) and len(b):
             fw.append(float(b.iloc[0] / a.iloc[0] - 1) * 100)
     hist = []
@@ -255,11 +264,16 @@ def split_light(eng, close: Optional[pd.DataFrame] = None) -> Dict:
             "value_txt": f"{int(ok.sum())} 檔中：52 週新高 {nh:.1f}%、新低 {nl:.1f}%；標普{'在' if above else '不在'} 50 日均線之上"}
 
 
+def _us_today() -> date:
+    from ..data.econcal import us_today
+    return us_today()
+
+
 def record_revisions(eng, today: Optional[date] = None) -> Dict:
     """Daily snapshot of the consensus EPS for every upcoming report (so revisions can be measured later)."""
     ed = getattr(eng, "earnings", None)
     days = (getattr(ed, "days", None) or {}) if ed is not None else {}
-    today = today or date.today()
+    today = today or _us_today()                 # report dates are US dates (Taipei's morning is still yesterday there)
     try:
         snap = json.loads(REV_FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -291,7 +305,7 @@ def revision_light(eng, snap: Optional[Dict] = None, today: Optional[date] = Non
     row = {"id": "eps_revisions", "group": "景氣類股", "zh": "獲利預估修正方向（市值 100 億美元以上）", "en": "EPS revision breadth", "kind": "rule",
            "why": "分析師開始普遍下修即將公布的獲利預估，常比股價先反映景氣轉弱。",
            "rule": "淨上修比例＝（4 週內預估上修 >1% 的家數 − 下修 >1% 的家數）÷ 總數。黃燈 ≤ −20%，紅燈 ≤ −40%。需要累積 4 週快照。"}
-    today = today or date.today()
+    today = today or _us_today()                 # report dates are US dates (Taipei's morning is still yesterday there)
     snap = snap if snap is not None else record_revisions(eng, today)
     ref = (today - timedelta(days=28)).isoformat()
     up = dn = n = 0
@@ -316,7 +330,7 @@ def revision_light(eng, snap: Optional[Dict] = None, today: Optional[date] = Non
 
 def hike_light(eng) -> Dict:
     row = {"id": "hike_pricing", "group": "資金市場", "zh": "升息定價（聯邦基金期貨）", "en": "Rate-hike pricing (fed funds futures)", "kind": "rule",
-           "why": "期貨押注聯準會在高利率下繼續升息時，最弱的借款人與高估值資產壓力最大。",
+           "why": "期貨押注聯準會在高利率下繼續升息時，最弱的借款人與估值偏高的資產壓力最大。",
            "rule": "看第三次會議後的隱含利率比目前高多少：≥ +25bp（至少一碼）黃燈；≥ +50bp，或一週內再增加 ≥ 15bp 紅燈。期貨歷史仍在累積，資料滿兩年前不回測。"}
     fv = getattr(eng, "fedwatch_view", None) or {}
     ms = fv.get("meetings") or []

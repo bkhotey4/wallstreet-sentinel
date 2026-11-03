@@ -24,6 +24,7 @@ from datetime import date
 from typing import Dict, List, Optional
 
 from ..config import DATA_DIR
+from ..health import HEALTH
 from . import http
 
 log = logging.getLogger(__name__)
@@ -226,6 +227,18 @@ def parse_tpex_xls(gov_raw: Optional[bytes], co_raw: Optional[bytes]) -> Dict:
     return out
 
 
+def decode_taipei(raw) -> str:
+    """The Taipei housing CSV is Big5 (cp950); utf-8 is tried first in case the portal re-encodes it."""
+    if isinstance(raw, str):
+        return raw
+    for enc in ("utf-8-sig", "cp950"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("cp950", errors="replace")
+
+
 def parse_taipei(text: str) -> List[List]:
     """[[YYYY-MM, index]] for 全市 (whole city) from the Taipei housing price index CSV (ROC year/month)."""
     out = []
@@ -311,13 +324,20 @@ async def refresh(force: bool = False) -> Dict:
         except Exception as e:  # noqa: BLE001
             log.info("CBC %s failed: %s", f, e)
     upd = d.get("cbc_updated") or {}
+    each, got, t0 = d.setdefault("ts_each", {}), 0, time.time()
     for key, (f, col) in CBC_SERIES.items():
         if f in files:
             rows = parse_cbc(files[f], col)
             if rows:
                 cbc[key] = rows
                 upd[key] = ((files[f].get("meta") or {}).get("last_updated") or "")[:10]
+                got += 1
     d["cbc"], d["cbc_updated"] = cbc, upd
+    if got:
+        each["cbc"] = time.time()
+        HEALTH.ok("tw_cbc", got, every=TTL)
+    else:
+        HEALTH.fail("tw_cbc", "no CBC series parsed", every=TTL)
     try:
         url = NDC_ZIP
         try:
@@ -326,16 +346,24 @@ async def refresh(force: bool = False) -> Dict:
         except Exception:  # noqa: BLE001
             pass
         ndc = parse_ndc(await http.get(url, kind="bytes", headers=UA, timeout=60, retries=1))
-        if ndc.get("light_score"):
-            d["ndc"] = ndc
+        if not ndc.get("light_score"):
+            raise ValueError("no light score in NDC zip")
+        d["ndc"], each["ndc"] = ndc, time.time()
+        HEALTH.ok("tw_ndc", len(ndc), every=TTL)
     except Exception as e:  # noqa: BLE001
-        log.info("NDC indicators failed: %s", e)
+        log.warning("NDC indicators failed: %s", e)
+        HEALTH.fail("tw_ndc", e, every=TTL)
     try:
-        tp = parse_taipei(await http.get(TAIPEI, kind="text", headers=UA, timeout=60, retries=1))
-        if len(tp) > 24:
-            d["taipei"] = tp
+        tp = parse_taipei(decode_taipei(await http.get(TAIPEI, kind="bytes", headers=UA, timeout=60, retries=1)))
+        if len(tp) <= 24:
+            raise ValueError(f"only {len(tp)} 全市 rows")
+        d["taipei"], each["taipei"] = tp, time.time()
+        HEALTH.ok("tw_taipei_housing", len(tp), every=TTL)
     except Exception as e:  # noqa: BLE001
-        log.info("Taipei housing index failed: %s", e)
-    d["ts"] = time.time()
+        log.warning("Taipei housing index failed: %s", e)
+        HEALTH.fail("tw_taipei_housing", e, every=TTL)
+    # freshness only moves when something was actually fetched; an all-failed run is retried next build
+    if any(each.get(k, 0) >= t0 for k in ("cbc", "ndc", "taipei")):
+        d["ts"] = time.time()
     _save(d)
     return d

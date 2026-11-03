@@ -58,6 +58,7 @@ from tools import site_twlive as STL
 from tools import site_extgap as SXG
 from tools import site_indnote as SIN2
 from tools import site_preview as SPV
+from tools import site_learn as SLN
 from tools import site_after as SAF
 from tools import site_transmission as STR
 from tools import site_observer as SOB
@@ -527,7 +528,7 @@ def sec_gamma(eng) -> str:
         ps = pd.Series([y for _, y in prof], index=pd.Index([x for x, _ in prof]))
         chart1 = gex_profile_svg("c_gexp", ps, spot, flip)
     bars = strike_bars_svg("c_gexs", op.get("by_strike") or [], spot, op.get("call_wall"), op.get("put_wall"))
-    note = T("資料：CBOE 延遲報價（約 15 分鐘），60 天內到期合約；慣例假設造市商持有客戶賣出的 Call、買入的 Put（業界常用但不一定準確）。"
+    note = T("資料：CBOE 延遲報價（約 15 分鐘），60 天內到期合約；慣例假設造市商持有客戶賣掉的 Call、買入的 Put（業界常用但不一定準確）。"
              "零 Gamma 翻轉點以下，市場對壞消息的反應通常更劇烈。" + (" 更新 " + str(op.get("asof")) if op.get("asof") else ""),
              "CBOE delayed quotes (~15 min), expiries within 60 days; assumes dealers are long calls / short puts (a common convention, not certain). "
              "Below the zero-gamma flip, markets tend to react more violently.")
@@ -1308,9 +1309,9 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
                                                        SEN.sec_cheap, SEN.sec_phased, SEN.sec_entry_links]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, SQ.sec_rule_sim, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
-            ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_earn_verdict, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
-            ("tech", "科技財報", "Tech earnings", [SPV.sec_earn_preview, SAF.sec_earn_after_tech, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
+            ("intel", "個股情報", "Stock intel", [SLN.sec_learn, SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
+            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
+            ("tech", "美股財報", "US earnings", [SPV.sec_earn_preview, S3.sec_earn_verdict, SAF.sec_earn_after_us, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),

@@ -315,8 +315,12 @@ class MarketData:
             hc = h[col].dropna().iloc[:-1]
             ov = hc.reindex(r.index).dropna()
             if len(ov) >= 3:
-                k = float((r.reindex(ov.index) / ov).median())
-                if np.isfinite(k) and k > 0 and abs(k - 1) > 0.015:
+                ratio = r.reindex(ov.index) / ov
+                k = float(ratio.median())
+                # a dividend re-basis is ~0.2–2% and the same on every overlapping bar; a 1.5% floor left a fake
+                # dividend-sized step at the boundary.  Uniform-ratio check keeps quote noise from rescaling history.
+                uniform = bool((ratio / k - 1).abs().max() < 0.0005) if np.isfinite(k) and k > 0 else False
+                if np.isfinite(k) and k > 0 and abs(k - 1) > 0.002 and uniform:
                     h.loc[h.index < r.index.min(), col] *= k
                     log.warning("%s re-based by factor %.4f (split/dividend adjustment)", col, k)
         new_idx = h.index.union(recent.index)

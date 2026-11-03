@@ -44,7 +44,7 @@ def rsi(c: pd.Series, n: int = 14) -> Optional[float]:
     au = up.ewm(alpha=1 / n, adjust=False).mean().iloc[-1]
     ad = dn.ewm(alpha=1 / n, adjust=False).mean().iloc[-1]
     if ad == 0:
-        return 100.0
+        return 50.0 if au == 0 else 100.0             # a flat series is neutral (50), as in signals.rsi_series
     return float(100 - 100 / (1 + au / ad))
 
 
@@ -127,8 +127,8 @@ def _intel_inputs(eng, mk: str, sym: str, f: Dict) -> List[Dict]:
             net = r["buy_usd"] - r["sell_disc_usd"]
             val = float(np.tanh(net / 25e6))
             out.append({"key": "insider", "val": val, "w": 0.7,
-                        "zh": (f"內部人 {r['days']} 天公開市場買進 ${r['buy_usd'] / 1e6:,.1f}M" if r["buy_usd"] > r["sell_disc_usd"]
-                               else f"內部人 {r['days']} 天非計畫性賣出 ${r['sell_disc_usd'] / 1e6:,.1f}M"),
+                        "zh": (f"內部人 {r['days']} 天公開市場增持 ${r['buy_usd'] / 1e6:,.1f}M" if r["buy_usd"] > r["sell_disc_usd"]
+                               else f"內部人 {r['days']} 天非計畫性減持 ${r['sell_disc_usd'] / 1e6:,.1f}M"),
                         "en": f"Insiders {r['days']}d: buys ${r['buy_usd'] / 1e6:,.1f}M / discretionary sells ${r['sell_disc_usd'] / 1e6:,.1f}M"})
         gu = getattr(eng, "gurus", None)
         g = gu.ticker(sym) if gu is not None and hasattr(gu, "ticker") else None

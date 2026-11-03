@@ -215,18 +215,22 @@ def econ(d: Dict) -> Optional[Dict]:
 
 
 # ------------------------------------------------------------------ 央行與資金
-def m1b_test(d: Dict, horizon: int = 6) -> Optional[Dict]:
-    """Forward TAIEX returns after months when M1B growth was above vs below M2 growth (1987 onward, overlapping windows)."""
+def m1b_test(d: Dict, horizon: int = 6, lag: int = 1) -> Optional[Dict]:
+    """Forward TAIEX returns after months when M1B growth was above vs below M2 growth (1987 onward, overlapping windows).
+    Month M's M1B/M2 is published around the 25th of M+1, so the return is measured from the index level `lag` months
+    later (the first month-end after the release), not from month M itself — otherwise the test uses data not yet out.
+    n_eff_* = months ÷ horizon ≈ independent (non-overlapping) windows."""
     m1, m2, px = _tw(d, "m1b"), _tw(d, "m2"), _tw(d, "taiex")
     df = pd.concat([m1, m2, px], axis=1, keys=["m1", "m2", "px"]).dropna()
     if len(df) < 120:
         return None
-    df["fwd"] = (df["px"].shift(-horizon) / df["px"] - 1) * 100
+    df["fwd"] = (df["px"].shift(-(horizon + lag)) / df["px"].shift(-lag) - 1) * 100
     t = df.dropna(subset=["fwd"])
     up, dn = t[t["m1"] > t["m2"]], t[t["m1"] <= t["m2"]]
     if len(up) < 24 or len(dn) < 24:
         return None
-    return {"h": horizon, "since": df.index[0].strftime("%Y"), "n_up": len(up), "n_dn": len(dn),
+    return {"h": horizon, "lag": lag, "since": df.index[0].strftime("%Y"), "n_up": len(up), "n_dn": len(dn),
+            "n_eff_up": round(len(up) / horizon, 1), "n_eff_dn": round(len(dn) / horizon, 1),
             "up_med": float(up["fwd"].median()), "dn_med": float(dn["fwd"].median()), "up_pos": float((up["fwd"] > 0).mean() * 100),
             "dn_pos": float((dn["fwd"] > 0).mean() * 100), "all_med": float(t["fwd"].median())}
 
@@ -321,6 +325,9 @@ def calendar_rows(d: Dict, today: Optional[date] = None) -> List[Dict]:
     y = today.year
     cands = [_third_thursday(y, m) for m in q] + [_third_thursday(y + 1, 3)]
     rows.append({"zh": "央行理監事會（利率決策）", "when": next(x for x in cands if x >= today), "last": latest(cbc.get("disc")), "why": "決定台灣的基準利率與房貸管制"})
+    for r in rows:                                              # usual timing, not an announced date
+        r["approx"] = True
+        r["when_zh"] = f"約 {r['when']:%m-%d}"
     return sorted(rows, key=lambda r: r["when"])
 
 

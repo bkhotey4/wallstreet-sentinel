@@ -1,4 +1,4 @@
-"""財報後白話解讀 (top of 財經日曆, and the tech ones on 科技財報): after US / Taiwan / Hong Kong companies report, a cloud
+"""財報後白話解讀 (top of 財經日曆, and the US ones on 美股財報): after US / Taiwan / Hong Kong companies report, a cloud
 routine writes research_feed/earn_after.json — for every company of any sector that reported (US market cap ≥ 200 億美元,
 the site's Taiwan top-150 and Hong Kong top-100 lists), a plain sentence,
 what the numbers say beyond "beat / miss", who else is affected (suppliers, rivals, customers, Taiwan supply chain), the
@@ -13,7 +13,6 @@ from typing import Dict, List
 from tools.sitekit import card, guard_safe
 
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "earn_after.json"   # public repo only
-BANNED = ("目標價", "上漲空間", "低估", "高估", "買進", "賣出")
 TECH = ("科技", "半導體", "通訊", "軟體", "雲端", "AI")
 MK = {"us": "美股", "tw": "台股", "hk": "港股"}
 
@@ -27,10 +26,7 @@ def load() -> Dict:
 
 
 def _esc(x) -> str:
-    s = str(x or "")
-    for w in BANNED:                                   # the routine is told not to use them; never shown even if it slips
-        s = s.replace(w, "—")
-    return html.escape(guard_safe(s))
+    return html.escape(guard_safe(str(x or "")))     # banned words are reworded by guard_safe (sitekit)
 
 
 def _list(xs) -> str:
@@ -100,5 +96,6 @@ def sec_earn_after(eng) -> str:
     return _card(_items(), "財報後白話解讀（美股／台股／港股）", "After the report: plain-language reads (US / Taiwan / HK)", 12)
 
 
-def sec_earn_after_tech(eng) -> str:
-    return _card(_items(True), "財報後白話解讀（科技）", "After the report: tech", 6)
+def sec_earn_after_us(eng) -> str:
+    """美股財報 tab: every US report the routine read (any sector); items without mk are US (older data)."""
+    return _card([x for x in _items() if (x.get("mk") or "us") == "us"], "財報後白話解讀（美股）", "After the report: US", 6)

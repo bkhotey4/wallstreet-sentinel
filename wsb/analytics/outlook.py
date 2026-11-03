@@ -117,7 +117,10 @@ def crisis(st, odds: Dict) -> Dict:
     lifts = [f["lift"] for f in fcs if f.get("lift")]
     lift_pts = _clip(50 + (np.mean(lifts) - 1) * 40) if lifts else st.score
     score = 0.6 * st.score + 0.4 * lift_pts
-    prev = float(st.history.iloc[-22]) if st.history is not None and len(st.history) > 22 else None
+    from .stress import ref_history
+    hh = ref_history(st, 22)                         # same live component set as st.score (else a stale input fakes a change)
+    hh = hh.dropna() if hh is not None else None
+    prev = float(hh.iloc[-22]) if hh is not None and len(hh) > 22 else None
     return _dim("crisis", "金融海嘯／崩跌", "Crisis & crash", score, ev, {"crash": fcs} if fcs else None,
                 prev=None if prev is None else 0.6 * prev + 0.4 * lift_pts)
 
@@ -140,7 +143,7 @@ def credit(fred) -> Dict:
         rising = chg is not None and chg > 25
         if lvl is not None:
             phase = ("收縮（利差高且擴大）" if lvl >= 60 and rising else "修復（利差高但收斂）" if lvl >= 60 else
-                     "轉折（利差從低檔擴大）" if rising else "過熱（利差極低，風險被低估）" if lvl <= 10 else "擴張（利差低且穩定）")
+                     "轉折（利差從低檔擴大）" if rising else "過熱（利差極低，風險定價偏低）" if lvl <= 10 else "擴張（利差低且穩定）")
             ev.append(f"信用循環階段：{phase}")
     ccc = fred.latest("BAMLH0A3HYC")
     if ccc and ccc.get("pctile_3y") is not None:

@@ -66,3 +66,22 @@ def session(ticker: str, now: Optional[datetime] = None) -> str:
 def stale(ticker: str, asof: str, now: Optional[datetime] = None) -> bool:
     """True when the bar is older than the last session the market should have traded."""
     return bool(asof) and str(asof)[:10] < expected_bar(ticker, now)
+
+
+# ---------------------------------------------------------------- per-series refresh of a cached bundle
+def due(d: Dict, keys, ttl: float, now: float, force: bool = False, retry: float = 3600) -> list:
+    """Keys of a cached bundle to fetch now: last success (d["ts_each"]) older than `ttl`, and not tried in the last
+    `retry` seconds (a failed series is retried hourly instead of waiting a whole TTL behind a fresh bundle ts).
+    Old caches without ts_each are seeded from the bundle ts for the series they hold."""
+    each, tried = d.setdefault("ts_each", {}), d.setdefault("try_each", {})
+    for k in keys:
+        if d.get(k) and k not in each:
+            each[k] = float(d.get("ts", 0))
+    return [k for k in keys if force or (now - float(each.get(k, 0)) > ttl and now - float(tried.get(k, 0)) > retry)]
+
+
+def bundle_ts(d: Dict, keys) -> float:
+    """Bundle freshness = its oldest successfully fetched series (one good series no longer renews the whole bundle)."""
+    each = d.get("ts_each") or {}
+    ts = [float(each[k]) for k in keys if k in each]
+    return min(ts) if ts else float(d.get("ts", 0))

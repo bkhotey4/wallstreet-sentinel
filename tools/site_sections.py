@@ -361,7 +361,7 @@ def sec_signals(eng) -> str:
     sg = getattr(eng, "signals", None) or {}
     if not sg.get("available"):
         return card("技術型態觀察", "Technical pattern watch", f'<p class="muted">{T("個股價格資料暫時取不到", "Stock data unavailable right now")}</p>', "wide")
-    warn = T("⚠️ 規則篩選（均線、動能、量能），只說明現在出現哪種技術型態，不是買進建議；收盤跌破失效線＝型態失敗。",
+    warn = T("⚠️ 規則篩選（均線、動能、量能），只說明現在出現哪種技術型態，不是投資建議；收盤跌破失效線＝型態失敗。",
              "⚠️ Rules-based screen of technical setups — not a recommendation. A close below the give-up line means the setup failed.")
     items = [(m["label"], m["label_en"], _signal_table(m)) for m in sg["markets"].values()]
     howto = (f'<details class="sgx"><summary>{T("怎麼看支撐參考區與分級", "How to read it")}</summary><ol class="small">'
@@ -552,18 +552,18 @@ def sec_insiders(eng) -> str:
         f'<td class="r">{r["n_sellers"]}</td><td>{who(r)}</td></tr>' for r in b["sells"])
     buys = "".join(
         f'<tr><td class="nw">{nm(r["sym"])}</td><td class="r up">{_usd(r["buy_usd"])}</td><td class="r">{r["n_buyers"]}</td><td>{who(r)}</td></tr>'
-        for r in b["buys"]) or f'<tr><td colspan="4" class="muted">{T("期間內沒有公開市場買進", "No open-market purchases in the window")}</td></tr>'
+        for r in b["buys"]) or f'<tr><td colspan="4" class="muted">{T("期間內沒有公開市場增持", "No open-market purchases in the window")}</td></tr>'
     npend = b.get("pending") or 0
     pend = ('<p class="note warn">' + T(f"還有 {npend} 份申報待下載，下次更新會補齊。", f"{npend} filings still queued.") + "</p>"
             if npend else "")
-    note = T(f"資料：SEC Form 4（最近 {b['days']} 天，評分池內的美股）。只計公開市場買進（P）與賣出（S），不含行使選擇權、扣稅、贈與。"
-             "「預先計畫」是依 10b5-1 規則事先排定的賣出，訊號意義較低；「非計畫性」賣出與高層主動買進較值得注意。",
+    note = T(f"資料：SEC Form 4（最近 {b['days']} 天，評分池內的美股）。只計公開市場增持（P）與減持（S），不含行使選擇權、扣稅、贈與。"
+             "「預先計畫」是依 10b5-1 規則事先排定的減持，訊號意義較低；「非計畫性」減持與高層主動增持較值得注意。",
              f"Source: SEC Form 4, last {b['days']} days, US names in the scoring universe. Open-market purchases (P) and sales (S) only. "
              "Pre-arranged 10b5-1 sales carry less signal than discretionary ones.")
-    body = (f'<div class="g2"><div><h3>{T("內部人賣出（依非計畫性金額排序）", "Insider selling (by discretionary amount)")}</h3><div class="scroll"><table class="mini">'
+    body = (f'<div class="g2"><div><h3>{T("內部人減持（依非計畫性金額排序）", "Insider selling (by discretionary amount)")}</h3><div class="scroll"><table class="mini">'
             f'<thead><tr><th>{T("個股", "Stock")}</th><th class="r">{T("非計畫性", "Discretionary")}</th><th class="r">{T("預先計畫", "10b5-1")}</th>'
             f'<th class="r">{T("人數", "Sellers")}</th><th>{T("最大一筆", "Largest")}</th></tr></thead><tbody>{sells}</tbody></table></div></div>'
-            f'<div><h3>{T("內部人公開市場買進", "Insider open-market buying")}</h3><div class="scroll"><table class="mini">'
+            f'<div><h3>{T("內部人公開市場增持", "Insider open-market buying")}</h3><div class="scroll"><table class="mini">'
             f'<thead><tr><th>{T("個股", "Stock")}</th><th class="r">{T("金額", "Amount")}</th><th class="r">{T("人數", "Buyers")}</th>'
             f'<th>{T("最大一筆", "Largest")}</th></tr></thead><tbody>{buys}</tbody></table></div></div></div>{pend}<p class="note">{note}</p>')
     return card("內部人買賣（Form 4）", "Insider trades (Form 4)", body, "wide")

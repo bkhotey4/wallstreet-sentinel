@@ -125,8 +125,10 @@ def divergence(st, close: Optional[pd.Series] = None, thr: Optional[float] = Non
         if len(j) > 300:
             hit = j["f"] <= -float(_k("divergence_drawdown", 0.10))
             on = j["g"] >= thr
-            out["hist"] = {"days_flagged": int(on.sum()), "base_rate": float(hit.mean() * 100),
-                           "prob_when_flagged": float(hit[on].mean() * 100) if on.sum() >= 20 else None,
+            hz = int(_k("divergence_horizon_days", 63))
+            n_eff = float(on.sum()) / hz                 # overlapping 63-day windows → ≈ independent outcomes
+            out["hist"] = {"days_flagged": int(on.sum()), "base_rate": float(hit.mean() * 100), "n_eff": round(n_eff, 1),
+                           "prob_when_flagged": float(hit[on].mean() * 100) if n_eff >= 5 else None,
                            "auc": auc(j["g"], hit.astype(float))}
     return out
 

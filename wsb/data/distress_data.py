@@ -441,8 +441,10 @@ def screen_candidates(fr: Dict[str, Dict[int, float]], names: Dict[int, Tuple[st
         if dep and dep / ta >= 0.4:
             if ta < min_bank or eq is None or eq <= 0:
                 continue
-            loss = (fr.get("aoci", {}).get(cik) or 0.0) - (fr.get("htm_loss", {}).get(cik) or 0.0)
-            if loss / eq <= -0.25:
+            aoci, htm = fr.get("aoci", {}).get(cik), fr.get("htm_loss", {}).get(cik)
+            # neither reported → the securities-loss test is skipped, not read as "zero losses"
+            loss = None if aoci is None and htm is None else (aoci or 0.0) - (htm or 0.0)
+            if loss is not None and loss / eq <= -0.25:
                 why = f"證券評價損失達股東權益的 {loss / eq * 100:.0f}%"
             elif eq / ta < 0.07:
                 why = f"股東權益只有資產的 {eq / ta * 100:.1f}%"

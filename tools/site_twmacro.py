@@ -6,7 +6,7 @@ import html
 import json
 from pathlib import Path
 
-from tools.sitekit import T, card, cls, esc, num
+from tools.sitekit import T, card, cls, esc, guard_safe, num
 
 NOTE = Path(__file__).resolve().parents[1] / "research_feed" / "tw_note.json"   # written monthly by a cloud routine (public repo only)
 WD = "一二三四五六日"
@@ -64,7 +64,7 @@ def load_note(path: Path = None) -> list:
 
 
 def _note_html(n: dict) -> str:
-    e = lambda x: html.escape(str(x or ""))  # noqa: E731
+    e = lambda x: html.escape(guard_safe(str(x or "")))  # noqa: E731   AI-written text
     lis = "".join(f"<li>{e(x)}</li>" for x in (n.get("summary") or []) if x)
     watch = "".join(f"<li>{e(x)}</li>" for x in (n.get("watch") or []) if x)
     src = "、".join(f'<a href="{e(s.get("url"))}" target="_blank" rel="noopener">{e(s.get("name"))}</a>' for s in (n.get("sources") or [])
@@ -90,7 +90,7 @@ def sec_tw_calendar(eng) -> str:
     rows = "".join(f'<tr><td class="nw"><b>{x["when"]:%m-%d}</b>（{WD[x["when"].weekday()]}）</td><td>{T(x["zh"], "")}</td>'
                    f'<td class="small muted">{esc(x["last"] or "—")}</td><td class="small">{T(x["why"], "")}</td></tr>' for x in r["cal"])
     first = r["cal"][0]
-    lead = f"一句話看懂：下一個台灣重要數據是 {first['when']:%m-%d} 的{first['zh']}。"
+    lead = f"一句話看懂：下一個台灣重要數據是{first.get('when_zh') or '約 ' + format(first['when'], '%m-%d')} 的{first['zh']}。"
     how = ("日期依各機關的慣例推算（例如國發會約每月 27 日、央行理監事會在 3／6／9／12 月），遇假日會前後移動，以官方公告為準。"
            "「本站最新資料」是目前抓到的最新月份，公布後下一次網站更新就會自動換成新數字。")
     body = (_lead(lead) + f'<div class="scroll"><table class="mini"><thead><tr><th>{T("約略日期", "Approx. date")}</th><th>{T("數據", "Release")}</th>'

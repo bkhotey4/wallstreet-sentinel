@@ -14,7 +14,7 @@ def sec_sizing(eng) -> str:
             + f("px", "價格", "Price", "例：150")
             + f("stop", "型態失效價（自訂）", "Invalidation price", "例：138")
             + f("risk", "每筆最多可承受虧損（% 資金）", "Max loss per idea (% of capital)", "例：1")
-            + f("tgt", "目標價（選填，用來算風報比）", "Target (optional)", "例：180")
+            + f("tgt", "預設出場價（選填，用來算風報比）", "Target (optional)", "例：180")
             + f("atr", "ATR（選填；沒填失效價時用 2×ATR）", "ATR (optional)", "例：4.5")
             + f("win", "勝率 %（選填，凱利公式用）", "Win rate % (optional)", "例：45")
             + f("rr", "平均賺賠比（選填，凱利公式用）", "Avg win ÷ avg loss (optional)", "例：2")
@@ -22,7 +22,7 @@ def sec_sizing(eng) -> str:
     pick = (f'<div class="szpk" id="sz_pick" hidden><label class="szf"><span>{T("從「我的持股」帶入（只讀這台瀏覽器的資料）", "Fill from my holdings")}</span>'
             f'<select id="sz_hold" aria-label="從我的持股帶入"><option value="">{T("選一檔持股…", "Pick a holding…")}</option></select></label></div>')
     out = pick + '<div class="szo" id="sz_out" aria-live="polite"></div>'
-    note = T("公式：每股風險＝價格−失效價；可承受虧損＝總資金×比例；股數上限＝可承受虧損÷每股風險（無條件捨去）；風報比＝(目標價−價格)÷每股風險；"
+    note = T("公式：每股風險＝價格−失效價；可承受虧損＝總資金×比例；股數上限＝可承受虧損÷每股風險（無條件捨去）；風報比＝(預設出場價−價格)÷每股風險；"
              "凱利比例＝勝率−(1−勝率)÷賺賠比。凱利公式假設勝率和賺賠比都準確，實務上常只用一半或更少，而且估錯時虧損會被放大。"
              "這是純數學試算工具：所有數字都由你自己輸入，只在你的瀏覽器裡計算，不會送出或儲存；結果不是投資建議，也不代表任何標的值得交易。",
              "Pure arithmetic on your own inputs, computed in your browser and never sent. Not investment advice.")

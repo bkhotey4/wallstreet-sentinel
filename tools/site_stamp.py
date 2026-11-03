@@ -314,6 +314,19 @@ def _feed_date() -> Optional[str]:
         return None
 
 
+def _feed_updated(mod: str, attr: str = "load") -> Optional[str]:
+    """`updated` (or the newest note's date) of a JSON a cloud routine commits — so a stuck routine shows as old."""
+    try:
+        import importlib
+        m = importlib.import_module(f"tools.{mod}")
+        if attr == "load_note":
+            notes = m.load_note(m.NOTE)
+            return _d(notes[0].get("date") or (str(notes[0].get("month")) + "-28")) if notes else None
+        return _d(str(getattr(m, attr)().get("updated") or "")[:10])
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _g(eng, *path):
     o = eng
     for p in path:
@@ -354,6 +367,11 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "street": ("華爾街觀點", "Street views", lambda e: (_ts(_g(e, "street", "ts")), _d(_g(e, "street", "pos", "asof") or _g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
     "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
+    "after": ("財報後解讀（雲端 AI）", "Post-earnings notes", lambda e: (None, _feed_updated("site_after")), 2),
+    "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: (None, _feed_updated("site_preview")), 2),
+    "learn": ("每日學習筆記（雲端 AI）", "Daily notes", lambda e: (None, _feed_updated("site_learn")), 2),
+    "twnote": ("台灣每月筆記（雲端 AI）", "Taiwan monthly note", lambda e: (None, _feed_updated("site_twmacro", "load_note")), 35),
+    "indnote": ("每週產業筆記（雲端 AI）", "Weekly industry note", lambda e: (None, _feed_updated("site_indnote", "load_note")), 9),
     "refund": ("財政部再融資", "Treasury refunding", lambda e: (_ts(_stab_ts("refunding")), _stab_date("refunding")), 100),
     "funding": ("紐約聯準會 SOFR", "NY Fed SOFR", lambda e: (_ts(_stab_ts("sofr")), _stab_date("sofr")), 4),
     "cftc": ("CFTC 持倉", "CFTC positions", lambda e: (_ts(_stab_ts("cftc")), _stab_date("cftc")), 10),
@@ -406,9 +424,11 @@ CARD: Dict[str, List[str]] = {
     "sec_fg": ["px", "crypto"], "sec_link": ["tw", "px"], "sec_taiwan": ["tw", "taiwan"], "sec_taiwan_trends": ["tw"],
     "sec_signal_scorecard": ["stocks"], "sec_earn_moves": ["earnings", "stocks"], "sec_analyst": ["earnings"],
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
+    "sec_earn_after": ["after"], "sec_earn_after_us": ["after"], "sec_earn_preview": ["preview"], "sec_learn": ["learn"],
+    "sec_tw_note": ["twnote"], "sec_industry_note": ["indnote"],
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_tw_note", "sec_industry_note", "sec_earn_preview"}   # static content
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds"}   # static content
 LIVE = {"sec_lookup", "sec_watch", "sec_intraday"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 

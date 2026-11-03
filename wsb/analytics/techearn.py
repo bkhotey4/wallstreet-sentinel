@@ -151,6 +151,9 @@ def build(eng) -> Dict:
         m = metrics(f.get("q") or [])
         su = [r for r in ((ed.surprise or {}).get(s) or {}).get("rows", []) if r.get("surp") is not None]
         px = sp.series(s) if sp is not None else None
+        if px is not None:
+            from .sessions import completed
+            px = completed(px, s)                      # react_last / season avg: finished sessions only
         react_all = [reaction(px, r["date"]) if r.get("date") else None for r in su]     # same order as su (newest first)
         reacts = [x for x in react_all if x is not None]
         sinfo = {"n": len(su), "beats": sum(1 for r in su if r["surp"] > 0), "avg": float(np.mean([r["surp"] for r in su])) if su else None,
@@ -236,7 +239,8 @@ def calendar_view(ed, names: Dict, themes: Dict, sp, today: str) -> Dict:
                  "tech": themes.get(r["sym"], "") in ED.TECH_THEMES}
             if d < today or r.get("eps") is not None:
                 if cur and sp is not None:
-                    x["react"] = reaction(sp.series(r["sym"]), d)
+                    from .sessions import completed      # an in-progress bar is not "the session after"
+                    x["react"] = reaction(completed(sp.series(r["sym"]), r["sym"]), d)
                 past.append(x)
             else:
                 up.append(x)

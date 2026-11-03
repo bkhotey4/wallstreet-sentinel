@@ -105,6 +105,18 @@ class StressResult:
         return sorted(valid, key=lambda c: c.weight * (c.score - 50))[:n]
 
 
+def ref_history(st, min_n: int = 500) -> Optional[pd.Series]:
+    """The SSI history that is like-for-like with st.score: `score` uses only the currently-live components, so models
+    applied to it (crash odds, the lab, model quality) and "vs a month ago" comparisons use the history of that same live
+    set when it is long enough (> min_n rows), else the full-component history."""
+    if st is None:
+        return None
+    lh = getattr(st, "live_history", None)
+    if lh is not None and len(lh.dropna()) > min_n:
+        return lh
+    return getattr(st, "history", None)
+
+
 def level_for(score: float):
     for lv in SETTINGS.get("stress_levels", []):
         if score < lv["max"]:

@@ -92,18 +92,28 @@ def us_universe() -> Dict[str, Tuple[str, str]]:
 
 
 async def ticker_map() -> Dict[str, Dict]:
-    """SEC ticker → {cik, title}; cached for a week."""
+    """SEC ticker → {cik, title}; cached for a week.  A failed refresh (e.g. SEC 403) falls back to the stale file."""
     try:
         if _MAP_FILE.exists() and time.time() - _MAP_FILE.stat().st_mtime < 7 * 86400:
             return json.loads(_MAP_FILE.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         pass
-    js = await _get("https://www.sec.gov/files/company_tickers.json")
+    try:
+        js = await _get("https://www.sec.gov/files/company_tickers.json")
+    except Exception as e:  # noqa: BLE001
+        try:
+            old = json.loads(_MAP_FILE.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            raise e from None
+        log.warning("SEC ticker map refresh failed, using the stale cache (%d tickers): %s", len(old), e)
+        HEALTH.fail("sec_ticker_map", e, every=7 * 86400)
+        return old
     out = {v["ticker"].upper(): {"cik": int(v["cik_str"]), "title": v["title"]} for v in js.values()}
     try:
         _write_json(_MAP_FILE, out)
     except Exception as e:  # noqa: BLE001
         log.warning("SEC ticker map not cached: %s", e)
+    HEALTH.ok("sec_ticker_map", len(out), every=7 * 86400)
     return out
 
 

@@ -35,6 +35,18 @@ def _bs_gamma(S: np.ndarray, K: np.ndarray, T: np.ndarray, iv: np.ndarray, r: fl
     return np.nan_to_num(g)
 
 
+def quote_time(js: Dict[str, Any]) -> Optional[datetime]:
+    """CBOE's top-level "timestamp" (New York time, e.g. "2026-11-04 15:44:32") → UTC; None when absent/unreadable."""
+    from zoneinfo import ZoneInfo
+    raw = str(js.get("timestamp") or "").strip()
+    try:
+        t = datetime.fromisoformat(raw.replace("T", " ")[:19])
+    except ValueError:
+        return None
+    t = t.replace(tzinfo=ZoneInfo("America/New_York")) if t.tzinfo is None else t
+    return t.astimezone(timezone.utc)
+
+
 def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
     data = js.get("data", {})
     spot = float(data.get("current_price") or data.get("close") or 0)
@@ -105,7 +117,9 @@ def parse_chain(js: Dict[str, Any], max_days: int = 60) -> Dict[str, Any]:
         "contracts": len(rows),
         "profile": [(float(x), float(y) / 1e9) for x, y in zip(grid, prof)],   # GEX (bn/1%) if SPX were at x
         "by_strike": by_strike,
-        "asof": now.strftime("%Y-%m-%d %H:%M UTC"),
+        # when CBOE took the quotes (delayed, stale over weekends), not when we fetched them
+        "asof": (quote_time(js) or now).strftime("%Y-%m-%d %H:%M UTC"),
+        "asof_source": "cboe" if quote_time(js) else "fetch",
     }
 
 

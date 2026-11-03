@@ -100,17 +100,23 @@ async def treasury_auctions(days: int = 30) -> List[Dict]:
     from . import http
     js = await http.get("https://www.treasurydirect.gov/TA_WS/securities/upcoming", params={"format": "json"})
     from zoneinfo import ZoneInfo
+    from ..health import HEALTH
     out, today = [], datetime.now(ZoneInfo("America/New_York")).date()
+    coupons = parsed = 0
     for r in js if isinstance(js, list) else []:
         term = str(r.get("originalSecurityTerm") or r.get("securityTerm", ""))   # reopenings: "9-Year 10-Month" remaining
         typ = str(r.get("securityType", ""))
         m = re.match(r"(\d+)-Year", term)
         if typ not in ("Note", "Bond") or not m or int(m.group(1)) not in (10, 20, 30):
             continue
+        coupons += 1
+        # TreasuryDirect renamed auctionDate in Oct 2026 (same fallback as treasury.parse_auctions)
+        raw = next((r.get(k) for k in ("auctionDate", "competitiveAuctionCloseDate") if r.get(k) not in (None, "")), None)
         try:
-            d = datetime.fromisoformat(str(r["auctionDate"])[:19]).date()
+            d = datetime.fromisoformat(str(raw)[:19]).date()
         except Exception:  # noqa: BLE001
             continue
+        parsed += 1
         if not (today <= d <= today + timedelta(days=days)):
             continue
         amt = r.get("offeringAmount")
@@ -124,4 +130,8 @@ async def treasury_auctions(days: int = 30) -> List[Dict]:
                     "event": f"美債 {yrs} 年期標售（{reopen}）" + (f" ${amt_s}" if amt_s else ""),
                     "importance": 3 if yrs >= 10 else 2,
                     "note": "標售尾差（tail）大／需求弱 → 殖利率跳升，長天期資產與成長股承壓"})
+    if coupons and not parsed:
+        HEALTH.fail("treasury_upcoming", f"{coupons} Note/Bond rows but no auction date parsed", every=6 * 3600)
+    else:
+        HEALTH.ok("treasury_upcoming", len(out), every=6 * 3600)
     return out

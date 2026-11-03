@@ -218,32 +218,37 @@ async def fetch_cftc() -> List[List]:
 
 
 async def refresh(force: bool = False) -> Dict:
+    from .freshness import bundle_ts, due
     d = load()
     now = time.time()
-    if not force and now - float(d.get("ts", 0)) < TTL and d.get("sofr"):
-        d["ts_check"] = now
-        _save(d)
-        return d
     bad = []
     steps = (("refunding", lambda: fetch_refunding(d.get("refunding") or {})), ("bills", fetch_bills),
              ("sofr", lambda: _get_parse(SOFR_URL.format(end=time.strftime("%Y-%m-%d")), parse_sofr)),
              ("repo", lambda: _get_parse(REPO_URL.format(n=500), parse_repo)), ("cftc", fetch_cftc),
              ("coverage", lambda: _get_parse(COVER_URL, lambda js: js if isinstance(js, dict) and "gaps" in js else None)),
              ("ai_view", lambda: _get_parse(AIVIEW_URL, lambda js: js if isinstance(js, dict) and js.get("verdict") else None)))
+    need = [k for k, _fn in steps if k not in ("coverage", "ai_view")]   # optional: absent until the first monthly audit runs
+    todo = due(d, [k for k, _fn in steps], TTL, now, force)     # per step: a failed one is retried within the hour
+    d["ts_check"] = now
+    if not todo:
+        _save(d)
+        return d
     for key, fn in steps:
+        if key not in todo:
+            continue
+        d["try_each"][key] = now
         try:
             v = await fn()
             if not v:
                 raise ValueError("empty")
             d[key] = v
-            d.setdefault("ts_each", {})[key] = now
+            d["ts_each"][key] = now
         except Exception as e:  # noqa: BLE001
             bad.append(f"{key}: {e if str(e) else type(e).__name__}")
-    bad = [b for b in bad if not b.startswith(("coverage", "ai_view"))]   # optional: absent until the first monthly audit runs
-    d["ts_check"] = now
-    if len(bad) < len(steps):
-        d["ts"] = now
-        _save(d)
+    bad = [b for b in bad if not b.startswith(("coverage", "ai_view"))]
+    bad += [f"{k}: stale" for k in need if k not in todo and now - float(d["ts_each"].get(k, 0)) > TTL]
+    d["ts"] = bundle_ts(d, need)                                # one good step no longer renews the whole bundle
+    _save(d)
     if bad:
         log.warning("stability data: %s", "; ".join(bad))
         HEALTH.fail("stability", "; ".join(bad), every=TTL)

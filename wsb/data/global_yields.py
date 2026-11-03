@@ -23,6 +23,18 @@ FILE = DATA_DIR / "econ_jgb_yields.json"            # econ_* is kept by the site
 KEEP = ("1Y", "2Y", "5Y", "10Y", "20Y", "30Y")
 
 
+def decode(raw) -> str:
+    """MOF CSVs are Shift-JIS (the title line is Japanese); utf-8 is tried first in case MOF switches."""
+    if isinstance(raw, str):
+        return raw
+    for enc in ("utf-8-sig", "shift_jis", "cp932"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("cp932", errors="replace")
+
+
 def parse(txt: str) -> pd.DataFrame:
     """MOF CSV → DataFrame indexed by date, columns 1Y…30Y in %.  The first line is a title; '-' marks no data."""
     lines = txt.splitlines()
@@ -41,6 +53,7 @@ class GlobalYields:
     def __init__(self) -> None:
         self.jgb = pd.DataFrame()
         self.ts = 0.0
+        self._retry_at = 0.0                            # a stale current-month file is retried hourly, not every cycle
         try:
             d = json.loads(FILE.read_text(encoding="utf-8"))
             self.jgb = pd.DataFrame(d["data"]).T
@@ -51,12 +64,15 @@ class GlobalYields:
             pass
 
     async def refresh(self, force: bool = False) -> None:
-        if not force and len(self.jgb) and time.time() - self.ts < 6 * 3600:
+        if not force and len(self.jgb) and (time.time() - self.ts < 6 * 3600 or time.time() < self._retry_at):
             return
-        parts = []
+        parts, cur_ok = [], False
         for u in URLS:
             try:
-                parts.append(parse(await http.get(u, kind="text", timeout=40, retries=1)))
+                parts.append(parse(decode(await http.get(u, kind="bytes", timeout=40, retries=1))))
+                if u == URLS[-1]:
+                    # the current-month file is what keeps the series fresh: it must reach the last ~10 days
+                    cur_ok = (pd.Timestamp.now().normalize() - parts[-1].index[-1]).days <= 10
             except Exception as e:  # noqa: BLE001
                 log.warning("MOF JGB %s failed: %s", u.rsplit("/", 1)[-1], e)
         if not parts:
@@ -67,7 +83,15 @@ class GlobalYields:
         if len(df) < 250:
             HEALTH.fail("mof_jgb", f"only {len(df)} rows", every=6 * 3600)
             return
-        self.jgb, self.ts = df, time.time()
+        now = pd.Timestamp.now().normalize()
+        if not cur_ok and now.day <= 7:                 # month start: the new file may still be empty
+            cur_ok = (now - df.index[-1]).days <= 10
+        # without a recent current-month part the data is kept but ts stays old (honest freshness) and it is retried
+        self.jgb = df
+        if cur_ok:
+            self.ts = time.time()
+        else:
+            self._retry_at = time.time() + 3600
         try:
             tmp = FILE.with_suffix(".tmp")
             data = {k.strftime("%Y-%m-%d"): {c: (None if pd.isna(v) else float(v)) for c, v in r.items()} for k, r in df.iterrows()}
@@ -75,7 +99,10 @@ class GlobalYields:
             tmp.replace(FILE)
         except Exception as e:  # noqa: BLE001
             log.warning("JGB cache not saved: %s", e)
-        HEALTH.ok("mof_jgb", len(df), every=6 * 3600)
+        if cur_ok:
+            HEALTH.ok("mof_jgb", len(df), every=6 * 3600)
+        else:
+            HEALTH.fail("mof_jgb", f"current-month csv missing or stale (last {df.index[-1].date()})", every=6 * 3600)
 
     def get(self, tenor: str) -> pd.Series:
         return self.jgb[tenor].dropna() if tenor in self.jgb.columns else pd.Series(dtype=float)

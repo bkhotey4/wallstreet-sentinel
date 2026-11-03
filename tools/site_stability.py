@@ -195,7 +195,7 @@ def sec_st_basis(eng) -> str:
             f'<div class="big">${ba["net"]:,.0f}B</div><div class="small muted">{ba["date"]}・一年前 ${ba["yago"]:,.0f}B・{ba["since"]} 年以來第 {ba["pct"]:.0f} 百分位'
             f'{"・歷史新高" if ba["record"] else ""}</div>{spark(_ser(h)) if len(h) > 5 else ""}</div>'
             f'<div><table class="mini"><thead><tr><th>{T("期貨", "Contract")}</th><th class="r">{T("淨空單", "Net short")}</th></tr></thead><tbody>{by}</tbody></table></div></div>'
-            f'<p class="note">{T("怎麼看：避險基金常「買美債現貨、同時放空期貨」，賺兩者之間很小的價差，再用回購借錢放大好幾十倍，這就是基差交易。期貨淨空單愈大，代表這種交易愈多。它平常幫市場提供流動性；可是一旦回購借不到錢或保證金提高，就得同時賣出現貨，2020 年 3 月美債因此大跌、聯準會出手買了上兆美元。要和上一張的資金市場、MOVE 債市波動一起看。名目金額沒有依期限加權，30 年期的風險其實比 2 年期大很多。資料：CFTC 交易者持倉報告（TFF），每週五公布週二部位。", "")}</p>')
+            f'<p class="note">{T("怎麼看：避險基金常「買美債現貨、同時放空期貨」，賺兩者之間很小的價差，再用回購借錢放大好幾十倍，這就是基差交易。期貨淨空單愈大，代表這種交易愈多。它平常幫市場提供流動性；可是一旦回購借不到錢或保證金提高，就得同時拋售現貨，2020 年 3 月美債因此大跌、聯準會出手買了上兆美元。要和上一張的資金市場、MOVE 債市波動一起看。名目金額沒有依期限加權，30 年期的風險其實比 2 年期大很多。資料：CFTC 交易者持倉報告（TFF），每週五公布週二部位。", "")}</p>')
     return card("美債基差交易：避險基金槓桿", "Treasury basis trade: hedge-fund leverage", body, "wide")
 
 

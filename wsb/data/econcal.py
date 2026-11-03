@@ -28,6 +28,7 @@ from . import http
 log = logging.getLogger(__name__)
 _FILE = DATA_DIR / "econ_days.json"
 _FOMC_FILE = DATA_DIR / "econ_fomc.json"
+_CLOCK_FILE = DATA_DIR / "econ_clock.json"       # {date: anchor-verified Nasdaq clock offset (minutes)}
 NQ_HDR = {"Accept": "application/json, text/plain, */*", "Origin": "https://www.nasdaq.com", "Referer": "https://www.nasdaq.com/"}
 _MONTHS = {m: i for i, m in enumerate(["January", "February", "March", "April", "May", "June", "July", "August",
                                          "September", "October", "November", "December"], 1)}
@@ -68,6 +69,8 @@ def num(s) -> Optional[float]:
 
 
 DEFAULT_OFF_MIN = -240          # the clock Nasdaq has used so far: fixed UTC-4 (verified in summer and in January)
+_CLOCK: Optional[Dict[str, int]] = None         # verified offsets by day (lazy-loaded from _CLOCK_FILE)
+_FF_UTC: Dict[Tuple[str, str], str] = {}         # (lower-case Nasdaq name, date) → FF release time in UTC (this week)
 # releases whose US-Eastern clock time never changes → used to check which UTC offset Nasdaq's clock had on a given day
 ANCHOR_ET = {"cpi": (8, 30), "core cpi": (8, 30), "ppi": (8, 30), "core ppi": (8, 30), "nonfarm payrolls": (8, 30),
              "retail sales": (8, 30), "core retail sales": (8, 30), "gdp": (8, 30), "initial jobless claims": (8, 30),
@@ -89,24 +92,67 @@ def _utc(day: date, hhmm: str, off_min: int = DEFAULT_OFF_MIN) -> Optional[str]:
     return t.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def clock_offset(rows: List[Dict], day: date) -> int:
-    """UTC offset (minutes) of the Nasdaq clock on `day`, inferred from anchor releases with a known US-Eastern time:
-    offset = shown clock − true UTC time of that release (zoneinfo handles EST/EDT).  Every anchor of the day must agree
-    and the result must be a plausible US offset (−4 h / −5 h); otherwise the long-standing fixed UTC−4 is kept.
-    This keeps release times right if Nasdaq switches its clock with US daylight saving (2026-11-01)."""
+def _clock() -> Dict[str, int]:
+    global _CLOCK
+    if _CLOCK is None:
+        try:
+            _CLOCK = {k: int(v) for k, v in json.loads(_CLOCK_FILE.read_text(encoding="utf-8")).items()} if _CLOCK_FILE.exists() else {}
+        except Exception:  # noqa: BLE001
+            _CLOCK = {}
+    return _CLOCK
+
+
+def _clock_save() -> None:
+    try:
+        tmp = _CLOCK_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(dict(sorted(_clock().items())[-1500:])), encoding="utf-8")
+        tmp.replace(_CLOCK_FILE)
+    except Exception as e:  # noqa: BLE001
+        log.warning("econ clock cache not saved: %s", e)
+
+
+def carried_offset(day: date) -> int:
+    """Most recent anchor-verified offset on or before `day` (after US DST ends, a day without anchors must not snap
+    back to UTC−4); the long-standing fixed UTC−4 when nothing has been verified yet."""
+    k = day.isoformat()
+    prior = [d for d in _clock() if d <= k]
+    return _clock()[max(prior)] if prior else DEFAULT_OFF_MIN
+
+
+def clock_check(rows: List[Dict], day: date) -> Optional[int]:
+    """Anchor-verified UTC offset (minutes) of the Nasdaq clock on `day`, or None when it cannot be verified.
+    offset = shown clock − true UTC time of a release with a fixed US-Eastern time (zoneinfo handles EST/EDT).  All anchors
+    must agree on a plausible US offset (−4 h / −5 h), and there must be ≥2 of them, or one whose shown time matches
+    ForexFactory's time for the same release — one odd row can't shift a whole day."""
     from zoneinfo import ZoneInfo
-    seen = set()
+    seen, single = [], None
     for r in rows:
-        et = ANCHOR_ET.get(clean(r.get("eventName") if "eventName" in r else r.get("name")).lower())
+        nm = clean(r.get("eventName") if "eventName" in r else r.get("name"))
+        et = ANCHOR_ET.get(nm.lower())
         hm = _hm(r.get("gmt", ""))
         if not et or not hm:
             continue
         true_utc = datetime(day.year, day.month, day.day, et[0], et[1], tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
         shown = datetime(day.year, day.month, day.day, hm[0], hm[1], tzinfo=timezone.utc)
-        seen.add(int(round((shown - true_utc).total_seconds() / 60)))
-    if len(seen) == 1 and next(iter(seen)) in (-240, -300):
-        return next(iter(seen))
-    return DEFAULT_OFF_MIN
+        seen.append(int(round((shown - true_utc).total_seconds() / 60)))
+        single = (nm.lower(), r.get("gmt", ""))
+    if not seen or len(set(seen)) != 1 or seen[0] not in (-240, -300):
+        return None
+    if len(seen) >= 2:
+        return seen[0]
+    ff = _FF_UTC.get((single[0], day.isoformat()))
+    return seen[0] if ff and _utc(day, single[1], seen[0]) == ff else None
+
+
+def clock_offset(rows: List[Dict], day: date) -> int:
+    """UTC offset (minutes) of the Nasdaq clock on `day`: the anchor-verified one (recorded for later days), else the most
+    recent verified offset carried forward.  Keeps release times right across Nasdaq's DST switch (2026-11-01)."""
+    v = clock_check(rows, day)
+    if v is None:
+        return carried_offset(day)
+    if _clock().get(day.isoformat()) != v:
+        _clock()[day.isoformat()] = v
+    return v
 
 
 def parse_nasdaq(js: Dict, day: date) -> List[Dict]:
@@ -217,6 +263,7 @@ async def refresh(budget_s: Optional[float] = None, force_days: Optional[List[da
         cut = (today - timedelta(days=back + 30)).isoformat()
         days = {k: v for k, v in days.items() if k >= cut}
         save(days)
+        _clock_save()
     if n_err and not n_ok:
         HEALTH.fail("econ_calendar", RuntimeError(f"{n_err} Nasdaq calendar requests failed"), every=3600)
     else:
@@ -254,7 +301,8 @@ def parse_ff(js) -> List[Dict]:
             continue
         nm, var = FF_MAP[r["title"]]
         out.append({"name": nm, "var": var, "date": t.date().isoformat(), "forecast": clean(r.get("forecast")),
-                    "previous": clean(r.get("previous")), "impact": r.get("impact", "")})
+                    "previous": clean(r.get("previous")), "impact": r.get("impact", ""),
+                    "utc": t.astimezone(timezone.utc).isoformat().replace("+00:00", "Z") if t.tzinfo else None})
     return out
 
 
@@ -262,6 +310,7 @@ async def ff_week() -> List[Dict]:
     try:
         js = await http.get("https://nfs.faireconomy.media/ff_calendar_thisweek.json", timeout=20, retries=1)
         rows = parse_ff(js)
+        _FF_UTC.update({(r["name"].lower(), r["date"]): r["utc"] for r in rows if r.get("utc")})   # confirms 1-anchor days
         HEALTH.ok("ff_calendar", len(rows), every=6 * 3600)
         return rows
     except Exception as e:  # noqa: BLE001
@@ -351,4 +400,5 @@ class EconCalendar:
         rec = store_day(self.days, day, rows, n_raw, us_today())
         rec["final"] = False
         save(self.days)
+        _clock_save()
         return rec["rows"]

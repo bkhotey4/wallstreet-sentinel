@@ -326,7 +326,7 @@ def main():
     assert sx["link"]["available"] and sx["link"]["rows"] and sx["link"]["adr"] and sx["link"]["index"]
     assert sx["debate"][0]["ai"]["bull"] and "建議買進" not in sx["debate"][0]["ai"]["bear"], "advice lines scrubbed"
     page = B.render(eng, "", "")
-    for s in ("個股情報", "情緒與警報", "分析師共識與目標價", "股息雷達", "SEC 重大申報", "高管／董事異動", "財報前隱含波動",
+    for s in ("個股情報", "情緒與警報", "分析師共識評級", "股息雷達", "SEC 重大申報", "高管／董事異動", "財報前隱含波動",
               "恐慌與貪婪指數（多因子）", "期權預期波動區間", "大盤警報規則回測", "地緣風險燈號", "台美連動", "台積電 ADR 溢價",
               "過熱／力竭警示", "硬科技一分鐘科普", "CoWoS", "AI 多空辯論", "交易成本試算", 'class="calc"', 'table class="mini srt"', 'id="p-tools"'):
         assert s in page, s

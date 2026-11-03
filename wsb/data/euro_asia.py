@@ -56,29 +56,44 @@ def parse_ciss(txt: str) -> Dict[str, float]:
 
 
 async def refresh(force: bool = False) -> Dict:
+    from .freshness import bundle_ts, due
     d = load()
     now = time.time()
     d["ts_check"] = now
-    need = force or now - float(d.get("ts", 0)) > TTL or not d.get("ciss") or not d.get("yields")
-    if need:
+    codes = ["DE"] + [c for c, _z in COUNTRIES]
+    keys = ["ciss"] + [f"y_{c}" for c in codes]
+    each = d.setdefault("ts_each", {})
+    for c in codes:                                   # seed old caches: yields live under d["yields"], not top level
+        if (d.get("yields") or {}).get(c) and f"y_{c}" not in each:
+            each[f"y_{c}"] = float(d.get("ts", 0))
+    todo = due(d, keys, TTL, now, force)              # per series: a failed one is retried within the hour
+    if todo:
         bad = []
-        try:
-            c = parse_ciss(await http.get(CISS_URL, kind="text", timeout=60, retries=1))
-            if len(c) < 1000:
-                raise ValueError(f"only {len(c)} days")
-            d["ciss"] = c
-        except Exception as e:  # noqa: BLE001
-            bad.append(f"ciss: {e if str(e) else type(e).__name__}")
-        y = dict(d.get("yields") or {})
-        for code in ["DE"] + [c for c, _z in COUNTRIES]:
+        if "ciss" in todo:
+            d["try_each"]["ciss"] = now
             try:
-                y[code] = await _fred(f"IRLTLT01{code}M156N")
+                c = parse_ciss(await http.get(CISS_URL, kind="text", timeout=60, retries=1))
+                if len(c) < 1000:
+                    raise ValueError(f"only {len(c)} days")
+                d["ciss"], each["ciss"] = c, now
+            except Exception as e:  # noqa: BLE001
+                bad.append(f"ciss: {e if str(e) else type(e).__name__}")
+        y = dict(d.get("yields") or {})
+        for code in codes:
+            if f"y_{code}" not in todo:
+                continue
+            d["try_each"][f"y_{code}"] = now
+            try:
+                v = await _fred(f"IRLTLT01{code}M156N")
+                if not v:
+                    raise ValueError("empty")
+                y[code], each[f"y_{code}"] = v, now
             except Exception as e:  # noqa: BLE001
                 bad.append(f"{code}: {e if str(e) else type(e).__name__}")
         if y:
             d["yields"] = y
-        if len(bad) < 3:
-            d["ts"] = now
+        bad += [f"{k}: stale" for k in keys if k not in todo and now - float(each.get(k, 0)) > TTL]
+        d["ts"] = bundle_ts(d, keys)                  # one good series no longer renews the whole bundle
         if bad:
             log.warning("euro/asia data: %s", "; ".join(bad))
             HEALTH.fail("euro_asia", "; ".join(bad), every=TTL)

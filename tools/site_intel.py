@@ -54,7 +54,7 @@ def _wd(d: str) -> str:
 
 
 # ================================================================== 個股情報
-REC_T = [(1.5, "強力買進", "Strong buy"), (2.5, "買進", "Buy"), (3.5, "持有", "Hold"), (4.5, "表現落後", "Underperform"), (9, "賣出", "Sell")]
+REC_T = [(1.5, "強烈看好", "Strongly positive"), (2.5, "看好", "Positive"), (3.5, "中立", "Neutral"), (4.5, "看淡", "Negative"), (9, "強烈看淡", "Strongly negative")]
 
 
 def _rec(rm: Optional[float]) -> str:
@@ -69,15 +69,12 @@ def _rec(rm: Optional[float]) -> str:
 def _analyst_table(rows: List[Dict], mk: str) -> str:
     if not rows:
         return f'<p class="muted">{T("這個市場還沒有分析師資料（每小時補抓一部分）。", "No analyst data for this market yet.")}</p>'
+    rows = sorted(rows, key=lambda r: -(r.get("n") or 0))           # most-covered first; no price-target figures (compliance)
     tr = "".join(
         f'<tr data-q="{esc((_name(r) + " " + (r.get("code") or "")).lower())}"><td class="nw">{_nm(r)}{_theme_chip(r["theme"])}</td>'
-        + _td(r["px"], num(r["px"], 2)) + _td(r["tm"], num(r["tm"], 2))
-        + _td(r["up"], f'<b class="{cls(r["up"])}">{num(r["up"], 0, sign=True, pct=True)}</b>')
-        + _td(r.get("upl"), f'<span class="muted">{num(r.get("upl"), 0, sign=True, pct=True)} ~ {num(r.get("uph"), 0, sign=True, pct=True)}</span>')
-        + _td(r.get("n"), num(r.get("n"), 0)) + _td(r.get("rm"), _rec(r.get("rm")), "") + "</tr>" for r in rows)
-    return (f'<div class="scroll"><table class="mini srt"><thead><tr>{_th("個股", "Stock", False)}{_th("現價", "Price")}{_th("平均目標價", "Mean target")}'
-            f'{_th("距平均目標", "To mean")}{_th("最低～最高目標", "Low ~ high")}{_th("分析師數", "Analysts")}{_th("共識評級", "Consensus", False)}'
-            f'</tr></thead><tbody>{tr}</tbody></table></div>')
+        + _td(r["px"], num(r["px"], 2)) + _td(r.get("n"), num(r.get("n"), 0)) + _td(r.get("rm"), _rec(r.get("rm")), "") + "</tr>" for r in rows)
+    return (f'<div class="scroll"><table class="mini srt"><thead><tr>{_th("個股", "Stock", False)}{_th("現價", "Price")}'
+            f'{_th("分析師數", "Analysts")}{_th("共識評級", "Consensus", False)}</tr></thead><tbody>{tr}</tbody></table></div>')
 
 
 def sec_analyst(eng) -> str:
@@ -85,10 +82,10 @@ def sec_analyst(eng) -> str:
     if not any(st.values()):
         return ""
     items = [(MK[mk][0] + f" {len(st.get(mk) or [])}", MK[mk][1], _analyst_table(st.get(mk) or [], mk)) for mk in ("us", "tw", "hk")]
-    note = T("目標價與評級來自 Yahoo Finance 彙整的券商預估，通常落後股價、偏樂觀；分析師少於 3 位的樣本代表性低。"
-             "評級分數 1＝強力買進、3＝持有、5＝賣出。這是市場共識的整理，不是本站的看法或建議。點欄位標題可排序。",
-             "Consensus targets / ratings compiled by Yahoo Finance. They lag the price and lean optimistic. Not our view or advice.")
-    return card("分析師共識與目標價（第三方券商彙整，非本站預測）", "Analyst consensus & targets (third-party, not our forecast)", f'<p class="small muted">{note}</p>' + _tabset("an", items), "wide")
+    note = T("評級來自 Yahoo Finance 彙整的券商看法，通常落後股價、偏樂觀；分析師少於 3 位的樣本代表性低。"
+             "評級分數 1＝強烈看好、3＝中立、5＝強烈看淡。這是市場共識的整理，不是本站的看法或建議；本站不列券商的價格預估。點欄位標題可排序。",
+             "Consensus ratings compiled by Yahoo Finance. They lag the price and lean optimistic. Not our view or advice.")
+    return card("分析師共識評級（第三方券商彙整，非本站預測）", "Analyst consensus ratings (third-party, not our forecast)", f'<p class="small muted">{note}</p>' + _tabset("an", items), "wide")
 
 
 def _div_table(rows: List[Dict], mk: str) -> str:
@@ -167,7 +164,7 @@ def _earn_lead(rows: list, lg: dict) -> str:
     if lg.get("n", 0) >= 20 and lg.get("lo") is not None:
         o, f = lg["over_pct"], lg["fair_over"]
         s += (f"本站記錄的 {lg['n']} 次財報，實際漲跌超過選擇權預期的佔 {o:.0f}%（90% 區間 {lg['lo']:.0f}～{lg['hi']:.0f}%；預期若剛好約 {f:.0f}%），"
-              + ("選擇權大致把財報波動定價得偏多。" if lg["hi"] < f else "選擇權大致低估了財報波動。" if lg["lo"] > f else "和理論差不多，看不出系統性偏貴或偏便宜。"))
+              + ("選擇權大致把財報波動定價得偏多。" if lg["hi"] < f else "選擇權大致把財報波動定價得偏少。" if lg["lo"] > f else "和理論差不多，看不出系統性偏貴或偏便宜。"))
     else:
         st = f"（從 {lg['start']} 的財報開始）" if lg.get("start") else ""
         s += f"財報跳空成績單剛開始記錄{st}，已完成 {lg.get('n', 0)} 次，累積 20 次後才顯示準不準。"
@@ -583,27 +580,27 @@ def sec_debate(eng) -> str:
 def sec_fees(eng) -> str:
     us = (f'<div class="calc" data-m="us"><div class="cg">'
           f'<label>{T("股數", "Shares")}<input type="number" step="any" data-k="q" value="10"></label>'
-          f'<label>{T("買進價（美元）", "Buy price (USD)")}<input type="number" step="any" data-k="b" value="100"></label>'
-          f'<label>{T("賣出價（美元）", "Sell price (USD)")}<input type="number" step="any" data-k="s" value="110"></label>'
+          f'<label>{T("買入價（美元）", "Buy price (USD)")}<input type="number" step="any" data-k="b" value="100"></label>'
+          f'<label>{T("出場價（美元）", "Sell price (USD)")}<input type="number" step="any" data-k="s" value="110"></label>'
           f'<label>{T("手續費率 %", "Commission %")}<input type="number" step="any" data-k="r" value="0.25"></label>'
           f'<label>{T("每筆最低手續費（美元）", "Min. commission (USD)")}<input type="number" step="any" data-k="m" value="0"></label>'
-          f'<label>{T("SEC 規費（每百萬美元賣出）", "SEC fee per $1M sold")}<input type="number" step="any" data-k="sec" value="0"></label>'
-          f'<label>{T("FINRA TAF（每股，賣出）", "FINRA TAF per share sold")}<input type="number" step="any" data-k="taf" value="0.000166"></label>'
+          f'<label>{T("SEC 規費（每百萬美元出場金額）", "SEC fee per $1M sold")}<input type="number" step="any" data-k="sec" value="0"></label>'
+          f'<label>{T("FINRA TAF（每股，出場時）", "FINRA TAF per share sold")}<input type="number" step="any" data-k="taf" value="0.000166"></label>'
           f'<label>{T("FINRA TAF 單筆上限（美元）", "FINRA TAF cap per trade (USD)")}<input type="number" step="any" data-k="tafcap" value="8.30"></label>'
           f'<label>{T("每股年配息（美元，選填）", "Annual dividend / share")}<input type="number" step="any" data-k="d" value="0"></label>'
           f'</div><div class="cout"></div></div>')
     tw = (f'<div class="calc" data-m="tw"><div class="cg">'
           f'<label>{T("股數", "Shares")}<input type="number" step="any" data-k="q" value="1000"></label>'
-          f'<label>{T("買進價（台幣）", "Buy price (TWD)")}<input type="number" step="any" data-k="b" value="100"></label>'
-          f'<label>{T("賣出價（台幣）", "Sell price (TWD)")}<input type="number" step="any" data-k="s" value="105"></label>'
+          f'<label>{T("買入價（台幣）", "Buy price (TWD)")}<input type="number" step="any" data-k="b" value="100"></label>'
+          f'<label>{T("出場價（台幣）", "Sell price (TWD)")}<input type="number" step="any" data-k="s" value="105"></label>'
           f'<label>{T("手續費折數（1＝不打折）", "Commission discount (1 = none)")}<input type="number" step="any" data-k="dc" value="1"></label>'
           f'<label>{T("每筆最低手續費（台幣）", "Min. commission (TWD)")}<input type="number" step="any" data-k="m" value="20"></label>'
           f'<label>{T("證交稅", "Transaction tax")}<select data-k="tax"><option value="0.003">{T("股票 0.3%", "Stock 0.3%")}</option>'
           f'<option value="0.001">{T("ETF 0.1%", "ETF 0.1%")}</option><option value="0.0015">{T("現股當沖 0.15%", "Day trade 0.15%")}</option></select></label>'
           f'</div><div class="cout"></div></div>')
     note = T("所有預設值都只是範例，請改成你券商的實際費率（複委託常見有最低手續費、優惠折扣，以對帳單為準）。"
-             "台股手續費＝成交金額 × 0.1425% × 折數，買賣各收一次；證交稅只在賣出收。美股股息對台灣投資人預扣 30%。"
-             "SEC 規費費率每年由 SEC 公告調整，FINRA TAF 只在賣出收取且有單筆上限（上限填 0＝不設上限）。計算只在你的瀏覽器裡進行，不會送出或儲存任何資料。"
+             "台股手續費＝成交金額 × 0.1425% × 折數，買賣各收一次；證交稅只在出場時收。美股股息對台灣投資人預扣 30%。"
+             "SEC 規費費率每年由 SEC 公告調整，FINRA TAF 只在出場時收取且有單筆上限（上限填 0＝不設上限）。計算只在你的瀏覽器裡進行，不會送出或儲存任何資料。"
              "費率為範例，以券商與主管機關最新公告為準（2026-10 整理）。",
              "All defaults are placeholders — enter your broker's real rates. Runs entirely in your browser; nothing is sent or stored.")
     return card("交易成本試算（手續費・稅・損益兩平）", "Trading-cost calculator",
@@ -644,10 +641,10 @@ function calc(w){var m=w.dataset.m,v={};w.querySelectorAll('[data-k]').forEach(f
  // break-even sell price: solve q*p - fee(p) = cost (fees are near-linear; iterate)
  var p=v.b;for(var k=0;k<40;k++){var s2=q*p,f2=m==='us'?Math.max(s2*v.r/100,v.m)+s2*v.sec/1e6+tf(q):Math.max(Math.floor(s2*0.001425*v.dc),v.m)+Math.floor(s2*v.tax);p=(cost+f2)/q;}
  var be=(p/v.b-1)*100,fr=fees/Math.max(bv,1)*100,L=en();
- var h='<table class="mini">'+row(L?'Buy amount':'買進金額',cur+' '+f(bv,d))+row(L?'Buy commission':'買進手續費',cur+' '+f(bf,d))
-  +row(L?'Sell amount':'賣出金額',cur+' '+f(sv,d))+row(L?'Sell commission':'賣出手續費',cur+' '+f(sf,d))
+ var h='<table class="mini">'+row(L?'Buy amount':'買入金額',cur+' '+f(bv,d))+row(L?'Buy commission':'買入手續費',cur+' '+f(bf,d))
+  +row(L?'Sell amount':'出場金額',cur+' '+f(sv,d))+row(L?'Sell commission':'出場手續費',cur+' '+f(sf,d))
   +(m==='us'?row('SEC',cur+' '+f(sec,2))+row('FINRA TAF',cur+' '+f(taf,2)):row(L?'Transaction tax':'證交稅',cur+' '+f(tax,0)))
-  +row('<b>'+(L?'Total costs':'總成本')+'</b>','<b>'+cur+' '+f(fees,d)+'</b>',(L?'= ':'＝ 買進金額的 ')+f(fr,2)+'%')
+  +row('<b>'+(L?'Total costs':'總成本')+'</b>','<b>'+cur+' '+f(fees,d)+'</b>',(L?'= ':'＝ 買入金額的 ')+f(fr,2)+'%')
   +row('<b>'+(L?'Net profit / loss':'淨損益')+'</b>','<b class="big2 '+(pnl>=0?'up':'dn')+'">'+cur+' '+f(pnl,d)+'</b>',(L?'return ':'報酬率 ')+f(pnl/Math.max(cost,1)*100,2)+'%')
   +row(L?'Break-even sell price':'損益兩平賣價',cur+' '+f(p,m==='us'?2:2),(L?'needs ':'需上漲 ')+f(be,2)+'%');
  if(m==='us'&&v.d>0){var g=v.d*q;h+=row(L?'Annual dividend (gross)':'年股息（稅前）',cur+' '+f(g,2))+row(L?'After 30% withholding':'扣 30% 預扣稅後',cur+' '+f(g*0.7,2),(L?'net yield ':'實拿殖利率 ')+f(g*0.7/Math.max(bv,1)*100,2)+'%');}

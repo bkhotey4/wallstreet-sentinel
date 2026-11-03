@@ -199,7 +199,7 @@ def _meaning(kind: str, up: bool, ctx: Dict[str, Dict]) -> List[str]:
         return ["半導體急漲：AI 需求預期升溫，市場風險偏好回升。"]
     if kind == "rate":
         if up:
-            return ["殖利率急升：借錢成本上升、遠期獲利折現變小——高估值成長股最受傷。"
+            return ["殖利率急升：借錢成本上升、遠期獲利折現變小——估值偏高的成長股最受傷。"
                     + ("股市同時下跌 → 股債雙殺，債券失去避險功能。" if spx is not None and spx < 0 else "")]
         return ["殖利率急降：若股市同時上漲＝利率壓力解除；若股市下跌＝資金逃向公債避險、擔心景氣。"]
     if kind == "vol":

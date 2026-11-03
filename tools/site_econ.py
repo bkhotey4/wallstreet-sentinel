@@ -1,4 +1,4 @@
-"""財經日曆＋科技財報 兩個分頁的區塊（build_site 用）。"""
+"""財經日曆＋美股財報 兩個分頁的區塊（build_site 用）。"""
 from __future__ import annotations
 
 from datetime import date
@@ -355,7 +355,11 @@ def sec_earn_verdict(eng) -> str:
         if r.get("react") is not None:
             kv.append(f'{T("兩日股價", "2-day")} <b class="{cls(r["react"])}">{num(r["react"], 1, sign=True, pct=True)}</b>')
         if r.get("mv"):
-            kv.append(f'{T("事前預期", "Implied")} <b>±{num(r["mv"], 1)}%</b>')
+            kv.append(f'{T("事前預期", "Implied")} <b>±{num(r["mv"], 1)}%</b>{T("（代替耳語預期）", "")}')
+        ac = r.get("accel")
+        if ac:
+            kv.append(f'{T("營收年增", "Revenue YoY")} <b>{num(ac["now"], 1, sign=True, pct=True)}</b> {T("vs 上季", "vs")} {num(ac["prev"], 1, sign=True, pct=True)}'
+                      f'：<b class="{ {"up": "up", "dn": "dn"}.get(ac["dir"], "") }">{T({"up": "加速", "dn": "放慢", "flat": "持平"}.get(ac.get("dir"), "—"), str(ac.get("dir") or ""))}</b>{T("（二階導）", " (2nd deriv.)")}')
         if r.get("peers"):
             kv.append(f'{T("同族群", "Peers")} <b class="{cls(r["peers"]["avg"])}">{num(r["peers"]["avg"], 1, sign=True, pct=True)}</b>')
         if r.get("tw") and r["tw"].get("move") is not None:
@@ -387,7 +391,8 @@ def sec_earn_verdict(eng) -> str:
                      f'<span class="muted small">{esc(r["date"][5:])} {_wd(r["date"])} {T(*tm.get(r["time"], ("", "")))}</span> {badge}</div>'
                      f'<p class="small">{T(r["verdict"]["zh"], r["verdict"]["en"])}</p>'
                      + (f'<div class="small eck">{"　".join(kv)}</div>' if kv else "") + relb + imp + peers + news + "</div>")
-    note = T("每股盈餘與預期來自 Nasdaq（Zacks 彙整）；兩日股價＝財報前一個交易日收盤到之後第一個交易日收盤；事前預期＝財報前最後一次記錄的選擇權跨式價；"
+    note = T("每股盈餘與預期來自 Nasdaq（Zacks 彙整）；兩日股價＝財報前一個交易日收盤到之後第一個交易日收盤；事前預期＝財報前最後一次記錄的選擇權跨式價，"
+             "代替「耳語預期」（市場私下期待的數字沒有可驗證的免費來源，所以不列）；營收加速／放慢（二階導）＝ SEC 季報最近一季營收年增率減去上一季年增率，差 2 個百分點以內算持平；"
              "同族群＝本站同主題個股同期平均；之後 20 日＝過去財報後的走勢。營收指引、毛利率等法說會內容不在這些數據裡，結論不會替它們下判斷。不構成投資建議。",
              "Nasdaq EPS; 2-session price move; implied move saved before the report; peers = same theme. Guidance is not in the data. Not advice.")
     return card("財報結論（最近 7 天）", "Earnings verdicts (last 7 days)",
@@ -469,7 +474,7 @@ def sec_econ_mini(eng) -> str:
                 + T("看影響劇本與預期 →", "Scenarios and consensus →") + "</a></p>", "span4")
 
 
-# ============================================================ 科技財報 tab
+# ============================================================ 美股財報 tab
 def _qchart(series: List[Dict]) -> str:
     """Small bar (revenue) + line (gross margin) chart for up to 8 quarters."""
     s = [x for x in series if x.get("rev")]
@@ -646,7 +651,7 @@ def sec_growth(eng) -> str:
              f'<li>{T("40 法則＝營收年增＋營益率，常用來看成長股「成長與獲利」的平衡（≥ 40 算健康）。", "Rule of 40 = growth + operating margin.")}</li>'
              f'<li>{T("台股 PEG＝本益比÷今年累計營收年增率；營收是每月公布，比季報即時。", "Taiwan PEG = P/E ÷ YTD revenue growth (monthly data).")}</li>'
              f'<li>{T("營收還小的早期公司也一起排名：還沒有毛利或獲利的，估值用本銷比、只跟同類公司比較；成長率超過 100% 以 100% 計，避免小基期的爆發成長把排名洗掉。外國公司（例如 NU）用 Nasdaq 年報補，是年度數字。", "Early-stage companies are ranked too (P/S basis among themselves); growth capped at 100%; foreign filers use annual statements.")}</li>'
-             f'<li>{T("下方另有「早期公司（營收 < 2 億美元）」清單，連營收還沒成長、甚至還沒有營收的公司（例如 SMR、核能、太空、生技）都列出，重點看「現金還能撐幾年」。估值低也可能有原因（成長不持續、獲利差、景氣循環高點），只是篩選起點，不是買進建議。", "An early-stage list (revenue < $200m) shows cash runway. A screen, not advice.")}</li>'
+             f'<li>{T("下方另有「早期公司（營收 < 2 億美元）」清單，連營收還沒成長、甚至還沒有營收的公司（例如 SMR、核能、太空、生技）都列出，重點看「現金還能撐幾年」。估值低也可能有原因（成長不持續、獲利差、景氣循環高點），只是篩選起點，不是投資建議。", "An early-stage list (revenue < $200m) shows cash runway. A screen, not advice.")}</li>'
              '</ul></details>')
     parts = [howto]
     if us and us.get("available"):

@@ -11,28 +11,15 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from ..config import DATA_DIR
+from . import econcal
 
 log = logging.getLogger(__name__)
-_MONTHS = {m: i for i, m in enumerate(
-    ["January", "February", "March", "April", "May", "June", "July", "August",
-     "September", "October", "November", "December"], 1)}
 
 
 def decision_dates(page_html: str) -> List[date]:
-    """All meeting decision dates (last day of each meeting) found on the Fed calendar page, ascending."""
-    out = []
-    for ym in re.finditer(r"(\d{4}) FOMC Meetings(.*?)(?=\d{4} FOMC Meetings|$)", page_html, re.S):
-        year, block = int(ym.group(1)), ym.group(2)
-        for m in re.finditer(r'fomc-meeting__month[^>]*>\s*<strong>([A-Za-z/]+)</strong>.*?'
-                             r'fomc-meeting__date[^>]*>([\d\-\*]+)', block, re.S):
-            month = m.group(1).split("/")[-1]
-            days = re.findall(r"\d+", m.group(2))
-            if month in _MONTHS and days:
-                try:
-                    out.append(date(year, _MONTHS[month], int(days[-1])))
-                except ValueError:
-                    pass
-    return sorted(set(out))
+    """All scheduled decision dates (last day of each meeting) on the Fed calendar page, ascending.  Shares
+    econcal.parse_fomc, which skips notation votes and handles abbreviated cross-month meetings ("Oct/Nov 31-1")."""
+    return [date.fromisoformat(m["date"]) for m in econcal.parse_fomc(page_html)]
 
 
 def statement_url(d: date) -> str:
@@ -91,10 +78,9 @@ async def fetch_statement(d: date) -> Optional[str]:
 
 async def latest_pair(today: Optional[date] = None, max_age_days: int = 3):
     """(date, new_text, prev_date, prev_text) for the most recent decision within `max_age_days`, else None."""
-    from . import http
     today = today or date.today()
-    page = await http.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", kind="text")
-    ds = [d for d in decision_dates(page) if d <= today]
+    ds = [date.fromisoformat(m["date"]) for m in await econcal.fomc_meetings()]
+    ds = [d for d in ds if d <= today]
     if len(ds) < 2 or (today - ds[-1]).days > max_age_days:
         return None
     new = await fetch_statement(ds[-1])

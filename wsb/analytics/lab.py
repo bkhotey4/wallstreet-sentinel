@@ -21,6 +21,7 @@ from .crash_odds import forward_min_return
 from .shock import auc
 
 CFG = SETTINGS.get("lab", {})
+MIN_BLOCK = int(CFG.get("iso_min_windows", 5))    # isotonic block ≥ this many forward windows (× horizon rows)
 SECTORS = ["XLK", "XLC", "XLY", "XLP", "XLE", "XLV", "XLI", "XLU", "XLB", "XLRE"]
 
 
@@ -153,19 +154,35 @@ def walk_forward_logit(F: pd.DataFrame, hit: pd.Series, valid: pd.Series, days: 
             "year_auc": {int(k): auc(pd.Series(v[0]), pd.Series(v[1])) for k, v in per_year.items()}}
 
 
-def isotonic(p: np.ndarray, y: np.ndarray, max_pts: int = 400):
-    """Pool-adjacent-violators: monotone map from a raw probability to the frequency actually observed."""
+def isotonic(p: np.ndarray, y: np.ndarray, max_pts: int = 400, min_w: float = 0.0):
+    """Pool-adjacent-violators: monotone map from a raw probability to the frequency actually observed.
+    min_w: the least number of rows a block may hold.  Labels on overlapping forward windows come in clusters (one
+    drawdown marks ~horizon consecutive days), so a block must hold several windows' worth of rows (callers pass
+    5 × horizon) or one episode calibrates to 100 %.  Adjacent raw values are pooled until a block is that large (a thin
+    top remainder joins the block below it), and each block sits at its mean raw value, so apply_iso never extends past
+    the last well-populated block (np.interp holds the end values flat)."""
     up, inv = np.unique(p, return_inverse=True)
     cnt = np.bincount(inv).astype(float)
-    mean = np.bincount(inv, weights=y.astype(float)) / cnt
-    vals, wts, xs = [], [], []
-    for xi, vi, wi in zip(up, mean, cnt):
-        vals.append(vi); wts.append(wi); xs.append(xi)
-        while len(vals) > 1 and vals[-2] > vals[-1]:
-            w = wts[-2] + wts[-1]
-            v = (vals[-2] * wts[-2] + vals[-1] * wts[-1]) / w
-            vals[-2:], wts[-2:], xs[-2:] = [v], [w], [xs[-1]]
-    xs, vals = np.array(xs), np.array(vals)
+    sy = np.bincount(inv, weights=y.astype(float))
+    blocks, cur = [], [0.0, 0.0, 0.0]                 # [rows, sum y, sum p]
+    for xi, si, wi in zip(up, sy, cnt):
+        cur = [cur[0] + wi, cur[1] + si, cur[2] + xi * wi]
+        if cur[0] >= min_w:
+            blocks.append(cur)
+            cur = [0.0, 0.0, 0.0]
+    if cur[0] > 0:
+        if blocks:
+            blocks[-1] = [a + b for a, b in zip(blocks[-1], cur)]
+        else:
+            blocks.append(cur)
+    st: List[List[float]] = []
+    for b in blocks:
+        st.append(list(b))
+        while len(st) > 1 and st[-2][1] / st[-2][0] > st[-1][1] / st[-1][0]:
+            last = st.pop()
+            st[-1] = [a + c for a, c in zip(st[-1], last)]
+    xs = np.array([b[2] / b[0] for b in st])
+    vals = np.array([b[1] / b[0] for b in st])
     if len(xs) > max_pts:
         sel = np.linspace(0, len(xs) - 1, max_pts).astype(int)
         xs, vals = xs[sel], vals[sel]
@@ -209,7 +226,7 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
     wb_all = fit_logit(Db[["ssi"]].values, Db["_y"].values)
     # the map must be learned on the outputs of the model it is applied to: wb_all's raw p on the OOS rows (monotone in
     # SSI, so this is the SSI → realised-frequency map over the out-of-sample years), not the yearly models' raw p
-    cal_b = isotonic(predict(wb_all, base["X"]), base["y"])
+    cal_b = isotonic(predict(wb_all, base["X"]), base["y"], min_w=MIN_BLOCK * days)
     out["base_model"] = {"w": [float(x) for x in wb_all], "cal": [[float(x) for x in cal_b[0]], [float(x) for x in cal_b[1]]],
                          "auc_oos": base["auc"], "skill": base["skill"], "n": base["n"]}
     base_full = base
@@ -267,7 +284,7 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
             D = F.join(hit.rename("_y")).join(valid.rename("_v")).dropna()
             D = D[D["_v"].astype(bool)]
             w = fit_logit(D[list(F.columns)].values, D["_y"].values)
-            cal = isotonic(predict(w, ens["X"]), ens["y"])                 # map learned on w's own outputs (see cal_b)
+            cal = isotonic(predict(w, ens["X"]), ens["y"], min_w=MIN_BLOCK * days)                 # map learned on w's own outputs (see cal_b)
             last = F.ffill(limit=5).iloc[-1].fillna(0.0).values.reshape(1, -1)   # last valid value, not "neutral"
             wb = fit_logit(D[["ssi"]].values, D["_y"].values)
             raw = float(predict(w, last)[0])
@@ -280,7 +297,7 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
         D = D[D["_v"].astype(bool)]
         wb = fit_logit(D[["ssi"]].values, D["_y"].values)
         out["calibration"] = _calibration(base["p"], base["y"])
-        cal = isotonic(predict(wb, base["X"]), base["y"])
+        cal = isotonic(predict(wb, base["X"]), base["y"], min_w=MIN_BLOCK * days)
         rawb = float(predict(wb, base_F.iloc[[-1]].fillna(0.0).values)[0])
         out["now"] = {"p_enh": None, "p_enh_cal": None, "p_base": rawb * 100, "p_base_cal": float(apply_iso(cal, rawb) * 100),
                       "drivers": []}

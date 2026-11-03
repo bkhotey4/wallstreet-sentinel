@@ -92,13 +92,26 @@ async def _tw_day(d: date) -> Optional[Dict[str, list]]:
     if not out:
         return {}
     await asyncio.sleep(2.5)                                        # TWSE blocks bursts
+    tp = await _tpex_day(d)
+    if tp is None:
+        out[PARTIAL] = True                                         # TWSE half only: the TPEx half is retried later
+    else:
+        out.update({k: v for k, v in tp.items() if k not in out})
+    return out
+
+
+PARTIAL = "_partial"                          # marker _tw_day sets on its result; refresh_tw pops it into d["partial"]
+
+
+async def _tpex_day(d: date) -> Optional[Dict[str, list]]:
+    """TPEx (OTC) half of a day; None when it failed or came back empty on a day TWSE traded."""
     try:
         b = await http.get(f"https://www.tpex.org.tw/www/zh-tw/afterTrading/peQryDate?date={d:%Y/%m/%d}&response=json",
                            headers=UA, timeout=30, retries=1)
-        out.update({k: v for k, v in parse_tpex(b).items() if k not in out})
+        return parse_tpex(b) or None
     except Exception as e:  # noqa: BLE001
         log.info("TPEx P/E %s failed: %s", d, e)
-    return out
+        return None
 
 
 async def refresh_tw(budget_s: float = 90, today: Optional[date] = None) -> Dict:
@@ -109,6 +122,19 @@ async def refresh_tw(budget_s: float = 90, today: Optional[date] = None) -> Dict
     tried: Dict[str, str] = d.get("tried") or {}                     # month → date already found empty (holiday streaks)
     t0, got = time.time(), 0
     want = [("latest", today)] + [(m.strftime("%Y-%m"), m) for m in month_ends(today)]
+    partial = set(d.get("partial") or [])                         # month-end days saved with the TWSE half only
+    for day_s in sorted(partial, reverse=True):                     # finish them first: TPEx half only
+        if time.time() - t0 > budget_s:
+            break
+        if day_s not in snaps:
+            partial.discard(day_s)
+            continue
+        tp = await _tpex_day(date.fromisoformat(day_s))
+        await asyncio.sleep(2.5)
+        if tp:
+            snaps[day_s].update({k: v for k, v in tp.items() if k not in snaps[day_s]})
+            partial.discard(day_s)
+            got += 1
     for key, end in want:
         if time.time() - t0 > budget_s:
             break
@@ -128,12 +154,16 @@ async def refresh_tw(budget_s: float = 90, today: Optional[date] = None) -> Dict
             await asyncio.sleep(2.5)
             if rows is None:
                 break                                               # source trouble: leave this month for a later run
+            half = bool(rows.pop(PARTIAL, False))
             if rows:
                 if key == "latest":
                     d["latest"] = {"date": day.isoformat(), "rows": rows}
-                    d["latest_day"] = today.isoformat()
+                    if not half:                                    # TWSE-only latest → fetched again next run
+                        d["latest_day"] = today.isoformat()
                 else:
                     snaps[day.isoformat()] = rows
+                    if half:
+                        partial.add(day.isoformat())
                 got += 1
                 break
             tried[day.isoformat()] = "empty"
@@ -142,6 +172,7 @@ async def refresh_tw(budget_s: float = 90, today: Optional[date] = None) -> Dict
     cut = (today - timedelta(days=31 * (MONTHS + 2))).isoformat()
     d["snaps"] = {k: v for k, v in snaps.items() if k >= cut}
     d["tried"] = {k: v for k, v in tried.items() if k >= cut}
+    d["partial"] = sorted(k for k in partial if k in d["snaps"])
     d["ts"] = time.time()
     save("tw", d)
     return {"fetched": got, "months": len(d["snaps"]), "latest": (d.get("latest") or {}).get("date")}

@@ -125,9 +125,6 @@ def company(sym: str, name: str, rec: Dict, med_margin: Optional[float], season:
             fut.append(f"資本支出年減 {cg:.0f}%（投資放緩）")
     if m.get("cip_share") is not None and m["cip_share"] >= 20:
         fut.append(f"在建工程佔固定資產 {m['cip_share']:.0f}%（已投入、尚未產生收入）")
-    up = info.get("up")
-    if up is not None and info.get("n"):
-        fut.append(f"分析師目標價中位數比現價 {up:+.0f}%（{int(info['n'])} 位）")
     if nxt:
         fut.append(f"下次財報 {nxt[5:]}")
     # ---- 信用體檢 (credit_health): strong credit is a strength, weak credit a risk of its own

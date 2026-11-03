@@ -34,21 +34,24 @@ def _save(d: Dict) -> None:
 
 async def refresh(force: bool = False) -> Dict:
     from ..analytics import nowcast as NC
+    from .freshness import bundle_ts, due
     from .transmission import _fred
     d = load()
     now = time.time()
     bad = []
-    if force or now - float(d.get("ts", 0)) > TTL or any(not d.get(k) for k in SERIES):
-        for sid in SERIES:
-            try:
-                v = await _fred(sid, "2010-01-01")
-                if not v:
-                    raise ValueError("empty")
-                d[sid] = v
-            except Exception as e:  # noqa: BLE001
-                bad.append(f"{sid}: {e if str(e) else type(e).__name__}")
-        if len(bad) < len(SERIES):
-            d["ts"] = now
+    todo = due(d, SERIES, TTL, now, force)                   # per series: a failed one is retried within the hour
+    for sid in todo:
+        d["try_each"][sid] = now
+        try:
+            v = await _fred(sid, "2010-01-01")
+            if not v:
+                raise ValueError("empty")
+            d[sid], d["ts_each"][sid] = v, now
+        except Exception as e:  # noqa: BLE001
+            bad.append(f"{sid}: {e if str(e) else type(e).__name__}")
+    # a series still stale from an earlier failure keeps health red while it waits for its retry
+    bad += [f"{k}: stale" for k in SERIES if k not in todo and now - float(d["ts_each"].get(k, 0)) > TTL]
+    d["ts"] = bundle_ts(d, SERIES)
     try:
         d["log"] = NC.update_log(d)
     except Exception as e:  # noqa: BLE001

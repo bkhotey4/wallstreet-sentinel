@@ -19,7 +19,7 @@ import pandas as pd
 from ..config import SETTINGS
 
 SOURCES = {
-    "thesis": "論點停損：基本面投資人的第一條賣出理由（論點不再成立）",
+    "thesis": "論點停損：基本面投資人的第一條出場理由（論點不再成立）",
     "stop": "停損紀律：長線基金常用 20–25%（短線如 CANSLIM 用 7–8%）",
     "trend": "趨勢：200 日線（Faber 2007）＋ 12-1 個月動能（Jegadeesh & Titman 1993）",
     "trail": "移動停損：從高點回落一定比例",

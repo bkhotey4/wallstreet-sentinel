@@ -93,7 +93,7 @@ PICKS: Dict[str, List[Tuple[str, str, Callable]]] = {
                ("rotation", r"美股評分池站上 200 日線比例 (\d+%)", lambda m: f"美股站上 200 日線 {m[1]}")],
     "stock": [("overview", r"個股評分前五名 .*?美股 (.*?) 台股", lambda m: f"評分前段（美股）：{_top3(m)}"),
               ("overview", r"個股評分前五名 .*?台股 (.*?) 港股", lambda m: "評分前段（台股）：" + "、".join(n for n, _c, _s in re.findall(r"(\S+) (\d{4}) (\d+)", m[1])[:3])),
-              ("gurus", r"內部人賣出（依非計畫性金額排序） .*?最大一筆 \S+ ([A-Z.]+) (\$[\d.]+[BMK])", lambda m: f"內部人賣出最多：{m[1]} {m[2]}")],
+              ("gurus", r"內部人減持（依非計畫性金額排序） .*?最大一筆 \S+ ([A-Z.]+) (\$[\d.]+[BMK])", lambda m: f"內部人賣出最多：{m[1]} {m[2]}")],
     "tw": [("tw_ai", r"景氣燈號\S*?(黃紅|黃藍|紅|綠|藍)燈（(\d{4}-\d\d)，(\d+) 分）", lambda m: f"景氣燈號 {m[1]}燈 {m[3]} 分（{m[2]}）"),
            ("tw_bonds", r"台灣 10 年期公債利率 ([\d.]+%)", lambda m: f"台灣 10 年期公債 {m[1]}"),
            ("taiwan", r"外資台指期未平倉 ([-\d,]+) 口 \S* ?(\S+)", lambda m: f"外資台指期未平倉 {m[1]} 口（{m[2]}）"),

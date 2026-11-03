@@ -203,7 +203,7 @@ class TaiwanData:
 
     # ------------------------------------------------------------ refresh
     async def refresh(self) -> None:
-        every = 1800
+        every, got = 1800, False
         try:
             flows, d = [], date.today()
             tries = 0
@@ -215,7 +215,9 @@ class TaiwanData:
                     await asyncio.sleep(2.5)                         # TWSE rate limit
                 d -= timedelta(days=1)
                 tries += 1
-            self.flows = flows
+            if not flows:                                         # keep the last good flows instead of blanking them
+                raise RuntimeError("no BFI82U data in the last 12 days")
+            self.flows, got = flows, True
             if flows:
                 self.stocks = await self._t86(date.fromisoformat(flows[0]["date"])) or {}
                 self.asof = flows[0]["date"]
@@ -242,8 +244,12 @@ class TaiwanData:
             log.warning("TWSE failed: %s", e)
             HEALTH.fail("twse", e, every=every)
         try:
-            self.futures = await self._futures()
-            HEALTH.ok("taifex", len(self.futures), every=every)
+            fu = await self._futures()
+            if not fu:                                            # all three TAIFEX feeds failed: keep the last good data
+                raise RuntimeError("all TAIFEX feeds failed or empty")
+            # a part that failed this time keeps its previous values (each part carries its own date)
+            self.futures, got = {**self.futures, **fu}, True
+            HEALTH.ok("taifex", len(fu), every=every)
         except Exception as e:  # noqa: BLE001
             log.warning("TAIFEX failed: %s", e)
             HEALTH.fail("taifex", e, every=every)
@@ -253,7 +259,8 @@ class TaiwanData:
         except Exception as e:  # noqa: BLE001
             log.warning("TWSE revenue failed: %s", e)
             HEALTH.fail("twse_revenue", e, every=6 * 3600)
-        self.ts = time.time()
+        if got:
+            self.ts = time.time()
 
     def _save_t86(self) -> None:
         self.t86_hist = dict(sorted(self.t86_hist.items())[-30:])

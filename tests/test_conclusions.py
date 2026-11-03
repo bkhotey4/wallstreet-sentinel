@@ -26,7 +26,8 @@ def test_fedwatch():
     assert rows[0]["probs"] == {"0": 0.7, "25": 0.3}, rows[0]
     assert abs(rows[0]["rate_after"] - 3.955) < 1e-9                       # late-month → November contract
     assert rows[1]["probs"]["25"] > 0.8 and abs(rows[1]["cum_bp"] - 29.3) < 0.2
-    assert len(rows) == 3, "no March contract → stop, never extrapolate"
+    # Jan 27 is late-month (N−d = 4) and there is no Feb contract: ÷4 days would blow up quote noise → stop there
+    assert len(rows) == 2, "late-month meeting without next month's contract → stop, never extrapolate"
     # a cut, mid-month meeting from the meeting-month contract itself: 15 days at 4.33, 15 at 4.08 → avg 4.205
     cut = FW.implied(["2025-09-15"], {(2025, 9): 100 - (15 * 4.33 + 15 * 4.08) / 30}, 4.33)
     assert cut[0]["probs"] == {"-25": 1.0}, cut
@@ -298,7 +299,33 @@ def test_release_parser():
     assert "營收 US$46.72B" in j and "高於指引上緣" in j and "下季指引" in j and "+14.1%" in j and "NT$443.21B" in j and "+44.0%" in j
 
 
+def test_accel():
+    from wsb.analytics import earn_verdict as EV
+    from tools import site_econ as SE
+    ends = ["2025-03-31", "2025-06-30", "2025-09-30", "2025-12-31", "2026-03-31", "2026-06-30", "2026-09-30"]
+    revs = [100, 100, 100, 100, 110, 120, 140]                 # growth 10% → 20% → 40%: speeding up
+    f = {"q": [{"end": e, "rev": v} for e, v in zip(ends, revs)]}
+    a = EV.accel(f, "2026-10-28")
+    assert a["now"] == 40.0 and a["prev"] == 20.0 and a["pp"] == 20.0 and a["dir"] == "up" and a["end"] == "2026-09-30"
+    assert EV.accel(f, "2026-07-20")["dir"] == "up" and EV.accel(f, "2026-07-20")["end"] == "2026-06-30"   # only quarters before the report
+    assert EV.accel({"q": f["q"][:5]}, "2026-10-28") is None and EV.accel(None, "2026-10-28") is None     # too short → no label
+    b = EV.accel({"q": f["q"][:6]}, "2026-10-28", 140e-9)          # 10-Q not out yet: the 8-K revenue (in billions) fills the quarter
+    assert b["src"] == "8-K" and b["now"] == 40.0 and b["prev"] == 20.0
+    slow = {"q": [{"end": e, "rev": v} for e, v in zip(ends, [100, 100, 100, 100, 130, 125, 120])]}
+    assert EV.accel(slow, "2026-10-28")["dir"] == "dn"
+    r = {"result": "beat", "eps": 2.05, "eps_f": 1.98, "surp": 3.5, "react": -3.4, "mv": 4.4, "accel": a}
+    z = EV.verdict(r)["zh"]
+    assert "營收成長加速（二階導）" in z and "（代替耳語預期）" in z and "耳語預期" in z
+    class E:
+        pass
+    e = E()
+    e.earn_verdict = {"available": True, "rows": [{**r, "sym": "AAPL", "name": "蘋果", "date": "2026-10-30", "time": "after", "verdict": EV.verdict(r)}]}
+    h = SE.sec_earn_verdict(e)
+    assert "加速" in h and "（二階導）" in h and "（代替耳語預期）" in h
+
+
 def main():
+    test_accel()
     test_guidance_period()
     test_logit_odds()
     test_release_parser()

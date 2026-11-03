@@ -29,9 +29,8 @@ class SecWatcher:
     async def _load_map(self) -> None:
         if self.cik:
             return
-        js = await http.get("https://www.sec.gov/files/company_tickers.json",
-                            headers={"User-Agent": SEC_USER_AGENT})
-        self.cik = {v["ticker"].upper(): str(v["cik_str"]).zfill(10) for v in js.values()}
+        from .edgar_holdings import ticker_map             # one shared, week-cached map with a stale fallback
+        self.cik = {t: str(v["cik"]).zfill(10) for t, v in (await ticker_map()).items()}
 
     async def fetch(self, ticker: str) -> List[dict]:
         """Read-only: a ticker's recent watched filings (does not mark them seen or touch self.recent)."""

@@ -127,9 +127,10 @@ def test_companies():
                     {"flags": [{"code": "4.02", "level": "alert", "zh": "先前財報不可再依賴", "date": date.today().isoformat()}]},
                     s2, spy, pd.Series(dtype=float), "2026-11-02")
     j = " ".join(co["good"] + co["future"] + co["own"] + co["env"])
-    for t in ("營收年增 +20%", "營業利益率 40%", "上修 +10.0%", "資本支出年增 +50%", "目標價", "負債快速擴張", "先前財報不可再依賴",
+    for t in ("營收年增 +20%", "營業利益率 40%", "上修 +10.0%", "資本支出年增 +50%", "負債快速擴張", "先前財報不可再依賴",
               "2008 金融海嘯：最深 -60%", "2022 升息衝擊：最深 -30%，至今仍未回到"):
         assert t in j, (t, j)
+    assert "目標價" not in j and "+12%" not in j                   # no analyst price-target figure (site compliance rule)
     assert co["env_lvl"] == "高"
     print("ok companies")
 

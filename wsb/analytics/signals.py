@@ -367,6 +367,17 @@ def evaluate(pats: Dict[str, pd.DataFrame], score: Optional[float], base: Dict[s
     return sorted(hits, key=lambda h: -h["strength"])
 
 
+def _closed(sp, sym: str):
+    """(close, volume) of finished sessions only: during a session the merged live bar has partial volume (vs full-day
+    averages) and an in-progress price (a "close below the invalidation line" must be a real close), so it is cut."""
+    from .sessions import completed
+    cl = completed(sp.series(sym), sym)
+    vo = sp.vol(sym)
+    if vo is not None and len(vo) and cl is not None and len(cl):
+        vo = vo[vo.index <= cl.index[-1]]
+    return cl, vo
+
+
 def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
     c = _cfg()
     if not c.get("enabled", True):
@@ -385,12 +396,12 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
         rows_by = {r["sym"]: r for r in (sc.get(mk) or {}).get("rows", [])}
         series, short = {}, []
         for sym in u["symbols"]:
-            cl = sp.series(sym)
+            cl, vo = _closed(sp, sym)
             if len(cl) < 60:                    # < ~3 months: nothing meaningful to say yet
                 short.append(sym)
                 continue
             try:
-                series[sym] = detect(cl, sp.vol(sym))
+                series[sym] = detect(cl, vo)
             except Exception:  # noqa: BLE001
                 log.exception("signal detect %s", sym)
         if not series:
@@ -457,7 +468,7 @@ def build(eng, uni: Optional[Dict] = None, persist: bool = True) -> Dict:
         for i, r in enumerate(allrows, 1):
             r["rank_all"] = i
             try:                                             # chart-pattern tags + top-exhaustion flags (descriptive only)
-                cl_, vo_ = sp.series(r["sym"]), sp.vol(r["sym"])
+                cl_, vo_ = _closed(sp, r["sym"])
                 r["tags"], r["exh"] = PT.tags(cl_, vo_), PT.exhaustion(cl_, vo_)
             except Exception:  # noqa: BLE001
                 log.exception("patterns %s", r["sym"])

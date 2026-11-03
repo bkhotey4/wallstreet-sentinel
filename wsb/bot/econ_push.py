@@ -142,7 +142,7 @@ def earnings_embed(row: Dict, tr: Optional[Dict]) -> discord.Embed:
                          + (f"；財報前後兩日平均波動 ±{su['react_avg']:.1f}%" if su.get("react_avg") is not None else ""), inline=False)
         if tr.get("rev_yoy") is not None:
             em.add_field(name=f"上一份季報（季末 {tr.get('end')}）", value=tr.get("verdict", "")[:1024], inline=False)
-    em.add_field(name="接下來", value="營收、毛利率等細節會在 SEC 季報（10-Q）出來後自動更新到網站「科技財報」頁；股價反應用 /stock 查。", inline=False)
+    em.add_field(name="接下來", value="營收、毛利率等細節會在 SEC 季報（10-Q）出來後自動更新到網站「美股財報」頁；股價反應用 /stock 查。", inline=False)
     em.set_footer(text="資料：Nasdaq（Zacks 彙整預期）｜EPS 口徑可能與公司公布的調整後 EPS 不同｜不構成投資建議")
     return em
 
@@ -189,14 +189,40 @@ async def _send(bot, em: discord.Embed) -> bool:
     """True when at least one destination got the message (or there is none to send to)."""
     from . import present as P
     targets = await bot._targets("alerts")
-    ok = not targets
+    ok = False                                         # no destination → not sent (kept unmarked, retried later)
     for t in targets:
         try:
-            await P.deliver(t, embeds=lambda: em)
-            ok = True
+            ok = bool(await P.deliver(t, embeds=lambda: em)) or ok   # deliver() returns False instead of raising
         except Exception:  # noqa: BLE001
             log.warning("econ push to %s failed", t, exc_info=True)
     return ok
+
+
+async def _recheck(eng, e: Dict) -> Optional[Dict]:
+    """Poll the event's day again and rebuild; the reminder goes out only if the same event still exists at the same
+    time (±5 min).  A moved event gets its own id (key:new date) and is reminded under that id instead."""
+    try:
+        await eng.econ.poll_day(date.fromisoformat(e["date"]))
+        eng.econ_view = await asyncio.to_thread(ME.build, eng)
+    except Exception as ex:  # noqa: BLE001
+        log.info("econ recheck %s: %s", e.get("id"), ex)
+        return e                                       # cannot re-check → keep the event we have
+    new = next((x for x in (eng.econ_view or {}).get("events", []) if x["id"] == e["id"]), None)
+    if new is None or not new.get("utc") or abs((_t(new["utc"]) - _t(e["utc"])).total_seconds()) > 300:
+        log.info("econ reminder %s dropped: event moved or vanished on re-check", e["id"])
+        return None
+    return new
+
+
+def _moved_from(e: Dict) -> Optional[str]:
+    """Date of an earlier reminder for the same release (same key, a nearby day) that no longer exists — the
+    calendar moved it, so this reminder says the earlier one was wrong."""
+    key, d = e["id"].rsplit(":", 1)[0], date.fromisoformat(e["date"])
+    for k in (-1, 1, -2, 2):
+        od = (d + timedelta(days=k)).isoformat()
+        if store.kv_get(f"econ_rem:{key}:{od}") and not store.kv_get(f"econ_res:{key}:{od}"):
+            return od
+    return None
 
 
 def _report_time(d: str, tm: str) -> datetime:
@@ -226,7 +252,14 @@ async def tick(bot, now: Optional[datetime] = None) -> None:
             dh = (_t(e["utc"]) - now).total_seconds() / 3600
             k = f"econ_rem:{e['id']}"
             if 0 < dh <= lead and not store.kv_get(k):
-                if await _send(bot, reminder_embed(e)):
+                e = await _recheck(eng, e)                 # calendars move events: re-fetch that day before announcing it
+                if e is None:
+                    continue
+                em = reminder_embed(e)
+                moved = _moved_from(e)
+                if moved:
+                    em.title = f"{em.title}（更正：先前通知的 {moved[5:]} 有誤）"
+                if await _send(bot, em):
                     store.kv_set(k, True)
         watch = {e["id"]: e["date"] for e in ev["events"] if e["imp"] >= min_imp and e.get("utc") and e.get("rows")
                  and -WATCH_BEFORE_MIN <= (now - _t(e["utc"])).total_seconds() / 60 <= WATCH_AFTER_MIN

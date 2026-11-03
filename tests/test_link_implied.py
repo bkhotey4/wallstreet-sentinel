@@ -31,7 +31,14 @@ def test_implied_log_cycle():
     IL.record(log, rows, "2026-11-03")                     # after-close report: the same-day snapshot still counts
     assert log["AAA|2026-11-03"]["mv"] == 7.0
     px = pd.Series([100.0, 101.0, 110.0], index=pd.to_datetime(["2026-11-02", "2026-11-03", "2026-11-04"]))
-    IL.resolve(log, lambda s: px, "2026-11-05")
+    import wsb.analytics.sessions as SS                       # resolve() keeps finished sessions only: fix the clock after 11-04's close
+    from datetime import datetime, timezone
+    _real = SS.completed
+    SS.completed = lambda p, sym="", now=None: _real(p, sym, datetime(2026, 11, 5, 22, 0, tzinfo=timezone.utc))
+    try:
+        IL.resolve(log, lambda s: px, "2026-11-05")
+    finally:
+        SS.completed = _real
     assert abs(log["AAA|2026-11-03"]["act"] - 10.0) < 1e-6   # close before (11-02) → close after (11-04)
     IL.record(log, [{**rows[0], "mv": 3.0}], "2026-11-02")   # never overwritten once resolved
     assert log["AAA|2026-11-03"]["mv"] == 7.0

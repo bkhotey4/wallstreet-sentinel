@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 import time
 from datetime import date, datetime, timedelta
 from typing import List
@@ -22,9 +21,6 @@ def us_today() -> date:
     """Event dates here are US dates: compare them with the New York calendar day, not Taipei's."""
     from zoneinfo import ZoneInfo
     return datetime.now(ZoneInfo("America/New_York")).date()
-_MONTHS = {m: i for i, m in enumerate(
-    ["January", "February", "March", "April", "May", "June", "July", "August",
-     "September", "October", "November", "December"], 1)}
 
 
 async def _fred_releases(days: int = 21) -> List[dict]:
@@ -45,24 +41,22 @@ async def _fred_releases(days: int = 21) -> List[dict]:
     return out
 
 
-async def _fomc() -> List[dict]:
-    html = await http.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", kind="text")
+def fomc_events(meetings: List[dict]) -> List[dict]:
+    """Scheduled decisions within 120 days (meetings from econcal.parse_fomc: no notation votes, cross-month ok)."""
     out = []
-    # page sections: "<year> FOMC Meetings" ... month + "28-29" style
-    for ym in re.finditer(r"(\d{4}) FOMC Meetings(.*?)(?=\d{4} FOMC Meetings|$)", html, re.S):
-        year, block = int(ym.group(1)), ym.group(2)
-        for m in re.finditer(r'fomc-meeting__month[^>]*>\s*<strong>([A-Za-z/]+)</strong>.*?'
-                             r'fomc-meeting__date[^>]*>([\d\-\*]+)', block, re.S):
-            month = m.group(1).split("/")[-1]
-            days = re.findall(r"\d+", m.group(2))
-            if month in _MONTHS and days:
-                try:
-                    d = date(year, _MONTHS[month], int(days[-1]))
-                except ValueError:
-                    continue
-                if us_today() <= d <= us_today() + timedelta(days=120):
-                    out.append({"date": d.isoformat(), "event": "FOMC 利率決議", "type": "fomc"})
+    for m in meetings:
+        d = date.fromisoformat(m["date"])
+        if us_today() <= d <= us_today() + timedelta(days=120):
+            out.append({"date": d.isoformat(), "event": "FOMC 利率決議", "type": "fomc"})
     return out
+
+
+async def _fomc() -> List[dict]:
+    from . import econcal
+    meetings = await econcal.fomc_meetings()             # shared parser + 7-day cache with the econ calendar
+    if not meetings:
+        raise RuntimeError("no FOMC meetings (Fed calendar page and cache both empty)")
+    return fomc_events(meetings)
 
 
 def _earnings(tickers: List[str]) -> List[dict]:

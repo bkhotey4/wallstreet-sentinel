@@ -241,6 +241,29 @@ def _link(us: pd.Series, tw: pd.Series, n: int = 250) -> Dict:
             "tw_d": tw_after.index[0].strftime("%Y-%m-%d") if len(tw_after) else None}
 
 
+def adr_pairs(adr: pd.Series, tw: pd.Series, fx: pd.Series, max_gap: int = 4) -> pd.DataFrame:
+    """Each Taiwan close (13:30 Taipei) paired with the NEXT US close of the ADR (same calendar date, 16:00 New York, or
+    the next US session after a US holiday) and the USD/TWD rate of the Taiwan date — real prints only, no forward fill.
+    Index = Taiwan date; column us_d = the paired US date.  When two Taiwan closes would share one US close (US holiday),
+    only the later one is kept, so each US close is used once."""
+    a = adr.dropna()
+    a = a[a > 0]
+    t = tw.dropna()
+    t = t[t > 0]
+    f = fx.dropna()
+    f = f[f > 0]
+    if not len(a) or not len(t) or not len(f):
+        return pd.DataFrame(columns=["adr", "tw", "fx", "us_d"])
+    L = pd.DataFrame({"d": pd.to_datetime(t.index).normalize(), "tw": t.values}).sort_values("d")
+    A = pd.DataFrame({"us_d": pd.to_datetime(a.index).normalize(), "adr": a.values}).sort_values("us_d")
+    F = pd.DataFrame({"fx_d": pd.to_datetime(f.index).normalize(), "fx": f.values}).sort_values("fx_d")
+    m = pd.merge_asof(L, A, left_on="d", right_on="us_d", direction="forward", tolerance=pd.Timedelta(days=max_gap))
+    m = pd.merge_asof(m, F, left_on="d", right_on="fx_d", direction="backward", tolerance=pd.Timedelta(days=0))
+    m = m.dropna(subset=["adr", "fx"])
+    m = m.drop_duplicates(subset=["us_d"], keep="last")
+    return m.set_index("d")[["adr", "tw", "fx", "us_d"]]
+
+
 def linkage(sp, uni: Dict, h: Optional[pd.DataFrame] = None) -> Dict:
     if sp is None or getattr(sp, "close", pd.DataFrame()).empty:
         return {"available": False}
@@ -266,13 +289,14 @@ def linkage(sp, uni: Dict, h: Optional[pd.DataFrame] = None) -> Dict:
     tsm, t2330 = sp.series("TSM"), sp.series("2330.TW")
     fx = _s(h, "TWD=X")
     if len(tsm) > 100 and len(t2330) > 100 and fx is not None:
-        df = pd.concat([tsm.rename("adr"), t2330.rename("tw"), fx.rename("fx")], axis=1).sort_index().ffill(limit=3).dropna()
+        df = adr_pairs(tsm, t2330, fx)
         prem = (df["adr"] / (df["tw"] * 5 / df["fx"]) - 1) * 100
         prem = prem.iloc[-500:]
         if len(prem) > 60:
             cur = float(prem.iloc[-1])
             adr = {"now": cur, "avg1y": float(prem.iloc[-250:].mean()), "pct": float((prem.iloc[-250:] < cur).mean() * 100),
                    "hi": float(prem.iloc[-250:].max()), "lo": float(prem.iloc[-250:].min()), "asof": prem.index[-1].strftime("%Y-%m-%d"),
+                   "tw_date": prem.index[-1].strftime("%Y-%m-%d"), "us_date": df["us_d"].iloc[-1].strftime("%Y-%m-%d"),
                    "hist": [(d.strftime("%Y-%m-%d"), round(float(x), 2)) for d, x in prem.iloc[-250::5].items()]}
     return {"available": bool(rows or idx), "rows": rows, "index": idx, "adr": adr}
 

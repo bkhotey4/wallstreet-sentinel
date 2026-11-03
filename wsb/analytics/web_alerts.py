@@ -41,7 +41,7 @@ def _danger(eng, out: List[Dict]) -> None:
         day = DG.in_session(mkt, q)
         if not day:
             continue
-        r = DG.score(mkt, q, vix_backwardation=back, day=day)
+        r = DG.score(mkt, q, vix_backwardation=back, day=day, series=eng.market.series)
         if r["level"] < 1:
             continue
         trig = "、".join(f"{h['label']} {h['chg']:+.2f}%" if h["chg"] is not None else h["label"] for h in r["hits"][:5])
@@ -163,6 +163,32 @@ def _stability(eng, out: List[Dict], now: datetime) -> None:
                     "zh": f"🏦 {title}", "en": title, "detail": (detail or "")[:240]})
 
 
+def _session_frac(sym: str, day: str, now: datetime) -> float:
+    """Share of the regular session elapsed for `sym`'s market on `day` (1.0 once it has closed / on a past day)."""
+    from zoneinfo import ZoneInfo
+    from ..data.freshness import MARKETS, market_of
+    tz, open_, close, _wk = MARKETS.get(market_of(sym), MARKETS["us"])
+    loc = now.astimezone(ZoneInfo(tz))
+    if loc.strftime("%Y-%m-%d") != day:
+        return 1.0
+    o = datetime.combine(loc.date(), open_, loc.tzinfo)
+    c = datetime.combine(loc.date(), close, loc.tzinfo)
+    return float(min(1.0, max(0.0, (loc - o) / (c - o))))
+
+
+def _vol_ratio(v: pd.Series, sym: str, day: str, now: datetime) -> Optional[float]:
+    """Today's volume ÷ the 50-session average, on the same bar as the quote's price move.  The volume bar must be the
+    quote's own session (not yesterday's bar against today's move); while that session is open its partial volume is
+    pro-rated to a full day by the elapsed share of the session (skipped in the first 10 % — too noisy)."""
+    if v is None or len(v) <= 51 or not day or pd.Timestamp(v.index[-1]).strftime("%Y-%m-%d") != day:
+        return None
+    base = float(v.iloc[-51:-1].mean())
+    frac = _session_frac(sym, day, now)
+    if base <= 0 or frac < 0.1:
+        return None
+    return float(v.iloc[-1]) / frac / base
+
+
 def _momentum(eng, out: List[Dict], now: datetime) -> None:
     """強勢上漲: a main index up >= 2x its own normal daily move (one-year std), or a heavyweight up >= 2.5x with >= 1.5x
     volume.  The 3-sigma moves are already in _vol; this adds the 2-sigma rallies so the page is not silent when markets surge."""
@@ -187,9 +213,7 @@ def _momentum(eng, out: List[Dict], now: datetime) -> None:
         vx = None
         if t in heavy:
             try:
-                v = eng.stockprices.vol(t).dropna()            # the stock universe keeps daily volume
-                base = float(v.iloc[-51:-1].mean()) if len(v) > 51 else 0.0
-                vx = float(v.iloc[-1]) / base if base > 0 else None
+                vx = _vol_ratio(eng.stockprices.vol(t).dropna(), t, str(x.get("asof", ""))[:10], now)
             except Exception:  # noqa: BLE001
                 vx = None
             if vx is None or vx < 1.5:

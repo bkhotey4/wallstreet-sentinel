@@ -111,6 +111,41 @@ def remember_implied(eng) -> Dict[str, Dict]:
     return snap
 
 
+def _yoy(q: List[Dict], i: int) -> Optional[float]:
+    """Revenue growth of quarter i vs the quarter ending ~a year earlier (same fiscal quarter)."""
+    end = date.fromisoformat(q[i]["end"])
+    for j in range(i - 1, -1, -1):
+        gap = (end - date.fromisoformat(q[j]["end"])).days
+        if 350 <= gap <= 380:
+            a, b = q[i].get("rev"), q[j].get("rev")
+            return (a / b - 1) * 100 if a and b and b > 0 else None
+        if gap > 380:
+            break
+    return None
+
+
+def accel(facts: Optional[Dict], d: str, rel_rev_b: Optional[float] = None) -> Optional[Dict]:
+    """二階導: is revenue growth speeding up or slowing down?  Latest quarter (ending before report date `d`) year-on-year
+    growth minus the previous quarter's year-on-year growth, in percentage points.  None when SEC history is too short.
+    The 10-Q lags the press release by weeks, so the just-reported quarter's revenue (from the 8-K, in billions) is
+    added when SEC facts don't have it yet."""
+    q = sorted([x for x in (facts or {}).get("q") or [] if x.get("end") and x.get("rev")], key=lambda x: x["end"])
+    q = [x for x in q if x["end"] < d]
+    if q and rel_rev_b and 30 <= (date.fromisoformat(d) - date.fromisoformat(q[-1]["end"])).days <= 130:
+        q.append({"end": (date.fromisoformat(q[-1]["end"]) + timedelta(days=91)).isoformat(), "rev": rel_rev_b * 1e9, "rel": True})
+    if len(q) < 6:
+        return None
+    now, prev = _yoy(q, len(q) - 1), _yoy(q, len(q) - 2)
+    if now is None or prev is None or abs(prev) > 500:
+        return None
+    pp = now - prev
+    return {"end": q[-1]["end"], "src": "8-K" if q[-1].get("rel") else "10-Q", "now": round(now, 1), "prev": round(prev, 1), "pp": round(pp, 1),
+            "dir": "up" if pp >= 2 else ("dn" if pp <= -2 else "flat")}
+
+
+ACC_ZH = {"up": "營收成長加速", "dn": "營收成長放慢", "flat": "營收成長持平"}
+
+
 def result_of(surp: Optional[float]) -> Optional[str]:
     if surp is None:
         return None
@@ -120,20 +155,29 @@ def result_of(surp: Optional[float]) -> Optional[str]:
 RES = {"beat": ("優於預期", "Beat"), "inline": ("符合預期", "In line"), "miss": ("低於預期", "Miss")}
 
 
+def _n2(x) -> str:
+    """Two decimals, or "—" when the number is missing (an estimate can be absent while the result is known)."""
+    return "—" if x is None else f"{x:.2f}"
+
+
+def _n1(x, sign: bool = True) -> str:
+    return "—" if x is None else (f"{x:+.1f}" if sign else f"{x:.1f}")
+
+
 def verdict(r: Dict) -> Dict[str, str]:
     """Plain-language conclusion assembled only from the measured fields of `r`."""
     zh, en = [], []
     res = r.get("result")
     if res:
-        zh.append(f"每股盈餘 {r['eps']:.2f}，{RES[res][0]}（預期 {r['eps_f']:.2f}，驚喜 {r['surp']:+.1f}%）")
-        en.append(f"EPS {r['eps']:.2f}, {RES[res][1].lower()} (est. {r['eps_f']:.2f}, {r['surp']:+.1f}%)")
+        zh.append(f"每股盈餘 {_n2(r.get('eps'))}，{RES[res][0]}（預期 {_n2(r.get('eps_f'))}，驚喜 {_n1(r.get('surp'))}%）")
+        en.append(f"EPS {_n2(r.get('eps'))}, {RES[res][1].lower()} (est. {_n2(r.get('eps_f'))}, {_n1(r.get('surp'))}%)")
     rc = r.get("react")
     if rc is None:
         zh.append("股價反應：等公布後第一個完整交易日收盤")
         en.append("Price reaction: waiting for the first full session after the report")
     else:
         if res == "beat":
-            z = ("市場買單" if rc > 1 else "優於預期但股價下跌：可能已提前反映，或市場更在意指引／毛利率（這些不在本站數據裡）" if rc < -1
+            z = ("市場買單" if rc > 1 else "優於預期但股價下跌：可能市場私下期待更高（耳語預期）、已提前反映，或更在意指引／毛利率（這些不在本站數據裡）" if rc < -1
                  else "優於預期但股價沒什麼反應")
         elif res == "miss":
             z = ("低於預期但股價上漲：可能利空出盡，或指引比數字好" if rc > 1 else "市場認賠" if rc < -1 else "低於預期但股價持穩")
@@ -144,11 +188,16 @@ def verdict(r: Dict) -> Dict[str, str]:
         mv = r.get("mv")
         if mv:
             ratio = abs(rc) / mv
-            zh.append(f"選擇權事前預期 ±{mv:.1f}%，實際波動是預期的 {ratio:.1f} 倍"
+            zh.append(f"選擇權事前預期 ±{mv:.1f}%（代替耳語預期），實際波動是預期的 {ratio:.1f} 倍"
                       + ("（比市場預期激烈）" if ratio > 1.3 else "（比市場預期溫和）" if ratio < 0.7 else "（大致符合）"))
             en.append(f"options priced ±{mv:.1f}%; actual {ratio:.1f}×")
         elif r.get("avg_past"):
             zh.append(f"過去 4 次財報平均波動 ±{r['avg_past']:.1f}%")
+    ac = r.get("accel")
+    if ac and ac.get("now") is not None and ac.get("prev") is not None:
+        when = "本次公布" if ac.get("src") == "8-K" else ("截至 " + str(ac["end"])[:7] + " " if ac.get("end") else "最近")
+        zh.append(f"{ACC_ZH.get(ac.get('dir'), '營收成長變化')}（二階導）：{when}的一季營收年增 {ac['now']:+.1f}%，上一季 {ac['prev']:+.1f}%（{_n1(ac.get('pp'))} 個百分點）")
+        en.append(f"revenue growth {ac['now']:+.1f}% vs {ac['prev']:+.1f}% a quarter earlier ({_n1(ac.get('pp'))}pp, 2nd derivative)")
     rel = r.get("release") or {}
     for x in rel.get("vs_prev_guide") or []:
         if x["metric"] in ("revenue", "gross_margin"):
@@ -227,7 +276,7 @@ def impact(r: Dict) -> List[str]:
     """預估影響 — what the data says to expect around a report (before) or what history says about the spill-over."""
     L = []
     if r.get("mv"):
-        L.append(f"選擇權事前預期兩日波動 ±{r['mv']:.1f}%" + (f"（過去 4 次實際平均 ±{r['avg_past']:.1f}%）" if r.get("avg_past") else ""))
+        L.append(f"選擇權事前預期兩日波動 ±{r['mv']:.1f}%（代替耳語預期）" + (f"（過去 4 次實際平均 ±{r['avg_past']:.1f}%）" if r.get("avg_past") else ""))
     elif r.get("avg_past"):
         L.append(f"過去 4 次財報兩日平均波動 ±{r['avg_past']:.1f}%")
     ph = r.get("peer_hist") or {}
@@ -283,6 +332,8 @@ def build(eng, now: Optional[date] = None) -> Dict:
              "react": None if rc is None else round(float(rc), 2), "status": "reported" if eps is not None else "pending"}
         imp = implied.get(f"{s}|{d}") or {}
         r["mv"] = imp.get("mv")
+        rr = ((((rels.get(f"{s}|{d}") or {}).get("actual") or {}).get("revenue") or {}).get("USD") or {}).get("v")
+        r["accel"] = accel(((getattr(ed, "facts", None) or {}) if ed is not None else {}).get(s), d, rr)
         past_dates = sorted(q["date"] for q in (surp.get(s) or {}).get("rows", []) if q.get("date") and q["date"] < d)
         pr = [v for v in (reaction(px, q) for q in past_dates[-4:]) if v is not None]
         r["avg_past"] = round(float(np.mean(np.abs(pr))), 1) if pr else None

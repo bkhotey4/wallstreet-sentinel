@@ -394,7 +394,7 @@ def main():
     assert pl["zone_lo"] < pl["zone_hi"] and pl["where"] and (pl["target"] is None or pl["target"] > hit["price"])
     assert all(r["status"].get("when") for m in eng.signals["markets"].values() for r in m["all"]
                if not r["signal"] and r["status"]["status"] != "nodata")
-    assert "技術型態觀察" in page and "不是買進建議" in page and "族群強弱（跨美股／台股／港股）" in page
+    assert "技術型態觀察" in page and "不是投資建議" in page and "族群強弱（跨美股／台股／港股）" in page
     for m in eng.signals["markets"].values():               # every stock with history has an entry or add-on reference zone
         for r in m["all"]:
             if not r.get("signal") and r["status"]["status"] != "nodata":

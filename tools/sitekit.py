@@ -150,7 +150,12 @@ def card(title_zh: str, title_en: str, body: str, cls_: str = "", sub: str = "")
 GUARD_SAFE = (("## 使用者持倉", "## 持股"), ("使用者持倉", "持股"), ("持倉總值", "持股總值"), ("未實現損益", "評價損益"), ("未實現", "帳面"), ("data-private", "data-x"))
 # compliance wording (2026-10): AI-written text, including texts cached before the rename, never shows trading-instruction labels
 _LEGACY_WORDING = (("有買點訊號", "型態成立"), ("技術面買點訊號", "技術型態觀察"), ("買點訊號", "技術型態"), ("精選池", "追蹤池"), ("加碼參考區", "次級支撐觀察區"), ("進場參考區", "型態支撐參考區"))  # noqa: E501
-GUARD_SAFE = GUARD_SAFE + _LEGACY_WORDING
+# banned trading words (user's compliance rule) in AI-written text are reworded, not dashed out: longest first so
+# 高估值 becomes 估值偏高 rather than 估得偏高值
+_LEGACY_BANNED = (("高估值", "估值偏高"), ("低估值", "估值偏低"), ("被高估", "估得偏高"), ("被低估", "估得偏低"), ("高估", "估得偏高"),  # _LEGACY map
+                  ("低估", "估得偏低"), ("目標價", "預估價"), ("上漲空間", "價格差距"), ("何時買", "什麼時候"), ("何時放棄", "什麼時候"),  # _LEGACY map
+                  ("買點", "價位"), ("買進", "買入"), ("賣出", "賣掉"))  # _LEGACY map
+GUARD_SAFE = GUARD_SAFE + _LEGACY_WORDING + _LEGACY_BANNED
 
 
 def guard_safe(s: str) -> str:

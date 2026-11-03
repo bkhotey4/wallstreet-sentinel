@@ -1,4 +1,4 @@
-"""財報前瞻 (top of 科技財報): before each big AI-related report a cloud routine writes research_feed/earn_preview.json —
+"""財報前瞻 (top of 美股財報): before each big AI-related report a cloud routine writes research_feed/earn_preview.json —
 the call (樂觀／中性／悲觀), probabilities for capex raised / held / cut, three scenarios with probabilities and who is
 affected, the forward gauges (neocloud bond yields, AI capex ÷ operating cash flow) — and after the report it records
 what happened, so the page also shows how often the calls were right (hit rate and Brier score).  Estimates, not advice."""
@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from tools.sitekit import card
+from tools.sitekit import card, guard_safe
 
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "earn_preview.json"   # public repo only
 CALLS = {"樂觀": "up", "中性": "", "悲觀": "dn"}
@@ -47,7 +47,7 @@ def score(items: List[Dict]) -> Optional[Dict]:
 
 
 def _esc(x) -> str:
-    return html.escape(str(x or ""))
+    return html.escape(guard_safe(str(x or "")))   # AI-written: banned words reworded
 
 
 def _item(it: Dict) -> str:

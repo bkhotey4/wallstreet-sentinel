@@ -53,10 +53,46 @@ def in_session(mkt: str, q: Callable[[str], Optional[dict]], now: Optional[datet
     return today if a.get("asof") == today else None
 
 
-def score(mkt: str, q: Callable[[str], Optional[dict]], vix_backwardation: bool = False, day: Optional[str] = None) -> Dict:
+SCALE_LO, SCALE_HI = 0.5, 2.5      # how far the σ scaling may move a threshold from its average-volatility value
+
+
+def vol_scale(px) -> float:
+    """Today's normal daily move (rally.normal_sd: one-year std) ÷ the series' own long-run average daily move.
+    The fixed % thresholds are calibrated for average volatility, so at average volatility this is 1.0 (same meaning);
+    in a calm year a −1 % S&P day counts like a bigger shock, in a wild year it takes more.  1.0 without enough history."""
+    from .rally import normal_sd
+    try:
+        h = px.dropna() if px is not None else None
+        if h is None or len(h) < 504:
+            return 1.0
+        sd1 = normal_sd(h)
+        r = h[h > 0].pct_change().dropna().iloc[-2520:-1] * 100      # up to ~10 years
+        sdl = float(r.std()) if len(r) > 500 else None
+        if not sd1 or not sdl:
+            return 1.0
+        return float(min(SCALE_HI, max(SCALE_LO, sd1 / sdl)))
+    except Exception:  # noqa: BLE001
+        return 1.0
+
+
+def score(mkt: str, q: Callable[[str], Optional[dict]], vix_backwardation: bool = False, day: Optional[str] = None,
+          series: Optional[Callable] = None) -> Dict:
+    """series(ticker) → daily closes, for the σ scaling of the thresholds.  When not given and `q` is a market object's
+    bound method (eng.market.q), that object's .series is used; without any series the thresholds stay fixed."""
     m = MARKETS[mkt]
     rules = CFG.get(f"{mkt}_rules") or m["rules"]
     hits, groups, pts = [], {}, 0
+    if series is None:
+        series = getattr(getattr(q, "__self__", None), "series", None)
+    scale: Dict[str, float] = {}
+
+    def k(t: str) -> float:
+        if t not in scale:
+            try:
+                scale[t] = vol_scale(series(t)) if callable(series) else 1.0
+            except Exception:  # noqa: BLE001
+                scale[t] = 1.0
+        return scale[t]
     for t, label, grp, direction, steps in rules:
         qt = q(t) or {}
         if day and str(qt.get("asof", ""))[:10] < day:
@@ -65,20 +101,21 @@ def score(mkt: str, q: Callable[[str], Optional[dict]], vix_backwardation: bool 
         if x is None or x != x:
             continue
         p = 0
+        f = k(t)
         for th, pp in steps:
-            if (direction < 0 and x <= th) or (direction > 0 and x >= th):
+            if (direction < 0 and x <= th * f) or (direction > 0 and x >= th * f):
                 p = pp
         if p:
             pts += p
             groups[grp] = groups.get(grp, 0) + p
-            hits.append({"ticker": t, "label": label, "group": grp, "chg": float(x), "pts": p})
+            hits.append({"ticker": t, "label": label, "group": grp, "chg": float(x), "pts": p, "scale": round(f, 2)})
     if mkt == "us" and vix_backwardation:
         pts += 1
         groups["波動率"] = groups.get("波動率", 0) + 1
         hits.append({"ticker": "^VIX/^VIX3M", "label": "VIX 期限結構倒掛", "group": "波動率", "chg": None, "pts": 1})
     gate_t, gate_th = m["gate"]
     g = (q(gate_t) or {}).get("chg_pct")
-    gated = g is not None and g <= gate_th                # "大盤危險" needs the benchmark itself to be down
+    gated = g is not None and g <= gate_th * k(gate_t)    # "大盤危險" needs the benchmark itself to be down (σ-scaled)
     th = CFG.get("level_points", [3, 6, 9])
     lvl = 0
     if gated:

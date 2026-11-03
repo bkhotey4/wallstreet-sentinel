@@ -167,6 +167,35 @@ def _sig(st: Optional[Dict]) -> str:
     return "統計上明顯" if abs(t) >= 2 else ("勉強" if abs(t) >= 1.5 else "不明顯（可能只是雜訊）")
 
 
+def _t(st: Optional[Dict]) -> Optional[float]:
+    t = (st or {}).get("t")
+    return None if t is None or t != t else abs(float(t))
+
+
+def _day_line(d_old: Dict, d_new: Dict) -> Dict:
+    """Decision-day old vs new sample, worded from the measured t-stats (not a fixed conclusion)."""
+    to, tn = _t(d_old), _t(d_new)
+    fmt_t = lambda st: "—" if st.get("t") is None else f"{st['t']:.1f}"  # noqa: E731
+    head = (f"決議當天：1995–2014 平均 {d_old['mean']:+.2f}%（平常一天 {d_old['base_mean']:+.2f}%，{_sig(d_old)}，t={fmt_t(d_old)}）"
+            + ("＝學界說的「會前漂移」" if to is not None and to >= 2 else ""))
+    new = f"2015 年後 {d_new['mean']:+.2f}%、上漲 {d_new['up']:.0f}%（{_sig(d_new)}，t={fmt_t(d_new)}）"
+    if to is None or tn is None:
+        tail, en = "，樣本不足以比較前後兩段。", "samples too small to compare."
+    elif to >= 2 and tn < 1.5:
+        tail, en = "，效果已大致消失。", "the effect has largely faded."
+    elif to >= 2 and tn >= 2:
+        tail, en = "，效果仍然明顯。", "the effect is still clear."
+    elif to >= 2:
+        tail, en = "，效果變弱、只剩勉強的差距。", "the effect has weakened."
+    elif tn >= 2:
+        tail, en = "，反而比早期明顯。", "clearer than in the early sample."
+    else:
+        tail, en = "；兩段都看不出明顯差距（可能只是雜訊）。", "neither sample shows a clear difference."
+    return {"zh": head + "；" + new + tail,
+            "en": f"Decision day: {d_old['mean']:+.2f}% in 1995–2014 (vs {d_old['base_mean']:+.2f}% a normal day); "
+                  f"{d_new['mean']:+.2f}% since 2015 — {en}"}
+
+
 def readings(r: Dict) -> List[Dict]:
     """Plain-language lines (zh / en) for the card and the AI context."""
     if not r.get("available"):
@@ -182,9 +211,7 @@ def readings(r: Dict) -> List[Dict]:
                   "en": f"2015+ ({n['n']}): pre-5-day {n['mean']:+.2f}%, up {n['up']:.0f}% vs base {n['base_mean']:+.2f}%/{n['base_up']:.0f}% (t={n['t']:.1f})."})
     d_old, d_new = S["old"]["day"], S["new"]["day"]
     if d_old and d_new:
-        L.append({"zh": f"決議當天：1995–2014 平均 {d_old['mean']:+.2f}%（平常一天 {d_old['base_mean']:+.2f}%，{_sig(d_old)}，t={d_old['t']:.1f}）＝學界說的「會前漂移」；"
-                        f"2015 年後只剩 {d_new['mean']:+.2f}%、上漲 {d_new['up']:.0f}%，效果已大致消失。",
-                  "en": f"Decision day: {d_old['mean']:+.2f}% in 1995–2014 (vs {d_old['base_mean']:+.2f}% a normal day); only {d_new['mean']:+.2f}% since 2015."})
+        L.append(_day_line(d_old, d_new))
     hi = S["hi"]["pre"]
     if hi:
         L.append({"zh": f"會前 VIX ≥ 20 的 {hi['n']} 次：會前 5 日平均 {hi['mean']:+.2f}%、上漲 {hi['up']:.0f}%；會後 5 日平均 "

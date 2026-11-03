@@ -66,7 +66,7 @@ def sec_mpd(eng) -> str:
             f'<th class="r">{T("一個月前", "1m ago")}</th><th class="r">{T("漲 ≥20% 機率", "P(rise ≥20%)")}</th>'
             f'<th class="r">{T("10 ／ 50 ／ 90 百分位報酬", "10/50/90th pct")}</th><th class="r">{T("偏態", "Skew")}</th></tr></thead><tbody>{rows}</tbody></table></div>')
     note = T(f"資料：明尼亞波利斯聯準銀行 Market-Based Probabilities，用 S&P 500 選擇權價格推算出的報酬分布，每週更新（最新 {l6[0]}）。"
-             "這是「風險中性」機率：投資人願意為崩盤保險多付錢，所以會高估真實的下跌機率；適合看變化與相對高低，不是真實發生率。"
+             "這是「風險中性」機率：投資人願意為崩盤保險多付錢，所以會高於真實的下跌機率；適合看變化與相對高低，不是真實發生率。"
              "偏態越負＝市場越擔心大跌勝過大漲。",
              "Minneapolis Fed option-implied probabilities (risk-neutral; overstates real-world odds).")
     return card("選擇權隱含的大跌機率（明尼亞波利斯聯準銀行）", "Option-implied odds of a 20% fall (Minneapolis Fed)", body + f'<p class="note">{note}</p>', "wide")

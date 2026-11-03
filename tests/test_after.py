@@ -1,4 +1,4 @@
-"""財報後白話解讀 card: renders the routine's JSON (any sector), folds details, filters tech for 科技財報, never shows
+"""財報後白話解讀 card: renders the routine's JSON (any sector), folds details, shows every US report on 美股財報, never shows
 trading words.  Run: python -m tests.test_after"""
 from __future__ import annotations
 
@@ -17,19 +17,20 @@ def test_card():
          "items": [{"sym": "GOOGL", "name": "Alphabet", "sector": "科技／雲端", "date": "2026-10-28", "mcap_b": 3000,
                     "one": "雲端成長但利潤率持平", "move": {"pct": 4.2, "why": "盤後 +4.2%：Cloud 營收高於預期（新聞 16:05）"},
                     "company": ["搜尋 +15%"], "spill": [{"who": "博通", "how": "TPU 共同設計"}], "macro": ["殖利率 5%"], "sources": ["8-K"]},
-                   {"sym": "KO", "name": "可口可樂", "sector": "民生消費", "date": "2026-10-28", "mcap_b": 280, "one": "價格調漲撐住營收，這裡不是買進時機"}]}
+                   {"sym": "KO", "name": "可口可樂", "sector": "民生消費", "date": "2026-10-28", "mcap_b": 280, "one": "價格調漲撐住營收，這裡不是買進時機"},
+                   {"mk": "tw", "sym": "2330", "name": "台積電", "sector": "半導體", "date": "2026-10-16", "mcap_b": 900, "one": "先進製程滿載"}]}
     f = Path(tempfile.mkdtemp()) / "earn_after.json"
     f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
     orig = A.FILE
     A.FILE = f
     try:
         h = A.sec_earn_after(None)
-        t = A.sec_earn_after_tech(None)
+        t = A.sec_earn_after_us(None)
     finally:
         A.FILE = orig
     assert "Alphabet" in h and "可口可樂" in h and "<details" in h and "連帶影響" in h and "+4.2%" in h and "大環境" in h
     assert "買進" not in h
-    assert "Alphabet" in t and "可口可樂" not in t
+    assert "Alphabet" in t and "可口可樂" in t and "台積電" not in t and "（美股）" in t        # 美股財報 tab: every US sector, not TW/HK
     A.FILE = Path(tempfile.mkdtemp()) / "none.json"
     try:
         assert A.sec_earn_after(None) == ""

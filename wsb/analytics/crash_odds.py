@@ -21,6 +21,8 @@ import pandas as pd
 
 from ..config import SETTINGS
 
+MIN_WINDOWS = 5          # a zone frequency needs ≥ 5 independent (non-overlapping) forward windows
+
 
 def forward_min_return(close: pd.Series, days: int) -> pd.Series:
     """min(close[t+1..t+days]) / close[t] - 1"""
@@ -114,7 +116,10 @@ def crash_odds(stress_hist: pd.Series, close: pd.Series, current: float, chg20: 
         hit = (fmr <= -dd) & valid
         base = float(hit[valid].mean() * 100)
         inb = valid & (df["ssi"] >= lo) & (df["ssi"] < hi)
-        cond = float(hit[inb].mean() * 100) if inb.sum() else None
+        # overlapping n-day windows: the days in the zone hold only ≈ days / n independent outcomes — fewer than
+        # MIN_WINDOWS of them is not a frequency worth showing (one episode would read as 100 %)
+        enough = inb.sum() / n >= MIN_WINDOWS
+        cond = float(hit[inb].mean() * 100) if enough else None
         table: List[Dict] = []
         for a, b in zip(edges[:-1], edges[1:]):
             m = valid & (df["ssi"] >= a) & (df["ssi"] < b)
@@ -143,6 +148,7 @@ def crash_odds(stress_hist: pd.Series, close: pd.Series, current: float, chg20: 
             "lift": (cond / base) if cond is not None and base > 0 else None,
             "lift_text": lift_text((cond / base) if cond is not None and base > 0 else None),
             "table": table,
-            "median_fwd_min_in_zone": float(fmr[inb].median() * 100) if inb.sum() else None,
+            "zone_windows": round(float(inb.sum()) / n, 1),
+            "median_fwd_min_in_zone": float(fmr[inb].median() * 100) if enough else None,
         })
     return out

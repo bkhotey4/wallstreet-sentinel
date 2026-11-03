@@ -1314,7 +1314,7 @@ var CRISES = [
  {
   id: 'yen2024',
   zh: '2024.08.05 日圓套息平倉股災', en: '2024 Yen Carry Unwind',
-  descZh: '日銀 7 月底升息、日圓急升，引發日圓套利交易平倉；8 月 5 日日經單日重挫逾 12%，半導體與高估值科技跌幅最深。',
+  descZh: '日銀 7 月底升息、日圓急升，引發日圓套利交易平倉；8 月 5 日日經單日重挫逾 12%，半導體與估值偏高的科技股跌幅最深。',
   descEn: 'BOJ hike and a sharp yen rally triggered a carry-trade unwind; the Nikkei fell over 12% on Aug 5.',
   shocks: (CS.yen2024 || {}).shocks
  },
@@ -1932,8 +1932,8 @@ if(expCsv)expCsv.addEventListener('click',function(){
  var d=get(),tb=document.getElementById('pft').tBodies[0];
  if(!d.h.length&&!(d.cash||[]).length){msg(['無持股可供匯出','No holdings to export']);return;}
  var isZh=!en(),lines=[];
- if(isZh){lines.push(['代號','名稱','股數','現價','幣別','今日漲跌(%)','市值(原幣)','市值(台幣)','每股成本','帳面損益(原幣)','報酬率(%)','投資權重(%)'].join(','));}
- else{lines.push(['Ticker','Name','Shares','Price','Currency','Today(%)','Value','Value_TWD','Cost_Per_Share','Unrealized','Return(%)','Weight(%)'].join(','));}
+ if(isZh){lines.push(['代號','名稱','股數','現價','幣別','今日漲跌(%)','市值(原幣)','市值(台幣)','成本(原幣)','帳面損益(原幣)','報酬率(%)','投資權重(%)'].join(','));}
+ else{lines.push(['Ticker','Name','Shares','Price','Currency','Today(%)','Value','Value_TWD','Cost','Unrealized','Return(%)','Weight(%)'].join(','));}
  for(var r=0;r<tb.rows.length;r++){
   var cells=tb.rows[r].cells;
   if(cells.length<14)continue;

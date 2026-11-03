@@ -129,7 +129,7 @@ def sec_intel(eng) -> str:
     cov = itl.get("ai_coverage")
     ai = (T(f"AI 已判讀 {cov * 100:.0f}% 的新聞標題（方向與嚴重度）", f"AI read {cov * 100:.0f}% of headlines (direction & severity)")
           if cov else T("新聞以關鍵字判斷", "Headlines scored by keywords"))
-    note = T("確認＝新聞與價格同時示警（最可信）；敘事領先＝只有新聞、價格未跟；無聲壓力＝價格在施壓但新聞安靜（容易被低估）。"
+    note = T("確認＝新聞與價格同時示警（最可信）；敘事領先＝只有新聞、價格未跟；無聲壓力＝價格在施壓但新聞安靜（容易被忽略）。"
              "市場點火＝衝擊雷達的價格分數；新聞熱度＝該路徑新聞量相對自身 30 日的百分位（括號為則數）。",
              "Confirmed = headlines and prices both flag it; Narrative only = headlines without price confirmation; "
              "Silent stress = prices under stress while headlines are quiet. Ignition = shock-radar price score; heat = news volume "

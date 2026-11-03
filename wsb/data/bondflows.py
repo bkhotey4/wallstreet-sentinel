@@ -20,6 +20,7 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from ..config import DATA_DIR
+from ..health import HEALTH
 from . import http
 
 log = logging.getLogger(__name__)
@@ -97,32 +98,44 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     if not force and time.time() - float(d.get("ts", 0)) < TTL and d.get("mof") and d.get("tic") and d.get("mmf"):
         return d
+    each, t0 = d.setdefault("ts_each", {}), time.time()
     try:
         raw = await http.get(MOF, kind="bytes", headers=UA, timeout=60, retries=1)
         rows = parse_mof(raw.decode("shift_jis", errors="replace"))
-        if len(rows) > 100:
-            d["mof"] = rows
+        if len(rows) <= 100:
+            raise ValueError(f"only {len(rows)} weeks")
+        d["mof"], each["mof"] = rows, time.time()
+        HEALTH.ok("mof_flows", len(rows), every=TTL)
     except Exception as e:  # noqa: BLE001
-        log.info("MOF weekly flows failed: %s", e)
+        log.warning("MOF weekly flows failed: %s", e)
+        HEALTH.fail("mof_flows", e, every=TTL)
     try:
         tic = parse_tic(await http.get(TIC, kind="text", headers=UA, timeout=60, retries=1))
-        if tic:
-            arc = d.get("tic") or {}
-            for c, vals in tic.items():
-                arc.setdefault(c, {}).update(vals)
-            d["tic"] = arc
+        if not tic:
+            raise ValueError("no TIC rows parsed")
+        arc = d.get("tic") or {}
+        for c, vals in tic.items():
+            arc.setdefault(c, {}).update(vals)
+        d["tic"], each["tic"] = arc, time.time()
+        HEALTH.ok("tic_holders", len(tic), every=TTL)
     except Exception as e:  # noqa: BLE001
-        log.info("TIC holders failed: %s", e)
+        log.warning("TIC holders failed: %s", e)
+        HEALTH.fail("tic_holders", e, every=TTL)
     try:
         mm = {}
         for k, mn in MMF_IDS.items():
             rows = await http.get(OFR.format(mn), headers=UA, timeout=60, retries=1)
             mm[k] = [[str(a)[:7], float(b)] for a, b in rows or [] if b is not None]
-        if len(mm.get("tot") or []) > 24:
-            d["mmf"] = mm
+        if len(mm.get("tot") or []) <= 24:
+            raise ValueError("OFR MMF total too short")
+        d["mmf"], each["mmf"] = mm, time.time()
+        HEALTH.ok("ofr_mmf", len(mm["tot"]), every=TTL)
     except Exception as e:  # noqa: BLE001
-        log.info("OFR money market funds failed: %s", e)
-    d["ts"] = time.time()
+        log.warning("OFR money market funds failed: %s", e)
+        HEALTH.fail("ofr_mmf", e, every=TTL)
+    # freshness only moves when something was actually fetched; an all-failed run is retried next build
+    if any(each.get(k, 0) >= t0 for k in ("mof", "tic", "mmf")):
+        d["ts"] = time.time()
     _save(d)
     return d
 

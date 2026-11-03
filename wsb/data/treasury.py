@@ -22,6 +22,7 @@ from . import http
 
 log = logging.getLogger(__name__)
 URL = "https://www.treasurydirect.gov/TA_WS/securities/auctioned"
+UPCOMING_URL = "https://www.treasurydirect.gov/TA_WS/securities/upcoming"   # /auctioned never lists unresulted ones
 _FILE = DATA_DIR / "treasury_auctions.json"
 TENORS = [("DGS1MO", 1 / 12), ("DGS3MO", 0.25), ("DGS6MO", 0.5), ("DGS1", 1), ("DGS2", 2), ("DGS3", 3), ("DGS5", 5),
           ("DGS7", 7), ("DGS10", 10), ("DGS20", 20), ("DGS30", 30)]
@@ -98,9 +99,11 @@ def judge(auctions: List[Dict], window: int = 6) -> List[Dict]:
 
 
 def upcoming(rows) -> List[str]:
-    """Dates (YYYY-MM-DD) of coupon auctions that are announced but have no result yet."""
+    """Dates (YYYY-MM-DD) of coupon auctions that are announced but have no result yet (rows from /securities/upcoming)."""
     out = set()
     for x in rows or []:
+        if str(x.get("securityType") or "Note") not in ("Note", "Bond"):
+            continue
         if any(str(x.get(k) or "No").lower() == "yes" for k in ("tips", "inflationProtected", "floatingRate")):
             continue
         if _n(x.get("bidToCoverRatio")) is None:
@@ -139,7 +142,11 @@ class Treasury:
             if not parsed:
                 raise RuntimeError("no auctions parsed")
             self.auctions, self.ts = judge(parsed), time.time()
-            self.upcoming = upcoming(rows)
+            try:
+                js = await http.get(UPCOMING_URL, params={"format": "json"}, timeout=30, retries=1)
+                self.upcoming = upcoming(js if isinstance(js, list) else [])
+            except Exception as e:  # noqa: BLE001
+                log.warning("TreasuryDirect upcoming failed, keeping previous list: %s", e)
             tmp = _FILE.with_suffix(_FILE.suffix + ".tmp")          # atomic: a cancelled run can't truncate it
             tmp.write_text(json.dumps({"ts": self.ts, "auctions": self.auctions, "upcoming": self.upcoming},
                                       ensure_ascii=False), encoding="utf-8")

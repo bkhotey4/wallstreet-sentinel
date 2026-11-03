@@ -373,6 +373,18 @@ def _auc(score: pd.Series, y: pd.Series) -> Optional[float]:
     return float((rk[pos].sum() - npos * (npos + 1) / 2) / (npos * nneg))
 
 
+RELEASE_LAG_DAYS = 3            # CFTC Commitments of Traders: as of Tuesday, released Friday 15:30 ET
+
+
+def release_dd(px: pd.Series, dates: pd.DatetimeIndex, lag_days: int = RELEASE_LAG_DAYS, horizon: int = 63) -> pd.Series:
+    """Worst close in the `horizon` sessions after each report's PUBLIC release ÷ the close at the release, − 1.
+    Positions are as of Tuesday but published Friday afternoon, so the outcome starts at the first close on or after the
+    release (Friday, or the next session after a holiday), never at the Tuesday close nobody could act on.  Index = dates."""
+    low = px[::-1].rolling(horizon, min_periods=1).min()[::-1].shift(-1)
+    rel = pd.DatetimeIndex(dates) + pd.Timedelta(days=lag_days)
+    return pd.Series((low / px - 1).reindex(rel, method="bfill").values, index=dates)
+
+
 def elephants(eng, cftc: Dict[str, List[List]]) -> List[Dict]:
     out = []
     for code, (zh, idx) in (("209742", ("那斯達克 100", "^NDX")), ("13874A", ("S&P 500", "^GSPC"))):
@@ -391,10 +403,9 @@ def elephants(eng, cftc: Dict[str, List[List]]) -> List[Dict]:
                "pct": float(pc.iloc[-1]) if pc.notna().any() else None, "since": str(d.index[0].year),
                "hist": [[i.strftime("%Y-%m-%d"), float(v)] for i, v in d["am"].tail(156).items()]}
         if len(px) > 500:
-            low = px[::-1].rolling(63, min_periods=1).min()[::-1].shift(-1)
-            dd = (low / px - 1).reindex(d.index, method="ffill")
+            dd = release_dd(px, d.index)
             y = (dd <= -0.10).astype(float).where(dd.notna())
-            y[d.index > px.index[-1] - pd.Timedelta(days=95)] = np.nan
+            y[d.index + pd.Timedelta(days=RELEASE_LAG_DAYS) > px.index[-1] - pd.Timedelta(days=95)] = np.nan
             ex = pc <= 10
             rec.update(base=float(y.mean() * 100), exit_rate=float(y[ex].mean() * 100) if y[ex].notna().any() else None,
                        exit_n=int(y[ex].notna().sum()), auc=_auc(-ch, y), auc_lev=_auc(-d["lev"].diff(13), y))

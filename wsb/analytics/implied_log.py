@@ -57,13 +57,15 @@ def record(log: Dict, rows: List[Dict], today: str) -> None:
 
 
 def resolve(log: Dict, series, today: str) -> None:
-    """Fill the actual two-session move once the session after the report has closed."""
+    """Fill the actual two-session move once the session after the report has closed.  The stored move is permanent, so
+    the price series is cut to finished sessions first: an in-progress bar is never recorded as the post-report close."""
+    from .sessions import completed
     from .techearn import reaction
     for k, x in log.items():
         if x.get("act") is not None or x["date"] >= today:
             continue
         try:
-            v = reaction(series(x["sym"]), x["date"])
+            v = reaction(completed(series(x["sym"]), x["sym"]), x["date"])
         except Exception:  # noqa: BLE001
             v = None
         if v is not None:

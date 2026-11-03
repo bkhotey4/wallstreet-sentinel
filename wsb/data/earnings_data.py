@@ -635,6 +635,16 @@ class EarningsData:
                     out[r["sym"]] = d
         return out
 
+    def verdict_syms(self, days: int = 10) -> List[str]:
+        """Companies 財報結論 shows (curated universe or ≥ $100B) that reported in the last `days` days, biggest first."""
+        from .stocks import universe
+        cur = set((universe().get("us") or {}).get("symbols", {}))
+        today = us_today()
+        lo = (today - timedelta(days=days)).isoformat()
+        rows = [r for d, rec in self.days.items() if lo <= d <= today.isoformat() for r in rec.get("rows", [])
+                if r.get("sym") and (r["sym"] in cur or (r.get("mcap") or 0) >= 1e11)]
+        return list(dict.fromkeys(r["sym"] for r in sorted(rows, key=lambda r: -(r.get("mcap") or 0))))
+
     async def refresh(self, tech_syms: List[str], force: bool = False, frames: bool = True) -> None:
         if not cfg().get("enabled", True):
             return
@@ -646,7 +656,8 @@ class EarningsData:
         except Exception as e:  # noqa: BLE001
             log.warning("earnings calendar refresh failed: %s", e)
         rep = self.reported()
-        res = await asyncio.gather(refresh_surprises(tech_syms, rep, b * 0.25), refresh_facts(tech_syms, rep, b * 0.5),
+        fsyms = list(dict.fromkeys(tech_syms + self.verdict_syms()))     # 財報結論 needs quarterly revenue (成長加速／放慢)
+        res = await asyncio.gather(refresh_surprises(tech_syms, rep, b * 0.25), refresh_facts(fsyms, rep, b * 0.5),
                                    refresh_frames(b * 0.5) if frames else asyncio.sleep(0, result=self.frames), refresh_twrev(),
                                    refresh_twpe(), return_exceptions=True)
         for nm, r in zip(("surprise", "facts", "frames", "tw", "twpe"), res):

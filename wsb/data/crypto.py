@@ -14,10 +14,21 @@ from . import http
 log = logging.getLogger(__name__)
 
 
+def funding_hours(row: Dict) -> float:
+    """Funding interval in hours from nextFundingTime − fundingTime (ms); 8h when absent or implausible."""
+    try:
+        h = (float(row["nextFundingTime"]) - float(row["fundingTime"])) / 3.6e6
+        return h if 0.5 <= h <= 24 else 8.0
+    except (KeyError, TypeError, ValueError):
+        return 8.0
+
+
 class CryptoSentiment:
     def __init__(self) -> None:
         self.data: Dict[str, Any] = {}
         self.ts = 0.0
+        self.ts_each: Dict[str, float] = {}             # last success per sub-feed
+        self.keys_each: Dict[str, set] = {}             # which data keys each sub-feed owns
 
     async def _global(self):
         js = await http.get("https://api.coingecko.com/api/v3/global")
@@ -46,8 +57,8 @@ class CryptoSentiment:
             row = (js.get("data") or [{}])[0]
             fr = row.get("fundingRate")
             if fr is not None:
-                # 8h rate → annualised %
-                out[inst.split("-")[0] + "_funding_ann_pct"] = float(fr) * 3 * 365 * 100
+                # per-interval rate → annualised %; OKX can switch a contract to 4h/2h/1h funding
+                out[inst.split("-")[0] + "_funding_ann_pct"] = float(fr) * 365 * 24 / funding_hours(row) * 100
         oi = await http.get("https://www.okx.com/api/v5/public/open-interest",
                             params={"instType": "SWAP", "instId": "BTC-USDT-SWAP"})
         row = (oi.get("data") or [{}])[0]
@@ -79,11 +90,27 @@ class CryptoSentiment:
         tasks = {"coingecko": self._global(), "defillama": self._stables(), "okx": self._funding(),
                  "crypto_fng": self._crypto_fng(), "cnn_fng": self._cnn_fng()}
         res = await asyncio.gather(*tasks.values(), return_exceptions=True)
-        for name, r in zip(tasks, res):
+        self.apply(dict(zip(tasks, res)), every)
+
+    def apply(self, results: Dict[str, Any], every: float, now: float | None = None) -> None:
+        """Merge sub-feed results; a feed that has not succeeded for ~2 refresh cycles has its values blanked."""
+        now = time.time() if now is None else now
+        for name, r in results.items():
             if isinstance(r, Exception):
                 log.warning("%s failed: %s", name, r)
                 HEALTH.fail(name, r, every=every)
             else:
                 self.data.update(r)
+                self.ts_each[name] = now
+                self.keys_each.setdefault(name, set()).update(r)
                 HEALTH.ok(name, len(r), every=every)
-        self.ts = time.time()
+        stale = sorted(n for n, t in self.ts_each.items() if now - t > 2 * every)
+        for name in stale:
+            for k in self.keys_each.get(name, ()):
+                self.data.pop(k, None)
+        if stale:
+            self.data["stale_sources"] = stale
+        else:
+            self.data.pop("stale_sources", None)
+        if any(t == now for t in self.ts_each.values()):
+            self.ts = now

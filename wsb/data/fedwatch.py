@@ -53,6 +53,8 @@ def implied(meetings: List[str], fut: Dict[Tuple[int, int], float], r0: float) -
         r_a = None
         if N - x.day < 8 and nxt in fut and nxt not in mdays:      # late-month meeting → next (meeting-free) month
             r_a = 100 - fut[nxt]
+        elif N - x.day < 8 and nxt not in fut:
+            r_a = None                                              # ÷(N−d) of 1–7 days would blow up quote noise
         elif ym in fut and N - x.day > 0:
             r_a = (N * (100 - fut[ym]) - x.day * r_b) / (N - x.day)
         elif nxt in fut and nxt not in mdays:

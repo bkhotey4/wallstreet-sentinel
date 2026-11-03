@@ -1143,9 +1143,9 @@ def sec_ai_elephant(eng) -> str:
     am_auc = [e["auc"] for e in el if e.get("auc") is not None]
     lev_auc = [e["auc_lev"] for e in el if e.get("auc_lev") is not None]
     ins = b.get("insiders") or {}
-    ins_txt = (f"AI 相關公司內部人（{ins['from']}～{ins['to']}）：賣出約 {(ins['sell'] + ins['sell_plan']) / 1e8:,.1f} 億美元、買進約 {ins['buy'] / 1e8:,.2f} 億美元；"
+    ins_txt = (f"AI 相關公司內部人（{ins['from']}～{ins['to']}）：減持約 {(ins['sell'] + ins['sell_plan']) / 1e8:,.1f} 億美元、增持約 {ins['buy'] / 1e8:,.2f} 億美元；"
                "賣最多的是 " + "、".join(f"{s}（{v / 1e8:,.1f} 億）" for s, v in ins.get("top") or []) +
-               "。高層賣股多半是事先排定的計畫或稅務、分散需求，買進才比較有資訊；本站只保存幾個月的申報，沒辦法回測，只當背景，不計入判斷。") if ins else ""
+               "。高層賣股多半是事先排定的計畫或稅務、分散需求，主動增持才比較有資訊；本站只保存幾個月的申報，沒辦法回測，只當背景，不計入判斷。") if ins else ""
     note = T("怎麼看：CFTC 每週公布期貨的持倉，「資產管理機構」是退休基金、共同基金、保險這類長期大錢；它們在股指期貨的淨多單（占未平倉量 %）"
              "13 週內大幅下降、落在自己歷史最低 10%，代表大錢在降低股票曝險。回測 2010 年起每週一筆：" + _ratio_txt(el)
              + (f"AUC {min(am_auc):.2f}–{max(am_auc):.2f}，" + ("有一點預測力但不強" if max(am_auc) >= 0.55 else "預測力不明顯") if am_auc else "")

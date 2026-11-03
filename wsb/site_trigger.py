@@ -94,10 +94,10 @@ class SiteTrigger:
 
     # ------------------------------------------------------------------ GitHub calls
     async def recent_runs(self) -> list:
-        """The latest few runs of any kind (scheduled, pushed, dispatched), newest first."""
+        """The latest few site-build runs (scheduled, pushed, dispatched), newest first."""
         try:
-            d = await http.get(f"{API}/repos/{self.repo}/actions/runs", headers=self._headers(),
-                               params={"per_page": 5}, retries=0, timeout=20)
+            d = await http.get(f"{API}/repos/{self.repo}/actions/workflows/{self.workflow}/runs", headers=self._headers(),
+                               params={"per_page": 5}, retries=0, timeout=20)   # the site build only, not heartbeats
             return list((d or {}).get("workflow_runs", []))
         except Exception as e:  # noqa: BLE001
             log.debug("site trigger: cannot list runs: %s", e)
@@ -110,7 +110,7 @@ class SiteTrigger:
 
     async def in_progress(self) -> list:
         try:
-            d = await http.get(f"{API}/repos/{self.repo}/actions/runs", headers=self._headers(),
+            d = await http.get(f"{API}/repos/{self.repo}/actions/workflows/{self.workflow}/runs", headers=self._headers(),
                                params={"status": "in_progress", "per_page": 3}, retries=0, timeout=20)
             return list((d or {}).get("workflow_runs", []))
         except Exception as e:  # noqa: BLE001
@@ -188,7 +188,7 @@ class SiteTrigger:
             return None, False
         alive = any(r.get("status") != "completed" for r in runs)
         try:
-            d = await http.get(f"{API}/repos/{self.repo}/actions/runs", headers=self._headers(),
+            d = await http.get(f"{API}/repos/{self.repo}/actions/workflows/{self.workflow}/runs", headers=self._headers(),
                                params={"status": "success", "per_page": 1}, retries=0, timeout=20)
             r = ((d or {}).get("workflow_runs") or [None])[0]
             if not r:

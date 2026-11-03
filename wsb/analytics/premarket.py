@@ -149,10 +149,10 @@ def takeaways_us(d: Dict) -> List[Dict]:
         out.append({"lv": "alert", "zh": "股票、黃金、比特幣同時下跌：投資人連避險資產也一起賣、換回現金——這種「什麼都賣」的情況，常見於投資人被迫降低槓桿的時候。",
                     "en": "Stocks, gold and bitcoin all down: selling across assets for cash — typical of forced de-leveraging."})
     elif sp_dn and y and (_bp(y) or 0) <= -BP_MOVE:
-        out.append({"lv": "info", "zh": "股票跌、殖利率也跌：資金從股市移到公債避險（典型的避險模式），利率下降對高估值科技股算是一點緩衝。",
+        out.append({"lv": "info", "zh": "股票跌、殖利率也跌：資金從股市移到公債避險（典型的避險模式），利率下降對估值偏高的科技股算是一點緩衝。",
                     "en": "Stocks and yields both down: money moving into Treasuries for safety."})
     elif sp_dn and y and (_bp(y) or 0) >= BP_MOVE:
-        out.append({"lv": "alert", "zh": "股票跌、殖利率卻上升：市場擔心的是通膨或升息，不是景氣——這種組合對高估值成長股壓力最大，公債也無法避險。",
+        out.append({"lv": "alert", "zh": "股票跌、殖利率卻上升：市場擔心的是通膨或升息，不是景氣——這種組合對估值偏高的成長股壓力最大，公債也無法避險。",
                     "en": "Stocks down while yields rise: an inflation / rates scare — hardest on high-valuation growth, bonds don't hedge."})
     if oil and (oil.get("ch") or 0) >= 2:
         out.append({"lv": "watch", "zh": f"原油漲 {oil['ch']:.1f}%：推高通膨預期，讓聯準會更難轉鴿；能源股相對受惠。",

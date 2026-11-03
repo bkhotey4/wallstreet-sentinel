@@ -308,9 +308,10 @@ class Engine:
                                    self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
                                    self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), self.refresh_segments(),
                                    self.refresh_street(), self.eia.refresh(), self.global_yields.refresh(), self.refresh_private_credit(),
-                                   self.long_history.refresh(), self.refresh_sector_brief(), return_exceptions=True)
+                                   self.long_history.refresh(), self.refresh_sector_brief(), _bondflows(), _twmacro(),
+                                   return_exceptions=True)               # bondflows / twmacro skip themselves inside their own TTL
         for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments",
-                          "street", "eia", "mof_jgb", "private_credit", "spx_long", "sector_brief"), res):
+                          "street", "eia", "mof_jgb", "private_credit", "spx_long", "sector_brief", "bondflows", "twmacro"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
         try:                                                    # 聯準會 EBP + 明尼亞波利斯 Fed 選擇權機率（每天一次）
@@ -385,9 +386,9 @@ class Engine:
                 if self.stress:
                     store.stress_record(self.stress.score, self.stress.blocks)
                     bench = SETTINGS.get("crash_odds", {}).get("benchmark", "^GSPC")
-                    self.odds = await asyncio.to_thread(
-                        co.crash_odds, getattr(self.stress, "live_history", None) if getattr(self.stress, "live_history", None) is not None
-                        and len(self.stress.live_history) > 500 else self.stress.history, self.market.series(bench), self.stress.score,
+                    from .analytics.stress import ref_history
+                    self.odds = await asyncio.to_thread(        # history of the live component set: like-for-like with score
+                        co.crash_odds, ref_history(self.stress, 500), self.market.series(bench), self.stress.score,
                         self.stress.chg_20d)
             except Exception:  # noqa: BLE001
                 log.exception("stress compute failed")
@@ -402,10 +403,12 @@ class Engine:
                     if not skip_quality and (self._quality is None or no_regimes or time.time() - self._quality_ts > hrs * 3600):
                         from .analytics import regime_split as rsp
                         lab = rsp.labels(self.fred.get("FEDFUNDS"), close, self.fred.get("DGS10"))
-                        self._quality = await asyncio.to_thread(sk.model_quality, self.stress.history, close, lab)
+                        from .analytics.stress import ref_history
+                        ssi_h = ref_history(self.stress, 500)  # trained on the same live set the model is applied to
+                        self._quality = await asyncio.to_thread(sk.model_quality, ssi_h, close, lab)
                         self._quality_ts = time.time()
                         try:
-                            self.lab = await asyncio.to_thread(lb.run, self.market.history, self.stress.history, close, self.fred)
+                            self.lab = await asyncio.to_thread(lb.run, self.market.history, ssi_h, close, self.fred)
                         except Exception:  # noqa: BLE001
                             log.exception("feature lab failed")
                     if self.lab and self.odds:                # validated logistic probability for today's SSI

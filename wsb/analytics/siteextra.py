@@ -298,8 +298,8 @@ def debate_prompt(r: Dict, info: Dict) -> str:
          f"現金：{b('cash')}；每年燒錢：{b('burn')}；可撐年數：{f('runway', 1)}",
          f"營收含併購（商譽大增）：{'是' if r.get('ma') else '否'}；營收規模尚小：{'是' if r.get('small') else '否'}",
          f"技術面狀態：{r.get('st') or '—'}"]
-    if info.get("tm"):
-        L.append("分析師平均目標價距現價：" + (f"{info['up']:+.0f}%" if info.get("up") is not None else "資料缺") + f"（{info.get('n') or '—'} 位分析師）")
+    if info.get("n"):                                  # analyst count + consensus rating only (no price-target figure)
+        L.append(f"分析師：{info['n']} 位" + (f"；共識評等平均 {info['rm']:.1f}（1 最正面、5 最負面）" if isinstance(info.get("rm"), (int, float)) else ""))
     return "\n".join(L)
 
 

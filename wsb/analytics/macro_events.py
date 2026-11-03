@@ -138,7 +138,7 @@ SCEN: Dict[str, Dict] = {
         "why": S("利率決定本身很少意外（市場通常已完全定價），真正的意外在聲明措辭、點陣圖（有「＊」的會議才有經濟預測）與主席記者會。"
                  "台北時間約凌晨 2–3 點公布、2:30–3:30 記者會。",
                  "The decision itself rarely surprises; the statement, dot plot and press conference do."),
-        "hot": S("比預期鷹派（少降息、點陣圖上移或主席強調通膨風險）→ 2 年期殖利率與美元急升，美股下跌，高估值科技與半導體跌幅較大；台幣走弱。",
+        "hot": S("比預期鷹派（少降息、點陣圖上移或主席強調通膨風險）→ 2 年期殖利率與美元急升，美股下跌，估值偏高的科技與半導體跌幅較大；台幣走弱。",
                  "Hawkish → 2y yields and USD jump, equities fall, high-multiple tech hit."),
         "inline": S("決策符合預期時，市場看點陣圖中位數與記者會語氣；常見「買傳聞、賣事實」——會前漲多的資產在會後回吐。",
                     "Focus on the dot plot and tone; 'buy the rumor, sell the fact' is common."),

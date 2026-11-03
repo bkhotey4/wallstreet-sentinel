@@ -52,9 +52,12 @@ def checks(eng) -> List[Dict]:
     """[{k, zh, ok, txt}] — ok is None when the data is missing."""
     out = []
     st = getattr(eng, "stress", None)
-    ssi = st.history.dropna() if st is not None and getattr(st, "history", None) is not None else pd.Series(dtype=float)
+    from .stress import ref_history
+    hh = ref_history(st, 21)                     # history of the live component set, like-for-like with st.score
+    ssi = hh.dropna() if hh is not None else pd.Series(dtype=float)
     if len(ssi) > 21:
-        now, ago = float(ssi.iloc[-1]), float(ssi.iloc[-21])
+        sc = getattr(st, "score", None)
+        now, ago = float(sc) if sc is not None else float(ssi.iloc[-1]), float(ssi.iloc[-21])
         out.append({"k": "ssi", "short": "壓力指數", "zh": "壓力指數 SSI 回到 50 以下、而且比一個月前低", "ok": now < 50 and now < ago, "txt": f"SSI {now:.0f}（一個月前 {ago:.0f}）"})
     vix, v3 = _s(eng, "^VIX"), _s(eng, "^VIX3M")
     if len(vix):

@@ -7,7 +7,7 @@ import html
 from pathlib import Path
 
 from tools.site_twmacro import _note_html, load_note
-from tools.sitekit import card
+from tools.sitekit import card, guard_safe
 
 NOTE = Path(__file__).resolve().parents[1] / "research_feed" / "industry_note.json"   # public repo only
 
@@ -16,7 +16,7 @@ def sec_industry_note(eng) -> str:
     notes = load_note(NOTE)
     if not notes:
         return ""
-    e = lambda x: html.escape(str(x or ""))  # noqa: E731
+    e = lambda x: html.escape(guard_safe(str(x or "")))  # noqa: E731   AI-written text
     sec = [x for x in (notes[0].get("sectors") or []) if isinstance(x, dict) and x.get("name") and x.get("read")]
     rows = "".join(f'<tr><td class="nw"><b>{e(x["name"])}</b>' + (f'<div class="small muted">{e(x.get("state"))}</div>' if x.get("state") else "")
                    + f'</td><td>{e(x["read"])}</td></tr>' for x in sec)

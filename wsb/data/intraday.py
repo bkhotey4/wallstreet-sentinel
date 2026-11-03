@@ -25,6 +25,10 @@ def parse(res: Dict, now: Optional[float] = None) -> Optional[Dict]:
             continue
         h, lo, v = (q.get("high") or [None] * len(ts))[i], (q.get("low") or [None] * len(ts))[i], (q.get("volume") or [None] * len(ts))[i]
         days.setdefault((t + off) // 86400, []).append({"t": t, "k": (t + off) % 86400, "c": float(c), "h": h, "l": lo, "v": float(v or 0)})
+    for d in days.values():                    # time of day = seconds since that day's first bar, so a DST change (the
+        t0 = d[0]["t"]                         # current gmtoffset applied to last month's bars) can't shift "same time"
+        for b in d:
+            b["k"] = b["t"] - t0
     ks = sorted(days)
     if len(ks) < 6:
         return None
