@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-04 01:30 台北",
+  "updated": "2026-11-04 07:55 台北",
   "stories": [
     {
       "date": "2026-11-02",
@@ -20,28 +20,99 @@
       "spill": "AI 公司如果只能用垃圾債利率借錢，蓋資料中心的成本會上升，這會往下傳到輝達、台積電、伺服器廠與電力股的訂單預期；新雲端公司（CoreWeave、Nebius）本來就靠借錢擴張，最敏感。",
       "watch": "三大評級機構正式公布的評級；Anthropic 價格區間公布時，申請文件裡的負債與信用額度條款；高收益債利差（本站信用利差卡）有沒有繼續擴大。",
       "sources": [
-        {"name": "Tech Times", "date": "2026-11-02", "url": "https://www.techtimes.com/articles/329858/20261102/anthropic-debt-now-priced-junk-after-blackstone-reverses-investment-grade-guidance.htm"},
-        {"name": "Seoul Economic Daily", "date": "2026-11-01", "url": "https://en.sedaily.com/international/2026/11/01/wall-street-turns-cold-on-ai-meta-outlook-cut-anthropic"},
-        {"name": "Cornford and Cross：哪些是確認的", "date": "2026-11", "url": "https://cornfordandcross.com/market-insights/how-confirmed-is-anthropic-s-possible-junk-credit-rating/"}
+        {
+          "name": "Tech Times",
+          "date": "2026-11-02",
+          "url": "https://www.techtimes.com/articles/329858/20261102/anthropic-debt-now-priced-junk-after-blackstone-reverses-investment-grade-guidance.htm"
+        },
+        {
+          "name": "Seoul Economic Daily",
+          "date": "2026-11-01",
+          "url": "https://en.sedaily.com/international/2026/11/01/wall-street-turns-cold-on-ai-meta-outlook-cut-anthropic"
+        },
+        {
+          "name": "Cornford and Cross：哪些是確認的",
+          "date": "2026-11",
+          "url": "https://cornfordandcross.com/market-insights/how-confirmed-is-anthropic-s-possible-junk-credit-rating/"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-03",
+      "topic": "費半反彈，但 10 年期殖利率升到約 4.95%",
+      "one": "11/3 美股收盤半導體明顯反彈，高收益債也沒再走弱；但 10 年期殖利率同日上升，反彈並不是因為利率下降。反彈原因只確認到「時間對得上的報導」，沒有單一官方解釋。",
+      "confirmed": [
+        "2026-11-03 收盤：S&P 500 +0.36%（7568.92）、那斯達克 +0.83%（25372.01）、費城半導體 +2.63%（10600.40）（本站價格資料）。",
+        "10 年期美債殖利率約 4.952%，前一日 4.894%，約上升 0.06 個百分點（本站價格資料）。",
+        "高收益債 ETF（HYG）+0.12%、投資等級債 ETF（LQD）+0.01%，前一天 HYG 曾 −0.7%，信用市場沒有繼續惡化（本站價格資料）。",
+        "美元兌新台幣約 32.72，當日 +0.39%（本站價格資料）。"
+      ],
+      "reported": [
+        "據報（搜尋結果摘要）道瓊當天下跌約 0.4%，S&P 500 終止連跌三天。",
+        "據報晶片股是在 AMD 財報公布前反彈，AMD 在收盤後股價上漲；當天也是美國期中選舉日（StockTitan、TheStreet 標題轉述，本筆未讀到原文）。"
+      ],
+      "market": "S&P 500 +0.36%、那指 +0.83%、費半 +2.63%；10 年期殖利率同步上升約 0.06 個百分點，HYG +0.12%。",
+      "spill": "費半是台積電、封測與伺服器供應鏈的情緒指標，美股半導體反彈通常先影響台股隔日的電子權值股開盤氣氛；但美元兌新台幣走升，外資匯兌壓力也要一起看。",
+      "watch": "AMD 財報原文與法說會對 AI 晶片需求的說法；Anthropic 三大評級機構正式評級；10 年期殖利率能否持續高於 4.9%、高收益債是否再轉弱。",
+      "sources": [
+        {
+          "name": "StockTitan：Stock Market Today Live, Nov 3, 2026",
+          "date": "2026-11-03",
+          "url": "https://www.stocktitan.net/articles/stock-market-today-live-november-3-2026"
+        },
+        {
+          "name": "TheStreet：Stock Market Today (Nov. 3, 2026)",
+          "date": "2026-11-03",
+          "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-nov-03-2026"
+        }
       ]
     }
   ],
   "terms": [
-    {"term": "耳語預期", "en": "Whisper number", "added": "2026-11-04", "site": "做不到",
-     "plain": "投資人私下真正期待的財報數字，熱門股通常比分析師公開的預期高；財報「優於預期」但沒超過耳語預期，股價還是可能下跌。",
-     "example": "Apple 每股盈餘 2.05 優於預期 1.98，兩天卻跌 3.4%，可能原因之一是市場期待更高。",
-     "how": "耳語數字沒有可驗證的免費來源，本站改用「選擇權事前預期的波動」代替，標示在財報結論卡。"},
-    {"term": "二階導", "en": "Second derivative", "added": "2026-11-04", "site": "已在本站",
-     "plain": "不是看有沒有成長，而是看成長在加速還是放慢；股價常反映的是加速或減速。",
-     "example": "營收年增從 16.4% 降到 11.7%，還在成長，但在放慢。",
-     "how": "財報結論卡標示「營收成長加速／放慢（二階導）」，用 SEC 季報與財報新聞稿算。"},
-    {"term": "垃圾債／非投資等級", "en": "Junk / high yield", "added": "2026-11-04", "site": "已在本站",
-     "plain": "評級在 BB+ 以下的債券；違約風險比較高，所以借錢利率比較高。BBB− 以上叫投資等級。",
-     "example": "Anthropic 若被評為 BB，發債利率會比投資等級公司高。",
-     "how": "本站信用利差卡追蹤高收益債利差；利差擴大代表垃圾債借錢變貴。"},
-    {"term": "選擇權事前預期", "en": "Options-implied move", "added": "2026-11-04", "site": "已在本站",
-     "plain": "財報前用選擇權價格推算，市場準備好接受股價在財報後上下動多少。",
-     "example": "PLTR 財報前預期 ±11.7%，實際兩天 −7.3%，比市場預期溫和。",
-     "how": "財報跳空成績單與財報結論卡。"}
+    {
+      "term": "耳語預期",
+      "en": "Whisper number",
+      "added": "2026-11-04",
+      "site": "做不到",
+      "plain": "投資人私下真正期待的財報數字，熱門股通常比分析師公開的預期高；財報「優於預期」但沒超過耳語預期，股價還是可能下跌。",
+      "example": "Apple 每股盈餘 2.05 優於預期 1.98，兩天卻跌 3.4%，可能原因之一是市場期待更高。",
+      "how": "耳語數字沒有可驗證的免費來源，本站改用「選擇權事前預期的波動」代替，標示在財報結論卡。"
+    },
+    {
+      "term": "二階導",
+      "en": "Second derivative",
+      "added": "2026-11-04",
+      "site": "已在本站",
+      "plain": "不是看有沒有成長，而是看成長在加速還是放慢；股價常反映的是加速或減速。",
+      "example": "營收年增從 16.4% 降到 11.7%，還在成長，但在放慢。",
+      "how": "財報結論卡標示「營收成長加速／放慢（二階導）」，用 SEC 季報與財報新聞稿算。"
+    },
+    {
+      "term": "垃圾債／非投資等級",
+      "en": "Junk / high yield",
+      "added": "2026-11-04",
+      "site": "已在本站",
+      "plain": "評級在 BB+ 以下的債券；違約風險比較高，所以借錢利率比較高。BBB− 以上叫投資等級。",
+      "example": "Anthropic 若被評為 BB，發債利率會比投資等級公司高。",
+      "how": "本站信用利差卡追蹤高收益債利差；利差擴大代表垃圾債借錢變貴。"
+    },
+    {
+      "term": "選擇權事前預期",
+      "en": "Options-implied move",
+      "added": "2026-11-04",
+      "site": "已在本站",
+      "plain": "財報前用選擇權價格推算，市場準備好接受股價在財報後上下動多少。",
+      "example": "PLTR 財報前預期 ±11.7%，實際兩天 −7.3%，比市場預期溫和。",
+      "how": "財報跳空成績單與財報結論卡。"
+    },
+    {
+      "term": "信用利差",
+      "en": "Credit spread",
+      "added": "2026-11-04",
+      "site": "已在本站",
+      "plain": "公司債殖利率比同年限美國公債多出來的部分，代表市場要求多少額外報酬來承擔違約風險；變大通常表示市場更擔心。",
+      "example": "11/2 高收益債 ETF（HYG）−0.7%，11/3 回升 0.12%（本站價格資料）。",
+      "how": "本站「金絲雀」、「全方位風險」信用循環／違約面板，以及「華爾街關注焦點」信用市場卡，使用 FRED 的 ICE BofA 利差系列。"
+    }
   ]
 }
