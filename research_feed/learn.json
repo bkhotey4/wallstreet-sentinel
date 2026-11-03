@@ -1,0 +1,47 @@
+{
+  "updated": "2026-11-04 01:30 台北",
+  "stories": [
+    {
+      "date": "2026-11-02",
+      "topic": "Anthropic 可能拿到「垃圾債」評級",
+      "one": "有媒體報導 Anthropic 上市後可能被評為非投資等級（俗稱垃圾債），借錢成本會比較高；三大評級機構還沒有正式公布評級，這件事只是當天 AI 股大跌的原因之一，不是唯一原因。",
+      "confirmed": [
+        "Anthropic 在 2026-10-26 遞交上市申請 S-1，2026-11-02 遞交修正版，預計在 Nasdaq 掛牌，代號 ANT（SEC 文件）。",
+        "2026-10-30 那指 −2.86%、費城半導體 −7.2%、CoreWeave −9.7%、甲骨文 −6.4%；10 年期美債殖利率小降 0.06 個百分點，所以不是利率造成的（本站價格資料）。",
+        "2026-11-02 高收益債 ETF（HYG）−0.7%，垃圾債市場也同步轉弱（本站價格資料）。"
+      ],
+      "reported": [
+        "Blackstone 據報 10/30 告訴投資人，Anthropic 上市後三大評級機構可能只給 BB 級（投資等級的下一級），推翻先前預期的投資等級（Tech Times、Seoul Economic Daily 轉述）。",
+        "較小的評級機構 Kroll（KBRA）據報 6 月就給了 BB+（媒體轉述，本站沒有看到評級原文）。",
+        "媒體轉述申請文件：一筆 150 億美元的信用額度要用幾乎全部資產擔保，直到拿到三大機構中至少兩家的投資等級為止。",
+        "同一天 Meta 調降展望也拖累 AI 股，兩件事很難分開。"
+      ],
+      "market": "AI 晶片、新雲端（CoreWeave）和甲骨文跌得最多；殖利率沒有上升，代表賣壓來自「AI 公司借錢會不會變貴」的擔心，不是利率。",
+      "spill": "AI 公司如果只能用垃圾債利率借錢，蓋資料中心的成本會上升，這會往下傳到輝達、台積電、伺服器廠與電力股的訂單預期；新雲端公司（CoreWeave、Nebius）本來就靠借錢擴張，最敏感。",
+      "watch": "三大評級機構正式公布的評級；Anthropic 價格區間公布時，申請文件裡的負債與信用額度條款；高收益債利差（本站信用利差卡）有沒有繼續擴大。",
+      "sources": [
+        {"name": "Tech Times", "date": "2026-11-02", "url": "https://www.techtimes.com/articles/329858/20261102/anthropic-debt-now-priced-junk-after-blackstone-reverses-investment-grade-guidance.htm"},
+        {"name": "Seoul Economic Daily", "date": "2026-11-01", "url": "https://en.sedaily.com/international/2026/11/01/wall-street-turns-cold-on-ai-meta-outlook-cut-anthropic"},
+        {"name": "Cornford and Cross：哪些是確認的", "date": "2026-11", "url": "https://cornfordandcross.com/market-insights/how-confirmed-is-anthropic-s-possible-junk-credit-rating/"}
+      ]
+    }
+  ],
+  "terms": [
+    {"term": "耳語預期", "en": "Whisper number", "added": "2026-11-04", "site": "做不到",
+     "plain": "投資人私下真正期待的財報數字，熱門股通常比分析師公開的預期高；財報「優於預期」但沒超過耳語預期，股價還是可能下跌。",
+     "example": "Apple 每股盈餘 2.05 優於預期 1.98，兩天卻跌 3.4%，可能原因之一是市場期待更高。",
+     "how": "耳語數字沒有可驗證的免費來源，本站改用「選擇權事前預期的波動」代替，標示在財報結論卡。"},
+    {"term": "二階導", "en": "Second derivative", "added": "2026-11-04", "site": "已在本站",
+     "plain": "不是看有沒有成長，而是看成長在加速還是放慢；股價常反映的是加速或減速。",
+     "example": "營收年增從 16.4% 降到 11.7%，還在成長，但在放慢。",
+     "how": "財報結論卡標示「營收成長加速／放慢（二階導）」，用 SEC 季報與財報新聞稿算。"},
+    {"term": "垃圾債／非投資等級", "en": "Junk / high yield", "added": "2026-11-04", "site": "已在本站",
+     "plain": "評級在 BB+ 以下的債券；違約風險比較高，所以借錢利率比較高。BBB− 以上叫投資等級。",
+     "example": "Anthropic 若被評為 BB，發債利率會比投資等級公司高。",
+     "how": "本站信用利差卡追蹤高收益債利差；利差擴大代表垃圾債借錢變貴。"},
+    {"term": "選擇權事前預期", "en": "Options-implied move", "added": "2026-11-04", "site": "已在本站",
+     "plain": "財報前用選擇權價格推算，市場準備好接受股價在財報後上下動多少。",
+     "example": "PLTR 財報前預期 ±11.7%，實際兩天 −7.3%，比市場預期溫和。",
+     "how": "財報跳空成績單與財報結論卡。"}
+  ]
+}
