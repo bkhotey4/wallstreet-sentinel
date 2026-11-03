@@ -156,32 +156,6 @@ def sec_etf_div(eng) -> str:
     return card("配息、除息與填息", "Dividends, ex-dates and recovery", _lead(lead) + cal + tab + _how(how), "wide")
 
 
-# ------------------------------------------------------------------ ETF 常被忽略的兩件事
-def sec_etf_traps(eng) -> str:
-    r = _r(eng)
-    if not r.get("available") or not (r.get("lev") or r.get("fx")):
-        return ""
-    parts, heads = [], []
-    lv = r.get("lev")
-    if lv:
-        heads.append(f"正 2 一年 {lv['lev']:+.0f}%，不是 0050 的兩倍 {lv['x2']:+.0f}%")
-        tx = (f"過去一年 0050 {lv['base']:+.1f}%，兩倍是 {lv['x2']:+.1f}%；00631L（台灣 50 正 2）實際 {lv['lev']:+.1f}%，"
-              f"差 {lv['gap']:+.1f} 個百分點" + (f"；00632R（反 1）{lv['inv']:+.1f}%" if lv.get("inv") is not None else "") + "。"
-              "槓桿 ETF 是「每天」維持 2 倍，來回震盪時會慢慢耗損（波動越大耗損越多"
-              + (f"，0050 這一年的年化波動 {lv['vol']:.0f}%" if lv.get("vol") is not None else "") + "），所以適合短期，長期報酬不會剛好是兩倍。")
-        parts.append(f'<h3>{T("⚡ 槓桿 ETF 不是長期兩倍", "Leveraged ETFs are not 2× long-term")}</h3><p>{T(tx, "")}</p>')
-    fx = r.get("fx")
-    if fx:
-        heads.append(f"美債 ETF 的報酬有一部分來自匯率（美元兌台幣一年 {fx['fx']:+.1f}%）")
-        tx = (f"過去一年 00679B（元大美債 20 年）價格 {fx['etf']:+.1f}%；同期美國 20 年公債 ETF（TLT，美元計價）{fx['usd']:+.1f}%，"
-              f"美元兌台幣 {fx['fx']:+.1f}%，兩者合起來約 {fx['combo']:+.1f}%（和 ETF 的差距來自配息時間、追蹤的指數與費用）。"
-              "買台灣掛牌的美債 ETF 等於同時承擔美國利率和美元匯率兩個風險：美國降息時債券漲，但如果新台幣同時升值，台幣報酬會被吃掉一部分。")
-        parts.append(f'<h3>{T("💱 美債 ETF：利率＋匯率", "US-bond ETFs: rates + currency")}</h3><p>{T(tx, "")}</p>'
-                     f'<p class="small"><a class="golink" href="#bonds" data-p="bonds">{T("看美國公債 →", "US Treasuries →")}</a></p>')
-    lead = "一句話看懂：" + "；".join(heads) + "。"
-    return card("ETF 常被忽略的兩件事", "Two things ETF holders often miss", _lead(lead) + "".join(parts), "wide")
-
-
 # ------------------------------------------------------------------ 回顧試算
 def tool_data(r) -> dict:
     """Weekly closes (last close of each week) + dividends per tracked ETF for the look-back calculator."""
@@ -226,15 +200,16 @@ def sec_etf_all(eng) -> str:
     nav = D.load().get("nav") or {}
     asof = max((f"{v['date']} {v.get('time') or ''}".strip() for v in nav.values() if v.get("date")), default="")
     core = {c: k for k, xs in D.CORE.items() for c in xs}
-    js = json.dumps({"rows": rows, "core": core, "asof": asof}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    body = (_lead(f"一句話看懂：台灣目前掛牌的 {len(rows)} 檔 ETF 都在這裡，輸入代號或名稱（例如 00999A、高息、美債）就能查；點「詳情」看一年高低點、配息率和波動。")
+    from tools.site_tw_etf_perf import perf_map
+    js = json.dumps({"rows": rows, "core": core, "asof": asof, "perf": perf_map(eng)}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    body = (_lead(f"一句話看懂：台灣目前掛牌的 {len(rows)} 檔 ETF 都在這裡，輸入代號或名稱（例如 00999A、高息、美債）就能查；表中附近 1 年含息報酬與近 3 年年化；點「詳情」看一年高低點、配息率和波動。")
             + f'<form class="lqf" id="etsf" autocomplete="off"><input id="etsq" class="lqin" maxlength="20" placeholder="00999A、高息、美債、主動" aria-label="search"></form>'
               f'<p class="small muted" id="etsu">🕒 {T("資料時間：", "Data as of ")}{esc(asof or "—")}{T("（網站更新時）", " (site build)")}</p>'
               f'<p class="small muted" id="etsn"></p><div class="scroll"><table class="mini" id="etst"></table></div>'
             + f'<script type="application/json" id="etf-all">{js}</script>'
             + _how("清單、價格、淨值、規模與今天申贖來自證交所「ETF 即時淨值」：在 Cloudflare 版網址打開時直接即時抓（每 2 分鐘更新，新上市的 ETF 會自動出現），"
                    "其他情況用網站更新時的資料；受益人數來自集保結算所（每週）。"
-                   "沒輸入時列出規模最大的 30 檔。「詳情」會即時向本站的報價服務查一年的日資料（Yahoo），只送出 ETF 代號。"
+                   "含息報酬用 Yahoo 的價格與配息（每天更新一次，3 年用年化）。沒輸入時列出規模最大的 30 檔。「詳情」會即時向本站的報價服務查一年的日資料（Yahoo），只送出 ETF 代號。"
                    "類型依代號與名稱自動判斷（B＝債券、L／R＝槓桿反向、A＝主動式、名稱有「息」＝高股息），可能有少數分錯。不是投資建議。"))
     return card("全部台灣 ETF 查詢", "Search every Taiwan ETF", body, "wide")
 
@@ -264,7 +239,7 @@ JS = r"""
  function sg(x,d){return x==null||isNaN(x)?'—':(x>=0?'+':'')+fm(x,d==null?1:d)+'%';}
  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
  var EA={rows:[],core:{}};try{EA=JSON.parse((document.getElementById('etf-all')||{}).textContent||'{}');}catch(e){}
- var ALL=EA.rows||[],HOLD={};ALL.forEach(function(r){if(r[7])HOLD[r[0]]=r[7];});
+ var ALL=EA.rows||[],HOLD={},PF=EA.perf||{};ALL.forEach(function(r){if(r[7])HOLD[r[0]]=r[7];});
  function kindOf(c,n){if(EA.core&&EA.core[c])return EA.core[c];if(/B$/.test(c))return '債券';if(/[LR]$/.test(c))return '槓桿反向';if(/A$/.test(c))return '主動式';
   if(/U$/.test(c)||n.indexOf('期貨')>=0)return '商品期貨';if(n.indexOf('息')>=0||n.indexOf('收益')>=0)return '高股息';return '其他股票型';}
  var dl=document.getElementById('etfl');
@@ -278,14 +253,15 @@ JS = r"""
   function draw(){var s=qi.value.trim().toUpperCase(),hit=s?ALL.filter(function(r){return r[0].toUpperCase().indexOf(s)>=0||r[1].toUpperCase().indexOf(s)>=0||r[2].indexOf(s)>=0;}):ALL;
    nn.textContent=s?('找到 '+hit.length+' 檔'+(hit.length>60?'，只列前 60 檔':'')):'規模最大的 30 檔（共 '+ALL.length+' 檔，輸入代號或名稱查詢）';
    hit=hit.slice(0,s?60:30);tb.textContent='';var h=tb.insertRow();
-   ['ETF','類型','價格','折溢價','規模（億）','今天申贖（億）','受益人（萬）',''].forEach(function(x,i){var th=el('th',i>1&&i<7?'r':'',x);h.appendChild(th);});
+   ['ETF','類型','價格','折溢價','規模（億）','今天申贖（億）','受益人（萬）','近 1 年含息','近 3 年年化',''].forEach(function(x,i){var th=el('th',i>1&&i<9?'r':'',x);h.appendChild(th);});
    hit.forEach(function(r){var tr=tb.insertRow(),c0=tr.insertCell();c0.appendChild(el('b','',r[0]));c0.appendChild(document.createTextNode(' '+r[1].slice(0,16)));
     tr.insertCell().textContent=r[2];
     [[fm(r[3],2),''],[r[4]==null?'—':sg(r[4],2),r[4]!=null&&Math.abs(r[4])>=1?'dn':''],[fm(r[5],0),''],[r[6]==null?'—':(r[6]>=0?'+':'')+fm(r[6],1),r[6]>0?'up':r[6]<0?'dn':''],[r[7]?fm(r[7]/1e4,1):'—','']]
+     .concat([0,1].map(function(i){var v=(PF[r[0]]||[])[i];return [v==null?'—':sg(v,1),v>0?'up':v<0?'dn':''];}))
      .forEach(function(v){var c=tr.insertCell();c.className='r '+v[1];c.textContent=v[0];});
     var bc=tr.insertCell(),b=el('button','btn','詳情');b.type='button';bc.appendChild(b);
     b.addEventListener('click',function(){var nx=tr.nextSibling;if(nx&&nx.className==='etsd'){nx.remove();return;}
-     var dr=tb.insertRow(tr.rowIndex+1);dr.className='etsd';var dc=dr.insertCell();dc.colSpan=8;dc.className='small';dc.textContent='查詢中…';
+     var dr=tb.insertRow(tr.rowIndex+1);dr.className='etsd';var dc=dr.insertCell();dc.colSpan=10;dc.className='small';dc.textContent='查詢中…';
      live(r[0],'full').then(function(q){if(!q){dc.textContent='報價服務沒有這檔的資料（或只在 Cloudflare 版網址可用）。';return;}
       var y=q.div12&&q.price?q.div12/q.price*100:null,off=q.hi52?(q.price/q.hi52-1)*100:null;
       dc.textContent='現價 '+fm(q.price,2)+'；一年高點 '+fm(q.hi52,2)+'、低點 '+fm(q.lo52,2)+(off!=null?'（離高點 '+sg(off)+'）':'')

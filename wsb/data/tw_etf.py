@@ -5,8 +5,10 @@
   build into a daily history, so flows and premiums can be compared with each ETF's own past.
 * 證交所 除權除息預告表 (OpenAPI TWT48U_ALL): upcoming ex-dividend dates and cash dividends.
 * 集保結算所 集保戶股權分散表 (opendata, weekly): number of holders per ETF, snapshotted weekly.
-* Yahoo chart API: 5 years of daily closes and cash dividends for the tracked ETFs (total return, yield, drawdown, 填息).
-Cached in data_cache/econ_tw_etf.json (kept between site builds)."""
+* Yahoo chart API: 5 years of daily closes and cash dividends for the tracked ETFs (total return, yield, drawdown, 填息),
+  and — refreshed about once a day, a slice per build — for every other listed ETF plus a few reference series
+  (indexes, US ETFs, the 10-year yield, USD/TWD) used to judge returns, payouts, rate sensitivity and leverage.
+Cached in data_cache/econ_tw_etf.json and econ_tw_etf_all.json (kept between site builds)."""
 from __future__ import annotations
 
 import asyncio
@@ -29,6 +31,12 @@ NAV_URL = "https://mis.twse.com.tw/stock/data/all_etf.txt"
 EXDIV_URL = "https://openapi.twse.com.tw/v1/exchangeReport/TWT48U_ALL"
 TDCC_URL = "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5"
 PX_TTL = 12 * 3600
+ALL_FILE = DATA_DIR / "econ_tw_etf_all.json"
+ALL_TTL = 20 * 3600
+ALL_BUDGET_S = 75
+# reference series the analytics compare ETFs with (picked per ETF by correlation, never assumed)
+REFS = ["^TWII", "^GSPC", "^NDX", "^DJI", "^SOX", "^N225", "^HSI", "^NSEI", "GC=F", "BZ=F", "CL=F",
+        "DX-Y.NYB", "JPY=X", "TLT", "SPY", "QQQ", "SOXX", "^TNX", "TWD=X"]
 KEEP_DAYS = 800
 
 # the ETFs most Taiwanese investors hold, by kind (the top ones by size are added automatically on top of these)
@@ -150,9 +158,20 @@ def parse_chart(js: Dict) -> Optional[Dict]:
     off = int((r.get("meta") or {}).get("gmtoffset") or 28800)
     day = lambda t: datetime.utcfromtimestamp(int(t) + off).strftime("%Y-%m-%d")      # noqa: E731  Taipei calendar day
     c = [[day(t), round(v, 4)] for t, v in zip(ts, cl) if v]
-    dv = sorted([day(x["date"]), float(x["amount"])] for x in ((r.get("events") or {}).get("dividends") or {}).values()
-                if x.get("amount"))
+    dv = dedupe_dv(sorted([day(x["date"]), float(x["amount"])] for x in ((r.get("events") or {}).get("dividends") or {}).values()
+                          if x.get("amount")))
     return {"c": fix_splits(c, {x for x, _ in dv}), "dv": dv} if len(c) > 20 else None
+
+
+def dedupe_dv(dv: List) -> List:
+    """Yahoo sometimes lists one Taiwan ETF dividend twice on consecutive days (00917: 3.5 on 01-19 and 01-20): the
+    same amount again within 7 days is dropped."""
+    out = []
+    for d, a in dv:
+        if out and abs(out[-1][1] - a) < 1e-9 and (date.fromisoformat(d) - date.fromisoformat(out[-1][0])).days <= 7:
+            continue
+        out.append([d, a])
+    return out
 
 
 def fix_splits(c: List, div_days=()) -> List:
@@ -172,7 +191,91 @@ def fix_splits(c: List, div_days=()) -> List:
     return out
 
 
+def pack(p: Dict) -> Dict:
+    """{"c": [[date, close]], "dv": …} → compact {"d0": first date, "t": day offsets, "c": closes, "dv": …}."""
+    if not p.get("c"):
+        return {"d0": None, "t": [], "c": [], "dv": p.get("dv") or []}
+    d0 = date.fromisoformat(p["c"][0][0])
+    return {"d0": d0.isoformat(), "t": [(date.fromisoformat(a) - d0).days for a, _ in p["c"]],
+            "c": [b for _, b in p["c"]], "dv": p.get("dv") or []}
+
+
+def unpack(p: Dict) -> Dict:
+    if "d0" not in p:
+        return p
+    if not p.get("d0"):
+        return {"c": [], "dv": p.get("dv") or []}
+    d0 = date.fromisoformat(p["d0"])
+    return {"c": [[(d0 + timedelta(days=t)).isoformat(), c] for t, c in zip(p["t"], p["c"])], "dv": p.get("dv") or []}
+
+
+def load_all() -> Dict:
+    try:
+        return json.loads(ALL_FILE.read_text(encoding="utf-8")) if ALL_FILE.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def all_series(d: Optional[Dict] = None) -> Dict[str, Dict]:
+    """Every ETF (and reference series) with a price history: {code: {"c": [[date, close]], "dv": [...]}}; the tracked
+    ETFs' fresher copy in econ_tw_etf.json wins."""
+    d = load() if d is None else d
+    out = {k: unpack(v) for k, v in (load_all().get("px") or {}).items()}
+    out.update({k: {"c": v["c"], "dv": v.get("dv") or []} for k, v in (d.get("px") or {}).items()})
+    for v in out.values():
+        v["dv"] = dedupe_dv(v["dv"])
+    return out
+
+
 # ------------------------------------------------------------------ refresh
+async def _yahoo(sym: str) -> Optional[Dict]:
+    q = sym.replace("^", "%5E")
+    try:
+        js = await http.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{q}?range=5y&interval=1d&events=div",
+                            headers={"User-Agent": "Mozilla/5.0"}, timeout=25, retries=1)
+    except Exception:  # noqa: BLE001
+        return None
+    return parse_chart(js)
+
+
+async def refresh_all(codes: List[str], budget_s: float = ALL_BUDGET_S) -> Dict:
+    """Price history for every listed ETF not tracked above, plus REFS: the stalest first, until the time budget is
+    spent (the first fill takes a few builds; afterwards each one is refreshed about once a day)."""
+    a = load_all()
+    px, sfx = a.setdefault("px", {}), a.setdefault("sfx", {})
+    want = list(dict.fromkeys(list(codes) + REFS))
+    due = sorted((float((px.get(c) or {}).get("ts", 0)), c) for c in want)
+    due = [c for t, c in due if time.time() - t > ALL_TTL]
+    t0, sem = time.monotonic(), asyncio.Semaphore(6)
+
+    async def one(c):
+        async with sem:
+            if time.monotonic() - t0 > budget_s:
+                return
+            if c in REFS:
+                p = await _yahoo(c)
+            else:
+                p = None
+                for s in ([sfx[c]] if sfx.get(c) else [".TW", ".TWO"]):
+                    p = await _yahoo(c + s)
+                    if p:
+                        sfx[c] = s
+                        break
+            if p:
+                px[c] = {**pack(p), "ts": time.time()}
+            elif c in px:
+                px[c]["ts"] = time.time() - ALL_TTL / 2      # retry later, keep the old copy
+            else:
+                px[c] = {"d0": None, "t": [], "c": [], "dv": [], "ts": time.time()}   # unknown to Yahoo: try again tomorrow
+    await asyncio.gather(*(one(c) for c in due))
+    a["px"] = {k: v for k, v in px.items() if k in set(want)}
+    a["ts"] = time.time()
+    tmp = ALL_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(a, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.replace(tmp, ALL_FILE)
+    return a
+
+
 async def _chart(code: str, d: Dict) -> None:
     sfx = (d.get("sfx") or {}).get(code)
     for s in ([sfx] if sfx else [".TW", ".TWO"]):
@@ -238,4 +341,8 @@ async def refresh(force: bool = False) -> Dict:
     d["px"] = {k: v for k, v in (d.get("px") or {}).items() if k in codes}
     d["ts"] = time.time()
     _save(d)
+    try:
+        await refresh_all([c for c in (d.get("nav") or {}) if c not in set(codes)])
+    except Exception as e:  # noqa: BLE001
+        log.warning("all-ETF price history unavailable: %s", e)
     return d
