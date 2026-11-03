@@ -202,7 +202,7 @@ def sec_etf_all(eng) -> str:
     core = {c: k for k, xs in D.CORE.items() for c in xs}
     from tools.site_tw_etf_perf import perf_map
     js = json.dumps({"rows": rows, "core": core, "asof": asof, "perf": perf_map(eng)}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    body = (_lead(f"一句話看懂：台灣目前掛牌的 {len(rows)} 檔 ETF 都在這裡，輸入代號或名稱（例如 00999A、高息、美債）就能查；表中附近 1 年含息報酬與近 3 年年化；點「詳情」看一年高低點、配息率和波動。")
+    body = (_lead(f"一句話看懂：台灣目前掛牌的 {len(rows)} 檔 ETF 都在這裡，輸入代號或名稱（例如 00999A、高息、美債）就能查；表中附近 1 年含息報酬、近 3 年年化，以及配息是不是在吃老本；點「詳情」看一年高低點、配息率和波動。")
             + f'<form class="lqf" id="etsf" autocomplete="off"><input id="etsq" class="lqin" maxlength="20" placeholder="00999A、高息、美債、主動" aria-label="search"></form>'
               f'<p class="small muted" id="etsu">🕒 {T("資料時間：", "Data as of ")}{esc(asof or "—")}{T("（網站更新時）", " (site build)")}</p>'
               f'<p class="small muted" id="etsn"></p><div class="scroll"><table class="mini" id="etst"></table></div>'
@@ -253,15 +253,17 @@ JS = r"""
   function draw(){var s=qi.value.trim().toUpperCase(),hit=s?ALL.filter(function(r){return r[0].toUpperCase().indexOf(s)>=0||r[1].toUpperCase().indexOf(s)>=0||r[2].indexOf(s)>=0;}):ALL;
    nn.textContent=s?('找到 '+hit.length+' 檔'+(hit.length>60?'，只列前 60 檔':'')):'規模最大的 30 檔（共 '+ALL.length+' 檔，輸入代號或名稱查詢）';
    hit=hit.slice(0,s?60:30);tb.textContent='';var h=tb.insertRow();
-   ['ETF','類型','價格','折溢價','規模（億）','今天申贖（億）','受益人（萬）','近 1 年含息','近 3 年年化',''].forEach(function(x,i){var th=el('th',i>1&&i<9?'r':'',x);h.appendChild(th);});
+   ['ETF','類型','價格','折溢價','規模（億）','今天申贖（億）','受益人（萬）','近 1 年含息','近 3 年年化','配息吃老本？',''].forEach(function(x,i){var th=el('th',i>1&&i<9?'r':'',x);h.appendChild(th);});
    hit.forEach(function(r){var tr=tb.insertRow(),c0=tr.insertCell();c0.appendChild(el('b','',r[0]));c0.appendChild(document.createTextNode(' '+r[1].slice(0,16)));
     tr.insertCell().textContent=r[2];
     [[fm(r[3],2),''],[r[4]==null?'—':sg(r[4],2),r[4]!=null&&Math.abs(r[4])>=1?'dn':''],[fm(r[5],0),''],[r[6]==null?'—':(r[6]>=0?'+':'')+fm(r[6],1),r[6]>0?'up':r[6]<0?'dn':''],[r[7]?fm(r[7]/1e4,1):'—','']]
      .concat([0,1].map(function(i){var v=(PF[r[0]]||[])[i];return [v==null?'—':sg(v,1),v>0?'up':v<0?'dn':''];}))
      .forEach(function(v){var c=tr.insertCell();c.className='r '+v[1];c.textContent=v[0];});
+    var pf=PF[r[0]]||[],pc=tr.insertCell();pc.className='small';pc.textContent=pf[2]==='gain'?'✅ 沒有':pf[2]==='capital'?'⚠️ 約 '+pf[3]+'% 是本金':pf[2]==='short'?'❌ 含息也賠':'—';
+    if(pf[2])pc.title=pf[2]==='gain'?'價格也漲，配息來自賺到的錢':pf[2]==='capital'?'價格跌、含息仍賺：部分配息等於拿回本金':'配息補不回價格跌幅';
     var bc=tr.insertCell(),b=el('button','btn','詳情');b.type='button';bc.appendChild(b);
     b.addEventListener('click',function(){var nx=tr.nextSibling;if(nx&&nx.className==='etsd'){nx.remove();return;}
-     var dr=tb.insertRow(tr.rowIndex+1);dr.className='etsd';var dc=dr.insertCell();dc.colSpan=10;dc.className='small';dc.textContent='查詢中…';
+     var dr=tb.insertRow(tr.rowIndex+1);dr.className='etsd';var dc=dr.insertCell();dc.colSpan=11;dc.className='small';dc.textContent='查詢中…';
      live(r[0],'full').then(function(q){if(!q){dc.textContent='報價服務沒有這檔的資料（或只在 Cloudflare 版網址可用）。';return;}
       var y=q.div12&&q.price?q.div12/q.price*100:null,off=q.hi52?(q.price/q.hi52-1)*100:null;
       dc.textContent='現價 '+fm(q.price,2)+'；一年高點 '+fm(q.hi52,2)+'、低點 '+fm(q.lo52,2)+(off!=null?'（離高點 '+sg(off)+'）':'')

@@ -147,7 +147,7 @@ def card(title_zh: str, title_en: str, body: str, cls_: str = "", sub: str = "")
 # phrases the deploy guard ("確認輸出不含持倉") treats as a holdings leak.  AI-written text (market commentary, translated
 # headlines) can use them innocently — e.g. a bank's 未實現損益 on its bonds — which would block every deploy, so they are
 # reworded before publishing.  The guard itself stays strict.
-GUARD_SAFE = (("## 使用者持倉", "## 持股"), ("使用者持倉", "持股"), ("持倉總值", "持股總值"), ("未實現損益", "評價損益"), ("data-private", "data-x"))
+GUARD_SAFE = (("## 使用者持倉", "## 持股"), ("使用者持倉", "持股"), ("持倉總值", "持股總值"), ("未實現損益", "評價損益"), ("未實現", "帳面"), ("data-private", "data-x"))
 # compliance wording (2026-10): AI-written text, including texts cached before the rename, never shows trading-instruction labels
 _LEGACY_WORDING = (("有買點訊號", "型態成立"), ("技術面買點訊號", "技術型態觀察"), ("買點訊號", "技術型態"), ("精選池", "追蹤池"), ("加碼參考區", "次級支撐觀察區"), ("進場參考區", "型態支撐參考區"))  # noqa: E501
 GUARD_SAFE = GUARD_SAFE + _LEGACY_WORDING

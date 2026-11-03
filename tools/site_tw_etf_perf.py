@@ -216,7 +216,10 @@ def sec_etf_active(eng) -> str:
 
 
 def perf_map(eng) -> dict:
-    """{code: [1-year total return, 3-year annualised]} for the search table."""
+    """{code: [1-year total return, 3-year annualised, payout class, % of payout that was capital]} for the search table."""
     p = _p(eng)
+    if not p.get("available"):
+        return {}
+    pay = {x["code"]: [x["cls"], round(x["capital_share"])] for x in (p.get("payout") or [])}
     return {x["code"]: [None if x.get("tr1y") is None else round(x["tr1y"], 1), None if x.get("tr3y") is None else round(x["tr3y"], 1)]
-            for x in (p.get("rows") or [])} if p.get("available") else {}
+            + pay.get(x["code"], [None, None]) for x in (p.get("rows") or [])}

@@ -89,6 +89,7 @@ def test_page():
     for w in BANNED:
         assert w not in h, w
     assert S.perf_map(e)["0050"][0] is not None
+    assert S.perf_map(e)["00999"][2] == "capital" and S.perf_map(e)["0050"][2] is None   # search table shows 吃老本
     e2 = Eng()
     e2._tw_etf_perf = {"available": False}
     assert S.sec_etf_rank(e2) == S.sec_etf_lev(e2) == ""

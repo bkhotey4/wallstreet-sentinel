@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from tools.sitekit import T, card, esc, num, spark
+from tools.sitekit import T, card, esc, guard_safe, num, spark
 
 COVERAGE = Path(__file__).resolve().parents[1] / "research_feed" / "coverage.json"   # public site repo root, never synced over
 TAB = "stability"
@@ -228,9 +228,9 @@ def sec_st_coverage(eng) -> str:
     cv = coverage()
     rows = "".join(f'<tr><td><b>{T(a, a)}</b></td><td class="small">{T(b, b)}</td><td><a href="#{t}">{T("前往", "Open")}</a></td></tr>' for a, b, t in MAP)
     gaps = cv.get("gaps") or []
-    gl = "".join(f'<li><b>{esc(g.get("risk", ""))}</b>（{esc(g.get("source", ""))}'
+    gl = "".join(f'<li><b>{esc(guard_safe(g.get("risk", "")))}</b>（{esc(g.get("source", ""))}'
                  + (f'，<a href="{esc(g["url"])}" target="_blank" rel="noopener">原文</a>' if str(g.get("url", "")).startswith("https://") else "")
-                 + f'）：{esc(g.get("suggest", ""))}' + (f'<span class="muted">・免費資料：{esc(g["data"])}</span>' if g.get("data") else "") + "</li>" for g in gaps)
+                 + f'）：{esc(guard_safe(g.get("suggest", "")))}' + (f'<span class="muted">・免費資料：{esc(guard_safe(g["data"]))}</span>' if g.get("data") else "") + "</li>" for g in gaps)
     src = "、".join(esc(s) for s in cv.get("sources") or [])
     body = (f'<p>{T("本站把監測的數據，對照聯準會《金融穩定報告》的 4 大類脆弱度，再加上排定的大事件：", "")}</p>'
             f'<div class="scroll"><table class="mini"><thead><tr><th>{T("類別", "Category")}</th><th>{T("本站在看的數據", "What the site watches")}</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>'
