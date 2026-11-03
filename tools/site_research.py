@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import List, Tuple
 
-from tools.sitekit import T, card
+from tools.sitekit import T, card, guard_safe
 
 STATIC = Path(__file__).parent / "static"
 FILE = "research_risk_2026-10.md"
@@ -29,7 +29,7 @@ STATUS = [
 
 
 def _inline(s: str) -> str:
-    s = html.escape(s, quote=False)
+    s = html.escape(guard_safe(s), quote=False)   # AI-written research notes: banned words reworded
     s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
     s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
     s = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2" target="_blank" rel="noopener">\1</a>', s)
@@ -282,7 +282,7 @@ def sec_research_feed(eng) -> str:
     items = load_feed()[:10]
     if not items:
         return ""
-    esc_ = lambda x: html.escape(str(x or ""))  # noqa: E731
+    esc_ = lambda x: html.escape(guard_safe(str(x or "")))  # noqa: E731
     rows = ""
     for it in items:
         tp = f'<span class="pill">{esc_(it["topic"])}</span> ' if it.get("topic") else ""
