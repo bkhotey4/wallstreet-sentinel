@@ -143,6 +143,7 @@ jobs:
       # CLOUDFLARE_API_TOKEN（權限：Account › Cloudflare Pages › Edit）與 CLOUDFLARE_ACCOUNT_ID 時才執行；
       # 失敗也不影響 GitHub Pages 的部署。
       - name: 發布到 Cloudflare Pages（試用）
+        id: cfdeploy
         if: ${{ env.HAS_CF == 'true' }}
         continue-on-error: true
         env:
@@ -162,6 +163,13 @@ jobs:
           sed -i 's/content="#0a0b0d"/content="#0d6e68"/' site/index.html
           npx --yes wrangler@3.114.0 pages project create wallstreet-sentinel --production-branch=main >/dev/null 2>&1 || true
           npx --yes wrangler@3.114.0 pages deploy site --project-name=wallstreet-sentinel --branch=main --commit-dirty=true
+
+      # 上一步失敗時不擋 GitHub Pages，但要讓這次執行顯示紅色警告，不再「看起來成功」而即時版卻停在舊版
+      - name: Cloudflare 發布失敗警告
+        if: ${{ env.HAS_CF == 'true' && steps.cfdeploy.outcome == 'failure' }}
+        run: |
+          echo "::error title=Cloudflare Pages 發布失敗::即時版（pages.dev）仍是舊版；GitHub Pages 已照常部署"
+          exit 1
 
   deploy:
     needs: build

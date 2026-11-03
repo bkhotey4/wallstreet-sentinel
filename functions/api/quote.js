@@ -78,6 +78,7 @@ export function volRatio(ts, vols, closes, off) {
     if (!byDay.has(d)) byDay.set(d, []);
     byDay.get(d).push([tod(ts[i]), typeof vols[i] === "number" ? vols[i] : 0, closes[i]]);
   }
+  for (const rows of byDay.values()) { const k0 = rows[0][0]; for (const r of rows) r[0] -= k0; }   // since the day's first bar: DST-proof
   const days = [...byDay.keys()].sort((a, b) => a - b);
   if (days.length < 3) return {};
   const today = byDay.get(days[days.length - 1]), cut = today[today.length - 1][0];
@@ -146,6 +147,7 @@ export function intraFrom(res, yieldBp = false) {
     if (!byDay.has(d)) byDay.set(d, []);
     byDay.get(d).push({ t: ts[i], k: tod(ts[i]), c, h: qd.high?.[i], l: qd.low?.[i], v: typeof qd.volume?.[i] === "number" ? qd.volume[i] : 0 });
   }
+  for (const rows of byDay.values()) { const t0 = rows[0].t; for (const b of rows) b.k = b.t - t0; }   // DST-proof time of day
   const days = [...byDay.keys()].sort((a, b) => a - b);
   if (days.length < 6) return null;
   const today = byDay.get(days[days.length - 1]), past = days.slice(0, -1).slice(-20).map((d) => byDay.get(d));
@@ -315,17 +317,19 @@ export async function onRequestGet({ request, waitUntil }) {
     if (cache && Object.keys(out).length) { const put = cache.put(key, hr.clone()); if (waitUntil) waitUntil(put); else await put; }
     return hr;
   }
+  const err = [];
   await Promise.all(syms.map(async (s) => {
     try {
       const [q, e, iv] = await Promise.all([one(s, fetch, full, vols.has(s)), exts.has(s) && !full ? ext(s).catch(() => null) : null,
         ivs.has(s) && !full ? intra(s).catch(() => null) : null]);
       if (q) out[s] = { ...q, ...(e ? { ext: e } : {}), ...(iv ? { iv } : {}) };
-    } catch (e) { /* one bad symbol never breaks the rest */ }
+    } catch (e) { err.push(s); }   // one bad symbol never breaks the rest
   }));
-  // unknown tickers just come back missing from q (200), so the page can say "not found" instead of "source down"
+  // unknown tickers just come back missing from q (200), so the page can say "not found"; a FAILED fetch (429, timeout)
+  // is listed in err and the answer is not cached, so a passing hiccup is not served as "not found" for minutes
   const n = Object.keys(out).length;
-  const res = json({ ts: Math.floor(Date.now() / 1000), q: out }, 200, n ? (full ? TTL_FULL : TTL) : 0);
-  if (cache && n) {
+  const res = json({ ts: Math.floor(Date.now() / 1000), q: out, ...(err.length ? { err } : {}) }, 200, n && !err.length ? (full ? TTL_FULL : TTL) : 0);
+  if (cache && n && !err.length) {
     const put = cache.put(key, res.clone());
     if (waitUntil) waitUntil(put); else await put;
   }

@@ -24,4 +24,8 @@ assert.ok(y.rvol === undefined && y.vwap === undefined && Math.abs(y.m60 - 22) <
 const bars = Array.from({ length: 20 }, (_, i) => ({ c: i % 2 ? 100.1 : 99.9, h: 100.1, l: 99.9 }));
 assert.ok(chlSpread(bars) >= 0);
 assert.equal(intraFrom({ meta: {}, timestamp: [] }), null);
+// DST: earlier days' bars sit one hour later in UTC (summer time) than today's; "same time" must still line up
+const dst = res(down, 2500);
+dst.timestamp = dst.timestamp.map((t, i) => (i < 21 * 78 ? t + 3600 : t));
+assert.ok(Math.abs(intraFrom(dst).rvol - 2.5) < 1e-9);
 console.log("intra ok");
