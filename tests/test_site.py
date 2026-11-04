@@ -45,7 +45,9 @@ def main():
     out = Path(tempfile.gettempdir()) / "wsb_site_test"
     from unittest.mock import AsyncMock, patch
     eng.refresh_earnings = AsyncMock()
-    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})):
+    # these two talk to Nasdaq and write the real cache, and the estimate card lists real tickers, so neither runs here;
+    # tests/test_est_event.py covers them offline
+    with patch("wsb.analytics.siteextra.refresh", AsyncMock(return_value={})),             patch("wsb.data.est_revisions.refresh", AsyncMock(return_value={})),             patch("wsb.data.est_revisions.load", return_value={}),             patch("wsb.analytics.event_react.refresh", AsyncMock(return_value={})):
         p = asyncio.run(B.build(out, use_ai=False, engine=eng))
     page = p.read_text(encoding="utf-8")
     # trading-desk layout: strip, hoverable charts, radar, bilingual labels, theme + language toggles
@@ -120,14 +122,14 @@ def main():
     assert "<script>alert" not in page and "&lt;script&gt;" in page, "untrusted headline must be escaped"
     assert 'href="javascript:' not in page, "non-http links must be neutralised"
     assert "https://example.com/a?b=1&amp;c=2" in page
-    # no holdings analytics on the public page.  Link URLs are stripped first: Google News links carry random base64
-    # tokens that can contain e.g. "ENB" and made this guard fail at random.
+    # no holdings analytics on the public page.  Link URLs are stripped first: Google News links carry random base64 tokens.
+    # The ENB metric is checked by its label, not the letters: Enbridge (ENB) is a public ticker in the earnings tables.
     import re as _re
     visible = _re.sub(r'(?:href|src)="[^"]*"', "", page)
     # the 我的持股 page's public market data (every US ticker's EPS, prices …) is checked by its own key whitelist in
     # test_portfolio_page; a public ticker such as Enbridge (ENB) there is not a holding
     visible = _re.sub(r'<script type="application/json" id="pf-data">.*?</script>', "", visible, flags=_re.S)
-    for word in ("持倉總值", "未實現", "VaR99", "ENB"):
+    for word in ("持倉總值", "未實現", "VaR99", "獨立押注"):
         assert not _re.search(rf"(?<![A-Za-z0-9]){_re.escape(word)}(?![A-Za-z0-9])", visible), word
     assert not re.search(r"https?://(?!example\.com)[^\"' ]+\.(js|css)\b", page), "page must not load external scripts/styles"
     import json

@@ -220,8 +220,9 @@ _JS = r"""
  function api1(list,full,vol,iv){return fetch('api/quote?s='+encodeURIComponent(list)+(full?'&full=1':'')+(vol?'&vol='+encodeURIComponent(vol):'')+(iv?'&iv='+encodeURIComponent(iv):''),{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();});}
  function api(list,full,vol){var a=String(list).split(',').filter(Boolean),ch=[];for(var i=0;i<a.length;i+=20)ch.push(a.slice(i,i+20).join(','));   // the service takes 25 per request
    return Promise.all(ch.map(function(c){return api1(c,full,vol);})).then(function(rs){var o={ts:0,q:{}};rs.forEach(function(r){o.ts=Math.max(o.ts,r.ts||0);Object.keys(r.q||{}).forEach(function(k){o.q[k]=r.q[k];});});return o;});}
- function hhmm(t){if(!t)return '';var d=new Date(t*1000),p=function(n){return ('0'+n).slice(-2);};var tm=p(d.getHours())+':'+p(d.getMinutes());
-   return d.toDateString()===new Date().toDateString()?tm:(d.getMonth()+1)+'/'+d.getDate()+' '+tm;}
+ function hhmm(t){if(!t)return '';var g=function(ms){var o={};new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})
+     .formatToParts(new Date(ms)).forEach(function(x){o[x.type]=x.value;});return o;},a=g(t*1000),b=g(Date.now()),tm=('0'+(+a.hour%24)).slice(-2)+':'+a.minute;
+   return a.month===b.month&&a.day===b.day?tm:a.month+'/'+a.day+' '+tm;}   // Taipei time, whatever clock the viewer's device is on
  function paintTiles(q){tiles.forEach(function(t){var s=t.getAttribute('data-lq'),x=q[s];if(!x)return;var dg=+t.getAttribute('data-dg')||0;
    var v=t.querySelector('.tv'),c=t.querySelector('.tc'),a=t.querySelector('.asof');if(v)v.textContent=f(x.price,dg);
    if(c&&x.chg!=null){c.textContent=sg(x.chg,2)+'%';c.classList.remove('up','dn');if(x.chg>0)c.classList.add('up');else if(x.chg<0)c.classList.add('dn');}

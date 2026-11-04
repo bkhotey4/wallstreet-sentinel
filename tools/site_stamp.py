@@ -109,6 +109,15 @@ def _bondflows():
         return None, None
 
 
+def _etf_flows():
+    """ETF flows: the oldest fetch and oldest latest date across funds, so one stuck issuer shows on the card."""
+    try:
+        from wsb.data import etf_flows as EF
+        return EF.status()
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 def _tw_etf():
     """Taiwan ETFs: when fetched and the TWSE NAV date."""
     try:
@@ -289,6 +298,22 @@ def _twf_date() -> Optional[str]:
     return max(n) if n else None
 
 
+def _erv(k: str):
+    try:
+        from wsb.data import est_revisions as ERV
+        return ERV.load().get(k)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _evr(k: str):
+    try:
+        from wsb.analytics import event_react as EVR
+        return EVR.load().get(k)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _obs_date() -> Optional[str]:
     try:
         from tools.site_observer import load
@@ -349,6 +374,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "jgb": ("日本財務省公債殖利率", "MOF JGB yields", lambda e: (_ts(_g(e, "global_yields", "ts")),
             _d(e.global_yields.jgb.index[-1]) if getattr(getattr(e, "global_yields", None), "jgb", None) is not None and len(e.global_yields.jgb) else None), 5),
     "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 14),
+    "etf_flows": ("State Street／Invesco／iShares 官方資料", "Issuer fund data", lambda e: (_ts(_etf_flows()[0]), _etf_flows()[1]), 5),
     "twetf": ("證交所 ETF 淨值／集保", "TWSE ETF NAV / TDCC", lambda e: (_ts(_tw_etf()[0]), _tw_etf()[1]), 4),
     "twmacro": ("台灣央行／國發會／櫃買中心", "Taiwan CBC / NDC / TPEx", lambda e: (_ts(_twmacro()[0]), _twmacro()[1]), 7),
     "fullmkt": ("全市場股價與估值", "Full-market scan", lambda e: (_ts(_fm()[0]), _fm()[1]), 4),
@@ -390,6 +416,8 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "stockchk": ("SEC 季報＋每週股價（個股體檢）", "SEC filings + weekly prices", lambda e: (_ts(_sck("ts_check")), None), 0),
     "fundgl": ("財報（SEC／FinMind／Yahoo 年報）", "Filings (SEC / FinMind / Yahoo)", lambda e: (_ts(_fgl("ts_check")), None), 0),
     "ipo": ("IPO 申報（SEC／證交所／櫃買）", "IPO filings (SEC / TWSE / TPEx)", lambda e: (_ts(_ipo("ts")), None), 0),
+    "estrev": ("Nasdaq 分析師獲利預估（Zacks）", "Nasdaq EPS estimates (Zacks)", lambda e: (_ts(_erv("ts")), _d(_erv("asof"))), 4),
+    "evreact": ("Nasdaq 經濟日曆歷史", "Nasdaq calendar history", lambda e: (_ts(_evr("ts")), _d(_evr("asof"))), 45),
     "twfoi": ("外資台指期部位（FinMind）", "TAIFEX foreign OI", lambda e: (_ts(_twf("ts_check")), _twf_date()), 5),
     "observer": ("獨立 AI 觀察員", "AI observer", lambda e: (_ts(_stab_ts("ai_view")), _obs_date()), 4),
     "cover": ("覆蓋盤點", "Coverage audit", lambda e: (_ts(_stab_ts("coverage")), _cover_date()), 40),
@@ -410,11 +438,11 @@ CARD: Dict[str, List[str]] = {
     "sec_ssi": ["ssi"], "sec_radar": ["ssi"], "sec_odds": ["ssi"],
     "sec_ai_entry": ["px", "ssi", "ofr"], "sec_cool_check": ["px", "ssi", "ofr"], "sec_cool_history": ["px"], "sec_bull_env": ["px", "fred", "canary"],
     "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"], "sec_gb_brief": ["fred", "bondflows"], "sec_gb_sovereign": ["fred"],
-    "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
+    "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_etf_flows": ["etf_flows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
     "sec_tw_money": ["twmacro", "tw"], "sec_tw_life": ["twmacro"],
-    "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
+    "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
     "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_fund_trend": ["fundgl"], "sec_ipo": ["ipo"], "sec_drop_check": ["fundgl", "px"], "sec_crisis": ["px"], "sec_timemachine": ["ssi"], "sec_dual": ["ssi", "px", "fred", "ofr"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
@@ -425,6 +453,7 @@ CARD: Dict[str, List[str]] = {
     "sec_signal_scorecard": ["stocks"], "sec_earn_moves": ["earnings", "stocks"], "sec_analyst": ["earnings"],
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_earn_after": ["after"], "sec_earn_after_us": ["after"], "sec_earn_preview": ["preview"], "sec_learn": ["learn"],
+    "sec_changes": ["px", "ssi", "canary", "fred"], "sec_track_record": ["preview", "model", "earnings"],
     "sec_tw_note": ["twnote"], "sec_industry_note": ["indnote"],
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }

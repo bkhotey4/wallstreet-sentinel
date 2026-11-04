@@ -537,9 +537,10 @@ briefings:
   - {time: "07:30", kind: morning_recap, title: 華爾街晨會｜美股收盤回顧, weekdays: [1,2,3,4,5]}
   - {time: "08:40", kind: taiwan,    title: 台股開盤前籌碼情報, weekdays: [0,1,2,3,4]}
   - {time: "15:30", kind: europe,    title: 歐洲開盤風險掃描, weekdays: [0,1,2,3,4]}
-  - {time: "21:00", kind: morning_call, title: 華爾街晨會｜美股開盤前, weekdays: [0,1,2,3,4]}
+  - {before_us_open_min: 30, kind: morning_call, title: 華爾街晨會｜美股開盤前, weekdays: [0,1,2,3,4]}
   - {time: "10:00", kind: weekend,   title: 週末全球風險與加密情報, weekdays: [5,6]}
 # weekdays: 0=週一 ... 6=週日（台北時間）
+# before_us_open_min: 美股開盤前 N 分鐘（用美東時間算，夏令／冬令都一樣；台北約 21:00／22:00），取代固定的 time
 
 # ---------- 新聞來源 ----------
 news_feeds:
@@ -641,6 +642,8 @@ lab:
 
 # ---------- 每週復盤（取代獨立的成績單週報；成績單併入其中） ----------
 weekly_report: {weekday: 6, time: "20:00"}
+# 每週持股風險報告（只私訊給 owner）：週六上午，美股週五已收盤、台股休市
+holdings_risk: {weekday: 5, time: "10:00"}
 
 # ---------- 持倉 X 光 ----------
 xray:

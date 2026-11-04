@@ -60,6 +60,12 @@ async def _bondflows():
     from .data import bondflows as BF
     await BF.refresh()
 
+async def _etf_flows():
+    """Issuer shares outstanding × NAV for major US ETFs (ETF 資金流向 card)."""
+    from .data import etf_flows as EF
+    await EF.refresh()
+
+
 async def _daily_why():
     """Daily closes of every gauge + SPY intraday bars for the archived 每日盤勢解讀 (site build only)."""
     from .analytics import daily_why as DW
@@ -193,7 +199,7 @@ class Engine:
                  ("stocks", self.stockprices.refresh()), ("stocknews", self.stocknews.refresh()),
                  ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()),
                  ("fedwatch", self.fedwatch.refresh()), ("finra", self.margin_debt.refresh()),
-                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()), ("twmacro", _twmacro()), ("tw_etf", _tw_etf()),
+                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()), ("etf_flows", _etf_flows()), ("twmacro", _twmacro()), ("tw_etf", _tw_etf()),
                  ("private_credit", self.refresh_private_credit()), ("spx_long", self.long_history.refresh()), ("distress", self.refresh_distress()))
         if self.site_mode:
             feeds += (("daily_why", _daily_why()),)
@@ -308,10 +314,10 @@ class Engine:
                                    self.refresh_edgar(), self.darkpool.refresh(self.market), self.econ.refresh(),
                                    self.fedwatch.refresh(), self.margin_debt.refresh(), self.refresh_distress(), self.refresh_segments(),
                                    self.refresh_street(), self.eia.refresh(), self.global_yields.refresh(), self.refresh_private_credit(),
-                                   self.long_history.refresh(), self.refresh_sector_brief(), _bondflows(), _twmacro(),
+                                   self.long_history.refresh(), self.refresh_sector_brief(), _bondflows(), _twmacro(), _etf_flows(),
                                    return_exceptions=True)               # bondflows / twmacro skip themselves inside their own TTL
         for nm, r in zip(("stocks", "stocknews", "treasury", "edgar", "darkpool", "econ", "fedwatch", "finra", "distress", "segments",
-                          "street", "eia", "mof_jgb", "private_credit", "spx_long", "sector_brief", "bondflows", "twmacro"), res):
+                          "street", "eia", "mof_jgb", "private_credit", "spx_long", "sector_brief", "bondflows", "twmacro", "etf_flows"), res):
             if isinstance(r, Exception):
                 log.warning("extras refresh %s failed: %s", nm, r)
         try:                                                    # 聯準會 EBP + 明尼亞波利斯 Fed 選擇權機率（每天一次）
@@ -376,6 +382,16 @@ class Engine:
             await self.refresh_earnings()                       # after the 13F / Form 4 pass: both talk to SEC
         except Exception as e:  # noqa: BLE001
             log.warning("extras refresh earnings failed: %s", e)
+        try:                                                    # 分析師預期修正：每天一份下一季 EPS 共識快照
+            from .data import est_revisions as erv
+            await erv.refresh(erv.symbols(self.earnings.days))
+        except Exception as e:  # noqa: BLE001
+            log.warning("estimate revisions failed: %s", e)
+        try:                                                    # 數據公布後的市場反應：歷史公布值／預期值
+            from .analytics import event_react as evr
+            await evr.refresh(self)
+        except Exception as e:  # noqa: BLE001
+            log.warning("event reaction data failed: %s", e)
         await self.recompute()
 
     async def recompute(self, skip_quality: bool = False) -> None:

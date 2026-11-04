@@ -8,6 +8,7 @@ from __future__ import annotations
 import html
 import json
 
+from tools.site_session import MKT_JS
 from tools.sitekit import T, card
 
 CF_URL = "https://wallstreet-sentinel.pages.dev"
@@ -122,7 +123,7 @@ def sec_intraday(eng) -> str:
             "這裡只描述盤中現況，不預測收盤，也不是投資建議。報價：Yahoo Finance，約有數分鐘延遲。")
     body = (f'<div id="idbox" data-lv="{lv}" data-why="{wy}"><p class="small muted" id="idst">🕒 {T("等待即時報價…", "Waiting for live quotes…")}</p><p class="rimp big2"><b id="idone">{T("一句話看懂：美股開盤後，這裡每分鐘自動整理盤勢。", "Live read of the US session appears here.")}</b></p>'
             f'<div id="idwhyb" hidden><p><b>{T("🤔 為什麼？同時間發生的事", "Why? What moved at the same time")}</b></p><ul id="idwhy"></ul>'
-            f'<p><b>{T("📅 和前幾天比：今天哪裡變了方向", "Compared with recent days")}</b></p><ul id="idtr"><li class="muted">{T("載入最近 20 天的走勢…", "Loading the last 20 days…")}</li></ul>'
+            f'<p><b>{T("📅 和前幾天比：哪裡變了方向", "Compared with recent days")}</b></p><ul id="idtr"><li class="muted">{T("載入最近 20 天的走勢…", "Loading the last 20 days…")}</li></ul>'
             f'<p class="small muted">{T(WHY_NOTE, "Same-time moves and news, not proven causes.")}</p></div>'
             '<ul id="idlist"></ul><div class="scroll"><table class="mini" id="idsec" hidden></table></div></div>'
             f'<p class="lqoff" id="idoff">{T("即時盤勢只在 Cloudflare 版網址可用：", "Live only on the Cloudflare site: ")}'
@@ -136,11 +137,12 @@ _JS = r"""
  try{WHY=JSON.parse(box.getAttribute('data-why')||'{}');}catch(e){}
  try{LV=JSON.parse(box.getAttribute('data-lv')||'{}');}catch(e){}
  function en(){return document.documentElement.lang==='en';}
+__MKT__ var ST={st:'open'};
+ function past(s){return ST.st==='open'?s:mktPast(s);}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){return x==null||isNaN(x)?'—':(x>0?'+':'')+f(x,d);}
  function et(){var p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),o={};
    p.forEach(function(x){o[x.type]=x.value;});return {wd:o.weekday,m:(+o.hour%24)*60+(+o.minute)};}
- function session(){var t=et();if(t.wd==='Sat'||t.wd==='Sun')return 'closed';if(t.m>=570&&t.m<960)return 'open';return t.m<570?'pre':'post';}
  var dead=false;
  function read(q){var L=[],one='',spx=q['^GSPC'],vix=q['^VIX'],sox=q['^SOX'],spy=q['SPY'],qq=q['QQQ'];if(!spx||spx.chg==null)return null;
    var v0=vix&&(vix.prev||vix.price),c=spx.chg,s=v0?v0/Math.sqrt(252):null,used=s?Math.abs(c)/s*100:null;
@@ -155,7 +157,7 @@ _JS = r"""
      L.push(en()?'Leaders: '+top.map(function(x){return x.en+' '+sg(x.c,1)+'%';}).join(', ')+'; laggards: '+bot.map(function(x){return x.en+' '+sg(x.c,1)+'%';}).join(', ')+'.'
        :'領漲：'+top.map(function(x){return x.zh+' '+sg(x.c,1)+'%';}).join('、')+'；領跌：'+bot.map(function(x){return x.zh+' '+sg(x.c,1)+'%';}).join('、')+'；11 個類股 '+up+' 個上漲。'
        +(d>=0.5?'防禦型類股（醫療、必需消費、公用事業）比景氣循環股強 '+f(d,1)+' 個百分點：資金偏保守。':d<=-0.5?'景氣循環股比防禦型強 '+f(-d,1)+' 個百分點：資金願意冒險。':''));
-     var t=document.getElementById('idsec');t.hidden=false;t.innerHTML='<thead><tr><th>'+(en()?'Sector':'類股')+'</th><th class="r">'+(en()?'Today':'今日')+'</th><th>'+(en()?'Type':'類型')+'</th></tr></thead><tbody>'
+     var t=document.getElementById('idsec');t.hidden=false;t.innerHTML='<thead><tr><th>'+(en()?'Sector':'類股')+'</th><th class="r">'+(en()?(ST.st==='open'?'Today':'Session'):past('今日'))+'</th><th>'+(en()?'Type':'類型')+'</th></tr></thead><tbody>'
        +sec.map(function(x){return '<tr><td>'+(en()?x.en:x.zh)+' <span class="muted small">'+x.s+'</span></td><td class="r '+(x.c>0?'up':x.c<0?'dn':'')+'">'+sg(x.c,2)+'%</td><td class="small muted">'+(x.k==='def'?(en()?'defensive':'防禦'):(en()?'cyclical':'景氣循環'))+'</td></tr>';}).join('')+'</tbody>';}
    var vx=[spy,qq].filter(function(x){return x&&x.volx!=null;});
    if(vx.length){var v=Math.max.apply(null,vx.map(function(x){return x.volx;}));L.push(en()?'Volume '+f(v,1)+'x the usual for this time.'
@@ -166,7 +168,8 @@ _JS = r"""
      if(Math.abs(g)>=0.3&&Math.abs(so)>=0.3)L.push(en()?'Since the open '+sg(so,2)+'% (gap '+sg(g,2)+'%).'
        :'開盤'+(g>0?'跳空上漲 ':'跳空下跌 ')+sg(g,2)+'%，開盤後'+(so>0?'再漲 ':'回落 ')+sg(so,2)+'%：'+(g>0&&so<0?'開高走低，早盤的樂觀被賣掉。':g<0&&so>0?'開低走高，有買盤承接。':g>0?'開高走高，買盤延續。':'開低走低，賣壓延續。'));}
    one=(c<=-s*1&&s?'美股明顯走弱':c>=s&&s?'美股明顯走強':Math.abs(c)<0.3?'美股平盤整理':c<0?'美股小跌':'美股小漲')+'（標普 '+sg(c,2)+'%'+(vix&&vix.chg!=null?'，VIX '+sg(vix.chg,1)+'%':'')+'）';
-   return {one:en()?'S&P '+sg(c,2)+'%':'一句話看懂（盤中）：'+one+'。',L:L,W:why(q,c,sec)};}
+   return {one:en()?'S&P '+sg(c,2)+'%':(ST.st==='open'?'一句話看懂（盤中）：':'一句話看懂：'+mktNote(ST,'美股')+'：')+past(one)+'。',L:L.map(past),
+     W:why(q,c,sec).map(function(x){return typeof x==='string'?past(x):{t:past(x.t),l:x.l};})};}
  // "why": mega caps moving with / against the index, rates, dollar, oil, VIX, then today's data releases and headlines
  function why(q,c,sec){var W=[],up=c>=0,big=Math.abs(c)>=0.3;
    if(!big)W.push(en()?'The move is small: ordinary day-to-day noise, no single driver.':'漲跌幅很小，屬於平常的波動，沒有單一主因；下面是今天比較明顯的變化。');
@@ -228,8 +231,9 @@ _JS = r"""
    var sp=q['SPY'],jp=sp&&sp.jump&&Math.abs(sp.jump.chg)>=0.25?sp.jump:null;
    var hm=function(t){return new Date(t*1000).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'});};
    if(jp)R.push(en()?'Fastest swing: '+sg(jp.chg,2)+'% in the 15 min to '+hm(jp.t)+' Taipei.':'今天最快的一波：台北 '+hm(jp.t)+' 前 15 分鐘，標普 ETF '+sg(jp.chg,2)+'%。');
-   var t=et(),cut=Date.now()/1000-(t.m+480+(t.wd==='Mon'?2880:0))*60;          // since the previous US close
-   var hit=(WHY.news||[]).filter(function(n){return n.ts>=cut;}).map(function(n){var sc=0,why=[];
+   var t=et(),cl=ST.st==='closed'&&ST.t,end=cl?ST.t:Infinity,                  // no session today: the news of the session shown
+     cut=cl?ST.t-86400:Date.now()/1000-(t.m+480+(t.wd==='Mon'?2880:0))*60;     // since the previous US close
+   var hit=(WHY.news||[]).filter(function(n){return n.ts>=cut&&n.ts<=end;}).map(function(n){var sc=0,why=[];
      var kk=n.k||[];
      (n.s||[]).forEach(function(s){if(MV[s]){sc+=kk.length?3:1;why.push('提到 '+MV[s]);}});       // a name with no business topic is weak
      (n.k||[]).forEach(function(k){if(TP[k]){sc+=TP[k][1];why.push(TP[k][0]);}});
@@ -241,24 +245,24 @@ _JS = r"""
    if(!hit.length)R.push(en()?'No headline lines up with what moved or when it moved, so none is shown.'
      :'新聞：沒有找到和今天實際大動的股票、資產或時間點對得上的新聞，所以不列，避免把無關的新聞當成原因。');
    return R;}
- function pull(){if(dead||document.hidden)return;var ss=session(),off=document.getElementById('idoff');
+ function pull(){if(dead||document.hidden)return;var off=document.getElementById('idoff');
    var syms=CORE.concat(SEC.map(function(x){return x[0];}),CROSS).slice(0,25);
    var lead=fetch('api/quote?s='+encodeURIComponent(MEGA.map(function(x){return x[0];}).join(',')),{cache:'no-store'}).then(function(r){return r.ok?r.json():{q:{}};}).catch(function(){return {q:{}};});
    fetch('api/quote?s='+encodeURIComponent(syms.join(','))+'&vol=SPY,QQQ',{cache:'no-store'}).then(function(r){if(r.status===404||r.status===405){dead=true;throw 0;}if(!r.ok)throw 0;return r.json();})
    .then(function(d){return lead.then(function(l){var m={};Object.keys(l.q||{}).forEach(function(k){m[k]=l.q[k];});Object.keys(d.q||{}).forEach(function(k){m[k]=d.q[k];});d.q=m;return d;});}).then(function(d){
-     if(off)off.hidden=true;var q=d.q||{},o=read(q),one=document.getElementById('idone'),ul=document.getElementById('idlist');if(!o)return;
-     var tag=ss==='open'?'':(en()?' (market closed — last session)':'（美股目前'+(ss==='pre'?'尚未開盤':'已收盤')+'，以下是最近一個交易日）');
-     one.textContent=o.one+tag;var st=document.getElementById('idst'),qt=(q['^GSPC']||{}).t;
+     if(off)off.hidden=true;var q=d.q||{};ST=mktState(['^GSPC','SPY','QQQ'].map(function(s){return (q[s]||{}).t;}),'America/New_York',570,960);
+     var o=read(q),one=document.getElementById('idone'),ul=document.getElementById('idlist');if(!o)return;
+     one.textContent=o.one+(ST.st==='open'||!en()?'':' (market closed — last session '+ST.day+')');var st=document.getElementById('idst'),qt=(q['^GSPC']||{}).t;
      if(st){var p=function(n){return ('0'+n).slice(-2);},n=new Date(),tq=qt?new Date(qt*1000):null,tp=function(d){return d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'});};
-      st.textContent='🕒 '+(en()?'Updated '+tp(n)+' Taipei'+(tq?' · S&P quote '+tp(tq):'')+' · refreshes every minute'
-        :'最後更新 '+tp(n)+'（台北）'+(tq?'・標普報價時間 '+tp(tq):'')+'・每分鐘自動更新');}var wb=document.getElementById('idwhyb'),wu=document.getElementById('idwhy');if(wb&&wu){wu.textContent='';o.W.forEach(function(x){var li=document.createElement('li');
+      st.textContent='🕒 '+(en()?'Updated '+tp(n)+' Taipei'+(tq?' · S&P quote '+(ST.stale?ST.day+' '+ST.hm+' ET':tp(tq)):'')+' · refreshes every minute'
+        :'最後更新 '+tp(n)+'（台北）'+(tq?(ST.stale?'・標普最後報價 美東 '+ST.day+' '+ST.hm:'・標普報價時間 '+tp(tq)):'')+'・每分鐘自動更新');}var wb=document.getElementById('idwhyb'),wu=document.getElementById('idwhy');if(wb&&wu){wu.textContent='';o.W.forEach(function(x){var li=document.createElement('li');
        if(typeof x==='string')li.textContent=x;else if(x.l){var a=document.createElement('a');a.href=x.l;a.target='_blank';a.rel='noopener';a.textContent=x.t;li.appendChild(a);}else li.textContent=x.t;wu.appendChild(li);});wb.hidden=!o.W.length;}
      ul.innerHTML=o.L.map(function(x){var li=document.createElement('li');li.textContent=x;return li.outerHTML;}).join('');
      var drawTr=function(){var tu=document.getElementById('idtr');if(!tu)return;var T=trend(q);tu.textContent='';
        var nm2=function(a){return a.map(function(x){return x.n;}).join('、');},ru=T.filter(function(x){return x.rev&&x.td>0;}),rd=T.filter(function(x){return x.rev&&x.td<0;});
        var sum=(ru.length||rd.length)?['和最近不同的是：'+(ru.length?nm2(ru)+' 由跌轉漲':'')+(ru.length&&rd.length?'；':'')+(rd.length?nm2(rd)+' 由漲轉跌':'')+'。']:[];
        (T.length?sum.concat(T.map(trTxt)):[Object.keys(TRD).length?'今天各類股、利率、油價、美元和 AI 主題股大致延續最近的走勢，沒有明顯的反轉或加速。':'最近 20 天的走勢暫時取不到。'])
-       .forEach(function(s){var li=document.createElement('li');li.textContent=s;tu.appendChild(li);});};
+       .forEach(function(s){var li=document.createElement('li');li.textContent=past(s);tu.appendChild(li);});};
      if(Date.now()-trAt>600000){trAt=Date.now();fetch('api/quote?s='+encodeURIComponent(TREND.map(function(x){return x[0];}).join(','))+'&full=1',{cache:'no-store'})
        .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d2){TRD=d2.q||{};var o2=read(q);if(o2&&wu){wu.textContent='';o2.W.forEach(function(x){var li=document.createElement('li');
          if(typeof x==='string')li.textContent=x;else if(x.l){var a=document.createElement('a');a.href=x.l;a.target='_blank';a.rel='noopener';a.textContent=x.t;li.appendChild(a);}else li.textContent=x.t;wu.appendChild(li);});}drawTr();})
@@ -266,7 +270,7 @@ _JS = r"""
  pull();setInterval(pull,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)pull();});
 })();
 """
-JS = (_JS.replace("__SEC__", json.dumps(SECTORS, ensure_ascii=False)).replace("__CORE__", json.dumps(CORE))
+JS = (_JS.replace("__MKT__", MKT_JS).replace("__SEC__", json.dumps(SECTORS, ensure_ascii=False)).replace("__CORE__", json.dumps(CORE))
       .replace("__CROSS__", json.dumps(CROSS)).replace("__MEGA__", json.dumps(MEGA, ensure_ascii=False)).replace("__TREND__", json.dumps(TREND, ensure_ascii=False)))
 
 

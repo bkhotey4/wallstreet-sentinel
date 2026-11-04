@@ -50,6 +50,7 @@ from tools import site_entry as SEN
 from tools import site_cooldown as SCD
 from tools import site_marks as SMK
 from tools import site_bonds as SBD
+from tools import site_etf_flows as SEF
 from tools import site_twmacro as STW
 from tools import site_tw_etf as STE
 from tools import site_tw_etf_perf as STEP
@@ -59,6 +60,10 @@ from tools import site_extgap as SXG
 from tools import site_indnote as SIN2
 from tools import site_preview as SPV
 from tools import site_learn as SLN
+from tools import site_estrev as SER
+from tools import site_event_react as SEVR
+from tools import site_changes as SCG
+from tools import site_track as STK
 from tools import site_after as SAF
 from tools import site_transmission as STR
 from tools import site_observer as SOB
@@ -1300,7 +1305,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
@@ -1310,16 +1315,16 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, SQ.sec_rule_sim, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
             ("intel", "個股情報", "Stock intel", [SLN.sec_learn, SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
-            ("tech", "美股財報", "US earnings", [SPV.sec_earn_preview, S3.sec_earn_verdict, SAF.sec_earn_after_us, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
+            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, SEVR.sec_event_react, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
+            ("tech", "美股財報", "US earnings", [SPV.sec_earn_preview, S3.sec_earn_verdict, SER.sec_est_rev, SAF.sec_earn_after_us, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SDC.sec_drop_check, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
-            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health]),
+            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health, STK.sec_track_record]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBD.sec_gb_brief, SBD.sec_gb_rotation, SBD.sec_gb_flows]),
+            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
             ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds, SBD.sec_gb_tic]),
             ("jgb", "日債", "Japanese bonds", [SBD.sec_gb_jgb, SBD.sec_gb_mof]),
             ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),
@@ -1668,6 +1673,16 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(EVC.refresh(), 60)
     except Exception as e:  # noqa: BLE001
         log.warning("release dates failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 數據公布後的市場反應：Nasdaq 歷史公布值／預期值（補齊一次後只抓新的）
+        from wsb.analytics import event_react as EVRA
+        await asyncio.wait_for(EVRA.refresh(eng, budget_s=90), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("event reaction data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 分析師預期修正：每天一份下一季 EPS 共識快照（Nasdaq）
+        from wsb.data import est_revisions as ERV
+        await asyncio.wait_for(ERV.refresh(ERV.symbols(eng.earnings.days), budget_s=120), 150)
+    except Exception as e:  # noqa: BLE001
+        log.warning("estimate revisions failed: %s", e if str(e) else type(e).__name__)
     try:                                           # AI 泡沫計時器：Ken French 49 產業（月）＋ CFTC 股指期貨部位
         from wsb.analytics import bubble as BUB
         await asyncio.wait_for(BUB.refresh(), 150)
@@ -1805,6 +1820,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.info("time machine: %s", f"new snapshot {w.name}" if w else "no new snapshot this run")
         except Exception:  # noqa: BLE001
             log.exception("snapshot update failed")
+        try:                               # 今天 vs 昨天: only the published build writes the row (a test build must not)
+            SCG.record(eng)
+        except Exception:  # noqa: BLE001
+            log.exception("daily change row failed")
     return out / "index.html"
 
 

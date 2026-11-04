@@ -9,6 +9,7 @@ from __future__ import annotations
 import html
 import json
 
+from tools.site_session import MKT_JS
 from tools.sitekit import T, card
 
 CF_URL = "https://wallstreet-sentinel.pages.dev"
@@ -30,7 +31,7 @@ TREND = [("^TWII", "加權指數"), ("0050.TW", "元大台灣50"), ("2330.TW", "
          ("1216.TW", "統一"), ("0056.TW", "元大高股息"), ("00878.TW", "國泰永續高股息"), ("TWD=X", "美元兌台幣"), ("TSM", "台積電 ADR")]
 CLUE = {"半導體": "chip", "AI 伺服器": "chip", "電子代工": "chip", "電源零組件": "chip", "光學": "chip", "電腦品牌": "chip",
         "塑化": "oil", "油品": "oil"}
-NOTE = ("這些是同一時間的變化與新聞，幫助理解盤勢，不是確定的因果。產業強弱用各產業權值股的平均漲跌；昨晚美股與台積電 ADR 溢價來自前一晚收盤；"
+NOTE = ("這些是同一時間的變化與新聞，幫助理解盤勢，不是確定的因果。產業強弱用各產業權值股的平均漲跌；美股與台積電 ADR 溢價來自最近一次美股收盤；"
         "外資買賣超是證交所前一個交易日的數字（盤中沒有即時資料）。「和前幾天比」：今天的方向和最近 5／20 天相反（反轉）或同向大幅加速才列出，"
         "平常一天＝過去一年每日漲跌的標準差。報價：Yahoo Finance，約有延遲。")
 
@@ -67,11 +68,11 @@ def sec_tw_live(eng) -> str:
     body = (f'<div id="twbox" data-ctx="{ctx}"><p class="small muted" id="twst">🕒 {T("等待即時報價…", "Waiting for live quotes…")}</p>'
             f'<p class="rimp big2"><b id="twone">{T("一句話看懂：台股盤中（09:00–13:30）這裡每分鐘自動整理盤勢。", "Live read of the Taiwan session.")}</b></p>'
             f'<div id="twwb" hidden><p><b>{T("🤔 為什麼？同時間發生的事", "Why?")}</b></p><ul id="twwhy"></ul>'
-            f'<p><b>{T("📅 和前幾天比：今天哪裡變了方向", "Compared with recent days")}</b></p><ul id="twtr"><li class="muted">{T("載入最近 20 天的走勢…", "Loading…")}</li></ul>'
+            f'<p><b>{T("📅 和前幾天比：哪裡變了方向", "Compared with recent days")}</b></p><ul id="twtr"><li class="muted">{T("載入最近 20 天的走勢…", "Loading…")}</li></ul>'
             f'<p class="small muted">{T(NOTE, "Same-time moves and news, not proven causes.")}</p></div></div>'
             f'<p class="lqoff" id="twoff">{T("即時盤勢只在 Cloudflare 版網址可用：", "Live only on the Cloudflare site: ")}'
             f'<a href="{CF_URL}/#taiwan" target="_blank" rel="noopener">{CF_URL.replace("https://", "")}</a></p>')
-    return card("台股即時盤勢：今天怎麼走、為什麼", "Taiwan session, live", body, "wide")
+    return card("台股即時盤勢：怎麼走、為什麼", "Taiwan session, live", body, "wide")
 
 
 def sec_tw_days(eng) -> str:
@@ -103,6 +104,9 @@ def sec_tw_days(eng) -> str:
 _JS = r"""
 (function(){var box=document.getElementById('twbox');if(!box)return;var LEAD=__LEAD__,GAUGE=__GAUGE__,TREND=__TREND__,CLUE=__CLUE__,C={},TRD={},trAt=0,dead=false;
  try{C=JSON.parse(box.getAttribute('data-ctx')||'{}');}catch(e){}
+__MKT__ var ST={st:'open'};
+ function past(s){return ST.st==='open'?s:mktPast(s);}
+ function ts(q,a){return a.map(function(s){return (q[s]||{}).t;});}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
  function sg(x,d){return x==null||isNaN(x)?'—':(x>0?'+':'')+f(x,d);}
  function nyLive(){var p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),o={};
@@ -129,15 +133,17 @@ _JS = r"""
    if(w.length||a.length)W.push('各產業權值股'+(up?'帶頭漲':'帶頭跌')+'：'+(w.length?w.slice(0,4).map(nm).join('、'):'沒有')+(a.length?'；反方向：'+a.slice(0,3).map(nm).join('、'):'')+'。');
    // industries: average of their heavyweights, the best and the worst with the clue that usually goes with them
    var g={};mg.forEach(function(x){(g[x.k]=g[x.k]||[]).push(x.c);});var ind=Object.keys(g).map(function(k){return {k:k,c:g[k].reduce(function(s,v){return s+v;},0)/g[k].length};}).sort(function(a,b){return b.c-a.c;});
-   var sox=q['^SOX'],oil=q['CL=F'],usNow=nyLive(),soxB=usNow?null:sox;   // tonight's US session came after this Taiwan session
-   var clue=function(x){var t=CLUE[x.k];if(t==='chip'&&soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1&&(soxB.chg>0)===(x.c>0))return '，呼應昨晚費城半導體 '+sg(soxB.chg,1)+'%';
+   var sox=q['^SOX'],oil=q['CL=F'],UT=mktState(ts(q,['^GSPC','^SOX','TSM']),'America/New_York',570,960),
+     usNow=nyLive()&&!UT.stale,soxB=usNow?null:sox;   // tonight's US session came after this Taiwan session; a US holiday has none
+   var lastNight=!UT.day||UT.date===mdParts(Date.now()/1000-86400,'Asia/Taipei').date,nt=lastNight?'昨晚':UT.day+' ';   // "last night" only if New York traded then
+   var clue=function(x){var t=CLUE[x.k];if(t==='chip'&&soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1&&(soxB.chg>0)===(x.c>0))return '，呼應'+nt+'費城半導體 '+sg(soxB.chg,1)+'%';
      if(t==='oil'&&oil&&oil.chg!=null&&Math.abs(oil.chg)>=1&&(oil.chg>0)===(x.c>0))return '，跟著原油 '+sg(oil.chg,1)+'%';
      if((x.k==='金融'||x.k==='電信'||x.k==='食品')&&x.c>0&&c<0)return '，大盤跌時資金躲進防禦型';return '';};
    if(ind.length>=6){var hi=ind[0],lo=ind[ind.length-1];if(Math.abs(hi.c)>=0.8||Math.abs(lo.c)>=0.8)W.push('產業：'+hi.k+' '+sg(hi.c,1)+'% 最強'+clue(hi)+'；'+lo.k+' '+sg(lo.c,1)+'% 最弱'+clue(lo)+'。');}
    // last night in New York and the TSMC ADR premium (ADR = 5 shares)
    var tsm=q['TSM'],t2=q['2330.TW'],fx=q['TWD=X'],gs=q['^GSPC'];
    var usLive=usNow;                                                   // New York is trading now (its own clock, so DST is handled)
-   if(sox&&sox.chg!=null&&gs&&gs.chg!=null)W.push((usLive?'美股盤中（今晚）':'昨晚美股')+'：標普 '+sg(gs.chg,1)+'%、費城半導體 '+sg(sox.chg,1)+'%'+(tsm&&tsm.chg!=null?'、台積電 ADR '+sg(tsm.chg,1)+'%':'')
+   if(sox&&sox.chg!=null&&gs&&gs.chg!=null)W.push((usLive?'美股盤中（今晚）':lastNight?'昨晚美股':'美股最近一個交易日（'+UT.day+'）')+'：標普 '+sg(gs.chg,1)+'%、費城半導體 '+sg(sox.chg,1)+'%'+(tsm&&tsm.chg!=null?'、台積電 ADR '+sg(tsm.chg,1)+'%':'')
      +(Math.abs(sox.chg)>=1.5?'：'+(sox.chg>0?'半導體大漲，台股電子權值股'+(usLive?'明天':'')+'通常跟著開高。':'半導體大跌，台股電子權值股'+(usLive?'明天':'')+'通常跟著承壓。'):'。'));
    if(tsm&&t2&&fx&&t2.price){var pm=(tsm.price*fx.price/(t2.price*5)-1)*100;if(Math.abs(pm)>=8)W.push('台積電 ADR 溢價 '+sg(pm,0)+'%：'+(pm>0?'美國投資人願意付比台股更高的價格，代表外資對台積電看法偏正面。':'ADR 比台股便宜，外資態度偏保守。'));}
    if(fx&&fx.chg!=null&&Math.abs(fx.chg)>=0.3)W.push('美元兌台幣 '+sg(fx.chg,2)+'%：'+(fx.chg>0?'台幣貶值，外資可能在匯出（賣台股換美元）。':'台幣升值，常伴隨外資匯入買台股。'));
@@ -145,7 +151,7 @@ _JS = r"""
      W.push((age>5?'（外資資料停在 '+String(L.d).slice(5)+'，較舊）':'')+'外資（'+String(L.d).slice(5)+'）買賣超 '+sg(L.f,1)+' 億、近 '+fl.length+' 日合計 '+sg(s5,0)+' 億'+(C.fut&&C.fut.oi!=null?'；外資台指期淨'+(C.fut.oi>=0?'多':'空')+'單 '+f(Math.abs(C.fut.oi),0)+' 口':'')+'。');}
    // headlines that name a mover (Chinese names matched at build time) or a moving theme
    var MV={};mg.forEach(function(x){if(Math.abs(x.c)>=1)MV[x.s]=x.n+' '+sg(x.c,1)+'%';});
-   var TP={};if(soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1.5){TP.chip=['昨晚費半 '+sg(soxB.chg,1)+'%',2];TP.ai=['昨晚費半 '+sg(soxB.chg,1)+'%',1];}
+   var TP={};if(soxB&&soxB.chg!=null&&Math.abs(soxB.chg)>=1.5){TP.chip=[nt+'費半 '+sg(soxB.chg,1)+'%',2];TP.ai=[nt+'費半 '+sg(soxB.chg,1)+'%',1];}
    if(Math.abs(c)>=1)TP.tw=['台股 '+sg(c,1)+'%',2];if(oil&&oil.chg!=null&&Math.abs(oil.chg)>=2)TP.power=['原油 '+sg(oil.chg,1)+'%',2];
    var tm=tpe(),cut=Date.now()/1000-(tm.m+600)*60;                       // since 13:30 Taipei the day before
    var hit=(C.news||[]).filter(function(n){return n.ts>=cut;}).map(function(n){var sc=0,why=[],kk=n.k||[];
@@ -154,18 +160,18 @@ _JS = r"""
      .filter(function(x){return x.sc>=2;}).sort(function(a,b){return b.sc-a.sc||b.n.ts-a.n.ts;}).slice(0,3);
    hit.forEach(function(x){W.push({t:'新聞：'+x.n.t+'（對得上：'+x.why.filter(function(v,i,a){return a.indexOf(v)===i;}).join('、')+'）',l:x.n.l});});
    if(!hit.length)W.push('新聞：沒有找到和今天實際大動的股票或產業對得上的新聞，所以不列。');
-   return {one:'一句話看懂（台股）：'+one+'。',W:W};}
- function draw(q){var o=read(q);if(!o)return;var ss=session();
-   document.getElementById('twone').textContent=o.one+(ss==='open'?'':'（台股目前'+(ss==='pre'?'尚未開盤':'已收盤')+'，以下是最近一個交易日）');
+   return {one:'一句話看懂（台股）：'+(ST.st==='open'?'':mktNote(ST,'台股')+'：')+past(one)+'。',W:W.map(function(x){return typeof x==='string'?past(x):{t:past(x.t),l:x.l};})};}
+ function draw(q){ST=mktState(ts(q,['^TWII','0050.TW','2330.TW']),'Asia/Taipei',540,810);var o=read(q);if(!o)return;
+   document.getElementById('twone').textContent=o.one;
    var ul=document.getElementById('twwhy');ul.textContent='';o.W.forEach(function(x){var li=document.createElement('li');
      if(typeof x==='string')li.textContent=x;else if(x.l){var a=document.createElement('a');a.href=x.l;a.target='_blank';a.rel='noopener';a.textContent=x.t;li.appendChild(a);}else li.textContent=x.t;ul.appendChild(li);});
    var tu=document.getElementById('twtr'),Tr=trend(q);tu.textContent='';
    var ru=Tr.filter(function(x){return x.rev&&x.td>0;}).map(function(x){return x.n;}),rd=Tr.filter(function(x){return x.rev&&x.td<0;}).map(function(x){return x.n;});
    var L=(ru.length||rd.length?['和最近不同的是：'+(ru.length?ru.join('、')+' 由跌轉漲':'')+(ru.length&&rd.length?'；':'')+(rd.length?rd.join('、')+' 由漲轉跌':'')+'。']:[]).concat(Tr.map(trTxt));
    (L.length?L:[Object.keys(TRD).length?'權值股、高股息 ETF 與匯率大致延續最近的走勢，沒有明顯的反轉或加速。':'最近 20 天的走勢暫時取不到。'])
-   .forEach(function(s){var li=document.createElement('li');li.textContent=s;tu.appendChild(li);});
+   .forEach(function(s){var li=document.createElement('li');li.textContent=past(s);tu.appendChild(li);});
    document.getElementById('twwb').hidden=false;var st=document.getElementById('twst');
-   if(st)st.textContent='🕒 最後更新 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'})+'（台北）・盤中每分鐘自動更新';}
+   if(st)st.textContent='🕒 最後更新 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Taipei'})+'（台北）'+(ST.t?'・台股報價時間 '+(ST.stale?ST.day+' ':'')+ST.hm:'')+'・盤中每分鐘自動更新';}
  function pull(){if(dead||document.hidden)return;var syms=GAUGE;
    Promise.all([get(LEAD.map(function(x){return x[0];})),get(syms),Date.now()-trAt>600000?get(TREND.map(function(x){return x[0];}),'&full=1'):Promise.resolve(null)])
    .then(function(r){var q={};Object.keys(r[0]).forEach(function(k){q[k]=r[0][k];});Object.keys(r[1]).forEach(function(k){q[k]=r[1][k];});
@@ -173,5 +179,5 @@ _JS = r"""
  pull();setInterval(function(){if(session()==='open'||!trAt)pull();},60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)pull();});
 })();
 """
-JS = (_JS.replace("__LEAD__", json.dumps(LEAD, ensure_ascii=False)).replace("__GAUGE__", json.dumps(GAUGE))
+JS = (_JS.replace("__MKT__", MKT_JS).replace("__LEAD__", json.dumps(LEAD, ensure_ascii=False)).replace("__GAUGE__", json.dumps(GAUGE))
       .replace("__TREND__", json.dumps(TREND, ensure_ascii=False)).replace("__CLUE__", json.dumps(CLUE, ensure_ascii=False)))

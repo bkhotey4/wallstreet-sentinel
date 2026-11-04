@@ -2,7 +2,7 @@
 last bar is an in-progress price; anything presented as a "close" must drop it until the market has closed."""
 from __future__ import annotations
 
-from datetime import datetime, time as dtime
+from datetime import datetime, time as dtime, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 
@@ -10,6 +10,13 @@ import pandas as pd
 
 US = ("America/New_York", dtime(16, 15))
 TW = ("Asia/Taipei", dtime(13, 45))
+US_OPEN = dtime(9, 30)
+
+
+def before_us_open(now: datetime, minutes: int) -> datetime:
+    """`minutes` before the New York open of `now`'s calendar date, in `now`'s time zone (summer and winter alike)."""
+    ny_open = datetime.combine(now.date(), US_OPEN, ZoneInfo("America/New_York"))
+    return ny_open.astimezone(now.tzinfo) - timedelta(minutes=int(minutes))
 
 
 def market_of(sym: str):

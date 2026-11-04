@@ -38,6 +38,7 @@ from ..analytics import personal as PERS
 from ..analytics import playbook as PB
 from ..analytics import portfolio as PF
 from ..analytics import scorecard as SC
+from ..analytics.sessions import before_us_open
 from ..analytics import watch as WATCH
 from ..data import fomc as FOMC
 from ..data.options import fetch_chain
@@ -838,15 +839,28 @@ class Sentinel(commands.Bot):
         out += self._danger_alerts()
         out += self._stop_alerts()
         out += self._rule_alerts()
-        pf = eng.portfolio
-        if pf and not pf.get("error") and pf.get("total_value_usd") and pf.get("day_pnl_usd") is not None:
-            prev_v = pf["total_value_usd"] - pf["day_pnl_usd"]            # return on yesterday's value: 100→97 is −3 %
-            dd = pf["day_pnl_usd"] / prev_v * 100 if prev_v > 0 else 0.0
-            if dd <= -abs(A.get("portfolio_drawdown_pct", 3)):
-                worst = sorted([p for p in pf["positions"] if p.get("d1_pct") is not None], key=lambda p: p["d1_pct"])[:3]
-                bar_day = max((q_.get("asof", "") for q_ in (eng.market.q(p["sym"]) for p in pf["positions"]) if q_), default="na")
-                out.append(Alert(f"pf_dd:{bar_day}", "🚨 CRITICAL", f"持倉單日回撤 {dd:.2f}%（${pf['day_pnl_usd']:,.0f}）",
-                                 "拖累：" + ", ".join(f"{p['sym']} {p['d1_pct']:+.1f}%" for p in worst)))
+        out += self._pf_dd_alerts()
+        return out
+
+    def _pf_dd_alerts(self) -> List[Alert]:
+        """持倉單日回撤, one figure per market session (never a Taiwan + US blend).  pf_dd:* keys are owner-DM only."""
+        pf = self.engine.portfolio
+        if not pf or pf.get("error") or not pf.get("total_value_usd"):
+            return []
+        rows = PF.day_by_market(pf.get("positions"), self.engine.market.q)
+        name = lambda r: PF_MARKET_ZH.get(r["market"], r["market"])              # noqa: E731
+        out = []
+        for r in rows:
+            if r["pct"] <= -abs(A.get("portfolio_drawdown_pct", 3)):
+                worst = [p for p in r["worst"] if p.get("d1_pct") is not None]
+                detail = "拖累：" + ", ".join(f"{p['sym']} {p['d1_pct']:+.1f}%" for p in worst)
+                other = [f"{name(x)} {x['pct']:+.2f}%（{x['day'][5:]}）" for x in rows if x is not r]
+                if other:
+                    detail += "\n其他市場（分開計算）：" + "、".join(other)
+                if r["skipped"]:
+                    detail += "\n報價停在較早交易日、未計入：" + ", ".join(r["skipped"])
+                out.append(Alert(f"pf_dd:{r['market']}:{r['day'] or 'na'}", "🚨 CRITICAL",
+                                 f"持倉單日回撤｜{name(r)} {r['pct']:.2f}%（${r['pnl_usd']:,.0f}，{r['day'][5:]}）", detail))
         return out
 
     def _danger_alerts(self) -> List[Alert]:
@@ -1575,7 +1589,8 @@ class Sentinel(commands.Bot):
         now = datetime.now(E.TZ)
         for b in SETTINGS.get("briefings", []):
             key = f"brief:{b['kind']}:{now:%Y%m%d}"
-            if self._due(now, b["time"], b.get("weekdays"), key):
+            hhmm = (f"{before_us_open(now, b['before_us_open_min']):%H:%M}" if "before_us_open_min" in b else b["time"])
+            if self._due(now, hhmm, b.get("weekdays"), key):
                 targets = await self._targets("briefings")
                 if targets:
                     self.spawn(self._run_job(key, self.send_briefing(targets, b["title"], b["kind"])), key)
@@ -1593,6 +1608,11 @@ class Sentinel(commands.Bot):
             async def _wk():
                 await self.send_weekly(await self._targets("briefings"))
             self.spawn(self._run_job(key, _wk()), key)
+
+        hr = SETTINGS.get("holdings_risk", {})
+        key = f"holdrisk:{now:%G%V}"
+        if hr and SETTINGS.get("portfolio", {}).get("enabled") and self._due(now, hr.get("time", "10:00"), [hr.get("weekday", 5)], key, 720):
+            self.spawn(self._run_job(key, self.send_holdings_risk()), key)
 
         wk = SETTINGS.get("scorecard", {}).get("weekly", {})
         key = f"scorecard:{now:%Y%m%d}"
@@ -1629,6 +1649,20 @@ class Sentinel(commands.Bot):
                             text=txt, title="FOMC 聲明語氣解讀", engine_name=name)
         store.kv_set(key, True)
         return txt
+
+    async def send_holdings_risk(self) -> None:
+        """Weekly private holdings risk report: the owner's DM is the only destination, and only the done flag is stored."""
+        from ..analytics import holdings_risk as HR       # stays out of the site build and the public repo
+        r = await asyncio.to_thread(HR.build, self.engine.market, self.engine.portfolio)
+        if r.get("empty"):
+            return
+        if r.get("error"):
+            raise RuntimeError("holdings risk report has no portfolio yet")
+        dm = await self._owner_dm()
+        if not dm or not self._all_dm([dm]):
+            raise RuntimeError("no owner DM reachable")
+        if not await P.deliver(dm, text=HR.report_text(r), title="每週持股風險報告"):
+            raise RuntimeError("DM not delivered")
 
     async def send_weekly(self, targets) -> None:
         eng = self.engine
@@ -1703,6 +1737,8 @@ def _S():
     return slides
 
 
+PF_MARKET_ZH = {"us": "美股", "tw": "台股", "hk": "港股", "jp": "日股", "kr": "韓股", "cn": "陸股", "au": "澳股", "in": "印股",
+                "eu": "歐股", "uk": "英股", "crypto": "加密貨幣"}
 VOL_LIKE = {"^VIX", "^VIX9D", "^VIX3M", "^VVIX", "^MOVE", "^SKEW", "DX-Y.NYB", "GC=F", "TLT", "IEF", "SHY"}
 SAFE_HAVEN_FX = {"JPY=X", "CHF=X"}   # USD/JPY falling = yen strength = risk-off
 

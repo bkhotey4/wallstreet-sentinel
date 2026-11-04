@@ -79,6 +79,28 @@ def _beta(r: pd.Series, b: pd.Series) -> Optional[float]:
     return float(j.cov().iloc[0, 1] / v) if v else None
 
 
+def day_by_market(positions, quote) -> list:
+    """One day figure per market: Taiwan and New York trade at different hours, so a single blended % mixes two sessions.
+    Within a market only holdings on its newest bar count (a quote stuck on an earlier day is another session, listed in
+    `skipped`).  The % is on that market's own value at the previous close, in USD including the currency move.
+    Holdings-derived: for the owner's DM only.  quote(sym) -> {"asof": "YYYY-MM-DD", ...} or None."""
+    from ..data.freshness import market_of
+    groups: Dict[str, list] = {}
+    for p in positions or []:
+        if p.get("value_usd") is not None and p.get("day_usd") is not None:
+            groups.setdefault(market_of(p["sym"]), []).append({**p, "asof": str((quote(p["sym"]) or {}).get("asof") or "")[:10]})
+    out = []
+    for mkt, rows in groups.items():
+        day = max(r["asof"] for r in rows)
+        same = [r for r in rows if r["asof"] == day]
+        pnl = sum(r["day_usd"] for r in same)
+        prev_v = sum(r["value_usd"] for r in same) - pnl                # return on the previous value: 100→97 is −3 %
+        out.append({"market": mkt, "day": day, "pnl_usd": pnl, "pct": pnl / prev_v * 100 if prev_v > 0 else 0.0,
+                    "worst": sorted(same, key=lambda r: r["d1_pct"] if r.get("d1_pct") is not None else 0.0)[:3],
+                    "skipped": [r["sym"] for r in rows if r["asof"] != day]})
+    return sorted(out, key=lambda x: x["pct"])
+
+
 def analyze(market, holdings: Dict[str, dict]) -> Dict:
     cfg = SETTINGS.get("portfolio", {})
     bench = cfg.get("benchmark", "SPY")

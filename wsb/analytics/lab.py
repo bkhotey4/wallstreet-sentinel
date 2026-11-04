@@ -203,6 +203,15 @@ def _calibration(p: np.ndarray, y: np.ndarray, edges=(0, .05, .10, .20, .30, .45
     return out
 
 
+def track_record(p: np.ndarray, y: np.ndarray, b: np.ndarray, days: int) -> Dict:
+    """全站預測成績單: out-of-sample record on non-overlapping windows (every `days`-th row, so one fall counts once).
+    Flagged = the model's probability was above the base rate known at that time."""
+    p, y, b = p[::days], y[::days], b[::days]
+    on = p > b
+    return {"n": int(len(y)), "events": int(y.sum()), "alarm": int(on.sum()), "hits": int(y[on].sum()), "misses": int(y[~on].sum()),
+            "base_rate": float(y.mean() * 100) if len(y) else None}
+
+
 def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd: float,
                 cands: Optional[Dict] = None) -> Dict:
     min_gain = float(CFG.get("min_auc_gain", 0.02))
@@ -228,7 +237,8 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
     # SSI, so this is the SSI → realised-frequency map over the out-of-sample years), not the yearly models' raw p
     cal_b = isotonic(predict(wb_all, base["X"]), base["y"], min_w=MIN_BLOCK * days)
     out["base_model"] = {"w": [float(x) for x in wb_all], "cal": [[float(x) for x in cal_b[0]], [float(x) for x in cal_b[1]]],
-                         "auc_oos": base["auc"], "skill": base["skill"], "n": base["n"]}
+                         "auc_oos": base["auc"], "skill": base["skill"], "n": base["n"],
+                         "calibration": _calibration(base["p"], base["y"]), "track": track_record(base["p"], base["y"], base["b"], days)}
     base_full = base
     feats = []
     def same_rows_base(mask):

@@ -82,8 +82,9 @@ def test_fx_in_day_pnl_and_drawdown_base():
     price, sh, conv, prev_fx, d1 = 320.0, 1, 30.0, 32.0, 0.0
     day = price * sh / conv - price / (1 + d1 / 100) * sh / prev_fx
     assert abs(day - (320 / 30 - 10)) < 1e-9
-    app = open(os.path.join(os.path.dirname(src and __file__), "..", "wsb", "bot", "app.py"), encoding="utf-8").read()
-    assert 'prev_v = pf["total_value_usd"] - pf["day_pnl_usd"]' in app
+    from wsb.analytics.portfolio import day_by_market
+    r = day_by_market([{"sym": "A", "value_usd": 97.0, "day_usd": -3.0, "d1_pct": -3.0}], lambda s: {"asof": "2026-10-28"})
+    assert abs(r[0]["pct"] + 3.0) < 1e-9                                 # on yesterday's value: 100→97 is −3 %
 
 
 def test_sessions_use_each_market():
