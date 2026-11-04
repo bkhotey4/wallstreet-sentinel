@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-04 07:55 台北",
+  "updated": "2026-11-04 23:30 台北",
   "stories": [
     {
       "date": "2026-11-02",
@@ -66,6 +66,41 @@
           "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-nov-03-2026"
         }
       ]
+    },
+    {
+      "date": "2026-11-04",
+      "topic": "期中選舉結果與 AMD 財報同日：大盤大漲，但費半反而下跌",
+      "one": "11/4 美股大漲，媒體把主因歸給期中選舉後的政治不確定性降低；同一天 AMD 財報亮眼，半導體指數卻下跌，代表漲跌不能只用單一新聞解釋。",
+      "confirmed": [
+        "AMD 在 2026-11-03 公布第三季財報（SEC 8-K）：營收約 134 億美元，非 GAAP 每股盈餘 2.09 美元；公司事前預估約 130 億美元±3 億，實際落在區間高端。",
+        "11/4 收盤：S&P 500 +1.58%（7688.62）、那斯達克 +1.44%（25736.51）、費城半導體 −3.13%（10268.65）（本站價格資料）。",
+        "10 年期美債殖利率 4.894%，前一日 4.952%，下降約 0.06 個百分點；HYG +0.70%、LQD +0.75%、IEF +0.55%（本站價格資料）。",
+        "美元指數 −0.37%；美元兌新台幣 32.82，+0.11%（本站價格資料）。"
+      ],
+      "reported": [
+        "據報（Yahoo Finance 即時報導轉述）民主黨取得國會兩院多數，市場歡迎分立政府；道瓊當天大漲約 1,500 點，為今年單日最佳，本站未讀到原文。",
+        "據報 AMD 盤前上漲約 6%，Data Center 營收年增 97%；也有報導指 AMD 收盤附近小幅回落，各來源說法不一，本站沒有 AMD 當天收盤價可核對。"
+      ],
+      "market": "S&P 500 +1.58%、那指 +1.44%，但費半 −3.13%；殖利率下降約 0.06 個百分點，HYG、LQD 同步上漲約 0.7%。",
+      "spill": "債市與信用市場同步轉強，顯示風險情緒回升，這對 AI 公司的借錢成本擔憂有緩解作用；但費半逆勢下跌，可能代表資金從已大漲的晶片股輪動到其他類股，這點只是可能，並未確認。對台股來說，費半下跌通常先影響隔日電子權值股氣氛，但新台幣小幅走弱、大盤風險情緒轉好，方向不一致，需分開看。",
+      "watch": "AMD 財報電話會議對第四季的說法；費半是否繼續與大盤分歧；Anthropic 三大評級機構正式評級；10 年期殖利率是否守在 4.9% 以下、高收益債是否續強。",
+      "sources": [
+        {
+          "name": "AMD Form 8-K 財報公告（SEC）",
+          "date": "2026-11-03",
+          "url": "https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000188/q32026991.htm"
+        },
+        {
+          "name": "Yahoo Finance：Dow surges 1,500 points after midterm election",
+          "date": "2026-11-04",
+          "url": "https://finance.yahoo.com/markets/live/stock-market-today-dow-sp-500-nasdaq-midterm-elections-earnings-140752043.html"
+        },
+        {
+          "name": "Benzinga：Democrats take control of Congress, AMD in focus",
+          "date": "2026-11-04",
+          "url": "https://www.benzinga.com/markets/equities/26/11/62854452/stock-market-today-dow-jones-sp-500-futures-rise-as-democrats-take-control-of-congress-amd-amgn-nvo-in-focus"
+        }
+      ]
     }
   ],
   "terms": [
@@ -113,6 +148,15 @@
       "plain": "公司債殖利率比同年限美國公債多出來的部分，代表市場要求多少額外報酬來承擔違約風險；變大通常表示市場更擔心。",
       "example": "11/2 高收益債 ETF（HYG）−0.7%，11/3 回升 0.12%（本站價格資料）。",
       "how": "本站「金絲雀」、「全方位風險」信用循環／違約面板，以及「華爾街關注焦點」信用市場卡，使用 FRED 的 ICE BofA 利差系列。"
+    },
+    {
+      "term": "優於預期並調高展望",
+      "en": "Beat and raise",
+      "added": "2026-11-04",
+      "site": "可以做",
+      "plain": "公司不只財報數字比分析師預期好（beat），還把下一季的預估調高（raise）；市場通常更在意後面的展望。",
+      "example": "AMD 第三季營收約 134 億美元，高於自己預估的約 130 億±3 億的區間高端（AMD 8-K，2026-11-03）。",
+      "how": "可以用 SEC 8-K 財報新聞稿，比對公司前一季給的預估區間與實際數字，再比對新一季的預估區間；資料都是免費公開文件。"
     }
   ]
 }
