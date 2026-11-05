@@ -1,11 +1,11 @@
 {
- "updated": "2026-11-05T07:08",
+ "updated": "2026-11-05T21:06",
  "verdict": "部分有根據",
  "summary": "大家在怕的 AI 與高利率有部分根據，但信用市場與金融體系整體壓力仍低於平均。",
  "narratives": [
   {
    "claim": "AI 投資恐慌：科技股大跌、AI 泡沫要破了",
-   "source": "https://www.cls.cn/detail/2482224",
+   "source": "https://www.investingcube.com/indices/stock-market-crash-as-south-korea-tech-sell-off-sparks-global-market-sell-off/",
    "judgement": "部分支持",
    "reason": "S&P 500 比一個月前低約 2.6%，VIX 從 15.5 升到 20.8，回檔是真的。但 S&P 500 仍在近 10 年約第 97 百分位的高檔，OFR 金融壓力指數 -1.47 仍明顯低於歷史平均 0。",
    "data": [
@@ -31,7 +31,7 @@
   },
   {
    "claim": "美債殖利率衝上 5%，債市會拖垮股市",
-   "source": "https://www.cls.cn/detail/2482224",
+   "source": "https://investinglive.com/news/some-good-news-treasuries-rally-as-ai-selloff-drives-flight-to-safety-10-year-yield-at-one-month-low/",
    "judgement": "部分支持",
    "reason": "10 年期殖利率 4.95%，處在近 10 年第 99 百分位，利率確實很高。但一個月前是 5.28%，目前已回落；2 年期 4.61% 也比 4.83% 低，10Y-2Y 利差 0.32 為正，沒有倒掛。",
    "data": [
@@ -109,6 +109,11 @@
   "備註：本次 CFTC 持倉資料抓不到（連線被擋），未納入判斷"
  ],
  "history": [
+  {
+   "time": "2026-11-05T21:06",
+   "verdict": "部分有根據",
+   "summary": "大家在怕的 AI 與高利率有部分根據，但信用市場與金融體系整體壓力仍低於平均。"
+  },
   {
    "time": "2026-11-05T07:08",
    "verdict": "部分有根據",
