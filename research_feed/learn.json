@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-04 23:30 台北",
+  "updated": "2026-11-05 23:50 台北",
   "stories": [
     {
       "date": "2026-11-02",
@@ -101,6 +101,41 @@
           "url": "https://www.benzinga.com/markets/equities/26/11/62854452/stock-market-today-dow-jones-sp-500-futures-rise-as-democrats-take-control-of-congress-amd-amgn-nvo-in-focus"
         }
       ]
+    },
+    {
+      "date": "2026-11-05",
+      "topic": "AI 股單日重挫：S&P 500 −4.4%、費半 −12.2%",
+      "one": "11/5 美股全面大跌，AI 與晶片股最重；媒體把原因指向「民主黨掌控國會後 AI 監管趨嚴」的擔心，但這是路透報導的解讀，不是官方確認的因果，估值過高等因素也被提到。",
+      "confirmed": [
+        "11/5 收盤：S&P 500 −4.36%（7353.73）、那斯達克 −5.52%（24314.998）、費城半導體 −12.25%（9011.14）（本站價格資料）。",
+        "10 年期美債殖利率 4.837%，前一日 4.894%，下降約 0.06 個百分點；IEF +0.34%、LQD +0.15%、HYG −0.31%（本站價格資料）。所以這次下跌不是利率上升造成的，債市反而偏避險。",
+        "美元兌新台幣 33.056，+0.73%；美元指數收在 101.566，當日變動 0%（本站價格資料）。"
+      ],
+      "reported": [
+        "據報（路透轉述）這是 S&P 500 自 2025 年 4 月以來最慘的一天；輝達跌逾 9%、AMD 跌 17.3%；道瓊約跌 1,833 點。",
+        "據報（路透轉述）賣壓與民主黨贏得國會、市場擔心 AI 監管與資料中心反對聲浪有關；也有報導提到估值偏高與獲利疑慮，各家說法不一。",
+        "據報 S&P 500 市值蒸發約 2.9～3 兆美元，那指進入「修正」（較高點回落逾 10%）（MarketWatch、路透、Yahoo Finance 標題轉述；本站未讀到原文，無法核對）。"
+      ],
+      "market": "S&P 500 −4.36%、那指 −5.52%、費半 −12.25%；殖利率降約 0.06 個百分點、HYG −0.31%，信用市場只小幅轉弱。",
+      "spill": "11/4 才因選舉大漲、費半已先跌 3.13%，11/5 又重挫，顯示資金對 AI 題材的敏感度很高；費半是台積電、封測與伺服器供應鏈的情緒指標，新台幣同日走弱約 0.7%，外資匯兌與台股電子權值股隔日氣氛都要一起看。",
+      "watch": "是否出現具體的 AI 監管或資料中心相關法案或官方文件（國會、白宮、FTC）；Anthropic 三大評級機構的正式評級；高收益債利差是否擴大；費半是否續跌。",
+      "sources": [
+        {
+          "name": "Reuters 經 Investing.com：Nasdaq posts biggest daily drop in 19 months on fears of AI regulations",
+          "date": "2026-11-05",
+          "url": "https://www.investing.com/news/stock-market-news/sp-500-futures-steady-after-midterm-rally-nasdaq-lags-on-chip-weakness-5003237"
+        },
+        {
+          "name": "Yahoo Finance：Dow plunges 1,800 points, Nasdaq enters correction",
+          "date": "2026-11-05",
+          "url": "https://finance.yahoo.com/markets/live/stock-market-today-thursday-november-5-dow-sp-500-nasdaq-oil-rises-chip-stocks-141439950.html"
+        },
+        {
+          "name": "Fox Business：Nasdaq tumbles 5%, Dow plunges more than 1,800 points",
+          "date": "2026-11-05",
+          "url": "https://www.foxbusiness.com/markets/stocks-nov-5-2026"
+        }
+      ]
     }
   ],
   "terms": [
@@ -157,6 +192,15 @@
       "plain": "公司不只財報數字比分析師預期好（beat），還把下一季的預估調高（raise）；市場通常更在意後面的展望。",
       "example": "AMD 第三季營收約 134 億美元，高於自己預估的約 130 億±3 億的區間高端（AMD 8-K，2026-11-03）。",
       "how": "可以用 SEC 8-K 財報新聞稿，比對公司前一季給的預估區間與實際數字，再比對新一季的預估區間；資料都是免費公開文件。"
+    },
+    {
+      "term": "修正",
+      "en": "Correction",
+      "added": "2026-11-05",
+      "site": "可以做",
+      "plain": "指數從近期高點回落超過 10%，但還沒到 20% 以上的熊市；是市場常用的降溫訊號，不代表一定會繼續跌。",
+      "example": "據報那斯達克 11/5 收 24314.998、單日 −5.52%，被媒體稱為進入修正（Yahoo Finance 標題轉述）。",
+      "how": "可以用 Yahoo 的歷史收盤價，算指數距離一年內最高收盤價的回落幅度，≥10% 標示「修正」；資料免費公開。"
     }
   ]
 }
