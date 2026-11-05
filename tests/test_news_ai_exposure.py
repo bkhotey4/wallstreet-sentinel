@@ -8,6 +8,7 @@ import time
 import types
 
 os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wsb_newsai_"))
+os.environ["WSB_AI_OFF"] = "0"                     # the switch in this PC's .env must not change what is tested
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402

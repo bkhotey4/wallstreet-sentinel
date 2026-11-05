@@ -820,6 +820,10 @@ class Sentinel(commands.Bot):
             out.append(Alert(f"sigma:{t}:{q['asof']}:{int(np.sign(sg))}", sev,
                              f"異常波動：{names.get(t, t)} ({t}) {q['chg_pct']:+.2f}%（{sg:+.1f}σ）",
                              f"現價 {q['price']:.4g} · 自身60日波動的 {abs(sg):.1f} 倍"))
+        for t, (n, day) in getattr(eng.market, "splits", {}).items():
+            ratio = f"1 拆 {n}" if n > 0 else f"{-n} 併 1"
+            out.append(Alert(f"split:{t}:{day}", "ℹ️ INFO", f"疑似股票分割：{names.get(t, t)} ({t}) 約 {ratio}（{day}）",
+                             "報價資料還沒調整舊股價，已自動換算，所以不算異常波動。若其實不是分割，請到券商或公司公告核對。"))
         out += self._canary_alerts()
         out += self._distress_alerts()
         vix, v3 = eng.market.q("^VIX"), eng.market.q("^VIX3M")
@@ -1519,7 +1523,7 @@ class Sentinel(commands.Bot):
         if risk_fired and SITE.enabled and SETTINGS.get("site_trigger", {}).get("on_risk_alert", True):
             self.spawn(SITE.dispatch("alert:" + risk_fired[0].key, fast=True), "site_build")   # page must not lag a selloff
         market_crit = [a for a in fire if a.severity.startswith("🚨") and not a.key.startswith("news:")]
-        if market_crit and targets:
+        if market_crit and targets and not llm.AI_OFF:
             self.spawn(self._alert_ai(fire, targets), "alert_ai")          # never block the quotes loop
 
     async def _alert_ai(self, fire: List[Alert], targets) -> None:

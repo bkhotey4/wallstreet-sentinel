@@ -116,6 +116,7 @@ ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", "claude-sonnet-4-5")
 GEMINI_API_KEY = env("GEMINI_API_KEY")
 GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.1-pro-preview")
 LLM_PRIMARY = env("LLM_PRIMARY", "claude").lower()
+AI_OFF = env("WSB_AI_OFF") == "1"                  # the local bot makes no AI calls; site builds on Actions keep theirs
 
 FRED_API_KEY = env("FRED_API_KEY")
 # SEC asks for "Company contact@domain"; tested: user agents mentioning github.com are refused (403), this form is accepted

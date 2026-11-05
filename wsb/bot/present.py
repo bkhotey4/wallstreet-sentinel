@@ -10,6 +10,7 @@ from typing import Callable, List, Optional, Sequence, Union
 
 import discord
 
+from ..ai import llm
 from ..config import SETTINGS
 from .. import store
 from . import embeds as E
@@ -59,6 +60,8 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
                   content: Optional[str] = None) -> bool:
     """Render and send. `text` = AI markdown (becomes slides, or chunked text in classic mode).
     Returns True when at least one message was actually delivered."""
+    if text == llm.OFF_NOTE:                                 # one line of text, not a slide of its own
+        content, text = "\n".join(x for x in (content, text) if x), None
     if style() == "slides" and (slides or text):
         try:
             from . import slides as S

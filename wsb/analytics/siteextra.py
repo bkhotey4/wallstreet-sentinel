@@ -359,7 +359,7 @@ async def generate_debates(limit: int = 10, max_age_days: float = 7, deadline_s:
             except Exception as e:  # noqa: BLE001
                 failed(sym, str(e)[:80])
                 continue
-            if name == "none":
+            if name in ("none", ""):
                 break                                          # no AI engine configured: not the symbol's fault
             if not text or text.startswith("⚠️"):
                 failed(sym, (text or "empty")[:80])

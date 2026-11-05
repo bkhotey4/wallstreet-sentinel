@@ -13,7 +13,7 @@ import logging
 import time
 from typing import Dict, List
 
-from ..config import ANTHROPIC_API_KEY, GEMINI_API_KEY, SETTINGS
+from ..config import AI_OFF, ANTHROPIC_API_KEY, GEMINI_API_KEY, SETTINGS
 from ..health import HEALTH
 from .. import store
 
@@ -87,7 +87,7 @@ class NewsClassifier:
 
     @property
     def enabled(self) -> bool:
-        return bool(ANTHROPIC_API_KEY or GEMINI_API_KEY) and bool(CFG.get("enabled", True))
+        return bool(ANTHROPIC_API_KEY or GEMINI_API_KEY) and bool(CFG.get("enabled", True)) and not AI_OFF
 
     @property
     def engine(self) -> str:

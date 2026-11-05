@@ -10,6 +10,7 @@ import tempfile
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wsb_numcheck_"))
+os.environ["WSB_AI_OFF"] = "0"                     # the switch in this PC's .env must not change what is tested
 
 from wsb.ai import llm, numcheck as NC  # noqa: E402
 

@@ -9,7 +9,7 @@ import re
 import time
 from typing import Awaitable, Callable, List, Tuple
 
-from ..config import (ANTHROPIC_API_KEY, ANTHROPIC_MODEL, GEMINI_API_KEY, GEMINI_MODEL, LLM_PRIMARY, env)
+from ..config import (AI_OFF, ANTHROPIC_API_KEY, ANTHROPIC_MODEL, GEMINI_API_KEY, GEMINI_MODEL, LLM_PRIMARY, env)
 from ..health import HEALTH
 from . import numcheck
 
@@ -22,6 +22,7 @@ GEMINI_MODELS = [m for m in dict.fromkeys(
 OPENAI_API_KEY = env("OPENAI_API_KEY")
 OPENAI_MODEL = env("OPENAI_MODEL", "gpt-4o")
 
+OFF_NOTE = "⚠️ AI 研判已停用，深度解讀請看網站 https://wallstreet-sentinel.pages.dev"
 TOTAL_BUDGET_S = 480                                # whole failover chain must finish within 8 minutes
 # model → unix time until which it is skipped (quota / 404)
 _cooldown: dict = {}
@@ -101,6 +102,8 @@ def _engines() -> List[Tuple[str, Callable]]:
 
 async def complete(system: str, user: str, max_tokens: int = 3500, check: bool = True) -> Tuple[str, str]:
     """Returns (text, engine_used). With `check`, sentences whose numbers aren't in the prompt are dropped (numcheck)."""
+    if AI_OFF:
+        return OFF_NOTE, ""
     engines = _engines()
     if not engines:
         return "⚠️ 未設定任何 AI 金鑰（ANTHROPIC / GEMINI / OPENAI），AI 研判停用；量化數據不受影響。", "none"

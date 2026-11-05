@@ -23,11 +23,26 @@ _HIST_FILE = DATA_DIR / "history_close.pkl"
 _FAIL_FILE = DATA_DIR / "history_fail.json"       # {ticker: last time a full history download came back without it}
 HIST_FAIL_DAYS = 7                                 # such tickers don't trigger another full rebuild for this long
 _HIST_BACKOFF = (1800, 7200, 21600)                # after a failed rebuild: next try in 30 min, then 2 h, then 6 h
+SPLIT_SIZES = (3, 4, 5, 6, 8, 10, 15, 20, 25, 30, 40, 50, 100)
+SPLIT_TOL = 0.15                                   # log distance from an exact split: room for the day's real move
 
 
 def is_rebaseable(t: str) -> bool:
     """Only equities / ETFs get split / dividend re-basing; indices (^), futures / FX (=) and crypto (-USD) never do."""
     return not (t.startswith("^") or "=" in t or t.endswith("-USD"))
+
+
+def split_factor(prev: float, last: float) -> Optional[int]:
+    """The split a close-to-close jump looks like: 4 = 1→4 (price ÷ 4), −10 = a 10→1 reverse split, None = an ordinary
+    move.  Yahoo can print the post-split price a day before it adjusts the old bars or lists the split, so the jump has
+    to be read from the prices.  A real day's move is allowed on top; 1→2 is left out, since −50% can be a real crash."""
+    if not (prev > 0 and last > 0):
+        return None
+    x = prev / last if prev > last else last / prev
+    n = min(SPLIT_SIZES, key=lambda k: abs(np.log(x / k)))
+    if abs(np.log(x / n)) > SPLIT_TOL:
+        return None
+    return n if prev > last else -n
 
 
 def _yf():
@@ -255,6 +270,7 @@ class MarketData:
                     except Exception as e:  # noqa: BLE001
                         log.warning("stooq backup failed: %s", e)
                         HEALTH.fail("stooq_backup", e, every=every * 6)
+            df = self._unsplit(df)
             quotes = dict(self.quotes)             # keep last good quote for tickers that failed this round
             fresh = 0
             for t in df.columns:
@@ -299,6 +315,25 @@ class MarketData:
                     self.history = self._merge(index) if not self.history.empty else index
             except Exception as e:
                 log.warning("Official Taiwan quote application failed: %s", e)
+
+    def _unsplit(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Put bars from before an unadjusted split on the new basis.  _merge then re-bases the stored history by the
+        same factor, and once Yahoo adjusts its own bars the jump is gone and this does nothing."""
+        df = df.copy()
+        found = {}
+        for t in df.columns:
+            s = df[t].dropna()
+            if not is_rebaseable(t):
+                continue
+            for i in range(len(s) - 1, 0, -1):
+                n = split_factor(float(s.iloc[i - 1]), float(s.iloc[i]))
+                if n:
+                    df.loc[df.index < s.index[i], t] *= (1 / n if n > 0 else -n)
+                    found[t] = (n, s.index[i].strftime("%Y-%m-%d"))
+                    log.warning("%s looks like an unadjusted split (%d) on %s", t, n, found[t][1])
+                    break
+        self.splits = found
+        return df
 
     def _merge(self, recent: pd.DataFrame) -> pd.DataFrame:
         h = self.history.copy()
