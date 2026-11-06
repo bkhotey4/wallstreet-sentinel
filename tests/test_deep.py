@@ -29,12 +29,15 @@ def test_card():
         {"date": "2026-11-05", "one": "賣壓集中在半導體", "spill": "台股承壓",
          "lens": [{"name": "資金與利率", "read": "殖利率持平", "evidence": "10 年期 4.86%", "conf": "高"},
                   {"name": "沒寫內容"}],
+         "signals": [{"name": "德州新規則", "read": "暫停未解除", "trend": "轉壞", "evidence": "稽核未完成", "next": "12 月中"},
+                     {"name": "長線資金", "read": "沒有資料", "trend": "資料不足"}, {"name": "沒寫內容2"}],
          "checks": [{"claim": "<script>x</script>", "data": "SOX -8%", "verdict": "部分支持"}],
          "calls": [{"claim": "SOX 回到 5 日線", "by": "2026-11-12", "measure": "SOX 收盤"}],
          "lesson": "別只看單一新聞", "sources": [{"name": "SEC", "date": "2026-11-05", "url": "https://example.com/a"},
                                                   {"name": "壞", "url": "javascript:alert(1)"}]}]}
     h = render(d)
     assert "賣壓集中在半導體" in h and "舊的一天" not in h and "資金與利率" in h and "沒寫內容" not in h
+    assert "評價標準變了" in h and "轉壞 1 項、資料不足 1 項" in h and "12 月中" in h and "沒寫內容2" not in h
     assert "<script>" not in h and "&lt;script&gt;" in h and 'href="javascript' not in h
     assert "待驗證 1 筆" in h and "到期的判斷 1 筆，對 0 筆、錯 1 筆" in h and "樣本還太少" in h and "收在 22" in h
     assert not any(w in h for w in BANNED)

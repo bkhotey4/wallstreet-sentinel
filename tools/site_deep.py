@@ -1,5 +1,7 @@
 """每日深度研判 (總覽): after each US close a cloud routine writes research_feed/deep.json —
 - four lenses on the day: cash flow and physical limits, money and rates, who had to trade, what people are saying.
+- 四個訊號: AI capex growth, the Texas permit rules, neocloud customers and funding, long-term money; together they
+  say whether an AI sell-off was an overreaction or the market changing how it values these companies.
 - 說法查核: popular claims held against data.
 - 可驗證的判斷: dated claims the routine scores itself on later runs, so the card shows how often it was right.
 Static content: the routine commits the JSON and the site shows it as written."""
@@ -15,6 +17,7 @@ from tools.sitekit import card, guard_safe
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "deep.json"   # public repo only
 VERDICT = {"有數據支持": "up", "部分支持": "", "證據不足": "muted", "與數據不符": "down"}
 RESULT = {"對": "up", "錯": "down", "未到期": "muted"}
+TREND = {"轉好": "up", "持平": "", "轉壞": "down", "資料不足": "muted"}
 MIN_SCORED = 20                                                              # fewer settled calls say nothing yet
 
 
@@ -56,6 +59,20 @@ def _lens(x: Dict) -> str:
             + (f'<div class="small muted">依據：{_e(x["evidence"])}</div>' if x.get("evidence") else "") + "</li>")
 
 
+def _signal(x: Dict) -> str:
+    return (f'<li>{_pill(x.get("trend"), TREND)} <b>{_e(x["name"])}</b>：{_e(x["read"])}'
+            + (f'<div class="small muted">依據：{_e(x["evidence"])}</div>' if x.get("evidence") else "")
+            + (f'<div class="small muted">下一個觀察點：{_e(x["next"])}</div>' if x.get("next") else "") + "</li>")
+
+
+def _signals(rows: List[Dict]) -> str:
+    if not rows:
+        return ""
+    count = "、".join(f'{k} {n} 項' for k in TREND if (n := sum(x.get("trend") == k for x in rows)))
+    return (f'<h3>這次是過度反應，還是評價標準變了？</h3><p class="small">四個訊號目前：{_e(count)}。</p>'
+            f'<ul class="lines">{"".join(_signal(x) for x in rows)}</ul>')
+
+
 def _check(x: Dict) -> str:
     return (f'<li>{_pill(x.get("verdict"), VERDICT)} <b>{_e(x["claim"])}</b>'
             f'<div class="small">{_e(x["data"])}</div></li>')
@@ -88,6 +105,7 @@ def sec_deep(eng) -> str:
     open_ = [c for c in calls if c.get("result") not in ("對", "錯")]
     body = (f'<p class="rimp big2"><b>一句話看懂：{_e(top["one"])}</b></p>'
             + (f'<ul class="lines">{"".join(_lens(x) for x in lens)}</ul>' if lens else "")
+            + _signals(_rows(top.get("signals"), "name", "read"))
             + (f'<p class="small"><b>連帶影響</b>：{_e(top["spill"])}</p>' if top.get("spill") else "")
             + (f'<details class="sgx"><summary>今天的說法查核（{len(checks)} 則）</summary><ul class="lines">'
                + "".join(_check(x) for x in checks) + "</ul></details>" if checks else "")

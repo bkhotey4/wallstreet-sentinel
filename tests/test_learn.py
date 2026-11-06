@@ -42,6 +42,30 @@ def test_card():
         assert L.sec_learn(None) == ""
     finally:
         L.FILE = orig
+    d["world"] = [{"date": "2026-11-01", "area": "科學", "title": "舊事件", "what": "舊的"},
+                  {"date": "2026-11-06", "area": "科技", "title": "新藥通過試驗", "what": "<b>第三期</b>達標", "status": "已確認",
+                   "cause": "十年研發", "effect": "藥價下降", "why": "影響很多病人", "link": "沒有明顯關聯", "followup": "等審查",
+                   "macro": [{"asset": "美債", "how": "通膨預期下降", "seen": "10 年期 -3bp"}, {"asset": "沒寫"}], "sources": [{"name": "Nature", "url": "https://example.com/n"}]},
+                  {"date": "2026-11-06", "title": "沒寫內容"}]
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    L.FILE = f
+    try:
+        h = L.sec_learn(None)
+    finally:
+        L.FILE = orig
+    assert "一句話看懂：新藥通過試驗" in h and "今天人類世界發生什麼" in h and "華爾街在談什麼" in h
+    assert h.index("新藥通過試驗") < h.index("舊事件") < h.index("Anthropic 可能拿到")
+    assert "前因" in h and "十年研發" in h and "藥價下降" in h and "怎麼影響總經與市場" in h and "10 年期 -3bp" in h and "沒寫" not in h
+    d["story"] = {"date": "2026-11-06", "title": "選民開始反對資料中心", "paragraphs": ["大家以為<AI>只缺晶片。", "", "後來發現缺的是電和選票。"]}
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    L.FILE = f
+    try:
+        told = L.sec_learn(None)
+    finally:
+        L.FILE = orig
+    assert "一句話看懂：選民開始反對資料中心" in told and "今天的故事" in told and "&lt;AI&gt;" in told and "缺的是電和選票" in told
+    assert told.index("今天的故事") < told.index("今天人類世界發生什麼")
+    assert "<b>第三期" not in h and "&lt;b&gt;第三期" in h and "沒寫內容" not in h and "等審查" in h
     src = (Path(L.__file__).parent / "build_site.py").read_text(encoding="utf-8")
     assert "SLN.sec_learn" in src
 
