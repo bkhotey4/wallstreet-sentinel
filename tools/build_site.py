@@ -61,6 +61,8 @@ from tools import site_indnote as SIN2
 from tools import site_preview as SPV
 from tools import site_learn as SLN
 from tools import site_deep as SDP
+from tools import site_human as SHM
+from tools import site_sessions as SSN
 from tools import site_estrev as SER
 from tools import site_event_react as SEVR
 from tools import site_changes as SCG
@@ -1306,7 +1308,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SLN.sec_learn, SDP.sec_deep, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SSN.sec_sessions, SLN.sec_learn, SDP.sec_deep, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
@@ -1334,6 +1336,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("cb_us", "美國公司債", "US corporate bonds", [SBD.sec_cb_us, SCR.sec_credit_rates, SSL.sec_ebp]),
             ("cb_eu", "歐洲公司債", "European corporate bonds", [SBD.sec_cb_eu]),
             ("cb_em", "新興與亞洲公司債", "EM & Asian corporate bonds", [SBD.sec_cb_em]),
+            ("human", "人類溫度計", "Human thermometer", [SHM.sec_human]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SW2.sec_nh_nl, SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),

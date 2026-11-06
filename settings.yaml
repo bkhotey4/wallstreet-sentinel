@@ -268,6 +268,21 @@ fred_series:
   UNRATE: 失業率
   SAHMREALTIME: 薩姆衰退指標
   CPIAUCSL: CPI
+  CUSR0000SEHF01: CPI 電費
+  CUSR0000SEHA: CPI 房租
+  CUSR0000SAF11: CPI 在家吃的食物
+  CUSR0000SETB01: CPI 汽油
+  AHETPI: 生產與非主管員工時薪
+  DRCLACBS: 消費貸款逾期率
+  TDSP: 家庭還債占收入比重
+  PSAVERT: 個人儲蓄率
+  LNS14024887: 16-24 歲失業率
+  CGBD2024: 20-24 歲大學畢業生失業率
+  LNS11300060: 25-54 歲勞動參與率
+  JTSQUR: 自願離職率
+  USEPUINDXD: 經濟政策不確定性
+  QCNR628BIS: 中國實質房價
+  CRDQCNAPABIS: 中國非金融部門信貸
   DTWEXBGS: 廣義美元指數
   IRLTLT01JPM156N: 日本10年期公債(月)
   IRLTLT01DEM156N: 德國10年期公債(月)
