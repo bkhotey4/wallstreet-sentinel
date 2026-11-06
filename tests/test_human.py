@@ -55,15 +55,34 @@ def test_sessions():
                    {"date": "2026-11-06", "phase": "盤前", "at": "21:00", "one": "開盤前<b>緊張</b>"},
                    {"date": "2026-11-06", "phase": "盤中", "at": "01:00", "one": "盤中反彈", "story": ["大家鬆一口氣"],
                     "macro": [{"name": "利率", "read": "10 年債小升"}, {"name": "沒寫"}], "next": "收盤",
+                    "movers": [{"sym": "AMD", "name": "超微", "chg": 9.2, "why": "昨天跌太多後反彈"}, {"sym": "NOWHY", "chg": 1}],
                     "sources": [{"name": "BBC", "url": "https://example.com/a"}, {"name": "壞", "url": "javascript:x"}]},
                    {"date": "2026-11-06", "phase": "奇怪", "one": "不該出現"}]}
     h = render(d)
     assert "一句話看懂：盤中反彈" in h and h.index("盤中反彈") < h.index("緊張") and "昨天的事" not in h and "不該出現" not in h
     assert "總經情勢" in h and "10 年債小升" in h and "沒寫" not in h and "&lt;b&gt;緊張" in h and 'href="javascript' not in h
+    assert "今天誰動得最大" in h and "超微" in h and "+9.2%" in h and "NOWHY" not in h
     assert render({}) == ""
+
+
+def test_longhist():
+    from tools import site_longhist as L
+    d = {"updated": "2026-11-07", "one": "信任變了", "intro": ["先講人"],
+         "eras": [{"years": "1790", "title": "戰債", "people": "<b>人</b>", "bonds": "換新", "lesson": "承諾", "conf": "中",
+                   "sources": [{"name": "Fed", "url": "https://example.com/a"}, {"name": "壞", "url": "javascript:x"}]}, {"years": "1800"}],
+         "patterns": [{"name": "新科技", "what": "便宜信用", "eras": ["1929"], "like": "像", "unlike": "不像", "conf": "低"}], "notes": ["數字粗略"]}
+    f = Path(tempfile.mkdtemp()) / "history.json"
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    with patch.object(L, "FILE", f):
+        h = L.sec_longhist(None)
+    assert "信任變了" in h and "戰債" in h and "債市與利率" in h and "今天不像的地方" in h and "（1 個時期）" in h and "把握度低" in h
+    assert "&lt;b&gt;人" in h and 'href="javascript' not in h and not any(w in h for w in BANNED)
+    with patch.object(L, "FILE", f.with_name("none.json")):
+        assert L.sec_longhist(None) == ""
 
 
 if __name__ == "__main__":
     test_human()
     test_sessions()
+    test_longhist()
     print("HUMAN TESTS PASSED")

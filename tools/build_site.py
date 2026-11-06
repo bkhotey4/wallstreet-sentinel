@@ -62,6 +62,7 @@ from tools import site_preview as SPV
 from tools import site_learn as SLN
 from tools import site_deep as SDP
 from tools import site_human as SHM
+from tools import site_longhist as SLH
 from tools import site_sessions as SSN
 from tools import site_estrev as SER
 from tools import site_event_react as SEVR
@@ -1310,7 +1311,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [SSN.sec_sessions, SLN.sec_learn, SDP.sec_deep, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
-            ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
+            ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SSN.sec_sessions, SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
@@ -1339,6 +1340,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("human", "人類溫度計", "Human thermometer", [SHM.sec_human]),
             ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
             ("rotation", "類股寬度", "Sectors & breadth", [SW2.sec_nh_nl, SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
+            ("longhist", "人類與市場長歷史", "People and markets", [SLH.sec_longhist]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [SEA.sec_asia, sec_markets]),

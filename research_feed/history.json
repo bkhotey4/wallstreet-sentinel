@@ -1,0 +1,1175 @@
+{
+ "updated": "2026-11-07",
+ "one": "230 年來市場每次大轉折，都是人對錢、對政府、對彼此的信任變了；規則會更新，恐懼和跟風不太變。",
+ "intro": [
+  "這一頁先講人，再講錢。美國的金融市場不是從股票開始，而是從一筆還不出來的戰爭債開始。1790 年，漢彌爾頓決定把債換新並且認帳。之後 230 多年，每個時代都有人相信某件事，害怕某件事，想要某件事，價格只是這些心情的紀錄。",
+  "我們同樣重視債券。很多初學者只看股票，但公債利率是所有借錢成本的起點。美國有過公債贏四十年，也有過公債輸四十年。戰爭、黃金、通膨與央行的故事，大多寫在債券裡。",
+  "舊數字很粗。1920 年代以前沒有 S&P 指數，每個數字都寫明在量什麼；查不到的就不寫。最後的規律比較，也會老實說哪些流行比喻很弱。本頁不做價格預測。"
+ ],
+ "eras": [
+  {
+   "years": "1602–1720",
+   "title": "美國之前：股票與泡沫先在歐洲出現",
+   "people": "荷蘭商人想分攤遠洋貿易的風險。英國政府則欠了一大筆難賣的舊債，想找人接手。英國人和法國人看到新公司的股價天天漲，怕自己錯過。",
+   "what": "1602 年荷蘭東印度公司（VOC）成立。後人把股份可轉讓、資本長期留在公司，看成現代公司的開端。1720 年，英國南海公司提議用自己的股票，換掉約 3,000 萬英鎊國債。法國的約翰．羅（John Law）早一步做了類似的事。",
+   "stocks": "南海公司股價 1720 年 1 月約 140 英鎊，6 月初約 800 英鎊，夏天接近 1,000 英鎊，10 月跌回約 200 英鎊。這是單一公司股價，不是市場指數，來源是百科條目，數字是約略值。",
+   "bonds": "國債是整件事的起點：政府舊債條件差、難轉手，才有「用股票換國債」的點子。可見債券問題可以變成股票泡沫。",
+   "after": "研究 Hoare's Bank 交易紀錄的學者發現：聰明的錢知道是泡沫，仍選擇跟著買，因為賺得到。",
+   "lesson": "知道是泡沫，和泡沫何時結束，是兩件事。",
+   "conf": "低",
+   "sources": [
+    {
+     "name": "Gelderblom, de Jong & Jonker：VOC 1602–1623（JEH 摘要）",
+     "url": "https://ideas.repec.org/a/cup/jechis/v73y2013i04p1050-1076_00.html"
+    },
+    {
+     "name": "Encyclopedia.com：South Sea Bubble",
+     "url": "https://encyclopedia.com/history/modern-europe/british-and-irish-history/south-sea-bubble"
+    },
+    {
+     "name": "Temin & Voth：Riding the South Sea Bubble（AER 2004）",
+     "url": "https://www.jvoth.com/papers/riding-the-south-sea-bubble.html"
+    }
+   ]
+  },
+  {
+   "years": "1790–1792",
+   "title": "漢彌爾頓把戰債變成國家信用，兩年後第一次股災",
+   "people": "新國家欠了獨立戰爭的債。舊的大陸幣幾乎沒人要，俗語說「不值一張大陸幣」。財政部長漢彌爾頓相信：還債才有信用，有信用才借得到錢。麥迪遜擔心低價收購舊債的投機客賺走好處，主張差別對待原始持有人，沒有成功。投機客杜爾（William Duer）只想賺一筆。",
+   "what": "1790 年 8 月《融資法》把舊債換成三種新公債，並由聯邦接手各州戰債。1791 年第一銀行開業，資本 1,000 萬美元，股票一開賣就搶光，隨後泡沫。1792 年 3 月杜爾借錢炒作失敗，付不出款，被關進牢裡。漢彌爾頓動用償債基金買下市場上的公債救市。",
+   "stocks": "沒有股價指數。一份學術摘要說，證券價格兩週跌近 25%。另一篇歷史文章記錄銀行認購權證（scrip）五週內從 25 美元漲到 325 美元，這是個別商品，不是市場。",
+   "bonds": "公債（政府借據）是當時市場的主角。財政部數字：1790 年初公債 7,106 萬美元。Hall 與 Sargent 估計換債後面額約 7,430 萬美元，約 GDP 的 35%（GDP 是估計值）。1790 年底，100 美元面額的 6% 公債值 90 美元，遞延 6% 與 3% 公債約值 45 美元。舊債人其實吃了折扣；大陸幣更慘，100 換 1。",
+   "after": "1792 年 5 月 17 日，24 名經紀商簽《梧桐樹協議》（Buttonwood Agreement），訂下手續費和互相交易的規矩，這是紐約證交所的起源。",
+   "lesson": "國家信用是一次次還錢累積出來的，不是宣告出來的。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Hall & Sargent（NBER w19008）：1790–1880 美國如何對待債權人",
+     "url": "https://www.nber.org/system/files/working_papers/w19008/w19008.pdf"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "Federal Reserve History：The First Bank of the United States",
+     "url": "https://www.federalreservehistory.org/essays/first-bank-of-the-us"
+    },
+    {
+     "name": "Sylla, Wright & Cowen：Alexander Hamilton, Central Banker（BHR 2009 摘要）",
+     "url": "https://ideas.repec.org/a/cup/buhirw/v83y2009i01p61-86_00.html"
+    },
+    {
+     "name": "American Heritage：Wall Street's First Collapse",
+     "url": "https://www.americanheritage.com/wall-streets-first-collapse"
+    },
+    {
+     "name": "NYSE：History of NYSE",
+     "url": "https://www.nyse.com/history-of-nyse"
+    }
+   ]
+  },
+  {
+   "years": "1811–1836",
+   "title": "兩家國家銀行的興亡，與一度幾乎還清的國債",
+   "people": "傑佛遜一派怕銀行太有權。各州的銀行怕競爭。傑克森總統反對銀行，認為第二銀行權力太大；銀行總裁比德爾不接受批評，認為銀行的做法沒錯。這場爭執也成了 1832 年大選的主題。",
+   "what": "第一銀行的特許 1811 年到期，國會不續。隔年打 1812 年戰爭，財政吃緊。1816 年成立第二銀行，資本 3,500 萬美元。1832 年傑克森否決續約後連任，1833 年把聯邦存款移出，銀行失去力量，1836 年特許結束。",
+   "stocks": "這段時期沒有可靠的全市場股價資料，本頁不給數字。",
+   "bonds": "戰爭推高借錢成本：美國公債殖利率（買債實際賺的年利率）1810 年約 5.82%，1814 年 7.64%。公債餘額 1812 年約 4,520 萬美元，1816 年約 1.27 億美元。之後一路還債：1835 年初只剩 33,733 美元，是美國史上最接近零債的時候。",
+   "after": "美國之後將近 80 年沒有中央銀行，直到 1913 年。",
+   "lesson": "一家機構存不存在，有時不是由經濟決定，而是由政治決定。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Federal Reserve History：The First Bank of the United States",
+     "url": "https://www.federalreservehistory.org/essays/first-bank-of-the-us"
+    },
+    {
+     "name": "Federal Reserve History：The Second Bank of the United States",
+     "url": "https://www.federalreservehistory.org/essays/second-bank-of-the-us"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    }
+   ]
+  },
+  {
+   "years": "1837–1843",
+   "title": "土地、運河與州債：第一次大蕭條般的長低迷",
+   "people": "西部開發讓人相信土地和運河會一直漲。各州政府舉債蓋運河、鐵路，倫敦投資人也搶著買。傑克森政府擔心紙幣和投機，要求買公有地付金銀。",
+   "what": "1836 年《鑄幣通令》加上聯邦盈餘分給各州，金銀被抽離紐約。1837 年 5 月 10 日紐約銀行停止兌付金銀，這是第一次全國性的停兌。1839 年第二波危機更久：Wallis 認為主因是 1836 年後州政府大舉借債，運河計畫又在 1839 年崩掉。729 家特許銀行中有 194 家關門。",
+   "stocks": "早期股市很小。一份舊研究說，1837 年 1 月到 1843 年鐵路股跌 62.6%，銀行與保險股跌 31.9%，波士頓工業股跌 23.2%。三個數字分屬不同樣本，只能看大概。",
+   "bonds": "這是美國第一次「地方政府債務危機」。1841–42 年八個州和佛羅里達領地違約，其中五個賴掉全部或部分債務。多數州最後還清，學者認為是為了再借到錢。聯邦雖沒違約，信用也受牽連：公債殖利率 1835 年 4.43%，1842 年 6.07%。短期商業票據利率 1836 年平均 18.42%。",
+   "after": "1842 到 1852 年間，十一個州寫了新憲法，規定發債要同時加稅，並經選民同意。",
+   "lesson": "地方政府的便宜借款，也可能變成全國的信用問題。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Rousseau（NBER w7528）：Jacksonian Monetary Policy, Specie Flows, and the Panic of 1837",
+     "url": "https://www.nber.org/papers/w7528.pdf"
+    },
+    {
+     "name": "Wallis（NBER h0133）：What Caused the Crisis of 1839?",
+     "url": "https://www.nber.org/papers/h0133"
+    },
+    {
+     "name": "Wallis, Sylla & Grinath（NBER w10753）：Sovereign Debt and Repudiation",
+     "url": "https://www.nber.org/system/files/working_papers/w10753/w10753.pdf"
+    },
+    {
+     "name": "English（AER 1996）：American State Debts in the 1840's（摘要）",
+     "url": "https://ideas.repec.org/a/aea/aecrev/v86y1996i1p259-75.html"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    }
+   ]
+  },
+  {
+   "years": "1857",
+   "title": "加州黃金、鐵路投機，一家分行倒閉拖垮全國",
+   "people": "1849 年起的加州黃金讓人覺得好日子不會停。銀行家和英國投資人湧入鐵路。1850 年代蓋了超過 2 萬英里鐵軌。",
+   "what": "1857 年 8 月 24 日，俄亥俄人壽信託公司紐約分行倒閉。銀行怕被擠兌，收回貸款，經紀商被迫低價拋售。9 月 26 日費城銀行停兌，10 月 13 日紐約只剩一家沒停。全國停兌約兩個月，紐約 12 月 14 日恢復。",
+   "stocks": "Macaulay 鐵路股價：1857 年 1 月 21.0，12 月 15.7，約跌 25%；1859 年 8 月低到 15.0。這只算鐵路股，也是舊資料，但當時鐵路就是股市主體。",
+   "bonds": "壓力都在短期利率。商業票據 1857 年平均 11.00%，1858 年回到 4.82%。隨時可收回的活期拆款 1857 年 9.34%，1858 年 4.15%。長期的美國公債殖利率幾乎沒動：4.30% 到 4.32%。",
+   "after": "沒有全國性新制度。布坎南總統在國情咨文要求各州規定銀行金銀準備，並主張一停兌就清算，銀行界則靠停兌度過。",
+   "lesson": "危機常先出現在隔夜借錢的地方，不是長期債。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "紐約聯準銀行 Liberty Street：Crisis Chronicles, Panic of 1857",
+     "url": "https://libertystreeteconomics.newyorkfed.org/2015/10/crisis-chronicles-defensive-suspension-and-the-panic-of-1857/"
+    },
+    {
+     "name": "NBER Macrohistory 第 XI 章：鐵路股價（Macaulay）",
+     "url": "https://www.nber.org/research/data/nber-macrohistory-xi-securities-markets"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    }
+   ]
+  },
+  {
+   "years": "1861–1879",
+   "title": "南北戰爭：綠背紙幣、人人買公債，再花 14 年回到黃金",
+   "people": "北方需要錢打仗。財政部長蔡斯（Salmon Chase）和銀行家庫克（Jay Cooke）想把公債賣給一般人。戰後，債主要求用黃金還；農民和欠債的人希望紙幣多一點，因為物價下跌會讓債變重。",
+   "what": "1861 年底銀行停止兌金，美國離開金本位。1862 年《法償法》發行不能換金的「綠背」紙幣。庫克用報紙廣告賣 5-20 公債（利率 6%，利息付黃金），面額低到 50 美元；《美國遺產》雜誌說庫克賣給約 5% 的北方人口，戰前持有證券者不到 1%。1863、1864 年《國家銀行法》建立全國銀行體系。",
+   "stocks": "鐵路股 1860 年 1 月 15.7，1864 年 6 月 37.3。這是綠背紙幣標價，物價也在漲，不能當成真實獲利；1865 年 8 月回到 29.8。",
+   "bonds": "公債餘額 1860 年約 6,500 萬美元，1866 年約 27.7 億美元，超過四十倍。黃金價格用紙幣算：戰前每盎司 20.67 美元，1864 年平均 42.03 美元，等於紙幣對金價掉一半。1868 年 5-20 公債占有息債務 70.5%，本金該付黃金還是紙幣成為大選議題。美國公債殖利率 1861 年 6.45%。",
+   "after": "1865 年對州銀行券課 10% 稅，全國紙幣統一。最高法院一度判法償法違憲，隨後反轉。國會讓物價回落，1879 年恢復兌金，綠背終於等於黃金。",
+   "lesson": "戰爭可以靠印鈔撐過去，但事後要有人承受把錢變回來的痛。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Federal Reserve History：National Banking Acts of 1863 and 1864",
+     "url": "https://www.federalreservehistory.org/essays/national-banking-acts"
+    },
+    {
+     "name": "Hall & Sargent（NBER w19008）：1790–1880 美國如何對待債權人",
+     "url": "https://www.nber.org/system/files/working_papers/w19008/w19008.pdf"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "MeasuringWorth：金價",
+     "url": "https://www.measuringworth.com/datasets/gold/"
+    },
+    {
+     "name": "NBER Macrohistory 第 XI 章：鐵路股價（Macaulay）",
+     "url": "https://www.nber.org/research/data/nber-macrohistory-xi-securities-markets"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "American Heritage：Paying for the War",
+     "url": "https://www.americanheritage.com/paying-war"
+    }
+   ]
+  },
+  {
+   "years": "1873–1879",
+   "title": "鐵路債崩盤，紐交所第一次關門",
+   "people": "戰後人們相信鐵路能把美國連成一個市場。歐洲投資人大買鐵路債。銀行家庫克押注北太平洋鐵路。那個年代的大富豪和普通鐵路工人距離很遠，後人稱為鍍金時代。",
+   "what": "1873 年 5 月和 9 月維也納股災，歐洲人倒出美國鐵路債。9 月 18 日庫克的銀行破產。9 月 20 日紐交所史上第一次休市，十天後才重開。隨後是 1873–79 年長期蕭條，當時就叫「大蕭條」，後來才被 1930 年代搶走名字。",
+   "stocks": "Cowles 回推的股價指數（後併入 Shiller 的 S&P 綜合指數，當時沒有 S&P）：1872 年 4 月 5.18，1877 年 6 月 2.73，月均跌約 47%。鐵路股 1872 年 10 月到 1877 年 7 月跌約 42%。",
+   "bonds": "出事的是鐵路公司債，不是國債。紐約短期拆款 1873 年平均 14.24%。長期利率反而從 1873 年 5.55% 降到 1879 年 4.22%（新英格蘭市政債），因為物價在跌，抱債反而賺。",
+   "after": "1875 年通過法律，定 1879 年恢復兌金。銀行界靠紐約清算所互助，但沒有央行。",
+   "lesson": "新基礎建設可以是真的，替它融資的債仍可能先垮。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Banking Panics of the Gilded Age",
+     "url": "https://www.federalreservehistory.org/essays/banking-panics-of-the-gilded-age"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "NBER Macrohistory 第 XI 章：鐵路股價（Macaulay）",
+     "url": "https://www.nber.org/research/data/nber-macrohistory-xi-securities-markets"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    },
+    {
+     "name": "Hall & Sargent（NBER w19008）：1790–1880 美國如何對待債權人",
+     "url": "https://www.nber.org/system/files/working_papers/w19008/w19008.pdf"
+    }
+   ]
+  },
+  {
+   "years": "1893–1896",
+   "title": "黃金流失與「黃金十字架」",
+   "people": "西部農民欠債，農產品價格又在跌。農民要白銀鑄幣，讓錢多一點。東部銀行家和債主要守金本位。1896 年布萊恩在民主黨大會說，不能把人類釘在黃金十字架上；共和黨麥金利主張金本位。這是債權人和債務人的政治對決。",
+   "what": "外界擔心美國守不住金本位。財政部黃金從 1890 年 1.9 億美元掉到約 1 億美元。7 月中到 8 月中有 340 家銀行停業。工業生產 1892–94 年跌 15.3%，失業率估計 17–19%（估計值，當時沒有官方失業率）。直到 1897 年中才完全恢復。",
+   "stocks": "道瓊平均 1892 年 3 月 44.08，1896 年 8 月 24.36，跌約 45%。這是把早期單一平均指數銜接的結果。Shiller 月均指數同期跌約 32%，樣本不同，差距本身就說明舊資料很粗。",
+   "bonds": "這次擔心的是貨幣本身。1895 年摩根出手幫政府穩住黃金。新英格蘭市政債長期殖利率變化很小：1892 年 3.61%，1893 年 3.74%。短期商業票據 1893 年 7.64%。",
+   "after": "1900 年《金本位法》確立法定金本位。布萊恩敗選，但貨幣問題成為長期的政治題目。",
+   "lesson": "當貨幣本身成為選舉議題，市場怕的就不只是景氣。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Banking Panics of the Gilded Age",
+     "url": "https://www.federalreservehistory.org/essays/banking-panics-of-the-gilded-age"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "Federal Reserve History：Federal Reserve Act Signed into Law",
+     "url": "https://www.federalreservehistory.org/essays/federal-reserve-act-signed"
+    },
+    {
+     "name": "Federal Reserve History：Roosevelt's Gold Program",
+     "url": "https://www.federalreservehistory.org/essays/roosevelts-gold-program"
+    },
+    {
+     "name": "Teaching American History：The Cross of Gold Speech",
+     "url": "https://teachingamericanhistory.org/document/the-cross-of-gold-speech/"
+    }
+   ]
+  },
+  {
+   "years": "1907–1913",
+   "title": "沒有央行的最後一次恐慌，催生聯準會",
+   "people": "信託公司的經營者追求高報酬，現金只留約 5%，國民銀行是 25%。銀行家摩根成了事實上的救火隊。民眾與政界不放心讓一個私人決定誰活誰死，也不放心把權力交給華爾街或華府。",
+   "what": "1907 年 10 月 16 日，炒作聯合銅業的計畫失敗。10 月 22 日尼克博克信託被提領近 800 萬美元後停業。紐約清算所發行臨時憑證，並限制存款換現金。1908 年工業生產跌 17%，實質 GNP 跌 12%。",
+   "stocks": "道瓊 1906 年 1 月 19 日 75.45，1907 年 11 月 15 日 38.83，跌約 49%。Shiller 月均指數 1906 年 9 月到 1907 年 11 月跌約 38%。",
+   "bonds": "隔夜拆款利率一天內從 9.5% 跳到 70%，兩天後到 100%。長期殖利率只從 1906 年 3.65% 到 1907 年 3.92%（新英格蘭市政債）。錢的問題在隔夜市場，不是長債。",
+   "after": "1908 年《奧德里奇－弗里蘭法》成立全國貨幣委員會。1913 年 12 月 23 日威爾遜總統簽署《聯邦準備法》。",
+   "lesson": "靠一個富人救市不是制度，所以國家最後建了制度。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：The Panic of 1907",
+     "url": "https://www.federalreservehistory.org/essays/panic-of-1907"
+    },
+    {
+     "name": "Federal Reserve History：Federal Reserve Act Signed into Law",
+     "url": "https://www.federalreservehistory.org/essays/federal-reserve-act-signed"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    }
+   ]
+  },
+  {
+   "years": "1914–1920",
+   "title": "第一次世界大戰：買公債是愛國，通膨是帳單",
+   "people": "政府要全民出錢打仗，用海報、演講和志工上門推銷自由公債。銀行告訴民眾可以「借錢買」。剛成立的聯準會把獨立性放在第二位，先幫財政部。",
+   "what": "1914 年 7 月底紐交所關門，道瓊到 12 月 12 日才再有收盤價。美國 1917 年 4 月參戰。五期公債 1917–1919 年共發行約 214.8 億美元。聯準會用優惠利率借錢給買公債的銀行。戰後物價爆發，CPI 1920 年 6 月年增約 24%。",
+   "stocks": "Shiller 月均指數 1919 年 7 月到 1921 年 8 月跌約 32%。道瓊 1919 年 11 月 3 日 119.62，1921 年 8 月 24 日 63.9，跌約 47%。JST 算出扣除通膨後，1914 到 1920 年股票總報酬約 −31%。",
+   "bonds": "公債餘額 1916 年約 36 億美元，1919 年約 274 億美元。JST 算出扣通膨後 1914 到 1920 年美國公債總報酬約 −45%，愛國買債的人實際虧得很重。聯準會紐約分行貼現率（銀行向央行借錢的利率）1920 年 6 月升到 7%，維持到 1921 年 4 月。",
+   "after": "1917 年《第二自由公債法》開啟國會授權大筆舉債的方式，1939 年才變成今天的總額上限。聯準會學會用公開市場買賣影響利率。",
+   "lesson": "戰時借錢便宜，是因為把成本留給之後的通膨。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "Federal Reserve History：The Federal Reserve's Role During WWI",
+     "url": "https://www.federalreservehistory.org/essays/feds-role-during-wwi"
+    },
+    {
+     "name": "Dictionary of American History：Liberty Loans",
+     "url": "https://encyclopedia.com/history/dictionaries-thesauruses-pictures-and-press-releases/liberty-loans"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Hall, Sargent et al.（NBER w21799）：美國債務上限史",
+     "url": "https://www.nber.org/system/files/working_papers/w21799/w21799.pdf"
+    },
+    {
+     "name": "NBER Macrohistory 13009：紐約聯準銀行貼現率",
+     "url": "https://data.nber.org/databases/macrohistory/rectdata/13/m13009.dat"
+    }
+   ]
+  },
+  {
+   "years": "1921–1929",
+   "title": "咆哮的二十年代：汽車、電力與融資買股",
+   "people": "戰後的樂觀讓許多人第一次買股票。買股常常只付約一成，其餘用借的。經濟學家費雪在 1929 年說股價已到「永久高原」。聯準會理事會想打擊投機，紐約分行想升息，兩邊意見不一。",
+   "what": "道瓊從 1921 年 8 月的 63 點漲到 1929 年 9 月 381 點，約六倍。1928–29 年聯準會收緊，1929 年 8 月紐約貼現率到 6%。美國以外的商業因此轉弱。",
+   "stocks": "這段的主角就是股票。道瓊 1929 年 9 月 3 日收 381.17 創高。",
+   "bonds": "戰爭公債被慢慢還掉：公債餘額 1919 年約 274 億美元，1930 年約 162 億美元。Aaa 公司債殖利率 1928 年 4.55%、1929 年 4.73%。隨時可收回的拆款利率 1929 年 7.61%，因為融資買股搶錢。",
+   "after": "當時規則很少：融資比例無上限，公司不必依聯邦法揭露財報。頂端 1% 人口的所得占比接近 24%，是 2000 年代前的高點。",
+   "lesson": "用借來的錢買上漲的東西，上漲時看起來都很聰明。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Stock Market Crash of 1929",
+     "url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1929"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "Saez：Striking It Richer（2022 更新）",
+     "url": "https://eml.berkeley.edu/~saez/saez-UStopincomes-2022.pdf"
+    }
+   ]
+  },
+  {
+   "years": "1929–1933",
+   "title": "大崩盤：股災不可怕，銀行倒才可怕",
+   "people": "許多人相信這次衰退會像 1920 年代幾次一樣，一年多就過去。聯準會領導層受「真實票據」想法影響，不願替投機放款。小銀行的存戶只想拿回錢。後來柏南奇 2002 年公開承認，聯準會的錯誤加重了大蕭條。",
+   "what": "1929 年 10 月 28、29 日道瓊各跌約 13%、12%。1930 年秋看似要恢復，11 月銀行恐慌開始。1930 年秋到 1933 年初貨幣供給減少近 30%，物價下跌。JST 資料顯示失業率 1933 年約 25%（當時沒有官方統計，是後人估算）。1933 年 3 月銀行體系崩解。",
+   "stocks": "道瓊從 381.17 跌到 1932 年 7 月 8 日 41.22，跌 89%，1954 年 11 月才回到 1929 年高點，隔了 25 年。Shiller 月均 S&P 綜合指數跌約 85%。",
+   "bonds": "公債成了避風港：3 個月美國國庫券 1933 年約 0.60%。信用差的債很慘：Damodaran 算 Baa 公司債 1931 年報酬 −15.68%，10 年美債 −2.56%。Aaa 公司債殖利率 1932 年回到 5.01%。物價下跌讓欠債的人更難還，這叫債務通縮。",
+   "after": "教訓寫進後來的聯準會：要當最後貸款人（別人不借時由央行借）。下一段的改革全部由此而來。",
+   "lesson": "股價大跌只是傷口，銀行體系崩潰才會變成十年的蕭條。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Stock Market Crash of 1929",
+     "url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1929"
+    },
+    {
+     "name": "Federal Reserve History：Banking Panics of 1930-31",
+     "url": "https://www.federalreservehistory.org/essays/banking-panics-1930-31"
+    },
+    {
+     "name": "Federal Reserve History：The Great Depression",
+     "url": "https://www.federalreservehistory.org/essays/great-depression"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    }
+   ]
+  },
+  {
+   "years": "1933–1938",
+   "title": "羅斯福的黃金行動與規則重寫",
+   "people": "羅斯福政府想讓物價回升，幫農民和欠債的人。批評者說取消黃金條款「完全不道德」，是對買自由公債的人毀約。銀行家怕存戶，存戶怕銀行。皮科拉（Ferdinand Pecora）在國會的聽證，讓民眾看到華爾街內幕，例如大通銀行總裁放空自家股票。",
+   "what": "1933 年 3 月 6 日全國銀行休假。3 月 9 日通過《緊急銀行法》，15 日掌握九成銀行資源的銀行重開，約 4,000 家永遠關閉。4 月 20 日暫停金本位。6 月 5 日國會取消所有合約的黃金條款。1934 年 1 月 30 日《黃金準備法》把金價從 20.67 美元改成 35 美元，美元含金量只剩 59%。私人持金受限，到 1974 年才解除。",
+   "stocks": "JST 算出 1933 年美股總報酬約 +53%。但 1937 年 3 月 10 日道瓊 194.4，1938 年 3 月 31 日 98.95，一年跌約 49%。1937–38 年衰退：實質 GDP 跌 10%，工業生產跌 32%，失業率回到 20%。原因之一是聯準會把存款準備率加倍，財政也收緊。",
+   "bonds": "短債利率幾乎歸零：3 個月國庫券 1934 年 0.28%。原本承諾可換黃金的公債，改成只付紙幣，最高法院認可國會的做法。對債權人來說，這等於條件被改寫。",
+   "after": "《格拉斯－史蒂格爾法》分開商業銀行與投資銀行，成立存款保險（起初 2,500 美元）。1934 年《證券交易法》成立 SEC。《1935 年銀行法》重組聯準會。",
+   "lesson": "信任崩潰時，政府可能改寫合約；這有助救經濟，債權人也不會忘記。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Bank Holiday of 1933",
+     "url": "https://www.federalreservehistory.org/essays/bank-holiday-of-1933"
+    },
+    {
+     "name": "Federal Reserve History：Roosevelt's Gold Program",
+     "url": "https://www.federalreservehistory.org/essays/roosevelts-gold-program"
+    },
+    {
+     "name": "Federal Reserve History：Gold Reserve Act of 1934",
+     "url": "https://www.federalreservehistory.org/essays/gold-reserve-act"
+    },
+    {
+     "name": "Federal Reserve History：Banking Act of 1933",
+     "url": "https://www.federalreservehistory.org/essays/glass-steagall-act"
+    },
+    {
+     "name": "Federal Reserve History：Recession of 1937-38",
+     "url": "https://www.federalreservehistory.org/essays/recession-of-1937-38"
+    },
+    {
+     "name": "SEC Historical Society：The Securities Exchange Act of 1934",
+     "url": "https://sechistorical.org/exhibition/fair-to-all-people-the-sec-and-the-regulation-of-insider-trading/the-securities-exchange-act-of-1934-principles-of-full-disclosure/"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    }
+   ]
+  },
+  {
+   "years": "1941–1951",
+   "title": "二戰壓低利率，1951 年協議把獨立還給聯準會",
+   "people": "戰爭優先。聯準會主席艾克斯（Eccles）偏好加稅與管制，但仍照財政部要求幫忙壓低利率。戰後杜魯門總統和財政部長史奈德想保護戰爭公債的價值，聯準會則怕通膨。兩邊公開吵到白宮。",
+   "what": "1942 年起，聯準會把短期國庫券釘在 3/8 厘（0.375%），長債上限約 2.5%。利率釘住就是央行無限買債，讓利率不超過上限。軍費 1944 年 910 億美元。戰後物價釋放，1946 年 6 月到 1947 年 6 月 CPI 上升 17.6%。韓戰後通膨再起。1951 年 3 月 4 日雙方宣布協議。",
+   "stocks": "1942 年 4 月 Shiller 月均 7.84 是低點，比 1937 年 2 月低約 57%，之後回升。1946–49 年月均跌約 25%。扣通膨算，1940 到 1951 年股票總報酬約 +126%（JST）。",
+   "bonds": "這是公債史最重要的一段。公債餘額 1941 年約 490 億美元，1945 年約 2,587 億美元。JST 的債務占 GDP 1945 年 113%。Aaa 公司債殖利率 1945 年 2.62%。名目利率被壓住，物價卻漲，JST 算出扣通膨後 1940 到 1951 年公債總報酬約 −34%。買債的人用購買力替戰爭付費。",
+   "after": "1951 年協議把債務管理和貨幣政策分開。馬丁後來接任聯準會主席。這是現代央行獨立性的起點。",
+   "lesson": "政府債很多時，壓低利率很誘人；代價是通膨由存錢的人承擔。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：The Treasury-Fed Accord",
+     "url": "https://www.federalreservehistory.org/essays/treasury-fed-accord"
+    },
+    {
+     "name": "Federal Reserve History：The Federal Reserve's Role During WWII",
+     "url": "https://www.federalreservehistory.org/essays/feds-role-during-wwii"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    }
+   ]
+  },
+  {
+   "years": "1944–1971",
+   "title": "布列敦森林：美元當世界貨幣，直到黃金不夠",
+   "people": "1944 年 44 國代表想避免 1930 年代的貨幣大戰。凱因斯和美國財政部的懷特是主要設計者。1960 年代美國想同時打越戰、辦社會計畫，又維持低失業，歐洲和日本則開始懷疑美元的黃金承諾。",
+   "what": "各國貨幣釘美元，美元釘黃金每盎司 35 美元。制度 1958 年才完全運作。1960 年 10 月倫敦金價衝到 40 美元，1961 年成立黃金總庫。1971 年 8 月 13–15 日尼克森在大衛營與幕僚定案：15 日宣布關閉黃金窗口，同時凍結工資物價 90 天，加徵 10% 進口附加稅。",
+   "stocks": "1968 年 12 月到 1970 年 6 月，Shiller 月均指數跌約 29%。Damodaran 算 1969 年股票和 10 年美債都下跌，是少見的雙跌年。",
+   "bonds": "長期利率一路爬：Aaa 公司債殖利率 1960 年 4.41%，1970 年 8.04%。Damodaran 算 1969 年 10 年美債 −5.01%。1971 年紐約金價平均 41.25 美元，1974 年 159.74 美元。",
+   "after": "固定匯率瓦解，世界走向浮動匯率。美元不再能換黃金，貨幣信用從此只靠央行和政府。1974 年美國人恢復可自由持金。",
+   "lesson": "一個承諾若要同時滿足國內和全世界，遲早得選邊。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Creation of the Bretton Woods System",
+     "url": "https://www.federalreservehistory.org/essays/bretton-woods-created"
+    },
+    {
+     "name": "Federal Reserve History：Nixon Ends Convertibility",
+     "url": "https://www.federalreservehistory.org/essays/gold-convertibility-ends"
+    },
+    {
+     "name": "Federal Reserve History：Gold Reserve Act of 1934",
+     "url": "https://www.federalreservehistory.org/essays/gold-reserve-act"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "MeasuringWorth：金價",
+     "url": "https://www.measuringworth.com/datasets/gold/"
+    }
+   ]
+  },
+  {
+   "years": "1973–1979",
+   "title": "石油禁運與大通膨",
+   "people": "政策圈相信失業和通膨可以取捨，寧可多一點通膨換就業。聯準會主席伯恩斯認為通膨多半來自石油、糧食等外部因素，貨幣政策管不到。一般人開始預期物價會一直漲，先搶先買，工資也跟著要求調高。",
+   "what": "1973 年 10 月 19 日起阿拉伯產油國禁運，油價從每桶 2.90 美元到 1974 年 1 月 11.65 美元。禁運 1974 年 3 月結束，高油價留下。1964 年通膨約 1%，十年後超過 12%，失業率超過 7%。高通膨加高失業，叫停滯性通膨。1979 年伊朗革命帶來第二次石油危機。",
+   "stocks": "Shiller 月均指數 1973 年 1 月到 1974 年 12 月跌約 43%，扣通膨跌約 54%。更殘酷的是時間：扣通膨後，1968 年 12 月的股價到 1982 年 7 月還低約 63%。",
+   "bonds": "債券是最大輸家。JST 算出扣通膨後，1965 到 1981 年美國公債總報酬約 −44%；1941 到 1981 年累計約 −58%。Aaa 公司債殖利率 1974 年 8.57%，1979 年 9.63%。名目上領到利息，買到的東西卻變少。",
+   "after": "1978 年《漢弗萊－霍金斯法》寫下充分就業與物價穩定雙目標。學界放棄「長期可用通膨換就業」的想法。",
+   "lesson": "人一旦相信物價會一直漲，通膨就會自己繼續。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Oil Shock of 1973-74",
+     "url": "https://www.federalreservehistory.org/essays/oil-shock-of-1973-74"
+    },
+    {
+     "name": "Federal Reserve History：The Great Inflation",
+     "url": "https://www.federalreservehistory.org/essays/great-inflation"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    }
+   ]
+  },
+  {
+   "years": "1979–1982",
+   "title": "伏克爾：用衰退買回信用",
+   "people": "1979 年通膨超過 11%，民眾信心低落。伏克爾在參議院承諾把打通膨放第一，說聯準會會照自己的判斷做事。卡特政府的官員擔心失業。高利率時，一位眾議員說這在摧毀美國夢。雷根政府表示尊重聯準會獨立，財政部長 Regan 仍公開質疑貨幣政策。",
+   "what": "1979 年 10 月 6 日週六，伏克爾臨時宣布改盯準備金和貨幣量，不再管隔夜利率。1980 年聯邦資金利率（銀行之間隔夜借錢的利率）年底到 20% 紀錄。CPI 年增 1980 年 3 月接近 15%。1981 年 7 月到 1982 年 11 月深度衰退，失業率到 10.8%。",
+   "stocks": "Shiller 月均指數 1980 年 11 月到 1982 年 7 月跌約 19%，幅度不算最大。之後的多頭正是從這裡開始。",
+   "bonds": "10 年美債殖利率 1981 年 9 月 30 日 15.84%，FRED 紀錄的最高點。這是長達四十年債券多頭（價格長期上漲）的起點：Damodaran 算 1982 年 10 年美債報酬 +32.81%。JST 算出扣通膨後 1981 到 2020 年公債總報酬約 +803%。",
+   "after": "央行建立打通膨的信用。後人把 1980 年代中到 2007 年叫「大穩健」，經濟波動變小。",
+   "lesson": "打通膨的信用很貴，但一旦建立，幾十年都在收利息。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Volcker's Announcement of Anti-Inflation Measures",
+     "url": "https://www.federalreservehistory.org/essays/anti-inflation-measures"
+    },
+    {
+     "name": "Federal Reserve History：The Great Inflation",
+     "url": "https://www.federalreservehistory.org/essays/great-inflation"
+    },
+    {
+     "name": "Federal Reserve History：The Great Moderation",
+     "url": "https://www.federalreservehistory.org/essays/great-moderation"
+    },
+    {
+     "name": "FRED：DGS10，10 年期美債殖利率（每日）",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6（美國列）",
+     "url": "https://www.macrohistory.net/database/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    }
+   ]
+  },
+  {
+   "years": "1987",
+   "title": "黑色星期一：一天跌 22.6%，但沒有蕭條",
+   "people": "股市 1987 年前八個月漲約 44%，大家擔心泡沫，也相信新工具「投資組合保險」能自動保護。外國投資人比以前更活躍。財政部長貝克週末公開談美元貶值，又添緊張。",
+   "what": "10 月 19 日道瓊跌 508 點、22.6%，是史上最大單日跌幅。新產品在下跌時自動賣期貨，賣壓更大。隔天聯準會發一句話聲明，承諾提供流動性，並勸銀行繼續借錢給券商。紐約前十大銀行對證券商放款近乎加倍。兩個交易日拿回當天跌幅 57%。",
+   "stocks": "道瓊 8 月 25 日 2722.42 到 10 月 19 日 1738.74，跌約 36%。Damodaran 算 1987 全年 S&P 500 反而 +5.81%。",
+   "bonds": "崩盤前利率已在升：Shiller 檔的 10 年長期利率 1 月 7.08%，10 月 9.52%。崩盤後回落，12 月 8.99%。Damodaran 算 1987 全年 10 年美債 −4.96%。",
+   "after": "交易所建立熔斷機制（現行規則為 S&P 500 跌 7%、13%、20% 時暫停）。批評者說這也讓市場相信央行會救，這叫道德風險。",
+   "lesson": "沒有銀行擠兌的股災，來得快，也可能去得快。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Stock Market Crash of 1987",
+     "url": "https://www.federalreservehistory.org/essays/stock-market-crash-of-1987"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    }
+   ]
+  },
+  {
+   "years": "1994–2002",
+   "title": "網路夢：先是債券屠殺，後是科技泡沫",
+   "people": "1990 年代人們相信網路會改變一切，公司有沒有獲利不重要。葛林斯潘 1996 年 12 月問「怎麼知道何時是非理性繁榮」，但決定不強打股市。長期資本管理公司的諾貝爾獎學者相信價差一定收斂。",
+   "what": "1994 年 2 月 4 日聯準會第一次發表決策聲明，開始升息，債市措手不及。1998 年俄羅斯與亞洲危機，LTCM 每 1 美元資本借約 30 美元，8 月一個月虧 44%，9 月 23 日由 14 家機構出資約 36 億美元接手。1999 年《金融服務現代化法》取消銀行與證券的隔離。2000 年 3 月網路泡沫破裂。",
+   "stocks": "那斯達克 2000 年 3 月 10 日 5,048.62，2002 年 10 月 9 日 1,114.11，跌約 78%，2015 年 4 月才回到舊高。道瓊同期只跌約 38%。Shiller 月均 S&P 綜合指數 2000 年 8 月到 2003 年 2 月跌約 44%。",
+   "bonds": "1994 年是債券的災難：10 年利率 1993 年 10 月 5.33%，1994 年 11 月 7.96%，Damodaran 算當年 10 年美債 −8.04%。泡沫破裂時正好相反：2000 年 +16.66%、2002 年 +15.12%，債券保護了組合。",
+   "after": "2002 年 7 月 30 日《沙賓法》加強公司財報責任。聯準會把利率降得很低，3 個月國庫券 2003 年約 1%。有人認為這助長後來的房市繁榮，也有人認為影響有限。",
+   "lesson": "科技可以是真的，公司價格仍可能跑得比現實快太多。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：The Great Moderation",
+     "url": "https://www.federalreservehistory.org/essays/great-moderation"
+    },
+    {
+     "name": "Federal Reserve History：Near Failure of LTCM",
+     "url": "https://www.federalreservehistory.org/essays/ltcm-near-failure"
+    },
+    {
+     "name": "Federal Reserve History：Banking Act of 1933",
+     "url": "https://www.federalreservehistory.org/essays/glass-steagall-act"
+    },
+    {
+     "name": "聯準會：Greenspan 1996-12-05 演講",
+     "url": "https://www.federalreserve.gov/boarddocs/speeches/1996/19961205.htm"
+    },
+    {
+     "name": "FRED：NASDAQCOM，那斯達克綜合指數",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=NASDAQCOM"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "MeasuringWorth：Officer，What Was the Interest Rate Then?",
+     "url": "https://www.measuringworth.com/datasets/interestrates/"
+    },
+    {
+     "name": "Sarbanes-Oxley Act（Public Law 107-204）",
+     "url": "https://www.govinfo.gov/content/pkg/PLAW-107publ204/pdf/PLAW-107publ204.pdf"
+    }
+   ]
+  },
+  {
+   "years": "2007–2009",
+   "title": "次貸與金融海嘯：房子不會跌的信念破滅",
+   "people": "許多家庭相信房價只漲不跌，銀行相信風險已被包裝分散。信評機構和投資人相信最高評等的層級很安全。民眾後來憤怒的是：銀行被救，自己的家卻被查封。",
+   "what": "全美房價 1998 到 2006 年漲一倍多，房貸占 GDP 從 61% 到 97%。房價轉跌後，2007 年 4 月新世紀金融破產，8 月短期票據市場出問題。2008 年貝爾斯登被併購，房利美、房地美被接管，9 月雷曼倒閉。實質 GDP 跌 4.3%，失業率到 10%。家庭淨值從約 69 兆跌到 55 兆美元。",
+   "stocks": "S&P 500 從 2007 年 10 月高點到 2009 年 3 月跌 57%。道瓊 14,164.53 到 6,547.05，跌約 54%。Shiller 月均跌約 51%。三個數字的差別，來自每日或月均與指數不同。",
+   "bonds": "美債是最強的避險：Damodaran 算 2008 年 10 年美債 +20.10%，S&P 500 −36.55%，Baa 公司債 −3.44%。聯邦資金利率從 5.25% 降到 0–0.25%。聯準會開始量化寬鬆（印錢買長債），第一輪買約 1.75 兆美元長期資產。",
+   "after": "2010 年 7 月 21 日《陶德－法蘭克法》：更高資本、壓力測試、消費者保護局、金融穩定監督委員會。公債餘額 2007 年 9 月約 9 兆，2010 年 9 月約 13.6 兆美元。",
+   "lesson": "1907 的擠兌換了衣服回來：這次被擠的是銀行以外的影子銀行。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "Federal Reserve History：Subprime Mortgage Crisis",
+     "url": "https://www.federalreservehistory.org/essays/subprime-mortgage-crisis"
+    },
+    {
+     "name": "Federal Reserve History：The Great Recession",
+     "url": "https://www.federalreservehistory.org/essays/great-recession-of-200709"
+    },
+    {
+     "name": "Federal Reserve History：The Great Recession and Its Aftermath",
+     "url": "https://www.federalreservehistory.org/essays/great-recession-and-its-aftermath"
+    },
+    {
+     "name": "Federal Reserve History：Dodd-Frank Act",
+     "url": "https://www.federalreservehistory.org/essays/dodd-frank-act"
+    },
+    {
+     "name": "Federal Reserve History：The Panic of 1907",
+     "url": "https://www.federalreservehistory.org/essays/panic-of-1907"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    }
+   ]
+  },
+  {
+   "years": "2010–2013",
+   "title": "債務上限攤牌與縮減恐慌",
+   "people": "2011 年共和黨眾議院要求削減支出才同意提高債務上限，歐巴馬政府主張上限不該成為談判籌碼。市場怕的是美國有沒有意願準時付款，不是有沒有能力。2013 年投資人已習慣聯準會每月買債，把它當成常態。",
+   "what": "2011 年國會在期限前才達成協議。8 月 5 日標普把美國評等從 AAA 調降到 AA+，理由是財政整頓不足以穩定債務。2013 年 5 月 22 日柏南奇在國會說買債規模可能調整，市場理解為很快會減少購買，這就是「縮減恐慌」（Taper Tantrum）。",
+   "stocks": "2011 年 7 月到 9 月 S&P 綜合月均跌約 11%。全年 S&P 500 +2.10%。2013 年 S&P 500 反而 +32.15%：債跌，股漲。",
+   "bonds": "最反直覺的一幕：美國被降評，美債反而漲。10 年殖利率 2011 年 8 月 4 日 2.47%，9 月 22 日 1.72%，Damodaran 算 2011 年 10 年美債 +16.04%。大家遇到風險仍買美債。2013 年 5 月 21 日 1.94%，9 月 5 日 2.98%，全年美債 −9.10%。",
+   "after": "GAO 估計 2011 年的拖延讓財政部當年度多付約 13 億美元利息。債務總額上限 1939 年才有，此後多次成為政治戰場。聯準會此後更小心預告減碼。",
+   "lesson": "債券市場怕的不一定是壞消息，常常是原本習慣的買家要離開。",
+   "conf": "中",
+   "sources": [
+    {
+     "name": "GAO-12-701：Debt Limit",
+     "url": "https://www.gao.gov/products/gao-12-701"
+    },
+    {
+     "name": "Arab News 轉載報導：S&P 2011 調降美國評等",
+     "url": "https://www.arabnews.com/node/386798"
+    },
+    {
+     "name": "FRED：DGS10，10 年期美債殖利率（每日）",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "Hall, Sargent et al.（NBER w21799）：美國債務上限史",
+     "url": "https://www.nber.org/system/files/working_papers/w21799/w21799.pdf"
+    },
+    {
+     "name": "聯準會：Bernanke 2013-05-22 國會證詞",
+     "url": "https://www.federalreserve.gov/newsevents/testimony/bernanke20130522a.htm"
+    },
+    {
+     "name": "Western Asset：Moody's 2025 調降（附 S&P 2011、Fitch 2023）",
+     "url": "https://www.westernasset.com/us/en/research/blog/end-of-an-era-moodys-downgrades-us-to-aa1-2025-05-19.cfm"
+    },
+    {
+     "name": "Econofact：Can the Fed Taper Without a Market Tantrum?",
+     "url": "https://econofact.org/?p=7669"
+    }
+   ]
+  },
+  {
+   "years": "2020",
+   "title": "疫情：連美債都有人搶著換現金",
+   "people": "一夕之間，所有人都想要現金。公司、基金、外國央行都想把資產變現，以防萬一。政策官員記得 2008 年，這次決定不等、一次給足。",
+   "what": "2020 年 3 月美國封城。3 月 15 日聯準會把利率降到 0–0.25%，宣布大買債。3 月 23 日取消上限。3 月 27 日《CARES 法》簽署，直接把錢發給家庭與企業。失業率 4 月到 14.8%，是 1948 年以來最高。",
+   "stocks": "道瓊 2 月 12 日 29,551.42 到 3 月 23 日 18,591.93，跌約 37%。3 月 16 日單日跌 12.9%。但 Damodaran 算全年 S&P 500 +18.02%。",
+   "bonds": "本來最安全的美債也出問題。10 年殖利率 3 月 9 日 0.55%，股市大跌中竟反升到 3 月 18 日 1.20%，因為海外投資人和避險基金急著換現金，交易商接不下。聯準會四週買超過 1 兆美元美債。8 月 4 日殖利率到 0.52%，FRED 紀錄最低。全年 10 年美債 +11.33%。",
+   "after": "2021 年起聯準會設常備附買回工具，提供隨時換現金的管道。美債清算制度的改革開始討論。",
+   "lesson": "連最安全的市場也有容量上限，真正的最後買家只有央行。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "紐約聯準銀行 Fleming et al.（EPR 2022）：Treasury Market in March 2020",
+     "url": "https://www.newyorkfed.org/medialibrary/media/research/epr/2022/EPR_2022_MFP_fleming.pdf?sc_lang=en"
+    },
+    {
+     "name": "紐約聯準銀行：Wuerffel 2023 演講",
+     "url": "https://www.newyorkfed.org/newsevents/speeches/2023/wue230303"
+    },
+    {
+     "name": "聯準會：2020-03-15 聲明",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm"
+    },
+    {
+     "name": "美國財政部：About the CARES Act",
+     "url": "https://home.treasury.gov/policy-issues/coronavirus/about-the-cares-act"
+    },
+    {
+     "name": "FRED：UNRATE 失業率",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE"
+    },
+    {
+     "name": "MeasuringWorth：道瓊每日收盤 1885 年起",
+     "url": "https://www.measuringworth.com/datasets/DJA/"
+    },
+    {
+     "name": "FRED：DGS10，10 年期美債殖利率（每日）",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "聯準會：聯邦資金利率目標變動表",
+     "url": "https://www.federalreserve.gov/monetarypolicy/openmarket.htm"
+    }
+   ]
+  },
+  {
+   "years": "2021–2023",
+   "title": "通膨回來，2022 年債券大崩",
+   "people": "2021 年多數官員相信通膨是暫時的。房貸族鎖住了很低的利率。銀行把疫情時湧入的存款拿去買長債，以為美債沒有信用風險，卻忽略了利率風險。",
+   "what": "CPI 年增 2022 年 6 月約 9.1%。聯準會 2022 年 3 月起連續升息，2023 年 7 月 27 日到 5.25–5.50%。2023 年 3 月 9 日矽谷銀行存款流出超過 400 億美元，隔天被關閉。",
+   "stocks": "Damodaran 算 2022 年 S&P 500 −18.04%。2023 年 +26.06%。",
+   "bonds": "這是 Damodaran 1928 年起的資料裡 10 年美債最差的一年：−17.83%。同年股票也跌，股債一起跌的年份，資料中只有 1931、1941、1969、2018、2022 五次。10 年殖利率 2021 年底 1.52%，2022 年 10 月 24 日 4.25%，2023 年 10 月 19 日 4.98%。FDIC 說全美銀行 2022 年底的證券未實現損失約 6,200 億美元。",
+   "after": "銀行的利率風險重回監理重點。2023 年 7 月底，財政部估計單季要淨借約 1 兆美元，債券供給也成了話題。Fitch 同年調降美國評等，Moody's 2023 年 11 月把展望改為負向。",
+   "lesson": "沒有信用風險的債券，仍然有利率風險；存戶也會跑。",
+   "conf": "高",
+   "sources": [
+    {
+     "name": "聯準會：聯邦資金利率目標變動表",
+     "url": "https://www.federalreserve.gov/monetarypolicy/openmarket.htm"
+    },
+    {
+     "name": "FRED：DGS10，10 年期美債殖利率（每日）",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+    },
+    {
+     "name": "Damodaran（NYU）：1928 年起股票、公債年報酬",
+     "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html"
+    },
+    {
+     "name": "Robert Shiller 資料（ie_data.xls，S&P 綜合指數月均價、長期利率、CPI）",
+     "url": "https://shillerdata.com/"
+    },
+    {
+     "name": "FDIC：Gruenberg 2023-03-06 演講",
+     "url": "https://www.fdic.gov/news/speeches/2023/spmar0623.html"
+    },
+    {
+     "name": "聯準會：矽谷銀行監理檢討（2023-04）",
+     "url": "https://www.federalreserve.gov/publications/files/svb-review-20230428.pdf"
+    },
+    {
+     "name": "美國財政部：2023-07-31 借款估計",
+     "url": "https://home.treasury.gov/news/press-releases/jy1662"
+    },
+    {
+     "name": "Moody's：美國主權評等行動頁",
+     "url": "https://www.moodys.com/web/en/us/about-us/usrating.html"
+    },
+    {
+     "name": "Western Asset：Moody's 2025 調降（附 S&P 2011、Fitch 2023）",
+     "url": "https://www.westernasset.com/us/en/research/blog/end-of-an-era-moodys-downgrades-us-to-aa1-2025-05-19.cfm"
+    }
+   ]
+  },
+  {
+   "years": "2023–2026",
+   "title": "AI 浪潮與資料中心反彈（本站已有詳述）",
+   "people": "科技公司相信 AI 是下一個基礎建設。投資人怕錯過。住在資料中心旁邊的人擔心電費與用水。AP 等聯合民調（經 BBC Verify，本站學習筆記引述）：76% 反對在自己社區蓋新資料中心，56% 說這是投票的關鍵或主要因素，但排在生活成本 89%、貪腐 90% 之後。",
+   "what": "2026 年春天，聯準會調查的受訪者已把 AI 估值、舉債投資列為風險。油價因美伊戰爭上升。聯準會 9 月 17 日升息 0.25 個百分點到 3.75–4.00%，是 2023 年 7 月後首次升息。11 月期中選舉前後，晶片股急跌。完整時間線見本站學習筆記。",
+   "stocks": "費城半導體指數（費半）2026 年 10 月 28 日 11,684，11 月 5 日 9,011.14，比高點低約 23%（本站價格資料）。11 月 5 日 S&P 500 −4.36%。那斯達克 11 月 5 日收約 24,315。",
+   "bonds": "10 年殖利率 2026 年 10 月 5 日 5.31%，是 2002 年 5 月以來最高；11 月 4 日回到 4.90%。公債餘額 2026 年 9 月底約 40.2 兆美元。FRED 的總公債占 GDP 2026 年第二季約 121%。Moody's 2025 年 5 月 16 日調降美國評等到 Aa1，三大評等機構至此都不再給最高級。",
+   "after": "規則還在形成。目前多為提案與預期，本站未看到已生效的聯邦 AI 或資料中心法律。",
+   "lesson": "現在還在故事中間，歷史只能幫忙提問，不能給結局。",
+   "conf": "低",
+   "sources": [
+    {
+     "name": "本站 learn.json 轉引 BBC Verify（AP 聯合民調）；BBC 頁面本次無法直接開啟",
+     "url": "https://www.bbc.co.uk/news/articles/crvg9yyz5437o"
+    },
+    {
+     "name": "聯準會：金融穩定報告（2026 年 5 月）",
+     "url": "https://www.federalreserve.gov/publications/files/financial-stability-report-20260508.pdf"
+    },
+    {
+     "name": "聯準會：聯邦資金利率目標變動表",
+     "url": "https://www.federalreserve.gov/monetarypolicy/openmarket.htm"
+    },
+    {
+     "name": "FRED：DGS10，10 年期美債殖利率（每日）",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+    },
+    {
+     "name": "FRED：NASDAQCOM，那斯達克綜合指數",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=NASDAQCOM"
+    },
+    {
+     "name": "美國財政部 Fiscal Data：歷史公債餘額",
+     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt"
+    },
+    {
+     "name": "FRED：GFDEGDQ188S 總公債占 GDP",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GFDEGDQ188S"
+    },
+    {
+     "name": "Moody's：美國主權評等行動頁",
+     "url": "https://www.moodys.com/web/en/us/about-us/usrating.html"
+    }
+   ]
+  }
+ ],
+ "patterns": [
+  {
+   "name": "新科技加上便宜信用",
+   "what": "每次都有真的新東西：運河、鐵路、電力、網路。錢便宜時，大家用借來的錢蓋或買，價格先跑到現實前面。科技留下來，早期出錢的人常常虧。",
+   "eras": [
+    "1837",
+    "1857",
+    "1873",
+    "1921",
+    "1994",
+    "2023"
+   ],
+   "like": "AI 也是真的新基礎建設。2026 年 5 月聯準會的調查提到，資本支出越來越靠舉債。費半從 2026 年 6 月高點到 11 月 5 日已跌約 38%，大部分跌幅在選舉前就發生，像 2000 年那種先修正最熱門股票的樣子。",
+   "unlike": "「今天就是 1929」是很弱的比喻：1929 年融資買股只付約一成，沒有存款保險，央行還袖手旁觀，今天這三點都不同。和 1873 比也不同：當時鐵路債是主要融資，今天大型雲端公司本身有獲利，新雲端業者則靠借錢擴張，要分開看。和 2000 比較接近，差別是 2000 年許多公司沒有獲利。真正的答案要看 AI 投資能否回收，這還不知道。",
+   "conf": "中"
+  },
+  {
+   "name": "戰爭靠借錢，帳單是通膨",
+   "what": "打仗時加稅來不及，就發債、壓利率或印鈔。戰時看起來很便宜，戰後物價上漲，公債持有人用購買力付帳。",
+   "eras": [
+    "1811",
+    "1861",
+    "1914",
+    "1941",
+    "1973"
+   ],
+   "like": "2026 年美伊戰爭推高油價，英國央行已因此升息。油價變通膨、通膨變升息的路徑，和 1973 年相同。聯準會也在 9 月升息，但本文沒有查證主因是否就是油價。",
+   "unlike": "規模差很遠。1973 年後 CPI 超過 12%；Shiller 檔內 2026 年 9 月年增約 3.3%。這場戰爭沒有美國全民動員，也沒有聯準會替戰爭釘利率。油價 11 月初已明顯回落。拿 1970 年代當今天的劇本，目前證據不足。",
+   "conf": "中"
+  },
+  {
+   "name": "對貨幣的信任流失",
+   "what": "貨幣本身就是一種承諾。大陸幣、綠背、1893 年的金本位疑慮、1933 年的黃金條款、1971 年關閉黃金窗口，都是人開始懷疑這個承諾。",
+   "eras": [
+    "1790",
+    "1861",
+    "1893",
+    "1933",
+    "1944",
+    "1973"
+   ],
+   "like": "美國失去所有最高評等，公債 40 兆美元。討論債務的人變多，金價在 MeasuringWorth 2025 年平均達 3,450 美元。",
+   "unlike": "「美元崩潰」是很弱的比喻。過去的危機都有明確承諾可以破功，例如換黃金；今天沒有這種承諾。2011 年美國被降評，美債反而上漲；2020 年全世界搶的是美元現金。金價高不等於美元失信，原因很多。",
+   "conf": "低"
+  },
+  {
+   "name": "公債也會輸：利率的長週期",
+   "what": "很多人以為公債等於安全。公債只保證拿回名目金額，不保證購買力。美國有過約四十年的債券輸局和四十年的債券贏局。",
+   "eras": [
+    "1914",
+    "1941",
+    "1973",
+    "1979",
+    "2021"
+   ],
+   "like": "2022 年是 1928 年以來 10 年美債最差的一年，2026 年 10 月殖利率到 2002 年以來最高。這顯示 1981 年開始的利率下降趨勢可能已結束，但這只是可能。",
+   "unlike": "1941 年的起點殖利率約 2–3%，還被央行壓住。今天殖利率約 5%，起點不同，通膨也沒有失控，聯準會也沒有釘利率。不能直接說「又要輸四十年」。",
+   "conf": "中"
+  },
+  {
+   "name": "短期借錢的地方先出事",
+   "what": "拿短錢做長投資是金融的本質，也是弱點。擠兌的對象一直在換：銀行、信託公司、影子銀行、美債市場、矽谷銀行。外圍受監管較少的機構常先出事。",
+   "eras": [
+    "1857",
+    "1907",
+    "1994",
+    "2007",
+    "2020",
+    "2021"
+   ],
+   "like": "聯準會 2026 年 5 月調查指出私募信貸面臨投資人贖回壓力，資料中心的借款也有部分在這個領域。像 1907 的信託、2008 的影子銀行：都在主要監管圈外。",
+   "unlike": "今天有存款保險、最後貸款人和常備換現金工具。銀行資本比 2008 年高得多的說法要看細節，本文未逐項驗證。私募信貸多為鎖定期的資金，不像活期存款能一天跑光，但也因此較不透明。",
+   "conf": "中"
+  },
+  {
+   "name": "貧富差距與政治反彈",
+   "what": "繁榮分配不均時，政治常在危機前後反撲銀行或大企業：傑克森對銀行、布萊恩對黃金、皮科拉聽證、陶德－法蘭克法。",
+   "eras": [
+    "1811",
+    "1893",
+    "1933",
+    "2007",
+    "2023"
+   ],
+   "like": "Saez 的資料：頂端 1% 所得占比 1920 年代末近 24%，1960–70 年代約 9%，2021 年創 27.6% 新高。2026 年的資料中心反彈，也帶有「好處給別人、帳單給我」的情緒。",
+   "unlike": "過去的反彈多在大崩盤後才成為法律。這次市場剛修正，還沒有已生效的聯邦法律。民調顯示選民更在意生活成本和貪腐。把這次直接比成 1933 年的改革，目前言之過早。Saez 的數字只到 2022 年，且是課稅前所得。",
+   "conf": "中"
+  },
+  {
+   "name": "政府債太多時，央行會被要求幫忙",
+   "what": "1917–19 年與 1942–51 年，聯準會都把壓低政府利息放在抗通膨前面。1951 年協議才分開。1960 年代的「穩定公債發行」慣例也限制了貨幣政策。",
+   "eras": [
+    "1914",
+    "1941",
+    "1944"
+   ],
+   "like": "總公債占 GDP 約 121%，1945 年 JST 的數字是 113%。理論上，利息成本上升後，壓低利率的誘惑會變大。",
+   "unlike": "兩個數字定義不同，不能直接比高低。1945 年債務在戰後快速被成長和通膨稀釋，今天沒有這種條件的保證。最重要的是，2026 年聯準會在升息，沒有釘利率，所以把今天比成 1942 年的利率釘住是很弱的比喻。",
+   "conf": "低"
+  },
+  {
+   "name": "危機寫規則，繁榮拆規則",
+   "what": "重大改革幾乎都在恐慌後：1913 聯準會、1933–34 存保與 SEC、2010 陶德－法蘭克法。平靜日子久了，規則又會被放鬆，例如 1999 年取消銀行與證券的隔離。",
+   "eras": [
+    "1907",
+    "1933",
+    "1994",
+    "2007"
+   ],
+   "like": "AI 目前沒有專屬金融規則，大家在邊走邊看。評等、私募信貸、電力成本都還是新問題。",
+   "unlike": "新規則的出現時機不能預測。這個規律只說方向，不說時間，也不說會不會有危機。",
+   "conf": "高"
+  }
+ ],
+ "notes": [
+  "1920 年代之前沒有 S&P 指數。1871 年起的數字是 Cowles 委員會事後回推，再接上 S&P。道瓊從 1896 年才有，1885–96 年是另一個平均值接上去的。",
+  "1871 年以前沒有全市場指數。本頁 1857 與南北戰爭只用鐵路股價，1837 年用舊研究的鐵路、銀行與工業股樣本。1790–1830 年代不給股價數字。",
+  "同一場崩盤會有不同跌幅。Shiller 是月平均，道瓊是每日收盤，S&P 500 是每日收盤。月均會把低點磨平，例如 2020 年 Shiller 只顯示跌約 19%，道瓊每日跌約 37%。",
+  "MeasuringWorth 的美國長期利率分三段：1798–1861 年是美國公債，1862–98 年是新英格蘭市政債，1899 年起是 Aaa 公司債。所以 1899 年後的數字不是公債，本頁都有寫出。真正的 10 年美債每日資料從 1962 年開始。",
+  "股價、鐵路股是名目價格，通常不含股息，也沒扣通膨。南北戰爭時用綠背紙幣標價，要特別小心。寫「扣通膨」的數字是本頁用 JST 的總報酬與 CPI 複利算的，用年資料。",
+  "南北戰爭與 1890 年代的失業率、GDP 都是後人估計。1790 年的 GDP 比例也是估計。估計值在內文都有標示。",
+  "Hall 與 Sargent 引用的 1790 年公債價格來自 Sylla 等人的資料，本頁未開到原始報價。Sylla、Wright、Cowen 的論文只讀到摘要；American Heritage 是歷史雜誌，不是學術來源。",
+  "聯準會歷史網站的 Bretton Woods 文章寫基金規模為百萬美元，似為誤植，所以本頁不引用該數字。Hall 與 Sargent 寫最高法院判決在 1869 年，一般記為 1870 年，本頁不寫年份。",
+  "2026 年的費半、S&P 500 與民調來自本站學習筆記，不是本次重新查證。BBC 頁面本次打不開。11 月 6 日是盤中資料，本頁不採用。",
+  "歷史比較不是預測。樣本很少，每次條件都不同。本頁只整理過去發生什麼，不提供任何操作建議。"
+ ],
+ "datasets": [
+  {
+   "name": "Shiller 美股月資料 ie_data.xls（現行版，shillerdata.com）",
+   "url": "https://img1.wsimg.com/blobby/go/e5e77e0b-59d1-44d9-ab25-4763ac982e53/downloads/1449043e-a1ed-4e2e-8e9c-7b9a2a064493/ie_data.xls?ver=1791297298731",
+   "start": 1871,
+   "format": "xls",
+   "works": true,
+   "note": "2026-11-07 下載成功，1.68 MB，資料到 2026 年 10 月。入口頁 https://shillerdata.com/。檔案網址有版本參數，更新後可能變動，程式要先抓入口頁再找連結。最後幾個月的股息與盈餘空白。第一張工作表是免責聲明。"
+  },
+  {
+   "name": "Shiller ie_data.xls（Yale 舊址）",
+   "url": "http://www.econ.yale.edu/~shiller/data/ie_data.xls",
+   "start": 1871,
+   "format": "xls",
+   "works": true,
+   "note": "還能下載，但資料停在 2023 年 9 月，已過期，不要當最新資料用。Yale 頁面現在指向 shillerdata.com。"
+  },
+  {
+   "name": "NBER Macrohistory（美國利率、股價、公債等，月資料）",
+   "url": "https://data.nber.org/databases/macrohistory/rectdata/13/m13009.dat",
+   "start": 1857,
+   "format": "dat（純文字），另有 .db",
+   "works": true,
+   "note": "入口 https://www.nber.org/research/data/nber-macrohistory-database 可開；目錄 https://data.nber.org/databases/macrohistory/data/ 可開。實測下載 13009（紐約貼現率）與 11005A（鐵路股價，1857 起）。data/13/m13001a.dat 這種路徑是 404，檔案在 rectdata 下，說明在 rectdata/13/docs/。多數序列到 1960 年代就停。各序列起始年不同。"
+  },
+  {
+   "name": "MeasuringWorth：美國與英國利率",
+   "url": "https://www.measuringworth.com/datasets/interestrates/result.php",
+   "start": 1790,
+   "format": "HTML 表格，用 POST；另有 export.php 輸出 CSV",
+   "works": true,
+   "note": "需送 year_source、year_result 與勾選欄位。POST 一次回 UK 與 US 兩張表，都要解析。美國短期 1831 起、長期 1798 起、英國長期 1729 起。美國長期序列只到 2024。CSV 匯出若只勾美國欄位，實測只回年份，要自己解析 HTML。網站說公開超過連續五年資料要先聯絡。"
+  },
+  {
+   "name": "MeasuringWorth：道瓊每日收盤",
+   "url": "https://www.measuringworth.com/datasets/DJA/export.php?monthStartD=2&dayStartD=16&yearStartD=1885&monthEndD=12&dayEndD=31&yearEndD=2025",
+   "start": 1885,
+   "format": "csv",
+   "works": true,
+   "note": "下載成功，38,458 筆，到 2025-12-31。1896 年 10 月 7 日前是銜接值。1914 年 7 月 30 日到 12 月 12 日交易所關閉，資料中斷。"
+  },
+  {
+   "name": "MeasuringWorth：年度 S&P 指數",
+   "url": "https://www.measuringworth.com/datasets/sap/",
+   "start": 1871,
+   "format": "HTML 表單",
+   "works": true,
+   "note": "頁面可開，本次沒有下載整份表格。"
+  },
+  {
+   "name": "MeasuringWorth：金價",
+   "url": "https://www.measuringworth.com/datasets/gold/result.php",
+   "start": 1718,
+   "format": "HTML 表格，用 POST",
+   "works": true,
+   "note": "倫敦 1718 起、紐約 1791 起、美國官價 1786 起。測到 2025 年。"
+  },
+  {
+   "name": "Jordà-Schularick-Taylor 總體歷史資料庫 R6",
+   "url": "https://www.macrohistory.net/app/download/9834512569/JSTdatasetR6.xlsx?t=1763503850",
+   "start": 1870,
+   "format": "xlsx（另有 dta）",
+   "works": true,
+   "note": "下載成功，年資料，18 個先進國家，1870–2020，不含之後年份。有公債與股票總報酬、危機年份。注意：把 9834512469（dta 的編號）接上 .xlsx 會下載到不是 xlsx 的檔案。使用受網站條款與授權限制，正式上架前要先看。"
+  },
+  {
+   "name": "Damodaran 歷史年報酬（NYU）",
+   "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html",
+   "start": 1928,
+   "format": "HTML 表格",
+   "works": true,
+   "note": "有 S&P 500、小型股、國庫券、10 年美債、Baa 公司債、房地產、黃金，到 2025。"
+  },
+  {
+   "name": "FRED（聖路易聯準銀行）CSV",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10",
+   "start": 1962,
+   "format": "csv",
+   "works": true,
+   "note": "本機 curl 五個序列都逾時或被重設，透過 WebFetch 工具成功，到 2026-11-04。表示網站可能擋某些用戶端，程式要有備援。起始年依序列而定。"
+  },
+  {
+   "name": "美國財政部 Fiscal Data 歷史公債餘額 API",
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_outstanding?page[size]=300&fields=record_date,debt_outstanding_amt",
+   "start": 1790,
+   "format": "json",
+   "works": true,
+   "note": "下載成功，到 2026-09-30。curl 要加 -g，否則方括號會被當成範圍。早期是年初，1843 年起改 7 月，後來是會計年度底。"
+  }
+ ]
+}

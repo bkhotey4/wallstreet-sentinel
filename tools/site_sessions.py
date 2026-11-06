@@ -37,12 +37,22 @@ def _src(xs) -> str:
     return "、".join(out)
 
 
+def _mover(m: Dict) -> str:
+    try:
+        pct = f'{float(m["chg"]):+.1f}%'
+    except (KeyError, TypeError, ValueError):
+        pct = ""
+    return f'<li><b>{_e(m.get("name") or m.get("sym"))}</b>（{_e(m.get("sym"))}）{pct}：{_e(m.get("why"))}</li>'
+
+
 def _item(x: Dict) -> str:
     told = "".join(f"<p>{_e(p)}</p>" for p in x.get("story") or [] if p)
     macro = "".join(f'<li><b>{_e(m.get("name"))}</b>：{_e(m.get("read"))}</li>' for m in x.get("macro") or []
                     if isinstance(m, dict) and m.get("name") and m.get("read"))
+    movers = "".join(_mover(m) for m in x.get("movers") or [] if isinstance(m, dict) and m.get("sym") and m.get("why"))
     return (f'<div class="rpt"><h3>{_e(x.get("phase"))} <span class="muted small">{_e(x.get("at"))} 台北</span></h3>'
             f'<p><b>{_e(x.get("one"))}</b></p>{told}'
+            + (f'<p class="small"><b>今天誰動得最大、為什麼</b></p><ul class="small">{movers}</ul>' if movers else "")
             + (f'<p class="small"><b>總經情勢</b></p><ul class="small">{macro}</ul>' if macro else "")
             + (f'<p class="small"><b>接下來看</b>：{_e(x["next"])}</p>' if x.get("next") else "")
             + (f'<p class="small muted">來源：{_src(x.get("sources"))}</p>' if x.get("sources") else "") + "</div>")
