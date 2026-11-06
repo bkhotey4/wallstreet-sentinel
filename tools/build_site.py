@@ -1306,7 +1306,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SDU.sec_dual, SCG.sec_changes, SDP.sec_deep, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SLN.sec_learn, SDP.sec_deep, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
@@ -1315,7 +1315,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
                                                        SEN.sec_cheap, SEN.sec_phased, SEN.sec_entry_links]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, SQ.sec_rule_sim, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
-            ("intel", "個股情報", "Stock intel", [SLN.sec_learn, SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
+            ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
             ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, SEVR.sec_event_react, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
             ("tech", "美股財報", "US earnings", [SPV.sec_earn_preview, S3.sec_earn_verdict, SER.sec_est_rev, SAF.sec_earn_after_us, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
