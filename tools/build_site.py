@@ -1793,6 +1793,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     except Exception:  # noqa: BLE001
         log.exception("earnings verdicts failed")
     out.mkdir(parents=True, exist_ok=True)
+    SFC.make_audio(out / "market")          # before render: the card only shows a player when the file exists
     page_html = render(eng, ai_text, ai_engine)
     (out / "index.html").write_text(page_html, encoding="utf-8")
     vb = re.search(r'id="liveb" data-b="(\d+)"', page_html)                 # same stamp as the page → open pages reload once

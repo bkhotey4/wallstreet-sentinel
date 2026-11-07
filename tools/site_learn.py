@@ -53,8 +53,8 @@ def _story(it: Dict) -> str:
             + (f'<p class="small"><b>連帶影響</b>：{_e(it["spill"])}</p>' if it.get("spill") else "")
             + (f'<p class="small"><b>接下來看</b>：{_e(it["watch"])}</p>' if it.get("watch") else "")
             + (f'<p class="small muted">來源：{_src(it.get("sources"))}</p>' if it.get("sources") else ""))
-    return (f'<div class="rpt"><h3>{_e(it.get("topic"))} <span class="muted small">{_e(it.get("date"))}</span></h3>'
-            f'<p>{_e(it.get("one"))}</p><details class="sgx"><summary>細節</summary>{body}</details></div>')
+    return (f'<details class="sgx"><summary><b>{_e(it.get("topic"))}</b> <span class="muted small">{_e(it.get("date"))}</span></summary>'
+            f'<p class="small">{_e(it.get("one"))}</p>{body}</details>')
 
 
 def _world(it: Dict) -> str:
@@ -69,8 +69,8 @@ def _world(it: Dict) -> str:
             + (f'<p class="small"><b>和台灣的關聯</b>：{_e(it["link"])}</p>' if it.get("link") else "")
             + (f'<p class="small"><b>後續進展</b>：{_e(it["followup"])}</p>' if it.get("followup") else "")
             + (f'<p class="small muted">來源：{_src(it.get("sources"))}</p>' if it.get("sources") else ""))
-    return (f'<div class="rpt"><h3>{_e(it.get("title"))} {tag} <span class="muted small">{_e(it.get("area"))} · {_e(it.get("date"))}</span></h3>'
-            f'<p>{_e(it.get("what"))}</p>' + (f'<details class="sgx"><summary>細節</summary>{body}</details>' if body else "") + "</div>")
+    return (f'<details class="sgx"><summary><b>{_e(it.get("title"))}</b> {tag} <span class="muted small">{_e(it.get("area"))} · {_e(it.get("date"))}</span></summary>'
+            f'<p class="small">{_e(it.get("what"))}</p>{body}</details>')
 
 
 def _term(t: Dict) -> str:
@@ -94,7 +94,8 @@ def sec_learn(eng) -> str:
     lead = ("一句話看懂：" + (f'{_e(world[0]["title"])}——{_e(world[0]["what"])}' if world else f'{_e(top["topic"])}——{_e(top["one"])}' if top else f"本站目前收錄 {len(terms)} 個華爾街常用術語，附白話解釋。"))
     newt = [t for t in terms if str(t.get("added") or "") == str(d.get("updated") or "")[:10]]
     story = d.get("story") if isinstance(d.get("story"), dict) else {}
-    told = "".join(f"<p>{_e(p)}</p>" for p in story.get("paragraphs") or [] if p)
+    paras = [f"<p>{_e(p)}</p>" for p in story.get("paragraphs") or [] if p]
+    told = (paras[0] + (f'<details class="sgx"><summary>看完整故事</summary>{"".join(paras[1:])}</details>' if paras[1:] else "")) if paras else ""
     if told and story.get("title"):
         lead = "一句話看懂：" + _e(story["title"])
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'

@@ -1,10 +1,11 @@
-"""每日總經情勢 voice card and 一個月預判 card.  Run: python -m tests.test_forecast"""
+"""每日總經情勢 audio card and 一個月預判 card.  Run: python -m tests.test_forecast"""
 from __future__ import annotations
 
 import json
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,20 +18,36 @@ def dump(base: Path, name: str, d) -> None:
     (base / name).write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
 
 
+class FakeTTS:
+    def __init__(self, text, voice):
+        self.text = text
+
+    async def save(self, path):
+        Path(path).write_bytes(b"mp3")
+
+
+class BrokenTTS(FakeTTS):
+    async def save(self, path):
+        raise OSError("no network")
+
+
 def test_voice():
     from tools import site_forecast as F
     base = Path(tempfile.mkdtemp())
-    dump(base, "forecast.json", {"one": "接下來偏鷹"})
-    dump(base, "sessions.json", {"items": [
-        {"date": "2026-11-05", "phase": "盤後", "one": "舊的", "macro": [{"name": "利率", "read": "舊"}]},
-        {"date": "2026-11-06", "phase": "盤前", "one": "早上", "macro": [{"name": "利率", "read": "早"}]},
-        {"date": "2026-11-06", "phase": "盤後", "one": "收盤<b>", "macro": [{"name": "利率", "read": "10 年債 4.86%。"}, {"name": "沒寫"}], "next": "看 CPI"},
-        {"date": "2026-11-07", "phase": "盤前", "one": "沒有總經"}]})
+    dump(base, "macro_voice.json", {"date": "2026-11-07", "one": "利率是主角", "script": "第一段<b>\n\n第二段"})
     with patch.object(F, "FILE", base / "forecast.json"):
+        with patch.dict(sys.modules, {"edge_tts": types.SimpleNamespace(Communicate=FakeTTS)}):
+            F.make_audio(base / "market")
         h = F.sec_macro_voice(None)
-    assert "一句話看懂：收盤&lt;b&gt;" in h and "聽今天的總經" in h and "speechSynthesis" in h and "沒寫" not in h
-    assert 'id="mvtext" hidden>2026-11-06 的總經情勢。收盤&lt;b&gt;。利率：10 年債 4.86%。接下來看：看 CPI。接下來偏鷹<' in h, h[:900]
+        assert (base / "market" / "macro.mp3").read_bytes() == b"mp3"
+        assert "一句話看懂：利率是主角" in h and "<audio controls" in h and f'market/macro.mp3?v={F.AUDIO["v"]}' in h
+        assert "<p>第一段&lt;b&gt;</p><p>第二段</p>" in h and "看文字稿" in h
+        with patch.dict(sys.modules, {"edge_tts": types.SimpleNamespace(Communicate=BrokenTTS)}):
+            F.make_audio(base / "market")                    # audio failure leaves the text card
+        h = F.sec_macro_voice(None)
+        assert "<audio" not in h and "第二段" in h
     with patch.object(F, "FILE", base / "x" / "forecast.json"):
+        F.make_audio(base / "market")
         assert F.sec_macro_voice(None) == ""
 
 
@@ -46,8 +63,8 @@ def test_forecast():
     dump(base, "forecast.json", d)
     with patch.object(F, "FILE", base / "forecast.json"):
         h = F.sec_forecast(None)
-    assert "偏鷹但沒壞" in h and "約 55%" in h and "我估 70%" in h and "2026-12-09 對答案" in h and "可能錯在" in h
-    assert "舊預判不再列" not in h and "2 題對 1 題（50%），當時平均估 70%" in h and "AI 供應商" in h and "TSM +11%" in h
+    assert "偏鷹但沒壞" in h and "偏鷹 <b>55%</b>" in h and "<td>會升息</td>" in h and "12-09" in h and "看依據" in h and "可能錯在" in h
+    assert "舊預判不再列" not in h and "2 題對 1 題（50%），當時平均估 70%" in h and "AI 供應商" in h and "TSM +11%" in h and "收 3.5%" in h
     assert 'href="javascript' not in h and not any(w in h for w in BANNED)
     with patch.object(F, "FILE", base / "none.json"):
         assert F.sec_forecast(None) == ""

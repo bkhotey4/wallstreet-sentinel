@@ -11,3 +11,4 @@ anthropic>=0.40
 openpyxl>=3.1      # 讀港交所證券名單（xlsx）
 holidays>=0.100   # 交易所休市日（開盤前 30 秒的倒數）
 xlrd>=2.0          # 讀櫃買中心月底債券檔（xls）
+edge-tts>=7.0      # 每日總經語音
