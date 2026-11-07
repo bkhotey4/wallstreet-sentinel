@@ -1,6 +1,7 @@
 """每日總經情勢 audio card and 一個月預判 card.  Run: python -m tests.test_forecast"""
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sys
@@ -38,10 +39,17 @@ def test_voice():
     with patch.object(F, "FILE", base / "forecast.json"):
         with patch.dict(sys.modules, {"edge_tts": types.SimpleNamespace(Communicate=FakeTTS)}):
             F.make_audio(base / "market")
-        h = F.sec_macro_voice(None)
-        assert (base / "market" / "macro.mp3").read_bytes() == b"mp3"
-        assert "一句話看懂：利率是主角" in h and "<audio controls" in h and f'market/macro.mp3?v={F.AUDIO["v"]}' in h
-        assert "<p>第一段&lt;b&gt;</p><p>第二段</p>" in h and "看文字稿" in h
+            h = F.sec_macro_voice(None)
+            assert (base / "market" / "macro.mp3").read_bytes() == b"mp3"
+            assert "一句話看懂：利率是主角" in h and "<audio controls" in h and f'market/macro.mp3?v={F.AUDIO["v"]}' in h
+            assert "<p>第一段&lt;b&gt;</p><p>第二段</p>" in h and "看文字稿" in h
+            (base / "market" / "macro.mp3").unlink()
+
+            async def inside_loop():                         # the real build calls this from a running event loop
+                F.make_audio(base / "market")
+
+            asyncio.run(inside_loop())
+            assert F.AUDIO["v"] and (base / "market" / "macro.mp3").exists()
         with patch.dict(sys.modules, {"edge_tts": types.SimpleNamespace(Communicate=BrokenTTS)}):
             F.make_audio(base / "market")                    # audio failure leaves the text card
         h = F.sec_macro_voice(None)

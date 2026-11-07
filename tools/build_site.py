@@ -50,6 +50,7 @@ from tools import site_entry as SEN
 from tools import site_cooldown as SCD
 from tools import site_marks as SMK
 from tools import site_bonds as SBD
+from tools import site_bondread as SBR
 from tools import site_etf_flows as SEF
 from tools import site_twmacro as STW
 from tools import site_tw_etf as STE
@@ -1329,7 +1330,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health, STK.sec_track_record]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
-            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
+            ("gbonds", "AI 視角看債券", "AI view of bonds", [SBR.sec_bond_read, SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
             ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds, SBD.sec_gb_tic]),
             ("jgb", "日債", "Japanese bonds", [SBD.sec_gb_jgb, SBD.sec_gb_mof]),
             ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),

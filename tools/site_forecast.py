@@ -11,6 +11,7 @@ import hashlib
 import html
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Dict, List
 
@@ -63,7 +64,9 @@ def make_audio(dest: Path) -> None:
     try:
         import edge_tts
         dest.mkdir(parents=True, exist_ok=True)
-        asyncio.run(edge_tts.Communicate(script, VOICE).save(str(dest / "macro.mp3")))
+        job = lambda: asyncio.run(edge_tts.Communicate(script, VOICE).save(str(dest / "macro.mp3")))   # noqa: E731
+        with ThreadPoolExecutor(1) as pool:   # its own thread: the site build already runs inside an event loop
+            pool.submit(job).result(timeout=180)
         AUDIO["v"] = hashlib.sha1(script.encode("utf-8")).hexdigest()[:10]
     except Exception:  # noqa: BLE001
         log.exception("macro audio failed")
