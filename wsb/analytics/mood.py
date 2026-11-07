@@ -254,9 +254,9 @@ def adr_pairs(adr: pd.Series, tw: pd.Series, fx: pd.Series, max_gap: int = 4) ->
     f = f[f > 0]
     if not len(a) or not len(t) or not len(f):
         return pd.DataFrame(columns=["adr", "tw", "fx", "us_d"])
-    L = pd.DataFrame({"d": pd.to_datetime(t.index).normalize(), "tw": t.values}).sort_values("d")
-    A = pd.DataFrame({"us_d": pd.to_datetime(a.index).normalize(), "adr": a.values}).sort_values("us_d")
-    F = pd.DataFrame({"fx_d": pd.to_datetime(f.index).normalize(), "fx": f.values}).sort_values("fx_d")
+    L = pd.DataFrame({"d": pd.to_datetime(t.index).normalize().as_unit("ns"), "tw": t.values}).sort_values("d")
+    A = pd.DataFrame({"us_d": pd.to_datetime(a.index).normalize().as_unit("ns"), "adr": a.values}).sort_values("us_d")
+    F = pd.DataFrame({"fx_d": pd.to_datetime(f.index).normalize().as_unit("ns"), "fx": f.values}).sort_values("fx_d")
     m = pd.merge_asof(L, A, left_on="d", right_on="us_d", direction="forward", tolerance=pd.Timedelta(days=max_gap))
     m = pd.merge_asof(m, F, left_on="d", right_on="fx_d", direction="backward", tolerance=pd.Timedelta(days=0))
     m = m.dropna(subset=["adr", "fx"])
