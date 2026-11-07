@@ -78,7 +78,21 @@ def test_forecast():
         assert F.sec_forecast(None) == ""
 
 
+def test_stamp():
+    from tools import site_forecast as F, site_stamp as ST
+    base = Path(tempfile.mkdtemp())
+    dump(base, "forecast.json", {"updated": "2026-11-07 21:10 台北"})
+    dump(base, "macro_voice.json", {"updated": "2026-11-07"})
+    now = 1794000000.0
+    with patch.object(F, "FILE", base / "forecast.json"):
+        st = ST.stamp(None, "sec_forecast", "overview", now)
+        assert "最後更新" in st and "11-07 21:10" in st, st
+        st = ST.stamp(None, "sec_macro_voice", "overview", now)       # a date alone: no invented time
+        assert "最後更新" not in st and "11-07" in st, st
+
+
 if __name__ == "__main__":
     test_voice()
     test_forecast()
+    test_stamp()
     print("FORECAST TESTS PASSED")

@@ -30,6 +30,17 @@ def _esc(x) -> str:
     return html.escape(guard_safe(str(x or "")))     # banned words are reworded by guard_safe (sitekit)
 
 
+def load_all() -> Dict:
+    """Newest `updated` across the daily file and the backfill files, for the 財報解讀總表 stamp."""
+    stamps = []
+    for name in ("earn_after.json", "earn_after_more.json", "earn_after_asia.json", "earn_after_rest.json"):
+        try:
+            stamps.append(str(json.loads(FILE.with_name(name).read_text(encoding="utf-8")).get("updated") or ""))
+        except (OSError, ValueError):
+            continue
+    return {"updated": max(stamps, default="")}
+
+
 def _rows(f: Path) -> List[Dict]:
     try:
         d = json.loads(f.read_text(encoding="utf-8"))

@@ -352,6 +352,18 @@ def _feed_updated(mod: str, attr: str = "load") -> Optional[str]:
         return None
 
 
+def _feed_stamp(mod: str, attr: str = "load"):
+    """(update time, data date) of a routine's JSON: `updated` is written as "YYYY-MM-DD HH:MM 台北"; a date alone gives no time."""
+    ts = None
+    try:
+        import importlib
+        raw = str(getattr(importlib.import_module(f"tools.{mod}"), attr)().get("updated") or "")
+        ts = datetime.strptime(raw[:16], "%Y-%m-%d %H:%M").replace(tzinfo=TPE).timestamp()
+    except Exception:  # noqa: BLE001
+        pass
+    return ts, _feed_updated(mod, attr)
+
+
 def _g(eng, *path):
     o = eng
     for p in path:
@@ -393,14 +405,16 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "street": ("華爾街觀點", "Street views", lambda e: (_ts(_g(e, "street", "ts")), _d(_g(e, "street", "pos", "asof") or _g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
     "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
-    "after": ("財報後解讀（雲端 AI）", "Post-earnings notes", lambda e: (None, _feed_updated("site_after")), 2),
-    "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: (None, _feed_updated("site_preview")), 2),
-    "sessions": ("美股時段快報（雲端 AI）", "US session notes", lambda e: (None, _feed_updated("site_sessions")), 2),
-    "forecast": ("一個月預判（雲端 AI）", "One-month calls", lambda e: (None, _feed_updated("site_forecast")), 5),
-    "bondread": ("債市深度判讀（雲端 AI）", "Bond read", lambda e: (None, _feed_updated("site_bondread")), 3),
-    "voice": ("每日總經語音（雲端 AI）", "Daily macro audio", lambda e: (None, _feed_updated("site_forecast", "voice")), 3),
-    "learn": ("每日學習筆記（雲端 AI）", "Daily notes", lambda e: (None, _feed_updated("site_learn")), 2),
-    "deep": ("每日深度研判（雲端 AI）", "Daily deep read", lambda e: (None, _feed_updated("site_deep")), 4),
+    "after": ("財報後解讀（雲端 AI）", "Post-earnings notes", lambda e: _feed_stamp("site_after"), 2),
+    "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: _feed_stamp("site_preview"), 2),
+    "sessions": ("美股時段快報（雲端 AI）", "US session notes", lambda e: _feed_stamp("site_sessions"), 2),
+    "forecast": ("一個月預判（雲端 AI）", "One-month calls", lambda e: _feed_stamp("site_forecast"), 5),
+    "afterall": ("財報判讀補寫（雲端 AI）", "Earnings reads", lambda e: _feed_stamp("site_after", "load_all"), 3),
+    "longhist": ("人類與市場長歷史（AI 整理）", "Long history", lambda e: _feed_stamp("site_longhist"), 0),
+    "bondread": ("債市深度判讀（雲端 AI）", "Bond read", lambda e: _feed_stamp("site_bondread"), 3),
+    "voice": ("每日總經語音（雲端 AI）", "Daily macro audio", lambda e: _feed_stamp("site_forecast", "voice"), 3),
+    "learn": ("每日學習筆記（雲端 AI）", "Daily notes", lambda e: _feed_stamp("site_learn"), 2),
+    "deep": ("每日深度研判（雲端 AI）", "Daily deep read", lambda e: _feed_stamp("site_deep"), 4),
     "twnote": ("台灣每月筆記（雲端 AI）", "Taiwan monthly note", lambda e: (None, _feed_updated("site_twmacro", "load_note")), 35),
     "indnote": ("每週產業筆記（雲端 AI）", "Weekly industry note", lambda e: (None, _feed_updated("site_indnote", "load_note")), 9),
     "refund": ("財政部再融資", "Treasury refunding", lambda e: (_ts(_stab_ts("refunding")), _stab_date("refunding")), 100),
@@ -457,7 +471,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fg": ["px", "crypto"], "sec_link": ["tw", "px"], "sec_taiwan": ["tw", "taiwan"], "sec_taiwan_trends": ["tw"],
     "sec_signal_scorecard": ["stocks"], "sec_earn_moves": ["earnings", "stocks"], "sec_analyst": ["earnings"],
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
-    "sec_earn_after": ["after"], "sec_earn_after_us": ["after"], "sec_earn_all": ["after"], "sec_earn_preview": ["preview"], "sec_learn": ["learn"], "sec_deep": ["deep"], "sec_sessions": ["sessions"], "sec_macro_voice": ["voice"], "sec_bond_read": ["bondread"], "sec_forecast": ["forecast"], "sec_human": ["fred"],
+    "sec_earn_after": ["after"], "sec_earn_after_us": ["after"], "sec_earn_all": ["afterall"], "sec_longhist": ["longhist"], "sec_earn_preview": ["preview"], "sec_learn": ["learn"], "sec_deep": ["deep"], "sec_sessions": ["sessions"], "sec_macro_voice": ["voice"], "sec_bond_read": ["bondread"], "sec_forecast": ["forecast"], "sec_human": ["fred"],
     "sec_changes": ["px", "ssi", "canary", "fred"], "sec_track_record": ["preview", "model", "earnings"],
     "sec_tw_note": ["twnote"], "sec_industry_note": ["indnote"],
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
@@ -465,6 +479,10 @@ CARD: Dict[str, List[str]] = {
 NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds"}   # static content
 LIVE = {"sec_lookup", "sec_watch", "sec_intraday"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
+
+
+MAX_AGE_H.update({k: 24 * (SOURCES[k][3] + 1) for k in ("after", "preview", "sessions", "forecast", "bondread", "voice", "afterall", "learn", "deep")})
+MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not a fault
 
 
 def sources_for(fname: str, tab: str) -> List[str]:
