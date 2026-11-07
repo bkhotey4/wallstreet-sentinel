@@ -38,6 +38,29 @@ def test_card():
         A.FILE = orig
 
 
+def test_all():
+    from tools import site_after as A
+    base = Path(tempfile.mkdtemp())
+    day = {"items": [{"sym": "SMR", "name": "NuScale", "sector": "核能", "date": "2026-11-05", "one": "每日版"}]}
+    more = {"items": [{"sym": "SMR", "name": "NuScale", "sector": "核能", "date": "2026-11-05", "one": "補寫版"},
+                      {"mk": "tw", "sym": "2330", "name": "台積電", "sector": "半導體", "date": "2026-10-15", "one": "先進製程<滿載>"},
+                      {"sym": "BAD", "date": "2026-10-15"}]}
+    (base / "earn_after.json").write_text(json.dumps(day, ensure_ascii=False), encoding="utf-8")
+    (base / "earn_after_more.json").write_text(json.dumps(more, ensure_ascii=False), encoding="utf-8")
+    orig = A.FILE
+    A.FILE = base / "earn_after.json"
+    try:
+        h = A.sec_earn_all(None)
+        A.publish(base)
+    finally:
+        A.FILE = orig
+    f = (base / "earn_all.html").read_text(encoding="utf-8")
+    assert "2 份財報判讀" in h and "美股 1 份、台股 1 份、港股 0 份" in h and "market/earn_all.html" in h
+    assert "每日版" in f and "補寫版" not in f and "BAD" not in f and "&lt;滿載&gt;" in f     # one read per report; text is escaped
+    assert f.index("2026-11-05") < f.index("2026-10-15") and 'data-q="2330 台積電 半導體 台股"' in f
+
+
 if __name__ == "__main__":
     test_card()
+    test_all()
     print("ok test_card")

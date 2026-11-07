@@ -2,7 +2,8 @@
 routine writes research_feed/earn_after.json — for every company of any sector that reported (US market cap ≥ 200 億美元,
 the site's Taiwan top-150 and Hong Kong top-100 lists), a plain sentence,
 what the numbers say beyond "beat / miss", who else is affected (suppliers, rivals, customers, Taiwan supply chain), the
-macro / bond backdrop it lands in, and the after-hours move explained only with news that matches it.  Not advice."""
+macro / bond backdrop it lands in, and the after-hours move explained only with news that matches it.  Not advice.
+research_feed/earn_after_more / _asia / _rest.json hold the backfilled reports of the season; 財報解讀總表 searches both files."""
 from __future__ import annotations
 
 import html
@@ -27,6 +28,14 @@ def load() -> Dict:
 
 def _esc(x) -> str:
     return html.escape(guard_safe(str(x or "")))     # banned words are reworded by guard_safe (sitekit)
+
+
+def _rows(f: Path) -> List[Dict]:
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return (d.get("items") or []) if isinstance(d, dict) else []
 
 
 def _list(xs) -> str:
@@ -67,8 +76,11 @@ def _item(it: Dict) -> str:
 
 
 def _items(tech_only: bool = False) -> List[Dict]:
-    d = load()
-    items = [x for x in (d.get("items") or []) if isinstance(x, dict) and x.get("sym") and x.get("date") and x.get("one")]
+    seen = {}
+    for x in _rows(FILE) + _rows(FILE.with_name("earn_after_more.json")) + _rows(FILE.with_name("earn_after_asia.json")) + _rows(FILE.with_name("earn_after_rest.json")):     # the daily file wins
+        if isinstance(x, dict) and x.get("sym") and x.get("date") and x.get("one"):
+            seen.setdefault((str(x["sym"]), str(x["date"])), x)
+    items = list(seen.values())
     if tech_only:
         items = [x for x in items if any(t in str(x.get("sector") or "") for t in TECH)]
     return sorted(items, key=lambda x: (str(x["date"]), float(x.get("mcap_b") or 0)), reverse=True)
@@ -99,3 +111,42 @@ def sec_earn_after(eng) -> str:
 def sec_earn_after_us(eng) -> str:
     """美股財報 tab: every US report the routine read (any sector); items without mk are US (older data)."""
     return _card([x for x in _items() if (x.get("mk") or "us") == "us"], "財報後白話解讀（美股）", "After the report: US", 6)
+
+
+def _rpt(x: Dict) -> str:
+    key = " ".join(str(x.get(k) or "") for k in ("sym", "name", "sector")) + " " + MK.get(x.get("mk") or "us", "美股")
+    return _item(x).replace('<div class="rpt">', f'<div class="rpt" data-q="{_esc(key.lower())}">', 1)
+
+
+def publish(dest: Path) -> None:
+    """market/earn_all.html: every read grouped by date, loaded only when 財報解讀總表 is opened (keeps the main page small)."""
+    days = {}
+    for x in _items():
+        days.setdefault(str(x["date"]), []).append(x)
+    (dest / "earn_all.html").write_text(
+        "".join(f'<details class="sgx eaday"><summary>{_esc(d)}（{len(xs)} 家）</summary>{"".join(_rpt(x) for x in xs)}</details>'
+                for d, xs in sorted(days.items(), reverse=True)), encoding="utf-8")
+
+
+ALL_JS = ("<script>(function(){var q=document.querySelector('.eaq'),b=document.getElementById('eaall');if(!q||!b)return;var st=0;"
+          "function f(){var v=q.value.trim().toLowerCase();b.querySelectorAll('.eaday').forEach(function(d){var n=0;"
+          "d.querySelectorAll('.rpt').forEach(function(r){var m=!v||r.dataset.q.indexOf(v)>=0;r.style.display=m?'':'none';if(m)n++;});"
+          "d.style.display=n?'':'none';d.open=!!v&&n>0;});}"
+          "function go(){if(st)return;st=1;b.textContent='載入中…';fetch(b.dataset.src).then(function(r){if(!r.ok)throw 0;return r.text();})"
+          ".then(function(t){b.innerHTML=t;f();}).catch(function(){st=0;b.textContent='載入失敗，請重新整理頁面。';});}"
+          "q.addEventListener('focus',go);q.addEventListener('input',function(){go();f();});"
+          "var o=document.querySelector('.eaopen');if(o)o.addEventListener('click',go);})();</script>")
+
+
+def sec_earn_all(eng) -> str:
+    items = _items()
+    if not items:
+        return ""
+    n = {k: sum((x.get("mk") or "us") == k for x in items) for k in MK}
+    body = (f'<p class="rimp big2"><b>一句話看懂：這裡查得到這一季寫過的 {len(items)} 份財報判讀，輸入代號或公司名就能找。</b></p>'
+            f'<p class="small">美股 {n["us"]} 份、台股 {n["tw"]} 份、港股 {n["hk"]} 份。範圍是美股市值 20 億美元以上，以及台股、港股全部上市公司，還在陸續補寫。小公司是精簡版，查不到的項目會寫查無。</p>'
+            '<p><input class="eaq" type="search" placeholder="輸入代號或名稱，例如 KLAC、台積電、核能" aria-label="搜尋財報判讀"> '
+            '<button class="btn eaopen" type="button">顯示全部</button></p>'
+            '<div id="eaall" data-src="market/earn_all.html"></div>' + ALL_JS
+            + '<p class="note">這是解讀，不是投資建議。</p>')
+    return card("財報解讀總表", "All earnings reads", body, "wide", sub="依日期整理，可搜尋")
