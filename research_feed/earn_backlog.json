@@ -1,5 +1,5 @@
 {
-"note": "reports to backfill; order is AI and power theme first, then market cap",
+"note": "reports to backfill; AI and power theme first, then market cap, down to 2 billion USD",
 "items": [
 {
 "sym": "SMR",
@@ -2592,6 +2592,6462 @@
 "name": "FTAI Aviation Ltd.",
 "date": "2026-10-29",
 "mcap_b": 20.1
+},
+{
+"sym": "CDW",
+"name": "CDW Corporation",
+"date": "2026-11-04",
+"mcap_b": 19.8
+},
+{
+"sym": "GFL",
+"name": "GFL Environmental Inc.",
+"date": "2026-10-28",
+"mcap_b": 19.6
+},
+{
+"sym": "FTV",
+"name": "Fortive Corporation",
+"date": "2026-10-28",
+"mcap_b": 19.6
+},
+{
+"sym": "APG",
+"name": "APi Group Corporation",
+"date": "2026-10-29",
+"mcap_b": 19.5
+},
+{
+"sym": "DINO",
+"name": "HF Sinclair Corporation",
+"date": "2026-10-28",
+"mcap_b": 19.2
+},
+{
+"sym": "DD",
+"name": "DuPont de Nemours, Inc.",
+"date": "2026-11-03",
+"mcap_b": 19.2
+},
+{
+"sym": "IP",
+"name": "International Paper Company",
+"date": "2026-10-28",
+"mcap_b": 19.1
+},
+{
+"sym": "FSLR",
+"name": "First Solar, Inc.",
+"date": "2026-10-29",
+"mcap_b": 19.0
+},
+{
+"sym": "YPF",
+"name": "YPF Sociedad Anonima",
+"date": "2026-10-28",
+"mcap_b": 18.8
+},
+{
+"sym": "TPL",
+"name": "Texas Pacific Land Corporation",
+"date": "2026-11-04",
+"mcap_b": 18.8
+},
+{
+"sym": "WIT",
+"name": "Wipro Limited",
+"date": "2026-10-15",
+"mcap_b": 18.5
+},
+{
+"sym": "BCH",
+"name": "Banco De Chile",
+"date": "2026-10-30",
+"mcap_b": 18.5
+},
+{
+"sym": "SNA",
+"name": "Snap-On Incorporated",
+"date": "2026-10-22",
+"mcap_b": 18.4
+},
+{
+"sym": "BG",
+"name": "Bunge Global SA",
+"date": "2026-10-29",
+"mcap_b": 18.4
+},
+{
+"sym": "MEDP",
+"name": "Medpace Holdings, Inc.",
+"date": "2026-10-21",
+"mcap_b": 18.3
+},
+{
+"sym": "LNT",
+"name": "Alliant Energy Corporation",
+"date": "2026-10-29",
+"mcap_b": 18.3
+},
+{
+"sym": "EWBC",
+"name": "East West Bancorp, Inc.",
+"date": "2026-10-20",
+"mcap_b": 18.2
+},
+{
+"sym": "RCI",
+"name": "Rogers Communication, Inc.",
+"date": "2026-10-23",
+"mcap_b": 18.2
+},
+{
+"sym": "TSCO",
+"name": "Tractor Supply Company",
+"date": "2026-10-22",
+"mcap_b": 18.1
+},
+{
+"sym": "TPG",
+"name": "TPG Inc.",
+"date": "2026-10-29",
+"mcap_b": 18.1
+},
+{
+"sym": "WCC",
+"name": "WESCO International, Inc.",
+"date": "2026-10-29",
+"mcap_b": 17.9
+},
+{
+"sym": "CF",
+"name": "CF Industries Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 17.9
+},
+{
+"sym": "PR",
+"name": "Permian Resources Corporation",
+"date": "2026-11-04",
+"mcap_b": 17.9
+},
+{
+"sym": "SMCI",
+"name": "Super Micro Computer, Inc.",
+"date": "2026-11-03",
+"mcap_b": 17.8
+},
+{
+"sym": "CRCL",
+"name": "Circle Internet Group, Inc.",
+"date": "2026-11-04",
+"mcap_b": 17.8
+},
+{
+"sym": "GPC",
+"name": "Genuine Parts Company",
+"date": "2026-10-20",
+"mcap_b": 17.6
+},
+{
+"sym": "IEX",
+"name": "IDEX Corporation",
+"date": "2026-10-28",
+"mcap_b": 17.6
+},
+{
+"sym": "ITT",
+"name": "ITT Inc.",
+"date": "2026-11-04",
+"mcap_b": 17.5
+},
+{
+"sym": "H",
+"name": "Hyatt Hotels Corporation",
+"date": "2026-10-29",
+"mcap_b": 17.4
+},
+{
+"sym": "BALL",
+"name": "Ball Corporation",
+"date": "2026-11-03",
+"mcap_b": 17.4
+},
+{
+"sym": "PFGC",
+"name": "Performance Food Group Company",
+"date": "2026-11-04",
+"mcap_b": 17.3
+},
+{
+"sym": "BIP",
+"name": "Brookfield Infrastructure Partners LP",
+"date": "2026-11-06",
+"mcap_b": 17.3
+},
+{
+"sym": "PAA",
+"name": "Plains All American Pipeline, L.P.",
+"date": "2026-11-06",
+"mcap_b": 17.3
+},
+{
+"sym": "ESS",
+"name": "Essex Property Trust, Inc.",
+"date": "2026-10-27",
+"mcap_b": 17.1
+},
+{
+"sym": "SWK",
+"name": "Stanley Black & Decker, Inc.",
+"date": "2026-11-04",
+"mcap_b": 17.1
+},
+{
+"sym": "RGA",
+"name": "Reinsurance Group of America, Incorporated",
+"date": "2026-11-05",
+"mcap_b": 17.1
+},
+{
+"sym": "ROL",
+"name": "Rollins, Inc.",
+"date": "2026-10-21",
+"mcap_b": 17.0
+},
+{
+"sym": "YUMC",
+"name": "Yum China Holdings, Inc.",
+"date": "2026-11-03",
+"mcap_b": 17.0
+},
+{
+"sym": "GEN",
+"name": "Gen Digital Inc.",
+"date": "2026-10-28",
+"mcap_b": 16.9
+},
+{
+"sym": "MGA",
+"name": "Magna International, Inc.",
+"date": "2026-10-30",
+"mcap_b": 16.9
+},
+{
+"sym": "HST",
+"name": "Host Hotels & Resorts, Inc.",
+"date": "2026-11-04",
+"mcap_b": 16.9
+},
+{
+"sym": "TSEM",
+"name": "Tower Semiconductor Ltd.",
+"date": "2026-11-02",
+"mcap_b": 16.8
+},
+{
+"sym": "NBIX",
+"name": "Neurocrine Biosciences, Inc.",
+"date": "2026-11-02",
+"mcap_b": 16.8
+},
+{
+"sym": "RVTY",
+"name": "Revvity, Inc.",
+"date": "2026-11-03",
+"mcap_b": 16.8
+},
+{
+"sym": "PKX",
+"name": "POSCO HOLDINGS INC.",
+"date": "2026-11-02",
+"mcap_b": 16.7
+},
+{
+"sym": "PAAS",
+"name": "Pan American Silver Corp.",
+"date": "2026-11-04",
+"mcap_b": 16.7
+},
+{
+"sym": "RIVN",
+"name": "Rivian Automotive, Inc.",
+"date": "2026-10-29",
+"mcap_b": 16.6
+},
+{
+"sym": "LDOS",
+"name": "Leidos Holdings, Inc.",
+"date": "2026-11-03",
+"mcap_b": 16.6
+},
+{
+"sym": "JHX",
+"name": "James Hardie Industries plc.",
+"date": "2026-11-05",
+"mcap_b": 16.6
+},
+{
+"sym": "HAS",
+"name": "Hasbro, Inc.",
+"date": "2026-10-20",
+"mcap_b": 16.5
+},
+{
+"sym": "ICLR",
+"name": "ICON plc",
+"date": "2026-10-27",
+"mcap_b": 16.5
+},
+{
+"sym": "WES",
+"name": "Western Midstream Partners, LP",
+"date": "2026-11-04",
+"mcap_b": 16.5
+},
+{
+"sym": "EXEL",
+"name": "Exelixis, Inc.",
+"date": "2026-10-29",
+"mcap_b": 16.4
+},
+{
+"sym": "FDXF",
+"name": "FedEx Freight Holding Company, Inc.",
+"date": "2026-10-29",
+"mcap_b": 16.4
+},
+{
+"sym": "KIM",
+"name": "Kimco Realty Corporation",
+"date": "2026-10-29",
+"mcap_b": 16.4
+},
+{
+"sym": "OVV",
+"name": "Ovintiv Inc.",
+"date": "2026-11-03",
+"mcap_b": 16.4
+},
+{
+"sym": "BEN",
+"name": "Franklin Templeton, Inc.",
+"date": "2026-11-06",
+"mcap_b": 16.4
+},
+{
+"sym": "NVR",
+"name": "NVR, Inc.",
+"date": "2026-10-22",
+"mcap_b": 16.3
+},
+{
+"sym": "CLH",
+"name": "Clean Harbors, Inc.",
+"date": "2026-10-28",
+"mcap_b": 16.3
+},
+{
+"sym": "OWL",
+"name": "Blue Owl Capital Inc.",
+"date": "2026-10-29",
+"mcap_b": 16.2
+},
+{
+"sym": "JLL",
+"name": "Jones Lang LaSalle Incorporated",
+"date": "2026-10-28",
+"mcap_b": 16.1
+},
+{
+"sym": "SBS",
+"name": "Companhia de saneamento Basico Do Estado De Sao Paulo - Sabesp",
+"date": "2026-11-05",
+"mcap_b": 16.1
+},
+{
+"sym": "CW",
+"name": "Curtiss-Wright Corporation",
+"date": "2026-11-04",
+"mcap_b": 16.0
+},
+{
+"sym": "LAMR",
+"name": "Lamar Advertising Company",
+"date": "2026-11-05",
+"mcap_b": 16.0
+},
+{
+"sym": "CX",
+"name": "Cemex S.A.B. de C.V.",
+"date": "2026-10-26",
+"mcap_b": 15.9
+},
+{
+"sym": "CRBG",
+"name": "Corebridge Financial Inc.",
+"date": "2026-11-02",
+"mcap_b": 15.9
+},
+{
+"sym": "INVH",
+"name": "Invitation Homes Inc.",
+"date": "2026-10-28",
+"mcap_b": 15.7
+},
+{
+"sym": "NWS",
+"name": "News Corporation",
+"date": "2026-11-04",
+"mcap_b": 15.7
+},
+{
+"sym": "NWSA",
+"name": "News Corporation",
+"date": "2026-11-04",
+"mcap_b": 15.7
+},
+{
+"sym": "EMA",
+"name": "Emera Incorporated",
+"date": "2026-11-06",
+"mcap_b": 15.7
+},
+{
+"sym": "MAS",
+"name": "Masco Corporation",
+"date": "2026-10-28",
+"mcap_b": 15.5
+},
+{
+"sym": "W",
+"name": "Wayfair Inc.",
+"date": "2026-11-04",
+"mcap_b": 15.5
+},
+{
+"sym": "LECO",
+"name": "Lincoln Electric Holdings, Inc.",
+"date": "2026-10-27",
+"mcap_b": 15.4
+},
+{
+"sym": "EG",
+"name": "Everest Group, Ltd.",
+"date": "2026-10-28",
+"mcap_b": 15.4
+},
+{
+"sym": "ULS",
+"name": "UL Solutions Inc.",
+"date": "2026-11-03",
+"mcap_b": 15.4
+},
+{
+"sym": "EQH",
+"name": "Equitable Holdings, Inc.",
+"date": "2026-11-02",
+"mcap_b": 15.3
+},
+{
+"sym": "LSCC",
+"name": "Lattice Semiconductor Corporation",
+"date": "2026-11-02",
+"mcap_b": 15.3
+},
+{
+"sym": "FICO",
+"name": "Fair Isaac Corporation",
+"date": "2026-11-04",
+"mcap_b": 15.3
+},
+{
+"sym": "PNFP",
+"name": "Pinnacle Financial Partners, Inc.",
+"date": "2026-10-21",
+"mcap_b": 15.2
+},
+{
+"sym": "APA",
+"name": "APA Corporation",
+"date": "2026-11-04",
+"mcap_b": 15.2
+},
+{
+"sym": "JAZZ",
+"name": "Jazz Pharmaceuticals plc",
+"date": "2026-11-02",
+"mcap_b": 15.1
+},
+{
+"sym": "CHKP",
+"name": "Check Point Software Technologies Ltd.",
+"date": "2026-11-02",
+"mcap_b": 15.1
+},
+{
+"sym": "ZBRA",
+"name": "Zebra Technologies Corporation",
+"date": "2026-11-03",
+"mcap_b": 15.1
+},
+{
+"sym": "AIZ",
+"name": "Assurant, Inc.",
+"date": "2026-11-03",
+"mcap_b": 15.1
+},
+{
+"sym": "FIS",
+"name": "Fidelity National Information Services, Inc.",
+"date": "2026-11-04",
+"mcap_b": 15.1
+},
+{
+"sym": "ALLE",
+"name": "Allegion plc",
+"date": "2026-10-22",
+"mcap_b": 15.0
+},
+{
+"sym": "TXT",
+"name": "Textron Inc.",
+"date": "2026-10-29",
+"mcap_b": 15.0
+},
+{
+"sym": "CRL",
+"name": "Charles River Laboratories International, Inc.",
+"date": "2026-11-04",
+"mcap_b": 15.0
+},
+{
+"sym": "CDE",
+"name": "Coeur Mining, Inc.",
+"date": "2026-11-04",
+"mcap_b": 15.0
+},
+{
+"sym": "TU",
+"name": "TELUS Corporation",
+"date": "2026-11-06",
+"mcap_b": 15.0
+},
+{
+"sym": "WPC",
+"name": "W. P. Carey Inc.",
+"date": "2026-10-27",
+"mcap_b": 14.9
+},
+{
+"sym": "CHRW",
+"name": "C.H. Robinson Worldwide, Inc.",
+"date": "2026-10-28",
+"mcap_b": 14.9
+},
+{
+"sym": "TYL",
+"name": "Tyler Technologies, Inc.",
+"date": "2026-10-28",
+"mcap_b": 14.9
+},
+{
+"sym": "SOLV",
+"name": "Solventum Corporation",
+"date": "2026-11-05",
+"mcap_b": 14.8
+},
+{
+"sym": "CSL",
+"name": "Carlisle Companies Incorporated",
+"date": "2026-10-28",
+"mcap_b": 14.7
+},
+{
+"sym": "VNOM",
+"name": "Viper Energy, Inc.",
+"date": "2026-11-02",
+"mcap_b": 14.7
+},
+{
+"sym": "RBC",
+"name": "RBC Bearings Incorporated",
+"date": "2026-10-30",
+"mcap_b": 14.6
+},
+{
+"sym": "OHI",
+"name": "Omega Healthcare Investors, Inc.",
+"date": "2026-11-03",
+"mcap_b": 14.6
+},
+{
+"sym": "CRS",
+"name": "Carpenter Technology Corporation",
+"date": "2026-10-22",
+"mcap_b": 14.5
+},
+{
+"sym": "MTSI",
+"name": "MACOM Technology Solutions Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 14.5
+},
+{
+"sym": "NLY",
+"name": "Annaly Capital Management Inc.",
+"date": "2026-10-20",
+"mcap_b": 14.4
+},
+{
+"sym": "TRU",
+"name": "TransUnion",
+"date": "2026-10-27",
+"mcap_b": 14.4
+},
+{
+"sym": "GKOS",
+"name": "Glaukos Corporation",
+"date": "2026-10-28",
+"mcap_b": 14.4
+},
+{
+"sym": "BSAC",
+"name": "Banco Santander Chile",
+"date": "2026-10-30",
+"mcap_b": 14.4
+},
+{
+"sym": "FLUT",
+"name": "Flutter Entertainment plc",
+"date": "2026-11-04",
+"mcap_b": 14.4
+},
+{
+"sym": "CHTR",
+"name": "Charter Communications, Inc.",
+"date": "2026-11-06",
+"mcap_b": 14.4
+},
+{
+"sym": "MTZ",
+"name": "MasTec, Inc.",
+"date": "2026-10-29",
+"mcap_b": 14.3
+},
+{
+"sym": "GRAB",
+"name": "Grab Holdings Limited",
+"date": "2026-11-03",
+"mcap_b": 14.3
+},
+{
+"sym": "WY",
+"name": "Weyerhaeuser Company",
+"date": "2026-10-29",
+"mcap_b": 14.2
+},
+{
+"sym": "CG",
+"name": "The Carlyle Group Inc.",
+"date": "2026-11-04",
+"mcap_b": 14.2
+},
+{
+"sym": "COKE",
+"name": "Coca-Cola Consolidated, Inc.",
+"date": "2026-11-04",
+"mcap_b": 14.1
+},
+{
+"sym": "MANH",
+"name": "Manhattan Associates, Inc.",
+"date": "2026-10-27",
+"mcap_b": 14.0
+},
+{
+"sym": "LOGI",
+"name": "Logitech International S.A.",
+"date": "2026-10-27",
+"mcap_b": 14.0
+},
+{
+"sym": "REG",
+"name": "Regency Centers Corporation",
+"date": "2026-11-05",
+"mcap_b": 14.0
+},
+{
+"sym": "HALO",
+"name": "Halozyme Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 14.0
+},
+{
+"sym": "PAG",
+"name": "Penske Automotive Group, Inc.",
+"date": "2026-10-28",
+"mcap_b": 13.9
+},
+{
+"sym": "DOC",
+"name": "Healthpeak Properties, Inc.",
+"date": "2026-11-02",
+"mcap_b": 13.9
+},
+{
+"sym": "ARCC",
+"name": "Ares Capital Corporation",
+"date": "2026-10-27",
+"mcap_b": 13.8
+},
+{
+"sym": "BBIO",
+"name": "BridgeBio Pharma, Inc.",
+"date": "2026-10-29",
+"mcap_b": 13.8
+},
+{
+"sym": "AVY",
+"name": "Avery Dennison Corporation",
+"date": "2026-10-29",
+"mcap_b": 13.8
+},
+{
+"sym": "TEM",
+"name": "Tempus AI, Inc.",
+"date": "2026-11-02",
+"mcap_b": 13.8
+},
+{
+"sym": "CACI",
+"name": "CACI International, Inc.",
+"date": "2026-10-21",
+"mcap_b": 13.7
+},
+{
+"sym": "RNR",
+"name": "RenaissanceRe Holdings Ltd.",
+"date": "2026-10-27",
+"mcap_b": 13.7
+},
+{
+"sym": "MAA",
+"name": "Mid-America Apartment Communities, Inc.",
+"date": "2026-10-28",
+"mcap_b": 13.7
+},
+{
+"sym": "STLA",
+"name": "Stellantis N.V.",
+"date": "2026-10-28",
+"mcap_b": 13.6
+},
+{
+"sym": "CART",
+"name": "Maplebear Inc.",
+"date": "2026-10-29",
+"mcap_b": 13.6
+},
+{
+"sym": "BSY",
+"name": "Bentley Systems, Incorporated",
+"date": "2026-11-05",
+"mcap_b": 13.6
+},
+{
+"sym": "LTM",
+"name": "LATAM Airlines Group S.A.",
+"date": "2026-11-03",
+"mcap_b": 13.5
+},
+{
+"sym": "GDDY",
+"name": "GoDaddy Inc.",
+"date": "2026-10-29",
+"mcap_b": 13.4
+},
+{
+"sym": "TIGO",
+"name": "Millicom International Cellular S.A.",
+"date": "2026-11-05",
+"mcap_b": 13.3
+},
+{
+"sym": "PAC",
+"name": "Grupo Aeroportuario Del Pacifico, S.A. de C.V.",
+"date": "2026-10-19",
+"mcap_b": 13.2
+},
+{
+"sym": "SUI",
+"name": "Sun Communities, Inc.",
+"date": "2026-10-26",
+"mcap_b": 13.2
+},
+{
+"sym": "BTSG",
+"name": "BrightSpring Health Services, Inc.",
+"date": "2026-10-30",
+"mcap_b": 13.2
+},
+{
+"sym": "FMS",
+"name": "Fresenius Medical Care AG",
+"date": "2026-11-03",
+"mcap_b": 13.2
+},
+{
+"sym": "WTRG",
+"name": "Essential Utilities, Inc.",
+"date": "2026-11-03",
+"mcap_b": 13.2
+},
+{
+"sym": "INIO",
+"name": "INNIO N.V.",
+"date": "2026-10-27",
+"mcap_b": 13.1
+},
+{
+"sym": "AHR",
+"name": "American Healthcare REIT, Inc.",
+"date": "2026-11-05",
+"mcap_b": 13.1
+},
+{
+"sym": "EHC",
+"name": "Encompass Health Corporation",
+"date": "2026-10-28",
+"mcap_b": 13.0
+},
+{
+"sym": "DTM",
+"name": "DT Midstream, Inc.",
+"date": "2026-10-29",
+"mcap_b": 13.0
+},
+{
+"sym": "CNA",
+"name": "CNA Financial Corporation",
+"date": "2026-11-02",
+"mcap_b": 13.0
+},
+{
+"sym": "AFG",
+"name": "American Financial Group, Inc.",
+"date": "2026-11-03",
+"mcap_b": 13.0
+},
+{
+"sym": "GL",
+"name": "Globe Life Inc.",
+"date": "2026-10-21",
+"mcap_b": 12.9
+},
+{
+"sym": "IVZ",
+"name": "Invesco Plc",
+"date": "2026-10-27",
+"mcap_b": 12.8
+},
+{
+"sym": "AR",
+"name": "Antero Resources Corporation",
+"date": "2026-10-28",
+"mcap_b": 12.7
+},
+{
+"sym": "PEN",
+"name": "Penumbra, Inc.",
+"date": "2026-10-29",
+"mcap_b": 12.7
+},
+{
+"sym": "CCK",
+"name": "Crown Holdings, Inc.",
+"date": "2026-10-19",
+"mcap_b": 12.6
+},
+{
+"sym": "WSO",
+"name": "Watsco, Inc.",
+"date": "2026-10-27",
+"mcap_b": 12.6
+},
+{
+"sym": "WSO-B",
+"name": "Watsco, Inc.",
+"date": "2026-10-27",
+"mcap_b": 12.6
+},
+{
+"sym": "RRC",
+"name": "Range Resources Corporation",
+"date": "2026-10-27",
+"mcap_b": 12.6
+},
+{
+"sym": "JKHY",
+"name": "Jack Henry & Associates, Inc.",
+"date": "2026-11-03",
+"mcap_b": 12.6
+},
+{
+"sym": "PNW",
+"name": "Pinnacle West Capital Corporation",
+"date": "2026-11-03",
+"mcap_b": 12.6
+},
+{
+"sym": "TXRH",
+"name": "Texas Roadhouse, Inc.",
+"date": "2026-11-05",
+"mcap_b": 12.6
+},
+{
+"sym": "SEIC",
+"name": "SEI Investments Company",
+"date": "2026-10-21",
+"mcap_b": 12.5
+},
+{
+"sym": "HII",
+"name": "Huntington Ingalls Industries, Inc.",
+"date": "2026-10-29",
+"mcap_b": 12.5
+},
+{
+"sym": "DT",
+"name": "Dynatrace, Inc.",
+"date": "2026-11-03",
+"mcap_b": 12.5
+},
+{
+"sym": "IT",
+"name": "Gartner, Inc.",
+"date": "2026-11-03",
+"mcap_b": 12.5
+},
+{
+"sym": "DVA",
+"name": "DaVita Inc.",
+"date": "2026-10-29",
+"mcap_b": 12.3
+},
+{
+"sym": "TRMB",
+"name": "Trimble Inc.",
+"date": "2026-11-04",
+"mcap_b": 12.3
+},
+{
+"sym": "FN",
+"name": "Fabrinet",
+"date": "2026-11-02",
+"mcap_b": 12.2
+},
+{
+"sym": "NXT",
+"name": "Nextpower Inc.",
+"date": "2026-10-28",
+"mcap_b": 12.1
+},
+{
+"sym": "BAX",
+"name": "Baxter International Inc.",
+"date": "2026-10-29",
+"mcap_b": 12.1
+},
+{
+"sym": "SWKS",
+"name": "Skyworks Solutions, Inc.",
+"date": "2026-11-03",
+"mcap_b": 12.1
+},
+{
+"sym": "QXO",
+"name": "QXO, Inc.",
+"date": "2026-11-05",
+"mcap_b": 12.1
+},
+{
+"sym": "ALLY",
+"name": "Ally Financial Inc.",
+"date": "2026-10-20",
+"mcap_b": 12.0
+},
+{
+"sym": "AGI",
+"name": "Alamos Gold Inc.",
+"date": "2026-10-28",
+"mcap_b": 12.0
+},
+{
+"sym": "GNRC",
+"name": "Generac Holdings Inc.",
+"date": "2026-10-28",
+"mcap_b": 12.0
+},
+{
+"sym": "CLX",
+"name": "Clorox Company (The)",
+"date": "2026-11-02",
+"mcap_b": 12.0
+},
+{
+"sym": "MKSI",
+"name": "MKS Inc.",
+"date": "2026-11-04",
+"mcap_b": 12.0
+},
+{
+"sym": "SUZ",
+"name": "Suzano S.A.",
+"date": "2026-11-05",
+"mcap_b": 12.0
+},
+{
+"sym": "MLI",
+"name": "Mueller Industries, Inc.",
+"date": "2026-10-20",
+"mcap_b": 11.9
+},
+{
+"sym": "ELS",
+"name": "Equity Lifestyle Properties, Inc.",
+"date": "2026-10-20",
+"mcap_b": 11.9
+},
+{
+"sym": "CR",
+"name": "Crane Company",
+"date": "2026-10-27",
+"mcap_b": 11.9
+},
+{
+"sym": "LII",
+"name": "Lennox International, Inc.",
+"date": "2026-10-28",
+"mcap_b": 11.9
+},
+{
+"sym": "AMH",
+"name": "American Homes 4 Rent",
+"date": "2026-11-04",
+"mcap_b": 11.9
+},
+{
+"sym": "UDR",
+"name": "UDR, Inc.",
+"date": "2026-11-02",
+"mcap_b": 11.8
+},
+{
+"sym": "ELAN",
+"name": "Elanco Animal Health Incorporated",
+"date": "2026-11-06",
+"mcap_b": 11.8
+},
+{
+"sym": "DKNG",
+"name": "DraftKings Inc.",
+"date": "2026-11-05",
+"mcap_b": 11.7
+},
+{
+"sym": "DECK",
+"name": "Deckers Outdoor Corporation",
+"date": "2026-10-22",
+"mcap_b": 11.6
+},
+{
+"sym": "ERIE",
+"name": "Erie Indemnity Company",
+"date": "2026-10-29",
+"mcap_b": 11.6
+},
+{
+"sym": "CBOE",
+"name": "Cboe Global Markets, Inc.",
+"date": "2026-10-30",
+"mcap_b": 11.6
+},
+{
+"sym": "ALB",
+"name": "Albemarle Corporation",
+"date": "2026-11-04",
+"mcap_b": 11.6
+},
+{
+"sym": "WTS",
+"name": "Watts Water Technologies, Inc.",
+"date": "2026-11-04",
+"mcap_b": 11.6
+},
+{
+"sym": "GLPI",
+"name": "Gaming and Leisure Properties, Inc.",
+"date": "2026-10-29",
+"mcap_b": 11.5
+},
+{
+"sym": "PCOR",
+"name": "Procore Technologies, Inc.",
+"date": "2026-11-03",
+"mcap_b": 11.5
+},
+{
+"sym": "UNM",
+"name": "Unum Group",
+"date": "2026-11-03",
+"mcap_b": 11.5
+},
+{
+"sym": "FNF",
+"name": "Fidelity National Financial, Inc.",
+"date": "2026-11-05",
+"mcap_b": 11.5
+},
+{
+"sym": "EVR",
+"name": "Evercore Inc.",
+"date": "2026-10-28",
+"mcap_b": 11.4
+},
+{
+"sym": "STRL",
+"name": "Sterling Infrastructure, Inc.",
+"date": "2026-10-28",
+"mcap_b": 11.4
+},
+{
+"sym": "CHYM",
+"name": "Chime Financial, Inc.",
+"date": "2026-11-04",
+"mcap_b": 11.4
+},
+{
+"sym": "UHAL",
+"name": "U-Haul Holding Company",
+"date": "2026-11-04",
+"mcap_b": 11.4
+},
+{
+"sym": "UHAL-B",
+"name": "U-Haul Holding Company",
+"date": "2026-11-04",
+"mcap_b": 11.4
+},
+{
+"sym": "TECH",
+"name": "Bio-Techne Corp",
+"date": "2026-11-04",
+"mcap_b": 11.4
+},
+{
+"sym": "MOH",
+"name": "Molina Healthcare Inc",
+"date": "2026-10-21",
+"mcap_b": 11.3
+},
+{
+"sym": "CSGP",
+"name": "CoStar Group, Inc.",
+"date": "2026-10-27",
+"mcap_b": 11.3
+},
+{
+"sym": "AVTR",
+"name": "Avantor, Inc.",
+"date": "2026-10-28",
+"mcap_b": 11.3
+},
+{
+"sym": "PINS",
+"name": "Pinterest, Inc.",
+"date": "2026-10-29",
+"mcap_b": 11.3
+},
+{
+"sym": "SMMT",
+"name": "Summit Therapeutics Inc.",
+"date": "2026-11-04",
+"mcap_b": 11.3
+},
+{
+"sym": "SKM",
+"name": "SK Telecom Co., Ltd.",
+"date": "2026-11-04",
+"mcap_b": 11.3
+},
+{
+"sym": "PAYC",
+"name": "Paycom Software, Inc.",
+"date": "2026-11-04",
+"mcap_b": 11.3
+},
+{
+"sym": "FRHC",
+"name": "Freedom Holding Corp.",
+"date": "2026-11-06",
+"mcap_b": 11.3
+},
+{
+"sym": "AKAM",
+"name": "Akamai Technologies, Inc.",
+"date": "2026-11-05",
+"mcap_b": 11.2
+},
+{
+"sym": "GGG",
+"name": "Graco Inc.",
+"date": "2026-10-21",
+"mcap_b": 11.1
+},
+{
+"sym": "TLK",
+"name": "PT Telekomunikasi Indonesia, Tbk",
+"date": "2026-10-30",
+"mcap_b": 11.1
+},
+{
+"sym": "RYAN",
+"name": "Ryan Specialty Holdings, Inc.",
+"date": "2026-10-29",
+"mcap_b": 11.1
+},
+{
+"sym": "BMRN",
+"name": "BioMarin Pharmaceutical Inc.",
+"date": "2026-11-02",
+"mcap_b": 11.1
+},
+{
+"sym": "RDY",
+"name": "Dr. Reddy's Laboratories Ltd",
+"date": "2026-10-23",
+"mcap_b": 11.0
+},
+{
+"sym": "AIT",
+"name": "Applied Industrial Technologies, Inc.",
+"date": "2026-10-27",
+"mcap_b": 11.0
+},
+{
+"sym": "EGP",
+"name": "EastGroup Properties, Inc.",
+"date": "2026-10-21",
+"mcap_b": 10.9
+},
+{
+"sym": "ENSG",
+"name": "The Ensign Group, Inc.",
+"date": "2026-10-27",
+"mcap_b": 10.9
+},
+{
+"sym": "ALGN",
+"name": "Align Technology, Inc.",
+"date": "2026-10-28",
+"mcap_b": 10.9
+},
+{
+"sym": "BWA",
+"name": "BorgWarner Inc.",
+"date": "2026-10-29",
+"mcap_b": 10.9
+},
+{
+"sym": "GMED",
+"name": "Globus Medical, Inc.",
+"date": "2026-11-05",
+"mcap_b": 10.9
+},
+{
+"sym": "FHN",
+"name": "First Horizon Corporation",
+"date": "2026-10-15",
+"mcap_b": 10.8
+},
+{
+"sym": "PODD",
+"name": "Insulet Corporation",
+"date": "2026-11-04",
+"mcap_b": 10.8
+},
+{
+"sym": "GSAT",
+"name": "Globalstar, Inc.",
+"date": "2026-11-05",
+"mcap_b": 10.8
+},
+{
+"sym": "IONQ",
+"name": "IonQ, Inc.",
+"date": "2026-11-05",
+"mcap_b": 10.8
+},
+{
+"sym": "AA",
+"name": "Alcoa Corporation",
+"date": "2026-10-15",
+"mcap_b": 10.7
+},
+{
+"sym": "RGEN",
+"name": "Repligen Corporation",
+"date": "2026-10-27",
+"mcap_b": 10.7
+},
+{
+"sym": "RRX",
+"name": "Regal Rexnord Corporation",
+"date": "2026-11-03",
+"mcap_b": 10.7
+},
+{
+"sym": "SITM",
+"name": "SiTime Corporation",
+"date": "2026-11-04",
+"mcap_b": 10.7
+},
+{
+"sym": "MAIR",
+"name": "Madison Air Solutions Corporation",
+"date": "2026-11-05",
+"mcap_b": 10.7
+},
+{
+"sym": "DRS",
+"name": "Leonardo DRS, Inc.",
+"date": "2026-10-29",
+"mcap_b": 10.6
+},
+{
+"sym": "AES",
+"name": "The AES Corporation",
+"date": "2026-11-03",
+"mcap_b": 10.6
+},
+{
+"sym": "AMKR",
+"name": "Amkor Technology, Inc.",
+"date": "2026-10-26",
+"mcap_b": 10.5
+},
+{
+"sym": "PNR",
+"name": "Pentair plc.",
+"date": "2026-10-27",
+"mcap_b": 10.5
+},
+{
+"sym": "NYT",
+"name": "New York Times Company (The)",
+"date": "2026-11-04",
+"mcap_b": 10.5
+},
+{
+"sym": "QGEN",
+"name": "Qiagen N.V.",
+"date": "2026-11-04",
+"mcap_b": 10.5
+},
+{
+"sym": "AGNC",
+"name": "AGNC Investment Corp.",
+"date": "2026-10-19",
+"mcap_b": 10.4
+},
+{
+"sym": "UHS",
+"name": "Universal Health Services, Inc.",
+"date": "2026-10-27",
+"mcap_b": 10.4
+},
+{
+"sym": "CPT",
+"name": "Camden Property Trust",
+"date": "2026-11-05",
+"mcap_b": 10.4
+},
+{
+"sym": "UMBF",
+"name": "UMB Financial Corporation",
+"date": "2026-10-27",
+"mcap_b": 10.3
+},
+{
+"sym": "SCI",
+"name": "Service Corporation International",
+"date": "2026-10-28",
+"mcap_b": 10.3
+},
+{
+"sym": "LFUS",
+"name": "Littelfuse, Inc.",
+"date": "2026-10-28",
+"mcap_b": 10.3
+},
+{
+"sym": "SF",
+"name": "Stifel Financial Corporation",
+"date": "2026-10-21",
+"mcap_b": 10.2
+},
+{
+"sym": "SSB",
+"name": "SouthState Bank Corporation",
+"date": "2026-10-21",
+"mcap_b": 10.2
+},
+{
+"sym": "KNX",
+"name": "Knight Transportation, Inc.",
+"date": "2026-10-21",
+"mcap_b": 10.2
+},
+{
+"sym": "R",
+"name": "Ryder System, Inc.",
+"date": "2026-10-22",
+"mcap_b": 10.2
+},
+{
+"sym": "OGE",
+"name": "OGE Energy Corp",
+"date": "2026-10-28",
+"mcap_b": 10.2
+},
+{
+"sym": "FLS",
+"name": "Flowserve Corporation",
+"date": "2026-10-28",
+"mcap_b": 10.2
+},
+{
+"sym": "AM",
+"name": "Antero Midstream Corporation",
+"date": "2026-10-28",
+"mcap_b": 10.2
+},
+{
+"sym": "KYMR",
+"name": "Kymera Therapeutics, Inc.",
+"date": "2026-10-29",
+"mcap_b": 10.2
+},
+{
+"sym": "OSCR",
+"name": "Oscar Health, Inc.",
+"date": "2026-11-05",
+"mcap_b": 10.2
+},
+{
+"sym": "BPOP",
+"name": "Popular, Inc.",
+"date": "2026-10-22",
+"mcap_b": 10.1
+},
+{
+"sym": "BXP",
+"name": "BXP, Inc.",
+"date": "2026-10-27",
+"mcap_b": 10.1
+},
+{
+"sym": "LTH",
+"name": "Life Time Group Holdings, Inc.",
+"date": "2026-10-29",
+"mcap_b": 10.1
+},
+{
+"sym": "DPZ",
+"name": "Domino's Pizza Inc",
+"date": "2026-10-13",
+"mcap_b": 10.0
+},
+{
+"sym": "ALSN",
+"name": "Allison Transmission Holdings, Inc.",
+"date": "2026-11-02",
+"mcap_b": 10.0
+},
+{
+"sym": "HUBS",
+"name": "HubSpot, Inc.",
+"date": "2026-11-04",
+"mcap_b": 10.0
+},
+{
+"sym": "IAG",
+"name": "Iamgold Corporation",
+"date": "2026-11-05",
+"mcap_b": 10.0
+},
+{
+"sym": "WTFC",
+"name": "Wintrust Financial Corporation",
+"date": "2026-10-19",
+"mcap_b": 9.9
+},
+{
+"sym": "MUSA",
+"name": "Murphy USA Inc.",
+"date": "2026-10-28",
+"mcap_b": 9.9
+},
+{
+"sym": "BIO",
+"name": "Bio-Rad Laboratories, Inc.",
+"date": "2026-11-04",
+"mcap_b": 9.9
+},
+{
+"sym": "BIO-B",
+"name": "Bio-Rad Laboratories, Inc.",
+"date": "2026-11-04",
+"mcap_b": 9.9
+},
+{
+"sym": "FIG",
+"name": "Figma, Inc.",
+"date": "2026-11-04",
+"mcap_b": 9.9
+},
+{
+"sym": "CFR",
+"name": "Cullen/Frost Bankers, Inc.",
+"date": "2026-10-29",
+"mcap_b": 9.8
+},
+{
+"sym": "HNGE",
+"name": "Hinge Health, Inc.",
+"date": "2026-11-02",
+"mcap_b": 9.8
+},
+{
+"sym": "PAYP",
+"name": "PayPay Corporation",
+"date": "2026-11-03",
+"mcap_b": 9.8
+},
+{
+"sym": "PCVX",
+"name": "Vaxcyte, Inc.",
+"date": "2026-11-04",
+"mcap_b": 9.8
+},
+{
+"sym": "ORI",
+"name": "Old Republic International Corporation",
+"date": "2026-10-22",
+"mcap_b": 9.7
+},
+{
+"sym": "RMBS",
+"name": "Rambus, Inc.",
+"date": "2026-10-26",
+"mcap_b": 9.7
+},
+{
+"sym": "HLI",
+"name": "Houlihan Lokey, Inc.",
+"date": "2026-10-28",
+"mcap_b": 9.7
+},
+{
+"sym": "SIRI",
+"name": "SiriusXM Holdings Inc.",
+"date": "2026-10-29",
+"mcap_b": 9.7
+},
+{
+"sym": "HL",
+"name": "Hecla Mining Company",
+"date": "2026-11-03",
+"mcap_b": 9.7
+},
+{
+"sym": "ZION",
+"name": "Zions Bancorporation N.A.",
+"date": "2026-10-19",
+"mcap_b": 9.6
+},
+{
+"sym": "ONB",
+"name": "Old National Bancorp",
+"date": "2026-10-21",
+"mcap_b": 9.6
+},
+{
+"sym": "FRT",
+"name": "Federal Realty Investment Trust",
+"date": "2026-10-30",
+"mcap_b": 9.6
+},
+{
+"sym": "OC",
+"name": "Owens Corning Inc",
+"date": "2026-11-04",
+"mcap_b": 9.6
+},
+{
+"sym": "LLYVA",
+"name": "Liberty Live Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 9.6
+},
+{
+"sym": "LLYVK",
+"name": "Liberty Live Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 9.6
+},
+{
+"sym": "VOYA",
+"name": "Voya Financial, Inc.",
+"date": "2026-11-02",
+"mcap_b": 9.5
+},
+{
+"sym": "TX",
+"name": "Ternium S.A.",
+"date": "2026-11-03",
+"mcap_b": 9.5
+},
+{
+"sym": "BAH",
+"name": "Booz Allen Hamilton Holding Corporation",
+"date": "2026-10-23",
+"mcap_b": 9.4
+},
+{
+"sym": "RHP",
+"name": "Ryman Hospitality Properties, Inc.",
+"date": "2026-11-02",
+"mcap_b": 9.4
+},
+{
+"sym": "HSIC",
+"name": "Henry Schein, Inc.",
+"date": "2026-11-03",
+"mcap_b": 9.4
+},
+{
+"sym": "JAN",
+"name": "Janus Living, Inc.",
+"date": "2026-11-02",
+"mcap_b": 9.3
+},
+{
+"sym": "MDGL",
+"name": "Madrigal Pharmaceuticals, Inc.",
+"date": "2026-11-03",
+"mcap_b": 9.3
+},
+{
+"sym": "CUBE",
+"name": "CubeSmart",
+"date": "2026-10-29",
+"mcap_b": 9.2
+},
+{
+"sym": "TFII",
+"name": "TFI International Inc.",
+"date": "2026-10-29",
+"mcap_b": 9.2
+},
+{
+"sym": "SAIA",
+"name": "Saia, Inc.",
+"date": "2026-10-29",
+"mcap_b": 9.2
+},
+{
+"sym": "KRYS",
+"name": "Krystal Biotech, Inc.",
+"date": "2026-11-02",
+"mcap_b": 9.2
+},
+{
+"sym": "SYRE",
+"name": "Spyre Therapeutics, Inc.",
+"date": "2026-11-03",
+"mcap_b": 9.2
+},
+{
+"sym": "WMS",
+"name": "Advanced Drainage Systems, Inc.",
+"date": "2026-11-05",
+"mcap_b": 9.2
+},
+{
+"sym": "FROG",
+"name": "JFrog Ltd.",
+"date": "2026-11-05",
+"mcap_b": 9.2
+},
+{
+"sym": "EAT",
+"name": "Brinker International, Inc.",
+"date": "2026-10-28",
+"mcap_b": 9.1
+},
+{
+"sym": "MTCH",
+"name": "Match Group, Inc.",
+"date": "2026-11-02",
+"mcap_b": 9.1
+},
+{
+"sym": "PBF",
+"name": "PBF Energy Inc.",
+"date": "2026-10-29",
+"mcap_b": 9.0
+},
+{
+"sym": "ENLT",
+"name": "Enlight Renewable Energy Ltd.",
+"date": "2026-11-03",
+"mcap_b": 9.0
+},
+{
+"sym": "ARW",
+"name": "Arrow Electronics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 9.0
+},
+{
+"sym": "KNSL",
+"name": "Kinsale Capital Group, Inc.",
+"date": "2026-10-22",
+"mcap_b": 8.9
+},
+{
+"sym": "GGB",
+"name": "Gerdau S.A.",
+"date": "2026-10-26",
+"mcap_b": 8.9
+},
+{
+"sym": "PRI",
+"name": "Primerica, Inc.",
+"date": "2026-11-04",
+"mcap_b": 8.9
+},
+{
+"sym": "NVMI",
+"name": "Nova Ltd.",
+"date": "2026-11-05",
+"mcap_b": 8.9
+},
+{
+"sym": "KT",
+"name": "KT Corporation",
+"date": "2026-11-06",
+"mcap_b": 8.9
+},
+{
+"sym": "MHK",
+"name": "Mohawk Industries, Inc.",
+"date": "2026-10-29",
+"mcap_b": 8.8
+},
+{
+"sym": "JXN",
+"name": "Jackson Financial Inc.",
+"date": "2026-11-03",
+"mcap_b": 8.8
+},
+{
+"sym": "BRKR",
+"name": "Bruker Corporation",
+"date": "2026-11-04",
+"mcap_b": 8.8
+},
+{
+"sym": "PCTY",
+"name": "Paylocity Holding Corporation",
+"date": "2026-11-05",
+"mcap_b": 8.8
+},
+{
+"sym": "CTRE",
+"name": "CareTrust REIT, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.8
+},
+{
+"sym": "PTGX",
+"name": "Protagonist Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.8
+},
+{
+"sym": "ADC",
+"name": "Agree Realty Corporation",
+"date": "2026-10-20",
+"mcap_b": 8.7
+},
+{
+"sym": "BRX",
+"name": "Brixmor Property Group Inc.",
+"date": "2026-10-26",
+"mcap_b": 8.7
+},
+{
+"sym": "PB",
+"name": "Prosperity Bancshares, Inc.",
+"date": "2026-10-28",
+"mcap_b": 8.7
+},
+{
+"sym": "DAR",
+"name": "Darling Ingredients Inc.",
+"date": "2026-10-28",
+"mcap_b": 8.7
+},
+{
+"sym": "SOLS",
+"name": "Solstice Advanced Materials Inc.",
+"date": "2026-11-04",
+"mcap_b": 8.7
+},
+{
+"sym": "CBC",
+"name": "Central Bancompany, Inc.",
+"date": "2026-10-27",
+"mcap_b": 8.6
+},
+{
+"sym": "AOS",
+"name": "A.O. Smith Corporation",
+"date": "2026-10-29",
+"mcap_b": 8.6
+},
+{
+"sym": "IDCC",
+"name": "InterDigital, Inc.",
+"date": "2026-10-29",
+"mcap_b": 8.6
+},
+{
+"sym": "AEIS",
+"name": "Advanced Energy Industries, Inc.",
+"date": "2026-11-02",
+"mcap_b": 8.6
+},
+{
+"sym": "SNAP",
+"name": "Snap Inc.",
+"date": "2026-11-04",
+"mcap_b": 8.6
+},
+{
+"sym": "COLB",
+"name": "Columbia Banking System, Inc.",
+"date": "2026-10-22",
+"mcap_b": 8.5
+},
+{
+"sym": "EGO",
+"name": "Eldorado Gold Corporation",
+"date": "2026-10-28",
+"mcap_b": 8.5
+},
+{
+"sym": "WLK",
+"name": "Westlake Corporation",
+"date": "2026-11-04",
+"mcap_b": 8.5
+},
+{
+"sym": "EPAM",
+"name": "EPAM Systems, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.5
+},
+{
+"sym": "VMI",
+"name": "Valmont Industries, Inc.",
+"date": "2026-10-20",
+"mcap_b": 8.4
+},
+{
+"sym": "ALV",
+"name": "Autoliv, Inc.",
+"date": "2026-10-23",
+"mcap_b": 8.4
+},
+{
+"sym": "SPXC",
+"name": "SPX Technologies, Inc.",
+"date": "2026-10-29",
+"mcap_b": 8.4
+},
+{
+"sym": "NCLH",
+"name": "Norwegian Cruise Line Holdings Ltd.",
+"date": "2026-10-29",
+"mcap_b": 8.4
+},
+{
+"sym": "OSK",
+"name": "Oshkosh Corporation",
+"date": "2026-10-29",
+"mcap_b": 8.4
+},
+{
+"sym": "VIRT",
+"name": "Virtu Financial, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.4
+},
+{
+"sym": "SARO",
+"name": "StandardAero, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.4
+},
+{
+"sym": "VICR",
+"name": "Vicor Corporation",
+"date": "2026-10-20",
+"mcap_b": 8.3
+},
+{
+"sym": "MORN",
+"name": "Morningstar, Inc.",
+"date": "2026-10-28",
+"mcap_b": 8.3
+},
+{
+"sym": "IDA",
+"name": "IDACORP, Inc.",
+"date": "2026-10-29",
+"mcap_b": 8.3
+},
+{
+"sym": "ATR",
+"name": "AptarGroup, Inc.",
+"date": "2026-10-29",
+"mcap_b": 8.3
+},
+{
+"sym": "DOCN",
+"name": "DigitalOcean Holdings, Inc.",
+"date": "2026-11-03",
+"mcap_b": 8.3
+},
+{
+"sym": "APTV",
+"name": "Aptiv PLC",
+"date": "2026-11-03",
+"mcap_b": 8.3
+},
+{
+"sym": "WAL",
+"name": "Western Alliance Bancorporation",
+"date": "2026-10-19",
+"mcap_b": 8.2
+},
+{
+"sym": "THG",
+"name": "The Hanover Insurance Group, Inc.",
+"date": "2026-10-28",
+"mcap_b": 8.2
+},
+{
+"sym": "VSAT",
+"name": "ViaSat, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.2
+},
+{
+"sym": "WYNN",
+"name": "Wynn Resorts, Limited",
+"date": "2026-11-05",
+"mcap_b": 8.2
+},
+{
+"sym": "CBSH",
+"name": "Commerce Bancshares, Inc.",
+"date": "2026-10-20",
+"mcap_b": 8.1
+},
+{
+"sym": "ESI",
+"name": "Element Solutions Inc.",
+"date": "2026-10-21",
+"mcap_b": 8.1
+},
+{
+"sym": "REXR",
+"name": "Rexford Industrial Realty, Inc.",
+"date": "2026-10-22",
+"mcap_b": 8.1
+},
+{
+"sym": "DBX",
+"name": "Dropbox, Inc.",
+"date": "2026-11-05",
+"mcap_b": 8.1
+},
+{
+"sym": "CLF",
+"name": "Cleveland-Cliffs Inc.",
+"date": "2026-10-19",
+"mcap_b": 8.0
+},
+{
+"sym": "FCFS",
+"name": "FirstCash Holdings, Inc.",
+"date": "2026-10-22",
+"mcap_b": 8.0
+},
+{
+"sym": "VIST",
+"name": "Vista Energy S.A.B. de C.V.",
+"date": "2026-10-28",
+"mcap_b": 8.0
+},
+{
+"sym": "PACS",
+"name": "PACS Group, Inc.",
+"date": "2026-11-03",
+"mcap_b": 8.0
+},
+{
+"sym": "NNN",
+"name": "NNN REIT, Inc.",
+"date": "2026-11-04",
+"mcap_b": 8.0
+},
+{
+"sym": "CGNX",
+"name": "Cognex Corporation",
+"date": "2026-11-04",
+"mcap_b": 8.0
+},
+{
+"sym": "KNTK",
+"name": "Kinetik Holdings Inc.",
+"date": "2026-11-04",
+"mcap_b": 8.0
+},
+{
+"sym": "PRMB",
+"name": "Primo Brands Corporation",
+"date": "2026-11-05",
+"mcap_b": 8.0
+},
+{
+"sym": "ETSY",
+"name": "Etsy, Inc.",
+"date": "2026-10-28",
+"mcap_b": 7.9
+},
+{
+"sym": "QNT",
+"name": "Quantinuum Inc.",
+"date": "2026-11-05",
+"mcap_b": 7.9
+},
+{
+"sym": "TAP",
+"name": "Molson Coors Beverage Company",
+"date": "2026-11-05",
+"mcap_b": 7.9
+},
+{
+"sym": "TAP-A",
+"name": "Molson Coors Beverage Company",
+"date": "2026-11-05",
+"mcap_b": 7.9
+},
+{
+"sym": "TTMI",
+"name": "TTM Technologies, Inc.",
+"date": "2026-10-22",
+"mcap_b": 7.8
+},
+{
+"sym": "SSD",
+"name": "Simpson Manufacturing Company, Inc.",
+"date": "2026-10-26",
+"mcap_b": 7.8
+},
+{
+"sym": "EMN",
+"name": "Eastman Chemical Company",
+"date": "2026-10-29",
+"mcap_b": 7.8
+},
+{
+"sym": "CORT",
+"name": "Corcept Therapeutics Incorporated",
+"date": "2026-11-03",
+"mcap_b": 7.8
+},
+{
+"sym": "BOKF",
+"name": "BOK Financial Corporation",
+"date": "2026-10-19",
+"mcap_b": 7.7
+},
+{
+"sym": "APPF",
+"name": "AppFolio, Inc.",
+"date": "2026-10-22",
+"mcap_b": 7.7
+},
+{
+"sym": "KNSA",
+"name": "Kiniksa Pharmaceuticals International, plc",
+"date": "2026-10-27",
+"mcap_b": 7.7
+},
+{
+"sym": "SIMO",
+"name": "Silicon Motion Technology Corporation",
+"date": "2026-10-28",
+"mcap_b": 7.7
+},
+{
+"sym": "KEX",
+"name": "Kirby Corporation",
+"date": "2026-10-28",
+"mcap_b": 7.7
+},
+{
+"sym": "TBBB",
+"name": "BBB Foods Inc.",
+"date": "2026-11-02",
+"mcap_b": 7.7
+},
+{
+"sym": "CYTK",
+"name": "Cytokinetics, Incorporated",
+"date": "2026-11-04",
+"mcap_b": 7.7
+},
+{
+"sym": "MSGK",
+"name": "MSG Knickerbockers Corp.",
+"date": "2026-11-06",
+"mcap_b": 7.7
+},
+{
+"sym": "VLY",
+"name": "Valley National Bancorp",
+"date": "2026-10-22",
+"mcap_b": 7.6
+},
+{
+"sym": "FORM",
+"name": "FormFactor, Inc.",
+"date": "2026-10-28",
+"mcap_b": 7.6
+},
+{
+"sym": "EDU",
+"name": "New Oriental Education & Technology Group, Inc.",
+"date": "2026-10-28",
+"mcap_b": 7.6
+},
+{
+"sym": "AGCO",
+"name": "AGCO Corporation",
+"date": "2026-10-29",
+"mcap_b": 7.6
+},
+{
+"sym": "CELH",
+"name": "Celsius Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 7.6
+},
+{
+"sym": "TXG",
+"name": "10x Genomics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 7.6
+},
+{
+"sym": "ASR",
+"name": "Grupo Aeroportuario del Sureste, S.A. de C.V.",
+"date": "2026-10-22",
+"mcap_b": 7.5
+},
+{
+"sym": "NE",
+"name": "Noble Corporation plc",
+"date": "2026-10-26",
+"mcap_b": 7.5
+},
+{
+"sym": "ALKS",
+"name": "Alkermes plc",
+"date": "2026-11-03",
+"mcap_b": 7.5
+},
+{
+"sym": "CAI",
+"name": "Caris Life Sciences, Inc.",
+"date": "2026-11-04",
+"mcap_b": 7.5
+},
+{
+"sym": "LNC",
+"name": "Lincoln National Corporation",
+"date": "2026-11-05",
+"mcap_b": 7.5
+},
+{
+"sym": "ZWS",
+"name": "Zurn Elkay Water Solutions Corporation",
+"date": "2026-10-27",
+"mcap_b": 7.4
+},
+{
+"sym": "NEU",
+"name": "NewMarket Corporation",
+"date": "2026-10-28",
+"mcap_b": 7.4
+},
+{
+"sym": "AXS",
+"name": "Axis Capital Holdings Limited",
+"date": "2026-10-28",
+"mcap_b": 7.4
+},
+{
+"sym": "DUOL",
+"name": "Duolingo, Inc.",
+"date": "2026-11-03",
+"mcap_b": 7.4
+},
+{
+"sym": "YOU",
+"name": "Clear Secure, Inc.",
+"date": "2026-11-04",
+"mcap_b": 7.4
+},
+{
+"sym": "TRNO",
+"name": "Terreno Realty Corporation",
+"date": "2026-11-04",
+"mcap_b": 7.4
+},
+{
+"sym": "FR",
+"name": "First Industrial Realty Trust, Inc.",
+"date": "2026-10-21",
+"mcap_b": 7.3
+},
+{
+"sym": "SFD",
+"name": "Smithfield Foods, Inc.",
+"date": "2026-10-27",
+"mcap_b": 7.3
+},
+{
+"sym": "MGM",
+"name": "MGM Resorts International",
+"date": "2026-10-28",
+"mcap_b": 7.3
+},
+{
+"sym": "BLCO",
+"name": "Bausch + Lomb Corporation",
+"date": "2026-10-28",
+"mcap_b": 7.3
+},
+{
+"sym": "RYTM",
+"name": "Rhythm Pharmaceuticals, Inc.",
+"date": "2026-11-03",
+"mcap_b": 7.3
+},
+{
+"sym": "AG",
+"name": "First Majestic Silver Corp.",
+"date": "2026-11-05",
+"mcap_b": 7.3
+},
+{
+"sym": "IREN",
+"name": "IREN Limited",
+"date": "2026-11-05",
+"mcap_b": 7.3
+},
+{
+"sym": "CMC",
+"name": "Commercial Metals Company",
+"date": "2026-10-15",
+"mcap_b": 7.2
+},
+{
+"sym": "POOL",
+"name": "Pool Corporation",
+"date": "2026-10-22",
+"mcap_b": 7.2
+},
+{
+"sym": "STAG",
+"name": "Stag Industrial, Inc.",
+"date": "2026-10-27",
+"mcap_b": 7.2
+},
+{
+"sym": "VFC",
+"name": "V.F. Corporation",
+"date": "2026-10-28",
+"mcap_b": 7.2
+},
+{
+"sym": "CROX",
+"name": "Crocs, Inc.",
+"date": "2026-10-29",
+"mcap_b": 7.2
+},
+{
+"sym": "AXTA",
+"name": "Axalta Coating Systems Ltd.",
+"date": "2026-10-29",
+"mcap_b": 7.2
+},
+{
+"sym": "AXSM",
+"name": "Axsome Therapeutics, Inc.",
+"date": "2026-11-02",
+"mcap_b": 7.2
+},
+{
+"sym": "ADT",
+"name": "ADT Inc.",
+"date": "2026-11-03",
+"mcap_b": 7.2
+},
+{
+"sym": "CHRD",
+"name": "Chord Energy Corporation",
+"date": "2026-11-04",
+"mcap_b": 7.2
+},
+{
+"sym": "GLXY",
+"name": "Galaxy Digital Inc.",
+"date": "2026-10-27",
+"mcap_b": 7.1
+},
+{
+"sym": "CHE",
+"name": "Chemed Corp.",
+"date": "2026-10-27",
+"mcap_b": 7.1
+},
+{
+"sym": "MOS",
+"name": "Mosaic Company (The)",
+"date": "2026-11-03",
+"mcap_b": 7.1
+},
+{
+"sym": "MAC",
+"name": "Macerich Company (The)",
+"date": "2026-11-04",
+"mcap_b": 7.1
+},
+{
+"sym": "ARE",
+"name": "Alexandria Real Estate Equities, Inc.",
+"date": "2026-10-26",
+"mcap_b": 7.0
+},
+{
+"sym": "CVLT",
+"name": "Commvault Systems, Inc.",
+"date": "2026-10-27",
+"mcap_b": 7.0
+},
+{
+"sym": "FSS",
+"name": "Federal Signal Corporation",
+"date": "2026-10-29",
+"mcap_b": 7.0
+},
+{
+"sym": "BVN",
+"name": "Buenaventura Mining Company Inc.",
+"date": "2026-10-29",
+"mcap_b": 7.0
+},
+{
+"sym": "SM",
+"name": "SM Energy Company",
+"date": "2026-11-03",
+"mcap_b": 7.0
+},
+{
+"sym": "Z",
+"name": "Zillow Group, Inc.",
+"date": "2026-11-04",
+"mcap_b": 7.0
+},
+{
+"sym": "ZG",
+"name": "Zillow Group, Inc.",
+"date": "2026-11-04",
+"mcap_b": 7.0
+},
+{
+"sym": "NFG",
+"name": "National Fuel Gas Company",
+"date": "2026-11-04",
+"mcap_b": 7.0
+},
+{
+"sym": "CAVA",
+"name": "CAVA Group, Inc.",
+"date": "2026-11-04",
+"mcap_b": 7.0
+},
+{
+"sym": "RAL",
+"name": "Ralliant Corporation",
+"date": "2026-11-04",
+"mcap_b": 7.0
+},
+{
+"sym": "BTG",
+"name": "B2Gold Corp",
+"date": "2026-11-04",
+"mcap_b": 7.0
+},
+{
+"sym": "COMP",
+"name": "Compass, Inc.",
+"date": "2026-11-05",
+"mcap_b": 7.0
+},
+{
+"sym": "AWI",
+"name": "Armstrong World Industries Inc",
+"date": "2026-10-27",
+"mcap_b": 6.9
+},
+{
+"sym": "NOV",
+"name": "NOV Inc.",
+"date": "2026-10-27",
+"mcap_b": 6.9
+},
+{
+"sym": "VCTR",
+"name": "Victory Capital Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.9
+},
+{
+"sym": "TKR",
+"name": "Timken Company (The)",
+"date": "2026-11-04",
+"mcap_b": 6.9
+},
+{
+"sym": "G",
+"name": "Genpact Limited",
+"date": "2026-11-05",
+"mcap_b": 6.9
+},
+{
+"sym": "BLDR",
+"name": "Builders FirstSource, Inc.",
+"date": "2026-10-29",
+"mcap_b": 6.8
+},
+{
+"sym": "MSA",
+"name": "MSA Safety Incorporporated",
+"date": "2026-11-02",
+"mcap_b": 6.8
+},
+{
+"sym": "VNO",
+"name": "Vornado Realty Trust",
+"date": "2026-11-02",
+"mcap_b": 6.8
+},
+{
+"sym": "AMRX",
+"name": "Amneal Pharmaceuticals, Inc.",
+"date": "2026-11-03",
+"mcap_b": 6.8
+},
+{
+"sym": "LOAR",
+"name": "Loar Holdings Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.8
+},
+{
+"sym": "LYFT",
+"name": "Lyft, Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.8
+},
+{
+"sym": "FAF",
+"name": "First American Corporation (The)",
+"date": "2026-10-21",
+"mcap_b": 6.6
+},
+{
+"sym": "RNG",
+"name": "RingCentral, Inc.",
+"date": "2026-10-22",
+"mcap_b": 6.6
+},
+{
+"sym": "UBSI",
+"name": "United Bankshares, Inc.",
+"date": "2026-10-22",
+"mcap_b": 6.6
+},
+{
+"sym": "PPC",
+"name": "Pilgrim's Pride Corporation",
+"date": "2026-10-28",
+"mcap_b": 6.6
+},
+{
+"sym": "INGM",
+"name": "Ingram Micro Holding Corporation",
+"date": "2026-10-29",
+"mcap_b": 6.6
+},
+{
+"sym": "SOBO",
+"name": "South Bow Corporation",
+"date": "2026-11-04",
+"mcap_b": 6.6
+},
+{
+"sym": "ACT",
+"name": "Enact Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.6
+},
+{
+"sym": "SWX",
+"name": "Southwest Gas Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.6
+},
+{
+"sym": "FTDR",
+"name": "frontdoor, inc.",
+"date": "2026-11-05",
+"mcap_b": 6.6
+},
+{
+"sym": "LNTH",
+"name": "Lantheus Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.6
+},
+{
+"sym": "TEX",
+"name": "Terex Corporation",
+"date": "2026-10-28",
+"mcap_b": 6.5
+},
+{
+"sym": "OMF",
+"name": "OneMain Holdings, Inc.",
+"date": "2026-10-30",
+"mcap_b": 6.5
+},
+{
+"sym": "JBTM",
+"name": "JBT Marel Corporation",
+"date": "2026-11-03",
+"mcap_b": 6.5
+},
+{
+"sym": "RYN",
+"name": "Rayonier Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.5
+},
+{
+"sym": "VIAV",
+"name": "Viavi Solutions Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.5
+},
+{
+"sym": "ELF",
+"name": "e.l.f. Beauty, Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.5
+},
+{
+"sym": "BKH",
+"name": "Black Hills Corporation",
+"date": "2026-11-04",
+"mcap_b": 6.5
+},
+{
+"sym": "OTEX",
+"name": "Open Text Corporation",
+"date": "2026-11-05",
+"mcap_b": 6.5
+},
+{
+"sym": "GIL",
+"name": "Gildan Activewear, Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.5
+},
+{
+"sym": "LAD",
+"name": "Lithia Motors, Inc.",
+"date": "2026-10-21",
+"mcap_b": 6.4
+},
+{
+"sym": "FSV",
+"name": "FirstService Corporation",
+"date": "2026-10-22",
+"mcap_b": 6.4
+},
+{
+"sym": "GATX",
+"name": "GATX Corporation",
+"date": "2026-10-29",
+"mcap_b": 6.4
+},
+{
+"sym": "TXNM",
+"name": "TXNM Energy, Inc.",
+"date": "2026-10-30",
+"mcap_b": 6.4
+},
+{
+"sym": "MATX",
+"name": "Matson, Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.4
+},
+{
+"sym": "TFX",
+"name": "Teleflex Incorporated",
+"date": "2026-11-05",
+"mcap_b": 6.4
+},
+{
+"sym": "ACI",
+"name": "Albertsons Companies, Inc.",
+"date": "2026-10-13",
+"mcap_b": 6.3
+},
+{
+"sym": "FNB",
+"name": "F.N.B. Corporation",
+"date": "2026-10-19",
+"mcap_b": 6.3
+},
+{
+"sym": "MSM",
+"name": "MSC Industrial Direct Company, Inc.",
+"date": "2026-10-22",
+"mcap_b": 6.3
+},
+{
+"sym": "WEX",
+"name": "WEX Inc.",
+"date": "2026-10-28",
+"mcap_b": 6.3
+},
+{
+"sym": "LGND",
+"name": "Ligand Pharmaceuticals Incorporated",
+"date": "2026-10-29",
+"mcap_b": 6.3
+},
+{
+"sym": "TFPM",
+"name": "Triple Flag Precious Metals Corp.",
+"date": "2026-11-03",
+"mcap_b": 6.3
+},
+{
+"sym": "HGTY",
+"name": "Hagerty, Inc.",
+"date": "2026-11-03",
+"mcap_b": 6.3
+},
+{
+"sym": "PJT",
+"name": "PJT Partners Inc.",
+"date": "2026-11-03",
+"mcap_b": 6.3
+},
+{
+"sym": "XMTR",
+"name": "Xometry, Inc.",
+"date": "2026-11-03",
+"mcap_b": 6.3
+},
+{
+"sym": "MGY",
+"name": "Magnolia Oil & Gas Corporation",
+"date": "2026-11-04",
+"mcap_b": 6.3
+},
+{
+"sym": "AVT",
+"name": "Avnet, Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.3
+},
+{
+"sym": "KTOS",
+"name": "Kratos Defense & Security Solutions, Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.3
+},
+{
+"sym": "BBUC",
+"name": "Brookfield Business Corporation",
+"date": "2026-11-05",
+"mcap_b": 6.3
+},
+{
+"sym": "HXL",
+"name": "Hexcel Corporation",
+"date": "2026-10-21",
+"mcap_b": 6.2
+},
+{
+"sym": "EXLS",
+"name": "ExlService Holdings, Inc.",
+"date": "2026-10-27",
+"mcap_b": 6.2
+},
+{
+"sym": "CHDN",
+"name": "Churchill Downs, Incorporated",
+"date": "2026-10-28",
+"mcap_b": 6.2
+},
+{
+"sym": "HR",
+"name": "Healthcare Realty Trust Incorporated",
+"date": "2026-10-29",
+"mcap_b": 6.2
+},
+{
+"sym": "ALGM",
+"name": "Allegro MicroSystems, Inc.",
+"date": "2026-10-29",
+"mcap_b": 6.2
+},
+{
+"sym": "GXO",
+"name": "GXO Logistics, Inc.",
+"date": "2026-11-03",
+"mcap_b": 6.2
+},
+{
+"sym": "MTDR",
+"name": "Matador Resources Company",
+"date": "2026-11-03",
+"mcap_b": 6.2
+},
+{
+"sym": "ESNT",
+"name": "Essent Group Ltd.",
+"date": "2026-11-06",
+"mcap_b": 6.2
+},
+{
+"sym": "RIG",
+"name": "Transocean Ltd.",
+"date": "2026-11-02",
+"mcap_b": 6.1
+},
+{
+"sym": "MIRM",
+"name": "Mirum Pharmaceuticals, Inc.",
+"date": "2026-11-03",
+"mcap_b": 6.1
+},
+{
+"sym": "INGR",
+"name": "Ingredion Incorporated",
+"date": "2026-11-05",
+"mcap_b": 6.1
+},
+{
+"sym": "PEGA",
+"name": "Pegasystems Inc.",
+"date": "2026-10-20",
+"mcap_b": 6.0
+},
+{
+"sym": "GBCI",
+"name": "Glacier Bancorp, Inc.",
+"date": "2026-10-22",
+"mcap_b": 6.0
+},
+{
+"sym": "ST",
+"name": "Sensata Technologies Holding plc",
+"date": "2026-10-27",
+"mcap_b": 6.0
+},
+{
+"sym": "JMKE",
+"name": "Jersey Mike's Subs Inc.",
+"date": "2026-10-28",
+"mcap_b": 6.0
+},
+{
+"sym": "CACC",
+"name": "Credit Acceptance Corporation",
+"date": "2026-10-29",
+"mcap_b": 6.0
+},
+{
+"sym": "GTES",
+"name": "Gates Industrial Corporation Ltd.",
+"date": "2026-10-30",
+"mcap_b": 6.0
+},
+{
+"sym": "BROS",
+"name": "Dutch Bros Inc.",
+"date": "2026-11-04",
+"mcap_b": 6.0
+},
+{
+"sym": "OGC",
+"name": "OceanaGold Corporation",
+"date": "2026-11-04",
+"mcap_b": 6.0
+},
+{
+"sym": "MP",
+"name": "MP Materials Corp.",
+"date": "2026-11-05",
+"mcap_b": 6.0
+},
+{
+"sym": "ACIW",
+"name": "ACI Worldwide, Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.0
+},
+{
+"sym": "AUGO",
+"name": "Aura Minerals Inc.",
+"date": "2026-11-05",
+"mcap_b": 6.0
+},
+{
+"sym": "FLR",
+"name": "Fluor Corporation",
+"date": "2026-11-06",
+"mcap_b": 6.0
+},
+{
+"sym": "RLI",
+"name": "RLI Corp.",
+"date": "2026-10-19",
+"mcap_b": 5.9
+},
+{
+"sym": "HWC",
+"name": "Hancock Whitney Corporation",
+"date": "2026-10-20",
+"mcap_b": 5.9
+},
+{
+"sym": "WFRD",
+"name": "Weatherford International plc",
+"date": "2026-10-20",
+"mcap_b": 5.9
+},
+{
+"sym": "MXL",
+"name": "MaxLinear, Inc",
+"date": "2026-10-22",
+"mcap_b": 5.9
+},
+{
+"sym": "CZR",
+"name": "Caesars Entertainment, Inc.",
+"date": "2026-10-27",
+"mcap_b": 5.9
+},
+{
+"sym": "ENIC",
+"name": "Enel Chile S.A.",
+"date": "2026-10-29",
+"mcap_b": 5.9
+},
+{
+"sym": "AN",
+"name": "AutoNation, Inc.",
+"date": "2026-10-30",
+"mcap_b": 5.9
+},
+{
+"sym": "SGHC",
+"name": "Super Group (SGHC) Limited",
+"date": "2026-11-03",
+"mcap_b": 5.9
+},
+{
+"sym": "KVYO",
+"name": "Klaviyo, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.9
+},
+{
+"sym": "IBP",
+"name": "Installed Building Products, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.9
+},
+{
+"sym": "DOCS",
+"name": "Doximity, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.9
+},
+{
+"sym": "MIDD",
+"name": "The Middleby Corporation",
+"date": "2026-11-05",
+"mcap_b": 5.9
+},
+{
+"sym": "HOMB",
+"name": "Home BancShares, Inc.",
+"date": "2026-10-14",
+"mcap_b": 5.8
+},
+{
+"sym": "EPRT",
+"name": "Essential Properties Realty Trust, Inc.",
+"date": "2026-10-21",
+"mcap_b": 5.8
+},
+{
+"sym": "MKTX",
+"name": "MarketAxess Holdings, Inc.",
+"date": "2026-10-23",
+"mcap_b": 5.8
+},
+{
+"sym": "HRI",
+"name": "Herc Holdings Inc.",
+"date": "2026-10-27",
+"mcap_b": 5.8
+},
+{
+"sym": "PLXS",
+"name": "Plexus Corp.",
+"date": "2026-10-28",
+"mcap_b": 5.8
+},
+{
+"sym": "LEA",
+"name": "Lear Corporation",
+"date": "2026-10-30",
+"mcap_b": 5.8
+},
+{
+"sym": "MTG",
+"name": "MGIC Investment Corporation",
+"date": "2026-11-04",
+"mcap_b": 5.8
+},
+{
+"sym": "EXP",
+"name": "Eagle Materials Inc",
+"date": "2026-11-04",
+"mcap_b": 5.8
+},
+{
+"sym": "NXST",
+"name": "Nexstar Media Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.8
+},
+{
+"sym": "TENB",
+"name": "Tenable Holdings, Inc.",
+"date": "2026-10-28",
+"mcap_b": 5.7
+},
+{
+"sym": "VAL",
+"name": "Valaris Limited",
+"date": "2026-11-02",
+"mcap_b": 5.7
+},
+{
+"sym": "WAY",
+"name": "Waystar Holding Corp.",
+"date": "2026-11-02",
+"mcap_b": 5.7
+},
+{
+"sym": "BETA",
+"name": "Beta Technologies, Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.7
+},
+{
+"sym": "ORA",
+"name": "Ormat Technologies, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.7
+},
+{
+"sym": "NICE",
+"name": "NICE Ltd",
+"date": "2026-11-04",
+"mcap_b": 5.7
+},
+{
+"sym": "CGON",
+"name": "CG Oncology, Inc.",
+"date": "2026-11-06",
+"mcap_b": 5.7
+},
+{
+"sym": "AUB",
+"name": "Atlantic Union Bankshares Corporation",
+"date": "2026-10-20",
+"mcap_b": 5.6
+},
+{
+"sym": "OZK",
+"name": "Bank OZK",
+"date": "2026-10-20",
+"mcap_b": 5.6
+},
+{
+"sym": "WH",
+"name": "Wyndham Hotels & Resorts, Inc.",
+"date": "2026-10-21",
+"mcap_b": 5.6
+},
+{
+"sym": "ASB",
+"name": "Associated Banc-Corp",
+"date": "2026-10-22",
+"mcap_b": 5.6
+},
+{
+"sym": "BCPC",
+"name": "Balchem Corporation",
+"date": "2026-10-23",
+"mcap_b": 5.6
+},
+{
+"sym": "CAKE",
+"name": "The Cheesecake Factory Incorporated",
+"date": "2026-10-27",
+"mcap_b": 5.6
+},
+{
+"sym": "PI",
+"name": "Impinj, Inc.",
+"date": "2026-10-28",
+"mcap_b": 5.6
+},
+{
+"sym": "TAL",
+"name": "TAL Education Group",
+"date": "2026-10-29",
+"mcap_b": 5.6
+},
+{
+"sym": "MMSI",
+"name": "Merit Medical Systems, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.6
+},
+{
+"sym": "VRNS",
+"name": "Varonis Systems, Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.6
+},
+{
+"sym": "FBIN",
+"name": "Fortune Brands Innovations, Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.6
+},
+{
+"sym": "SSRM",
+"name": "SSR Mining Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.6
+},
+{
+"sym": "TREX",
+"name": "Trex Company, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.6
+},
+{
+"sym": "HAE",
+"name": "Haemonetics Corporation",
+"date": "2026-11-05",
+"mcap_b": 5.6
+},
+{
+"sym": "OUT",
+"name": "OUTFRONT Media Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.6
+},
+{
+"sym": "ABCB",
+"name": "Ameris Bancorp",
+"date": "2026-10-22",
+"mcap_b": 5.5
+},
+{
+"sym": "SIGI",
+"name": "Selective Insurance Group, Inc.",
+"date": "2026-10-22",
+"mcap_b": 5.5
+},
+{
+"sym": "SBRA",
+"name": "Sabra Health Care REIT, Inc.",
+"date": "2026-11-02",
+"mcap_b": 5.5
+},
+{
+"sym": "CE",
+"name": "Celanese Corporation",
+"date": "2026-11-02",
+"mcap_b": 5.5
+},
+{
+"sym": "RIOT",
+"name": "Riot Platforms, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.5
+},
+{
+"sym": "HUT",
+"name": "Hut 8 Corp.",
+"date": "2026-11-04",
+"mcap_b": 5.5
+},
+{
+"sym": "CRUS",
+"name": "Cirrus Logic, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.5
+},
+{
+"sym": "WTM",
+"name": "White Mountains Insurance Group, Ltd.",
+"date": "2026-11-05",
+"mcap_b": 5.5
+},
+{
+"sym": "MBLY",
+"name": "Mobileye Global Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.4
+},
+{
+"sym": "CNX",
+"name": "CNX Resources Corporation",
+"date": "2026-10-29",
+"mcap_b": 5.4
+},
+{
+"sym": "PTCT",
+"name": "PTC Therapeutics, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.4
+},
+{
+"sym": "FND",
+"name": "Floor & Decor Holdings, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.4
+},
+{
+"sym": "CHH",
+"name": "Choice Hotels International, Inc.",
+"date": "2026-11-02",
+"mcap_b": 5.4
+},
+{
+"sym": "NPO",
+"name": "Enpro Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.4
+},
+{
+"sym": "LPX",
+"name": "Louisiana-Pacific Corporation",
+"date": "2026-11-03",
+"mcap_b": 5.4
+},
+{
+"sym": "BLLN",
+"name": "BillionToOne, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.4
+},
+{
+"sym": "VNT",
+"name": "Vontier Corporation",
+"date": "2026-11-05",
+"mcap_b": 5.4
+},
+{
+"sym": "CON",
+"name": "Concentra Group Holdings Parent, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.4
+},
+{
+"sym": "BYD",
+"name": "Boyd Gaming Corporation",
+"date": "2026-10-22",
+"mcap_b": 5.3
+},
+{
+"sym": "WFG",
+"name": "West Fraser Timber Co. Ltd",
+"date": "2026-10-28",
+"mcap_b": 5.3
+},
+{
+"sym": "WHD",
+"name": "Cactus, Inc.",
+"date": "2026-10-28",
+"mcap_b": 5.3
+},
+{
+"sym": "GVA",
+"name": "Granite Construction Incorporated",
+"date": "2026-10-29",
+"mcap_b": 5.3
+},
+{
+"sym": "AX",
+"name": "Axos Financial, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.3
+},
+{
+"sym": "GRAL",
+"name": "GRAIL, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.3
+},
+{
+"sym": "OBDC",
+"name": "Blue Owl Capital Corporation",
+"date": "2026-11-04",
+"mcap_b": 5.3
+},
+{
+"sym": "JOBY",
+"name": "Joby Aviation, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.3
+},
+{
+"sym": "MAIN",
+"name": "Main Street Capital Corporation",
+"date": "2026-11-05",
+"mcap_b": 5.3
+},
+{
+"sym": "RITM",
+"name": "Rithm Capital Corp.",
+"date": "2026-10-23",
+"mcap_b": 5.2
+},
+{
+"sym": "PSN",
+"name": "Parsons Corporation",
+"date": "2026-10-28",
+"mcap_b": 5.2
+},
+{
+"sym": "POR",
+"name": "Portland General Electric Company",
+"date": "2026-10-29",
+"mcap_b": 5.2
+},
+{
+"sym": "SNDR",
+"name": "Schneider National, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.2
+},
+{
+"sym": "OGS",
+"name": "ONE Gas, Inc.",
+"date": "2026-11-02",
+"mcap_b": 5.2
+},
+{
+"sym": "SEZL",
+"name": "Sezzle Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.2
+},
+{
+"sym": "MUR",
+"name": "Murphy Oil Corporation",
+"date": "2026-11-04",
+"mcap_b": 5.2
+},
+{
+"sym": "REYN",
+"name": "Reynolds Consumer Products Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.2
+},
+{
+"sym": "STEP",
+"name": "StepStone Group Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.2
+},
+{
+"sym": "PAGP",
+"name": "Plains GP Holdings, L.P.",
+"date": "2026-11-06",
+"mcap_b": 5.2
+},
+{
+"sym": "VEON",
+"name": "VEON Ltd.",
+"date": "2026-11-06",
+"mcap_b": 5.2
+},
+{
+"sym": "EBC",
+"name": "Eastern Bankshares, Inc.",
+"date": "2026-10-22",
+"mcap_b": 5.1
+},
+{
+"sym": "RUSHA",
+"name": "Rush Enterprises, Inc.",
+"date": "2026-10-27",
+"mcap_b": 5.1
+},
+{
+"sym": "RUSHB",
+"name": "Rush Enterprises, Inc.",
+"date": "2026-10-27",
+"mcap_b": 5.1
+},
+{
+"sym": "CNO",
+"name": "CNO Financial Group, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.1
+},
+{
+"sym": "RRR",
+"name": "Red Rock Resorts, Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.1
+},
+{
+"sym": "COGT",
+"name": "Cogent Biosciences, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.1
+},
+{
+"sym": "LFST",
+"name": "LifeStance Health Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.1
+},
+{
+"sym": "HASI",
+"name": "HA Sustainable Infrastructure Capital, Inc.",
+"date": "2026-11-05",
+"mcap_b": 5.1
+},
+{
+"sym": "UNF",
+"name": "Unifirst Corporation",
+"date": "2026-10-21",
+"mcap_b": 5.0
+},
+{
+"sym": "SON",
+"name": "Sonoco Products Company",
+"date": "2026-10-21",
+"mcap_b": 5.0
+},
+{
+"sym": "PSMT",
+"name": "PriceSmart, Inc.",
+"date": "2026-10-26",
+"mcap_b": 5.0
+},
+{
+"sym": "FCN",
+"name": "FTI Consulting, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.0
+},
+{
+"sym": "LAUR",
+"name": "Laureate Education, Inc.",
+"date": "2026-10-29",
+"mcap_b": 5.0
+},
+{
+"sym": "KRG",
+"name": "Kite Realty Group Trust",
+"date": "2026-10-30",
+"mcap_b": 5.0
+},
+{
+"sym": "SXT",
+"name": "Sensient Technologies Corporation",
+"date": "2026-10-30",
+"mcap_b": 5.0
+},
+{
+"sym": "TVTX",
+"name": "Travere Therapeutics, Inc.",
+"date": "2026-11-02",
+"mcap_b": 5.0
+},
+{
+"sym": "CRSP",
+"name": "CRISPR Therapeutics AG",
+"date": "2026-11-02",
+"mcap_b": 5.0
+},
+{
+"sym": "AROC",
+"name": "Archrock, Inc.",
+"date": "2026-11-02",
+"mcap_b": 5.0
+},
+{
+"sym": "CRGY",
+"name": "Crescent Energy Company",
+"date": "2026-11-02",
+"mcap_b": 5.0
+},
+{
+"sym": "HLNE",
+"name": "Hamilton Lane Incorporated",
+"date": "2026-11-03",
+"mcap_b": 5.0
+},
+{
+"sym": "SKY",
+"name": "Champion Homes, Inc.",
+"date": "2026-11-03",
+"mcap_b": 5.0
+},
+{
+"sym": "NWE",
+"name": "NorthWestern Energy Group, Inc.",
+"date": "2026-11-04",
+"mcap_b": 5.0
+},
+{
+"sym": "LIVN",
+"name": "LivaNova PLC",
+"date": "2026-11-04",
+"mcap_b": 5.0
+},
+{
+"sym": "WULF",
+"name": "TeraWulf Inc.",
+"date": "2026-11-06",
+"mcap_b": 5.0
+},
+{
+"sym": "OMAB",
+"name": "Grupo Aeroportuario del Centro Norte S.A.B. de C.V.",
+"date": "2026-10-29",
+"mcap_b": 4.9
+},
+{
+"sym": "PECO",
+"name": "Phillips Edison & Company, Inc.",
+"date": "2026-10-26",
+"mcap_b": 4.9
+},
+{
+"sym": "STNG",
+"name": "Scorpio Tankers Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.9
+},
+{
+"sym": "GHC",
+"name": "Graham Holdings Company",
+"date": "2026-10-29",
+"mcap_b": 4.9
+},
+{
+"sym": "MEOH",
+"name": "Methanex Corporation",
+"date": "2026-10-29",
+"mcap_b": 4.9
+},
+{
+"sym": "MOD",
+"name": "Modine Manufacturing Company",
+"date": "2026-11-03",
+"mcap_b": 4.9
+},
+{
+"sym": "RDN",
+"name": "Radian Group Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.9
+},
+{
+"sym": "ESAB",
+"name": "ESAB Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.9
+},
+{
+"sym": "CIGI",
+"name": "Colliers International Group Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.9
+},
+{
+"sym": "BGC",
+"name": "BGC Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.9
+},
+{
+"sym": "LSTR",
+"name": "Landstar System, Inc.",
+"date": "2026-10-27",
+"mcap_b": 4.8
+},
+{
+"sym": "PTEN",
+"name": "Patterson-UTI Energy, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.8
+},
+{
+"sym": "SITE",
+"name": "SiteOne Landscape Supply, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.8
+},
+{
+"sym": "KBR",
+"name": "KBR, Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.8
+},
+{
+"sym": "BC",
+"name": "Brunswick Corporation",
+"date": "2026-10-29",
+"mcap_b": 4.8
+},
+{
+"sym": "CUZ",
+"name": "Cousins Properties Incorporated",
+"date": "2026-10-29",
+"mcap_b": 4.8
+},
+{
+"sym": "GOLF",
+"name": "Acushnet Holdings Corp.",
+"date": "2026-11-04",
+"mcap_b": 4.8
+},
+{
+"sym": "LB",
+"name": "LandBridge Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.8
+},
+{
+"sym": "INSW",
+"name": "International Seaways, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.8
+},
+{
+"sym": "MRX",
+"name": "Marex Group Limited",
+"date": "2026-11-05",
+"mcap_b": 4.8
+},
+{
+"sym": "STWD",
+"name": "STARWOOD PROPERTY TRUST, INC.",
+"date": "2026-11-06",
+"mcap_b": 4.8
+},
+{
+"sym": "CSW",
+"name": "CSW Industrials, Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.7
+},
+{
+"sym": "TFSL",
+"name": "TFS Financial Corporation",
+"date": "2026-10-29",
+"mcap_b": 4.7
+},
+{
+"sym": "DOX",
+"name": "Amdocs Limited",
+"date": "2026-11-03",
+"mcap_b": 4.7
+},
+{
+"sym": "MCY",
+"name": "Mercury General Corporation",
+"date": "2026-11-03",
+"mcap_b": 4.7
+},
+{
+"sym": "OPCH",
+"name": "Option Care Health, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.7
+},
+{
+"sym": "DNTH",
+"name": "Dianthus Therapeutics, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.7
+},
+{
+"sym": "HHH",
+"name": "Howard Hughes Holdings Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.7
+},
+{
+"sym": "WK",
+"name": "Workiva Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.7
+},
+{
+"sym": "IRDM",
+"name": "Iridium Communications Inc",
+"date": "2026-10-20",
+"mcap_b": 4.6
+},
+{
+"sym": "MIR",
+"name": "Mirion Technologies, Inc.",
+"date": "2026-10-27",
+"mcap_b": 4.6
+},
+{
+"sym": "LKQ",
+"name": "LKQ Corporation",
+"date": "2026-10-29",
+"mcap_b": 4.6
+},
+{
+"sym": "RXO",
+"name": "RXO, Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.6
+},
+{
+"sym": "CNK",
+"name": "Cinemark Holdings Inc",
+"date": "2026-11-03",
+"mcap_b": 4.6
+},
+{
+"sym": "VSNT",
+"name": "Versant Media Group, Inc.",
+"date": "2026-11-03",
+"mcap_b": 4.6
+},
+{
+"sym": "BXSL",
+"name": "Blackstone Secured Lending Fund",
+"date": "2026-11-04",
+"mcap_b": 4.6
+},
+{
+"sym": "VSEC",
+"name": "VSE Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.6
+},
+{
+"sym": "RELY",
+"name": "Remitly Global, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.6
+},
+{
+"sym": "SYNA",
+"name": "Synaptics Incorporated",
+"date": "2026-11-05",
+"mcap_b": 4.6
+},
+{
+"sym": "PRM",
+"name": "Perimeter Group Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.6
+},
+{
+"sym": "MC",
+"name": "Moelis & Company",
+"date": "2026-11-05",
+"mcap_b": 4.6
+},
+{
+"sym": "FFIN",
+"name": "First Financial Bankshares, Inc.",
+"date": "2026-10-15",
+"mcap_b": 4.5
+},
+{
+"sym": "UCB",
+"name": "United Community Banks, Inc.",
+"date": "2026-10-20",
+"mcap_b": 4.5
+},
+{
+"sym": "FULT",
+"name": "Fulton Financial Corporation",
+"date": "2026-10-21",
+"mcap_b": 4.5
+},
+{
+"sym": "UFPI",
+"name": "UFP Industries, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.5
+},
+{
+"sym": "EPR",
+"name": "EPR Properties",
+"date": "2026-10-28",
+"mcap_b": 4.5
+},
+{
+"sym": "CCC",
+"name": "CCC Intelligent Solutions Holdings Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.5
+},
+{
+"sym": "PIPR",
+"name": "Piper Sandler Companies",
+"date": "2026-10-30",
+"mcap_b": 4.5
+},
+{
+"sym": "SHC",
+"name": "Sotera Health Company",
+"date": "2026-11-03",
+"mcap_b": 4.5
+},
+{
+"sym": "BCO",
+"name": "Brink's Company (The)",
+"date": "2026-11-04",
+"mcap_b": 4.5
+},
+{
+"sym": "NNI",
+"name": "Nelnet, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.5
+},
+{
+"sym": "PLNT",
+"name": "Planet Fitness, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.5
+},
+{
+"sym": "COLD",
+"name": "Americold Realty Trust, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.5
+},
+{
+"sym": "NSIT",
+"name": "Insight Enterprises, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.5
+},
+{
+"sym": "SFBS",
+"name": "ServisFirst Bancshares, Inc.",
+"date": "2026-10-19",
+"mcap_b": 4.4
+},
+{
+"sym": "ENVA",
+"name": "Enova International, Inc.",
+"date": "2026-10-22",
+"mcap_b": 4.4
+},
+{
+"sym": "GNTX",
+"name": "Gentex Corporation",
+"date": "2026-10-23",
+"mcap_b": 4.4
+},
+{
+"sym": "AKO-A",
+"name": "Embotelladora Andina S.A.",
+"date": "2026-10-27",
+"mcap_b": 4.4
+},
+{
+"sym": "AKO-B",
+"name": "Embotelladora Andina S.A.",
+"date": "2026-10-27",
+"mcap_b": 4.4
+},
+{
+"sym": "SFM",
+"name": "Sprouts Farmers Market, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.4
+},
+{
+"sym": "CHEF",
+"name": "The Chefs' Warehouse, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.4
+},
+{
+"sym": "MYRG",
+"name": "MYR Group, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.4
+},
+{
+"sym": "CVSA",
+"name": "Covista Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.4
+},
+{
+"sym": "SRAD",
+"name": "Sportradar Group AG",
+"date": "2026-11-03",
+"mcap_b": 4.4
+},
+{
+"sym": "SKT",
+"name": "Tanger Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.4
+},
+{
+"sym": "BILL",
+"name": "BILL Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.4
+},
+{
+"sym": "CATY",
+"name": "Cathay General Bancorp",
+"date": "2026-10-21",
+"mcap_b": 4.3
+},
+{
+"sym": "BMI",
+"name": "Badger Meter, Inc.",
+"date": "2026-10-22",
+"mcap_b": 4.3
+},
+{
+"sym": "ITGR",
+"name": "Integer Holdings Corporation",
+"date": "2026-10-29",
+"mcap_b": 4.3
+},
+{
+"sym": "FLG",
+"name": "Flagstar Bank, N.A.",
+"date": "2026-10-23",
+"mcap_b": 4.3
+},
+{
+"sym": "MRP",
+"name": "Millrose Properties, Inc.",
+"date": "2026-10-27",
+"mcap_b": 4.3
+},
+{
+"sym": "TNL",
+"name": "Travel   Leisure Co.",
+"date": "2026-10-27",
+"mcap_b": 4.3
+},
+{
+"sym": "FELE",
+"name": "Franklin Electric Co., Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.3
+},
+{
+"sym": "FHI",
+"name": "Federated Hermes, Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.3
+},
+{
+"sym": "CRC",
+"name": "California Resources Corporation",
+"date": "2026-11-02",
+"mcap_b": 4.3
+},
+{
+"sym": "CRVL",
+"name": "CorVel Corp.",
+"date": "2026-11-03",
+"mcap_b": 4.3
+},
+{
+"sym": "CAR",
+"name": "Avis Budget Group, Inc.",
+"date": "2026-11-03",
+"mcap_b": 4.3
+},
+{
+"sym": "ADPT",
+"name": "Adaptive Biotechnologies Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "IPAR",
+"name": "Interparfums, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "OPLN",
+"name": "OPENLANE, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "OTF",
+"name": "Blue Owl Technology Finance Corp.",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "TPC",
+"name": "Tutor Perini Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "CAMT",
+"name": "Camtek Ltd.",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "HCC",
+"name": "Warrior Met Coal, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "EWTX",
+"name": "Edgewise Therapeutics, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.3
+},
+{
+"sym": "MDA",
+"name": "MDA Space Ltd.",
+"date": "2026-11-05",
+"mcap_b": 4.3
+},
+{
+"sym": "KTB",
+"name": "Kontoor Brands, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.3
+},
+{
+"sym": "IRTC",
+"name": "iRhythm Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.3
+},
+{
+"sym": "APLE",
+"name": "Apple Hospitality REIT, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.3
+},
+{
+"sym": "MAT",
+"name": "Mattel, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.3
+},
+{
+"sym": "KRMN",
+"name": "Karman Holdings Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.3
+},
+{
+"sym": "AQN",
+"name": "Algonquin Power & Utilities Corp.",
+"date": "2026-11-06",
+"mcap_b": 4.3
+},
+{
+"sym": "KRC",
+"name": "Kilroy Realty Corporation",
+"date": "2026-10-22",
+"mcap_b": 4.2
+},
+{
+"sym": "FBP",
+"name": "First BanCorp.",
+"date": "2026-10-22",
+"mcap_b": 4.2
+},
+{
+"sym": "ITRI",
+"name": "Itron, Inc.",
+"date": "2026-10-27",
+"mcap_b": 4.2
+},
+{
+"sym": "MTH",
+"name": "Meritage Homes Corporation",
+"date": "2026-10-28",
+"mcap_b": 4.2
+},
+{
+"sym": "CVCO",
+"name": "Cavco Industries, Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.2
+},
+{
+"sym": "BDC",
+"name": "Belden Inc",
+"date": "2026-10-29",
+"mcap_b": 4.2
+},
+{
+"sym": "GTX",
+"name": "Garrett Motion Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.2
+},
+{
+"sym": "SLGN",
+"name": "Silgan Holdings Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.2
+},
+{
+"sym": "INDV",
+"name": "Indivior Pharmaceuticals, Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.2
+},
+{
+"sym": "HESM",
+"name": "Hess Midstream LP",
+"date": "2026-10-30",
+"mcap_b": 4.2
+},
+{
+"sym": "PAY",
+"name": "Paymentus Holdings, Inc.",
+"date": "2026-11-02",
+"mcap_b": 4.2
+},
+{
+"sym": "TAC",
+"name": "TransAlta Corporation",
+"date": "2026-11-03",
+"mcap_b": 4.2
+},
+{
+"sym": "AVNT",
+"name": "Avient Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.2
+},
+{
+"sym": "ICUI",
+"name": "ICU Medical, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.2
+},
+{
+"sym": "CVBF",
+"name": "CVB Financial Corporation",
+"date": "2026-10-21",
+"mcap_b": 4.1
+},
+{
+"sym": "SLM",
+"name": "SLM Corporation",
+"date": "2026-10-22",
+"mcap_b": 4.1
+},
+{
+"sym": "SIM",
+"name": "Grupo Simec, S.A. de C.V.",
+"date": "2026-10-28",
+"mcap_b": 4.1
+},
+{
+"sym": "JOE",
+"name": "St. Joe Company (The)",
+"date": "2026-10-28",
+"mcap_b": 4.1
+},
+{
+"sym": "CGAU",
+"name": "Centerra Gold Inc.",
+"date": "2026-10-29",
+"mcap_b": 4.1
+},
+{
+"sym": "LUMN",
+"name": "Lumen Technologies, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.1
+},
+{
+"sym": "PLMR",
+"name": "Palomar Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.1
+},
+{
+"sym": "WSFS",
+"name": "WSFS Financial Corporation",
+"date": "2026-10-22",
+"mcap_b": 4.0
+},
+{
+"sym": "MMYT",
+"name": "MakeMyTrip Limited",
+"date": "2026-10-26",
+"mcap_b": 4.0
+},
+{
+"sym": "QTWO",
+"name": "Q2 Holdings, Inc.",
+"date": "2026-10-28",
+"mcap_b": 4.0
+},
+{
+"sym": "AXTI",
+"name": "AXT Inc",
+"date": "2026-10-29",
+"mcap_b": 4.0
+},
+{
+"sym": "CVI",
+"name": "CVR Energy Inc.",
+"date": "2026-11-03",
+"mcap_b": 4.0
+},
+{
+"sym": "EE",
+"name": "Excelerate Energy, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.0
+},
+{
+"sym": "NVST",
+"name": "Envista Holdings Corporation",
+"date": "2026-11-04",
+"mcap_b": 4.0
+},
+{
+"sym": "MGNI",
+"name": "Magnite, Inc.",
+"date": "2026-11-04",
+"mcap_b": 4.0
+},
+{
+"sym": "SPHR",
+"name": "Sphere Entertainment Co.",
+"date": "2026-11-05",
+"mcap_b": 4.0
+},
+{
+"sym": "AAOI",
+"name": "Applied Optoelectronics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 4.0
+},
+{
+"sym": "FA",
+"name": "First Advantage Corporation",
+"date": "2026-11-05",
+"mcap_b": 4.0
+},
+{
+"sym": "AZZ",
+"name": "AZZ Inc.",
+"date": "2026-10-13",
+"mcap_b": 3.9
+},
+{
+"sym": "ALK",
+"name": "Alaska Air Group, Inc.",
+"date": "2026-10-20",
+"mcap_b": 3.9
+},
+{
+"sym": "NP",
+"name": "Neptune Insurance Holdings Inc.",
+"date": "2026-10-20",
+"mcap_b": 3.9
+},
+{
+"sym": "BFH",
+"name": "Bread Financial Holdings, Inc.",
+"date": "2026-10-22",
+"mcap_b": 3.9
+},
+{
+"sym": "RHI",
+"name": "Robert Half Inc.",
+"date": "2026-10-22",
+"mcap_b": 3.9
+},
+{
+"sym": "WING",
+"name": "Wingstop Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.9
+},
+{
+"sym": "BOOT",
+"name": "Boot Barn Holdings, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.9
+},
+{
+"sym": "CDP",
+"name": "COPT Defense Properties",
+"date": "2026-10-29",
+"mcap_b": 3.9
+},
+{
+"sym": "CBT",
+"name": "Cabot Corporation",
+"date": "2026-11-02",
+"mcap_b": 3.9
+},
+{
+"sym": "IEP",
+"name": "Icahn Enterprises L.P.",
+"date": "2026-11-03",
+"mcap_b": 3.9
+},
+{
+"sym": "CRK",
+"name": "Comstock Resources, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.9
+},
+{
+"sym": "SEI",
+"name": "Solaris Energy Infrastructure, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.9
+},
+{
+"sym": "SMG",
+"name": "Scotts Miracle-Gro Company (The)",
+"date": "2026-11-04",
+"mcap_b": 3.9
+},
+{
+"sym": "GPGI",
+"name": "GPGI, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.9
+},
+{
+"sym": "MDU",
+"name": "MDU Resources Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.9
+},
+{
+"sym": "APPN",
+"name": "Appian Corporation",
+"date": "2026-11-05",
+"mcap_b": 3.9
+},
+{
+"sym": "BANF",
+"name": "BancFirst Corporation",
+"date": "2026-10-21",
+"mcap_b": 3.8
+},
+{
+"sym": "WSBC",
+"name": "WesBanco, Inc.",
+"date": "2026-10-21",
+"mcap_b": 3.8
+},
+{
+"sym": "DORM",
+"name": "Dorman Products, Inc.",
+"date": "2026-10-26",
+"mcap_b": 3.8
+},
+{
+"sym": "OLED",
+"name": "Universal Display Corporation",
+"date": "2026-10-28",
+"mcap_b": 3.8
+},
+{
+"sym": "TGS",
+"name": "Transportadora De Gas Sa Ord B",
+"date": "2026-10-29",
+"mcap_b": 3.8
+},
+{
+"sym": "MWA",
+"name": "Mueller Water Products Inc",
+"date": "2026-11-04",
+"mcap_b": 3.8
+},
+{
+"sym": "RLAY",
+"name": "Relay Therapeutics, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.8
+},
+{
+"sym": "PLSE",
+"name": "Pulse Biosciences, Inc",
+"date": "2026-11-05",
+"mcap_b": 3.8
+},
+{
+"sym": "DK",
+"name": "Delek US Holdings, Inc.",
+"date": "2026-11-06",
+"mcap_b": 3.8
+},
+{
+"sym": "CLMT",
+"name": "Calumet, Inc",
+"date": "2026-11-06",
+"mcap_b": 3.8
+},
+{
+"sym": "ATMU",
+"name": "Atmus Filtration Technologies Inc.",
+"date": "2026-11-06",
+"mcap_b": 3.8
+},
+{
+"sym": "INDB",
+"name": "Independent Bank Corp.",
+"date": "2026-10-15",
+"mcap_b": 3.7
+},
+{
+"sym": "RNST",
+"name": "Renasant Corporation",
+"date": "2026-10-27",
+"mcap_b": 3.7
+},
+{
+"sym": "SKYW",
+"name": "SkyWest, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.7
+},
+{
+"sym": "EXPO",
+"name": "Exponent, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.7
+},
+{
+"sym": "CDNA",
+"name": "CareDx, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.7
+},
+{
+"sym": "ECG",
+"name": "Everus Construction Group, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.7
+},
+{
+"sym": "MTRN",
+"name": "Materion Corporation",
+"date": "2026-11-04",
+"mcap_b": 3.7
+},
+{
+"sym": "VAC",
+"name": "Marriott Vacations Worldwide Corporation",
+"date": "2026-11-04",
+"mcap_b": 3.7
+},
+{
+"sym": "ACAD",
+"name": "ACADIA Pharmaceuticals Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.7
+},
+{
+"sym": "LION",
+"name": "Lionsgate Studios Cp",
+"date": "2026-11-05",
+"mcap_b": 3.7
+},
+{
+"sym": "CNR",
+"name": "Core Natural Resources, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.7
+},
+{
+"sym": "CORZ",
+"name": "Core Scientific, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.7
+},
+{
+"sym": "BH",
+"name": "Biglari Holdings Inc.",
+"date": "2026-11-06",
+"mcap_b": 3.7
+},
+{
+"sym": "BH-A",
+"name": "Biglari Holdings Inc.",
+"date": "2026-11-06",
+"mcap_b": 3.7
+},
+{
+"sym": "TDS",
+"name": "Telephone and Data Systems, Inc.",
+"date": "2026-11-06",
+"mcap_b": 3.7
+},
+{
+"sym": "NIC",
+"name": "Nicolet Bankshares Inc.",
+"date": "2026-10-20",
+"mcap_b": 3.6
+},
+{
+"sym": "OII",
+"name": "Oceaneering International, Inc.",
+"date": "2026-10-21",
+"mcap_b": 3.6
+},
+{
+"sym": "LAZ",
+"name": "Lazard, Inc.",
+"date": "2026-10-22",
+"mcap_b": 3.6
+},
+{
+"sym": "LXP",
+"name": "LXP Industrial Trust",
+"date": "2026-10-27",
+"mcap_b": 3.6
+},
+{
+"sym": "ABG",
+"name": "Asbury Automotive Group Inc",
+"date": "2026-10-27",
+"mcap_b": 3.6
+},
+{
+"sym": "OGN",
+"name": "Organon & Co.",
+"date": "2026-10-30",
+"mcap_b": 3.6
+},
+{
+"sym": "IRT",
+"name": "Independence Realty Trust, Inc.",
+"date": "2026-11-02",
+"mcap_b": 3.6
+},
+{
+"sym": "STVN",
+"name": "Stevanato Group S.p.A.",
+"date": "2026-11-03",
+"mcap_b": 3.6
+},
+{
+"sym": "MSGE",
+"name": "Madison Square Garden Entertainment Corp.",
+"date": "2026-11-04",
+"mcap_b": 3.6
+},
+{
+"sym": "CNS",
+"name": "Cohen & Steers Inc",
+"date": "2026-10-15",
+"mcap_b": 3.5
+},
+{
+"sym": "SLG",
+"name": "SL Green Realty Corp",
+"date": "2026-10-21",
+"mcap_b": 3.5
+},
+{
+"sym": "FIBK",
+"name": "First Interstate BancSystem, Inc.",
+"date": "2026-10-22",
+"mcap_b": 3.5
+},
+{
+"sym": "COCO",
+"name": "The Vita Coco Company, Inc.",
+"date": "2026-10-22",
+"mcap_b": 3.5
+},
+{
+"sym": "PAM",
+"name": "Pampa Energia S.A.",
+"date": "2026-11-02",
+"mcap_b": 3.5
+},
+{
+"sym": "OTTR",
+"name": "Otter Tail Corporation",
+"date": "2026-11-02",
+"mcap_b": 3.5
+},
+{
+"sym": "KAI",
+"name": "Kadant Inc",
+"date": "2026-11-03",
+"mcap_b": 3.5
+},
+{
+"sym": "ASH",
+"name": "Ashland Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.5
+},
+{
+"sym": "HNI",
+"name": "HNI Corporation",
+"date": "2026-11-03",
+"mcap_b": 3.5
+},
+{
+"sym": "BATRA",
+"name": "Atlanta Braves Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "BATRK",
+"name": "Atlanta Braves Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "KD",
+"name": "Kyndryl Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "DAVE",
+"name": "Dave Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "TRMD",
+"name": "TORM plc",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "AWR",
+"name": "American States Water Company",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "NATL",
+"name": "NCR Atleos Corporation",
+"date": "2026-11-04",
+"mcap_b": 3.5
+},
+{
+"sym": "IOVA",
+"name": "Iovance Biotherapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.5
+},
+{
+"sym": "IRON",
+"name": "Disc Medicine, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.5
+},
+{
+"sym": "AVPT",
+"name": "AvePoint, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.5
+},
+{
+"sym": "LRN",
+"name": "Stride, Inc.",
+"date": "2026-10-20",
+"mcap_b": 3.4
+},
+{
+"sym": "ARLP",
+"name": "Alliance Resource Partners, L.P.",
+"date": "2026-10-26",
+"mcap_b": 3.4
+},
+{
+"sym": "FFBC",
+"name": "First Financial Bancorp.",
+"date": "2026-10-27",
+"mcap_b": 3.4
+},
+{
+"sym": "PII",
+"name": "Polaris Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.4
+},
+{
+"sym": "ENPH",
+"name": "Enphase Energy, Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.4
+},
+{
+"sym": "HIW",
+"name": "Highwoods Properties, Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.4
+},
+{
+"sym": "VKTX",
+"name": "Viking Therapeutics, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.4
+},
+{
+"sym": "PARR",
+"name": "Par Pacific Holdings, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.4
+},
+{
+"sym": "AVA",
+"name": "Avista Corporation",
+"date": "2026-11-03",
+"mcap_b": 3.4
+},
+{
+"sym": "GPK",
+"name": "Graphic Packaging Holding Company",
+"date": "2026-11-03",
+"mcap_b": 3.4
+},
+{
+"sym": "GEF",
+"name": "Greif, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.4
+},
+{
+"sym": "GEF-B",
+"name": "Greif, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.4
+},
+{
+"sym": "COTY",
+"name": "Coty Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.4
+},
+{
+"sym": "ARQT",
+"name": "Arcutis Biotherapeutics, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.4
+},
+{
+"sym": "CXT",
+"name": "Crane NXT, Co.",
+"date": "2026-11-04",
+"mcap_b": 3.4
+},
+{
+"sym": "VSH",
+"name": "Vishay Intertechnology, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.4
+},
+{
+"sym": "GNW",
+"name": "Genworth Financial Inc",
+"date": "2026-11-04",
+"mcap_b": 3.4
+},
+{
+"sym": "CPK",
+"name": "Chesapeake Utilities Corporation",
+"date": "2026-11-05",
+"mcap_b": 3.4
+},
+{
+"sym": "FOUR",
+"name": "Shift4 Payments, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.4
+},
+{
+"sym": "FIGS",
+"name": "FIGS, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.4
+},
+{
+"sym": "CURB",
+"name": "Curbline Properties Corp.",
+"date": "2026-10-22",
+"mcap_b": 3.3
+},
+{
+"sym": "CBU",
+"name": "Community Financial System, Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.3
+},
+{
+"sym": "BNL",
+"name": "Broadstone Net Lease, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.3
+},
+{
+"sym": "BHC",
+"name": "Bausch Health Companies Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.3
+},
+{
+"sym": "PFSI",
+"name": "PennyMac Financial Services, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.3
+},
+{
+"sym": "OSIS",
+"name": "OSI Systems, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.3
+},
+{
+"sym": "COLM",
+"name": "Columbia Sportswear Company",
+"date": "2026-10-29",
+"mcap_b": 3.3
+},
+{
+"sym": "BFAM",
+"name": "Bright Horizons Family Solutions Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.3
+},
+{
+"sym": "ERO",
+"name": "Ero Copper Corp.",
+"date": "2026-11-02",
+"mcap_b": 3.3
+},
+{
+"sym": "FRSH",
+"name": "Freshworks Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.3
+},
+{
+"sym": "TARS",
+"name": "Tarsus Pharmaceuticals, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.3
+},
+{
+"sym": "SEB",
+"name": "Seaboard Corporation",
+"date": "2026-11-03",
+"mcap_b": 3.3
+},
+{
+"sym": "CWK",
+"name": "Cushman & Wakefield Ltd.",
+"date": "2026-11-04",
+"mcap_b": 3.3
+},
+{
+"sym": "GEO",
+"name": "Geo Group Inc (The)",
+"date": "2026-11-05",
+"mcap_b": 3.3
+},
+{
+"sym": "NMIH",
+"name": "NMI Holdings Inc",
+"date": "2026-11-05",
+"mcap_b": 3.3
+},
+{
+"sym": "ALRM",
+"name": "Alarm.com Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.3
+},
+{
+"sym": "ELVN",
+"name": "Enliven Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.3
+},
+{
+"sym": "NHC",
+"name": "National HealthCare Corporation",
+"date": "2026-11-06",
+"mcap_b": 3.3
+},
+{
+"sym": "SFNC",
+"name": "Simmons First National Corporation",
+"date": "2026-10-15",
+"mcap_b": 3.2
+},
+{
+"sym": "VTMX",
+"name": "Corporacion Inmobiliaria Vesta, S.A.B de C.V.",
+"date": "2026-10-22",
+"mcap_b": 3.2
+},
+{
+"sym": "AGYS",
+"name": "Agilysys, Inc.",
+"date": "2026-10-26",
+"mcap_b": 3.2
+},
+{
+"sym": "PRK",
+"name": "Park National Corporation",
+"date": "2026-10-26",
+"mcap_b": 3.2
+},
+{
+"sym": "HWKN",
+"name": "Hawkins, Inc.",
+"date": "2026-10-26",
+"mcap_b": 3.2
+},
+{
+"sym": "AB",
+"name": "AllianceBernstein Holding L.P.",
+"date": "2026-10-27",
+"mcap_b": 3.2
+},
+{
+"sym": "SLDE",
+"name": "Slide Insurance Holdings, Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.2
+},
+{
+"sym": "SBCF",
+"name": "Seacoast Banking Corporation of Florida",
+"date": "2026-10-27",
+"mcap_b": 3.2
+},
+{
+"sym": "HAYW",
+"name": "Hayward Holdings, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.2
+},
+{
+"sym": "MCHB",
+"name": "Mechanics Bancorp",
+"date": "2026-10-28",
+"mcap_b": 3.2
+},
+{
+"sym": "CSTM",
+"name": "Constellium SE",
+"date": "2026-10-28",
+"mcap_b": 3.2
+},
+{
+"sym": "RSI",
+"name": "Rush Street Interactive, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.2
+},
+{
+"sym": "AAMI",
+"name": "Acadian Asset Management Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.2
+},
+{
+"sym": "HTGC",
+"name": "Hercules Capital, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.2
+},
+{
+"sym": "HOG",
+"name": "Harley-Davidson, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.2
+},
+{
+"sym": "USLM",
+"name": "United States Lime & Minerals, Inc.",
+"date": "2026-10-30",
+"mcap_b": 3.2
+},
+{
+"sym": "PPLI",
+"name": "People Incorporated",
+"date": "2026-11-02",
+"mcap_b": 3.2
+},
+{
+"sym": "KNF",
+"name": "Knife River Corp.",
+"date": "2026-11-03",
+"mcap_b": 3.2
+},
+{
+"sym": "LBTYA",
+"name": "Liberty Global Ltd.",
+"date": "2026-11-03",
+"mcap_b": 3.2
+},
+{
+"sym": "LBTYB",
+"name": "Liberty Global Ltd.",
+"date": "2026-11-03",
+"mcap_b": 3.2
+},
+{
+"sym": "LBTYK",
+"name": "Liberty Global Ltd.",
+"date": "2026-11-03",
+"mcap_b": 3.2
+},
+{
+"sym": "DNLI",
+"name": "Denali Therapeutics Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.2
+},
+{
+"sym": "VRDN",
+"name": "Viridian Therapeutics, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.2
+},
+{
+"sym": "ACHC",
+"name": "Acadia Healthcare Company, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.2
+},
+{
+"sym": "ARIS",
+"name": "Aris Mining Corporation",
+"date": "2026-11-04",
+"mcap_b": 3.2
+},
+{
+"sym": "DYN",
+"name": "Dyne Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "WSC",
+"name": "WillScot Holdings Corporation",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "WRBY",
+"name": "Warby Parker Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "FSK",
+"name": "FS KKR Capital Corp.",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "CARG",
+"name": "CarGurus, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "LMND",
+"name": "Lemonade, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "AGO",
+"name": "Assured Guaranty Ltd.",
+"date": "2026-11-05",
+"mcap_b": 3.2
+},
+{
+"sym": "MHO",
+"name": "M/I Homes, Inc.",
+"date": "2026-10-21",
+"mcap_b": 3.1
+},
+{
+"sym": "BKU",
+"name": "BankUnited, Inc.",
+"date": "2026-10-21",
+"mcap_b": 3.1
+},
+{
+"sym": "FHB",
+"name": "First Hawaiian, Inc.",
+"date": "2026-10-23",
+"mcap_b": 3.1
+},
+{
+"sym": "EXTR",
+"name": "Extreme Networks, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.1
+},
+{
+"sym": "GPI",
+"name": "Group 1 Automotive, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.1
+},
+{
+"sym": "OSW",
+"name": "OneSpaWorld Holdings Limited",
+"date": "2026-10-28",
+"mcap_b": 3.1
+},
+{
+"sym": "MIAX",
+"name": "Miami International Holdings, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.1
+},
+{
+"sym": "SPSC",
+"name": "SPS Commerce, Inc.",
+"date": "2026-10-29",
+"mcap_b": 3.1
+},
+{
+"sym": "WT",
+"name": "WisdomTree, Inc.",
+"date": "2026-10-30",
+"mcap_b": 3.1
+},
+{
+"sym": "BSM",
+"name": "Black Stone Minerals, L.P.",
+"date": "2026-11-02",
+"mcap_b": 3.1
+},
+{
+"sym": "PRIM",
+"name": "Primoris Services Corporation",
+"date": "2026-11-03",
+"mcap_b": 3.1
+},
+{
+"sym": "ATRC",
+"name": "AtriCure, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.1
+},
+{
+"sym": "FRPT",
+"name": "Freshpet, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.1
+},
+{
+"sym": "PK",
+"name": "Park Hotels & Resorts Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.1
+},
+{
+"sym": "LOPE",
+"name": "Grand Canyon Education, Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.1
+},
+{
+"sym": "PTRN",
+"name": "Pattern Group Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.1
+},
+{
+"sym": "AAUC",
+"name": "Allied Gold Corporation",
+"date": "2026-11-04",
+"mcap_b": 3.1
+},
+{
+"sym": "DIOD",
+"name": "Diodes Incorporated",
+"date": "2026-11-05",
+"mcap_b": 3.1
+},
+{
+"sym": "CELC",
+"name": "Celcuity Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.1
+},
+{
+"sym": "PRVA",
+"name": "Privia Health Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.1
+},
+{
+"sym": "SPNT",
+"name": "SiriusPoint Ltd.",
+"date": "2026-11-05",
+"mcap_b": 3.1
+},
+{
+"sym": "CBZ",
+"name": "CBIZ, Inc.",
+"date": "2026-10-19",
+"mcap_b": 3.0
+},
+{
+"sym": "HTO",
+"name": "H2O America",
+"date": "2026-10-26",
+"mcap_b": 3.0
+},
+{
+"sym": "INTA",
+"name": "Intapp, Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.0
+},
+{
+"sym": "APAM",
+"name": "Artisan Partners Asset Management Inc.",
+"date": "2026-10-27",
+"mcap_b": 3.0
+},
+{
+"sym": "PFS",
+"name": "Provident Financial Services, Inc",
+"date": "2026-10-28",
+"mcap_b": 3.0
+},
+{
+"sym": "AXGN",
+"name": "AxoGen, Inc.",
+"date": "2026-10-28",
+"mcap_b": 3.0
+},
+{
+"sym": "SXI",
+"name": "Standex International Corporation",
+"date": "2026-10-29",
+"mcap_b": 3.0
+},
+{
+"sym": "EFXT",
+"name": "Enerflex Ltd",
+"date": "2026-10-29",
+"mcap_b": 3.0
+},
+{
+"sym": "CIFR",
+"name": "Cipher Digital Inc.",
+"date": "2026-11-02",
+"mcap_b": 3.0
+},
+{
+"sym": "IDYA",
+"name": "IDEAYA Biosciences, Inc.",
+"date": "2026-11-03",
+"mcap_b": 3.0
+},
+{
+"sym": "MZTI",
+"name": "The Marzetti Company",
+"date": "2026-11-03",
+"mcap_b": 3.0
+},
+{
+"sym": "MGEE",
+"name": "MGE Energy Inc.",
+"date": "2026-11-04",
+"mcap_b": 3.0
+},
+{
+"sym": "WBI",
+"name": "WaterBridge Infrastructure LLC",
+"date": "2026-11-04",
+"mcap_b": 3.0
+},
+{
+"sym": "TDC",
+"name": "Teradata Corporation",
+"date": "2026-11-05",
+"mcap_b": 3.0
+},
+{
+"sym": "BTE",
+"name": "Baytex Energy Corp.",
+"date": "2026-11-05",
+"mcap_b": 3.0
+},
+{
+"sym": "SHAK",
+"name": "Shake Shack, Inc.",
+"date": "2026-11-05",
+"mcap_b": 3.0
+},
+{
+"sym": "CENX",
+"name": "Century Aluminum Company",
+"date": "2026-11-05",
+"mcap_b": 3.0
+},
+{
+"sym": "KYIV",
+"name": "Kyivstar Group Ltd.",
+"date": "2026-11-06",
+"mcap_b": 3.0
+},
+{
+"sym": "DKL",
+"name": "Delek Logistics Partners, L.P.",
+"date": "2026-11-06",
+"mcap_b": 3.0
+},
+{
+"sym": "KN",
+"name": "Knowles Corporation",
+"date": "2026-10-22",
+"mcap_b": 2.9
+},
+{
+"sym": "BANC",
+"name": "Banc of California, Inc.",
+"date": "2026-10-27",
+"mcap_b": 2.9
+},
+{
+"sym": "CWT",
+"name": "California Water  Service Group Holding",
+"date": "2026-10-28",
+"mcap_b": 2.9
+},
+{
+"sym": "MGRC",
+"name": "McGrath RentCorp",
+"date": "2026-10-28",
+"mcap_b": 2.9
+},
+{
+"sym": "TR",
+"name": "Tootsie Roll Industries, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.9
+},
+{
+"sym": "TNET",
+"name": "TriNet Group, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.9
+},
+{
+"sym": "CLBK",
+"name": "Columbia Financial, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.9
+},
+{
+"sym": "HG",
+"name": "Hamilton Insurance Group, Ltd.",
+"date": "2026-10-29",
+"mcap_b": 2.9
+},
+{
+"sym": "DRH",
+"name": "Diamondrock Hospitality Company",
+"date": "2026-11-03",
+"mcap_b": 2.9
+},
+{
+"sym": "ARCB",
+"name": "ArcBest Corporation",
+"date": "2026-11-04",
+"mcap_b": 2.9
+},
+{
+"sym": "ADMA",
+"name": "ADMA Biologics Inc",
+"date": "2026-11-04",
+"mcap_b": 2.9
+},
+{
+"sym": "SII",
+"name": "Sprott Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.9
+},
+{
+"sym": "VGNT",
+"name": "Versigent PLC",
+"date": "2026-11-04",
+"mcap_b": 2.9
+},
+{
+"sym": "VERX",
+"name": "Vertex, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.9
+},
+{
+"sym": "AAP",
+"name": "Advance Auto Parts Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.9
+},
+{
+"sym": "SHOO",
+"name": "Steven Madden, Ltd.",
+"date": "2026-11-05",
+"mcap_b": 2.9
+},
+{
+"sym": "WDFC",
+"name": "WD-40 Company",
+"date": "2026-10-21",
+"mcap_b": 2.8
+},
+{
+"sym": "AMBP",
+"name": "Ardagh Metal Packaging S.A.",
+"date": "2026-10-22",
+"mcap_b": 2.8
+},
+{
+"sym": "NBTB",
+"name": "NBT Bancorp Inc.",
+"date": "2026-10-27",
+"mcap_b": 2.8
+},
+{
+"sym": "PRCH",
+"name": "Porch Group, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.8
+},
+{
+"sym": "HGV",
+"name": "Hilton Grand Vacations Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.8
+},
+{
+"sym": "HURN",
+"name": "Huron Consulting Group Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.8
+},
+{
+"sym": "FSM",
+"name": "Fortuna Mining Corp.",
+"date": "2026-11-04",
+"mcap_b": 2.8
+},
+{
+"sym": "CXW",
+"name": "CoreCivic, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.8
+},
+{
+"sym": "CALY",
+"name": "Callaway Golf Company",
+"date": "2026-11-05",
+"mcap_b": 2.8
+},
+{
+"sym": "FG",
+"name": "F&G Annuities & Life, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.8
+},
+{
+"sym": "SKWD",
+"name": "Skyward Specialty Insurance Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.8
+},
+{
+"sym": "LCLN",
+"name": "Lincoln International, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.8
+},
+{
+"sym": "ACLS",
+"name": "Axcelis Technologies, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.8
+},
+{
+"sym": "DX",
+"name": "Dynex Capital, Inc.",
+"date": "2026-10-19",
+"mcap_b": 2.7
+},
+{
+"sym": "CUBI",
+"name": "Customers Bancorp, Inc",
+"date": "2026-10-22",
+"mcap_b": 2.7
+},
+{
+"sym": "BOH",
+"name": "Bank of Hawaii Corporation",
+"date": "2026-10-26",
+"mcap_b": 2.7
+},
+{
+"sym": "TOWN",
+"name": "Towne Bank",
+"date": "2026-10-28",
+"mcap_b": 2.7
+},
+{
+"sym": "BELFA",
+"name": "Bel Fuse Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.7
+},
+{
+"sym": "BELFB",
+"name": "Bel Fuse Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.7
+},
+{
+"sym": "DAN",
+"name": "Dana Incorporated",
+"date": "2026-10-28",
+"mcap_b": 2.7
+},
+{
+"sym": "GRBK",
+"name": "Green Brick Partners, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.7
+},
+{
+"sym": "KWR",
+"name": "Quaker Houghton",
+"date": "2026-10-29",
+"mcap_b": 2.7
+},
+{
+"sym": "AKR",
+"name": "Acadia Realty Trust",
+"date": "2026-11-02",
+"mcap_b": 2.7
+},
+{
+"sym": "BCC",
+"name": "Boise Cascade, L.L.C.",
+"date": "2026-11-02",
+"mcap_b": 2.7
+},
+{
+"sym": "BEAM",
+"name": "Beam Therapeutics Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.7
+},
+{
+"sym": "AMC",
+"name": "AMC Entertainment Holdings, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.7
+},
+{
+"sym": "GPOR",
+"name": "Gulfport Energy Corporation",
+"date": "2026-11-04",
+"mcap_b": 2.7
+},
+{
+"sym": "ACMR",
+"name": "ACM Research, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.7
+},
+{
+"sym": "VCEL",
+"name": "Vericel Corporation",
+"date": "2026-11-05",
+"mcap_b": 2.7
+},
+{
+"sym": "AD",
+"name": "Array Digital Infrastructure, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.7
+},
+{
+"sym": "NRIX",
+"name": "Nurix Therapeutics, Inc.",
+"date": "2026-10-12",
+"mcap_b": 2.6
+},
+{
+"sym": "FBK",
+"name": "FB Financial Corporation",
+"date": "2026-10-13",
+"mcap_b": 2.6
+},
+{
+"sym": "FBNC",
+"name": "First Bancorp",
+"date": "2026-10-21",
+"mcap_b": 2.6
+},
+{
+"sym": "QS",
+"name": "QuantumScape Corporation",
+"date": "2026-10-21",
+"mcap_b": 2.6
+},
+{
+"sym": "BANR",
+"name": "Banner Corporation",
+"date": "2026-10-21",
+"mcap_b": 2.6
+},
+{
+"sym": "FRME",
+"name": "First Merchants Corporation",
+"date": "2026-10-21",
+"mcap_b": 2.6
+},
+{
+"sym": "UCTT",
+"name": "Ultra Clean Holdings, Inc.",
+"date": "2026-10-27",
+"mcap_b": 2.6
+},
+{
+"sym": "TRMK",
+"name": "Trustmark Corporation",
+"date": "2026-10-27",
+"mcap_b": 2.6
+},
+{
+"sym": "BHE",
+"name": "Benchmark Electronics, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.6
+},
+{
+"sym": "IPGP",
+"name": "IPG Photonics Corporation",
+"date": "2026-11-03",
+"mcap_b": 2.6
+},
+{
+"sym": "FLYW",
+"name": "Flywire Corporation",
+"date": "2026-11-03",
+"mcap_b": 2.6
+},
+{
+"sym": "LTC",
+"name": "LTC Properties, Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.6
+},
+{
+"sym": "PGNY",
+"name": "Progyny, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.6
+},
+{
+"sym": "ATHM",
+"name": "Autohome Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.6
+},
+{
+"sym": "ECPG",
+"name": "Encore Capital Group Inc",
+"date": "2026-11-04",
+"mcap_b": 2.6
+},
+{
+"sym": "UWMC",
+"name": "UWM Holdings Corporation",
+"date": "2026-11-04",
+"mcap_b": 2.6
+},
+{
+"sym": "TGB",
+"name": "Trekor Metals Limited",
+"date": "2026-11-04",
+"mcap_b": 2.6
+},
+{
+"sym": "XNCR",
+"name": "Xencor, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.6
+},
+{
+"sym": "IMAX",
+"name": "Imax Corporation",
+"date": "2026-11-05",
+"mcap_b": 2.6
+},
+{
+"sym": "FIVN",
+"name": "Five9, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.6
+},
+{
+"sym": "ASST",
+"name": "Strive, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.6
+},
+{
+"sym": "BKD",
+"name": "Brookdale Senior Living Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.6
+},
+{
+"sym": "BBT",
+"name": "Beacon Financial Corporation",
+"date": "2026-10-21",
+"mcap_b": 2.5
+},
+{
+"sym": "LBRT",
+"name": "Liberty Energy Inc.",
+"date": "2026-10-21",
+"mcap_b": 2.5
+},
+{
+"sym": "ROG",
+"name": "Rogers Corporation",
+"date": "2026-10-27",
+"mcap_b": 2.5
+},
+{
+"sym": "BUSE",
+"name": "First Busey Corporation",
+"date": "2026-10-27",
+"mcap_b": 2.5
+},
+{
+"sym": "COHU",
+"name": "Cohu, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.5
+},
+{
+"sym": "UE",
+"name": "Urban Edge Properties",
+"date": "2026-10-28",
+"mcap_b": 2.5
+},
+{
+"sym": "FCPT",
+"name": "Four Corners Property Trust, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.5
+},
+{
+"sym": "BHVN",
+"name": "Biohaven Ltd.",
+"date": "2026-10-29",
+"mcap_b": 2.5
+},
+{
+"sym": "PEB",
+"name": "Pebblebrook Hotel Trust",
+"date": "2026-10-29",
+"mcap_b": 2.5
+},
+{
+"sym": "RNW",
+"name": "ReNew Energy Global plc",
+"date": "2026-11-02",
+"mcap_b": 2.5
+},
+{
+"sym": "SDRL",
+"name": "Seadrill Limited",
+"date": "2026-11-03",
+"mcap_b": 2.5
+},
+{
+"sym": "RCUS",
+"name": "Arcus Biosciences, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.5
+},
+{
+"sym": "FSLY",
+"name": "Fastly, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.5
+},
+{
+"sym": "IOND",
+"name": "Ionic Digital Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.5
+},
+{
+"sym": "NMM",
+"name": "Navios Maritime Partners LP",
+"date": "2026-11-04",
+"mcap_b": 2.5
+},
+{
+"sym": "BOBS",
+"name": "Bob's Discount Furniture, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.5
+},
+{
+"sym": "GRDN",
+"name": "Guardian Pharmacy Services, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.5
+},
+{
+"sym": "PTON",
+"name": "Peloton Interactive, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.5
+},
+{
+"sym": "LCII",
+"name": "LCI Industries",
+"date": "2026-11-05",
+"mcap_b": 2.5
+},
+{
+"sym": "PVLA",
+"name": "Palvella Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.5
+},
+{
+"sym": "DNOW",
+"name": "DNOW Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.5
+},
+{
+"sym": "CTOS",
+"name": "Custom Truck One Source, Inc.",
+"date": "2026-10-26",
+"mcap_b": 2.4
+},
+{
+"sym": "IVT",
+"name": "InvenTrust Properties Corp.",
+"date": "2026-10-27",
+"mcap_b": 2.4
+},
+{
+"sym": "SYBT",
+"name": "Stock Yards Bancorp, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.4
+},
+{
+"sym": "MBIN",
+"name": "Merchants Bancorp",
+"date": "2026-10-28",
+"mcap_b": 2.4
+},
+{
+"sym": "BLKB",
+"name": "Blackbaud, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.4
+},
+{
+"sym": "DXC",
+"name": "DXC Technology Company",
+"date": "2026-10-29",
+"mcap_b": 2.4
+},
+{
+"sym": "STGW",
+"name": "Stagwell Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.4
+},
+{
+"sym": "SUPN",
+"name": "Supernus Pharmaceuticals, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.4
+},
+{
+"sym": "PATK",
+"name": "Patrick Industries, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.4
+},
+{
+"sym": "MD",
+"name": "Pediatrix Medical Group, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.4
+},
+{
+"sym": "VVX",
+"name": "V2X, Inc.",
+"date": "2026-11-02",
+"mcap_b": 2.4
+},
+{
+"sym": "RXRX",
+"name": "Recursion Pharmaceuticals, Inc.",
+"date": "2026-11-02",
+"mcap_b": 2.4
+},
+{
+"sym": "LIFE",
+"name": "Ethos Technologies Inc.",
+"date": "2026-11-02",
+"mcap_b": 2.4
+},
+{
+"sym": "EROK",
+"name": "EagleRock Land, LLC",
+"date": "2026-11-03",
+"mcap_b": 2.4
+},
+{
+"sym": "TALO",
+"name": "Talos Energy, Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.4
+},
+{
+"sym": "ADUS",
+"name": "Addus HomeCare Corporation",
+"date": "2026-11-03",
+"mcap_b": 2.4
+},
+{
+"sym": "ALGT",
+"name": "Allegiant Travel Company",
+"date": "2026-11-04",
+"mcap_b": 2.4
+},
+{
+"sym": "HCI",
+"name": "HCI Group, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.4
+},
+{
+"sym": "RUN",
+"name": "Sunrun Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.4
+},
+{
+"sym": "CLOV",
+"name": "Clover Health Investments, Corp.",
+"date": "2026-11-04",
+"mcap_b": 2.4
+},
+{
+"sym": "PURR",
+"name": "Hyperliquid Strategies Inc",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "PAYO",
+"name": "Payoneer Global Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "GRND",
+"name": "Grindr Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "TMDX",
+"name": "TransMedics Group, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "XERS",
+"name": "Xeris Biopharma Holdings, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "BHF",
+"name": "Brighthouse Financial, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "NOG",
+"name": "Northern Oil and Gas, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.4
+},
+{
+"sym": "UA",
+"name": "Under Armour, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.4
+},
+{
+"sym": "UAA",
+"name": "Under Armour, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.4
+},
+{
+"sym": "EEFT",
+"name": "Euronet Worldwide, Inc.",
+"date": "2026-10-27",
+"mcap_b": 2.3
+},
+{
+"sym": "NTB",
+"name": "Bank of N.T. Butterfield & Son Limited (The)",
+"date": "2026-10-27",
+"mcap_b": 2.3
+},
+{
+"sym": "NEO",
+"name": "NeoGenomics, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.3
+},
+{
+"sym": "PBI",
+"name": "Pitney Bowes Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.3
+},
+{
+"sym": "TRN",
+"name": "Trinity Industries, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.3
+},
+{
+"sym": "UFPT",
+"name": "UFP Technologies, Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.3
+},
+{
+"sym": "NAMS",
+"name": "NewAmsterdam Pharma Company N.V.",
+"date": "2026-11-04",
+"mcap_b": 2.3
+},
+{
+"sym": "PENN",
+"name": "PENN Entertainment, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.3
+},
+{
+"sym": "NTCT",
+"name": "NetScout Systems, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.3
+},
+{
+"sym": "GCT",
+"name": "GigaCloud Technology Inc",
+"date": "2026-11-05",
+"mcap_b": 2.3
+},
+{
+"sym": "SHO",
+"name": "Sunstone Hotel Investors, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.3
+},
+{
+"sym": "WAFD",
+"name": "WaFd, Inc.",
+"date": "2026-10-15",
+"mcap_b": 2.2
+},
+{
+"sym": "AERO",
+"name": "Grupo Aeromexico, S.A.B. de C.V.",
+"date": "2026-10-19",
+"mcap_b": 2.2
+},
+{
+"sym": "EFSC",
+"name": "Enterprise Financial Services Corporation",
+"date": "2026-10-21",
+"mcap_b": 2.2
+},
+{
+"sym": "OFG",
+"name": "OFG Bancorp",
+"date": "2026-10-21",
+"mcap_b": 2.2
+},
+{
+"sym": "VC",
+"name": "Visteon Corporation",
+"date": "2026-10-22",
+"mcap_b": 2.2
+},
+{
+"sym": "NWBI",
+"name": "Northwest Bancshares, Inc.",
+"date": "2026-10-26",
+"mcap_b": 2.2
+},
+{
+"sym": "CNXN",
+"name": "PC Connection, Inc.",
+"date": "2026-10-28",
+"mcap_b": 2.2
+},
+{
+"sym": "PHIN",
+"name": "PHINIA Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.2
+},
+{
+"sym": "FTRE",
+"name": "Fortrea Holdings Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.2
+},
+{
+"sym": "AUPH",
+"name": "Aurinia Pharmaceuticals Inc",
+"date": "2026-10-30",
+"mcap_b": 2.2
+},
+{
+"sym": "NWL",
+"name": "Newell Brands Inc.",
+"date": "2026-10-30",
+"mcap_b": 2.2
+},
+{
+"sym": "OUST",
+"name": "Ouster, Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.2
+},
+{
+"sym": "UPST",
+"name": "Upstart Holdings, Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.2
+},
+{
+"sym": "HMN",
+"name": "Horace Mann Educators Corporation",
+"date": "2026-11-03",
+"mcap_b": 2.2
+},
+{
+"sym": "ARDT",
+"name": "Ardent Health, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "WU",
+"name": "Western Union Company (The)",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "NGVT",
+"name": "Ingevity Corporation",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "PRGO",
+"name": "Perrigo Company",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "POWI",
+"name": "Power Integrations, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "SDGR",
+"name": "Schrodinger, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "TTAM",
+"name": "Titan America SA",
+"date": "2026-11-04",
+"mcap_b": 2.2
+},
+{
+"sym": "CLDX",
+"name": "Celldex Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.2
+},
+{
+"sym": "VERA",
+"name": "Vera Therapeutics, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.2
+},
+{
+"sym": "PLUS",
+"name": "ePlus inc.",
+"date": "2026-11-05",
+"mcap_b": 2.2
+},
+{
+"sym": "TILE",
+"name": "Interface, Inc.",
+"date": "2026-11-06",
+"mcap_b": 2.2
+},
+{
+"sym": "NTST",
+"name": "NetSTREIT Corp.",
+"date": "2026-10-21",
+"mcap_b": 2.1
+},
+{
+"sym": "HTH",
+"name": "Hilltop Holdings Inc.",
+"date": "2026-10-22",
+"mcap_b": 2.1
+},
+{
+"sym": "SRCE",
+"name": "1st Source Corporation",
+"date": "2026-10-22",
+"mcap_b": 2.1
+},
+{
+"sym": "INVX",
+"name": "Innovex International, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.1
+},
+{
+"sym": "NMRK",
+"name": "Newmark Group, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.1
+},
+{
+"sym": "TBBK",
+"name": "The Bancorp, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.1
+},
+{
+"sym": "CPRI",
+"name": "Capri Holdings Limited",
+"date": "2026-10-30",
+"mcap_b": 2.1
+},
+{
+"sym": "DV",
+"name": "DoubleVerify Holdings, Inc.",
+"date": "2026-10-30",
+"mcap_b": 2.1
+},
+{
+"sym": "CALX",
+"name": "Calix, Inc",
+"date": "2026-11-02",
+"mcap_b": 2.1
+},
+{
+"sym": "CC",
+"name": "Chemours Company (The)",
+"date": "2026-11-02",
+"mcap_b": 2.1
+},
+{
+"sym": "NVTS",
+"name": "Navitas Semiconductor Corporation",
+"date": "2026-11-03",
+"mcap_b": 2.1
+},
+{
+"sym": "LIND",
+"name": "Lindblad Expeditions Holdings Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.1
+},
+{
+"sym": "SMA",
+"name": "SmartStop Self Storage REIT, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.1
+},
+{
+"sym": "AGM",
+"name": "Federal Agricultural Mortgage Corporation",
+"date": "2026-11-05",
+"mcap_b": 2.1
+},
+{
+"sym": "MH",
+"name": "McGraw Hill, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.1
+},
+{
+"sym": "PBH",
+"name": "Prestige Consumer Healthcare Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.1
+},
+{
+"sym": "TIC",
+"name": "TIC Solutions, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.1
+},
+{
+"sym": "TRLV",
+"name": "Trulieve Cannabis Corp.",
+"date": "2026-11-05",
+"mcap_b": 2.1
+},
+{
+"sym": "DXPE",
+"name": "DXP Enterprises, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.1
+},
+{
+"sym": "UTZ",
+"name": "Utz Brands Inc",
+"date": "2026-11-06",
+"mcap_b": 2.1
+},
+{
+"sym": "MAN",
+"name": "ManpowerGroup",
+"date": "2026-10-15",
+"mcap_b": 2.0
+},
+{
+"sym": "SAM",
+"name": "Boston Beer Company, Inc. (The)",
+"date": "2026-10-22",
+"mcap_b": 2.0
+},
+{
+"sym": "FCF",
+"name": "First Commonwealth Financial Corporation",
+"date": "2026-10-27",
+"mcap_b": 2.0
+},
+{
+"sym": "MCRI",
+"name": "Monarch Casino & Resort, Inc.",
+"date": "2026-10-27",
+"mcap_b": 2.0
+},
+{
+"sym": "EPAC",
+"name": "Enerpac Tool Group Corp.",
+"date": "2026-10-28",
+"mcap_b": 2.0
+},
+{
+"sym": "ESTA",
+"name": "Establishment Labs Holdings Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.0
+},
+{
+"sym": "SAH",
+"name": "Sonic Automotive, Inc.",
+"date": "2026-10-29",
+"mcap_b": 2.0
+},
+{
+"sym": "EVTC",
+"name": "Evertec, Inc.",
+"date": "2026-11-03",
+"mcap_b": 2.0
+},
+{
+"sym": "VECO",
+"name": "Veeco Instruments Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.0
+},
+{
+"sym": "AMPL",
+"name": "Amplitude, Inc.",
+"date": "2026-11-04",
+"mcap_b": 2.0
+},
+{
+"sym": "SOUN",
+"name": "SoundHound AI, Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.0
+},
+{
+"sym": "XRAY",
+"name": "DENTSPLY SIRONA Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.0
+},
+{
+"sym": "TGLS",
+"name": "Tecnoglass Holdings Inc.",
+"date": "2026-11-05",
+"mcap_b": 2.0
+},
+{
+"sym": "DCO",
+"name": "Ducommun Incorporated",
+"date": "2026-11-05",
+"mcap_b": 2.0
 }
 ]
 }
