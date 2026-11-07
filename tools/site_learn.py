@@ -100,13 +100,16 @@ def sec_learn(eng) -> str:
         lead = "一句話看懂：" + _e(story["title"])
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
             + (f'<div class="rpt"><h3>今天的故事 <span class="muted small">{_e(story.get("date"))}</span></h3>{told}</div>' if told else "")
-            + (f'<p class="small">今天新學的術語：{"、".join(_e(t["term"]) for t in newt)}</p>' if newt else "")
-            + (f'<h3>今天人類世界發生什麼</h3>' + "".join(_world(x) for x in world[:WORLD_SHOWN]) if world else "")
+            + (f'<p class="small">今天新學的術語：{"、".join(_e(t["term"]) for t in newt)}</p>' if newt else ""))
+    rest = ((f'<h3>今天人類世界發生什麼</h3>' + "".join(_world(x) for x in world[:WORLD_SHOWN]) if world else "")
             + (f'<h3>華爾街在談什麼</h3>' if world and stories else "")
             + "".join(_story(x) for x in stories[:6])
             + (f'<details class="sgx"><summary>華爾街術語小辭典（{len(terms)} 個）</summary><ul class="lines">'
-               + "".join(_term(t) for t in sorted(terms, key=lambda t: str(t.get("added") or ""), reverse=True)) + "</ul></details>" if terms else "")
-            + f'<p class="note">每天由雲端 AI 讀可靠媒體、學術期刊與官方文件整理，「已確認」只放有文件的事實，「只是報導」要等官方證實。'
-              f'最後更新 {_e(d.get("updated"))}。不構成投資建議。</p>')
+               + "".join(_term(t) for t in sorted(terms, key=lambda t: str(t.get("added") or ""), reverse=True)) + "</ul></details>" if terms else ""))
+    nw, ns = min(len(world), WORLD_SHOWN), min(len(stories), 6)
+    if rest:                                   # one line on the overview; the lists open on a tap
+        body += f'<details class="sgx"><summary>看世界大事（{nw} 則）、華爾街情資（{ns} 則）與術語</summary>{rest}</details>'
+    body += (f'<p class="note">每天由雲端 AI 讀可靠媒體、學術期刊與官方文件整理，「已確認」只放有文件的事實，「只是報導」要等官方證實。'
+             f'最後更新 {_e(d.get("updated"))}。不構成投資建議。</p>')
     return card("每日學習筆記：世界今天發生什麼", "Daily notes: what happened in the world", body, "wide",
                 sub="全世界的大事、華爾街情資，以及學到的術語")

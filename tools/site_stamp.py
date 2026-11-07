@@ -52,9 +52,9 @@ def _last(df) -> Optional[str]:
 
 def _fred_date(eng) -> Optional[str]:
     try:
-        ds = [str((eng.fred.latest(sid) or {}).get("date") or "")[:10] for sid in ("DGS10", "DGS2", "T10Y3M", "SOFR", "NFCI")]
+        ds = [str((eng.fred.latest(sid) or {}).get("date") or "")[:10] for sid in ("DGS10", "DGS2", "T10Y3M", "SOFR")]
         ds = [d for d in ds if d]
-        return max(ds) if ds else None
+        return min(ds) if ds else None             # the oldest daily series, so one stuck feed shows on the stamp
     except Exception:  # noqa: BLE001
         return None
 
@@ -83,7 +83,7 @@ def _stab_ts(k: str):
 
 
 def _fm():
-    """Full-market scan: when the newest market file was written, and the price date it holds."""
+    """Full-market scan: the oldest market file and its price date, so one stuck market shows on the stamp."""
     try:
         import json as _j
         from wsb.config import DATA_DIR
@@ -91,8 +91,9 @@ def _fm():
         fs = [f for f in fs if f.exists()]
         if not fs:
             return None, None
-        ts = max(f.stat().st_mtime for f in fs)
-        asof = max((_j.loads(f.read_text(encoding="utf-8")).get("asof") or "") for f in fs) or None
+        ts = min(f.stat().st_mtime for f in fs)
+        asof = min((_j.loads(f.read_text(encoding="utf-8")).get("asof") or "9999") for f in fs)
+        asof = None if asof == "9999" else asof
         return ts, asof
     except Exception:  # noqa: BLE001
         return None, None
