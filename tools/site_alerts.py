@@ -124,7 +124,7 @@ JS = r"""
    :'<p class="muted">'+(zh()?'目前沒有觸發任何警示規則。':'No alert rule is firing right now.')+'</p>';
   L.querySelectorAll('a.algo').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();close(d);if(typeof page==='function')page(a.dataset.p);else location.hash=a.dataset.p;
    try{history.replaceState(null,'','#'+a.dataset.p);}catch(e){}window.scrollTo(0,0);});});
-  document.getElementById('alfoot').textContent=zh()?'🔴 風險 🟡 觀察 🟢 好的方向（大漲、恐慌退潮、型態成立）🔵 環境轉好。只有紅色會跳出視窗。只用公開市場數據（不含持股，新聞不列入）；網站約每 20 分鐘更新、報價約延遲 15 分鐘。描述現象，不是預測，也不是買賣建議。'
+  document.getElementById('alfoot').textContent=zh()?'🔴 風險 🟡 觀察 🟢 好的方向（大漲、恐慌退潮、型態成立）🔵 環境轉好。紅色會算進鈴鐺的數字。只用公開市場數據（不含持股，新聞不列入）；網站約每 20 分鐘更新、報價約延遲 15 分鐘。描述現象，不是預測，也不是買賣建議。'
    :'Same rules as the Discord alerts, public market data only. Updated ~20 min, quotes ~15 min delayed. A risk notice, not a forecast or advice.';
   var nb=document.getElementById('alnotify');
   if(!('Notification' in window)){nb.hidden=true;}else{nb.hidden=Notification.permission==='granted';
@@ -148,7 +148,7 @@ JS = r"""
   var calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(!calm)setInterval(function(){if(!document.hidden&&Date.now()-hold>8000)step(1);},5000);}
  var lb0=document.getElementById('langBtn');if(lb0)lb0.addEventListener('click',function(){setTimeout(function(){ribbon(cur);},0);});
- function show(d){cur=d;badge(d);ribbon(d);var nw=fresh(d);if(nw.length){if(document.hidden)notify(nw);open(d,nw);}}
+ function show(d){cur=d;badge(d);ribbon(d);var nw=fresh(d);if(nw.length&&document.hidden)notify(nw);}   // the ribbon and the bell carry them; no pop-up over the page
  btn.addEventListener('click',function(){open(cur,fresh(cur));});
  document.getElementById('alok').addEventListener('click',function(){close(cur);});document.getElementById('alclose').addEventListener('click',function(){close(cur);});
  md.addEventListener('click',function(ev){if(ev.target===md)close(cur);});

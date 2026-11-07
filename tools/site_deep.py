@@ -103,7 +103,7 @@ def sec_deep(eng) -> str:
     calls = [c for x in days for c in _rows(x.get("calls"), "claim")]
     done = [c for c in calls if c.get("result") in ("對", "錯")]
     open_ = [c for c in calls if c.get("result") not in ("對", "錯")]
-    body = (f'<p class="rimp big2"><b>一句話看懂：{_e(top["one"])}</b></p>'
+    body = (f'<p class="rimp big2"><b>一句話看懂：{_e(top["one"])}</b></p><details class="sgx"><summary>看完整研判</summary>'
             + (f'<ul class="lines">{"".join(_lens(x) for x in lens)}</ul>' if lens else "")
             + _signals(_rows(top.get("signals"), "name", "read"))
             + (f'<p class="small"><b>連帶影響</b>：{_e(top["spill"])}</p>' if top.get("spill") else "")
@@ -113,7 +113,7 @@ def sec_deep(eng) -> str:
                f'<p class="small">{_e(_score(done))}</p><ul class="lines">'
                + "".join(_call(x) for x in open_[:8] + done[:12]) + "</ul></details>" if calls else "")
             + (f'<p class="small"><b>學到的教訓</b>：{_e(top["lesson"])}</p>' if top.get("lesson") else "")
-            + (f'<p class="small muted">來源：{_src(top.get("sources"))}</p>' if top.get("sources") else "")
+            + (f'<p class="small muted">來源：{_src(top.get("sources"))}</p>' if top.get("sources") else "") + "</details>"
             + f'<p class="note">美股收盤後由雲端 AI 用公開資料整理，是對當天市場的解讀，不是股價預測；判斷都附驗證日，錯了也會留著。'
               f'分析日 {_e(top["date"])}，最後更新 {_e(d.get("updated"))}。不構成投資建議。</p>')
     return card("每日深度研判：拿掉情緒，只看數據", "Daily deep read: the data under the noise", body, "wide",

@@ -45,17 +45,18 @@ def _mover(m: Dict) -> str:
     return f'<li><b>{_e(m.get("name") or m.get("sym"))}</b>（{_e(m.get("sym"))}）{pct}：{_e(m.get("why"))}</li>'
 
 
-def _item(x: Dict) -> str:
+def _item(x: Dict, lead: bool = False) -> str:
     told = "".join(f"<p>{_e(p)}</p>" for p in x.get("story") or [] if p)
     macro = "".join(f'<li><b>{_e(m.get("name"))}</b>：{_e(m.get("read"))}</li>' for m in x.get("macro") or []
                     if isinstance(m, dict) and m.get("name") and m.get("read"))
     movers = "".join(_mover(m) for m in x.get("movers") or [] if isinstance(m, dict) and m.get("sym") and m.get("why"))
-    return (f'<div class="rpt"><h3>{_e(x.get("phase"))} <span class="muted small">{_e(x.get("at"))} 台北</span></h3>'
-            f'<p><b>{_e(x.get("one"))}</b></p>{told}'
-            + (f'<p class="small"><b>今天誰動得最大、為什麼</b></p><ul class="small">{movers}</ul>' if movers else "")
+    more = (told + (f'<p class="small"><b>今天誰動得最大、為什麼</b></p><ul class="small">{movers}</ul>' if movers else "")
             + (f'<p class="small"><b>總經情勢</b></p><ul class="small">{macro}</ul>' if macro else "")
+            + (f'<p class="small muted">來源：{_src(x.get("sources"))}</p>' if x.get("sources") else ""))
+    return (f'<div class="rpt"><h3>{_e(x.get("phase"))} <span class="muted small">{_e(x.get("at"))} 台北</span></h3>'
+            + ("" if lead else f'<p><b>{_e(x.get("one"))}</b></p>')
             + (f'<p class="small"><b>接下來看</b>：{_e(x["next"])}</p>' if x.get("next") else "")
-            + (f'<p class="small muted">來源：{_src(x.get("sources"))}</p>' if x.get("sources") else "") + "</div>")
+            + (f'<details class="sgx"><summary>看完整解讀：誰動得最大、為什麼</summary>{more}</details>' if more else "") + "</div>")
 
 
 def sec_sessions(eng) -> str:
@@ -67,6 +68,6 @@ def sec_sessions(eng) -> str:
     today = {x["phase"]: x for x in items if str(x["date"]) == day}
     shown = [today[p] for p in reversed(PHASES) if p in today]
     return card("美股今天怎麼了", "US stocks today", f'<p class="rimp big2"><b>一句話看懂：{_e(shown[0]["one"])}</b></p>'
-                + "".join(_item(x) for x in shown)
+                + "".join(_item(x, i == 0) for i, x in enumerate(shown))
                 + f'<p class="note">美股開盤前、盤中、收盤後由雲端 AI 用公開資料整理，交易日 {_e(day)}。是對當下的解讀，不是股價預測。不構成投資建議。</p>',
                 "wide", sub="開盤前、盤中、收盤後各更新一次")

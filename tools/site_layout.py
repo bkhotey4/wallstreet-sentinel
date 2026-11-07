@@ -1,4 +1,4 @@
-"""Page layout: seven groups in a left sidebar (a drawer on phones), a breadcrumb, and the 總攬大表 at the top of the
+"""Page layout: seven groups in a left sidebar (a drawer on phones), a breadcrumb, and the 總覽大表 at the top of the
 overview.  Layout only — every card is rendered exactly as before; the index copies its figures from the cards that
 were rendered in the same build, so the two can never disagree.  The page keys (#risk, #industry …) are unchanged, so
 links from the bot, alerts and bookmarks keep working."""
@@ -39,7 +39,10 @@ def order(tabs: List[tuple]) -> List[tuple]:
     return out + [t for t in tabs if t[0] not in GROUP_OF]
 
 
-# ------------------------------------------------------------------ 總攬大表: figures copied from the rendered cards
+TODAY_MARK, MORE_MARK = "<!--today-->", "<!--more-->"
+
+
+# ------------------------------------------------------------------ 總覽大表: figures copied from the rendered cards
 def _text(h: str) -> str:
     return re.sub(r"\s+", " ", _h.unescape(re.sub(r"<[^>]+>", " ", h or "")))
 
@@ -139,7 +142,34 @@ def index_card(pages: Dict[str, str], names: Dict[str, Tuple[str, str]]) -> str:
     body = (f'<p class="sub">{T("每一類想回答的問題、今天的重點數字（直接取自同一次產生的各張卡片），點右邊就跳到詳細內容。", "Each group, the key figures for today (copied from the cards below), and where to read more.")}</p>'
             f'<div class="scroll"><table class="mini otab"><thead><tr><th>{T("分類", "Group")}</th><th>{T("今日重點", "Today")}</th>'
             f'<th>{T("詳細在哪", "Where")}</th></tr></thead><tbody>{rows}</tbody></table></div>')
-    return f'<section class="card wide ovt" id="c-index"><h2>{T("總攬大表：重點在哪裡", "Index: where the key points are")}</h2>{body}</section>'
+    return f'<section class="card wide ovt" id="c-index"><h2>{T("總覽大表：重點在哪裡", "Index: where the key points are")}</h2>{body}</section>'
+
+
+def sec_today_slot(eng) -> str:
+    return TODAY_MARK
+
+
+def sec_more_slot(eng) -> str:
+    return MORE_MARK
+
+
+def today_card(pages: Dict[str, str]) -> str:
+    """今天的風險燈號: the same figures as the index card, in one short list right under the audio."""
+    pk = picks(pages)
+    rows = (pk.get("home") or [])[:4] + (pk.get("macro") or [])[:1]
+    if not rows:
+        return ""
+    return ('<section class="card wide"><h2>' + T("今天的風險燈號", "Today's risk lights") + '</h2><ul class="ol">'
+            + "".join(f"<li>{T(x, x)}</li>" for x in rows) + "</ul></section>")
+
+
+def more_wrap(html: str) -> str:
+    """Everything below the daily reads folds under one line; a jump to a card inside opens it first."""
+    n = html.count("<section")
+    return (f'<details class="ovmore"><summary>{T(f"更多總覽（{n} 張）：總覽大表、風險、VIX、事件、評分、走勢", f"More ({n} cards)")}</summary>'
+            f'<div class="grid12">{html}</div></details>'
+            "<script>(function(){var o=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(a){"
+            "var d=this.closest&&this.closest('details.ovmore');if(d)d.open=true;return o.call(this,a);};})();</script>")
 
 
 # ------------------------------------------------------------------ sidebar, breadcrumb
@@ -292,7 +322,7 @@ background:var(--card2,transparent);color:var(--tx);font-size:13px}.psnone{font-
 .qtab:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
 @media(max-width:900px){.qtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px 0;min-width:0;flex:1}.qtabs::-webkit-scrollbar{display:none}.pbar{display:flex;align-items:center;gap:4px;min-width:0}.crumb{display:none}}
 .ovt .otab{table-layout:fixed;width:100%}.ovt .otab td{vertical-align:top}.ovt .otab th:nth-child(1){width:150px}.ovt .otab th:nth-child(3){width:30%}.og{min-width:0}.oq{font-size:12px;color:var(--tx2);margin-top:2px}.ol{margin:0;padding-left:16px;line-height:1.7;columns:2 260px;column-gap:28px}.ol li{break-inside:avoid}.oc{min-width:0}
-.ochip{display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border:1px solid var(--bd);border-radius:99px;font-size:12px;color:var(--tx);text-decoration:none}
+.ovmore{grid-column:1/-1}.ovmore>summary{cursor:pointer;padding:12px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--card);font-weight:600}.ovmore[open]>summary{margin-bottom:12px}.ochip{display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border:1px solid var(--bd);border-radius:99px;font-size:12px;color:var(--tx);text-decoration:none}
 .ochip:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
 @media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}
  .side{position:fixed;top:0;left:0;bottom:auto;width:min(82vw,300px);height:calc(100vh / var(--z,1));height:calc(100dvh / var(--z,1));max-height:calc(100dvh / var(--z,1));overflow-y:auto;

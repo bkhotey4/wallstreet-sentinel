@@ -75,7 +75,7 @@ def main():
     for k in ("overview", "risk", "flows", "crisis", "valuation", "markets", "taiwan", "news", "inputs"):
         assert f'id="p-{k}"' in page and f'href="#{k}"' in page, k
     assert 'class="page on" id="p-overview"' in page
-    # sidebar layout (2026-10): every page sits in the sidebar once, the overview opens with the 總攬大表
+    # sidebar layout (2026-10): every page sits in the sidebar once, the overview opens with the 總覽大表
     import tools.site_layout as SLY
     side = page[page.find('<aside class="side"'):page.find("</aside>")]
     keys = re.findall(r'class="page[^"]*" id="p-([a-z]+)"', page)
@@ -87,7 +87,7 @@ def main():
     assert [k for k in keys if k in SLY.GROUP_OF] == [k for *_x, ks in SLY.GROUPS for k in ks if k in keys]
     for w in ("有買點訊號", "接近回檔買點", "技術面買點", "何時買", "何時放棄", "精選池", "加碼參考區"):   # our own labels (third-party headlines are quoted as-is)
         assert w not in page, w
-    assert page.index('id="c-index"') < page.index('id="p-risk"') and "總攬大表" in page and 'id="crumb"' in page
+    assert page.index('id="c-index"') < page.index('id="p-risk"') and "總覽大表" in page and 'id="crumb"' in page
     _pages = {k: page[page.find(f'id="p-{k}"'):] for k in keys}
     _pk = SLY.picks({k: v[:v.find('class="page', 10)] if 'class="page' in v[10:] else v for k, v in _pages.items()})
     # the index reads its figures off the cards: a reworded card must not silently empty it
