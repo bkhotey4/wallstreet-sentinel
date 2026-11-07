@@ -650,6 +650,7 @@ def sec_taiwan(eng) -> str:
     fu = tw.futures or {}
     mg = tw.margin or {}
     fl = tw.flows or []
+    _d = lambda x: f" · {T('資料日', 'as of')} {esc(str(x))}" if x else ""   # noqa: E731  a holiday shows the last session, so say which
 
     # KPI 1: Foreign Futures Net OI
     oi = fu.get("oi_foreign")
@@ -671,7 +672,7 @@ def sec_taiwan(eng) -> str:
             cls_oi = "up"
         oi_box = (f'<div><span>{T("外資台指期未平倉", "Foreign Net Futures OI")}</span>'
                   f'<b class="{cls_oi}">{oi:+,.0f} 口</b>'
-                  f'<span class="muted small">{badge}{chg_txt}</span></div>')
+                  f'<span class="muted small">{badge}{chg_txt}{_d(fu.get("inst_date"))}</span></div>')
 
     # KPI 2: Margin Balance & Washout Temp
     mg_box = ""
@@ -690,7 +691,7 @@ def sec_taiwan(eng) -> str:
             cls_m = "up"
         mg_box = (f'<div><span>{T("散戶融資餘額與清洗計", "Margin Balance & Liquidation")}</span>'
                   f'<b class="{cls_m}">{bal:,.0f} 億 ({c1_str})</b>'
-                  f'<span class="muted small">{m_badge}</span></div>')
+                  f'<span class="muted small">{m_badge}{_d(mg.get("date"))}</span></div>')
 
     # KPI 3: Options Put/Call Ratio
     pcr_box = ""
@@ -711,7 +712,7 @@ def sec_taiwan(eng) -> str:
             cls_p = "up"
         pcr_box = (f'<div><span>{T("選擇權 Put/Call 未平倉比", "Options Put/Call OI Ratio")}</span>'
                    f'<b class="{cls_p}">{pcr_val:.1f}%</b>'
-                   f'<span class="muted small">{p_badge}</span></div>')
+                   f'<span class="muted small">{p_badge}{_d(pcr_list[0].get("date"))}</span></div>')
 
     # KPI 4: Foreign Cash Buying
     fl_box = ""

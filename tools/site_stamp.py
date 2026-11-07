@@ -99,13 +99,20 @@ def _fm():
         return None, None
 
 
+def _oldest(d: Dict, keys) -> Optional[float]:
+    """The oldest good fetch among a cache's sources, so one stuck source turns the stamp stale instead of hiding behind the others."""
+    each = d.get("ts_each") or {}
+    ts = [float(each[k]) for k in keys if each.get(k)]
+    return min(ts) if ts else d.get("ts")
+
+
 def _bondflows():
     """Japan MOF weekly + US TIC: when they were fetched and the newest week covered."""
     try:
         from wsb.data import bondflows as BF
         d = BF.load()
         rows = d.get("mof") or []
-        return d.get("ts"), (rows[-1][1] if rows else None)
+        return _oldest(d, ("mof", "tic", "mmf")), (rows[-1][1] if rows else None)
     except Exception:  # noqa: BLE001
         return None, None
 
@@ -136,7 +143,7 @@ def _twmacro():
         from wsb.data import twmacro as TM
         d = TM.load()
         daily = sorted(d.get("daily") or {})
-        return d.get("ts"), (daily[-1] if daily else None)
+        return _oldest(d, ("cbc", "ndc", "taipei")), (daily[-1] if daily else None)
     except Exception:  # noqa: BLE001
         return None, None
 
@@ -477,14 +484,20 @@ CARD: Dict[str, List[str]] = {
     "sec_tw_note": ["twnote"], "sec_industry_note": ["indnote"],
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
-NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds"}   # static content
-LIVE = {"sec_lookup", "sec_watch", "sec_intraday"}
+NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_today_slot", "sec_more_slot"}   # static content
+LIVE = {"sec_lookup", "sec_watch", "sec_intraday", "sec_tw_live", "sec_ext_gaps"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 
 
 MAX_AGE_H.update({k: 24 * (SOURCES[k][3] + 1) for k in ("after", "preview", "sessions", "forecast", "bondread", "voice", "afterall", "learn", "deep")})
 MAX_AGE_H["rel"] = 8 * 24             # refreshed weekly by design
 MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not a fault
+
+
+CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
+    "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred"],
+})
 
 
 def sources_for(fname: str, tab: str) -> List[str]:

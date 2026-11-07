@@ -614,7 +614,7 @@ def sec_bonds(eng) -> str:
     if not b.get("available"):
         return card("美債專區", "US Treasuries", f'<p class="muted">{T("殖利率與標售資料暫時取不到", "Treasury data unavailable right now")}</p>', "wide")
     now = {c["sid"]: c["yield"] for c in b["curves"].get("now", [])}
-    ndate = max((c.get("date") or "" for c in b["curves"].get("now", [])), default="")
+    ndate = min((c["date"] for c in b["curves"].get("now", []) if c.get("date")), default="")   # the oldest tenor, so a stuck one shows
     sp, tp, mv = b.get("spreads", {}), b.get("term_premium"), b.get("move")
     kv = (f'<div><span class="muted">{T("資料日", "As of")}</span><b class="small">{esc(ndate or "—")}</b></div>' if ndate else "")
     kv += "".join(f'<div><span class="muted">{T(zh, en)}</span><b>{num(now.get(sid), 2)}%</b></div>'
@@ -627,7 +627,7 @@ def sec_bonds(eng) -> str:
             kv += f'<div><span class="muted">{T(zh, en)}</span><b class="{cls(sp[k]["bp"])}">{sp[k]["bp"]:+.0f}bp</b>{inv}</div>'
     if tp:
         kv += (f'<div><span class="muted">{T("10 年期限溢價", "10Y term premium")}</span><b>{tp["value"]:.2f}%</b>'
-               f' <span class="small muted">{T("百分位", "pct")} {tp["pctile"]:.0f}</span></div>')
+               f' <span class="small muted">{T("百分位", "pct")} {tp["pctile"]:.0f}' + (f' · {esc(str(tp["date"])[5:])}' if tp.get("date") else "") + '</span></div>')
     if mv:
         kv += (f'<div><span class="muted">{T("MOVE 債市波動", "MOVE bond vol")}</span><b>{mv["value"]:.0f}</b>'
                f' <span class="small muted">{T("10 年百分位", "10y pct")} {mv["pctile"]:.0f}</span></div>')
@@ -1005,6 +1005,17 @@ _CN_STATE = {"alert": ("🔴", "紅燈", "Alert", "var(--dn)"), "watch": ("🟡"
              "stale": ("⚪", "資料過期", "Stale", "var(--mu)"), "na": ("⚪", "無資料", "n/a", "var(--mu)")}
 
 
+def _canary_old(asof, today=None) -> bool:
+    """Each light keeps its own cadence: a monthly reading (YYYY-MM, dated to its first day) is stale after 90 days, a dated one after 10 (H.8 runs a week behind)."""
+    from datetime import date
+    a = str(asof or "")
+    try:
+        d = date.fromisoformat(a + "-01" if len(a) == 7 else a[:10])
+    except ValueError:
+        return False
+    return ((today or date.today()) - d).days > (90 if len(a) == 7 else 10)
+
+
 def sec_canary(eng) -> str:
     cv = getattr(eng, "canary", None) or {}
     if not cv.get("available"):
@@ -1036,7 +1047,8 @@ def sec_canary(eng) -> str:
         cards.append(f'<div class="cncard" style="border-left-color:{col}"><div class="cnh"><span class="cng">{esc(r["group"])}</span>'
                      f'<b>{T(r["zh"], r["en"])}</b><span class="pill" style="border-color:{col};color:{col}">{ico} {T(zh, en)}</span></div>'
                      f'{body}<p class="small">{esc(r.get("why") or "")}</p><p class="small muted">{T("規則", "Rule")}：{rule}</p>'
-                     f'<p class="small muted">{T("資料日", "As of")} {esc(str(r.get("asof") or "—"))}</p>{hb}</div>')
+                     f'<p class="small muted">{T("資料日", "As of")} {esc(str(r.get("asof") or "—"))}'
+                     + (f' <b style="color:var(--warn)">⚠ {T("資料偏舊", "stale")}</b>' if _canary_old(r.get("asof")) else "") + f'</p>{hb}</div>')
     head = (f'<div class="kv"><div><span class="muted">{T("紅燈", "Alerts")}</span><b style="color:var(--dn)">{cv.get("n_alert", 0)}</b></div>'
             f'<div><span class="muted">{T("黃燈", "Watch")}</span><b style="color:var(--warn)">{cv.get("n_watch", 0)}</b></div>'
             f'<div><span class="muted">{T("燈號總數", "Lights")}</span><b>{len(cv["rows"])}</b></div></div>')
