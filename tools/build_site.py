@@ -737,7 +737,8 @@ def sec_calendar(eng) -> str:
     if not ev:
         return ""
     lis = "".join(f'<li><span class="dt">{esc(e["date"][5:])}</span>{esc(e["event"])}</li>' for e in ev[:18])
-    return card("未來 14 天事件", "Next 14 days", f'<ul class="cal">{lis}</ul>', "span4")
+    gap = f'<p class="small muted">有 {len(eng.calendar.failed)} 個來源這次沒抓到，清單可能不完整。</p>' if getattr(eng.calendar, "failed", None) else ""
+    return card("未來 14 天事件", "Next 14 days", f'<ul class="cal">{lis}</ul>{gap}', "span4")
 
 
 def sec_news(eng) -> str:

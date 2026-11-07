@@ -92,14 +92,14 @@ def dir_label(key: str, d: str) -> Tuple[str, str]:
 S = lambda zh, en: {"zh": zh, "en": en}  # noqa: E731
 SCEN: Dict[str, Dict] = {
     "cpi": {
-        "why": S("看「核心 CPI 月增」：0.1 個百分點的差距就會改變市場對降息時點的押注。聯準會目標是 PCE 年增 2%，CPI 是最早出來、最受矚目的通膨數字。",
+        "why": S("看「核心 CPI 月增」：0.1 個百分點的差距就會改變市場對下一步利率的押注。聯準會目標是 PCE 年增 2%，CPI 是最早出來、最受矚目的通膨數字。",
                  "Core CPI m/m is the number that moves rate expectations; 0.1pp matters."),
-        "hot": S("降息預期往後延或次數減少 → 2 年期殖利率上升多於 10 年期、美元走強；美股承壓，高本益比的軟體與半導體通常跌幅較大，金融股相對抗跌；"
+        "hot": S("市場預期利率更高、維持更久 → 2 年期殖利率上升多於 10 年期、美元走強；美股承壓，高本益比的軟體與半導體通常跌幅較大，金融股相對抗跌；"
                  "黃金短線承壓。台股：外資賣超與台幣走弱壓力，電子權值股跟著費半走。連續兩個月偏熱，市場會開始談「通膨再起」，衝擊比單月大。",
                  "Rate cuts priced out → 2y yields up more than 10y, USD up; long-duration tech/semis hit hardest."),
         "inline": S("不確定性消除，VIX 通常回落；市場焦點轉向細項——核心服務（不含住房）與住房項目是否降溫——原本的趨勢延續。",
                     "Uncertainty clears, volatility usually eases; focus shifts to services ex-housing and shelter."),
-        "cool": S("降息預期升溫 → 2 年期殖利率下滑、美元走弱；成長股、半導體與小型股通常領漲，台幣偏升。若同時就業數據轉弱，"
+        "cool": S("市場預期利率走低 → 2 年期殖利率下滑、美元走弱；成長股、半導體與小型股通常領漲，台幣偏升。若同時就業數據轉弱，"
                   "可能被解讀為需求降溫（衰退擔憂），漲勢不一定持久。",
                   "Cuts priced in → yields and USD down; growth, semis and small caps usually lead."),
         "watch": S("核心服務（不含住房）、住房、二手車、機票；年增率與 2% 目標的距離。", "Supercore, shelter, used cars, airfares."),
@@ -110,17 +110,17 @@ SCEN: Dict[str, Dict] = {
         "hot": S("成本壓力可能往下游傳導 → 殖利率小幅上升；若與 CPI 同方向偏熱，衝擊放大。製造業與硬體公司的毛利率壓力上升。",
                  "Pipeline pressure → yields edge up, bigger if CPI was hot too."),
         "inline": S("通常影響有限，市場等 PCE。", "Usually limited impact."),
-        "cool": S("通膨管線降溫 → 對降息有利，殖利率小幅下滑。單獨 PPI 的影響通常小於 CPI。", "Pipeline cooling → mildly supportive."),
+        "cool": S("通膨管線降溫 → 升息壓力減輕，殖利率小幅下滑。單獨 PPI 的影響通常小於 CPI。", "Pipeline cooling → mildly supportive."),
         "watch": S("能源與食品以外的核心項目、貿易服務利潤率；與當月 CPI 是否同方向。", "Core ex-trade; same direction as CPI?"),
     },
     "nfp": {
         "why": S("就業是聯準會雙重目標之一。要同時看三個數字：新增就業、失業率、時薪；並注意前兩個月的修正。",
                  "Payrolls, unemployment and wages together; watch revisions."),
-        "hot": S("經濟有韌性 → 降息預期下修，殖利率與美元上升。股市反應看薪資：就業強但時薪溫和＝「不冷不熱」偏多；時薪也偏熱＝通膨擔憂偏空。"
+        "hot": S("經濟有韌性 → 市場預期利率更高，殖利率與美元上升。股市反應看薪資：就業強但時薪溫和＝「不冷不熱」偏多；時薪也偏熱＝通膨擔憂偏空。"
                  "景氣循環股、金融股受惠，長存續期成長股承壓。",
                  "Resilient economy → fewer cuts, yields/USD up; equities depend on wage growth."),
         "inline": S("焦點轉向失業率與前兩月修正；失業率持平通常讓市場鬆一口氣。", "Focus shifts to unemployment and revisions."),
-        "cool": S("降息預期升溫，殖利率下跌。溫和放緩對成長股與半導體有利；但若失業率明顯跳升（例如 3 個月均值比過去 12 個月低點高 0.5 個百分點，"
+        "cool": S("市場預期利率走低，殖利率下跌。溫和放緩對成長股與半導體有利；但若失業率明顯跳升（例如 3 個月均值比過去 12 個月低點高 0.5 個百分點，"
                   "即 Sahm 規則），市場會轉為「衰退交易」：股市跌、公債漲、防禦類股抗跌。",
                   "More cuts priced; mild cooling helps growth, but a jump in unemployment flips to recession trading."),
         "watch": S("失業率、時薪年增、前兩月修正、勞動參與率。", "Unemployment, wages, revisions, participation."),
@@ -128,38 +128,38 @@ SCEN: Dict[str, Dict] = {
     "pce": {
         "why": S("PCE 是聯準會官方通膨目標（2%）所用的指標。因為 CPI、PPI 已先公布，市場多半已能推估，意外通常較小。",
                  "The Fed's target gauge; usually well nowcast from CPI/PPI."),
-        "hot": S("確認通膨黏著 → 殖利率上升、降息預期下修；同時公布的個人支出若也強，代表需求旺，鷹派解讀更強。",
+        "hot": S("確認通膨黏著 → 殖利率上升、市場預期利率更高；同時公布的個人支出若也強，代表需求旺，鷹派解讀更強。",
                  "Confirms sticky inflation → yields up."),
         "inline": S("通常影響小；看個人支出與所得判斷消費動能。", "Usually small; look at spending/income."),
-        "cool": S("確認通膨回落 → 對降息有利，成長股受惠；若個人支出同時轉弱，要留意消費放緩。", "Confirms disinflation → supportive."),
+        "cool": S("確認通膨回落 → 利率壓力減輕，成長股受惠；若個人支出同時轉弱，要留意消費放緩。", "Confirms disinflation → supportive."),
         "watch": S("核心 PCE 年增與 2% 的距離、個人支出、儲蓄率。", "Core PCE y/y vs 2%, spending, saving rate."),
     },
     "fomc": {
         "why": S("利率決定本身很少意外（市場通常已完全定價），真正的意外在聲明措辭、點陣圖（有「＊」的會議才有經濟預測）與主席記者會。"
                  "台北時間約凌晨 2–3 點公布、2:30–3:30 記者會。",
                  "The decision itself rarely surprises; the statement, dot plot and press conference do."),
-        "hot": S("比預期鷹派（少降息、點陣圖上移或主席強調通膨風險）→ 2 年期殖利率與美元急升，美股下跌，估值偏高的科技與半導體跌幅較大；台幣走弱。",
+        "hot": S("比預期鷹派（更偏向升息或少降息、點陣圖上移或主席強調通膨風險）→ 2 年期殖利率與美元急升，美股下跌，估值偏高的科技與半導體跌幅較大；台幣走弱。",
                  "Hawkish → 2y yields and USD jump, equities fall, high-multiple tech hit."),
         "inline": S("決策符合預期時，市場看點陣圖中位數與記者會語氣；常見「買傳聞、賣事實」——會前漲多的資產在會後回吐。",
                     "Focus on the dot plot and tone; 'buy the rumor, sell the fact' is common."),
-        "cool": S("比預期鴿派（多降息、點陣圖下移）→ 殖利率與美元下跌，成長股、半導體、黃金受惠；但若降息是因為經濟轉弱的擔憂，股市可能先漲後跌。",
+        "cool": S("比預期鴿派（更偏向降息或少升息、點陣圖下移）→ 殖利率與美元下跌，成長股、半導體、黃金受惠；但若轉鴿是因為經濟轉弱的擔憂，股市可能先漲後跌。",
                   "Dovish → yields/USD down, growth and gold up — unless it signals growth fears."),
         "watch": S("聲明措辭的增刪、點陣圖中位數、反對票、主席對通膨與就業的評估、縮表（資產負債表）安排。",
                    "Statement changes, dots, dissents, balance sheet."),
     },
     "minutes": {
-        "why": S("三週前那次會議的討論細節，可以看出委員之間對降息速度的分歧。", "Detail on the debate three weeks ago."),
+        "why": S("三週前那次會議的討論細節，可以看出委員之間對下一步利率的分歧。", "Detail on the debate three weeks ago."),
         "hot": S("多數委員擔心通膨 → 殖利率小幅上升。", "Hawkish tone → yields edge up."),
         "inline": S("影響通常有限。", "Usually limited."),
-        "cool": S("多數委員傾向繼續降息 → 殖利率小幅下滑。", "Dovish tone → yields edge down."),
+        "cool": S("多數委員不急著升息或傾向放鬆 → 殖利率小幅下滑。", "Dovish tone → yields edge down."),
         "watch": S("「多數」「一些」「少數」委員的用詞；對縮表的討論。", "'Most/some/a few participants'."),
     },
     "fedchair": {
         "why": S("主席的公開談話常被視為下一次會議的預告。", "Often a preview of the next meeting."),
         "hot": S("強調通膨尚未解決 → 殖利率、美元上升，科技股承壓。", "Inflation-focused → yields/USD up."),
         "inline": S("重申既有立場 → 影響有限。", "Repeats the stance → limited."),
-        "cool": S("談到就業或經濟下行風險 → 降息預期升溫。", "Growth-risk focused → cuts priced."),
-        "watch": S("對下次會議的暗示、對關稅與通膨的評估。", "Hints about the next meeting."),
+        "cool": S("談到就業或經濟下行風險 → 市場預期利率走低。", "Growth-risk focused → lower rates priced."),
+        "watch": S("對下次會議的暗示、對通膨與就業的評估。", "Hints about the next meeting."),
     },
     "gdp": {
         "why": S("以「初估值」影響最大；同時公布的 GDP 物價指數也是通膨線索。", "The advance estimate matters most."),
@@ -171,7 +171,7 @@ SCEN: Dict[str, Dict] = {
     },
     "retail": {
         "why": S("美國經濟約七成是消費；零售銷售是最即時的消費數據。", "The most timely read on consumers."),
-        "hot": S("消費強 → 殖利率上升，非必需消費股受惠；但也降低降息急迫性。", "Strong spending → yields up, discretionary up."),
+        "hot": S("消費強 → 殖利率上升，非必需消費股受惠；但也讓聯準會更不急著放鬆。", "Strong spending → yields up, discretionary up."),
         "inline": S("看控制組（不含汽車、汽油、建材、餐飲），它直接進入 GDP。", "Watch the control group."),
         "cool": S("消費轉弱 → 成長擔憂，殖利率下滑，零售與消費股承壓。", "Weak spending → growth worries."),
         "watch": S("控制組、前月修正、餐飲（服務消費）。", "Control group, revisions, restaurants."),
@@ -196,21 +196,21 @@ SCEN: Dict[str, Dict] = {
         "why": S("勞動需求的指標；職缺與失業人數的比例是聯準會常看的勞動市場鬆緊度。", "Labour demand; openings per unemployed."),
         "hot": S("勞動市場仍緊 → 薪資壓力，殖利率上升。", "Tight market → wage pressure, yields up."),
         "inline": S("影響通常有限。", "Usually limited."),
-        "cool": S("勞動需求降溫 → 支持降息；搭配離職率下降更明確。", "Cooling demand → supports cuts."),
+        "cool": S("勞動需求降溫 → 升息壓力減輕；搭配離職率下降更明確。", "Cooling demand → eases rate pressure."),
         "watch": S("離職率（反映勞工信心與薪資壓力）、裁員數。", "Quits and layoffs."),
     },
     "claims": {
         "why": S("每週公布，最即時的就業數據；單週波動大，看 4 週平均與續領人數。", "Weekly, noisy; watch the 4-week average."),
         "hot": S("申請人數低 → 就業穩，影響通常小。", "Low claims → labour market fine."),
         "inline": S("影響通常很小。", "Usually negligible."),
-        "cool": S("申請人數升高、尤其 4 週平均持續上升 → 就業轉弱訊號，降息預期升溫。", "Rising claims → labour softening."),
+        "cool": S("申請人數升高、尤其 4 週平均持續上升 → 就業轉弱訊號，市場預期利率走低。", "Rising claims → labour softening."),
         "watch": S("4 週平均、續領人數趨勢。", "4-week average, continuing claims."),
     },
     "umich": {
         "why": S("市場更關心其中的「1 年、5 年通膨預期」——聯準會很在意預期是否失控。", "Inflation expectations matter most."),
         "hot": S("信心或通膨預期上升 → 殖利率小幅上升。", "Higher expectations → yields edge up."),
         "inline": S("影響通常有限。", "Usually limited."),
-        "cool": S("信心下滑 → 消費放緩疑慮；但通膨預期若同時下降，對降息有利。", "Lower sentiment → consumption worries."),
+        "cool": S("信心下滑 → 消費放緩疑慮；但通膨預期若同時下降，利率壓力減輕。", "Lower sentiment → consumption worries."),
         "watch": S("5 年通膨預期是否超過近年區間。", "5-yr expectations range."),
     },
     "durable": {
@@ -226,7 +226,7 @@ SCEN: Dict[str, Dict] = {
     "beige": {
         "why": S("聯準會 12 個地區的經濟描述，是下次會議的參考資料。", "Regional anecdotes before the meeting."),
         "hot": S("描述偏強 → 殖利率小幅上升。", "Upbeat → yields edge up."), "inline": S("影響通常有限。", "Usually limited."),
-        "cool": S("多數地區描述放緩 → 降息預期升溫。", "Soft → cuts priced."), "watch": S("對就業、物價與關稅的描述。", "Labour, prices, tariffs."),
+        "cool": S("多數地區描述放緩 → 市場預期利率走低。", "Soft → lower rates priced."), "watch": S("對就業與物價的描述。", "Labour and prices."),
     },
 }
 

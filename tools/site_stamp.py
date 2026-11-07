@@ -205,7 +205,7 @@ def _bub_cftc_date() -> Optional[str]:
 def _rel_ts():
     try:
         from wsb.analytics import event_clock as EC
-        return EC.load().get("ts_check")
+        return EC.load().get("ts")
     except Exception:  # noqa: BLE001
         return None
 
@@ -431,9 +431,9 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "swpt": ("FRED 換匯額度／GDPNow", "FRED SWPT / GDPNOW", lambda e: (_ts(_trm("ts_check")), _trm_date("swaps")), 14),
     "jpy": ("日圓匯率＋CFTC 日圓部位", "Yen and CFTC", lambda e: (_ts(_trm("ts_check")), _trm_date("jpy")), 10),
     "ecb": ("歐洲央行 CISS＋各國公債（FRED 月資料）", "ECB CISS / FRED", lambda e: (_ts(_ead("ts_check")), _ead_date()), 7),
-    "capexq": ("SEC 季報（資本支出／營收）", "SEC quarterly", lambda e: (_ts(_cxl("ts_check")), None), 0),
-    "stockchk": ("SEC 季報＋每週股價（個股體檢）", "SEC filings + weekly prices", lambda e: (_ts(_sck("ts_check")), None), 0),
-    "fundgl": ("財報（SEC／FinMind／Yahoo 年報）", "Filings (SEC / FinMind / Yahoo)", lambda e: (_ts(_fgl("ts_check")), None), 0),
+    "capexq": ("SEC 季報（資本支出／營收）", "SEC quarterly", lambda e: (_ts(_cxl("ts")), None), 0),
+    "stockchk": ("SEC 季報＋每週股價（個股體檢）", "SEC filings + weekly prices", lambda e: (_ts(_sck("ts")), None), 0),
+    "fundgl": ("財報（SEC／FinMind／Yahoo 年報）", "Filings (SEC / FinMind / Yahoo)", lambda e: (_ts(_fgl("ts")), None), 0),
     "ipo": ("IPO 申報（SEC／證交所／櫃買）", "IPO filings (SEC / TWSE / TPEx)", lambda e: (_ts(_ipo("ts")), None), 0),
     "estrev": ("Nasdaq 分析師獲利預估（Zacks）", "Nasdaq EPS estimates (Zacks)", lambda e: (_ts(_erv("ts")), _d(_erv("asof"))), 4),
     "evreact": ("Nasdaq 經濟日曆歷史", "Nasdaq calendar history", lambda e: (_ts(_evr("ts")), _d(_evr("asof"))), 45),
@@ -482,6 +482,7 @@ MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 *
 
 
 MAX_AGE_H.update({k: 24 * (SOURCES[k][3] + 1) for k in ("after", "preview", "sessions", "forecast", "bondread", "voice", "afterall", "learn", "deep")})
+MAX_AGE_H["rel"] = 8 * 24             # refreshed weekly by design
 MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not a fault
 
 

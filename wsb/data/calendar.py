@@ -79,6 +79,8 @@ def _earnings(tickers: List[str]) -> List[dict]:
 class EventCalendar:
     def __init__(self) -> None:
         self.events: List[dict] = []
+        self.last: dict = {}           # each source's last good rows
+        self.failed: List[str] = []
         self.ts = 0.0
 
     async def refresh(self, holdings: List[str]) -> None:
@@ -90,14 +92,19 @@ class EventCalendar:
             events += liq.computed_events(days=60)
         except Exception as ex:  # noqa: BLE001
             log.warning("liquidity calendar failed: %s", ex)
+        self.failed = []
         for name, r in zip(("fred_calendar", "fomc_calendar", "earnings_calendar", "treasury_auctions"), res):
             if isinstance(r, Exception):
                 HEALTH.fail(name, r, every=every)
+                self.failed.append(name)
+                events += self.last.get(name, [])   # a failed source keeps its rows instead of vanishing from the list
             else:
                 HEALTH.ok(name, len(r), every=every)
+                self.last[name] = r
                 events += r
         self.events = sorted(events, key=lambda e: e["date"])
-        self.ts = time.time()
+        if not self.failed:
+            self.ts = time.time()
 
     def upcoming(self, days: int = 14) -> List[dict]:
         lim = (us_today() + timedelta(days=days)).isoformat()

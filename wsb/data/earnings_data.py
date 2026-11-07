@@ -621,7 +621,8 @@ class EarningsData:
         self.tw: Dict = _load(F_TW)
         self.twpe: Dict = _load(F_TWPE)
         self.nqann: Dict = _load(F_ANN)
-        self.ts = 0.0
+        self.ts = 0.0          # last refresh that really got the calendar
+        self.tried = 0.0
 
     def reported(self) -> Dict[str, str]:
         """Latest report date per symbol seen in the (past part of the) calendar."""
@@ -648,12 +649,15 @@ class EarningsData:
     async def refresh(self, tech_syms: List[str], force: bool = False, frames: bool = True) -> None:
         if not cfg().get("enabled", True):
             return
-        if not force and time.time() - self.ts < float(cfg().get("refresh_s", 1800)):
+        if not force and time.time() - self.tried < float(cfg().get("refresh_s", 1800)):
             return
+        self.tried = time.time()
         b = float(cfg().get("budget_s", 240))
+        ok = True
         try:
             self.days = await refresh_calendar(b * 0.3)
         except Exception as e:  # noqa: BLE001
+            ok = False
             log.warning("earnings calendar refresh failed: %s", e)
         rep = self.reported()
         fsyms = list(dict.fromkeys(tech_syms + self.verdict_syms()))     # 財報結論 needs quarterly revenue (成長加速／放慢)
@@ -665,7 +669,8 @@ class EarningsData:
                 log.warning("earnings %s refresh failed: %s", nm, r)
             else:
                 setattr(self, nm, r)
-        self.ts = time.time()
+        if ok:                         # a failed fetch must not make old rows look fresh on the card's stamp
+            self.ts = time.time()
 
     async def poll_day(self, d: date) -> List[Dict]:
         rows = await _cal_day(d)

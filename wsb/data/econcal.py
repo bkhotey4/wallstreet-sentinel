@@ -378,21 +378,23 @@ class EconCalendar:
         self.days: Dict[str, Dict] = load()
         self.ff: List[Dict] = []
         self.fomc: List[Dict] = []
-        self.ts = 0.0
+        self.ts = 0.0          # last refresh that really got the calendar
+        self.tried = 0.0
 
     async def refresh(self, force: bool = False, budget_s: Optional[float] = None) -> None:
         if not cfg().get("enabled", True):
             return
-        if not force and time.time() - self.ts < float(cfg().get("refresh_s", 1500)):
+        if not force and time.time() - self.tried < float(cfg().get("refresh_s", 1500)):
             return
+        self.tried = time.time()
         res = await asyncio.gather(refresh(budget_s), ff_week(), fomc_meetings(), return_exceptions=True)
         if not isinstance(res[0], Exception):
             self.days = res[0]
+            self.ts = time.time()      # a failed fetch must not make old rows look fresh on the card's stamp
         else:
             log.warning("econ refresh failed: %s", res[0])
         self.ff = res[1] if not isinstance(res[1], Exception) else self.ff
         self.fomc = res[2] if not isinstance(res[2], Exception) else self.fomc
-        self.ts = time.time()
 
     async def poll_day(self, day: date) -> List[Dict]:
         """Fast path for the release watcher: re-fetch one day now and store it (an empty answer keeps the old rows)."""

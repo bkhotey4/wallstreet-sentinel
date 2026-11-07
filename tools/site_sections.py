@@ -737,6 +737,7 @@ def rotation_svg(cid: str, rows: List[Dict], w: int = 560, h: int = 300) -> str:
 
 
 def sec_rotation(eng) -> str:
+    from wsb.data.stocks import universe
     b = getattr(eng, "rotation", None) or {}
     if not b.get("available"):
         return card("類股輪動與市場寬度", "Sector rotation & breadth", f'<p class="muted">{T("資料暫時取不到", "Data unavailable")}</p>', "wide")
@@ -759,8 +760,9 @@ def sec_rotation(eng) -> str:
         br.append(f'<div class="trend"><div class="th"><b>{T("等權重 ÷ 市值加權標普（起點=100）", "Equal-weight ÷ cap-weight S&P (start = 100)")}</b>'
                   f'<span class="muted">{T("3 個月", "3M")} {num(ew.get("chg_3m"), 1, sign=True, pct=True)}</span></div>'
                   + line_chart("c_ew", ew["series"], "RSP/SPY", 1) + "</div>")
-    note = T("相對強弱 = 類股 ETF 報酬 − 標普 500 報酬（百分點），顏色深淺只是輔助，數字才是重點。輪動圖：橫軸是相對標普的 3 個月表現（站在哪），"
-             "縱軸是最近 1 個月相對表現減去 3 個月的平均月速度（往哪走）。市場寬度用本站個股評分池計算（美股 52、台股 30、港股 30 檔大型股），"
+    n = {m: len(u) for m, u in universe().items()}
+    note = T(f"相對強弱 = 類股 ETF 報酬 − 標普 500 報酬（百分點），顏色深淺只是輔助，數字才是重點。輪動圖：橫軸是相對標普的 3 個月表現（站在哪），"
+             f"縱軸是最近 1 個月相對表現減去 3 個月的平均月速度（往哪走）。市場寬度用本站個股評分池計算（美股 {n.get('us', 0)}、台股 {n.get('tw', 0)}、港股 {n.get('hk', 0)} 檔大型股），"
              "不是全市場；比例跌破 30% 代表多數權值股已轉弱。等權重相對市值加權走低，代表漲勢集中在少數大型股。",
              "Relative strength = sector ETF return minus S&P 500 (pp). Rotation map: x = 3-month relative return, y = last month's "
              "relative return minus the 3-month average pace. Breadth uses this site's scoring universe (large caps), not the whole market.")
