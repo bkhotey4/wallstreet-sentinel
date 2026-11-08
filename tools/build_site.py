@@ -1096,6 +1096,11 @@ body{margin:0;background:var(--page);color:var(--tx);font:14px/1.55 system-ui,-a
 .tbtns{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .fsg{display:inline-flex}.fsg .fsb{min-width:30px;padding:5px 7px;font-weight:700}.fsg .fsb:first-child{border-radius:8px 0 0 8px}.fsg .fsb:last-child{border-radius:0 8px 8px 0;border-left:0}
 .fsb:disabled{opacity:.4;cursor:default}
+.tmore{display:none}
+@media(max-width:620px){.bar{padding:6px 12px;gap:4px 8px;flex-wrap:wrap}.brand{font-size:12px;letter-spacing:.04em}.brand small{display:none}.live{order:3;flex:1 1 100%;margin:0;font-size:11.5px}
+.tbtns{flex:1;gap:4px}.tbtns .btn{padding:4px 7px;min-width:32px}.omni-btn,#reloadBtn{font-size:0!important;padding-inline:8px!important}.omni-btn::before{content:"🔍";font-size:13px}#reloadBtn::before{content:"↻";font-size:14px}
+.tbtns .install,#kwBtn,#langBtn,#themeBtn,.fsg{display:none}.top.more .tbtns .install.show,.top.more #kwBtn,.top.more #langBtn,.top.more #themeBtn{display:inline-block}.top.more .fsg{display:inline-flex}.tmore{display:inline-block}
+.top{transition:transform .2s ease}.top.hid{transform:translateY(-100%)}}
 @media(min-width:901px){.bar{flex-wrap:nowrap}.live{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;justify-content:flex-end}}
 .btn{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer;min-width:40px}
 .wrap{max-width:1320px;margin:0 auto;padding:12px 16px 40px}
@@ -1297,17 +1302,30 @@ COMPLY_EN = ("A personal open-source quantitative research tool built on public 
 
 
 def comply_bar() -> str:
-    return (f'<div class="comply" id="comply" role="note"><span>⚠️ <b>{T("免責聲明與研究工具宣告", "Disclaimer")}</b>：{T(COMPLY_ZH, COMPLY_EN)} '
+    return (f'<div class="comply" id="comply" role="note"><span>⚠️ <b>{T("免責聲明與研究工具宣告", "Disclaimer")}</b><span class="cfull">：{T(COMPLY_ZH, COMPLY_EN)}</span> '
+            f'<button type="button" class="cmore" id="complyMore" aria-expanded="false">{T("看全文", "Read")}</button> '
             f'<a href="#about" data-p="about" class="golink">{T("條款與隱私", "Terms")}</a></span>'
             f'<button type="button" class="btn" id="complyX">{T("我知道了", "Got it")}</button></div>')
 
 
 COMPLY_CSS = (".comply{display:flex;gap:10px;align-items:flex-start;padding:8px max(16px,env(safe-area-inset-left,0px));font-size:12.5px;"
               "line-height:1.55;background:var(--wash);border-bottom:1px solid var(--bd);color:var(--tx)}.comply span{flex:1;min-width:0}"
-              ".comply .btn{flex:none;font-size:12px;padding:3px 10px}.comply.hide{display:none}")
+              ".comply .btn{flex:none;font-size:12px;padding:3px 10px}.comply.hide{display:none}"
+              ".cmore{display:none;background:none;border:0;padding:0;color:var(--ac);font:inherit;cursor:pointer}"
+              "@media(max-width:620px){.comply{padding-block:6px}.comply .cfull{display:none}.comply.open .cfull{display:inline}.cmore{display:inline}.comply.open .cmore{display:none}.comply .golink{display:none}.comply.open .golink{display:inline}}")
+TOP_JS = r"""
+(function(){var t=document.querySelector('header.top'),mb=document.getElementById('tmoreBtn');if(!t)return;
+ if(mb)mb.addEventListener('click',function(){var o=t.classList.toggle('more');mb.setAttribute('aria-expanded',String(o));});
+ var mq=window.matchMedia('(max-width:620px)'),y0=window.scrollY;
+ function upd(){var y=window.scrollY;if(!mq.matches||y<120||t.classList.contains('more')){t.classList.remove('hid');}
+  else if(y>y0+8){t.classList.add('hid');}else if(y<y0-8){t.classList.remove('hid');}
+  if(Math.abs(y-y0)>8)y0=y;}
+ window.addEventListener('scroll',upd,{passive:true});})();
+"""
 COMPLY_JS = r"""
 (function(){var b=document.getElementById('comply');if(!b)return;var k='disclaimer_closed';
  try{var v=+localStorage.getItem(k)||0;if(v&&Date.now()-v<30*864e5)b.classList.add('hide');}catch(e){}
+ var m=document.getElementById('complyMore');if(m)m.addEventListener('click',function(){b.classList.add('open');m.setAttribute('aria-expanded','true');});
  var x=document.getElementById('complyX');if(x)x.addEventListener('click',function(){b.classList.add('hide');try{localStorage.setItem(k,String(Date.now()));}catch(e){}});})();
 """
 
@@ -1413,11 +1431,11 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SNL.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
-<div class="tbtns">{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="reloadBtn" type="button" aria-label="refresh page" title="重新載入最新資料" data-en="↻ Refresh">↻ 更新</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><span class="fsg"><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></span></div></div>
+<div class="tbtns">{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="reloadBtn" type="button" aria-label="refresh page" title="重新載入最新資料" data-en="↻ Refresh">↻ 更新</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><button class="btn tmore" id="tmoreBtn" type="button" aria-label="more buttons" aria-expanded="false">⋯</button><span class="fsg"><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></span></div></div>
 {SLY.topnav()}{SA.RIBBON_HTML}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{COMPLY_JS}{TOP_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
