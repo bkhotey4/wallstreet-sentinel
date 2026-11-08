@@ -1415,6 +1415,10 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     strip = sec_strip(eng)
     asof, stale = data_asof(eng)
     eng.web_alerts = SA.alerts_payload(eng)                 # 網頁警示 (also written to alerts.json)
+    try:                                                    # 網站自己的警報紀錄（全站預測成績單用）
+        STK.log_site_alerts(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("site alert log failed")
     data = json.dumps(_CHARTS, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     foot = T("資料來源：Yahoo Finance、FRED、CBOE、FINRA、SEC EDGAR、TreasuryDirect、證交所／期交所、公開新聞 RSS 與 Google 新聞。平日約每 20 分鐘、週末每 4 小時自動更新；市場轉差時立即重建。"
              "所有數字由程式自動計算；崩跌機率是歷史頻率而非預測，個股評分是量化篩選而非推薦。本站僅提供市場資訊，不構成任何投資建議。"

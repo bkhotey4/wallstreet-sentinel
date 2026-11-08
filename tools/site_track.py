@@ -4,6 +4,10 @@ replay and the live alert log.  Every line has a sample size, hits, a baseline a
 Below MIN_N a line says 樣本太少 and shows counts only; a verdict needs the 90% interval of the hit rate to clear the baseline."""
 from __future__ import annotations
 
+import json
+import os
+import time
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from tools.sitekit import T, card, esc, guard_safe
@@ -93,16 +97,77 @@ def rules_row(eng) -> Optional[Dict]:
     return x
 
 
-def _alert_rows() -> List[tuple]:
+SEED = Path(__file__).resolve().parents[1] / "research_feed" / "alert_track_seed.json"   # public site repo root, never synced over
+
+
+def _track_file() -> Path:
+    from wsb.config import DATA_DIR
+    return DATA_DIR / "econ_alert_track.json"          # econ_* → kept by the Actions cache between builds
+
+
+def _load(path: Path) -> List[list]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("rows") or [] if path.exists() else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def sanitize(rows: List[tuple]) -> List[list]:
+    """Public form of a logged alert: time, rule family only (no ticker, no title), severity, S&P 500 level."""
+    from wsb.analytics.scorecard import FAMILIES
+    out = []
+    for ts, key, kind, sev, _title, spx, _ssi in rows:
+        pre = next((p for p, _ in FAMILIES if key.startswith(p)), "other:")
+        out.append([round(float(ts)), pre, kind, "🚨" if str(sev).startswith("🚨") else "⚠️", spx])
+    return out
+
+
+def log_site_alerts(eng, now: Optional[float] = None) -> int:
+    """Each build: remember the first time every red (risk) pop-up alert appeared on the site, with the S&P 500 level.
+    Gives the Actions-built site its own alert record — the bot's log lives only on the owner's computer."""
+    items = [x for x in ((getattr(eng, "web_alerts", None) or {}).get("items") or [])
+             if x.get("lv") == "alert" and x.get("tone", "risk") == "risk" and x.get("key")]
+    if not items:
+        return 0
+    f = _track_file()
+    rows = _load(f)
+    seen = {r[1] for r in rows}
+    try:
+        spx = float(eng.market.series("^GSPC").dropna().iloc[-1])
+    except Exception:  # noqa: BLE001
+        spx = None
+    now = now or time.time()
+    new = [[round(now), x["key"], "risk", "⚠️", spx] for x in items if x["key"] not in seen]
+    if new:
+        rows = [r for r in rows + new if r[0] > now - 400 * 86400]
+        tmp = f.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"rows": rows}, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, f)
+    return len(new)
+
+
+def _alert_rows() -> Tuple[List[tuple], str]:
+    """Rows for the scorecard and where they came from: the bot's own log when it exists (owner's computer), else the
+    site's record (Actions) plus the bot history published once as a sanitized seed."""
     from wsb import store
-    return [r for r in store.tracked_alerts(365) if not store.is_private_alert(r[1])]     # holdings-derived alerts stay private
+    try:
+        own = [r for r in store.tracked_alerts(365) if not store.is_private_alert(r[1])]     # holdings-derived alerts stay private
+    except Exception:  # noqa: BLE001
+        own = []
+    if own:
+        return own, "bot"
+    site = _load(_track_file())
+    seed = _load(SEED)
+    cut = min([r[0] for r in site] or [time.time()])
+    rows = [r for r in seed if r[0] < cut] + site
+    return [(r[0], r[1], r[2], r[3], "", r[4], None) for r in sorted(rows) if r[0] > time.time() - 365 * 86400], "site"
 
 
 def alert_rows(eng) -> List[Dict]:
     """Alerts actually sent and logged, S&P 500 afterwards, merged into episodes (wsb.analytics.scorecard)."""
     try:
         from wsb.analytics import scorecard as SC
-        rows = _alert_rows()
+        rows, src = _alert_rows()
         res = SC.evaluate(rows, eng.market.series("^GSPC")) if rows else {}
     except Exception:  # noqa: BLE001
         res = {}
@@ -114,7 +179,8 @@ def alert_rows(eng) -> List[Dict]:
         base = p.get("base_rate")
         dd = h["drawdown"] * 100
         r = _row(f"已發出的風險警報：{days} 日內跌 ≥{dd:.0f}%", f"Sent alerts: ≥{dd:.0f}% in {days}d", n, round((p.get("hit_rate") or 0) * n / 100), base,
-                 f"任何一天 {base:.0f}%" if base is not None else "—", f"Any day {base:.0f}%" if base is not None else "—", None)
+                 f"任何一天 {base:.0f}%" if base is not None else "—", f"Any day {base:.0f}%" if base is not None else "—", None,
+                 "" if src == "bot" else "網站自己記的紅色警報（加上機器人過去的紀錄），同一天內的多次警報算一次")
         r["false"] = n - r["hits"]
         r["fam"] = [{"name": k, "n": ((v.get("by_horizon") or {}).get(days) or {}).get("episodes", 0),
                      "rate": ((v.get("by_horizon") or {}).get(days) or {}).get("hit_rate")} for k, v in (res.get("families") or {}).items()]

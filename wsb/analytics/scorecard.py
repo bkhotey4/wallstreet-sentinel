@@ -22,7 +22,8 @@ HORIZONS = CFG.get("horizons", [{"days": 5, "drawdown": 0.02}, {"days": 20, "dra
 KIND_NAMES = {"risk": "市場風險警報", "news": "新聞風險警報"}
 
 
-FAMILIES = [("ssi_level", "壓力指數升級"), ("ssi_jump", "SSI 單日跳升"), ("vix_backwardation", "VIX 期限倒掛"),
+FAMILIES = [("ssi_level", "壓力指數升級"), ("ssi:", "壓力指數升級"), ("ssi_jump", "SSI 單日跳升"), ("vix_back", "VIX 期限倒掛"),
+            ("danger:", "盤中危險訊號"), ("canary:", "金絲雀紅燈"),
             ("gamma_flip", "Gamma 翻轉"), ("pf_dd", "持倉單日回撤"), ("playbook:", "風險劇本升級"),
             ("shock:div", "股債背離"), ("shock:", "衝擊路徑點火"), ("regime:", "避險機制失靈"), ("sigma:", "異常波動")]
 
