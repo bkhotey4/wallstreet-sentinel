@@ -650,7 +650,8 @@ def sec_taiwan(eng) -> str:
     fu = tw.futures or {}
     mg = tw.margin or {}
     fl = tw.flows or []
-    _d = lambda x: f" · {T('資料日', 'as of')} {esc(str(x))}" if x else ""   # noqa: E731  a holiday shows the last session, so say which
+    _iso = lambda x: f"{x[:4]}-{x[4:6]}-{x[6:]}" if len(x) == 8 and x.isdigit() else x.replace("/", "-")   # noqa: E731  TAIFEX sends 20261106
+    _d = lambda x: f" · {T('資料日', 'as of')} {esc(_iso(str(x)))}" if x else ""   # noqa: E731  a holiday shows the last session, so say which
 
     # KPI 1: Foreign Futures Net OI
     oi = fu.get("oi_foreign")
