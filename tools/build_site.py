@@ -1381,7 +1381,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
-            ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ldi, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_dollar, STR.sec_tr_yen, SST.sec_st_coverage]),
+            ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ldi, SST.sec_st_fsr, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_dollar, STR.sec_tr_yen, SST.sec_st_coverage]),
             ("tools", "工具", "Tools", [SLV.sec_lookup, SLV.sec_watch, SCA.sec_sizing, S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
@@ -1670,6 +1670,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(MGP.refresh(), 90)
     except Exception as e:  # noqa: BLE001
         log.warning("polls data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 金融穩定報告點名的壓力點：OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（每天一次）
+        from wsb.data import fsr_watch as FSW
+        await asyncio.wait_for(FSW.refresh(), 240)
+    except Exception as e:  # noqa: BLE001
+        log.warning("FSR watch data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 退休金與長債：英國央行 20 年公債、歐洲央行 30 年（12 小時一次）
         from wsb.data import pension_ldi as PLD
         await asyncio.wait_for(PLD.refresh(), 120)

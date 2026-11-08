@@ -1226,6 +1226,11 @@ class Sentinel(commands.Bot):
             out += [Alert(k, sev, t, d) for k, sev, t, d in pld.alerts(pld.view(self.engine))]
         except Exception:  # noqa: BLE001
             log.exception("pension/LDI alert failed")
+        try:                                     # 金融穩定報告點名的壓力點亮黃燈（季資料，每個資料日一次）
+            from ..data import fsr_watch as fsw
+            out += [Alert(k, sev, t, d) for k, sev, t, d in fsw.alerts(fsw.view(self.engine, (v.get("basis") or {}).get("pct")))]
+        except Exception:  # noqa: BLE001
+            log.exception("FSR watch alert failed")
         try:                                     # 大象撤退：資產管理機構股指期貨淨多單 13 週變化落在歷史最低 10%
             from ..analytics import bubble as bub
             for e in bub.elephants(self.engine, bub.load().get("cftc") or {}):

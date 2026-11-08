@@ -68,9 +68,9 @@ def coverage() -> Dict:
 
 # What the site watches, filed under the Fed Financial Stability Report's four vulnerability categories (+ events).
 MAP = [
-    ("資產估值", "巴菲特指標、熱度計、投機股（高 Beta／ARKK）、EBP 信用定價、期限溢價", "valuation"),
-    ("企業與家庭借貸", "高收益／BB／CCC／Baa 利差、企業危機雷達（Altman Z''、Merton）、破產模型、家庭償債比、逾期率、AI 資本支出", "industry"),
-    ("金融機構槓桿", "放款標準 SLOOS、銀行存款、私募信貸 BDC、融資餘額、美債基差交易（CFTC）", "risk"),
+    ("資產估值", "巴菲特指標、熱度計、投機股（高 Beta／ARKK）、EBP 信用定價、期限溢價、房價租金比", "valuation"),
+    ("企業與家庭借貸", "高收益／BB／CCC／Baa 利差、企業危機雷達（Altman Z''、Merton）、破產模型、家庭償債比、逾期率、各類貸款新增嚴重逾期（紐約聯準會）、AI 資本支出", "industry"),
+    ("金融機構槓桿", "放款標準 SLOOS、銀行存款、銀行證券帳面損失與未保險存款（FDIC）、避險基金槓桿（OFR）、私募信貸 BDC、融資餘額、美債基差交易（CFTC）", "risk"),
     ("資金面（短期融資）", "SOFR−準備金利率、常設回購動用、逆回購、準備金、財政部 TGA、貼現窗口", "stability"),
     ("排定的大事件", "FOMC、財政部季度再融資（借款估算＋標售規模聲明）、美債標售、CPI／就業、財報季", "econ"),
 ]
@@ -103,6 +103,13 @@ def sec_st_brief(eng) -> str:
         lit = "🔴" if any(r["emoji"] == "🔴" for r in ld) else "🟡" if any(r["emoji"] == "🟡" for r in ld) else "🟢"
         tiles.append(("st-ldi", f"{lit} 退休金與長債", f"{w['c3']:+.0f}<small> bp</small>",
                       f"{w['zh']} {w['tenor']} 3 天變化・{len(ld)} 個市場" + ("都平穩" if lit == "🟢" else ""), ""))
+    fw = _fsr(eng) or {}
+    fl = [x for x in (fw.get(k) for k in ("house", "bank", "hedge", "rent")) if x]
+    if fl:
+        lit = sum(1 for x in fl if x["emoji"] == "🟡")
+        au = next((r for r in (fw.get("house") or {}).get("rows") or [] if r["code"] == "AUTO"), None)
+        tiles.append(("st-fsr", f"{'🟡' if lit else '🟢'} 官方點名的壓力點", f"{lit}<small> / {len(fl)} 黃燈</small>",
+                      (f"車貸新增嚴重逾期 {au['flow']:.1f}%（10 年第 {au['p10']:.0f} 百分位）" if au and au.get("p10") is not None else "家庭貸款、銀行、避險基金、房價"), ""))
     cv = coverage()
     gaps = cv.get("gaps") or []
     try:
@@ -292,6 +299,91 @@ def sec_st_ldi(eng) -> str:
             + (f'<div class="g3">{sp}</div>' if sp else "") + '</details>'
             + f'<p class="note">{T(f"燈號規則：3 個交易日升幅落在自己歷史最高 0.5%、或超過 {PL.RED_BP:.0f}bp → 🔴；最高 2.5%（或 20 天升幅最高 2.5%）→ 🟡；其餘 🟢。百分位只和同一條債自己的歷史比。資料：英國央行（20 年名目平價殖利率，2000 年起）、歐洲央行（歐元區 AAA 公債殖利率曲線，2004 年起）、FRED（美國 30 年）、日本財務省（日本 30 年）。描述現況，不是預測，也不是投資建議。", "")}</p>')
     return card("退休金與長天期公債：會不會再出一次 2022 年英國危機", "Pensions and long bonds: LDI stress", body, "wide")
+
+
+def _fsr(eng) -> Dict:
+    c = getattr(eng, "_fsr_view", None)
+    if c is None:
+        try:
+            from wsb.data import fsr_watch as FW
+            c = FW.view(eng, ((_v(eng) or {}).get("basis") or {}).get("pct"))
+        except Exception:  # noqa: BLE001
+            c = {}
+        try:
+            eng._fsr_view = c
+        except Exception:  # noqa: BLE001
+            pass
+    return c
+
+
+def fsr_lead(v: Dict) -> str:
+    from wsb.data import fsr_watch as FW
+    lit = [(k, v[k]) for k in FW.NAMES if (v.get(k) or {}).get("emoji") == "🟡"]
+    n = sum(1 for k in FW.NAMES if v.get(k))
+    if not lit:
+        return f"聯準會點名的 {n} 個壓力點，目前都沒有落在自己歷史最高的一成。"
+    return f"{n} 個壓力點裡有 {len(lit)} 個亮黃燈：" + "；".join(f"{FW.NAMES[k]}（{x['state']}）" for k, x in lit) + "。"
+
+
+@_anchor("st-fsr")
+def sec_st_fsr(eng) -> str:
+    from wsb.data import fsr_watch as FW
+    v = _fsr(eng) or {}
+    hf, hh, bk, rr = (v.get(k) for k in ("hedge", "house", "bank", "rent"))
+    if not any((hf, hh, bk, rr)):
+        return ""
+    parts = []
+    if hh:
+        tr = "".join(f'<tr{" class=hl" if r["zh"] in hh["hot"] else ""}><td>{esc(r["zh"])}</td><td class="r"><b>{r["flow"]:.2f}%</b></td>'
+                     f'<td class="r">{num(r["flow_1y"], 2)}%</td><td class="r">{num(r["p10"], 0)}</td><td class="r small muted">{r["max"]:.2f}%（{esc(r["max_date"])}）</td>'
+                     f'<td class="r">{num(r["stock"], 2)}%</td></tr>' for r in hh["rows"])
+        au = next((r for r in hh["rows"] if r["code"] == "AUTO"), None)
+        parts.append(f'<h3>{hh["emoji"]} 家庭貸款：{esc(hh["state"])} <span class="muted small">資料季 {esc(hh["date"][:7])}</span></h3>'
+                     + (f'<p>這一季大約每 100 元車貸，就有 {au["flow"]:.1f} 元新變成拖欠 90 天以上，一年前是 {num(au["flow_1y"], 1)} 元，'
+                        f'在過去 10 年裡排第 {num(au["p10"], 0)} 百分位；最高是 {esc(au["max_date"][:4])} 年金融海嘯時的 {au["max"]:.1f} 元。'
+                        '車是很多人上班的工具，車貸繳不出來，通常代表收入最緊的那群人先撐不住。</p>' if au else "")
+                     + f'<div class="scroll"><table class="mini"><thead><tr><th>貸款</th><th class="r">新增嚴重逾期</th><th class="r">一年前</th>'
+                       f'<th class="r">10 年百分位</th><th class="r">歷史最高</th><th class="r">累積逾期 90 天以上</th></tr></thead><tbody>{tr}</tbody></table></div>')
+    if bk:
+        parts.append(f'<h3>{bk["emoji"]} 銀行：{esc(bk["state"])} <span class="muted small">資料季 {esc(bk["date"][:7])}</span></h3>'
+                     f'<p>銀行手上的債券如果現在賣掉，比當初的成本少大約 {abs(bk["unreal"]) * 10000:,.0f} 億美元，等於股東權益的 {abs(bk["ratio"]):.1f}%'
+                     + (f'（一年前 {abs(bk["ratio_1y"]):.1f}%）' if bk.get("ratio_1y") is not None else "")
+                     + f'；最糟是 {esc(bk["worst_date"][:7])} 的 {abs(bk["worst"]):.1f}%。另外 {bk["unins"]:.0f}% 的存款超過保險上限（{bk["since"]} 年以來第 {num(bk["unins_pct"], 0)} 百分位）。'
+                     '平常不賣就不會認列損失；麻煩是存款人一起提款、銀行被迫賣債，損失就變成真的——2023 年矽谷銀行就是這樣倒的。</p>')
+    if hf:
+        parts.append(f'<h3>{hf["emoji"]} 避險基金：{esc(hf["state"])} <span class="muted small">資料季 {esc(hf["date"][:7])}</span></h3>'
+                     f'<p>避險基金總共管理 {hf["gav"]:.1f} 兆美元的部位，其中自己的錢只有 {hf["nav"]:.1f} 兆，平均每 1 元本金撐 {hf["lev"]:.2f} 元'
+                     f'（{hf["since"]} 年以來第 {num(hf["lev_pct"], 0)} 百分位，最高 {hf["lev_max"]:.2f} 倍在 {esc(hf["lev_max_date"][:7])}）。'
+                     + (f'最大 10 家平均 {hf["top10"]:.1f} 倍，占全部資產 {num(hf.get("share"), 1)}%。' if hf.get("top10") is not None else "")
+                     + (f'它們透過結算所借錢做美債基差交易的擔保回購約 {hf["repo"] / 1000:.2f} 兆美元，比一年前 {hf["repo_yoy"]:+.0f}%（{esc(hf["repo_date"])}）。'
+                        if hf.get("repo_yoy") is not None else "")
+                     + (f'CFTC 美債基差交易規模在自己歷史第 {hf["basis_pct"]:.0f} 百分位。' if hf.get("basis_pct") is not None else "")
+                     + '槓桿高本身不是問題；問題是市場一急，大家同時被要求補錢、同時賣美債，2020 年 3 月就發生過。</p>')
+    if rr:
+        parts.append(f'<h3>{rr["emoji"]} 房價租金比：{esc(rr["state"])} <span class="muted small">資料月 {esc(rr["date"])}</span></h3>'
+                     f'<p>把房價除以房租（{rr["since"]} 年＝100），現在是 {rr["idx"]:.0f}，在自己歷史第 {num(rr["pct"], 0)} 百分位'
+                     + (f'；2006 年泡沫高點是 {rr["peak06"]:.0f}（{esc(rr["peak06_date"])}）' if rr.get("peak06") else "")
+                     + (f'，歷史最高 {rr["max"]:.0f}（{esc(rr["max_date"])}）' if rr.get("max_date") and rr.get("max_date") != rr.get("peak06_date") else "")
+                     + '。比值高代表「買房比租房貴很多」，年輕人更難買房；房價若要回到常態，不是房價跌，就是房租要漲很多年。</p>')
+    spill = ('<p class="small"><b>連帶影響</b>：車貸逾期先打到次級車貸放款機構、二手車價和車廠的融資部門，再傳到買車貸證券的投資人；'
+             '銀行帳面損失大，放款就保守，小企業和商用不動產最先借不到錢；避險基金一起去槓桿時，美債殖利率會在幾天內亂跳，'
+             '房貸利率跟著動；房價相對房租偏高，房市交易就冷，建商、仲介和家具家電需求跟著慢。</p>')
+    sp = []
+    au = next((r for r in (hh or {}).get("rows") or [] if r["code"] == "AUTO"), None)
+    for lab, rows in (("車貸新增嚴重逾期（%）", (au or {}).get("hist")), ("銀行債券帳面盈虧÷股東權益（%）", (bk or {}).get("hist")),
+                      ("避險基金槓桿（倍）", (hf or {}).get("hist")), ("房價租金比", (rr or {}).get("hist"))):
+        if rows and len(rows) > 5:
+            sp.append(f'<div><div class="small muted">{lab}</div>{spark(_ser(rows), 160, 36)}</div>')
+    body = (f'<p class="rimp big2"><b>{T("一句話看懂：" + fsr_lead(v), "")}</b></p>'
+            f'<p>{T("聯準會每半年出一份《金融穩定報告》，點名哪裡可能出事。本站每月對照，發現這四項原本沒在看，現在補上：家庭繳不繳得出貸款、銀行債券跌價、避險基金借了多少錢、房子相對房租貴不貴。", "")}</p>'
+            + (parts[0] if parts else "")
+            + f'<details class="sgx"><summary>{T("看銀行、避險基金、房價租金比與連帶影響", "Details")}</summary>' + "".join(parts[1:]) + spill
+            + (f'<div class="g3">{"".join(sp)}</div>' if sp else "") + '</details>'
+            + f'<p class="note">{T("燈號：每項都和自己的歷史比。家庭——車貸或信用卡「這一季新增逾期 90 天以上」落在過去 10 年最高 10% → 🟡；銀行——證券帳面損失占股東權益落在 2010 年以來最大 10% → 🟡；避險基金——整體槓桿在 2013 年以來最高 10%、而且 CFTC 基差交易也在最高 10% → 🟡；房價租金比在 1987 年以來最高 10% → 🟡。", "")}'
+              f'資料：<a href="{FW.NYF_PAGE}" target="_blank" rel="noopener">紐約聯準會家庭債務與信用報告</a>（季，2003 年起；沒有 FHA/VA 房貸分項）、'
+              f'<a href="{FW.FDIC_PAGE}" target="_blank" rel="noopener">FDIC 全體銀行申報</a>（季）、<a href="{FW.OFR_PAGE}" target="_blank" rel="noopener">OFR 避險基金監測</a>（Form PF 季資料、結算所擔保回購）、'
+              'FRED（Case-Shiller 房價、CPI 房租）。季資料大約落後 2～5 個月。描述現況，不是預測，也不是投資建議。</p>')
+    return card("官方點名的四個壓力點：家庭貸款、銀行、避險基金、房價", "Fed FSR pressure points", body, "wide")
 
 
 @_anchor("st-cover")

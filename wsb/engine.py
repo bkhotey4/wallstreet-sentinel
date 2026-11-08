@@ -340,6 +340,11 @@ class Engine:
             await mgp.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("polls data failed: %s", e)
+        try:                                                    # 金融穩定報告點名的壓力點：避險基金、家庭貸款、銀行（每天一次）
+            from .data import fsr_watch as fsw
+            await fsw.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("FSR watch data failed: %s", e)
         try:                                                    # 退休金與長債（12 小時一次）
             from .data import pension_ldi as pld
             await pld.refresh()
