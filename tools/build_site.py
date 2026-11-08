@@ -53,6 +53,7 @@ from tools import site_bonds as SBD
 from tools import site_bondread as SBR
 from tools import site_etf_flows as SEF
 from tools import site_twmacro as STW
+from tools import site_twbank as STB
 from tools import site_tw_etf as STE
 from tools import site_tw_etf_perf as STEP
 from tools import site_intraday as SID
@@ -1374,7 +1375,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ]),
-            ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money]),
+            ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),
             ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, sec_calendar, sec_news]),

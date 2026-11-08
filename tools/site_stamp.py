@@ -288,6 +288,19 @@ def _fsr():
     return (_ts(min(ts)) if ts else None), (min(last) if last else None)
 
 
+def _twbank():
+    """(oldest fetch ts, oldest data month) over the four Banking Bureau files."""
+    try:
+        from wsb.data import tw_bank as TB
+        d = TB.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    each = d.get("ts_each") or {}
+    ts = [float(each[k]) for k in ("quality", "sme", "npl", "land") if each.get(k)]
+    last = [max(d[k]) for k in ("quality", "sme") if d.get(k)] + [d[k]["month"] for k in ("npl", "land") if (d.get(k) or {}).get("month")]
+    return (_ts(min(ts)) if ts else None), (min(last) if last else None)
+
+
 def _polls():
     try:
         from wsb.data import migration_polls as MP
@@ -482,6 +495,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "jpy": ("日圓匯率＋CFTC 日圓部位", "Yen and CFTC", lambda e: (_ts(_trm("ts_check")), _trm_date("jpy")), 10),
     "polls": ("VoteHub 民調彙整", "VoteHub polls", lambda e: _polls(), 45),
     "ldi": ("英國央行與歐洲央行長天期公債", "BoE / ECB long yields", lambda e: _ldi(), 7),
+    "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
     "fsr": ("OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（季資料）", "OFR / NY Fed / FDIC quarterly", lambda e: _fsr(), 200),
     "ecb": ("歐洲央行 CISS＋各國公債（FRED 月資料）", "ECB CISS / FRED", lambda e: (_ts(_ead("ts_check")), _ead_date()), 7),
     "capexq": ("SEC 季報（資本支出／營收）", "SEC quarterly", lambda e: (_ts(_cxl("ts")), None), 0),
@@ -513,7 +527,7 @@ CARD: Dict[str, List[str]] = {
     "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_etf_flows": ["etf_flows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
-    "sec_tw_money": ["twmacro", "tw"], "sec_tw_life": ["twmacro"],
+    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_life": ["twmacro"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],

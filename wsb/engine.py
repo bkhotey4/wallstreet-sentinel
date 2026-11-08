@@ -82,6 +82,11 @@ async def _twmacro():
     """Taiwan central bank / NDC / TPEx bonds / Taipei housing (台灣 pages)."""
     from .data import twmacro as TM
     await TM.refresh()
+    try:                                       # 台灣家庭與銀行壓力：金管會銀行局開放資料（每天一次）
+        from .data import tw_bank as TB
+        await TB.refresh()
+    except Exception as e:  # noqa: BLE001
+        log.warning("TW bank data failed: %s", e)
 
 
 class Engine:

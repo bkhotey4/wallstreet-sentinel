@@ -1226,6 +1226,11 @@ class Sentinel(commands.Bot):
             out += [Alert(k, sev, t, d) for k, sev, t, d in pld.alerts(pld.view(self.engine))]
         except Exception:  # noqa: BLE001
             log.exception("pension/LDI alert failed")
+        try:                                     # 台灣中小企業逾放比、非正常放款落在自己歷史最高 10%
+            from ..data import tw_bank as twb
+            out += [Alert(k, sev, t, d) for k, sev, t, d in twb.alerts(twb.view(self.engine))]
+        except Exception:  # noqa: BLE001
+            log.exception("TW bank alert failed")
         try:                                     # 金融穩定報告點名的壓力點亮黃燈（季資料，每個資料日一次）
             from ..data import fsr_watch as fsw
             out += [Alert(k, sev, t, d) for k, sev, t, d in fsw.alerts(fsw.view(self.engine, (v.get("basis") or {}).get("pct")))]
