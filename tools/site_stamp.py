@@ -298,7 +298,11 @@ def _twbank():
     each = d.get("ts_each") or {}
     ts = [float(each[k]) for k in ("quality", "sme", "npl", "land") if each.get(k)]
     last = [max(d[k]) for k in ("quality", "sme") if d.get(k)] + [d[k]["month"] for k in ("npl", "land") if (d.get(k) or {}).get("month")]
-    return (_ts(min(ts)) if ts else None), (min(last) if last else None)
+    if not last:
+        return (_ts(min(ts)) if ts else None), None
+    import pandas as pd
+    end = (pd.Timestamp(min(last) + "-01") + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")      # 'YYYY-MM' → month end, like other stamps
+    return (_ts(min(ts)) if ts else None), end
 
 
 def _polls():
