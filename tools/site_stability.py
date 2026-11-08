@@ -320,9 +320,11 @@ def fsr_lead(v: Dict) -> str:
     from wsb.data import fsr_watch as FW
     lit = [(k, v[k]) for k in FW.NAMES if (v.get(k) or {}).get("emoji") == "🟡"]
     n = sum(1 for k in FW.NAMES if v.get(k))
+    ac = v.get("auto") or {}
+    tail = "車貸壓力已經傳到放款公司（股價明顯落後大盤）。" if ac.get("emoji") == "🟡" else ""
     if not lit:
-        return f"聯準會點名的 {n} 個壓力點，目前都沒有落在自己歷史最高的一成。"
-    return f"{n} 個壓力點裡有 {len(lit)} 個亮黃燈：" + "；".join(f"{FW.NAMES[k]}（{x['state']}）" for k, x in lit) + "。"
+        return f"聯準會點名的 {n} 個壓力點，目前都沒有落在自己歷史最高的一成。" + tail
+    return f"{n} 個壓力點裡有 {len(lit)} 個亮黃燈：" + "；".join(f"{FW.NAMES[k]}（{x['state']}）" for k, x in lit) + "。" + tail
 
 
 @_anchor("st-fsr")
@@ -344,6 +346,24 @@ def sec_st_fsr(eng) -> str:
                         '車是很多人上班的工具，車貸繳不出來，通常代表收入最緊的那群人先撐不住。</p>' if au else "")
                      + f'<div class="scroll"><table class="mini"><thead><tr><th>貸款</th><th class="r">新增嚴重逾期</th><th class="r">一年前</th>'
                        f'<th class="r">10 年百分位</th><th class="r">歷史最高</th><th class="r">累積逾期 90 天以上</th></tr></thead><tbody>{tr}</tbody></table></div>')
+    ac = v.get("auto")
+    if ac and hh:
+        tr = "".join(f'<tr><td>{esc(r["zh"])} <span class="muted small">{esc(r["sym"])}・{esc(r["what"])}</span></td><td class="r">{r["ret"]:+.0f}%</td>'
+                     f'<td class="r"><b>{r["rel"]:+.0f}</b></td></tr>' for r in ac["rows"])
+        ext = []
+        if ac.get("used_yoy") is not None:
+            ext.append(f'二手車價一年 {ac["used_yoy"]:+.1f}%（{esc(ac["used_date"])}；車價跌，車子拿回來拍賣就更不值錢）')
+        if ac.get("rate") is not None:
+            ext.append(f'60 個月車貸利率 {ac["rate"]:.2f}%' + (f'（一年前 {ac["rate_1y"]:.2f}%）' if ac.get("rate_1y") is not None else "") + f'（{esc(ac["rate_date"])}）')
+        if ac.get("std") is not None:
+            ext.append(f'銀行車貸放款標準：淨 {abs(ac["std"]):.0f}% 的銀行{"收緊" if ac["std"] > 0 else "放寬"}（{esc(ac["std_date"])}；收緊代表更難借到車貸）')
+        parts.append(f'<h3>{ac["emoji"]} 車貸壓力會傳到哪裡：{esc(ac["state"])} <span class="muted small">股價日 {esc(ac["date"])}</span></h3>'
+                     f'<p>車貸繳不出來，第一個受傷的是借錢給他們的公司。這 {len(ac["rows"])} 家車貸放款與二手車公司，最近 3 個月平均比標普 500 '
+                     + (f'差不多' if abs(ac["rel"]) < 1 else f'{"落後" if ac["rel"] < 0 else "領先"} {abs(ac["rel"]):.0f} 個百分點')
+                     + f'（標普 {ac["spx_ret"]:+.0f}%），在自己 5 年裡排第 {num(ac["rel_pct"], 0)} 百分位'
+                     '（越低越差）。</p>'
+                     + (f'<p class="small">{"；".join(ext)}。</p>' if ext else "")
+                     + f'<div class="scroll"><table class="mini"><thead><tr><th>公司</th><th class="r">3 個月漲跌</th><th class="r">比標普多（百分點）</th></tr></thead><tbody>{tr}</tbody></table></div>')
     if bk:
         parts.append(f'<h3>{bk["emoji"]} 銀行：{esc(bk["state"])} <span class="muted small">資料季 {esc(bk["date"][:7])}</span></h3>'
                      f'<p>銀行手上的債券如果現在賣掉，比當初的成本少大約 {abs(bk["unreal"]) * 10000:,.0f} 億美元，等於股東權益的 {abs(bk["ratio"]):.1f}%'
@@ -371,18 +391,19 @@ def sec_st_fsr(eng) -> str:
     sp = []
     au = next((r for r in (hh or {}).get("rows") or [] if r["code"] == "AUTO"), None)
     for lab, rows in (("車貸新增嚴重逾期（%）", (au or {}).get("hist")), ("銀行債券帳面盈虧÷股東權益（%）", (bk or {}).get("hist")),
-                      ("避險基金槓桿（倍）", (hf or {}).get("hist")), ("房價租金比", (rr or {}).get("hist"))):
+                      ("避險基金槓桿（倍）", (hf or {}).get("hist")), ("房價租金比", (rr or {}).get("hist")),
+                      ("車貸公司比標普（3 個月，百分點）", (v.get("auto") or {}).get("hist"))):
         if rows and len(rows) > 5:
             sp.append(f'<div><div class="small muted">{lab}</div>{spark(_ser(rows), 160, 36)}</div>')
     body = (f'<p class="rimp big2"><b>{T("一句話看懂：" + fsr_lead(v), "")}</b></p>'
             f'<p>{T("聯準會每半年出一份《金融穩定報告》，點名哪裡可能出事。本站每月對照，發現這四項原本沒在看，現在補上：家庭繳不繳得出貸款、銀行債券跌價、避險基金借了多少錢、房子相對房租貴不貴。", "")}</p>'
             + (parts[0] if parts else "")
-            + f'<details class="sgx"><summary>{T("看銀行、避險基金、房價租金比與連帶影響", "Details")}</summary>' + "".join(parts[1:]) + spill
+            + f'<details class="sgx"><summary>{T("看車貸壓力傳到哪裡、銀行、避險基金、房價租金比與連帶影響", "Details")}</summary>' + "".join(parts[1:]) + spill
             + (f'<div class="g3">{"".join(sp)}</div>' if sp else "") + '</details>'
-            + f'<p class="note">{T("燈號：每項都和自己的歷史比。家庭——車貸或信用卡「這一季新增逾期 90 天以上」落在過去 10 年最高 10% → 🟡；銀行——證券帳面損失占股東權益落在 2010 年以來最大 10% → 🟡；避險基金——整體槓桿在 2013 年以來最高 10%、而且 CFTC 基差交易也在最高 10% → 🟡；房價租金比在 1987 年以來最高 10% → 🟡。", "")}'
+            + f'<p class="note">{T("燈號：每項都和自己的歷史比。家庭——車貸或信用卡「這一季新增逾期 90 天以上」落在過去 10 年最高 10% → 🟡；銀行——證券帳面損失占股東權益落在 2010 年以來最大 10% → 🟡；避險基金——整體槓桿在 2013 年以來最高 10%、而且 CFTC 基差交易也在最高 10% → 🟡；房價租金比在 1987 年以來最高 10% → 🟡；車貸往外傳——車貸逾期亮黃燈、而且 5 家車貸與二手車公司 3 個月比標普落在自己 5 年最差 10% → 🟡。", "")}'
               f'資料：<a href="{FW.NYF_PAGE}" target="_blank" rel="noopener">紐約聯準會家庭債務與信用報告</a>（季，2003 年起；沒有 FHA/VA 房貸分項）、'
               f'<a href="{FW.FDIC_PAGE}" target="_blank" rel="noopener">FDIC 全體銀行申報</a>（季）、<a href="{FW.OFR_PAGE}" target="_blank" rel="noopener">OFR 避險基金監測</a>（Form PF 季資料、結算所擔保回購）、'
-              'FRED（Case-Shiller 房價、CPI 房租）。季資料大約落後 2～5 個月。描述現況，不是預測，也不是投資建議。</p>')
+              'FRED（Case-Shiller 房價、CPI 房租與二手車、60 個月車貸利率、銀行放款調查）、Yahoo（車貸公司股價）。季資料大約落後 2～5 個月。描述現況，不是預測，也不是投資建議。</p>')
     return card("官方點名的四個壓力點：家庭貸款、銀行、避險基金、房價", "Fed FSR pressure points", body, "wide")
 
 

@@ -45,8 +45,16 @@ def test_readings():
     idx = pd.date_range("1987-01-01", periods=480, freq="MS")
     r = F.rent_ratio({F.HPI: pd.Series(np.linspace(60, 300, 480), index=idx), F.RENT: pd.Series(np.linspace(100, 200, 480), index=idx)}.get)
     assert r["pct"] == 100 and r["emoji"] == "🟡"
-    v = {"hedge": F.hedge(hf, 95), "house": h, "bank": b, "rent": r}
-    assert len(F.alerts(v)) == 4
+    days = pd.bdate_range("2021-11-01", periods=1250)
+    up = {d.strftime("%Y-%m-%d"): 100 + i * 0.1 for i, d in enumerate(days)}
+    down = {d.strftime("%Y-%m-%d"): 100 + i * 0.1 - (max(0, i - 1180) * 1.5) for i, d in enumerate(days)}   # lenders slump at the end
+    px = {sym: down for sym, _, _ in F.LENDERS}
+    px["^GSPC"] = up
+    ac = F.auto_chain(px, lambda k: None, h)
+    assert ac["rel"] < -10 and ac["rel_pct"] == 0 and ac["emoji"] == "🟡"
+    assert F.auto_chain(px, lambda k: None, {"hot": []})["emoji"] == "🟢"
+    v = {"hedge": F.hedge(hf, 95), "house": h, "bank": b, "rent": r, "auto": ac}
+    assert len(F.alerts(v)) == 5
     from tools import site_stability as S
     eng = types.SimpleNamespace(_fsr_view=v)
     out = S.sec_st_fsr(eng)

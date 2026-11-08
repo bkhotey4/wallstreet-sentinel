@@ -7,6 +7,9 @@
   * 銀行（FDIC 全體銀行申報彙總，季資料，2010 年起）：證券帳面損益（持有到期＋備供出售，公允價值減攤銷成本）占股東權益，
     以及未保險存款占總存款；帳面損失落在 2010 年以來最大 10% → 黃燈。2023 年矽谷銀行就是這兩項同時偏高。
   * 房價租金比（FRED：Case-Shiller 全國房價 ÷ CPI 房租），和 1987 年以來比；落在最高 10% → 黃燈。
+  * 車貸壓力往外傳（第二層）：車貸放款公司與二手車商股價（Yahoo 日線 5 年）3 個月比標普 500 落後多少，和自己 5 年比；
+    再看二手車價（CPI）、60 個月車貸利率、銀行車貸放款標準（SLOOS 淨緊縮比例）。車貸逾期偏高「而且」放款公司股價落在
+    自己最差 10% → 黃燈：代表壓力已經從家庭傳到放款的人。
 快取 data_cache/econ_fsr.json（CI 保留 econ_*），每天一次。描述現況，不是預測。"""
 from __future__ import annotations
 
@@ -38,7 +41,14 @@ FDIC = "https://api.fdic.gov/banks/financials"
 FDIC_PAGE = "https://www.fdic.gov/quarterly-banking-profile"
 FDIC_FIELDS = "SCHA,SCHF,SCAA,SCAF,EQ,DEPUNINS,DEP"
 HPI, RENT = "CSUSHPISA", "CUSR0000SEHA"
-FRED_IDS = (HPI, RENT)
+USED, CAR_RATE, CAR_STD = "CUSR0000SETA02", "RIFLPBCIANM60NM", "STDSAUTO"
+FRED_IDS = (HPI, RENT, USED, CAR_RATE, CAR_STD)
+YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/{s}?range=5y&interval=1d"
+# (代號, 中文, 做什麼)：車貸放款與二手車鏈上市公司
+LENDERS = (("CACC", "Credit Acceptance", "次級車貸放款"), ("CPSS", "Consumer Portfolio Services", "深度次級車貸"),
+           ("ALLY", "Ally Financial", "美國最大車貸銀行之一"), ("KMX", "CarMax", "二手車商（自有車貸部門）"),
+           ("CVNA", "Carvana", "線上二手車商（賣車貸證券）"))
+REL_DAYS = 63                        # 約 3 個月的交易日
 HOT = 90.0                           # 自己歷史的第 90 百分位以上 → 偏高
 
 
@@ -113,7 +123,7 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     now = time.time()
     d["ts_check"] = now
-    keys = ["hf", "hh", "bank"]
+    keys = ["hf", "hh", "bank", "auto"]
     each = d.setdefault("ts_each", {})
     todo = due(d, keys, TTL, now, force)
     if todo:
@@ -150,6 +160,18 @@ async def refresh(force: bool = False) -> Dict:
                 d["bank"], each["bank"] = parse_fdic(js), now
             except Exception as e:  # noqa: BLE001
                 bad.append(f"bank: {e if str(e) else type(e).__name__}")
+        if "auto" in todo:
+            d["try_each"]["auto"] = now
+            try:
+                px = {}
+                for sym in [x[0] for x in LENDERS] + ["^GSPC"]:
+                    js = await http.get(YAHOO.format(s=sym.replace("^", "%5E")), headers={"User-Agent": "Mozilla/5.0"}, timeout=30, retries=1)
+                    px[sym] = parse_chart(js)
+                if len(px.get("^GSPC") or {}) < 500 or sum(1 for x in LENDERS if len(px.get(x[0]) or {}) > 500) < 3:
+                    raise ValueError("Yahoo: too little price history")
+                d["auto"], each["auto"] = px, now
+            except Exception as e:  # noqa: BLE001
+                bad.append(f"auto: {e if str(e) else type(e).__name__}")
         bad += [f"{k}: stale" for k in keys if k not in todo and now - float(each.get(k, 0)) > TTL * 3]
         d["ts"] = bundle_ts(d, keys)
         if bad:
@@ -161,6 +183,15 @@ async def refresh(force: bool = False) -> Dict:
     tmp.write_text(json.dumps(d), encoding="utf-8")
     os.replace(tmp, FILE)
     return d
+
+
+def parse_chart(js: Dict) -> Dict[str, float]:
+    """Yahoo chart JSON → {date: close}."""
+    r = ((js or {}).get("chart") or {}).get("result") or []
+    if not r:
+        return {}
+    ts, cl = r[0].get("timestamp") or [], (((r[0].get("indicators") or {}).get("quote") or [{}])[0].get("close") or [])
+    return {pd.Timestamp(t, unit="s").strftime("%Y-%m-%d"): round(float(c), 4) for t, c in zip(ts, cl) if c is not None}
 
 
 def _ser(pairs) -> pd.Series:
@@ -268,6 +299,55 @@ def rent_ratio(get) -> Optional[Dict]:
     return out
 
 
+def auto_chain(px: Dict, get, house: Optional[Dict] = None) -> Optional[Dict]:
+    """Second step of the car-loan story: are lenders' shares lagging the S&P 500, and what used-car prices, loan rates and
+    bank standards say."""
+    spx = _ser(px.get("^GSPC"))
+    if len(spx) < 500:
+        return None
+    rows, rels = [], []
+    for sym, zh, what in LENDERS:
+        s = _ser(px.get(sym))
+        j = pd.concat([s, spx], axis=1, join="inner").dropna()
+        if len(j) < 300:
+            continue
+        rel = ((j.iloc[:, 0] / j.iloc[:, 0].shift(REL_DAYS)) - (j.iloc[:, 1] / j.iloc[:, 1].shift(REL_DAYS))) * 100
+        rels.append(rel.rename(sym))
+        rows.append({"sym": sym, "zh": zh, "what": what, "rel": float(rel.iloc[-1]),
+                     "ret": float(j.iloc[-1, 0] / j.iloc[-1 - REL_DAYS, 0] - 1) * 100})
+    if len(rows) < 3:
+        return None
+    basket = pd.concat(rels, axis=1).mean(axis=1).dropna()
+    now = float(basket.iloc[-1])
+    out = {"date": basket.index[-1].strftime("%Y-%m-%d"), "rows": rows, "rel": now, "rel_pct": _pct(basket.iloc[:-1], now),
+           "spx_ret": float(spx.iloc[-1] / spx.iloc[-1 - REL_DAYS] - 1) * 100,
+           "hist": [[i.strftime("%Y-%m-%d"), round(float(v), 2)] for i, v in basket.resample("W-FRI").last().dropna().tail(104).items()]}
+    u = get(USED)
+    if u is not None and len(u.dropna()) > 13:
+        u = u.dropna()
+        out.update(used_yoy=float(u.iloc[-1] / u.iloc[-13] - 1) * 100, used_date=u.index[-1].strftime("%Y-%m"))
+    r = get(CAR_RATE)
+    if r is not None and len(r.dropna()) > 4:
+        r = r.dropna()
+        yago = r[r.index <= r.index[-1] - pd.DateOffset(years=1)]
+        out.update(rate=float(r.iloc[-1]), rate_1y=float(yago.iloc[-1]) if len(yago) else None, rate_date=r.index[-1].strftime("%Y-%m"))
+    st = get(CAR_STD)
+    if st is not None and len(st.dropna()):
+        st = st.dropna()
+        out.update(std=float(st.iloc[-1]), std_date=st.index[-1].strftime("%Y-%m"))
+    lag = (out["rel_pct"] if out["rel_pct"] is not None else 50) <= 100 - HOT
+    hot = bool(house and "車貸" in (house.get("hot") or []))
+    if lag and hot:
+        out["emoji"], out["state"] = "🟡", "車貸逾期偏高，放款公司股價也明顯落後：壓力已傳到放款端"
+    elif lag:
+        out["emoji"], out["state"] = "🟢", "放款公司股價落後，但車貸逾期還不算高"
+    elif hot:
+        out["emoji"], out["state"] = "🟢", "車貸逾期偏高，但放款公司股價還沒反映"
+    else:
+        out["emoji"], out["state"] = "🟢", "看不到車貸壓力往外傳"
+    return out
+
+
 def view(eng=None, basis_pct: Optional[float] = None) -> Dict:
     d = load()
     fr = getattr(eng, "fred", None)
@@ -280,16 +360,22 @@ def view(eng=None, basis_pct: Optional[float] = None) -> Dict:
         except Exception:  # noqa: BLE001
             log.exception("FSR watch view %s failed", k)
             out[k] = None
+    try:
+        out["auto"] = auto_chain(d.get("auto") or {}, get, out.get("house"))
+    except Exception:  # noqa: BLE001
+        log.exception("FSR watch view auto failed")
+        out["auto"] = None
     return out
 
 
 NAMES = {"hedge": "避險基金槓桿", "house": "家庭貸款逾期", "bank": "銀行證券帳面損失", "rent": "房價租金比"}
+ALERT_NAMES = dict(NAMES, auto="車貸壓力往外傳")
 
 
 def alerts(v: Dict) -> List[tuple]:
     """(key, severity, title, detail) — once per section per data date while it is yellow."""
     out = []
-    for k, zh in NAMES.items():
+    for k, zh in ALERT_NAMES.items():
         x = v.get(k) or {}
         if x.get("emoji") != "🟡":
             continue
