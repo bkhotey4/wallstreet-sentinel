@@ -170,7 +170,7 @@ def bar_html(eng=None) -> str:
     en = ("Three live layers, checked every minute: fixed thresholds; each market vs its own normal daily move (2x yellow, 3x red, "
           "index futures included for pre-market); SPY/QQQ volume vs the same time on prior days, and short-ETF volume. Reminders, not forecasts.")
     return (f'<div class="lqbar" id="lqbar" hidden data-sig="{sig}" data-cr="{crb}"><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
-            '<div id="lqal" class="lqal"></div><div id="lqan" class="lqal"></div>'
+            '<div id="lqal" class="lqal"></div><div id="lqan" class="lqal"></div><button type="button" id="lqmore" class="lqmore" hidden></button>'
             f'<details class="lqd"><summary class="lqnote">{T("燈號規則", "Rules")}</summary><p class="lqnote">{T(note, en)}</p></details></div>')
 
 
@@ -203,6 +203,7 @@ CSS = (".lqbar{margin:8px 0 4px;padding:9px 12px;border:1px solid var(--bd);bord
        ".lqhead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}.lqst{font-size:12px;color:var(--mu)}.lqst.on{color:var(--up)}"
        ".lqal{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.lqchip{font-size:12.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--bd)}"
        ".lqchip.hit{border-color:var(--dn);color:var(--dn);font-weight:600}.lqchip.ok{color:var(--mu)}"
+       ".lqbar:not(.lqall) .lqchip.ok{display:none}.lqmore{font-size:12.5px;padding:2px 9px;margin-top:4px;border-radius:999px;border:1px dashed var(--bd);background:none;color:var(--mu);cursor:pointer}"
        ".lqchip.warn{border-color:#d97706;color:#b45309;font-weight:600}.lqchip.good{border-color:var(--up);color:var(--up);font-weight:600}"
        ".lqchip.info{border-color:var(--ac);color:var(--ac)}.lqd summary{cursor:pointer}"
        ".lqnote{margin:4px 0 0;font-size:11.5px;color:var(--mu)}.tile .asof.lv{color:var(--up)}"
@@ -293,7 +294,12 @@ _JS = r"""
      :gd.length?(en()?'Live: no stress signal; '+gd.length+' big move(s) in the healthy direction':'一句話看懂（即時）：✅ 目前無偵測到異常；'+gd.length+' 個市場往好的方向大幅變動（綠色）')
      :!nr||!cv.sc?(en()?'Live: not enough live data to judge ('+nr+' thresholds, '+cv.sc+' markets with quotes)':'一句話看懂（即時）：⚪ 資料不足，暫時無法判斷——有報價的固定門檻 '+nr+' 項、異常波動 '+cv.sc+' 個市場')
      :lay<4?(en()?'Live: no alert in the '+lay+' of 4 layers that have data':'一句話看懂（即時）：✅ 目前無偵測到異常（四層檢查中 '+lay+' 層有資料'+(cv.vol?'':'，成交量暫缺')+(cv.cb?'':'，組合型態暫缺')+'）')
-     :(en()?'Live: no alert — fixed thresholds, unusual-move scan and volume all normal':'一句話看懂（即時）：✅ 目前無偵測到異常——固定門檻、異常波動、組合型態、成交量四層檢查都正常');}
+     :(en()?'Live: no alert — fixed thresholds, unusual-move scan and volume all normal':'一句話看懂（即時）：✅ 目前無偵測到異常——固定門檻、異常波動、組合型態、成交量四層檢查都正常');okMore();}
+ // only lit items stay in view; the normal ones fold behind one button, so the bar is short on every page
+ function okMore(){var b=document.getElementById('lqmore'),bar=document.getElementById('lqbar');if(!b||!bar)return;
+   var n=bar.querySelectorAll('.lqchip.ok').length,o=bar.classList.contains('lqall');b.hidden=!n;
+   b.textContent=o?(en()?'Hide normal checks':'收起正常項目'):(en()?'Show '+n+' normal checks':'看正常項目（'+n+' 項）');
+   b.onclick=function(){bar.classList.toggle('lqall');okMore();};}
  function ago(){var st=document.getElementById('lqst');if(!st||!lastOk)return;var s=Math.round((Date.now()-lastOk)/1000);
    st.className='lqst on';st.textContent='● '+(en()?'live · updated '+(s<60?s+'s':Math.round(s/60)+'m')+' ago':'即時 · '+(s<60?s+' 秒前':Math.round(s/60)+' 分鐘前')+'更新');}
  function stale(){var st=document.getElementById('lqst');if(st&&lastOk){st.className='lqst';st.textContent=en()?'live paused — showing hourly data':'即時暫停，顯示整點資料';}}
