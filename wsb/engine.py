@@ -335,6 +335,11 @@ class Engine:
             await ead.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("euro/asia data failed: %s", e)
+        try:                                                    # 移民與民意：民調（12 小時一次）
+            from .data import migration_polls as mgp
+            await mgp.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("polls data failed: %s", e)
         try:                                                    # 退休金與長債（12 小時一次）
             from .data import pension_ldi as pld
             await pld.refresh()
