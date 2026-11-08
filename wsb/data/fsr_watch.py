@@ -201,7 +201,7 @@ def hedge(hf: Dict, basis_pct: Optional[float] = None) -> Optional[Dict]:
     if hot and (basis_pct or 0) >= HOT:
         out["emoji"], out["state"] = "🟡", "槓桿偏高，基差交易也偏大"
     elif hot:
-        out["emoji"], out["state"] = "🟢", "槓桿偏高，但基差交易不大"
+        out["emoji"], out["state"] = "🟢", "槓桿偏高，基差交易還沒到最高一成"
     else:
         out["emoji"], out["state"] = "🟢", "槓桿在歷史常見範圍"
     return out
