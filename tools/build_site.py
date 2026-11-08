@@ -77,6 +77,7 @@ from tools import site_watch2 as SW2
 from tools import site_chain as SCH
 from tools import site_capex as SCX
 from tools import site_euro_asia as SEA
+from tools import site_newslive as SNL
 from tools import site_stamp as STP
 from tools import site_layout as SLY
 from tools import site_bottom as SBT
@@ -1100,7 +1101,7 @@ body{margin:0;background:var(--page);color:var(--tx);font:14px/1.55 system-ui,-a
 .strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(148px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
 .tile{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px 11px;position:relative;min-height:86px}
 .tl{color:var(--mu);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;justify-content:space-between;gap:6px}.tv{font-size:18px;font-weight:700;margin-top:2px}.tc{font-size:12px;font-variant-numeric:tabular-nums}
-.spark{position:absolute;right:8px;bottom:8px;width:80px;height:24px}.spark polyline{fill:none;stroke:var(--mu);stroke-width:1.5}.spark circle{fill:var(--ac)}
+.spark{display:block;width:120px;max-width:100%;height:28px;margin-top:4px}.tile .spark{position:absolute;right:8px;bottom:8px;width:80px;height:24px;margin:0}.spark polyline{fill:none;stroke:var(--mu);stroke-width:1.5}.spark circle{fill:var(--ac)}
 .grid12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-flow:row dense;gap:12px;margin-top:12px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;grid-column:span 4;min-width:0}
 .card.ssi{grid-column:span 6}.card.span3{grid-column:span 3}.card.span4{grid-column:span 4}.card.span8{grid-column:span 8}.card.wide{grid-column:span 12}
@@ -1314,7 +1315,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SFC.sec_macro_voice, SLY.sec_today_slot, SSN.sec_sessions, SFC.sec_forecast, SLN.sec_learn, SDP.sec_deep, SLY.sec_more_slot, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SFC.sec_macro_voice, SNL.sec_news_live, SLY.sec_today_slot, SSN.sec_sessions, SFC.sec_forecast, SLN.sec_learn, SDP.sec_deep, SLY.sec_more_slot, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SSN.sec_sessions, SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
@@ -1408,14 +1409,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SNL.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <div class="tbtns">{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="reloadBtn" type="button" aria-label="refresh page" title="重新載入最新資料" data-en="↻ Refresh">↻ 更新</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><span class="fsg"><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></span></div></div>
 {SLY.topnav()}{SA.RIBBON_HTML}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{COMPLY_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{COMPLY_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
@@ -1810,6 +1811,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     (out / "index.html").write_text(page_html, encoding="utf-8")
     vb = re.search(r'id="liveb" data-b="(\d+)"', page_html)                 # same stamp as the page → open pages reload once
     (out / "version.json").write_text(json.dumps({"b": int(vb.group(1)) if vb else int(time.time())}), encoding="utf-8")
+    try:                                           # 緊急加班車：市場異常大動 → workflow 叫醒加班口播
+        from wsb.analytics import breaking as BRK
+        (out / "breaking.json").write_text(json.dumps(BRK.build(eng), ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("breaking check failed")
     (out / "alerts.json").write_text(json.dumps(getattr(eng, "web_alerts", None) or {"ts": 0, "items": []}, ensure_ascii=False), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")

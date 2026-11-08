@@ -499,7 +499,7 @@ CARD: Dict[str, List[str]] = {
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
 NONE = {"sec_research", "sec_research_status", "sec_research_points", "sec_fees", "sec_terms", "sec_privacy", "sec_explainer", "sec_sizing", "sec_entry_links", "sec_research_bonds", "sec_today_slot", "sec_more_slot"}   # static content
-LIVE = {"sec_lookup", "sec_watch", "sec_intraday", "sec_tw_live", "sec_ext_gaps"}
+LIVE = {"sec_lookup", "sec_watch", "sec_intraday", "sec_tw_live", "sec_ext_gaps", "sec_news_live"}
 MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 * 24}      # refreshed weekly by design                                    # fetched in the viewer's browser when the page opens
 
 

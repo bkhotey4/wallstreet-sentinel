@@ -78,9 +78,12 @@ def sec_macro_voice(eng) -> str:
         return ""
     paras = "".join(f"<p>{_e(p)}</p>" for p in str(x["script"]).split("\n") if p.strip())
     player = (f'<audio controls preload="none" style="width:100%" src="market/macro.mp3?v={AUDIO["v"]}">你的瀏覽器不支援播放。</audio>' if AUDIO["v"] else "")
-    body = (f'<p class="rimp big2"><b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
+    ed = str(x.get("edition") or "")
+    tag = f'<span class="pill{" warn" if ed == "加班" else ""}">{_e("🚨 緊急加班" if ed == "加班" else ed)}</span> ' if ed else ""
+    body = (f'<p class="rimp big2">{tag}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
             f'<details class="sgx"><summary>看文字稿</summary>{paras}</details>'
-            f'<p class="note">{_e(x.get("date"))} 雲端 AI 撰稿，每個交易日早上更新，語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
+            f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
+            f'市場異常大動時會加班。語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
     return card("每日總經情勢", "Daily macro", body, "wide", sub="用聽的，約兩三分鐘")
 
 

@@ -31,6 +31,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      fire: ${{ steps.brk.outputs.fire }}
+      key: ${{ steps.brk.outputs.key }}
     env:
       HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}   # step 的 if 不能直接讀 secrets，先轉成旗標
     steps:
@@ -164,6 +167,21 @@ jobs:
           npx --yes wrangler@3.114.0 pages project create wallstreet-sentinel --production-branch=main >/dev/null 2>&1 || true
           npx --yes wrangler@3.114.0 pages deploy site --project-name=wallstreet-sentinel --branch=main --commit-dirty=true
 
+      # 緊急加班車：市場異常大動（breaking.json 的 fire）→ 下面的 breaking job 開一張 issue，叫醒加班口播
+      - name: 檢查緊急加班車
+        id: brk
+        if: ${{ always() }}
+        run: |
+          python - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json
+          try:
+              d = json.load(open("site/breaking.json", encoding="utf-8"))
+          except Exception:
+              d = {}
+          print("fire=" + ("true" if d.get("fire") else "false"))
+          print("key=" + str(d.get("key") or ""))
+          EOF
+
       # 上一步失敗時不擋 GitHub Pages，但要讓這次執行顯示紅色警告，不再「看起來成功」而即時版卻停在舊版
       - name: Cloudflare 發布失敗警告
         if: ${{ env.HAS_CF == 'true' && steps.cfdeploy.outcome == 'failure' }}
@@ -180,6 +198,25 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  breaking:
+    needs: build
+    if: ${{ needs.build.outputs.fire == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          KEY: ${{ needs.build.outputs.key }}
+        run: |
+          sleep 90   # 等 pages.dev 上的 breaking.json 換成這一版
+          gh label create breaking -R "${{ github.repository }}" -c d03b3b -d "緊急加班車" 2>/dev/null || true
+          body=$(curl -sL https://wallstreet-sentinel.pages.dev/breaking.json)
+          gh issue create -R "${{ github.repository }}" -l breaking -t "緊急加班車：$KEY" -b "網站偵測到市場異常大動，加班口播會自動寫稿。
+          \`\`\`
+          $body
+          \`\`\`"
 
   # 公開倉庫連續 60 天沒有活動時，GitHub 會自動停用排程；每次執行順便重新啟用，避免悄悄停擺
   keepalive:
