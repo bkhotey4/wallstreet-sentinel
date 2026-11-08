@@ -168,7 +168,7 @@ __MKT__ var ST={st:'open'};
      if(Math.abs(g)>=0.3&&Math.abs(so)>=0.3)L.push(en()?'Since the open '+sg(so,2)+'% (gap '+sg(g,2)+'%).'
        :'開盤'+(g>0?'跳空上漲 ':'跳空下跌 ')+sg(g,2)+'%，開盤後'+(so>0?'再漲 ':'回落 ')+sg(so,2)+'%：'+(g>0&&so<0?'開高走低，早盤的樂觀被賣掉。':g<0&&so>0?'開低走高，有買盤承接。':g>0?'開高走高，買盤延續。':'開低走低，賣壓延續。'));}
    one=(c<=-s*1&&s?'美股明顯走弱':c>=s&&s?'美股明顯走強':Math.abs(c)<0.3?'美股平盤整理':c<0?'美股小跌':'美股小漲')+'（標普 '+sg(c,2)+'%'+(vix&&vix.chg!=null?'，VIX '+sg(vix.chg,1)+'%':'')+'）';
-   return {one:en()?'S&P '+sg(c,2)+'%':(ST.st==='open'?'一句話看懂（盤中）：':'一句話看懂：'+mktNote(ST,'美股')+'：')+past(one)+'。',L:L.map(past),
+   return {one:en()?'S&P '+sg(c,2)+'%':(ST.st==='open'?(ST.early?'一句話看懂（盤中，今天只開半天，13:00 收盤）：':'一句話看懂（盤中）：'):'一句話看懂：'+mktNote(ST,'美股')+'：')+past(one)+'。',L:L.map(past),
      W:why(q,c,sec).map(function(x){return typeof x==='string'?past(x):{t:past(x.t),l:x.l};})};}
  // "why": mega caps moving with / against the index, rates, dollar, oil, VIX, then today's data releases and headlines
  function why(q,c,sec){var W=[],up=c>=0,big=Math.abs(c)>=0.3;
