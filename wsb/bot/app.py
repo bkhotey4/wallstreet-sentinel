@@ -1221,6 +1221,11 @@ class Sentinel(commands.Bot):
         from ..data.econcal import us_today
         v = stb.view(self.engine)
         out = [Alert(k, sev, t, d) for k, sev, t, d in stb.alerts(v, us_today().isoformat())]
+        try:                                     # 長天期公債 3 天急升（退休金被迫賣債的風險）
+            from ..data import pension_ldi as pld
+            out += [Alert(k, sev, t, d) for k, sev, t, d in pld.alerts(pld.view(self.engine))]
+        except Exception:  # noqa: BLE001
+            log.exception("pension/LDI alert failed")
         try:                                     # 大象撤退：資產管理機構股指期貨淨多單 13 週變化落在歷史最低 10%
             from ..analytics import bubble as bub
             for e in bub.elephants(self.engine, bub.load().get("cftc") or {}):

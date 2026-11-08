@@ -335,6 +335,11 @@ class Engine:
             await ead.refresh()
         except Exception as e:  # noqa: BLE001
             log.warning("euro/asia data failed: %s", e)
+        try:                                                    # 退休金與長債（12 小時一次）
+            from .data import pension_ldi as pld
+            await pld.refresh()
+        except Exception as e:  # noqa: BLE001
+            log.warning("pension/LDI data failed: %s", e)
         try:                                                    # AI 資本支出依賴度（SEC 季資料，7 天一次）
             from .analytics import capex_link as cxl
             await cxl.refresh()

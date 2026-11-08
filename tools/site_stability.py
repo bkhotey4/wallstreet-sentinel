@@ -97,6 +97,12 @@ def sec_st_brief(eng) -> str:
     if ai:
         tiles.append(("st-ai", f"{ai['emoji']} AI 資本支出", f"{ai['ratio']:.2f}<small> 倍</small>",
                       f"資本支出÷營業現金流・{ai['state']}" + (f"（{'、'.join(ai['over1'])} > 1）" if ai["over1"] else ""), ""))
+    ld = (_ldi(eng) or {}).get("rows") or []
+    if ld:
+        w = max(ld, key=lambda r: (r["p3"] or 0))
+        lit = "🔴" if any(r["emoji"] == "🔴" for r in ld) else "🟡" if any(r["emoji"] == "🟡" for r in ld) else "🟢"
+        tiles.append(("st-ldi", f"{lit} 退休金與長債", f"{w['c3']:+.0f}<small> bp</small>",
+                      f"{w['zh']} {w['tenor']} 3 天變化・{len(ld)} 個市場" + ("都平穩" if lit == "🟢" else ""), ""))
     cv = coverage()
     gaps = cv.get("gaps") or []
     try:
@@ -221,6 +227,71 @@ def sec_st_ai(eng) -> str:
             f'<tbody>{rows}</tbody></table></div>'
             f'<p class="note">{T("怎麼看：大公司用自己賺的錢蓋機房，利率高也撐得住；營業現金流不夠付資本支出的公司，要靠發債或借錢，利率一上升、再融資成本跟著跳，市場會先修理這種公司。這裡看的是「整體」，各家的利息負擔與債務成本請看「產業體檢」頁的 AI 帳本。全部來自 SEC 申報（XBRL），近 12 個月合計，和自己一年前比。", "")}</p>')
     return card("AI 資本支出：靠自己賺還是靠借錢", "AI capex: paid by cash flow or by debt", body, "wide")
+
+
+def _ldi(eng) -> Dict:
+    c = getattr(eng, "_ldi_view", None)
+    if c is None:
+        try:
+            from wsb.data import pension_ldi as PL
+            c = PL.view(eng)
+        except Exception:  # noqa: BLE001
+            c = {}
+        try:
+            eng._ldi_view = c
+        except Exception:  # noqa: BLE001
+            pass
+    return c
+
+
+def ldi_lead(rows: List[Dict]) -> str:
+    hot = [r for r in rows if r["emoji"] != "🟢"]
+    if not hot:
+        return f"{len(rows)} 個市場的長天期公債最近 3 天都沒有急升，退休金被迫賣債的風險現在不高。"
+    return "；".join(f"{r['zh']} {r['tenor']}公債 3 天 {r['c3']:+.0f}bp（{r['since']} 年以來第 {r['p3']:.0f} 百分位），{r['state']}" for r in hot) + \
+        "。長債升得太快時，用槓桿避險的退休金要補保證金，可能被迫賣債。"
+
+
+@_anchor("st-ldi")
+def sec_st_ldi(eng) -> str:
+    from wsb.data import pension_ldi as PL
+    rows = (_ldi(eng) or {}).get("rows") or []
+    if not rows:
+        return ""
+    by = {r["key"]: r for r in rows}
+    tr = "".join(f'<tr{" class=hl" if r["emoji"] != "🟢" else ""}><td>{r["emoji"]} {esc(r["zh"])} {esc(r["tenor"])}</td><td class="r">{r["level"]:.2f}%</td>'
+                 f'<td class="r"><b>{r["c3"]:+.0f}</b></td><td class="r">{num(r["p3"], 0)}</td><td class="r">{r["c20"]:+.0f}</td>'
+                 f'<td class="r small muted">{r["max3"]:.0f}（{esc(r["max3_date"])}）</td><td class="small muted">{esc(r["date"])}</td></tr>' for r in rows)
+    tbl = (f'<div class="scroll"><table class="mini"><thead><tr><th>{T("長天期公債", "Long bond")}</th><th class="r">{T("殖利率", "Yield")}</th>'
+           f'<th class="r">{T("3 天變化（bp）", "3-day, bp")}</th><th class="r">{T("歷史百分位", "Pctile")}</th><th class="r">{T("20 天（bp）", "20-day, bp")}</th>'
+           f'<th class="r">{T("歷史最大 3 天升幅", "Record 3-day rise")}</th><th>{T("資料日", "As of")}</th></tr></thead><tbody>{tr}</tbody></table></div>')
+    uk, eu = by.get("uk"), by.get("eu")
+    story = ""
+    if uk:
+        used = max(uk["c3"], 0) / PL.BUFFER_BP * 100
+        story += (f'<p class="small"><b>2022 年發生什麼</b>：英國政府 9 月 23 日宣布大減稅又沒說錢從哪來，長債被拋售。英國 20 年公債在本站資料裡最大的 3 天升幅是 '
+                  f'{uk["max3"]:.0f}bp（{esc(uk["max3_date"])}）。用槓桿做 LDI 的退休金被追繳保證金，只好賣更多長債，殖利率又再升，形成惡性循環；'
+                  f'英國央行 9 月 28 日宣布緊急買債才止住。英鎊同時跌到接近 1 英鎊兌 1 美元。</p>'
+                  f'<p class="small"><b>之後的規定</b>：英國金融政策委員會要求 LDI 基金至少撐得住約 {PL.BUFFER_BP}bp 的急升'
+                  f'（<a href="{PL.BUFFER_URL}" target="_blank" rel="noopener">英國央行原文</a>）。最近 3 天英國 20 年公債 {uk["c3"]:+.0f}bp，'
+                  + (f'約占這個緩衝的 {used:.0f}%。</p>' if uk["c3"] > 0 else '沒有上升。</p>'))
+    if eu and eu.get("slope") is not None:
+        story += (f'<p class="small"><b>荷蘭退休金改革（時程是官方的，對利率的影響是研究機構預估）</b>：荷蘭退休金約 1.5 兆歐元，正從「保證給多少」改成「看投資成果給」，'
+                  f'各基金要在 2028 年 1 月前轉換，最大的 ABP 預定 2027 年 1 月 1 日轉換。轉換後不需要那麼多 30 年以上的避險，'
+                  f'ING 等研究預期歐元 30 年利率相對 10 年會被推高（<a href="https://think.ing.com/articles/dutch-pension-reforms-are-bumping-up-rates-from-the-long-end" target="_blank" rel="noopener">ING</a>）。'
+                  f'本站量到的歐元區 AAA 30 年減 10 年是 {eu["slope"]:+.0f}bp（{eu["since"]} 年以來第 {num(eu.get("slope_pct"), 0)} 百分位）'
+                  + (f'，一年 {eu["slope_1y"]:+.0f}bp' if eu.get("slope_1y") is not None else "") + '。這個差距若在轉換日前後明顯拉大，代表預期正在發生。</p>')
+    story += ('<p class="small"><b>連帶影響</b>：長債急升時，房貸利率、公用事業、不動產信託和還沒賺錢的成長股通常先受傷（它們的價值最看重遠期的錢）；'
+              '保險公司和退休金帳上的債券跌價；如果拋售從英國或日本傳到美債，全球借錢成本一起上升。</p>'
+              '<p class="small"><b>誰持有這些長債</b>：' + "；".join(f'{esc(r["zh"])}——{esc(r["who"])}' for r in rows) + "。</p>")
+    sp = "".join(f'<div><div class="small muted">{esc(r["zh"])} {esc(r["tenor"])}（近 5 年）</div>{spark(_ser(r["hist"]), 160, 36)}</div>' for r in rows if r.get("hist"))
+    body = (f'<p class="rimp big2"><b>{T("一句話看懂：" + ldi_lead(rows), "")}</b></p>'
+            f'<p>{T("退休金答應幾十年後每個月付錢給退休的人，所以買很多 30 年左右的長債。殖利率慢慢升對它們是好事；幾天內急升，用借來的錢避險的基金就要補保證金，只好賣債，越賣越跌。", "")}</p>'
+            + tbl
+            + f'<details class="sgx"><summary>{T("看 2022 年英國退休金危機、荷蘭改革與連帶影響", "Details")}</summary>{story}'
+            + (f'<div class="g3">{sp}</div>' if sp else "") + '</details>'
+            + f'<p class="note">{T(f"燈號規則：3 個交易日升幅落在自己歷史最高 0.5%、或超過 {PL.RED_BP:.0f}bp → 🔴；最高 2.5%（或 20 天升幅最高 2.5%）→ 🟡；其餘 🟢。百分位只和同一條債自己的歷史比。資料：英國央行（20 年名目平價殖利率，2000 年起）、歐洲央行（歐元區 AAA 公債殖利率曲線，2004 年起）、FRED（美國 30 年）、日本財務省（日本 30 年）。描述現況，不是預測，也不是投資建議。", "")}</p>')
+    return card("退休金與長天期公債：會不會再出一次 2022 年英國危機", "Pensions and long bonds: LDI stress", body, "wide")
 
 
 @_anchor("st-cover")
