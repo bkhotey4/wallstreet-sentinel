@@ -51,7 +51,17 @@ def test_browser():
         assert st["st"] == "closed" and st["hol"], st              # before the open the holiday is now known, not "not open yet"
 
 
+def test_sessions_note():
+    from datetime import timezone
+    from tools import site_sessions as SS
+    mon = datetime(2026, 11, 9, 3, 54, tzinfo=timezone.utc)                  # Monday noon in Taipei, still Sunday in New York
+    assert "週末美股休市" in SS.stale_note("2026-11-06", mon) and "11/9（週一）21:00" in SS.stale_note("2026-11-06", mon)
+    assert "節日" in SS.stale_note("2026-11-25", datetime(2026, 11, 26, 15, 0, tzinfo=timezone.utc))
+    assert SS.stale_note("2026-11-06", datetime(2026, 11, 6, 23, 0, tzinfo=timezone.utc)) == ""
+
+
 if __name__ == "__main__":
     test_calendar()
+    test_sessions_note()
     test_browser()
     print("MARKET CALENDAR TESTS PASSED [OK]")
