@@ -1,6 +1,7 @@
 // Cloudflare Pages Function: GET /api/news → the latest headlines from a fixed list of reliable feeds, newest first, each tagged
 // with the markets it is likely to touch (keyword rules below, not AI).  Chinese sources first-class (中央社, BBC 中文), plus
-// official releases (Fed, ECB, BOJ), English business desks (BBC, MarketWatch) and CNBC (markets, finance, top news).  General-news feeds (all: false) keep only headlines that
+// official releases (Fed, ECB, BOJ), English business desks (BBC, MarketWatch) and CNBC (markets, finance, top news, world, politics —
+// world/politics carry statements like "Trump says Iran strikes unlikely" that move oil before any market desk writes it up).  General-news feeds (all: false) keep only headlines that
 // carry a market tag.  Nothing stored; the merged list is cached 120 s at the edge.
 // Aggregators (Google News) are left out on purpose: too many click-bait titles for a beginner's page.
 const FEEDS = [
@@ -15,6 +16,8 @@ const FEEDS = [
   { s: "CNBC 市場", u: "https://www.cnbc.com/id/15839069/device/rss/rss.html", lang: "en" },
   { s: "CNBC 財經", u: "https://www.cnbc.com/id/10000664/device/rss/rss.html", lang: "en" },
   { s: "CNBC 頭條", u: "https://www.cnbc.com/id/100003114/device/rss/rss.html", lang: "en" },
+  { s: "CNBC 國際", u: "https://www.cnbc.com/id/100727362/device/rss/rss.html", lang: "en" },
+  { s: "CNBC 政治", u: "https://www.cnbc.com/id/10000113/device/rss/rss.html", lang: "en" },
 ];
 // tag → keywords.  Chinese: substring; English: whole word, any case.  A headline can carry several tags.
 export const TAGS = [
@@ -27,7 +30,7 @@ export const TAGS = [
   ["黃金", ["黃金", "金價", "gold"]],
   ["科技", ["AI", "人工智慧", "輝達", "晶片", "半導體", "Nvidia", "chip", "chips", "semiconductor"]],
   ["地緣", ["關稅", "制裁", "戰爭", "飛彈", "台海", "伊朗", "以色列", "中東", "荷姆茲", "烏克蘭", "俄羅斯", "tariff", "tariffs", "sanction",
-            "sanctions", "war", "missile", "invasion", "Iran", "Iranian", "Israel", "Middle East", "Hormuz", "Ukraine", "Russia"]],
+            "sanctions", "war", "missile", "invasion", "strike", "strikes", "airstrike", "ceasefire", "Iran", "Iranian", "Israel", "Middle East", "Hormuz", "Ukraine", "Russia"]],
   ["就業物價", ["通膨", "物價", "CPI", "就業", "非農", "失業", "inflation", "jobs", "payrolls", "unemployment"]],
 ];
 const MAX_AGE_H = 36;
