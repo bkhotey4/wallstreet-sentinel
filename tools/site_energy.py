@@ -5,6 +5,48 @@ from typing import Dict, List
 
 from tools.sitekit import T, card, cls, esc, num
 
+OIL_SYMS = ("BZ=F", "CL=F", "XLE", "JETS", "6505.TW", "2610.TW")   # crude, energy stocks, airlines, 台塑化, 華航
+
+
+def oil_sigma(eng) -> float:
+    """Brent's usual daily move (% std of the last 60 daily returns), baked into the page for the live line."""
+    try:
+        s = eng.market.series("BZ=F").dropna()
+        return round(float(s.pct_change().dropna().tail(60).std() * 100), 3) if len(s) > 61 else 0.0
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+def oil_live(eng) -> str:
+    """Placeholder filled in the browser from /api/quote and /api/news (hidden if either fails, e.g. on GitHub Pages)."""
+    return (f'<div class="oillive" id="oillive" data-sig="{oil_sigma(eng)}" hidden><p class="rimp"><b id="oil_one"></b></p>'
+            '<ul class="small" id="oil_news"></ul><p class="small" id="oil_who"></p>'
+            '<p class="small muted" id="oil_t"></p></div>')
+
+
+OIL_CSS = ".oillive{border-left:3px solid var(--ac);padding:2px 10px;margin:4px 0 10px;background:var(--wash);border-radius:6px}"
+OIL_JS = r"""
+(function(){var box=document.getElementById('oillive');if(!box)return;var sig=parseFloat(box.dataset.sig)||0;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function ago(ts){var m=Math.max(0,Math.round((Date.now()/1000-ts)/60));return m<60?m+' 分鐘前':m<1440?Math.round(m/60)+' 小時前':Math.round(m/1440)+' 天前';}
+function pc(x){return (x>0?'+':'')+x.toFixed(1)+'%';}
+function run(){Promise.all([fetch('/api/quote?s=__SYMS__').then(function(r){return r.json();}),fetch('/api/news').then(function(r){return r.json();})]).then(function(a){
+  var q=a[0].q||a[0],n=a[1].items||[],b=q['BZ=F'];if(!b||b.chg==null)return;var c=+b.chg,k=sig?Math.abs(c)/sig:null;
+  var size=k==null?'':(k>=2?'，是平常一天波動的 '+k.toFixed(1)+' 倍，算大動':k>=1?'，比平常一天的波動大一些（'+k.toFixed(1)+' 倍）':'，在平常的波動範圍內');
+  document.getElementById('oil_one').textContent='油價今天怎麼了：布蘭特原油 '+(+b.price).toFixed(2)+' 美元，'+pc(c)+size+'。';
+  var now=Date.now()/1000,hit=n.filter(function(x){return now-x.ts<24*3600&&(x.tags.indexOf('油價')>=0||x.tags.indexOf('地緣')>=0);}).slice(0,4);
+  var ul=document.getElementById('oil_news');ul.innerHTML=hit.length?hit.map(function(x){return '<li>'+esc(ago(x.ts))+'・'+esc(x.s)+'：<a href="'+esc(x.u)+'" target="_blank" rel="noopener noreferrer">'+esc(x.t)+'</a></li>';}).join('')
+   :'<li>過去 24 小時，本站的新聞來源沒有和油價或地緣政治有關的標題，原因還不清楚，不硬猜。</li>';
+  var f=function(s){var x=q[s];return x&&x.chg!=null?pc(+x.chg):'—';};
+  var who=c<=-1?'油價下跌時，通常航空（美國航空股 '+f('JETS')+'、華航 '+f('2610.TW')+'）、貨運和塑化下游的成本變低；石油公司與能源股（美國能源股 '+f('XLE')+'）收入受壓；通膨預期和利率常跟著往下，對成長股是減壓。'
+   :c>=1?'油價上漲時，通常石油公司與能源股（美國能源股 '+f('XLE')+'、台塑化 '+f('6505.TW')+'）受惠；航空（'+f('JETS')+'、華航 '+f('2610.TW')+'）與貨運成本變高；通膨預期和利率容易跟著往上，對成長股是壓力。'
+   :'油價今天變化不大，對航空、能源股和通膨預期的影響有限。';
+  document.getElementById('oil_who').innerHTML='<b>會牽動誰</b>：'+esc(who);
+  document.getElementById('oil_t').textContent='報價約延遲 15 分鐘（'+new Date((b.t||now)*1000).toLocaleString('zh-TW',{hour12:false})+'）；新聞是用時間和關鍵字對上的，對得上不等於就是原因。每 5 分鐘更新。';
+  box.hidden=false;}).catch(function(){box.hidden=true;});}
+run();setInterval(run,300000);})();
+""".replace("__SYMS__", ",".join(s.replace("=", "%3D").replace("^", "%5E") for s in OIL_SYMS))
+
 
 def readings(r: Dict, c: Dict) -> List[Dict]:
     """🔑 what the numbers add up to (descriptive; percentile thresholds from settings.yaml energy_chain)."""
@@ -45,7 +87,7 @@ def sec_energy_chain(eng) -> str:
         return ""
     from tools.site_quant import _takeaways
     from wsb.analytics import energy_chain as EC
-    body = _takeaways(readings(r, EC.cfg()))
+    body = oil_live(eng) + _takeaways(readings(r, EC.cfg()))
     ch = r.get("chain") or []
     if ch:
         def d3(x):

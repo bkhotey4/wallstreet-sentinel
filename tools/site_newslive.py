@@ -11,8 +11,8 @@ def sec_news_live(eng) -> str:
     body = ('<p class="rimp" id="nl_lead"><b>一句話看懂：</b>讀取最新新聞中…</p>'
             '<div class="nlf" id="nl_f"></div><ul class="nll" id="nl_list"></ul>'
             '<button type="button" class="btn nlmore" id="nl_more" hidden></button>'
-            '<p class="note" id="nl_note">來源固定：中央社、BBC 中文、聯準會、歐洲央行、日本央行、BBC Business、MarketWatch；'
-            '綜合新聞只留跟市場有關的標題。標籤是用關鍵字自動分類，不是 AI 判斷；⚡ 代表這則新聞的時間和分類，對得上即時燈號裡正在大動的行情，'
+            '<p class="note" id="nl_note">來源固定：中央社、BBC 中文、聯準會、歐洲央行、日本央行、BBC Business、MarketWatch、CNBC（市場、財經、頭條、國際、政治）；'
+            '綜合新聞只留跟市場有關的標題。標籤是用關鍵字自動分類，不是 AI 判斷；⚡ 代表這則新聞的時間和分類，對得上即時燈號裡正在大動的行情（油價大動時，地緣政治新聞也算），'
             '但對得上不等於就是原因。每 5 分鐘自動更新。不構成投資建議。</p>')
     h = card("即時新聞", "Live news", body, "wide", sub="可靠來源的最新標題，自動標上可能牽動哪些行情")
     return h.replace('<section class="card', '<section id="newslive" class="card', 1)
@@ -29,7 +29,7 @@ CSS = (".nlf{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.nlf button{font-s
 JS = r"""
 (function(){var box=document.getElementById('newslive');if(!box)return;
 var MAP=[['標普','美股'],['那斯達克','美股'],['道瓊','美股'],['VIX','美股'],['羅素','美股'],['台股','台股'],['加權','台股'],['台積電','台股'],
- ['殖利率','利率'],['美債','利率'],['公債','利率'],['原油','油價'],['油','油價'],['美元','匯率'],['日圓','匯率'],['台幣','匯率'],['黃金','黃金'],
+ ['殖利率','利率'],['美債','利率'],['公債','利率'],['原油','油價'],['油','油價'],['原油','地緣'],['油','地緣'],['美元','匯率'],['日圓','匯率'],['台幣','匯率'],['黃金','黃金'],
  ['半導體','科技'],['輝達','科技'],['高收益債','利率']];
 var items=[],tag='',shown=5,tm=null;
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
