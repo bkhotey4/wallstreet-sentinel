@@ -1,6 +1,18 @@
 {
-  "updated": "2026-11-02",
+  "updated": "2026-11-09",
   "items": [
+    {
+      "title": "How Do Banking Supervisors Deal with Failing Banks?",
+      "authors": "Sergio Correia, Stephan Luck, Emil Verner",
+      "source": "Federal Reserve Bank of New York, Liberty Street Economics",
+      "published": "2026-11-02",
+      "url": "https://libertystreeteconomics.newyorkfed.org/2026/11/how-do-banking-supervisors-deal-with-failing-banks/",
+      "added": "2026-11-09",
+      "summary": "研究銀行主管機關如何決定關閉問題銀行，使用 2000 至 2023 年所有商業銀行的檢查資料，並與 1865–1935 年的銀行倒閉紀錄比較。2000 年以來 557 家倒閉銀行中，只有 28 家不是在週五關閉；股本占資產比超過 5% 的銀行幾乎不倒，低於 2% 時一年內倒閉機率接近 70%。",
+      "implication": "現代銀行倒閉多半是主管機關的決定，而不是市場自然擠兌的結果，且與帳面資本高度相關。看銀行風險時，資本比率是否持續下滑比單日股價更值得留意。",
+      "site_relevance": "與本站壓力指數 SSI 的銀行體系成分有關，可考慮加入銀行股本資產比的觀察項目。",
+      "topic": "風險預警"
+    },
     {
       "title": "Treasury Issuance and Dealer Balance Sheets",
       "authors": "Jonathan Glicoes, Lubomir Petrasek, Zack Saravay, Mary Tian",
