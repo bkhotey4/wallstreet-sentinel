@@ -148,7 +148,7 @@ def sec_energy_chain(eng) -> str:
         if not st:
             body += f'<p class="small muted">{T("庫存需要 EIA 免費金鑰（EIA_API_KEY）才會顯示。", "Stocks need a free EIA_API_KEY.")}</p>'
     body += tw_fuel_block(eng)
-    note = T("把「原油 → 柴油 → 通膨預期 → Fed 路徑」這條鏈放在一起看。這次油價衝擊最緊的是柴油等精煉品，只看原油會看輕對物價的影響。"
+    note = T("把「原油 → 柴油 → 通膨預期 → Fed 路徑」這條鏈放在一起看；柴油等精煉品比原油更直接推高物價，所以兩個都看。"
              "資料來自 Yahoo 期貨、FRED（EIA 柴油零售價、5 年通膨預期、2 年期殖利率）與 EIA 週庫存；🔑 重點是固定規則的解讀，不是預測，也不是投資建議。",
              "Oil → diesel → inflation expectations → the Fed path, from futures, FRED and EIA data. Readings are fixed rules, not forecasts or advice.")
     return card("能源傳導鏈：原油 → 柴油 → 通膨 → 利率", "Energy chain: oil → diesel → inflation → rates", body + f'<p class="note">{note}</p>', "wide")

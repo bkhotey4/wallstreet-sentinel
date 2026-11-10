@@ -229,7 +229,9 @@ def hedge(hf: Dict, basis_pct: Optional[float] = None) -> Optional[Dict]:
         out.update(repo=float(repo.iloc[-1]) / 1e9, repo_date=repo.index[-1].strftime("%Y-%m-%d"),
                    repo_yoy=float(repo.iloc[-1] / yago.iloc[-1] - 1) * 100 if len(yago) else None)
     hot = (out["lev_pct"] or 0) >= HOT
-    if hot and (basis_pct or 0) >= HOT:
+    if out["lev_pct"] is None:
+        out["emoji"], out["state"] = "⚪", "資料不足"
+    elif hot and (basis_pct or 0) >= HOT:
         out["emoji"], out["state"] = "🟡", "槓桿偏高，基差交易也偏大"
     elif hot:
         out["emoji"], out["state"] = "🟢", "槓桿偏高，基差交易還沒到最高一成"
@@ -271,7 +273,9 @@ def banks(rows: List[Dict]) -> Optional[Dict]:
            "worst": float(ratio.min()), "worst_date": worst, "unins": float(df["unins"].iloc[-1]),
            "unins_pct": _pct(df["unins"].iloc[:-1], float(df["unins"].iloc[-1])),
            "hist": [[k, round(float(v), 2)] for k, v in ratio.tail(40).items()]}
-    if (out["loss_pct"] or 0) >= HOT:
+    if out["loss_pct"] is None:
+        out["emoji"], out["state"] = "⚪", "資料不足"
+    elif out["loss_pct"] >= HOT:
         out["emoji"], out["state"] = "🟡", "證券帳面損失在 2010 年以來最大 10%"
     elif now < 0:
         out["emoji"], out["state"] = "🟢", "還有帳面損失，但比高峰時小"
@@ -295,7 +299,8 @@ def rent_ratio(get) -> Optional[Dict]:
            "peak06": float(peak.max()) if len(peak) else None, "peak06_date": peak.idxmax().strftime("%Y-%m") if len(peak) else None,
            "max": float(x.max()), "max_date": x.idxmax().strftime("%Y-%m"),
            "hist": [[i.strftime("%Y-%m-%d"), round(float(v), 1)] for i, v in x.resample("QE").last().tail(60).items()]}
-    out["emoji"], out["state"] = ("🟡", "房價相對房租在歷史高檔") if (out["pct"] or 0) >= HOT else ("🟢", "房價相對房租沒有特別高")
+    out["emoji"], out["state"] = (("⚪", "資料不足") if out["pct"] is None else ("🟡", "房價相對房租在歷史高檔") if out["pct"] >= HOT
+                                  else ("🟢", "房價相對房租沒有特別高"))
     return out
 
 

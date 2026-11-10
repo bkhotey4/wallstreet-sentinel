@@ -38,8 +38,8 @@ def readings(r: Dict) -> List[Dict]:
                     "en": f"Equity risk premium {g['erp']:.2f}pp — {g['erp_pct']:.0f}th percentile since {g['erp_since']}."})
     if g.get("gap") is not None and g["gap"] < 0 and g.get("y1987") is not None:
         out.append({"lv": "watch", "zh": f"「像 1987」的量化檢查：10 年期殖利率（{g['nominal']:.2f}%）高於股票盈餘殖利率（{g['ey']:.2f}%），差距 {g['gap']:+.2f} 個百分點，方向和 1987 年一樣；"
-                                         f"但 1987 年 7 月的差距是 {g['y1987']:+.2f}" + (f"、2000 年初是 {g['y2000']:+.2f}" if g.get("y2000") is not None else "") + "，現在小得多。"
-                                         + (f"而且 1962 年以來有 {g['neg_share']:.0f}% 的季度差距都是負的，" if g.get("neg_share") is not None else "")
+                                         f"但 1987 年 7 月的差距是 {g['y1987']:+.2f}" + (f"、2000 年初是 {g['y2000']:+.2f}" if g.get("y2000") is not None else "") + ("，現在小得多。" if abs(g["gap"]) < abs(g["y1987"]) * 0.5 else "，現在已經接近那時候的程度。")
+                                         + (f"而且有資料以來有 {g['neg_share']:.0f}% 的季度差距都是負的，" if g.get("neg_share") is not None else "")
                                          + "所以它代表「股票相對公債偏貴」，不是崩盤的時間點。",
                     "en": f"'Like 1987' check: bond yield above the earnings yield ({g['gap']:+.2f}pp) — same sign as 1987 ({g['y1987']:+.2f}) but far smaller; "
                           + (f"negative in {g['neg_share']:.0f}% of quarters since 1962, " if g.get("neg_share") is not None else "")
@@ -187,11 +187,11 @@ def sec_rate_pressure(eng) -> str:
     r, w = links["rate"], v.get("worst")
     lead = (f"一句話看懂：10 年期殖利率 {r['now']:.2f}%（一年內最高 {r['hi']:.2f}%，{r['hi_date']}）。"
             + (f"四個環節裡，目前壓力最大的是「{w['zh']}」（自己歷史第 {w['pct']:.0f} 百分位）。" if w else ""))
-    cells = [f'<div class="cch"><span class="cst">利率</span>10 年期 {r["now"]:.2f}%<span class="cmt">3 個月 {r["chg3"]:+.0f}bp・{r["since"]} 年以來第 {num(r["pct"], 0)} 百分位</span></div>']
+    cells = [f'<div class="cch"><span class="cst">利率</span>10 年期 {r["now"]:.2f}%<span class="cmt">3 個月 {num(r["chg3"], 0, sign=True)}bp・{r["since"]} 年以來第 {num(r["pct"], 0)} 百分位</span></div>']
     h = links.get("home")
     if h:
         cells.append(f'<div class="cch"><span class="cst">一般人</span>房貸利率 {h["now"]:.2f}%'
-                     f'<span class="cmt">3 個月 {h["chg3"]:+.0f}bp・第 {num(h["pct"], 0)} 百分位</span></div>')
+                     f'<span class="cmt">3 個月 {num(h["chg3"], 0, sign=True)}bp・第 {num(h["pct"], 0)} 百分位</span></div>')
     c = links.get("credit")
     if c:
         cells.append(f'<div class="cch"><span class="cst">公司借錢</span>'
@@ -200,7 +200,7 @@ def sec_rate_pressure(eng) -> str:
     a = links.get("ai")
     if a:
         cells.append(f'<div class="cch"><span class="cst">AI 借錢擴張</span>算力公司 3 個月比那斯達克 {a["rel"]:+.0f} 個百分點'
-                     f'<span class="cmt">壓力第 {num(a["pct"], 0)} 百分位（越高越差）</span></div>')
+                     f'<span class="cmt">本站選定 4 家・壓力第 {num(a["pct"], 0)} 百分位（越高越差）</span></div>')
     body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p>'
             '<p>利率升高時，壓力不是一下子打到所有人，而是沿著一條鏈傳下去：先是借錢買房的人，再來是要借新債的公司，'
             '最後是本來就靠借錢擴張、現金流還不夠付利息的公司。下面四格就是這條鏈，每格都和自己的歷史比。</p>'
@@ -224,5 +224,5 @@ def sec_rate_pressure(eng) -> str:
             '投資和招人會放慢；AI 算力公司如果借不到便宜的錢，晶片和電力設備的訂單也會跟著延後，台灣的 AI 供應鏈會感受到。</p>')
     body += f'<details class="sgx"><summary>{T("看每一環的數字與連帶影響", "Details")}</summary>{det}</details>'
     body += (f'<p class="note">{T("資料：FRED（10 年期公債 1962 年起、30 年房貸利率、ICE BofA 公司債利差近 3 年）、Yahoo（XHB、AI 算力公司、BIZD）。百分位都是和自己的歷史比，壓力最大的一環是四格裡百分位最高的（利率本身不算在內）。描述現況，不是預測，也不是投資建議。", "")}</p>')
-    h2 = card("利率回到 5% 附近，壓力傳到哪裡", "Where high rates bite", body, "wide", sub="殖利率 → 房貸 → 公司借錢 → 靠借錢擴張的 AI 公司")
+    h2 = card(f"10 年期殖利率 {r['now']:.2f}%：壓力傳到哪裡", "Where high rates bite", body, "wide", sub="殖利率 → 房貸 → 公司借錢 → 靠借錢擴張的 AI 公司")
     return h2.replace('<section class="card', '<section id="ratepress" class="card', 1)

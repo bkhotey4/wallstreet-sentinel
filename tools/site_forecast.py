@@ -141,7 +141,8 @@ def _score(xs: List[Dict]) -> str:
     if not done:
         return ""
     hit = sum(x["result"] == "對" for x in done)
-    avg = sum(float(x.get("prob") or 0) for x in done) / len(done)
+    ps = [float(x["prob"]) for x in done if x.get("prob") is not None]
+    avg = sum(ps) / len(ps) if ps else 0.0
     rows = "".join(f'<p class="small"><b>{_e(x["name"])}</b>（估 {_e(x.get("prob"))}%）<b class="{"up" if x["result"] == "對" else "dn"}">{_e(x["result"])}</b>：{_e(x.get("note"))}</p>' for x in done)
     return (f'<p class="small"><b>過去成績</b>：{len(done)} 題對 {hit} 題（{hit / len(done) * 100:.0f}%），當時平均估 {avg:.0f}%，兩者越接近代表機率估得越準。</p>'
             f'<details class="sgx"><summary>看每一題結果</summary>{rows}</details>')

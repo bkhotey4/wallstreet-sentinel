@@ -504,6 +504,36 @@ def all_events(days: Dict[str, Dict], ff: Optional[List[Dict]] = None) -> List[D
     return out
 
 
+FRED_IDS = ("CPIAUCSL", "CPILFESL")          # official CPI indexes: fill a missed m/m actual when the calendar source drops the row
+FRED_FILL = {"cpi": (("CPI 月增", "CPIAUCSL"), ("核心 CPI 月增", "CPILFESL"))}
+
+
+def fill_from_fred(e: Dict, get) -> bool:
+    """A release day whose calendar rows never got an actual (Nasdaq removed the 2026-11-10 CPI row): compute the m/m change
+    from the official index when FRED already has the month before the release month. Returns True when it filled one."""
+    spec = FRED_FILL.get(e.get("key"))
+    if not spec or e.get("released"):
+        return False
+    done = False
+    want = (pd.Timestamp(e["date"]) - pd.DateOffset(months=1)).strftime("%Y-%m")
+    for lab, sid in spec:
+        s = get(sid)
+        row = next((r for r in e.get("rows") or [] if r.get("label") == lab), None)
+        if s is None or row is None or row.get("a") is not None:
+            continue
+        s = s.dropna()
+        if len(s) < 2 or s.index[-1].strftime("%Y-%m") != want:
+            continue
+        a = round(float(s.iloc[-1] / s.iloc[-2] - 1) * 100, 1)
+        row.update(actual=f"{a:.1f}%", a=a, actual_src="fred", diff=(a - row["c"]) if row.get("c") is not None else None)
+        done = True
+    if done:
+        prim = e["rows"][0]
+        e["released"] = True
+        e["dir"] = classify(e["key"], prim) if prim.get("a") is not None else None
+    return done
+
+
 def build(eng, now: Optional[datetime] = None) -> Dict:
     ec = getattr(eng, "econ", None)
     if ec is None or not ec.days:
@@ -525,7 +555,13 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
     stats = history_stats(past, hist)
     upcoming = sorted([e for e in window if not e["released"]], key=lambda e: (e["date"], e.get("utc") or ""))
     ctx = context(past, upcoming, hist)
+    fr = getattr(eng, "fred", None)
     for e in window:
+        if e["date"] <= today.isoformat() and fr is not None:
+            try:
+                fill_from_fred(e, fr.get)
+            except Exception:  # noqa: BLE001
+                log.exception("CPI fill from FRED failed")
         if e["key"] == "fomc":
             e["sep"] = e.get("sep") or seps.get(e["date"], False)
             fv = getattr(eng, "fedwatch_view", None) or {}

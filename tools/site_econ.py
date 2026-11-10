@@ -40,7 +40,8 @@ def _val_line(e: Dict) -> str:
     p = _prim(e)
     if not p:
         return f'<span class="muted small">{T("無數值（看內容與語氣）", "no figure — content and tone")}</span>'
-    act = (f'{T("公布", "Actual")} <b>{esc(p["actual"])}</b>　' if p.get("actual") else "")
+    act = (f'{T("公布", "Actual")} <b>{esc(p["actual"])}</b>' + (f'<span class="muted small">{T("（勞工統計局指數）", "(BLS index)")}</span>' if p.get("actual_src") == "fred" else "")
+           + "　" if p.get("actual") else "")
     src = f'<span class="muted small">{T("（FF）", "(FF)")}</span>' if p.get("cons_src") == "ff" else ""
     return (f'<span class="small">{esc(p["label"])}：{act}{T("預期", "Cons.")} <b>{esc(p["cons"] or "—")}</b>{src}　'
             f'{T("前值", "Prev.")} {esc(p["prev"] or "—")}</span>')

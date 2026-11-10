@@ -92,14 +92,14 @@ def view(get, px) -> Dict:
         y = y.dropna()
         yr = y[y.index > y.index[-1] - pd.DateOffset(years=1)]
         out["links"].append({"key": "rate", "zh": "10 年期公債殖利率", "now": float(y.iloc[-1]), "date": y.index[-1].strftime("%Y-%m-%d"),
-                             "chg3": (_chg(y, 91) or 0) * 100, "hi": float(yr.max()), "hi_date": yr.idxmax().strftime("%Y-%m-%d"),
+                             "chg3": None if _chg(y, 91) is None else _chg(y, 91) * 100, "hi": float(yr.max()), "hi_date": yr.idxmax().strftime("%Y-%m-%d"),
                              "since": y.index[0].strftime("%Y"), "pct": _pct(y.iloc[:-1], float(y.iloc[-1]))})
     m = get("MORTGAGE30US")
     if m is not None and len(m.dropna()) > 100:
         m = m.dropna()
         c3 = _chg(m, 91)
         link = {"key": "home", "zh": "30 年房貸利率（美國）", "now": float(m.iloc[-1]), "date": m.index[-1].strftime("%Y-%m-%d"),
-                "chg3": (c3 or 0) * 100, "since": m.index[0].strftime("%Y"), "pct": _pct(m.iloc[:-1], float(m.iloc[-1])),
+                "chg3": None if c3 is None else c3 * 100, "since": m.index[0].strftime("%Y"), "pct": _pct(m.iloc[:-1], float(m.iloc[-1])),
                 "pay": payment(float(m.iloc[-1])), "pay3": payment(float(m.iloc[-1]) - c3) if c3 is not None else None}
         xhb, spx = px("XHB"), px("^GSPC")
         if xhb is not None and spx is not None:
@@ -112,19 +112,23 @@ def view(get, px) -> Dict:
         if s is not None and len(s.dropna()) > 120:
             s = s.dropna()
             c3 = _chg(s, 91)
+            if c3 is None:
+                continue
             out.setdefault("credit", []).append({"zh": zh, "pct": _pct(s.iloc[:-1], float(s.iloc[-1])), "since": s.index[0].strftime("%Y"),
-                                                 "dir": "擴大" if (c3 or 0) > 0.05 else "收斂" if (c3 or 0) < -0.05 else "持平",
+                                                 "dir": "擴大" if c3 > 0.05 else "收斂" if c3 < -0.05 else "持平",
                                                  "date": s.index[-1].strftime("%Y-%m-%d")})
     if out.get("credit"):
         cr = out["credit"]
-        out["links"].append({"key": "credit", "zh": "公司借錢的利差", "pct": max(c["pct"] or 0 for c in cr), "rows": cr})
+        ps = [c["pct"] for c in cr if c["pct"] is not None]
+        out["links"].append({"key": "credit", "zh": "公司借錢的利差", "pct": max(ps) if ps else None, "rows": cr})
     neo = load().get("neo") or {}
     ser = [pd.Series(v, dtype=float).rename(k) for k, v in neo.items() if len(v) > 120]
     ndx = px("^NDX")
     if ser and ndx is not None:
         for s in ser:
             s.index = pd.to_datetime(s.index)
-        basket = pd.concat([s / s.dropna().iloc[0] for s in ser], axis=1).mean(axis=1).dropna()
+        rets = pd.concat([s.pct_change() for s in ser], axis=1).mean(axis=1, skipna=True).dropna()   # equal-weight daily returns, so a late listing does not jump the basket
+        basket = (1 + rets).cumprod()
         r = _rel(basket, ndx)
         if r is not None:
             rk = _pct(r.iloc[:-1], float(r.iloc[-1]))           # 0 = the worst 3 months in its own history (0 is a real value, not missing)

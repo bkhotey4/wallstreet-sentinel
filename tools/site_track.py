@@ -178,6 +178,8 @@ def alert_rows(eng) -> List[Dict]:
         n = p.get("episodes", 0)
         base = p.get("base_rate")
         dd = h["drawdown"] * 100
+        if p.get("hit_rate") is None and n:
+            continue                                  # no graded result yet: do not show it as all misses
         r = _row(f"已發出的風險警報：{days} 日內跌 ≥{dd:.0f}%", f"Sent alerts: ≥{dd:.0f}% in {days}d", n, round((p.get("hit_rate") or 0) * n / 100), base,
                  f"任何一天 {base:.0f}%" if base is not None else "—", f"Any day {base:.0f}%" if base is not None else "—", None,
                  "" if src == "bot" else "網站自己記的紅色警報（加上機器人過去的紀錄），同一天內的多次警報算一次")

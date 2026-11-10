@@ -79,6 +79,7 @@ class FredData:
         from .migration_polls import FRED_IDS as MG_IDS
         from .fsr_watch import FRED_IDS as FW_IDS
         from .rate_pressure import FRED_IDS as RP_IDS
+        from ..analytics.macro_events import FRED_IDS as ME_IDS
         every = SETTINGS["refresh"]["fred"]
         start = history_start().isoformat()
         val = SETTINGS.get("valuation", {}) or {}
@@ -87,7 +88,7 @@ class FredData:
         ids = list(dict.fromkeys(list(SETTINGS.get("fred_series", {}).keys()) + list((val.get("fred") or {}).keys())
                                  + list(trs.keys())
                                  + [sid for grp in (SETTINGS.get("real_economy") or {}).values() for sid in (grp or {})]
-                                 + list(RR_IDS) + list(EC_IDS) + list(RS_IDS) + list(VU_IDS) + list(ST_IDS) + list(BD_IDS) + list(MG_IDS) + list(FW_IDS) + list(RP_IDS)))
+                                 + list(RR_IDS) + list(EC_IDS) + list(RS_IDS) + list(VU_IDS) + list(ST_IDS) + list(BD_IDS) + list(MG_IDS) + list(FW_IDS) + list(RP_IDS) + list(ME_IDS)))
         # full history only where a module needs it; DGS2 (an SSI input) and the energy-chain series keep the usual start
         starts = {sid: long_start for sid in list(val.get("fred") or {}) + list(RR_LONG) + list(RS_IDS) + list(VU_IDS) + list(FW_IDS)
                   + [i for i in BD_IDS if i.startswith("IRLTLT")]}                      # government bonds: full history for percentiles   # 利率衝擊雷達 needs 1962+ (1987 check)
