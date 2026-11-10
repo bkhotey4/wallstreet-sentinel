@@ -81,6 +81,32 @@ def readings(r: Dict, c: Dict) -> List[Dict]:
     return sorted(out, key=lambda x: order[x["lv"]])
 
 
+def tw_fuel_block(eng) -> str:
+    """4. 台灣加油站：中油每週牌價，和國際油價（換成新台幣）一年的變化比。"""
+    try:
+        from wsb.data import tw_fuel as TF
+        v = TF.view(eng.market.series("BZ=F"), eng.market.series("TWD=X"))
+    except Exception:  # noqa: BLE001
+        v = None
+    if not v:
+        return ""
+    rows = "".join(f'<tr><td>{esc(r["zh"])}</td><td class="r"><b>{r["price"]:.1f}</b></td>'
+                   f'<td class="r {cls(r["wk"])}">{num(r["wk"], 1, sign=True)}</td>'
+                   f'<td class="r {cls(r["yoy"])}">{num(r["yoy"], 1, sign=True, pct=True)}</td><td class="small muted">{esc(r["date"])}</td></tr>' for r in v["rows"])
+    g = next((r for r in v["rows"] if r["key"] == "95"), v["rows"][0])
+    read = ""
+    if v.get("brent_yoy") is not None and g.get("yoy") is not None:
+        gap = v["brent_yoy"] - g["yoy"]
+        read = (f'<p class="small">一年來國際油價（布蘭特換成新台幣）{v["brent_yoy"]:+.0f}%，台灣 95 汽油 {g["yoy"]:+.1f}%。'
+                + (f'加油站漲得比國際油價少很多，差的部分由中油和政府的油價平穩機制吸收，所以台灣物價受油價的衝擊比國外小；但中油吸收的成本，最後可能要靠政府補貼，也就是納稅人負擔。'
+                   if gap > 5 else f'加油站跌得比國際油價少，平穩機制在油價下跌時也會讓台灣降得比較慢。' if gap < -5 else '兩者差不多，國際油價大致照實反映到加油站。')
+                + '</p>')
+    return (f'<h3>{T("4. 台灣加油站：國際油價傳到台灣多少", "4. Taiwan pump prices")}</h3>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th></th><th class="r">元／公升</th><th class="r">本週調整</th><th class="r">一年</th><th>生效日</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>' + read
+            + f'<p class="small muted">中油每週日公布、週一生效（<a href="{TF.PAGE}" target="_blank" rel="noopener">中油歷史牌價</a>）；本站自動抓取，不是預測下週油價。</p>')
+
+
 def sec_energy_chain(eng) -> str:
     r = getattr(eng, "energy_chain", None) or {}
     if not r.get("available"):
@@ -121,6 +147,7 @@ def sec_energy_chain(eng) -> str:
         body += f'<h3>{T("3. 庫存緩衝與傳導力道", "3. Buffer and pass-through")}</h3><div class="kv">{kv}</div>'
         if not st:
             body += f'<p class="small muted">{T("庫存需要 EIA 免費金鑰（EIA_API_KEY）才會顯示。", "Stocks need a free EIA_API_KEY.")}</p>'
+    body += tw_fuel_block(eng)
     note = T("把「原油 → 柴油 → 通膨預期 → Fed 路徑」這條鏈放在一起看。這次油價衝擊最緊的是柴油等精煉品，只看原油會看輕對物價的影響。"
              "資料來自 Yahoo 期貨、FRED（EIA 柴油零售價、5 年通膨預期、2 年期殖利率）與 EIA 週庫存；🔑 重點是固定規則的解讀，不是預測，也不是投資建議。",
              "Oil → diesel → inflation expectations → the Fed path, from futures, FRED and EIA data. Readings are fixed rules, not forecasts or advice.")

@@ -87,6 +87,11 @@ async def _twmacro():
         await TB.refresh()
     except Exception as e:  # noqa: BLE001
         log.warning("TW bank data failed: %s", e)
+    try:                                       # 台灣加油站價格：中油每週牌價（12 小時一次）
+        from .data import tw_fuel as TF
+        await TF.refresh()
+    except Exception as e:  # noqa: BLE001
+        log.warning("TW fuel data failed: %s", e)
 
 
 class Engine:
