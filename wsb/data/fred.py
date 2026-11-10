@@ -110,6 +110,17 @@ class FredData:
                 await asyncio.sleep(0.3)
 
         await asyncio.gather(*(run(s) for s in ids))
+        limited = [sid for sid in ids if sid not in self.series] if ok else []
+        if limited and len(limited) <= 30:                # FRED allows ~120 calls/min: a few 429s per build → one slow second pass
+            await asyncio.sleep(20)
+            for sid in limited:
+                try:
+                    self.series[sid] = self._merge(sid, await _one(sid, starts.get(sid, start)))
+                    ok += 1
+                    fails -= 1
+                except Exception as e:  # noqa: BLE001
+                    log.warning("FRED %s failed again: %s", sid, e)
+                await asyncio.sleep(1.0)
         for sid in ids:                                   # failed this round → fall back to the archive
             if sid not in self.series and sid in self._archive:
                 self.series[sid] = self._archive[sid]
