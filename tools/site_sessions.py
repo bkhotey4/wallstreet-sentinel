@@ -77,6 +77,28 @@ def _mover(m: Dict) -> str:
     return f'<li><b>{_e(m.get("name") or m.get("sym"))}</b>（{_e(m.get("sym"))}）{pct}：{_e(m.get("why"))}</li>'
 
 
+STEPS = ("發生什麼", "最先動的", "怎麼傳下去", "影響到誰")
+
+
+def chain(x: Dict) -> str:
+    """The causal chain the routine writes (CAUSAL_GUIDE.md): event → first mover → spread → who is hit, as arrows."""
+    cs = [c for c in (x.get("chain") or []) if isinstance(c, dict) and c.get("text")][:4]
+    if len(cs) < 2:
+        return ""
+    cells = []
+    for i, c in enumerate(cs):
+        meta = " ".join(_e(v) for v in (c.get("time"), c.get("src")) if v)
+        cells.append(f'<div class="cch"><span class="cst">{_e(c.get("step") or STEPS[min(i, 3)])}</span>{_e(c["text"])}'
+                     + (f'<span class="cmt">{meta}</span>' if meta else "") + "</div>")
+    return '<div class="cchain">' + '<span class="car">→</span>'.join(cells) + "</div>"
+
+
+CSS = (".cchain{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;margin:6px 0 10px}"
+       ".cch{flex:1 1 150px;min-width:0;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;background:var(--card2);font-size:13px;line-height:1.45}"
+       ".cst{display:block;font-size:11px;color:var(--ac);font-weight:700;margin-bottom:2px}.cmt{display:block;font-size:11px;color:var(--mu);margin-top:3px}"
+       ".car{align-self:center;color:var(--mu);font-weight:700}@media(max-width:620px){.car{transform:rotate(90deg);width:100%;text-align:center}}")
+
+
 def _item(x: Dict, lead: bool = False) -> str:
     told = "".join(f"<p>{_e(p)}</p>" for p in x.get("story") or [] if p)
     macro = "".join(f'<li><b>{_e(m.get("name"))}</b>：{_e(m.get("read"))}</li>' for m in x.get("macro") or []
@@ -99,7 +121,7 @@ def sec_sessions(eng) -> str:
     day = max(str(x["date"]) for x in items)
     today = {x["phase"]: x for x in items if str(x["date"]) == day}
     shown = [today[p] for p in reversed(PHASES) if p in today]
-    return card("美股今天怎麼了", "US stocks today", stale_note(day) + f'<p class="rimp big2"><b>一句話看懂：{_e(shown[0]["one"])}</b></p>'
+    return card("美股今天怎麼了", "US stocks today", stale_note(day) + f'<p class="rimp big2"><b>一句話看懂：{_e(shown[0]["one"])}</b></p>' + chain(shown[0])
                 + "".join(_item(x, i == 0) for i, x in enumerate(shown))
                 + f'<p class="note">美股開盤前、盤中、收盤後由雲端 AI 用公開資料整理，交易日 {_e(day)}。是對當下的解讀，不是股價預測。不構成投資建議。</p>',
                 "wide", sub="開盤前、盤中、收盤後各更新一次")

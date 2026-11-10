@@ -58,6 +58,8 @@ def test_sessions_note():
     assert "週末美股休市" in SS.stale_note("2026-11-06", mon) and "11/9（週一）21:00" in SS.stale_note("2026-11-06", mon)
     assert "節日" in SS.stale_note("2026-11-25", datetime(2026, 11, 26, 15, 0, tzinfo=timezone.utc))
     assert SS.stale_note("2026-11-06", datetime(2026, 11, 6, 23, 0, tzinfo=timezone.utc)) == ""
+    ch = SS.chain({"chain": [{"step": "發生什麼", "text": "川普談伊朗", "src": "CNBC"}, {"text": "油價先跌"}, {"text": "<b>股市反彈</b>"}]})
+    assert ch.count('class="cch"') == 3 and "→" in ch and "<b>股市" not in ch and SS.chain({"chain": [{"text": "x"}]}) == ""
 
 
 if __name__ == "__main__":
