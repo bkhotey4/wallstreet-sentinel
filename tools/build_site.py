@@ -1355,7 +1355,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("gbonds", "AI 視角看債券", "AI view of bonds", [SBR.sec_bond_read, SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
-            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, S2.sec_bonds, SBD.sec_gb_tic]),
+            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, SR.sec_rate_pressure, S2.sec_bonds, SBD.sec_gb_tic]),
             ("jgb", "日債", "Japanese bonds", [SBD.sec_gb_jgb, SBD.sec_gb_mof]),
             ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),
             ("wbonds", "各國債券", "Bonds by country", [SBD.sec_gb_sovereign]),

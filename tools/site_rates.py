@@ -160,3 +160,69 @@ def sec_rates_radar(eng) -> str:
              "全部來自官方與市場數據（FRED、財政部、SEC、Yahoo）；🔑 重點是固定規則的解讀，不是預測，也不是投資建議。",
              "The Treasury → tech chain in one place, from official and market data. Readings are fixed rules, not forecasts or advice.")
     return card("利率衝擊雷達：美債殖利率 → AI 科技股", "Rates shock radar: Treasury yields → AI / tech", body + f'<p class="note">{note}</p>', "wide")
+
+
+def _rp(eng) -> Dict:
+    c = getattr(eng, "_rate_pressure", None)
+    if c is None:
+        try:
+            from wsb.data import rate_pressure as RP
+            fr, mk = getattr(eng, "fred", None), getattr(eng, "market", None)
+            c = RP.view(lambda k: fr.get(k) if fr is not None else None, lambda t: mk.series(t) if mk is not None else None)
+        except Exception:  # noqa: BLE001
+            c = {}
+        try:
+            eng._rate_pressure = c
+        except Exception:  # noqa: BLE001
+            pass
+    return c
+
+
+def sec_rate_pressure(eng) -> str:
+    """利率回到 5% 附近，壓力傳到哪裡：殖利率 → 房貸 → 公司借錢 → 靠借錢擴張的 AI 算力公司。"""
+    v = _rp(eng) or {}
+    links = {l["key"]: l for l in v.get("links") or []}
+    if "rate" not in links or len(links) < 3:
+        return ""
+    r, w = links["rate"], v.get("worst")
+    lead = (f"一句話看懂：10 年期殖利率 {r['now']:.2f}%（一年內最高 {r['hi']:.2f}%，{r['hi_date']}）。"
+            + (f"四個環節裡，目前壓力最大的是「{w['zh']}」（自己歷史第 {w['pct']:.0f} 百分位）。" if w else ""))
+    cells = [f'<div class="cch"><span class="cst">利率</span>10 年期 {r["now"]:.2f}%<span class="cmt">3 個月 {r["chg3"]:+.0f}bp・{r["since"]} 年以來第 {num(r["pct"], 0)} 百分位</span></div>']
+    h = links.get("home")
+    if h:
+        cells.append(f'<div class="cch"><span class="cst">一般人</span>房貸利率 {h["now"]:.2f}%'
+                     f'<span class="cmt">3 個月 {h["chg3"]:+.0f}bp・第 {num(h["pct"], 0)} 百分位</span></div>')
+    c = links.get("credit")
+    if c:
+        cells.append(f'<div class="cch"><span class="cst">公司借錢</span>'
+                     + "；".join(f'{esc(x["zh"])} {x["dir"]}' for x in c["rows"])
+                     + f'<span class="cmt">最緊的在 {c["rows"][0]["since"]} 年以來第 {num(c["pct"], 0)} 百分位</span></div>')
+    a = links.get("ai")
+    if a:
+        cells.append(f'<div class="cch"><span class="cst">AI 借錢擴張</span>算力公司 3 個月比那斯達克 {a["rel"]:+.0f} 個百分點'
+                     f'<span class="cmt">壓力第 {num(a["pct"], 0)} 百分位（越高越差）</span></div>')
+    body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p>'
+            '<p>利率升高時，壓力不是一下子打到所有人，而是沿著一條鏈傳下去：先是借錢買房的人，再來是要借新債的公司，'
+            '最後是本來就靠借錢擴張、現金流還不夠付利息的公司。下面四格就是這條鏈，每格都和自己的歷史比。</p>'
+            '<div class="cchain">' + '<span class="car">→</span>'.join(cells) + "</div>")
+    det = ""
+    if h:
+        det += (f'<p class="small"><b>房貸</b>：照現在的 {h["now"]:.2f}%，借 30 萬美元、30 年，每月約付 {h["pay"]:,.0f} 美元'
+                + (f'，3 個月前是 {h["pay3"]:,.0f} 美元（一個月差 {h["pay"] - h["pay3"]:+,.0f}）' if h.get("pay3") else "")
+                + (f'。住宅建商股 3 個月比標普 {h["stock"]:+.0f} 個百分點：房貸變貴，買房的人變少，建商最先感受到' if h.get("stock") is not None else "")
+                + f'（房貸利率資料日 {esc(h["date"])}）。</p>')
+    if c:
+        det += ('<p class="small"><b>公司借錢</b>：利差是公司借錢要比政府多付的利息。'
+                + "；".join(f'{esc(x["zh"])}近 3 個月{x["dir"]}，在 {x["since"]} 年以來第 {num(x["pct"], 0)} 百分位（{esc(x["date"])}）' for x in c["rows"])
+                + '。利差擴大代表借錢給公司的人開始擔心還不出來。（指數授權限制，這裡只顯示百分位與方向。）</p>')
+    if a:
+        det += (f'<p class="small"><b>AI 算力公司</b>：{"、".join(a["names"])} 平均 3 個月比那斯達克 {a["rel"]:+.0f} 個百分點'
+                + (f'；借錢給中型公司的私募信貸（BIZD）比標普 {a["bizd"]:+.0f} 個百分點' if a.get("bizd") is not None else "")
+                + '。這些公司先花錢買晶片、蓋機房，兩年後才收得到租金，中間靠借錢撐，利率越高越吃力（資料日 '
+                + esc(a["date"]) + '）。</p>')
+    det += ('<p class="small"><b>連帶影響</b>：房貸變貴，買房與換屋變少，家具、家電、裝修跟著慢；公司借錢變貴，'
+            '投資和招人會放慢；AI 算力公司如果借不到便宜的錢，晶片和電力設備的訂單也會跟著延後，台灣的 AI 供應鏈會感受到。</p>')
+    body += f'<details class="sgx"><summary>{T("看每一環的數字與連帶影響", "Details")}</summary>{det}</details>'
+    body += (f'<p class="note">{T("資料：FRED（10 年期公債 1962 年起、30 年房貸利率、ICE BofA 公司債利差近 3 年）、Yahoo（XHB、AI 算力公司、BIZD）。百分位都是和自己的歷史比，壓力最大的一環是四格裡百分位最高的（利率本身不算在內）。描述現況，不是預測，也不是投資建議。", "")}</p>')
+    h2 = card("利率回到 5% 附近，壓力傳到哪裡", "Where high rates bite", body, "wide", sub="殖利率 → 房貸 → 公司借錢 → 靠借錢擴張的 AI 公司")
+    return h2.replace('<section class="card', '<section id="ratepress" class="card', 1)

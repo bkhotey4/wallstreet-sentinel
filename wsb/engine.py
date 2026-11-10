@@ -87,6 +87,11 @@ async def _twmacro():
         await TB.refresh()
     except Exception as e:  # noqa: BLE001
         log.warning("TW bank data failed: %s", e)
+    try:                                       # 利率壓力鏈：AI 算力公司股價（每天一次）
+        from .data import rate_pressure as RPD
+        await RPD.refresh()
+    except Exception as e:  # noqa: BLE001
+        log.warning("rate pressure data failed: %s", e)
     try:                                       # 台灣加油站價格：中油每週牌價（12 小時一次）
         from .data import tw_fuel as TF
         await TF.refresh()

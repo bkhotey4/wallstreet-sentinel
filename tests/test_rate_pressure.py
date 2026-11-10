@@ -1,11 +1,12 @@
-"""10 年債利率壓力通知: measured against the yield's own 20-day moves, needs a 60-day high/low, plain and no trading words.
+"""利率壓力鏈: mortgage payment math, the four links and the worst-link pick, the card.
 Run: python -m tests.test_rate_pressure"""
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
-from datetime import datetime, timezone
+import types
 
 os.environ.setdefault("WSB_DATA_DIR", tempfile.mkdtemp(prefix="wsb_rp_"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,59 +14,29 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from wsb.analytics import web_alerts as WA  # noqa: E402
-
-BANNED = ("目標價", "上漲空間", "低估", "高估", "買進", "賣出", "買點", "何時買", "加碼參考區", "進場參考區")
+from wsb.data import rate_pressure as R  # noqa: E402
 
 
-def _ser(tail):
-    rng = np.random.default_rng(5)
-    idx = pd.bdate_range(end="2026-10-30", periods=1200)
-    y = 4.5 + np.cumsum(rng.normal(0, 0.04, len(idx)))
-    y[-20:] = y[-21] + np.linspace(0, tail, 20)
-    tnx = pd.Series(y, index=idx)
-    ndx = pd.Series(20000 * np.cumprod(1 - 0.01 * np.diff(np.r_[y[0], y]) * 3 + rng.normal(0, 0.005, len(idx))), index=idx)
-    return tnx, ndx
-
-
-class _M:
-    def __init__(self, s):
-        self.s = s
-
-    def series(self, t):
-        return self.s.get(t, pd.Series(dtype=float))
-
-
-class _E:
-    def __init__(self, tnx, ndx):
-        self.market = _M({"^TNX": tnx, "^NDX": ndx})
-
-
-def test_down_and_up():
-    now = datetime(2026, 10, 31, tzinfo=timezone.utc)
-    for tail, key, tone in ((-1.2, "rate:dn", "good"), (1.2, "rate:up", "watch")):
-        tnx, ndx = _ser(tail)
-        r = WA.rate_pressure(tnx, ndx)
-        assert r and abs(r["z"]) >= 1.5 and r["ndx_per10"] < 0 and 0 <= r["pct10y"] <= 100
-        out = []
-        WA._rates(_E(tnx, ndx), out, now)
-        assert len(out) == 1 and out[0]["key"].startswith(key) and out[0]["tone"] == tone and out[0]["tab"] == "bonds"
-        txt = out[0]["zh"] + out[0]["detail"]
-        assert "平常" in txt and "10bp" in txt
-        for w in BANNED:
-            assert w not in txt
-
-
-def test_quiet_and_short():
-    tnx, ndx = _ser(0.0)
-    out = []
-    WA._rates(_E(tnx, ndx), out, datetime(2026, 10, 31, tzinfo=timezone.utc))
-    assert out == []
-    assert WA.rate_pressure(tnx.iloc[-300:], ndx) is None
+def test_view_and_card():
+    assert abs(R.payment(7.0) - 1995.9) < 1
+    d = pd.bdate_range("2020-01-01", periods=1500)
+    up = pd.Series(np.linspace(3, 5, 1500), index=d)
+    mid = pd.Series(np.r_[np.linspace(5, 7, 1000), np.linspace(7, 6, 500)], index=d)          # mortgage and credit not at their worst
+    fred = {"DGS10": up, "MORTGAGE30US": mid, "BAMLH0A0HYM2": mid - 3, "BAMLC0A0CM": pd.Series(1.0, index=d)}
+    flat = pd.Series(100.0, index=d)
+    falling = pd.Series(np.r_[np.full(1400, 100.0), np.linspace(100, 50, 100)], index=d)
+    R.FILE.write_text(json.dumps({"neo": {s: {k.strftime("%Y-%m-%d"): v for k, v in falling.items()} for s in R.NEO}}), encoding="utf-8")
+    px = {"^GSPC": flat, "^NDX": flat, "XHB": flat, "BIZD": flat}
+    v = R.view(fred.get, px.get)
+    keys = [l["key"] for l in v["links"]]
+    assert keys == ["rate", "home", "credit", "ai"] and v["worst"]["key"] == "ai"
+    from tools import site_rates as S
+    h = S.sec_rate_pressure(types.SimpleNamespace(_rate_pressure=v))
+    assert 'id="ratepress"' in h and "一句話看懂" in h and 'class="cchain"' in h
+    for w in ("目標價", "買進", "賣出", "低估", "高估", "未實現"):
+        assert w not in h, w
 
 
 if __name__ == "__main__":
-    for name, fn in list(globals().items()):
-        if name.startswith("test_") and callable(fn):
-            fn()
-            print("ok", name)
+    test_view_and_card()
+    print("RATE PRESSURE TESTS PASSED [OK]")

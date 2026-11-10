@@ -570,7 +570,7 @@ MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not 
 
 CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
     "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
-    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_rate_pressure": ["fred", "px"],
 })
 
 
