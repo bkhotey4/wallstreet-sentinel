@@ -10,6 +10,7 @@ import asyncio
 import hashlib
 import html
 import json
+import os
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -72,17 +73,52 @@ def make_audio(dest: Path) -> None:
         log.exception("macro audio failed")
 
 
+def voice_history(x: Dict, keep: int = 12) -> List[Dict]:
+    """Every edition the build has seen (the routines overwrite macro_voice.json), newest first. Kept in data_cache/econ_* so
+    the Actions cache carries it between builds; the current file is added when its `updated` is new."""
+    try:
+        from wsb.config import DATA_DIR
+        f = DATA_DIR / "econ_voice_hist.json"
+        hist = json.loads(f.read_text(encoding="utf-8")).get("items", []) if f.exists() else []
+    except Exception:  # noqa: BLE001
+        return [x]
+    seen = {h.get("updated") for h in hist}                # editions published before the archive existed (public repo seed)
+    hist = sorted(hist + [h for h in (_json(FILE.with_name("macro_voice_hist.json")).get("items") or []) if h.get("updated") not in seen],
+                  key=lambda h: str(h.get("updated") or ""), reverse=True)
+    if x.get("updated") and not any(h.get("updated") == x["updated"] for h in hist):
+        hist = ([{k: x.get(k) for k in ("updated", "date", "edition", "one", "script")}] + hist)[:keep]
+        try:
+            tmp = f.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"items": hist}, ensure_ascii=False), encoding="utf-8")
+            os.replace(tmp, f)
+        except Exception:  # noqa: BLE001
+            pass
+    return hist
+
+
+def _paras(x: Dict) -> str:
+    return "".join(f"<p>{_e(p)}</p>" for p in str(x.get("script") or "").split("\n") if p.strip())
+
+
+def _ed_pill(ed: str) -> str:
+    return f'<span class="pill{" warn" if ed == "加班" else ""}">{_e("🚨 緊急加班" if ed == "加班" else ed)}</span> ' if ed else ""
+
+
 def sec_macro_voice(eng) -> str:
     x = voice()
     if not x.get("script"):
         return ""
-    paras = "".join(f"<p>{_e(p)}</p>" for p in str(x["script"]).split("\n") if p.strip())
+    earlier = [h for h in voice_history(x) if h.get("updated") != x.get("updated") and h.get("script")][:5]
     player = (f'<audio controls preload="none" style="width:100%" src="market/macro.mp3?v={AUDIO["v"]}">你的瀏覽器不支援播放。</audio>' if AUDIO["v"] else "")
-    ed = str(x.get("edition") or "")
-    tag = f'<span class="pill{" warn" if ed == "加班" else ""}">{_e("🚨 緊急加班" if ed == "加班" else ed)}</span> ' if ed else ""
-    body = (f'<p class="rimp big2">{tag}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
-            f'<details class="sgx"><summary>看文字稿</summary>{paras}</details>'
-            f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
+    prev = ""
+    if earlier:
+        prev = (f'<details class="sgx"><summary>前幾班（{len(earlier)} 班）</summary>'
+                + "".join(f'<div class="rpt"><p>{_ed_pill(str(h.get("edition") or ""))}<span class="muted small">{_e(h.get("updated"))}</span><br>'
+                          f'<b>{_e(h.get("one"))}</b></p><details class="sgx"><summary>看文字稿</summary>{_paras(h)}</details></div>' for h in earlier)
+                + '<p class="small muted">語音只有最新一班；前幾班保留文字稿。</p></details>')
+    body = (f'<p class="rimp big2">{_ed_pill(str(x.get("edition") or ""))}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
+            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + prev
+            + f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
             f'市場異常大動時會加班。語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
     return card("每日總經情勢", "Daily macro", body, "wide", sub="用聽的，約兩三分鐘")
 
