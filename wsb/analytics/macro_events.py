@@ -512,7 +512,7 @@ def fill_from_fred(e: Dict, get) -> bool:
     """A release day whose calendar rows never got an actual (Nasdaq removed the 2026-11-10 CPI row): compute the m/m change
     from the official index when FRED already has the month before the release month. Returns True when it filled one."""
     spec = FRED_FILL.get(e.get("key"))
-    if not spec or e.get("released"):
+    if not spec:
         return False
     done = False
     want = (pd.Timestamp(e["date"]) - pd.DateOffset(months=1)).strftime("%Y-%m")
@@ -527,8 +527,8 @@ def fill_from_fred(e: Dict, get) -> bool:
         a = round(float(s.iloc[-1] / s.iloc[-2] - 1) * 100, 1)
         row.update(actual=f"{a:.1f}%", a=a, actual_src="fred", diff=(a - row["c"]) if row.get("c") is not None else None)
         done = True
-    if done:
-        prim = e["rows"][0]
+    if done:                                       # also fills rows Nasdaq left blank after it published the headline
+        prim = next((r for r in e["rows"] if r.get("a") is not None), e["rows"][0])
         e["released"] = True
         e["dir"] = classify(e["key"], prim) if prim.get("a") is not None else None
     return done

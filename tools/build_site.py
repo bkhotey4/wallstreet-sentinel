@@ -70,6 +70,7 @@ from tools import site_estrev as SER
 from tools import site_event_react as SEVR
 from tools import site_changes as SCG
 from tools import site_track as STK
+from tools import site_routines as SRT
 from tools import site_after as SAF
 from tools import site_forecast as SFC
 from tools import site_transmission as STR
@@ -1351,7 +1352,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
             ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SDC.sec_drop_check, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
-            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health, STK.sec_track_record]),
+            ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health, STK.sec_track_record, SRT.sec_routine_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("gbonds", "AI 視角看債券", "AI view of bonds", [SBR.sec_bond_read, SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
@@ -1863,6 +1864,19 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
              "built": datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M")}, ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("quotes.json failed")
+    try:                                   # 台灣每月筆記排程讀這份（它的雲端環境連不到央行／國發會／櫃買／北市）
+        from wsb.data import twmacro as TWMD
+        us = None
+        try:
+            ser = eng.fred.get("DGS10")
+            if ser is not None and len(ser):
+                m = ser.dropna().resample("ME").mean()
+                us = [[i.strftime("%Y-%m"), round(float(v), 3)] for i, v in m.items()]
+        except Exception:  # noqa: BLE001
+            us = None
+        (out / "market" / "tw_inputs.json").write_text(json.dumps(TWMD.public_inputs(us10y=us), ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("tw_inputs.json failed")
     for mk in ("us", "tw", "hk"):
         published = FS.published(mk)
         if published:

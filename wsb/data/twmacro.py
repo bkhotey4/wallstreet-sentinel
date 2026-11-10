@@ -367,3 +367,23 @@ async def refresh(force: bool = False) -> Dict:
         d["ts"] = time.time()
     _save(d)
     return d
+
+
+def public_inputs(d: Optional[Dict] = None, months: int = 25, us10y: Optional[List[List]] = None) -> Dict:
+    """The official numbers already cached for the 台灣 pages, trimmed to the last `months` months, for the monthly
+    Taiwan-note routine: its cloud sandbox cannot reach cpx.cbc.gov.tw / data.gov.tw / tpex / data.taipei, so it reads
+    this file from the site instead (published as market/tw_inputs.json).  Every series keeps its own update time."""
+    d = load() if d is None else d
+    cut = lambda rows: [r for r in (rows or [])][-months:]        # noqa: E731
+    days = sorted(d.get("daily") or {})
+    src = {"cbc": "https://cpx.cbc.gov.tw/API/DataAPI/Get?FileName=<代碼>", "ndc": NDC_META,
+           "tpex": TPEX_NOW, "taipei": "https://data.taipei/dataset/detail?id=ce4ea2c6-6334-44f8-945a-5705492b187d"}
+    out = {"ts": d.get("ts"), "ts_each": d.get("ts_each") or {}, "sources": src,
+           "cbc": {k: cut(v) for k, v in (d.get("cbc") or {}).items()},
+           "cbc_updated": d.get("cbc_updated") or {},
+           "ndc": {k: cut(v) for k, v in (d.get("ndc") or {}).items()},
+           "taipei_index": cut(d.get("taipei")),
+           "tpex_curve": {"date": days[-1], **d["daily"][days[-1]]} if days else None}
+    if us10y:
+        out["us10y_monthly"] = cut(us10y)
+    return out

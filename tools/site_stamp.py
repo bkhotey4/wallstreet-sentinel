@@ -429,6 +429,16 @@ def _feed_updated(mod: str, attr: str = "load") -> Optional[str]:
         return None
 
 
+def _routines_stamp():
+    """Newest `updated` among the cloud-AI files the routine-health card watches."""
+    try:
+        from tools import site_routines as SR
+        t = SR.newest(SR.rows())
+        return (t, datetime.fromtimestamp(t, TPE).strftime("%Y-%m-%d")) if t else (None, None)
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 def _feed_stamp(mod: str, attr: str = "load"):
     """(update time, data date) of a routine's JSON: `updated` is written as "YYYY-MM-DD HH:MM 台北"; a date alone gives no time."""
     ts = None
@@ -482,6 +492,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "street": ("華爾街觀點", "Street views", lambda e: (_ts(_g(e, "street", "ts")), _d(_g(e, "street", "pos", "asof") or _g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
     "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
+    "routines": ("雲端 AI 排程", "Cloud AI routines", lambda e: _routines_stamp(), 2),
     "after": ("財報後解讀（雲端 AI）", "Post-earnings notes", lambda e: _feed_stamp("site_after"), 2),
     "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: _feed_stamp("site_preview"), 2),
     "sessions": ("美股時段快報（雲端 AI）", "US session notes", lambda e: _feed_stamp("site_sessions"), 2),
@@ -554,7 +565,7 @@ CARD: Dict[str, List[str]] = {
     "sec_signal_scorecard": ["stocks"], "sec_earn_moves": ["earnings", "stocks"], "sec_analyst": ["earnings"],
     "sec_dividends": ["stocks"], "sec_filings": ["sec"], "sec_rev_exposure": ["sec"],
     "sec_earn_after": ["after"], "sec_earn_after_us": ["after"], "sec_earn_all": ["afterall"], "sec_longhist": ["longhist"], "sec_earn_preview": ["preview"], "sec_learn": ["learn"], "sec_deep": ["deep"], "sec_sessions": ["sessions"], "sec_macro_voice": ["voice"], "sec_bond_read": ["bondread"], "sec_forecast": ["forecast"], "sec_human": ["fred"],
-    "sec_changes": ["px", "ssi", "canary", "fred"], "sec_track_record": ["preview", "model", "earnings"],
+    "sec_changes": ["px", "ssi", "canary", "fred"], "sec_track_record": ["preview", "model", "earnings"], "sec_routine_health": ["routines"],
     "sec_tw_note": ["twnote"], "sec_industry_note": ["indnote"],
     "sec_tw_rev": ["earnings"], "sec_us_read": ["earnings"], "sec_earn_cal": ["earnings"], "sec_earn_verdict": ["earnings"], "sec_latest_reports": ["earnings"],
 }
