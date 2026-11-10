@@ -196,6 +196,18 @@ export function todayOpen(res) {
   return null;
 }
 
+export async function prevFromDaily(sym, fetchImpl, m) {
+  try {
+    const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=5d&interval=1d`, { headers: { "User-Agent": "Mozilla/5.0" } });
+    if (!r.ok) return null;
+    const res = (((await r.json()).chart || {}).result || [])[0];
+    const ts = res?.timestamp || [], closes = ((((res || {}).indicators || {}).quote || [])[0] || {}).close || [];
+    const off = m.gmtoffset || 0, day = (s) => Math.floor((s + off) / 86400), today = day(m.regularMarketTime || 0);
+    for (let i = closes.length - 1; i >= 0; i--) if (typeof closes[i] === "number" && ts[i] != null && day(ts[i]) < today) return closes[i];
+  } catch (e) { /* fall back to the meta value */ }
+  return null;
+}
+
 export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
   const q = full ? "range=1y&interval=1d&events=div" : vol ? "range=5d&interval=5m" : "range=1d&interval=5m";
   const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?${q}`, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -231,6 +243,12 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
     if (v.volx != null) { out.vol = v.vol; out.volx = v.volx; }
     const j = jumpOf(res.timestamp || [], qd.close || [], m.gmtoffset || 0);
     if (j) out.jump = j;
+  }
+  if (!full && /^\^TW/.test(sym)) {
+    // Yahoo's meta previousClose for the TAIEX has skipped whole sessions (11-10 showed the 11-06 close): take the last
+    // daily bar from an earlier exchange-local day instead
+    const d = await prevFromDaily(sym, fetchImpl, m);
+    if (d != null) prev = d;
   }
   out.prev = prev ?? null;
   out.chg = prev ? (out.price / prev - 1) * 100 : null;
