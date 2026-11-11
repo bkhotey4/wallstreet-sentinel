@@ -79,7 +79,8 @@ def sec_chokepoints(eng) -> str:
              f'<th class="r">{T("是平常的", "vs normal")}</th><th class="r">{T("2019 年來排名", "Pctile")}</th>'
              f'<th class="r">{T("油輪 現在／平常", "Tankers")}</th><th>{T("偏低起始日", "Low since")}</th></tr></thead><tbody>{trs}</tbody></table></div>')
     pick = worst or rows[0]
-    chart = line_chart("cp_" + pick["id"], pick["weekly"], f'{pick["zh"]}：每天通過船數（7 天平均，每週一點）', 0)
+    chart = line_chart("cp_" + pick["id"], pick["weekly"], f'{pick["zh"]}：每天通過船數（7 天平均，每週一點）', 0,
+                       fixed=(0.0, float(pick["weekly"].max()) * 1.1 or 1.0))     # ship counts start at zero
     what = "".join(f'<li><b>{esc(r["zh"])}</b>：{esc(r["what"])}。</li>' for r in rows)
     note = (f'資料：<a href="{CP.PAGE}" target="_blank" rel="noopener">IMF PortWatch</a>，用衛星收到的船舶 AIS 訊號計數，2019 年起每天一筆；'
             f'最新資料日 {esc(v["date"])}（PortWatch 約每週更新，通常落後 3～7 天）。「平常」是一年前以前所有 7 天平均的中位數。'
