@@ -12,18 +12,26 @@ from tools.sitekit import T, card, esc
 RECENT = 14
 
 
-def day_move(px: pd.Series, day: str) -> Optional[Dict]:
-    """% move of the asset on `day` (close vs previous close) and its size next to a usual day (σ of 60 prior daily moves)."""
+def day_move(px: pd.Series, day: str, roll: bool = False) -> Optional[Dict]:
+    """% move of the asset on `day` (close vs previous close) and its size next to a usual day (σ of 60 prior daily moves).
+    roll=True: if `day` is not a trading day (signed on a weekend/holiday), use the next trading day within 4 days."""
     s = px.dropna() if px is not None else pd.Series(dtype=float)
-    t = pd.Timestamp(day)
-    if len(s) < 70 or t not in s.index:
+    if not day:
         return None
+    t = pd.Timestamp(day)
+    if len(s) < 70:
+        return None
+    if t not in s.index:
+        nxt = s.index[s.index > t]
+        if not roll or not len(nxt) or (nxt[0] - t).days > 4:
+            return None
+        t = nxt[0]
     r = s.pct_change() * 100
     i = s.index.get_loc(t)
     if i < 61:
         return None
     sig = float(r.iloc[i - 60:i].std())
-    return {"pct": float(r.iloc[i]), "k": abs(float(r.iloc[i])) / sig if sig else None}
+    return {"pct": float(r.iloc[i]), "k": abs(float(r.iloc[i])) / sig if sig else None, "day": t.strftime("%Y-%m-%d")}
 
 
 def _mv(m: Optional[Dict], sym_zh: str) -> str:
@@ -60,19 +68,27 @@ def sec_fed_register(eng) -> str:
                 px[sym] = pd.Series(dtype=float)
         return px[sym]
 
-    items = []
+    items, big = [], 0
     for x in docs[:10]:
         m = day_move(series(x["sym"]), x["date"])
+        sg = x.get("signed")
+        ms = day_move(series(x["sym"]), sg, roll=True) if sg and sg < x["date"] else None
+        if max((m or {}).get("k") or 0, (ms or {}).get("k") or 0) >= 2:
+            big += 1
         eo = f'（第 {x["eo"]} 號）' if x.get("eo") else ""
+        sign_txt = ""
+        if sg and sg < x["date"]:
+            when = f'簽署 {sg}' + (f'（遇休市，看下一個交易日 {ms["day"]}）' if ms and ms["day"] != sg else "")
+            sign_txt = f'{esc(when)}：{esc(_mv(ms, x["sym_zh"]))}；'
         items.append(f'<li><span class="small muted">{esc(x["date"])}・{esc(FR.type_zh(x.get("type")))}{esc(eo)}・{esc(x.get("agency", ""))}</span><br>'
                      f'<b>{esc(x["topic"])}</b>：<a href="{esc(x["url"])}" target="_blank" rel="noopener">{esc(x["title"])}</a><br>'
-                     f'<span class="small">刊登當天 {esc(_mv(m, x["sym_zh"]))}</span></li>')
-    big = [x for x in docs[:10] if (day_move(series(x["sym"]), x["date"]) or {}).get("k", 0) and day_move(series(x["sym"]), x["date"])["k"] >= 2]
+                     f'<span class="small">{sign_txt}刊登當天 {esc(_mv(m, x["sym_zh"]))}</span></li>')
     if big:
-        lead += f'其中 {len(big)} 項刊登當天對應的資產大動，但同一天常有其他消息，要對照新聞。'
+        lead += f'其中 {big} 項在簽署或刊登當天對應的資產大動，但同一天常有其他消息，要對照新聞。'
     note = (f'資料：<a href="{FR.PAGE}" target="_blank" rel="noopener">美國聯邦公報</a>官方 API。只收三類：總統文件、商務部工業安全局（出口管制）、'
             '貿易代表署（301 關稅）；用關鍵字挑出和市場有關的，主題與「先動的資產」是本站的對照表，不是 AI 判讀。'
-            '刊登日通常比總統簽署或宣布晚幾天，新聞往往在宣布當天就出來，所以市場反應可能早就發生；這裡只寫「刊登當天」，不說是這份文件造成的。'
+            '刊登日通常比總統簽署或宣布晚幾天，新聞往往在簽署當天就出來，所以總統文件會同時列出「簽署當天」和「刊登當天」的漲跌'
+            '（簽署日遇週末或假日，看下一個交易日；機關公告多半沒有簽署日）；這只是同一天發生，不說是這份文件造成的。'
             '「大動」是當天漲跌超過平常一天波動的 2 倍。標題保留英文原文，點進去可看全文。')
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
             f'<details class="sgx" open><summary>{T("最近 10 項政策文件", "Latest 10 documents")}</summary><ul>{"".join(items)}</ul></details>'

@@ -34,6 +34,15 @@ def main() -> None:
         assert rs["tw_note.json"]["st"] == "ok"
         assert rs["learn.json"]["st"] == "never"
         assert R.newest(list(rs.values())) == ep("2026-11-06 23:00")
+        (p / "tw_note.json").unlink()
+        rs = {r["file"]: r for r in R.rows(now=ep("2026-11-12 00:10"), feed_dir=p)}
+        assert rs["tw_note.json"]["st"] == "wait" and rs["tw_note.json"]["first"] == ep("2026-11-28 12:05")
+        rs = {r["file"]: r for r in R.rows(now=ep("2026-11-28 20:00"), feed_dir=p)}
+        assert rs["tw_note.json"]["st"] == "wait"          # same day as the run: within the 1-day grace
+        rs = {r["file"]: r for r in R.rows(now=ep("2026-11-30 09:00"), feed_dir=p)}
+        assert rs["tw_note.json"]["st"] == "never"         # run passed over a day ago and still nothing → 🔴
+        rs = {r["file"]: r for r in R.rows(now=ep("2027-01-05 09:00"), feed_dir=p)}
+        assert rs["tw_note.json"]["st"] == "never"         # stays 🔴 in later months
     html = R.sec_routine_health()
     assert "排程健康表" in html and "<table" in html
     print("test_routines: ok")

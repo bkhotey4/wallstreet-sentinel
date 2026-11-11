@@ -36,7 +36,11 @@ EXPECT = (
     ("tw_note.json", "台灣每月分析筆記", "Taiwan monthly note", 31 * 24, False),
 )
 LIGHT = {"ok": ("🟢", "準時", "On time"), "late": ("🟡", "晚了", "Late"), "stop": ("🔴", "停了", "Stopped"),
-         "never": ("🔴", "從未產出", "Never written")}
+         "never": ("🔴", "從未產出", "Never written"), "wait": ("⚪", "等第一次排程", "Waiting for first run")}
+# First scheduled run (Taipei) of routines that were (re)set up and have not written their file yet (configuration,
+# from the routine's cron).  Before that run + 1 day of grace a missing file is ⚪ waiting, not 🔴.
+FIRST_RUN = {"tw_note.json": "2026-11-28 12:05"}
+GRACE_H = 24
 
 
 def parse_updated(raw) -> Optional[float]:
@@ -88,8 +92,13 @@ def rows(now: Optional[float] = None, feed_dir: Path = FEED_DIR) -> List[Dict]:
         except Exception:  # noqa: BLE001
             ts = None
         age = None if ts is None else (weekday_hours(ts, now) if us_days else max(0.0, (now - ts) / 3600))
+        st, first = status(age, every), None
+        if st == "never" and name in FIRST_RUN:
+            first = parse_updated(FIRST_RUN[name])
+            if first and now < first + GRACE_H * 3600:
+                st = "wait"
         out.append({"file": name, "zh": zh, "en": en, "every": every, "us_days": us_days, "ts": ts, "age": age,
-                    "st": status(age, every)})
+                    "st": st, "first": first})
     return out
 
 
@@ -119,16 +128,23 @@ def sec_routine_health(eng=None) -> str:
         lz = f"AI 卡片大致正常，{'、'.join(r['zh'] for r in late)} 比平常晚。"
         le = "AI cards mostly on time; late: " + ", ".join(r["en"] for r in late) + "."
     else:
-        lz, le = f"{len(rs)} 張 AI 卡片都照排程更新。", f"All {len(rs)} AI cards are on schedule."
+        n = len([r for r in rs if r["st"] != "wait"])
+        lz, le = f"{n} 張 AI 卡片都照排程更新。", f"All {n} AI cards are on schedule."
+    wait = [r for r in rs if r["st"] == "wait"]
+    if wait:
+        lz += f"{'、'.join(r['zh'] for r in wait)}還沒到第一次排程。"
+        le += " Not yet due: " + ", ".join(r["en"] for r in wait) + "."
     trs = []
     for r in rs:
         ic, sz, se = LIGHT[r["st"]]
         when = datetime.fromtimestamp(r["ts"], TPE).strftime("%m/%d %H:%M") if r["ts"] else "—"
+        if r["st"] == "wait" and r.get("first"):
+            when = "第一次排程 " + datetime.fromtimestamp(r["first"], TPE).strftime("%m/%d %H:%M")
         trs.append(f'<tr><td>{T(r["zh"], r["en"])}</td><td>{ic} {T(sz, se)}</td><td class="r">{esc(when)}</td>'
                    f'<td class="r">{esc(_age(r["age"]))}</td><td class="r">{esc(_gap(r["every"]))}'
                    f'{T("（交易日）", " (trading days)") if r["us_days"] else ""}</td></tr>')
     note = T("每張 AI 卡片都由雲端排程定時寫好再上傳，這張表看它們最後一次更新是多久以前，和平常的更新間隔比："
-             "不超過 2 倍是準時，2～4 倍是晚了，超過 4 倍或從來沒寫過就是停了。美股相關的卡片不算週末。"
+             "不超過 2 倍是準時，2～4 倍是晚了，超過 4 倍或從來沒寫過就是停了；每月一次的排程在第一次執行日之前顯示 ⚪ 等第一次排程。美股相關的卡片不算週末。"
              "補寫型的排程沒有新東西時本來就不會更新，所以不列在這裡。排程停了常見的原因是帳號用量額度用完，或排程的雲端環境連不到資料來源。",
              "Each AI card is written by a scheduled cloud job. Compared with its usual gap: ≤2× on time, 2–4× late, more or never = stopped. "
              "US cards skip weekends. Backfill jobs that only commit when there is something new are not listed.")

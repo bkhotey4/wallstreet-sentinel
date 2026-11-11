@@ -26,6 +26,11 @@ def main() -> None:
     m = S.day_move(px, "2026-11-10")
     assert round(m["pct"], 1) == 3.0 and m["k"] > 2, m
     assert S.day_move(px, "2026-11-08") is None
+    px.loc["2026-11-02"] = px.loc["2026-10-30"] * 0.97                            # -3% on Monday after a Sunday signing
+    ms = S.day_move(px, "2026-11-01", roll=True)
+    assert ms["day"] == "2026-11-02" and round(ms["pct"], 1) == -3.0, ms
+    assert S.day_move(px, "2026-11-01") is None and S.day_move(px, None, roll=True) is None
+    k["signed"] = "2026-11-01"
 
     d = {"docs": [k]}
     FR.load, real = (lambda: d), FR.load
@@ -41,6 +46,7 @@ def main() -> None:
     finally:
         FR.load = real
     assert "正式刊登 1 項" in html and "關稅與貿易 1 項" in html and "標普 500 +3.0%，大動" in html, html[:500]
+    assert "簽署 2026-11-01（遇休市，看下一個交易日 2026-11-02）：標普 500 -3.0%" in html, html
     for w in ("買進", "賣出", "目標價", "低估", "高估"):
         assert w not in html
     print("test_fed_register ok")
