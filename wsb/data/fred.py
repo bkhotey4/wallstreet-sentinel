@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import re
 import logging
 import time
 from datetime import date, timedelta
@@ -16,6 +17,11 @@ from ..health import HEALTH
 from . import http
 
 log = logging.getLogger(__name__)
+
+
+def _redact(msg: str) -> str:
+    """aiohttp errors carry the request URL; never let the API key reach the log."""
+    return re.sub(r"(api_key=)[^&\s'\"]+", r"\g<1>***", msg)
 
 
 async def _one(series_id: str, start: str) -> pd.Series:
@@ -105,7 +111,7 @@ class FredData:
                     ok += 1
                 except Exception as e:  # noqa: BLE001
                     fails += 1
-                    last_err = f"{type(e).__name__}: {e}"
+                    last_err = _redact(f"{type(e).__name__}: {e}")
                     log.warning("FRED %s failed: %s", sid, last_err)
                 await asyncio.sleep(0.3)
 
@@ -119,7 +125,7 @@ class FredData:
                     ok += 1
                     fails -= 1
                 except Exception as e:  # noqa: BLE001
-                    log.warning("FRED %s failed again: %s", sid, e)
+                    log.warning("FRED %s failed again: %s", sid, _redact(str(e)))
                 await asyncio.sleep(1.0)
         for sid in ids:                                   # failed this round → fall back to the archive
             if sid not in self.series and sid in self._archive:

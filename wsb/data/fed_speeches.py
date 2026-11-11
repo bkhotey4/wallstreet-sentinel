@@ -31,15 +31,24 @@ PAGE = "https://www.federalreserve.gov/newsevents/speeches.htm"
 CAL_PAGE = "https://www.federalreserve.gov/newsevents/calendar.htm"
 UA = {"User-Agent": "Mozilla/5.0"}
 KEEP = 40                                     # speeches kept in the cache
-SCORE_V = 4                                   # bump when score() changes so cached speeches are re-read
+SCORE_V = 5                                   # bump when score() changes so cached speeches are re-read
 
 INFL = re.compile(r"\binflation\w*|\bprices?\b", re.I)
 JOBS = re.compile(r"\blabor market|\bemployment\b|\bunemployment\b|\bjobs?\b|\bhiring\b|\blayoffs?\b", re.I)
 RATE = re.compile(r"policy rate|federal funds rate|monetary policy|rate cuts?|rate increases?|rate hikes?", re.I)
-EASE = re.compile(r"\b(cut|cuts|cutting|lower(ing)?|reduc(e|ed|ing|tion|tions)|eas(e|ing)|less restrictive|accommodat\w*)\b", re.I)
-HOLD = re.compile(r"\b(should wait|wait until|patient|patience|hold(ing)? (the|our) (policy )?rate|on hold|well positioned|maintain(ing)? the (current )?(policy|rate|target))\b", re.I)
+_RATES = r"\s+(?:in\s+|of\s+)?(?:the\s+|our\s+)?(?:policy\s+|federal\s+funds\s+|interest\s+)?rates?\b"
+# direction words count only when they point at the policy rate: "reduce inflation" or "rising prices" is not a rate call
+EASE = re.compile(r"\b(?:(?:cut|cuts|cutting|lower(?:ing)?|reduc(?:e|ed|ing)|eas(?:e|ing))" + _RATES
+                  + r"|rate cuts?|(?:further|additional) (?:cuts|easing)|less restrictive|accommodat\w*"
+                  + r"|rates?\s+(?:\w+\s+){0,3}(?:be\s+)?(?:lowered|reduced|cut)\b)", re.I)
+HOLD = re.compile(r"\b(should wait|wait until|patient|patience|hold(ing)? (the|our) (policy )?rate|on hold|well positioned|maintain(ing)? the (current )?(policy|rate|target)"
+                  r"|(remain|stay|keep)\w* (sufficiently |moderately )?restrictive)\b", re.I)
 MINE = re.compile(r"\bmy view|\bI (?:support|expect|believe|think|see|favor|would|judge|anticipate)\b|\bin my\b")   # the speaker's own view
-TIGHT = re.compile(r"\b(rais(e|ed|ing)|hik(e|es|ing)|increas(e|es|ing)|tighten\w*|more restrictive|firming|hold(ing)? .{0,20}longer)\b", re.I)
+TIGHT = re.compile(r"\b(?:(?:rais(?:e|ed|ing)|hik(?:e|es|ing)|increas(?:e|es|ing)|tighten(?:ing)?)" + _RATES
+                   + r"|rate (?:hikes?|increases?)|(?:further|additional) (?:tightening|firming|hikes|increases)|more restrictive|firming|hold(?:ing)? .{0,20}longer"
+                   + r"|rates?\s+(?:\w+\s+){0,3}(?:be\s+)?(?:raised|increased|hiked)\b)", re.I)
+AGENDA = re.compile(r"\bwill (then )?(turn|discuss|conclude)|\btoday I\b|before I turn|\bI (will|want to|would like to) (explain|describe|spend|focus|discuss|talk)", re.I)
+ABBR = re.compile(r"\b(U\.S|U\.K|e\.g|i\.e|Mr|Ms|Mrs|Dr|St|No|vs)\.", re.I)
 
 
 def load() -> Dict:
@@ -77,11 +86,14 @@ def text_of(html: str) -> str:
         if j > 0:
             a = a[:j]
     a = re.sub(r"<script.*?</script>|<style.*?</style>", " ", a, flags=re.S)
-    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", a))).strip()
+    a = re.sub(r"</(p|h\d|li|div|blockquote)>", " ¶ ", a)          # block ends are sentence ends (headings have no period)
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", a))).strip(" ¶")
 
 
 def score(text: str) -> Dict:
-    sents = re.split(r"(?<=[.!?])\s+", text)
+    safe = ABBR.sub(lambda m: m.group(0).replace(".", "․"), text)     # "U.S." must not end a sentence
+    sents = [x.strip().replace("․", ".") for x in re.split(r"(?<=[.!?])\s+|\s*¶\s*", safe) if x.strip()]
+    text = text.replace("¶", " ")
     ease, tight = [], []
     for s in sents:
         if not RATE.search(s) or len(s) > 400:
@@ -92,7 +104,7 @@ def score(text: str) -> Dict:
         elif t and not e:
             tight.append(s)
     mine = [s for s in sents if RATE.search(s) and MINE.search(s) and 40 <= len(s) <= 400
-            and not re.search(r"\bwill (then )?(turn|discuss|conclude)|\btoday I\b", s)]
+            and not AGENDA.search(s)]
     return {"words": len(text.split()), "infl": len(INFL.findall(text)), "jobs": len(JOBS.findall(text)),
             "ease": len(ease), "tight": len(tight), "key": mine[0] if mine else "", "key_dir": key_dir(mine[0] if mine else "")}
 

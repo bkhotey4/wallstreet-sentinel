@@ -92,7 +92,7 @@ def sec_chokepoints(eng) -> str:
         lvl = {"red": "很高，供應鏈明顯塞住", "yellow": "偏高，供應鏈有點塞", "green": "在正常範圍"}[g["st"]]
         trend = "" if g["chg3"] is None else (f'，3 個月前是 {g["v"] - g["chg3"]:+.2f}（' + ("變更塞" if g["chg3"] > 0.2 else "變順" if g["chg3"] < -0.2 else "差不多") + "）")
         gline = (f'<p>{ICON[g["st"]]} <b>整體供應鏈壓力</b>（紐約聯準會 GSCPI，{esc(g["month"])}）：{g["v"]:+.2f}，{lvl}{trend}。'
-                 f'{g["start"]} 年以來排第 {g["pct"]:.0f} 百分位；最高是 {esc(g["peak_m"])} 疫情塞港時的 {g["peak"]:+.1f}。'
+                 f'{g["start"]} 年以來排第 {g["pct"]:.0f} 百分位；最高是 {esc(g["peak_m"])}' + ("（疫情塞港）" if str(g["peak_m"])[:4] in ("2020", "2021", "2022") else "") + f' 的 {g["peak"]:+.1f}。'
                  '<span class="small muted">（數字是「比長期平均高幾個標準差」，0 是平常；把運費、交貨時間、積壓訂單合起來算，'
                  f'<a href="{CP.GSCPI_PAGE}" target="_blank" rel="noopener">紐約聯準會</a>每月初更新。≥1 黃、≥2 紅是本站自訂。）</span></p>')
     body = (f'<p class="rimp big2"><b>{esc(lead)}</b></p>'

@@ -29,7 +29,6 @@ EXPECT = (
     ("ai_view.json", "獨立 AI 觀察員", "AI observer", 12, False),
     ("earn_preview.json", "財報前瞻", "Earnings previews", 24, False),
     ("earn_after.json", "財報後解讀", "Post-earnings reads", 12, False),
-    ("earn_after_more.json", "財報補寫（美股）", "Earnings backfill (US)", 6, False),
     ("forecast.json", "一個月預判", "One-month calls", 96, False),
     ("feed.json", "學術動態", "Research feed", 168, False),
     ("industry_note.json", "產業筆記", "Industry note", 168, False),
@@ -57,8 +56,11 @@ def parse_updated(raw) -> Optional[float]:
 
 def _stamp(name: str, d: Dict) -> Optional[float]:
     if name == "tw_note.json":                        # the monthly note keeps its date on the newest note
-        notes = d.get("notes") or []
-        return parse_updated(notes[0].get("date")) if notes else None
+        notes = [n for n in d.get("notes") or [] if isinstance(n, dict) and (n.get("date") or n.get("month"))]
+        if not notes:                                 # same reading as the note card: newest by date, else month + "-28"
+            return None
+        n = max(notes, key=lambda n: str(n.get("date") or n.get("month")))
+        return parse_updated(n.get("date") or f'{n.get("month")}-28')
     return parse_updated(d.get("updated"))
 
 

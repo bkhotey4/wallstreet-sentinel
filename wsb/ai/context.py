@@ -55,12 +55,13 @@ def build(engine, focus: str = "full", private: bool = True) -> str:
         L.append("區塊: " + ", ".join(f"{k} {v:.0f}" for k, v in sorted(st.blocks.items(), key=lambda x: -x[1])))
         L.append("主要推升因子: " + "; ".join(f"{c.id}={f(c.raw, 4)} z{f(c.z, 2, sign=True)} 分{c.score:.0f}" for c in st.drivers(6)))
         L.append("主要緩解因子: " + "; ".join(f"{c.id}={f(c.raw, 4)} z{f(c.z, 2, sign=True)} 分{c.score:.0f}" for c in st.relief(3)))
-    if engine.odds.get("horizons"):
-        L.append(f"## 經驗崩跌機率 (SSI區間 {engine.odds.get('bucket')}, 樣本自 {engine.odds.get('sample_start')})")
-        mom = engine.odds.get("momentum") or {}
+    odds = engine.odds or {}                          # engine sets odds=None when SSI is not computable
+    if odds.get("horizons"):
+        L.append(f"## 經驗崩跌機率 (SSI區間 {odds.get('bucket')}, 樣本自 {odds.get('sample_start')})")
+        mom = odds.get("momentum") or {}
         L.append(f"SSI 20日變化 {f(mom.get('chg20'), 1, sign=True)} 點，歷史百分位 {f(mom.get('pctile'), 0)}，升溫狀態={mom.get('state') or 'NA'}"
                  f"（門檻：升溫≥{f(mom.get('th_rising'), 1, sign=True)}、降溫≤{f(mom.get('th_falling'), 1, sign=True)}）")
-        for h in engine.odds["horizons"]:
+        for h in odds["horizons"]:
             lg = h.get("method") == "logit"
             L.append(f"{h['days']}交易日內跌≥{h['drawdown_pct']:.0f}%: " + (f"主機率（只用今日 SSI 的邏輯迴歸，樣本外 AUC {f(h.get('model_auc_oos'), 2)}）"
                      if lg else "主機率（SSI 區間＋升溫速度的歷史頻率）") + f" {f(h.get('adjusted'), 1)}% "

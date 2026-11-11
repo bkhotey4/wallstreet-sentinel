@@ -112,7 +112,10 @@ def _bondflows():
         from wsb.data import bondflows as BF
         d = BF.load()
         rows = d.get("mof") or []
-        return _oldest(d, ("mof", "tic", "mmf")), (rows[-1][1] if rows else None)
+        end = None                                    # rows carry the week START; the data runs to the week's last day (+6)
+        if rows and rows[-1][1]:
+            end = (datetime.strptime(rows[-1][1], "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+        return _oldest(d, ("mof", "tic", "mmf")), end
     except Exception:  # noqa: BLE001
         return None, None
 
@@ -502,7 +505,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "darkpool": ("FINRA 暗池", "FINRA dark pool", lambda e: (None, _d(_g(e, "darkpool", "result", "asof"))), 7),
     "jgb": ("日本財務省公債殖利率", "MOF JGB yields", lambda e: (_ts(_g(e, "global_yields", "ts")),
             _d(e.global_yields.jgb.index[-1]) if getattr(getattr(e, "global_yields", None), "jgb", None) is not None and len(e.global_yields.jgb) else None), 5),
-    "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 14),
+    "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 16),   # MOF posts ~6 days after the week ends, weekly
     "etf_flows": ("State Street／Invesco／iShares 官方資料", "Issuer fund data", lambda e: (_ts(_etf_flows()[0]), _etf_flows()[1]), 5),
     "twetf": ("證交所 ETF 淨值／集保", "TWSE ETF NAV / TDCC", lambda e: (_ts(_tw_etf()[0]), _tw_etf()[1]), 4),
     "twmacro": ("台灣央行／國發會／櫃買中心", "Taiwan CBC / NDC / TPEx", lambda e: (_ts(_twmacro()[0]), _twmacro()[1]), 7),

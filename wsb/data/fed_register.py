@@ -44,11 +44,15 @@ TOPICS = (
     ("能源與制裁", "Energy & sanctions", r"\biran\b|russia|venezuela|\boil\b|petroleum|crude|natural gas|\blng\b|sanction|energy emergency",
      "BZ=F", "布蘭特原油"),
     ("航運與造船", "Shipping", r"maritime|shipbuilding|vessel|port fees|logistics", "BZ=F", "布蘭特原油"),
-    ("金融與加密資產", "Finance & crypto", r"digital asset|crypto|stablecoin|bank|securities investments|federal reserve|treasury market",
+    # 中國排在金融之前：「…Securities Investments That Finance Certain Companies of the PRC」是中國題目，不是加密資產。
+    # 用美國掛牌的中概股 ETF：港股在美國公布之前就收盤了，看恒指等於看「消息出來前」的那一天
+    ("中國", "China", r"\bchina\b|people's republic|chinese", "KWEB", "中概網路股 ETF"),
+    ("金融與加密資產", "Finance & crypto", r"digital asset|crypto|stablecoin|\bbank|federal reserve|treasury market",
      "BTC-USD", "比特幣"),
     ("人工智慧", "AI", r"artificial intelligence|\bai\b|data center", "SMH", "半導體 ETF"),
-    ("中國", "China", r"\bchina\b|people's republic|chinese", "^HSI", "恒生指數"),
 )
+# 每年例行的延長（國家緊急狀態續期）：內容不變，不算新政策，不列入「大動」
+ROUTINE = re.compile(r"continuation of the national emergency|continuation of the emergency", re.I)
 SKIP = re.compile(r"information collection|performance review board|temporary denial|denying export privileges|order renewing|"
                   r"sunshine act|meeting|national .{0,30} (day|week|month)|week, 20\d\d|day, 20\d\d|monument|anniversary|honoring", re.I)
 
@@ -77,7 +81,7 @@ def keep(r: Dict) -> Optional[Dict]:
     ags = [a.get("name") or a.get("raw_name") or "" for a in r.get("agencies") or []]
     return {"id": r.get("document_number"), "title": r.get("title", ""), "date": r.get("publication_date"),
             "signed": r.get("signing_date"), "type": r.get("subtype") or r.get("type"), "eo": r.get("executive_order_number"),
-            "url": r.get("html_url"), "agency": ags[0] if ags else "", **t}
+            "url": r.get("html_url"), "agency": ags[0] if ags else "", "routine": bool(ROUTINE.search(r.get("title", ""))), **t}
 
 
 async def refresh(force: bool = False) -> Dict:
@@ -92,21 +96,28 @@ async def refresh(force: bool = False) -> Dict:
     out, bad = {}, []
     for name, cond in QUERIES:
         try:
-            params = {"per_page": "100", "order": "newest", "conditions[publication_date][gte]": since, **cond}
-            qs = list(params.items()) + [("fields[]", f) for f in FIELDS]
-            js = await http.get(API + "?" + "&".join(f"{k}={v}" for k, v in qs), timeout=60, retries=1)
-            for r in js.get("results") or []:
-                k = keep(r)
-                if k and k["id"]:
-                    out[k["id"]] = {**k, "src": name}
+            for page in range(1, 6):                              # 100 per page; a busy 45 days can need more than one
+                params = {"per_page": "100", "page": str(page), "order": "newest", "conditions[publication_date][gte]": since, **cond}
+                qs = list(params.items()) + [("fields[]", f) for f in FIELDS]
+                js = await http.get(API + "?" + "&".join(f"{k}={v}" for k, v in qs), timeout=60, retries=1)
+                for r in js.get("results") or []:
+                    k = keep(r)
+                    if k and k["id"]:
+                        out[k["id"]] = {**k, "src": name}
+                if page >= int(js.get("total_pages") or 1):
+                    break
         except Exception as e:  # noqa: BLE001
-            bad.append(f"{name}: {e if str(e) else type(e).__name__}")
+            bad.append(name)
+            log.warning("Federal Register %s: %s", name, e if str(e) else type(e).__name__)
     if len(bad) < len(QUERIES):
+        for x in d.get("docs") or []:                            # a failed query keeps that source's earlier docs
+            if x.get("src") in bad and x.get("id") not in out and (x.get("date") or "") >= since:
+                out[x["id"]] = x
         d["docs"] = sorted(out.values(), key=lambda x: (x["date"] or "", x["id"]), reverse=True)
-        d["ts_each"]["docs"], d["ts"] = now, now
+        if not bad:                                               # partial success: retried in an hour, not after a full TTL
+            d["ts_each"]["docs"], d["ts"] = now, now
     if bad:
-        log.warning("Federal Register: %s", "; ".join(bad))
-        HEALTH.fail("fed_register", "; ".join(bad), every=TTL)
+        HEALTH.fail("fed_register", "failed: " + ", ".join(bad), every=TTL)
     else:
         HEALTH.ok("fed_register", len(d.get("docs") or []), every=TTL)
     tmp = FILE.with_suffix(".tmp")

@@ -35,7 +35,7 @@ def main() -> None:
     assert len(up) == 1 and up[0]["date"] == "2026-11-13"
 
     import tools.site_fedspeech as S
-    assert S._cal_time("2026-11-13", "7:00 p.m.") == "11/14 08:00"
+    assert S._cal_time("2026-11-13", "7:00 p.m.") == "11/14 08:00 台北"
     assert S._role("Speech - Vice Chair for Supervision Michelle W. Bowman") == "監理副主席"
     idx = pd.bdate_range("2026-06-01", "2026-11-10")
     y = pd.Series(3.5 + np.cumsum(np.random.default_rng(1).normal(0, 0.03, len(idx))), index=idx)
@@ -44,6 +44,7 @@ def main() -> None:
     assert round(m["bp"]) == 15 and m["k"] > 2, m
     assert S.yield_move(y, pd.Timestamp("2026-11-08")) is None                      # weekend: no row
 
+    S._today = lambda: date(2026, 11, 11)
     d = {"ts": 1.0, "speeches": [{**it[0], **sc}], "upcoming": up}
     FS.load, real = (lambda: d), FS.load
 

@@ -427,15 +427,17 @@ class Engine:
     async def recompute(self, skip_quality: bool = False) -> None:
         async with self._lock:
             try:
-                self.odds = None                              # a failed / not-computable SSI must not leave yesterday's odds on show
-                self.stress = await asyncio.to_thread(self.stress_engine.compute)
-                if self.stress:
-                    store.stress_record(self.stress.score, self.stress.blocks)
+                new_stress = await asyncio.to_thread(self.stress_engine.compute)
+                new_odds = None                               # a failed / not-computable SSI must not leave yesterday's odds on show
+                if new_stress:
+                    store.stress_record(new_stress.score, new_stress.blocks)
                     bench = SETTINGS.get("crash_odds", {}).get("benchmark", "^GSPC")
                     from .analytics.stress import ref_history
-                    self.odds = await asyncio.to_thread(        # history of the live component set: like-for-like with score
-                        co.crash_odds, ref_history(self.stress, 500), self.market.series(bench), self.stress.score,
-                        self.stress.chg_20d)
+                    new_odds = await asyncio.to_thread(         # history of the live component set: like-for-like with score
+                        co.crash_odds, ref_history(new_stress, 500), self.market.series(bench), new_stress.score,
+                        new_stress.chg_20d)
+                # swap both at once: readers outside the lock (briefings) never see stress without its odds
+                self.stress, self.odds = new_stress, new_odds
             except Exception:  # noqa: BLE001
                 log.exception("stress compute failed")
                 self.stress, self.odds = None, None

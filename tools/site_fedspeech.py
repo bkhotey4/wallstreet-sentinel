@@ -27,6 +27,27 @@ def _ny_day(iso: str) -> Optional[pd.Timestamp]:
         return None
 
 
+def _today():
+    return datetime.now(NY).date()
+
+
+def speech_day(s: Dict) -> Optional[pd.Timestamp]:
+    """The day the speech was GIVEN: the Board's URL carries it (…/waller20260928a.htm); the RSS pubDate is when the
+    page was posted, often the next day. Falls back to the pubDate's New York date."""
+    m = re.search(r"(20\d{6})[a-z]?\.htm", s.get("url", ""))
+    if m:
+        try:
+            return pd.Timestamp(datetime.strptime(m.group(1), "%Y%m%d").date())
+        except ValueError:
+            pass
+    return _ny_day(s.get("time", ""))
+
+
+def _dtxt(s: Dict) -> str:
+    d = speech_day(s)
+    return d.strftime("%m/%d") if d is not None else "—"
+
+
 def yield_move(dgs2: pd.Series, day: Optional[pd.Timestamp]) -> Optional[Dict]:
     """2-year yield change on the speech day (bp) and how big that is next to a usual day (σ of the prior 60 daily changes)."""
     s = dgs2.dropna() if dgs2 is not None else pd.Series(dtype=float)
@@ -52,10 +73,10 @@ def _cal_time(day: str, t: str) -> str:
     """'10:00 a.m.' Eastern on `day` → Taipei 'MM/DD HH:MM'."""
     m = re.match(r"(\d{1,2}):(\d{2})\s*([ap])", t or "")
     if not m:
-        return day[5:].replace("-", "/")
+        return day[5:].replace("-", "/") + "（美東日期，時間未公布）"
     h = int(m.group(1)) % 12 + (12 if m.group(3) == "p" else 0)
     dt = datetime.fromisoformat(day).replace(hour=h, minute=int(m.group(2)), tzinfo=NY).astimezone(TPE)
-    return dt.strftime("%m/%d %H:%M")
+    return dt.strftime("%m/%d %H:%M") + " 台北"
 
 
 def sec_fed_speeches(eng) -> str:
@@ -71,31 +92,32 @@ def sec_fed_speeches(eng) -> str:
         dgs2 = eng.fred.get("DGS2")
     except Exception:  # noqa: BLE001
         dgs2 = pd.Series(dtype=float)
-    newest = sp[0].get("time", "")[:10]
-    cutoff = (datetime.strptime(newest, "%Y-%m-%d") - timedelta(days=14)).strftime("%Y-%m-%d") if newest else ""
-    recent = [s for s in sp if s.get("time", "")[:10] >= cutoff]
+    cutoff = pd.Timestamp(_today()) - pd.Timedelta(days=14)   # two weeks back from today, not from the newest item
+    recent = [s for s in sp if (speech_day(s) is not None and speech_day(s) >= cutoff)]
     policy = [s for s in recent if FS.lean(s) != "—"]
     for s in sp:
-        s["_mv"] = yield_move(dgs2, _ny_day(s.get("time", "")))
+        s["_mv"] = yield_move(dgs2, speech_day(s))
     if policy:
         lead = (f'最近兩週有 {len({s["who"] for s in policy})} 位聯準會理事公開談經濟與利率：'
-                + "；".join(f'{esc(s["who"])}（{FS.taipei_date(s["time"]) or ""}）{FS.lean(s)}'
+                + "；".join(f'{esc(s["who"])}（{_dtxt(s)}）{FS.lean(s)}'
                            + (f'，{FS.DIR_ZH[s.get("key_dir", "")]}' if s.get("key_dir") else "") for s in policy[:3]) + "。")
     else:
-        lead = "最近兩週聯準會理事的公開講話都不是談利率（多半是銀行監理），市場沒有新的利率訊號從這裡來。"
+        lead = ("最近兩週聯準會理事的公開講話都不是談利率，市場沒有新的利率訊號從這裡來。" if recent
+                else "最近兩週聯準會理事沒有新的公開講話（下面是更早的紀錄）。")
     quotes = []
     for s in policy[:3]:
         if s.get("key"):
-            quotes.append(f'<li><b>{esc(s["who"])}</b> <span class="small muted">{esc(FS.taipei_date(s["time"]) or "")} 台北・'
+            quotes.append(f'<li><b>{esc(s["who"])}</b> <span class="small muted">{esc(_dtxt(s))} 演講（美東日期）・'
                           f'同一天 2 年期美債殖利率 {esc(_move_txt(s["_mv"]))}</span><br>'
                           f'<span class="small">原文重點句：「{esc(s["key"])}」</span> <a class="small" href="{esc(s["url"])}" target="_blank" rel="noopener">全文</a></li>')
-    up = d.get("upcoming") or []
-    up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))} 台北・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
+    today_ny = _today().isoformat()
+    up = [u for u in (d.get("upcoming") or []) if u.get("date", "") >= today_ny]   # a stale calendar must not list past talks
+    up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))}・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
                       f'{esc(_role(u["title"]))} {esc(u["title"].split(" - ")[-1].split()[-1])}：{esc(u.get("topic", ""))}</li>' for u in up[:6])
-    trs = "".join(f'<tr><td>{esc(FS.taipei_date(s.get("time", "")) or "—")}</td><td>{esc(s["who"])}</td><td class="small">{esc(s.get("topic", ""))}</td>'
+    trs = "".join(f'<tr><td>{esc(_dtxt(s))}</td><td>{esc(s["who"])}</td><td class="small">{esc(s.get("topic", ""))}</td>'
                   f'<td>{FS.lean(s)}</td><td class="r small">{s.get("infl", "—")}／{s.get("jobs", "—")}</td>'
                   f'<td class="r small">{esc(_move_txt(s["_mv"]))}</td></tr>' for s in sp[:12])
-    table = (f'<div class="scroll"><table class="mini"><thead><tr><th>台北時間</th><th>誰</th><th>題目（原文）</th><th>多談哪邊</th>'
+    table = (f'<div class="scroll"><table class="mini"><thead><tr><th>演講日（美東）</th><th>誰</th><th>題目（原文）</th><th>多談哪邊</th>'
              f'<th class="r">通膨／就業 次數</th><th class="r">當天 2 年期殖利率</th></tr></thead><tbody>{trs}</tbody></table></div>')
     note = (f'資料：<a href="{FS.PAGE}" target="_blank" rel="noopener">聯準會理事會演講</a>與<a href="{FS.CAL_PAGE}" target="_blank" rel="noopener">官方行事曆</a>'
             '（主席、副主席與理事都有 FOMC 永久投票權；地方聯準會總裁的講話不在這裡）。「多談哪邊」只是數原文提到通膨和就業的次數，'

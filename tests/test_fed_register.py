@@ -1,6 +1,8 @@
 """政府做了什麼：主題判斷、行政雜項過濾、刊登當天反應、卡片輸出（不連網）。"""
 from __future__ import annotations
 
+from datetime import date
+
 import numpy as np
 import pandas as pd
 
@@ -32,6 +34,7 @@ def main() -> None:
     assert S.day_move(px, "2026-11-01") is None and S.day_move(px, None, roll=True) is None
     k["signed"] = "2026-11-01"
 
+    S._today = lambda: date(2026, 11, 11)
     d = {"docs": [k]}
     FR.load, real = (lambda: d), FR.load
 

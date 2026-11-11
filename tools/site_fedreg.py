@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from typing import Dict, Optional
 
 import pandas as pd
@@ -34,6 +34,16 @@ def day_move(px: pd.Series, day: str, roll: bool = False) -> Optional[Dict]:
     return {"pct": float(r.iloc[i]), "k": abs(float(r.iloc[i])) / sig if sig else None, "day": t.strftime("%Y-%m-%d")}
 
 
+def _today() -> date:
+    return date.today()
+
+
+def _retopic(FR, x: Dict) -> Dict:
+    """Re-match the topic with today's rules, so a cache written under older rules does not keep a wrong asset."""
+    t = FR.topic(x.get("title", ""))
+    return {**x, **t} if t else x
+
+
 def _mv(m: Optional[Dict], sym_zh: str) -> str:
     if not m:
         return f"{sym_zh}：當天沒有交易資料"
@@ -49,8 +59,9 @@ def sec_fed_register(eng) -> str:
         return ""
     if not docs:
         return ""
-    newest = max(x["date"] for x in docs if x.get("date"))
-    cut = (datetime.strptime(newest, "%Y-%m-%d") - timedelta(days=RECENT)).strftime("%Y-%m-%d")
+    docs = [_retopic(FR, x) for x in docs]
+    newest = max((x["date"] for x in docs if x.get("date")), default="")
+    cut = (_today() - timedelta(days=RECENT)).isoformat()     # back from today, so a stuck feed cannot pass as "recent"
     recent = [x for x in docs if (x.get("date") or "") >= cut]
     cnt = Counter(x["topic"] for x in recent)
     if recent:
@@ -70,10 +81,11 @@ def sec_fed_register(eng) -> str:
 
     items, big = [], 0
     for x in docs[:10]:
+        routine = x.get("routine") or bool(FR.ROUTINE.search(x.get("title", "")))
         m = day_move(series(x["sym"]), x["date"])
         sg = x.get("signed")
         ms = day_move(series(x["sym"]), sg, roll=True) if sg and sg < x["date"] else None
-        if max((m or {}).get("k") or 0, (ms or {}).get("k") or 0) >= 2:
+        if not routine and x in recent and max((m or {}).get("k") or 0, (ms or {}).get("k") or 0) >= 2:
             big += 1
         eo = f'（第 {x["eo"]} 號）' if x.get("eo") else ""
         sign_txt = ""
@@ -81,10 +93,11 @@ def sec_fed_register(eng) -> str:
             when = f'簽署 {sg}' + (f'（遇休市，看下一個交易日 {ms["day"]}）' if ms and ms["day"] != sg else "")
             sign_txt = f'{esc(when)}：{esc(_mv(ms, x["sym_zh"]))}；'
         items.append(f'<li><span class="small muted">{esc(x["date"])}・{esc(FR.type_zh(x.get("type")))}{esc(eo)}・{esc(x.get("agency", ""))}</span><br>'
-                     f'<b>{esc(x["topic"])}</b>：<a href="{esc(x["url"])}" target="_blank" rel="noopener">{esc(x["title"])}</a><br>'
+                     f'<b>{esc(x["topic"])}</b>' + ('<span class="small muted">（每年例行延長，內容不變）</span>' if routine else '')
+                     + f'：<a href="{esc(x["url"])}" target="_blank" rel="noopener">{esc(x["title"])}</a><br>'
                      f'<span class="small">{sign_txt}刊登當天 {esc(_mv(m, x["sym_zh"]))}</span></li>')
     if big:
-        lead += f'其中 {big} 項在簽署或刊登當天對應的資產大動，但同一天常有其他消息，要對照新聞。'
+        lead += f'其中 {big} 項（不含每年例行延長）在簽署或刊登當天對應的資產大動，但同一天常有其他消息，要對照新聞。'
     note = (f'資料：<a href="{FR.PAGE}" target="_blank" rel="noopener">美國聯邦公報</a>官方 API。只收三類：總統文件、商務部工業安全局（出口管制）、'
             '貿易代表署（301 關稅）；用關鍵字挑出和市場有關的，主題與「先動的資產」是本站的對照表，不是 AI 判讀。'
             '刊登日通常比總統簽署或宣布晚幾天，新聞往往在簽署當天就出來，所以總統文件會同時列出「簽署當天」和「刊登當天」的漲跌'
