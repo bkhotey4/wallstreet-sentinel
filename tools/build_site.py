@@ -71,6 +71,7 @@ from tools import site_event_react as SEVR
 from tools import site_changes as SCG
 from tools import site_track as STK
 from tools import site_routines as SRT
+from tools import site_chokepoints as SCP
 from tools import site_after as SAF
 from tools import site_forecast as SFC
 from tools import site_transmission as STR
@@ -1365,7 +1366,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("cb_eu", "歐洲公司債", "European corporate bonds", [SBD.sec_cb_eu]),
             ("cb_em", "新興與亞洲公司債", "EM & Asian corporate bonds", [SBD.sec_cb_em]),
             ("human", "人類溫度計", "Human thermometer", [SHM.sec_human, SPP.sec_migration_polls]),
-            ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain]),
+            ("energy", "能源通膨", "Energy & inflation", [SE.sec_energy_chain, SCP.sec_chokepoints]),
             ("rotation", "類股寬度", "Sectors & breadth", [SW2.sec_nh_nl, SQ.sec_index_vs_stocks, SQ.sec_factor_returns, S2.sec_rotation, S2.sec_breadth_polarization]),
             ("longhist", "人類與市場長歷史", "People and markets", [SLH.sec_longhist]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
@@ -1681,6 +1682,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(FSW.refresh(), 240)
     except Exception as e:  # noqa: BLE001
         log.warning("FSR watch data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 航道監測：IMF PortWatch 每日船隻通過數（12 小時一次）
+        from wsb.data import chokepoints as CKP
+        await asyncio.wait_for(CKP.refresh(), 180)
+    except Exception as e:  # noqa: BLE001
+        log.warning("chokepoints data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 退休金與長債：英國央行 20 年公債、歐洲央行 30 年（12 小時一次）
         from wsb.data import pension_ldi as PLD
         await asyncio.wait_for(PLD.refresh(), 120)

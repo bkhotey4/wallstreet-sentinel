@@ -315,6 +315,16 @@ def _twfuel():
     return _ts(d.get("ts")), (min(last) if last else None)
 
 
+def _chokepoints():
+    try:
+        from wsb.data import chokepoints as CP
+        d = CP.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    last = [max(v) for v in (d.get("ports") or {}).values() if v]
+    return _ts(d.get("ts")), (min(last) if last else None)
+
+
 def _polls():
     try:
         from wsb.data import migration_polls as MP
@@ -520,6 +530,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "jpy": ("日圓匯率＋CFTC 日圓部位", "Yen and CFTC", lambda e: (_ts(_trm("ts_check")), _trm_date("jpy")), 10),
     "polls": ("VoteHub 民調彙整", "VoteHub polls", lambda e: _polls(), 45),
     "ldi": ("英國央行與歐洲央行長天期公債", "BoE / ECB long yields", lambda e: _ldi(), 7),
+    "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
     "fsr": ("OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（季資料）", "OFR / NY Fed / FDIC quarterly", lambda e: _fsr(), 200),
@@ -581,7 +592,7 @@ MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not 
 
 CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
     "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
-    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_rate_pressure": ["fred", "px"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_rate_pressure": ["fred", "px"],
 })
 
 
