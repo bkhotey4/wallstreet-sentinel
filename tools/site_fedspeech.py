@@ -1,0 +1,109 @@
+"""聯準會官員講話卡（美債分頁）：最近誰講了什麼（原文重點句＋字數統計）、同一天 2 年期殖利率怎麼動、接下來兩週誰要講。"""
+from __future__ import annotations
+
+import re
+from datetime import datetime, timedelta
+from typing import Dict, Optional
+from zoneinfo import ZoneInfo
+
+import pandas as pd
+
+from tools.sitekit import T, card, esc
+
+NY, TPE = ZoneInfo("America/New_York"), ZoneInfo("Asia/Taipei")
+ROLE = (("Vice Chair for Supervision", "監理副主席"), ("Vice Chair", "副主席"), ("Chair", "主席"), ("Governor", "理事"))
+KIND = {"Speech": "演講", "Discussion": "座談", "Testimony": "國會作證", "Remarks": "致詞", "Panel": "座談"}
+
+
+def _role(title: str) -> str:
+    return next((zh for en, zh in ROLE if en in title), "")
+
+
+def _ny_day(iso: str) -> Optional[pd.Timestamp]:
+    try:
+        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%MZ").replace(tzinfo=ZoneInfo("UTC")).astimezone(NY)
+        return pd.Timestamp(dt.date())
+    except ValueError:
+        return None
+
+
+def yield_move(dgs2: pd.Series, day: Optional[pd.Timestamp]) -> Optional[Dict]:
+    """2-year yield change on the speech day (bp) and how big that is next to a usual day (σ of the prior 60 daily changes)."""
+    s = dgs2.dropna() if dgs2 is not None else pd.Series(dtype=float)
+    if day is None or len(s) < 70 or day not in s.index:
+        return None
+    i = s.index.get_loc(day)
+    if i < 61:
+        return None
+    ch = s.diff() * 100
+    sig = float(ch.iloc[i - 60:i].std())
+    bp = float(ch.iloc[i])
+    return {"bp": bp, "sig": sig, "k": abs(bp) / sig if sig else None}
+
+
+def _move_txt(m: Optional[Dict]) -> str:
+    if not m:
+        return "—"
+    size = "，比平常一天大很多" if (m["k"] or 0) >= 2 else "，比平常一天大一些" if (m["k"] or 0) >= 1 else "，在平常範圍內"
+    return f'{m["bp"]:+.0f}bp{size}'
+
+
+def _cal_time(day: str, t: str) -> str:
+    """'10:00 a.m.' Eastern on `day` → Taipei 'MM/DD HH:MM'."""
+    m = re.match(r"(\d{1,2}):(\d{2})\s*([ap])", t or "")
+    if not m:
+        return day[5:].replace("-", "/")
+    h = int(m.group(1)) % 12 + (12 if m.group(3) == "p" else 0)
+    dt = datetime.fromisoformat(day).replace(hour=h, minute=int(m.group(2)), tzinfo=NY).astimezone(TPE)
+    return dt.strftime("%m/%d %H:%M")
+
+
+def sec_fed_speeches(eng) -> str:
+    try:
+        from wsb.data import fed_speeches as FS
+        d = FS.load()
+    except Exception:  # noqa: BLE001
+        return ""
+    sp = d.get("speeches") or []
+    if not sp:
+        return ""
+    try:
+        dgs2 = eng.fred.get("DGS2")
+    except Exception:  # noqa: BLE001
+        dgs2 = pd.Series(dtype=float)
+    newest = sp[0].get("time", "")[:10]
+    cutoff = (datetime.strptime(newest, "%Y-%m-%d") - timedelta(days=14)).strftime("%Y-%m-%d") if newest else ""
+    recent = [s for s in sp if s.get("time", "")[:10] >= cutoff]
+    policy = [s for s in recent if FS.lean(s) != "—"]
+    for s in sp:
+        s["_mv"] = yield_move(dgs2, _ny_day(s.get("time", "")))
+    if policy:
+        lead = (f'最近兩週有 {len({s["who"] for s in policy})} 位聯準會理事公開談經濟與利率：'
+                + "；".join(f'{esc(s["who"])}（{FS.taipei_date(s["time"]) or ""}）{FS.lean(s)}'
+                           + (f'，{FS.DIR_ZH[s.get("key_dir", "")]}' if s.get("key_dir") else "") for s in policy[:3]) + "。")
+    else:
+        lead = "最近兩週聯準會理事的公開講話都不是談利率（多半是銀行監理），市場沒有新的利率訊號從這裡來。"
+    quotes = []
+    for s in policy[:3]:
+        if s.get("key"):
+            quotes.append(f'<li><b>{esc(s["who"])}</b> <span class="small muted">{esc(FS.taipei_date(s["time"]) or "")} 台北・'
+                          f'同一天 2 年期美債殖利率 {esc(_move_txt(s["_mv"]))}</span><br>'
+                          f'<span class="small">原文重點句：「{esc(s["key"])}」</span> <a class="small" href="{esc(s["url"])}" target="_blank" rel="noopener">全文</a></li>')
+    up = d.get("upcoming") or []
+    up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))} 台北・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
+                      f'{esc(_role(u["title"]))} {esc(u["title"].split(" - ")[-1].split()[-1])}：{esc(u.get("topic", ""))}</li>' for u in up[:6])
+    trs = "".join(f'<tr><td>{esc(FS.taipei_date(s.get("time", "")) or "—")}</td><td>{esc(s["who"])}</td><td class="small">{esc(s.get("topic", ""))}</td>'
+                  f'<td>{FS.lean(s)}</td><td class="r small">{s.get("infl", "—")}／{s.get("jobs", "—")}</td>'
+                  f'<td class="r small">{esc(_move_txt(s["_mv"]))}</td></tr>' for s in sp[:12])
+    table = (f'<div class="scroll"><table class="mini"><thead><tr><th>台北時間</th><th>誰</th><th>題目（原文）</th><th>多談哪邊</th>'
+             f'<th class="r">通膨／就業 次數</th><th class="r">當天 2 年期殖利率</th></tr></thead><tbody>{trs}</tbody></table></div>')
+    note = (f'資料：<a href="{FS.PAGE}" target="_blank" rel="noopener">聯準會理事會演講</a>與<a href="{FS.CAL_PAGE}" target="_blank" rel="noopener">官方行事曆</a>'
+            '（主席、副主席與理事都有 FOMC 永久投票權；地方聯準會總裁的講話不在這裡）。「多談哪邊」只是數原文提到通膨和就業的次數，'
+            '多 1.5 倍以上算多談那一邊；重點句是第一句「講者自己看法＋利率」的原文，「偏向收緊／放寬／觀望」只看這一句裡的字眼，不是 AI 判讀，也不翻譯以免失真，請點全文確認。'
+            '2 年期殖利率最貼近市場對聯準會未來一兩年利率的猜測；同一天常有其他消息，所以只寫「同一天」，不說是演講造成的。資料來源 FRED DGS2，比市場晚一天。')
+    body = (f'<p class="rimp big2"><b>{lead}</b></p>'
+            + (f'<ul>{"".join(quotes)}</ul>' if quotes else "")
+            + (f'<h3>接下來兩週誰要講</h3><ul class="small">{up_html}</ul>' if up_html else '<p class="small muted">官方行事曆上接下來兩週沒有理事演講。</p>')
+            + f'<details class="sgx"><summary>{T("看最近 12 篇講話", "Recent speeches")}</summary>{table}</details>'
+            + f'<p class="note">{note}</p>')
+    return card("聯準會官員怎麼說：利率的線索", "Fed speakers: clues on rates", body, "wide")
