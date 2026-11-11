@@ -3,58 +3,58 @@
   {
    "date": "2026-11-11",
    "phase": "盤後",
-   "at": "05:03",
-   "one": "CoreWeave（把 AI 晶片租給企業的算力公司）財報讓市場放下「AI 花太多錢」的擔憂，標普 500 收 +1.3%、半導體指數漲約 5.7%；油價小漲，沒有大的政治消息主導。",
+   "at": "06:05",
+   "one": "AI 算力公司 CoreWeave 前晚收盤後的財報，讓市場放下「AI 花太多錢」的擔憂：標普 500 收 +1.3%、半導體指數 +5.7%；油價、利率沒有大動，政治消息不是主因。",
    "chain": [
     {
      "step": "發生什麼",
-     "text": "CoreWeave 發布強勁財報、重申 AI 算力需求強（CNBC 標題，只讀到標題）",
-     "time": "美東盤前，開盤前",
-     "src": "CNBC／中央社"
+     "text": "CoreWeave 財報營收優於預期、上調財測（CNBC 標題）",
+     "time": "美東週二收盤後",
+     "src": "CNBC／Reuters"
     },
     {
      "step": "最先動的",
-     "text": "開盤那斯達克先漲 1.54%、CoreWeave 全天 +24.7%；油價、利率只小動"
+     "text": "開盤半導體指數跳空約 +4%，CoreWeave 全天 +24.7%"
     },
     {
      "step": "怎麼傳下去",
-     "text": "算力需求被確認 → 記憶體、設備、雲端同步漲；VIX 降 9.7% 至 17.57"
+     "text": "「AI 需求還在」被確認，VIX 降 10.1% 至 17.49"
     },
     {
      "step": "影響到誰",
-     "text": "MU +11.9%、NBIS +15.4%、ORCL +8.8%；但 MSFT -2.3%、META -2.0%、AMZN -1.7% 逆勢"
+     "text": "MU +11.9%、ORCL +8.8%；MSFT -2.3%、META -2.0% 逆勢"
     }
    ],
    "story": [
-    "今天的主線很單純：AI 算力出租商 CoreWeave 在美東盤前公布財報，執行長說客戶需求仍強。中央社報導，開盤時那斯達克已漲 1.54%，時間在財報之後，對得上。上週市場怕的是「大家砸錢蓋 AI 資料中心，會不會燒不起」，這份財報讓這個擔心暫時退場。",
-    "錢往賣設備和晶片的公司跑：記憶體廠美光 +11.9%、半導體設備 Lam Research +6.1%、Applied Materials +6.1%、KLA +5.2%。有趣的是花錢的大客戶反而跌：微軟 -2.3%、Meta -2.0%、亞馬遜 -1.7%。我的判斷是，資金今天偏好「收錢的」勝過「花錢的」，但這是推論，沒有找到直接說明這三檔下跌的消息。",
-    "輝達（NVDA）+2.9%，是前兩天因執行長婚外情涉嫌牽涉國安連跌後的反彈。BBC 報導輝達已請律師事務所調查，FBI 也在查；Baird 把評等降到中立（中央社）。這是公司自己的事，和大盤為什麼漲要分開看。",
-    "政治面沒有找到能解釋大盤的消息：財政部長 Bessent 因伊朗威脅被移到軍事基地（BBC），路透民調顯示多數美國人希望新國會結束對伊朗戰爭，但油價只小漲，美元漲 0.66%，都沒超過警戒線。聯準會官員 Goolsbee 說通膨報告「令人不安」（CNBC 標題），10 年期殖利率 4.998%，利率仍是壓力。"
+    "上週市場怕的是：大家砸大錢蓋 AI 資料中心，賺得回來嗎？中選舉後，也有人擔心新國會會放慢 AI 與資料中心的建設（BBC）。CoreWeave 是把 AI 晶片出租給企業的算力公司，它前晚收盤後交出營收優於預期、財測上調的成績（CNBC、Reuters 標題），等於告訴市場客戶還在付錢。",
+    "時間檢查：財報在週二收盤後，週三開盤半導體指數就跳空上漲，盤中走高到美東約 13 點後回吐一些，方向和時間都對得上。錢流向「賣鏟子的」：美光 +11.9%、應材 +6.1%、Lam +6.1%、KLA +5.2%；花錢的大客戶微軟、Meta、亞馬遜反而跌。我的判斷是資金今天偏好收錢的、不偏好花錢的，但沒有找到這三檔下跌的直接消息，這是推論。",
+    "輝達 +2.9%，是連跌後反彈。BBC 報導輝達已請律師事務所調查執行長與疑似中國間諜的關係，FBI 也在查，Baird 把評等降到中立（中央社標題）。這是公司自己的事，和大盤為什麼漲要分開看。",
+    "政治面我沒有找到時間對得上的大盤原因：財政部長 Bessent 因伊朗威脅被移到軍事基地（BBC，美東約 11:45），那段時間油價反而從約 87.8 降到 86.9，股市也沒跌。通膨是背景壓力：10 月 CPI 月增 0.4%、高於預期，Goolsbee 稱「令人不安」，聯準會 12 月可能升息（BBC、CNBC 標題），10 年期殖利率仍在 5% 附近。"
    ],
    "movers": [
     {
      "sym": "CRWV",
      "name": "CoreWeave",
      "chg": 24.71,
-     "why": "財報強、執行長重申算力需求（CNBC 標題），時間在開盤前，對得上"
+     "why": "財報營收優於預期並上調財測（CNBC 標題），收盤後公布、開盤即漲，時間對得上"
     },
     {
      "sym": "NBIS",
      "name": "Nebius",
      "chg": 15.44,
-     "why": "同為 AI 算力出租商，跟著 CoreWeave 財報動，時間對得上"
+     "why": "同為 AI 算力出租商，跟著 CoreWeave 財報動（Barron's 標題把兩者並列）"
     },
     {
      "sym": "MU",
      "name": "美光",
      "chg": 11.89,
-     "why": "沒有找到個別消息，可能是 AI 需求確認、記憶體族群一起漲"
+     "why": "記憶體族群隨 AI 需求被確認而漲；Barron's 有高盛偏好記憶體股的文章（只看到標題），不當成主因"
     },
     {
      "sym": "ORCL",
      "name": "甲骨文",
-     "chg": 8.83,
-     "why": "AI 雲端族群跟漲；MarketWatch 有分析師看好的文章，但不是主因"
+     "chg": 8.82,
+     "why": "AI 雲端族群跟漲，沒有找到個別消息"
     },
     {
      "sym": "AMD",
@@ -65,77 +65,73 @@
     {
      "sym": "VRT",
      "name": "維諦",
-     "chg": 6.34,
-     "why": "資料中心設備股，跟著算力需求被確認而漲"
-    },
-    {
-     "sym": "NVDA",
-     "name": "輝達",
-     "chg": 2.92,
-     "why": "連跌後反彈；執行長風波仍在調查中，Baird 降評等"
+     "chg": 6.33,
+     "why": "資料中心設備股，算力需求被確認而漲"
     },
     {
      "sym": "MSFT",
      "name": "微軟",
      "chg": -2.26,
      "why": "沒有找到時間對得上的消息，可能是資金從花錢方轉向供應商"
+    },
+    {
+     "sym": "AMZN",
+     "name": "亞馬遜",
+     "chg": -1.74,
+     "why": "沒有找到時間對得上的消息，逆勢原因不明"
     }
    ],
    "macro": [
     {
      "name": "景氣",
-     "read": "今天沒有新的美國景氣數據；台灣上櫃公司 10 月營收年增 47%（中央社），AI 伺服器需求仍強，和今天算力股大漲一致。"
+     "read": "今天沒有新的美國景氣數據；台灣上櫃公司 10 月營收年增 47%（中央社），AI 伺服器需求仍強，與算力股大漲一致。"
     },
     {
      "name": "通膨",
-     "read": "10 月 CPI 月增 0.4%、高於預期，Goolsbee 稱「令人不安」（CNBC 標題）；物價壓力還沒退，關稅與戰爭都在推高成本（中央社）。"
+     "read": "10 月 CPI 月增 0.4%、高於預期的 0.3%（BBC）；Goolsbee 稱「令人不安」，物價壓力還沒退，油價仍比戰前高很多。"
     },
     {
      "name": "利率與聯準會",
-     "read": "10 年期殖利率 4.998%、小升 0.3%；市場在討論聯準會是否繼續升息，房貸與成長股估值壓力仍在。"
+     "read": "10 年期殖利率 4.998%、小升 0.3%；聯準會 12 月可能升息（BBC），房貸與成長股估值壓力仍在。"
     },
     {
      "name": "信用",
-     "read": "高收益債 ETF（HYG）+0.23%、投資級債 ETF（LQD）+0.07%，VIX 17.57、降 9.7%，沒有信用緊張跡象。"
+     "read": "高收益債 ETF（HYG）+0.22%、投資級債 ETF（LQD）+0.08%，VIX 17.49，沒有信用緊張跡象。"
     },
     {
      "name": "美元與台幣",
-     "read": "美元指數 102.91、漲 0.66%；美元兌台幣 32.88、台幣小升 0.17%，美元強但台幣沒跟著貶。"
+     "read": "美元指數 102.92、漲 0.67%；美元兌台幣 32.87、台幣小升 0.2%，美元走強但台幣沒跟著貶。"
     },
     {
      "name": "油價",
-     "read": "紐約原油 86.38、漲 0.4%，布蘭特 92.56、漲 1.2%；變動不大，沒找到時間對得上的消息，伊朗戰事仍是背景風險。"
+     "read": "紐約原油 86.44、漲 0.5%，布蘭特 92.60、漲 1.2%；波動小，沒找到時間對得上的消息，美伊戰事仍是背景風險。"
     }
    ],
-   "next": "接下來看：AI 股能否守住今天的漲幅、輝達風波是否出現國會傳票，以及升息預期會不會讓殖利率站穩 5% 之上。",
+   "next": "接下來看：AI 股能否守住今天的漲幅、輝達調查的後續、10 年期殖利率能否留在 5% 以下，以及 11/19 Anthropic 掛牌（BBC）帶來的 AI 情緒。",
    "sources": [
     {
-     "name": "中央社：CoreWeave財報提振AI交易 美國股市開盤走揚",
-     "url": "https://www.cna.com.tw/news/afe/202611110347.aspx"
+     "name": "Reuters（Google News）：Stocks end higher as CoreWeave results ease AI spending worries",
+     "url": "https://news.google.com/rss/search?q=stocks+when:1d&hl=en-US&gl=US&ceid=US:en"
     },
     {
-     "name": "中央社：路透民調 多數美國人盼新國會結束對伊朗戰爭",
-     "url": "https://www.cna.com.tw/news/aopl/202611120004.aspx"
+     "name": "CNBC：CoreWeave beats on revenue and lifts guidance",
+     "url": "https://www.cnbc.com/2026/11/10/coreweave-crwv-q3-earnings-report-2026.html"
+    },
+    {
+     "name": "BBC：Nvidia hires major US law firm to investigate alleged Chinese spy affair",
+     "url": "https://www.bbc.co.uk/news/articles/ck1wvwwl3x0go"
+    },
+    {
+     "name": "BBC：US inflation higher than expected in October",
+     "url": "https://www.bbc.co.uk/news/articles/cwy8lx3pg4k2o"
     },
     {
      "name": "BBC：Bessent relocated after alleged Iranian threats",
      "url": "https://www.bbc.co.uk/news/articles/cqr7gr0010r2o"
     },
     {
-     "name": "BBC：Nvidia hires law firm to investigate",
-     "url": "https://www.bbc.co.uk/news/articles/ck1wvwwl3x0go"
-    },
-    {
-     "name": "CNBC：CoreWeave soars 26%（只讀標題，被擋）",
-     "url": "https://www.cnbc.com/2026/11/11/coreweave-crwv-outlook-earnings-ai.html"
-    },
-    {
-     "name": "CNBC：Goolsbee 通膨報告（只讀標題，被擋）",
-     "url": "https://www.cnbc.com/2026/11/11/goolsbee-october-inflation-fed-rates-disturbing-distressing.html"
-    },
-    {
-     "name": "本站行情",
-     "url": "https://wallstreet-sentinel.pages.dev/"
+     "name": "BBC：Anthropic set for $1.3tn stock market debut",
+     "url": "https://www.bbc.co.uk/news/articles/crpdgd723x2zo"
     }
    ]
   },
@@ -1273,5 +1269,5 @@
    ]
   }
  ],
- "updated": "2026-11-12 05:03 台北"
+ "updated": "2026-11-12 06:05 台北"
 }
