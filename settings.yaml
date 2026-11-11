@@ -280,6 +280,9 @@ fred_series:
   CGBD2024: 20-24 歲大學畢業生失業率
   LNS11300060: 25-54 歲勞動參與率
   JTSQUR: 自願離職率
+  JTSHIR: 招聘率
+  JTSJOR: 職缺率
+  JTSLDR: 裁員率
   USEPUINDXD: 經濟政策不確定性
   QCNR628BIS: 中國實質房價
   CRDQCNAPABIS: 中國非金融部門信貸

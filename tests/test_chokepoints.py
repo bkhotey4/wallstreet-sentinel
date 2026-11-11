@@ -28,7 +28,11 @@ def main() -> None:
     assert CP.one(_rows(100, 80)) is None                       # too little history
     data = {"ts": 1.0, "ports": {"chokepoint6": _rows(1500, 80, 1300, 3), "chokepoint4": _rows(1500, 60, 1300, 20),
                                  "chokepoint7": _rows(1500, 50, 1300, 80)}}
+    data["gscpi"] = {f"{1998 + i // 12}-{i % 12 + 1:02d}": (4.4 if i == 287 else 0.0) for i in range(345)}
+    data["gscpi"]["2026-10"] = 1.26
     v = CP.view(data)
+    g = v["gscpi"]
+    assert g["month"] == "2026-10" and g["st"] == "yellow" and g["peak_m"] == "2021-12", g
     assert v["detour"]["on"] is True, v["detour"]
     assert [r["id"] for r in v["rows"]] == ["chokepoint6", "chokepoint4", "chokepoint7"]
 
@@ -48,7 +52,8 @@ def main() -> None:
         CP.view = real
     assert "荷姆茲海峽最近 7 天平均每天 3 艘" in html and "平常約 80 艘" in html, html[:400]
     assert "好望角是平常的 160%" in html
-    assert "布蘭特原油" in html                                 # price since the closure started
+    assert "布蘭特原油" in html
+    assert "整體供應鏈壓力" in html and "+1.26，偏高" in html and "2021-12" in html                                 # price since the closure started
     for w in ("買進", "賣出", "目標價", "低估", "高估"):
         assert w not in html
     print("test_chokepoints ok")

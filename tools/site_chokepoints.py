@@ -86,8 +86,18 @@ def sec_chokepoints(eng) -> str:
             f'最新資料日 {esc(v["date"])}（PortWatch 約每週更新，通常落後 3～7 天）。「平常」是一年前以前所有 7 天平均的中位數。'
             '燈號是本站自訂：比平常少一半以上是 🔴，少 25% 以上或落在 2019 年以來最低 10% 是 🟡。'
             '限制：只數有開 AIS 的船，戰區船隻常關掉訊號，所以數字可能比實際少；船少不一定是封鎖，也可能是船公司自己避開。描述現況，不是預測。')
+    g = v.get("gscpi")
+    gline = ""
+    if g:
+        lvl = {"red": "很高，供應鏈明顯塞住", "yellow": "偏高，供應鏈有點塞", "green": "在正常範圍"}[g["st"]]
+        trend = "" if g["chg3"] is None else (f'，3 個月前是 {g["v"] - g["chg3"]:+.2f}（' + ("變更塞" if g["chg3"] > 0.2 else "變順" if g["chg3"] < -0.2 else "差不多") + "）")
+        gline = (f'<p>{ICON[g["st"]]} <b>整體供應鏈壓力</b>（紐約聯準會 GSCPI，{esc(g["month"])}）：{g["v"]:+.2f}，{lvl}{trend}。'
+                 f'{g["start"]} 年以來排第 {g["pct"]:.0f} 百分位；最高是 {esc(g["peak_m"])} 疫情塞港時的 {g["peak"]:+.1f}。'
+                 '<span class="small muted">（數字是「比長期平均高幾個標準差」，0 是平常；把運費、交貨時間、積壓訂單合起來算，'
+                 f'<a href="{CP.GSCPI_PAGE}" target="_blank" rel="noopener">紐約聯準會</a>每月初更新。≥1 黃、≥2 紅是本站自訂。）</span></p>')
     body = (f'<p class="rimp big2"><b>{esc(lead)}</b></p>'
             + (f'<ul>{"".join(chain)}</ul>' if chain else "")
+            + gline
             + chart
             + f'<details class="sgx"><summary>{T("看七條航道的數字、各走什麼貨、會傳到哪些產業", "Details")}</summary>'
             + table + spill + f'<h3>每條航道走的是什麼</h3><ul class="small">{what}</ul></details>'

@@ -322,7 +322,7 @@ def _chokepoints():
     except Exception:  # noqa: BLE001
         return None, None
     last = [max(v) for v in (d.get("ports") or {}).values() if v]
-    return _ts(d.get("ts")), (min(last) if last else None)
+    return _ts(d.get("ts")), (min(last) if last else None)          # GSCPI is monthly; the daily ship counts set the data date
 
 
 def _fedspeech():
@@ -333,6 +333,16 @@ def _fedspeech():
         return None, None
     sp = d.get("speeches") or []
     return _ts(d.get("ts")), (sp[0].get("time", "")[:10] or None) if sp else None
+
+
+def _fedreg():
+    try:
+        from wsb.data import fed_register as FR
+        d = FR.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    docs = d.get("docs") or []
+    return _ts(d.get("ts")), (max(x["date"] for x in docs if x.get("date")) if docs else None)
 
 
 def _polls():
@@ -540,6 +550,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "jpy": ("日圓匯率＋CFTC 日圓部位", "Yen and CFTC", lambda e: (_ts(_trm("ts_check")), _trm_date("jpy")), 10),
     "polls": ("VoteHub 民調彙整", "VoteHub polls", lambda e: _polls(), 45),
     "ldi": ("英國央行與歐洲央行長天期公債", "BoE / ECB long yields", lambda e: _ldi(), 7),
+    "fedreg": ("美國聯邦公報（總統文件、出口管制、301 關稅）", "Federal Register", lambda e: _fedreg(), 30),
     "fedspeech": ("聯準會理事演講與行事曆", "Fed speeches & calendar", lambda e: _fedspeech(), 45),
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
@@ -603,7 +614,7 @@ MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not 
 
 CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
     "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
-    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_rate_pressure": ["fred", "px"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fed_register": ["fedreg", "px"], "sec_rate_pressure": ["fred", "px"],
 })
 
 

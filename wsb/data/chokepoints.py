@@ -7,6 +7,8 @@
 燈號（本站自訂）：比平常少一半以上 → 🔴；少 25% 以上，或落在自己 2019 年以來最低 10% → 🟡；其他 🟢。
 繞道：曼德海峽／蘇伊士變少、好望角變多，代表船改走非洲南端，航程多 1～2 週，運費和到貨時間跟著變。
 限制：數的是有開 AIS 的船；戰區船隻常關掉訊號，所以數字可能比實際少。PortWatch 大約每週更新，最新一天通常落後 3～7 天。
+另外看紐約聯準會「全球供應鏈壓力指數」GSCPI（月資料，1998 年起，單位是「比長期平均高幾個標準差」）：
+船過不去是一條航道的事，GSCPI 把運費、交貨時間、積壓訂單合起來看整體供應鏈有沒有塞住；≥1 偏高 🟡、≥2 很高 🔴（2021 年塞港高峰約 4）。
 快取 data_cache/econ_chokepoints.json（CI 保留 econ_*）；第一次抓 2019 年起全部，之後只補最近 30 天。描述現況，不是預測。"""
 from __future__ import annotations
 
@@ -28,6 +30,8 @@ FILE = DATA_DIR / "econ_chokepoints.json"
 TTL = 12 * 3600
 API = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query"
 PAGE = "https://portwatch.imf.org/pages/chokepoints"
+GSCPI = "https://www.newyorkfed.org/medialibrary/research/interactives/gscpi/downloads/gscpi_data.xls"
+GSCPI_PAGE = "https://www.newyorkfed.org/research/policy/gscpi"
 START = "2019-01-01"
 # (PortWatch id, 中文, 英文, 這條路上走的是什麼, 出事時先動的資產)
 PORTS = (
@@ -71,37 +75,77 @@ async def _fetch(pid: str, since: str) -> Dict[str, List[int]]:
             return out
 
 
+def parse_gscpi(raw: bytes) -> Dict[str, float]:
+    """NY Fed workbook → {YYYY-MM: index in standard deviations from its average}."""
+    import io
+    df = pd.read_excel(io.BytesIO(raw), header=None)
+    out = {}
+    for dt, v in zip(df.iloc[:, 0], df.iloc[:, 1]):
+        t = pd.to_datetime(dt, errors="coerce", format="mixed")
+        if pd.notna(t) and isinstance(v, (int, float)) and pd.notna(v):
+            out[t.strftime("%Y-%m")] = round(float(v), 3)
+    return out
+
+
 async def refresh(force: bool = False) -> Dict:
-    from .freshness import due
+    from .freshness import bundle_ts, due
     d = load()
     now = time.time()
     d["ts_check"] = now
-    if not due(d, ["ports"], TTL, now, force):
+    keys = ["ports", "gscpi"]
+    todo = due(d, keys, TTL, now, force)
+    if not todo:
         return d
-    d["try_each"]["ports"] = now
-    ports = d.get("ports") or {}
     bad = []
-    for pid, *_ in PORTS:
-        old = ports.get(pid) or {}
-        since = START if len(old) < 365 else (date.fromisoformat(max(old)) - timedelta(days=30)).isoformat()
+    if "ports" in todo:
+        d["try_each"]["ports"] = now
+        ports = d.get("ports") or {}
+        pbad = []
+        for pid, *_ in PORTS:
+            old = ports.get(pid) or {}
+            since = START if len(old) < 365 else (date.fromisoformat(max(old)) - timedelta(days=30)).isoformat()
+            try:
+                new = await _fetch(pid, since)
+                if not new and not old:
+                    raise ValueError("no rows")
+                ports[pid] = {**old, **new}
+            except Exception as e:  # noqa: BLE001
+                pbad.append(f"{pid}: {e if str(e) else type(e).__name__}")
+        if len(pbad) < len(PORTS):
+            d["ports"], d["ts_each"]["ports"] = ports, now
+        bad += pbad
+    if "gscpi" in todo:
+        d["try_each"]["gscpi"] = now
         try:
-            new = await _fetch(pid, since)
-            if not new and not old:
-                raise ValueError("no rows")
-            ports[pid] = {**old, **new}
+            g = parse_gscpi(await http.get(GSCPI, kind="bytes", headers={"User-Agent": "Mozilla/5.0"}, timeout=60, retries=1))
+            if len(g) < 300:
+                raise ValueError("GSCPI: too few months")
+            d["gscpi"], d["ts_each"]["gscpi"] = g, now
         except Exception as e:  # noqa: BLE001
-            bad.append(f"{pid}: {e if str(e) else type(e).__name__}")
-    if len(bad) < len(PORTS):
-        d["ports"], d["ts_each"]["ports"], d["ts"] = ports, now, now
+            bad.append(f"gscpi: {e if str(e) else type(e).__name__}")
+    d["ts"] = bundle_ts(d, keys)
     if bad:
-        log.warning("PortWatch: %s", "; ".join(bad))
+        log.warning("chokepoints: %s", "; ".join(bad))
         HEALTH.fail("chokepoints", "; ".join(bad), every=TTL)
     else:
-        HEALTH.ok("chokepoints", len(ports), every=TTL)
+        HEALTH.ok("chokepoints", len(d.get("ports") or {}), every=TTL)
     tmp = FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(d), encoding="utf-8")
     os.replace(tmp, FILE)
     return d
+
+
+def gscpi_view(g: Dict[str, float]) -> Optional[Dict]:
+    """Latest GSCPI, its rank since 1998, the peak and the change over 3 months."""
+    if not g or len(g) < 60:
+        return None
+    s = pd.Series(g).sort_index()
+    cur, m = float(s.iloc[-1]), s.index[-1]
+    pk = s.idxmax()
+    ago = s.iloc[-4] if len(s) > 4 else None
+    st = "red" if cur >= 2 else "yellow" if cur >= 1 else "green"
+    return {"month": m, "v": cur, "pct": float(((s < cur).mean() + (s == cur).mean() / 2) * 100), "peak": float(s[pk]), "peak_m": pk,
+            "chg3": cur - float(ago) if ago is not None else None, "st": st, "start": s.index[0][:4]}
 
 
 def _series(rows: Dict[str, List[int]], k: int = 0) -> pd.Series:
@@ -170,4 +214,5 @@ def view(d: Optional[Dict] = None) -> Optional[Dict]:
     bm, cape = by.get("chokepoint4"), by.get("chokepoint7")
     if bm and cape and bm["ratio"] is not None and cape["ratio"] is not None:
         detour = {"bm": bm["ratio"], "cape": cape["ratio"], "on": bm["ratio"] < YEL_RATIO and cape["ratio"] > 1.1}
-    return {"rows": rows, "detour": detour, "ts": d.get("ts"), "date": max(r["date"] for r in rows)}
+    return {"rows": rows, "detour": detour, "ts": d.get("ts"), "date": max(r["date"] for r in rows),
+            "gscpi": gscpi_view(d.get("gscpi") or {})}
