@@ -60,7 +60,7 @@ function pct(v,d){return (v>0?'+':'')+v.toFixed(d==null?1:d)+'%';}
 function fillImpact(el){var s=el.getAttribute('data-sym'),m=IM&&IM.map&&IM.map[s];
   if(!m){el.textContent=IM?'這家公司還沒有影響估算資料。':'影響估算計算中…';return;}
   var syms=[s].concat(m.peers.map(function(p){return p.sym;}),m.tw.map(function(p){return p.sym;})).slice(0,25);
-  fetch('/api/quote?s='+encodeURIComponent(syms.join(','))+'&ext='+encodeURIComponent(s)).then(function(r){return r.json();}).then(function(q){
+  fetch('/api/quote?s='+encodeURIComponent(syms.join(','))+'&ext='+encodeURIComponent(s)).then(function(r){return r.json();}).then(function(d){var q=(d&&d.q)||{};
     var o=q[s]||{},mv=o.ext&&typeof o.ext.chg==='number'?o.ext.chg:o.chg,ses=o.ext&&typeof o.ext.chg==='number'?(o.ext.sess==='pre'?'盤前':'盤後'):'今天';
     if(typeof mv!=='number'){el.textContent='影響估算：還拿不到 '+s+' 的即時價格。';return;}
     var cur=function(t){var x=q[t];return x&&typeof x.chg==='number'?'（現 '+pct(x.chg)+'）':'';};
