@@ -440,6 +440,16 @@ def sec_latest_reports(eng) -> str:
                 sub=T("營收、毛利率、營益率、對照上次指引、下季與全年指引、資本支出", "Revenue, margins, vs prior guidance, outlook, capex"))
 
 
+def _sec_note(cal: Dict) -> str:
+    """Rows added from SEC filings while Nasdaq blocks the build server: say where they came from and what is missing."""
+    n = sum(1 for x in (cal.get("up") or []) + (cal.get("past") or []) if x.get("src") == "sec")
+    if not n:
+        return ""
+    return (f"Nasdaq 擋掉本站雲端主機的期間，{n} 筆「已公布」改看公司向美國證交會（SEC）的申報：8-K 第 2.02 項（季度營運結果）的收件時間"
+            "就是公布日與盤前／盤後；沒有 8-K 的公司看 10-Q。官方沒有分析師預期，所以這些公司的 EPS 預期、驚喜留白；"
+            "外國公司（申報 6-K）與未來的財報日不在官方資料裡，沿用擋掉前的紀錄。")
+
+
 def sec_earn_cal(eng) -> str:
     te = getattr(eng, "techearn", None) or {}
     cal = (te.get("calendar") or {}) if te else {}
@@ -465,7 +475,7 @@ def sec_earn_cal(eng) -> str:
             f'<h4>{T("最近 7 天已公布", "Reported in the last 7 days")}</h4><div class="scroll"><table class="mini ecal"><thead><tr><th>{T("日期", "Date")}</th>'
             f'<th>{T("公司", "Company")}</th><th class="r">{T("EPS 實際", "EPS")}</th><th class="r">{T("預期", "Est.")}</th><th class="r">{T("驚喜", "Surprise")}</th>'
             f'<th class="r">{T("前後兩日股價", "2-day move")}</th></tr></thead><tbody>{past}</tbody></table></div>')
-    note = T("資料：Nasdaq 財報日曆（EPS 預期來自 Zacks 彙整）。日期為美東；盤後公布的股價反應出現在隔天。兩日股價＝財報日前一個交易日收盤到之後第一個交易日收盤（只算追蹤池）。",
+    note = T("資料：Nasdaq 財報日曆（EPS 預期來自 Zacks 彙整）。日期為美東；盤後公布的股價反應出現在隔天。兩日股價＝財報日前一個交易日收盤到之後第一個交易日收盤（只算追蹤池）。" + _sec_note(cal),
              "Source: Nasdaq earnings calendar (Zacks consensus). US dates.")
     return card("美股財報日曆", "US earnings calendar", body + f'<p class="note">{note}</p>', "wide")
 

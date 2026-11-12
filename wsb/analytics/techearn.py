@@ -236,7 +236,7 @@ def calendar_view(ed, names: Dict, themes: Dict, sp, today: str) -> Dict:
             x = {"date": d, "sym": r["sym"], "name": names[r["sym"]][0] if cur else r["name"], "cur": cur,
                  "theme": themes.get(r["sym"], ""), "time": r["time"], "eps_f": r["eps_f"], "n_est": r["n_est"], "eps_ly": r["eps_ly"],
                  "g": _pct(r["eps_f"], r["eps_ly"]), "mcap": r.get("mcap"), "eps": r.get("eps"), "surp": r.get("surprise"),
-                 "tech": themes.get(r["sym"], "") in ED.TECH_THEMES}
+                 "tech": themes.get(r["sym"], "") in ED.TECH_THEMES, **({"src": "sec", "url": r.get("url", "")} if r.get("src") == "sec" else {})}
             if d < today or r.get("eps") is not None:
                 if cur and sp is not None:
                     from .sessions import completed      # an in-progress bar is not "the session after"

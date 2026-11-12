@@ -76,6 +76,9 @@ async def _cal_day(d: date) -> List[Dict]:
     return parse_cal(js)
 
 
+CAL_BLOCKED = False             # the last calendar refresh got no Nasdaq answer → SEC 8-K Item 2.02 fills the past days
+
+
 async def refresh_calendar(budget_s: float = 90, force_days: Optional[List[date]] = None) -> Dict[str, Dict]:
     days = _load(F_DAYS)
     today, now, t0 = us_today(), time.time(), time.time()
@@ -119,6 +122,8 @@ async def refresh_calendar(budget_s: float = 90, force_days: Optional[List[date]
     days = {k: v for k, v in days.items() if k >= cut}
     if ok:
         _save(F_DAYS, days)
+    global CAL_BLOCKED
+    CAL_BLOCKED = bool(err and not ok)
     (HEALTH.fail("earnings_calendar", RuntimeError("Nasdaq earnings calendar failed"), every=3600) if err and not ok
      else HEALTH.ok("earnings_calendar", ok, every=3600))
     return days
@@ -308,11 +313,14 @@ async def refresh_facts(syms: List[str], reported: Dict[str, str], budget_s: flo
                 rows = parse_facts(cf)
                 await asyncio.sleep(0.2)
             if not rows or rows[-1]["end"] < (date.fromisoformat(today) - timedelta(days=200)).isoformat():
-                js = await http.get(f"https://api.nasdaq.com/api/company/{s.replace('-', '.')}/financials", params={"frequency": 2},
-                                    headers=NQ_HDR, timeout=20, retries=1)
-                nq = parse_nq_financials(js)
-                if nq and (not rows or nq[-1]["end"] > rows[-1]["end"]):
-                    rows = nq
+                try:                                       # Nasdaq blocked must not throw away the SEC rows just fetched
+                    js = await http.get(f"https://api.nasdaq.com/api/company/{s.replace('-', '.')}/financials", params={"frequency": 2},
+                                        headers=NQ_HDR, timeout=20, retries=1)
+                    nq = parse_nq_financials(js)
+                    if nq and (not rows or nq[-1]["end"] > rows[-1]["end"]):
+                        rows = nq
+                except Exception as e:  # noqa: BLE001
+                    log.info("facts %s (Nasdaq fallback): %s", s, e)
             if rows:
                 cache[s] = {"ts": time.time(), "q": rows, "cik": cik}
                 ok += 1
@@ -659,6 +667,8 @@ class EarningsData:
         except Exception as e:  # noqa: BLE001
             ok = False
             log.warning("earnings calendar refresh failed: %s", e)
+        if CAL_BLOCKED:
+            await self.official(tech_syms, b * 0.25)
         rep = self.reported()
         fsyms = list(dict.fromkeys(tech_syms + self.verdict_syms()))     # 財報結論 needs quarterly revenue (成長加速／放慢)
         res = await asyncio.gather(refresh_surprises(tech_syms, rep, b * 0.25), refresh_facts(fsyms, rep, b * 0.5),
@@ -672,8 +682,29 @@ class EarningsData:
         if ok:                         # a failed fetch must not make old rows look fresh on the card's stamp
             self.ts = time.time()
 
+    async def official(self, tech_syms: List[str], budget_s: float = 60) -> int:
+        """Nasdaq unreachable: add the companies that filed an 8-K Item 2.02 (results) with the SEC to the past days."""
+        from . import earn_official as EO
+        from .stocks import universe
+        try:
+            cur = list((universe().get("us") or {}).get("symbols", {}))
+            n = await EO.fill(self.days, list(dict.fromkeys(tech_syms + cur)), us_today(), int(cfg().get("cal_back", 10)), budget_s)
+            if n:
+                _save(F_DAYS, self.days)
+            self.ts = time.time()
+            HEALTH.ok("earnings_official", n, every=3600)
+            return n
+        except Exception as e:  # noqa: BLE001
+            HEALTH.fail("earnings_official", e, every=3600)
+            log.warning("earnings official fallback failed: %s", e)
+            return 0
+
     async def poll_day(self, d: date) -> List[Dict]:
-        rows = await _cal_day(d)
+        try:
+            rows = await _cal_day(d)
+        except Exception:  # noqa: BLE001
+            await self.official([], 30)                  # Nasdaq blocked → SEC filings instead
+            return (self.days.get(d.isoformat()) or {}).get("rows") or []
         if not rows:                                 # an empty answer never wipes the rows we already have
             rows = (self.days.get(d.isoformat()) or {}).get("rows") or []
         self.days[d.isoformat()] = {"ts": time.time(), "rows": rows, "final": False}

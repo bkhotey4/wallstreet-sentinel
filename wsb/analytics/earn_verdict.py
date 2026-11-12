@@ -168,6 +168,9 @@ def verdict(r: Dict) -> Dict[str, str]:
     """Plain-language conclusion assembled only from the measured fields of `r`."""
     zh, en = [], []
     res = r.get("result")
+    if not res and r.get("src") == "sec":
+        zh.append("已向美國證交會申報季度營運結果（8-K）；Nasdaq 擋掉本站時拿不到分析師預期，這次不判斷優於或低於預期，數字看申報原文")
+        en.append("Results filed with the SEC (8-K); no analyst consensus while Nasdaq blocks this site, so no beat/miss call")
     if res:
         zh.append(f"每股盈餘 {_n2(r.get('eps'))}，{RES[res][0]}（預期 {_n2(r.get('eps_f'))}，驚喜 {_n1(r.get('surp'))}%）")
         en.append(f"EPS {_n2(r.get('eps'))}, {RES[res][1].lower()} (est. {_n2(r.get('eps_f'))}, {_n1(r.get('surp'))}%)")
@@ -329,7 +332,8 @@ def build(eng, now: Optional[date] = None) -> Dict:
         rc = x.get("react") if x.get("react") is not None else reaction(px, d)
         r = {"sym": s, "name": x.get("name") or s, "theme": themes.get(s, x.get("theme", "")), "date": d, "time": x.get("time") or "",
              "eps": eps, "eps_f": eps_f, "surp": None if sp is None else round(float(sp), 1), "result": result_of(sp) if eps is not None else None,
-             "react": None if rc is None else round(float(rc), 2), "status": "reported" if eps is not None else "pending"}
+             "react": None if rc is None else round(float(rc), 2), "status": "reported" if (eps is not None or x.get("src") == "sec") else "pending",
+             **({"src": "sec", "url": x.get("url", "")} if x.get("src") == "sec" else {})}
         imp = implied.get(f"{s}|{d}") or {}
         r["mv"] = imp.get("mv")
         rr = ((((rels.get(f"{s}|{d}") or {}).get("actual") or {}).get("revenue") or {}).get("USD") or {}).get("v")
