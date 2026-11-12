@@ -81,11 +81,16 @@ export function merge(lists, nowSec) {
 const SEC_FEED = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&company=&dateb=&owner=include&count=100&output=atom";
 const SEC_UA = "WallStreet Sentinel research site https://wallstreet-sentinel.pages.dev";
 
+const ITEMS = { "1.03": "破產或接管", "1.05": "重大資安事件", "2.06": "重大資產減損", "3.01": "收到下市或不符上市規定通知",
+  "4.02": "過去財報不可再信賴（須重編）", "5.02": "高層人事異動" };
+
 export function parseSec(xml, watch) {
   const out = [];
   for (const e of xml.match(/<entry>[\s\S]*?<\/entry>/g) || []) {
     const sum = unesc((e.match(/<summary[^>]*>([\s\S]*?)<\/summary>/) || [])[1] || "");
-    if (!/Item 5\.02/.test(sum)) continue;
+    const have = (sum.match(/Item (\d\.\d\d)/g) || []).map((x) => x.slice(5));
+    const item = Object.keys(ITEMS).find((i) => i !== "5.02" && have.includes(i)) || (have.includes("5.02") ? "5.02" : null);
+    if (!item) continue;
     const title = unesc((e.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || "");
     const cm = title.match(/\((\d{10})\)/);
     if (!cm) continue;
@@ -94,8 +99,8 @@ export function parseSec(xml, watch) {
     const u = ((e.match(/<link[^>]*href="([^"]+)"/) || [])[1] || "").replace(/^http:\/\//, "https://");
     const d = Date.parse((e.match(/<updated>([^<]+)<\/updated>/) || [])[1] || "");
     if (!/^https:\/\/www\.sec\.gov\//.test(u) || !d) continue;
-    out.push({ t: `SEC 申報：${hit[1]}（${hit[0]}）高層人事異動（8-K 第 5.02 項）`, u, s: "SEC 申報", ts: Math.floor(d / 1000),
-               lang: "zh", off: true, tags: ["美股", "人事"], alert: true, sym: hit[0] });
+    out.push({ t: `SEC 申報：${hit[1]}（${hit[0]}）${ITEMS[item]}（8-K 第 ${item} 項）`, u, s: "SEC 申報", ts: Math.floor(d / 1000),
+               lang: "zh", off: true, tags: ["美股", item === "5.02" ? "人事" : "重大申報"], alert: true, sym: hit[0], item });
   }
   return out;
 }
@@ -120,7 +125,7 @@ async function secItems(ctx) {
     ]);
     if (!wr.ok) return [];
     const items = fr.ok ? parseSec(await fr.text(), ((await wr.json()) || {}).ciks || {}) : [];
-    for (const x of items.slice(0, 5)) {             // read the filing itself (rare: only tracked companies)
+    for (const x of items.filter((y) => y.item === "5.02").slice(0, 5)) {   // personnel: read the filing itself (rare)
       try {
         const ix = await fetch(x.u, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } });
         const doc = ((await ix.text()).match(/href="(\/Archives\/edgar\/data\/[^"]+?\.htm)"/) || [])[1];

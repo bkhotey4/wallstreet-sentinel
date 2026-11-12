@@ -1880,6 +1880,13 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.exception("SEC 5.02 refresh failed")
             st = SOF.load()
         (out / "sec_alerts.json").write_text(json.dumps(SOF.public(st), ensure_ascii=False), encoding="utf-8")
+        from wsb.analytics import news_impact as NI           # 影響估算：大盤權重、最常一起動的美股、台股隔天連動
+        try:
+            spy = await asyncio.wait_for(NI.spy_weights(), 70)
+        except Exception:  # noqa: BLE001
+            log.exception("SPY weights failed")
+            spy = {}
+        (out / "impact_map.json").write_text(json.dumps(NI.build(eng, sw["ciks"], spy), ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("sec watch list failed")
     (out / "alerts.json").write_text(json.dumps(getattr(eng, "web_alerts", None) or {"ts": 0, "items": []}, ensure_ascii=False), encoding="utf-8")

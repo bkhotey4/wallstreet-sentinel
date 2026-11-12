@@ -1,4 +1,5 @@
-"""SEC 人事申報警報（建置端）：追蹤公司申報 8-K 第 5.02 項（董事或高階主管離職、任命、薪酬安排）就記下來，保留 3 天。
+"""SEC 重大申報警報（建置端）：追蹤公司申報 8-K 第 5.02 項（董事或高階主管離職、任命、薪酬安排），或少見而本身就是新聞的
+項目（1.03 破產、1.05 重大資安事件、2.06 資產減損、3.01 下市通知、4.02 財報須重編），就記下來，保留 3 天。
 
 即時的部分在 Cloudflare 函式 /api/news（每 2 分鐘看 SEC 最新 100 份 8-K）；SEC 的「最新申報」清單忙的時候 1～2 小時就滾掉，
 所以每次建置也翻頁讀到上次看過的地方，記進 data_cache/econ_sec502.json（CI 保留 econ_*），寫成公開的 sec_alerts.json，
@@ -74,7 +75,14 @@ def kind(text: str) -> Dict[str, str]:
     return {"what": what, "seat": seat}
 
 
-def title_of(sym: str, zh: str, k: Dict[str, str]) -> str:
+# the 8-K items worth an alert: rare, and each one is news on its own (routine items like 7.01 / 8.01 / 9.01 are not)
+ITEMS = {"5.02": "高層人事異動", "1.03": "破產或接管", "1.05": "重大資安事件", "2.06": "重大資產減損",
+         "3.01": "收到下市或不符上市規定通知", "4.02": "過去財報不可再信賴（須重編）"}
+
+
+def title_of(sym: str, zh: str, k: Dict[str, str], item: str = "5.02") -> str:
+    if item != "5.02":
+        return f"SEC 申報：{zh}（{sym}）{ITEMS[item]}（8-K 第 {item} 項）"
     body = f'{k.get("seat") or "高層"}{k["what"]}' if k.get("what") else "高層人事異動"
     return f"SEC 申報：{zh}（{sym}）{body}（8-K 第 5.02 項）"
 
@@ -94,17 +102,19 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
         for r in rows:
             newest = max(newest, r["ts"])
             hit = watch.get(r["cik"])
-            if hit and "5.02" in r["items"] and r["acc"] and r["acc"] not in alerts and now - r["ts"] < KEEP_S:
+            item = next((i for i in ITEMS if i in r["items"] and i != "5.02"), None) or ("5.02" if "5.02" in r["items"] else None)
+            if hit and item and r["acc"] and r["acc"] not in alerts and now - r["ts"] < KEEP_S:
                 k = {"what": "", "seat": ""}
-                try:
-                    ix = await http.get(r["url"], kind="text", headers=HDR, timeout=30, retries=1)
-                    m = re.search(r'href="(/Archives/edgar/data/[^"]+?\.htm)"', ix)
-                    if m:
-                        k = kind(_text(await http.get("https://www.sec.gov" + m.group(1), kind="text", headers=HDR, timeout=30, retries=1)))
-                except Exception as e:  # noqa: BLE001
-                    log.info("SEC 5.02 %s: %s", r["acc"], e)
-                alerts[r["acc"]] = {"acc": r["acc"], "ts": r["ts"], "sym": hit[0], "zh": hit[1], "url": r["url"], **k,
-                                    "t": title_of(hit[0], hit[1], k)}
+                if item == "5.02":                           # only personnel filings need the text read
+                    try:
+                        ix = await http.get(r["url"], kind="text", headers=HDR, timeout=30, retries=1)
+                        m = re.search(r'href="(/Archives/edgar/data/[^"]+?\.htm)"', ix)
+                        if m:
+                            k = kind(_text(await http.get("https://www.sec.gov" + m.group(1), kind="text", headers=HDR, timeout=30, retries=1)))
+                    except Exception as e:  # noqa: BLE001
+                        log.info("SEC 8-K %s: %s", r["acc"], e)
+                alerts[r["acc"]] = {"acc": r["acc"], "ts": r["ts"], "sym": hit[0], "zh": hit[1], "url": r["url"], **k, "item": item,
+                                    "t": title_of(hit[0], hit[1], k, item)}
         if min(r["ts"] for r in rows) <= seen_ts:
             break
     st = {"last_ts": newest, "alerts": sorted(alerts.values(), key=lambda a: -a["ts"]), "ts": int(now)}
@@ -117,5 +127,5 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
 def public(st: Dict) -> Dict:
     """sec_alerts.json: the same item shape /api/news uses."""
     return {"ts": st.get("ts", 0), "items": [{"t": a["t"], "u": a["url"], "s": "SEC 申報", "ts": a["ts"], "lang": "zh", "off": True,
-                                             "tags": ["美股", "人事"], "alert": True, "sym": a["sym"], "kind": a.get("what", "")}
+                                             "tags": ["美股", "人事" if a.get("item", "5.02") == "5.02" else "重大申報"], "alert": True, "sym": a["sym"], "kind": a.get("what", "")}
                                             for a in st.get("alerts") or []]}
