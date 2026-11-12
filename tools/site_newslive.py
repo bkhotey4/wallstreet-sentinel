@@ -38,8 +38,11 @@ function lit(){var t={},n=[];document.querySelectorAll('.lqchip:not(.ok)').forEa
   MAP.forEach(function(p){if(x.indexOf(p[0])>=0&&!t[p[1]]){t[p[1]]=1;n.push(p[1]);}});});return n;}
 function paint(){var hot=lit(),now=Date.now()/1000,list=document.getElementById('nl_list');
   var xs=items.filter(function(x){return !tag||x.tags.indexOf(tag)>=0;});
-  var al=function(x){return x.alert&&now-x.ts<24*3600;};          // SEC officer filings of the last day stay pinned on top
-  xs=xs.filter(al).concat(xs.filter(function(x){return !al(x);}));
+  var al=function(x){return x.alert&&now-x.ts<24*3600;};
+  // severity first (rare items like bankruptcy or restatement, then a departure, then a top seat), newest within the same level
+  var sev=function(x){var t=x.t||'';return (x.item&&x.item!=='5.02'||/破產|資安|減損|下市|重編/.test(t)?4:0)+(/離職/.test(t)?2:0)+(/執行長|財務長|董事長/.test(t)?1:0);};
+  var bySev=function(a,b){return sev(b)-sev(a)||b.ts-a.ts;};          // SEC officer filings of the last day stay pinned on top
+  xs=xs.filter(al).sort(bySev).concat(xs.filter(function(x){return !al(x);}));
   var isHot=function(x){return now-x.ts<3*3600&&x.tags.some(function(g){return hot.indexOf(g)>=0;});};
   list.innerHTML=xs.slice(0,shown).map(function(x){return '<li'+(al(x)?' class="sec"':isHot(x)?' class="hot"':'')+'>'+(al(x)?'🔴 ':isHot(x)?'⚡ ':'')+
     '<a href="'+esc(x.u)+'" target="_blank" rel="noopener noreferrer">'+esc(x.t)+'</a><div class="m">'+(x.off?'<span class="of">官方</span> ':'')+esc(x.s)+
@@ -49,7 +52,7 @@ function paint(){var hot=lit(),now=Date.now()/1000,list=document.getElementById(
   list.querySelectorAll('.imp').forEach(fillImpact);
   var mb=document.getElementById('nl_more');mb.hidden=xs.length<=5;mb.textContent=shown<xs.length?'看更多（共 '+xs.length+' 則）':'收起';
   var lead=document.getElementById('nl_lead'),hn=items.filter(isHot).length;
-  var top=items[0],sa=items.filter(al);
+  var top=items[0],sa=items.filter(al).sort(bySev);
   lead.innerHTML='<b>一句話看懂：</b>'+(sa.length?'🔴 '+esc(sa[0].t)+'（'+ago(sa[0].ts)+'，公司向美國證交會的正式申報，點進去看原文）'
     +(sa.length>1?'；過去 24 小時共 '+sa.length+' 家追蹤公司申報高層人事。':'。'):'')+(hot.length?(hn?'正在大動的行情（'+esc(hot.join('、'))+'），最近 3 小時有 '+hn+' 則時間和分類對得上的新聞，標了 ⚡。'
     :'正在大動的行情（'+esc(hot.join('、'))+'）目前找不到時間對得上的新聞，原因還不清楚。')
