@@ -1,0 +1,121 @@
+"""SEC 人事申報警報（建置端）：追蹤公司申報 8-K 第 5.02 項（董事或高階主管離職、任命、薪酬安排）就記下來，保留 3 天。
+
+即時的部分在 Cloudflare 函式 /api/news（每 2 分鐘看 SEC 最新 100 份 8-K）；SEC 的「最新申報」清單忙的時候 1～2 小時就滾掉，
+所以每次建置也翻頁讀到上次看過的地方，記進 data_cache/econ_sec502.json（CI 保留 econ_*），寫成公開的 sec_alerts.json，
+函式把它和即時清單合併，警報不會因為清單滾動而消失。
+判斷「離職／任命／薪酬」與職位（執行長、財務長…）只看申報原文第 5.02 項開頭的文字，判斷不出來就只寫「高層人事異動」。"""
+from __future__ import annotations
+
+import json
+import logging
+import re
+import time
+from datetime import datetime, timezone
+from html import unescape
+from typing import Dict, List
+
+from ..config import DATA_DIR, SEC_USER_AGENT
+from . import http
+
+log = logging.getLogger(__name__)
+FILE = DATA_DIR / "econ_sec502.json"
+FEED = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&company=&dateb=&owner=include"
+        "&count=100&start={start}&output=atom")
+HDR = {"User-Agent": SEC_USER_AGENT}
+KEEP_S = 3 * 86400
+PAGES = 8
+
+
+def load() -> Dict:
+    try:
+        return json.loads(FILE.read_text(encoding="utf-8")) if FILE.exists() else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _text(x: str) -> str:
+    x = re.sub(r"<!\[CDATA\[(.*?)\]\]>", lambda m: m.group(1), x or "", flags=re.S)
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", unescape(re.sub(r"<[^>]+>", " ", x)))).strip()   # escaped HTML too
+
+
+def parse_feed(xml: str) -> List[Dict]:
+    """Every 8-K entry: {cik, ts, url, acc, items}."""
+    out = []
+    for e in re.findall(r"<entry>.*?</entry>", xml or "", re.S):
+        title = _text((re.search(r"<title>(.*?)</title>", e, re.S) or [None, ""])[1])
+        cm = re.search(r"\((\d{10})\)", title)
+        um = re.search(r'<link[^>]*href="([^"]+)"', e)
+        tm = re.search(r"<updated>([^<]+)</updated>", e)
+        if not (cm and um and tm):
+            continue
+        try:
+            ts = int(datetime.fromisoformat(tm.group(1)).timestamp())
+        except ValueError:
+            continue
+        summ = _text((re.search(r"<summary[^>]*>(.*?)</summary>", e, re.S) or [None, ""])[1])
+        am = re.search(r"accession-number=([\d-]+)", e) or re.search(r"AccNo:\s*([\d-]+)", summ)
+        acc = am.group(1) if am else ""
+        out.append({"cik": str(int(cm.group(1))), "ts": ts, "url": um.group(1).replace("http://", "https://"), "acc": acc,
+                    "items": re.findall(r"Item (\d\.\d\d)", summ)})
+    return out
+
+
+def kind(text: str) -> Dict[str, str]:
+    """離職 / 任命 / 薪酬安排 and the seat, from the start of Item 5.02 in the filing."""
+    t = text[:12000]
+    i = re.search(r"Item\s*5\.02", t, re.I)
+    w = t[i.start(): i.start() + 4000] if i else t
+    what = ("離職" if re.search(r"resign|step(?:ped|s)? down|retire|depart|terminat|will not stand|leave the company", w, re.I)
+            else "任命" if re.search(r"appoint|named|elect|promot", w, re.I)
+            else "薪酬安排" if re.search(r"compensat|bonus|award|salary|incentive", w, re.I) else "")
+    seat = ("執行長" if re.search(r"Chief Executive Officer|\bCEO\b", w) else "財務長" if re.search(r"Chief Financial Officer|\bCFO\b", w)
+            else "董事長" if re.search(r"Chair(?:man|woman|person)? of the Board|Chair\b", w) else "總裁" if re.search(r"President", w)
+            else "董事" if re.search(r"director", w, re.I) else "")
+    return {"what": what, "seat": seat}
+
+
+def title_of(sym: str, zh: str, k: Dict[str, str]) -> str:
+    body = f'{k.get("seat") or "高層"}{k["what"]}' if k.get("what") else "高層人事異動"
+    return f"SEC 申報：{zh}（{sym}）{body}（8-K 第 5.02 項）"
+
+
+async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
+    """Page the SEC current-8-K feed back to the last entry seen; record 5.02 filings by watched companies."""
+    now = now or time.time()
+    st = load()
+    seen_ts = int(st.get("last_ts") or (now - 6 * 3600))
+    alerts = {a["acc"]: a for a in st.get("alerts") or [] if now - a["ts"] < KEEP_S}
+    newest = seen_ts
+    for p in range(PAGES):
+        xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=30, retries=1)
+        rows = parse_feed(xml)
+        if not rows:
+            break
+        for r in rows:
+            newest = max(newest, r["ts"])
+            hit = watch.get(r["cik"])
+            if hit and "5.02" in r["items"] and r["acc"] and r["acc"] not in alerts and now - r["ts"] < KEEP_S:
+                k = {"what": "", "seat": ""}
+                try:
+                    ix = await http.get(r["url"], kind="text", headers=HDR, timeout=30, retries=1)
+                    m = re.search(r'href="(/Archives/edgar/data/[^"]+?\.htm)"', ix)
+                    if m:
+                        k = kind(_text(await http.get("https://www.sec.gov" + m.group(1), kind="text", headers=HDR, timeout=30, retries=1)))
+                except Exception as e:  # noqa: BLE001
+                    log.info("SEC 5.02 %s: %s", r["acc"], e)
+                alerts[r["acc"]] = {"acc": r["acc"], "ts": r["ts"], "sym": hit[0], "zh": hit[1], "url": r["url"], **k,
+                                    "t": title_of(hit[0], hit[1], k)}
+        if min(r["ts"] for r in rows) <= seen_ts:
+            break
+    st = {"last_ts": newest, "alerts": sorted(alerts.values(), key=lambda a: -a["ts"]), "ts": int(now)}
+    tmp = FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(FILE)
+    return st
+
+
+def public(st: Dict) -> Dict:
+    """sec_alerts.json: the same item shape /api/news uses."""
+    return {"ts": st.get("ts", 0), "items": [{"t": a["t"], "u": a["url"], "s": "SEC 申報", "ts": a["ts"], "lang": "zh", "off": True,
+                                             "tags": ["美股", "人事"], "alert": True, "sym": a["sym"], "kind": a.get("what", "")}
+                                            for a in st.get("alerts") or []]}

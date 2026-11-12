@@ -11,7 +11,7 @@ def sec_news_live(eng) -> str:
     body = ('<p class="rimp" id="nl_lead"><b>一句話看懂：</b>讀取最新新聞中…</p>'
             '<div class="nlf" id="nl_f"></div><ul class="nll" id="nl_list"></ul>'
             '<button type="button" class="btn nlmore" id="nl_more" hidden></button>'
-            '<p class="note" id="nl_note">來源固定：中央社、BBC 中文、聯準會、歐洲央行、日本央行、BBC Business、MarketWatch、CNBC（市場、財經、頭條、國際、政治）；'
+            '<p class="note" id="nl_note">來源固定：中央社、BBC 中文、聯準會、歐洲央行、日本央行、BBC Business、MarketWatch、CNBC（市場、財經、頭條、國際、政治），加上美國證交會（SEC）最新 8-K 申報；🔴 是追蹤池或市值 1,000 億美元以上的公司申報第 5.02 項（董事或高階主管離職、任命、薪酬安排），通常比媒體報導早幾十分鐘，置頂 24 小時；「離職／任命」與職位由程式從申報原文判斷，判斷不出來只寫「高層人事異動」。'
             '綜合新聞只留跟市場有關的標題。標籤是用關鍵字自動分類，不是 AI 判斷；⚡ 代表這則新聞的時間和分類，對得上即時燈號裡正在大動的行情（油價大動時，地緣政治新聞也算），'
             '但對得上不等於就是原因。每 5 分鐘自動更新。不構成投資建議。</p>')
     h = card("即時新聞", "Live news", body, "wide", sub="可靠來源的最新標題，自動標上可能牽動哪些行情")
@@ -23,7 +23,7 @@ CSS = (".nlf{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.nlf button{font-s
        ".nll{list-style:none;padding:0;margin:4px 0}.nll li{padding:7px 0;border-bottom:1px solid var(--bd);line-height:1.5}"
        ".nll a{color:inherit;text-decoration:none}.nll a:hover{text-decoration:underline}.nll .m{font-size:12px;color:var(--mu)}"
        ".nll .tg{font-size:11px;border:1px solid var(--bd);border-radius:99px;padding:0 6px;margin-left:4px}.nll li.hot{background:var(--wash)}"
-       ".nll .of{color:var(--ac);font-weight:700}.nlmore{margin-top:6px}")
+       ".nll .of{color:var(--ac);font-weight:700}.nll li.sec{background:var(--wash);border-left:3px solid var(--dn,#c0392b);padding-left:8px}.nlmore{margin-top:6px}")
 
 # chip words in the live bar → news tags (the bar's own names, so a lit chip finds its headlines)
 JS = r"""
@@ -38,15 +38,18 @@ function lit(){var t={},n=[];document.querySelectorAll('.lqchip:not(.ok)').forEa
   MAP.forEach(function(p){if(x.indexOf(p[0])>=0&&!t[p[1]]){t[p[1]]=1;n.push(p[1]);}});});return n;}
 function paint(){var hot=lit(),now=Date.now()/1000,list=document.getElementById('nl_list');
   var xs=items.filter(function(x){return !tag||x.tags.indexOf(tag)>=0;});
+  var al=function(x){return x.alert&&now-x.ts<24*3600;};          // SEC officer filings of the last day stay pinned on top
+  xs=xs.filter(al).concat(xs.filter(function(x){return !al(x);}));
   var isHot=function(x){return now-x.ts<3*3600&&x.tags.some(function(g){return hot.indexOf(g)>=0;});};
-  list.innerHTML=xs.slice(0,shown).map(function(x){return '<li'+(isHot(x)?' class="hot"':'')+'>'+(isHot(x)?'⚡ ':'')+
+  list.innerHTML=xs.slice(0,shown).map(function(x){return '<li'+(al(x)?' class="sec"':isHot(x)?' class="hot"':'')+'>'+(al(x)?'🔴 ':isHot(x)?'⚡ ':'')+
     '<a href="'+esc(x.u)+'" target="_blank" rel="noopener noreferrer">'+esc(x.t)+'</a><div class="m">'+(x.off?'<span class="of">官方</span> ':'')+esc(x.s)+
     (x.lang==='en'?'（英文）':'')+' · '+ago(x.ts)+x.tags.map(function(g){return '<span class="tg">'+esc(g)+'</span>';}).join('')+'</div></li>';}).join('')
     ||'<li class="m">這個分類目前沒有新聞。</li>';
   var mb=document.getElementById('nl_more');mb.hidden=xs.length<=5;mb.textContent=shown<xs.length?'看更多（共 '+xs.length+' 則）':'收起';
   var lead=document.getElementById('nl_lead'),hn=items.filter(isHot).length;
-  var top=items[0];
-  lead.innerHTML='<b>一句話看懂：</b>'+(hot.length?(hn?'正在大動的行情（'+esc(hot.join('、'))+'），最近 3 小時有 '+hn+' 則時間和分類對得上的新聞，標了 ⚡。'
+  var top=items[0],sa=items.filter(al);
+  lead.innerHTML='<b>一句話看懂：</b>'+(sa.length?'🔴 '+esc(sa[0].t)+'（'+ago(sa[0].ts)+'，公司向美國證交會的正式申報，點進去看原文）'
+    +(sa.length>1?'；過去 24 小時共 '+sa.length+' 家追蹤公司申報高層人事。':'。'):'')+(hot.length?(hn?'正在大動的行情（'+esc(hot.join('、'))+'），最近 3 小時有 '+hn+' 則時間和分類對得上的新聞，標了 ⚡。'
     :'正在大動的行情（'+esc(hot.join('、'))+'）目前找不到時間對得上的新聞，原因還不清楚。')
     :(top?'最新一則（'+ago(top.ts)+'）：'+esc(top.t):'目前沒有新聞。'));}
 function filters(){var c={};items.forEach(function(x){x.tags.forEach(function(g){c[g]=(c[g]||0)+1;});});

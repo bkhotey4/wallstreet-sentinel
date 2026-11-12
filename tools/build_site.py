@@ -1869,6 +1869,19 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         (out / "breaking.json").write_text(json.dumps(BRK.build(eng), ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("breaking check failed")
+    try:                                           # SEC 人事申報警報：/api/news 用這份名單比對最新 8-K 第 5.02 項
+        from tools import site_secwatch as SSW
+        sw = SSW.build(eng)
+        (out / "sec_watch.json").write_text(json.dumps(sw, ensure_ascii=False), encoding="utf-8")
+        from wsb.data import sec_officers as SOF
+        try:
+            st = await asyncio.wait_for(SOF.refresh(sw["ciks"]), 90)
+        except Exception:  # noqa: BLE001
+            log.exception("SEC 5.02 refresh failed")
+            st = SOF.load()
+        (out / "sec_alerts.json").write_text(json.dumps(SOF.public(st), ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("sec watch list failed")
     (out / "alerts.json").write_text(json.dumps(getattr(eng, "web_alerts", None) or {"ts": 0, "items": []}, ensure_ascii=False), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")
