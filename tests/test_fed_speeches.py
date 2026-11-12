@@ -62,6 +62,28 @@ def main() -> None:
     assert "11/14 08:00 台北" in html
     for w in ("買進", "賣出", "目標價", "低估", "高估"):
         assert w not in html
+
+    # FRED lags a day: Treasury's same-evening 2-year fills the speech day
+    xml = ('<feed><entry><content><m:properties><d:NEW_DATE m:type="Edm.DateTime">2026-11-09T00:00:00</d:NEW_DATE>'
+           '<d:BC_1YEAR m:type="Edm.Double">4.1</d:BC_1YEAR><d:BC_2YEAR m:type="Edm.Double">4.56</d:BC_2YEAR></m:properties></content></entry>'
+           '<entry><content><m:properties><d:NEW_DATE m:type="Edm.DateTime">2026-11-10T00:00:00</d:NEW_DATE>'
+           '<d:BC_2YEAR m:type="Edm.Double">4.73</d:BC_2YEAR></m:properties></content></entry></feed>')
+    u = FS.parse_ust2(xml)
+    assert u == {"2026-11-09": 4.56, "2026-11-10": 4.73}, u
+    lag = y.iloc[:-1]                                                                # FRED ends 11/09
+    lag.iloc[-1] = 4.56
+    s2, extra = S.with_treasury(lag, u)
+    assert extra == {pd.Timestamp("2026-11-10")} and s2.index.is_monotonic_increasing and len(s2) == len(lag) + 1
+    assert round(S.yield_move(s2, pd.Timestamp("2026-11-10"))["bp"]) == 17
+    assert S.with_treasury(y, u)[1] == set()                                         # FRED already has it: Treasury unused
+    d["ust2"] = u
+    F.get = lambda self, sid: lag
+    FS.load = lambda: d
+    try:
+        html = S.sec_fed_speeches(E())
+    finally:
+        FS.load = real
+    assert "+17bp" in html and "財政部" in html and "11/10 先用" in html, html[-900:]
     print("test_fed_speeches ok")
 
 

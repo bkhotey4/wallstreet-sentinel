@@ -554,7 +554,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "polls": ("VoteHub 民調彙整", "VoteHub polls", lambda e: _polls(), 45),
     "ldi": ("英國央行與歐洲央行長天期公債", "BoE / ECB long yields", lambda e: _ldi(), 7),
     "fedreg": ("美國聯邦公報（總統文件、出口管制、301 關稅）", "Federal Register", lambda e: _fedreg(), 30),
-    "fedspeech": ("聯準會理事演講與行事曆", "Fed speeches & calendar", lambda e: _fedspeech(), 45),
+    "fedspeech": ("聯準會理事演講與行事曆＋財政部 2 年期殖利率", "Fed speeches & calendar + Treasury 2y", lambda e: _fedspeech(), 45),
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),

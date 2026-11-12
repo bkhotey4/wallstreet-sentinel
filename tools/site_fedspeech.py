@@ -62,6 +62,17 @@ def yield_move(dgs2: pd.Series, day: Optional[pd.Timestamp]) -> Optional[Dict]:
     return {"bp": bp, "sig": sig, "k": abs(bp) / sig if sig else None}
 
 
+def with_treasury(dgs2: Optional[pd.Series], ust2: Optional[Dict]) -> tuple:
+    """FRED DGS2 plus the Treasury days FRED has not posted yet (same number, published the same evening).
+    Returns (series, set of days that came from Treasury)."""
+    s = dgs2.dropna() if dgs2 is not None else pd.Series(dtype=float)
+    last = s.index.max() if len(s) else None
+    add = {pd.Timestamp(k): float(v) for k, v in (ust2 or {}).items() if last is None or pd.Timestamp(k) > last}
+    if not add or not len(s):
+        return s, set()
+    return pd.concat([s, pd.Series(add)]).sort_index(), set(add)
+
+
 def _move_txt(m: Optional[Dict]) -> str:
     if not m:
         return "—"
@@ -92,6 +103,7 @@ def sec_fed_speeches(eng) -> str:
         dgs2 = eng.fred.get("DGS2")
     except Exception:  # noqa: BLE001
         dgs2 = pd.Series(dtype=float)
+    dgs2, from_ust = with_treasury(dgs2, d.get("ust2"))
     cutoff = pd.Timestamp(_today()) - pd.Timedelta(days=14)   # two weeks back from today, not from the newest item
     recent = [s for s in sp if (speech_day(s) is not None and speech_day(s) >= cutoff)]
     policy = [s for s in recent if FS.lean(s) != "—"]
@@ -122,7 +134,9 @@ def sec_fed_speeches(eng) -> str:
     note = (f'資料：<a href="{FS.PAGE}" target="_blank" rel="noopener">聯準會理事會演講</a>與<a href="{FS.CAL_PAGE}" target="_blank" rel="noopener">官方行事曆</a>'
             '（主席、副主席與理事都有 FOMC 永久投票權；地方聯準會總裁的講話不在這裡）。「多談哪邊」只是數原文提到通膨和就業的次數，'
             '多 1.5 倍以上算多談那一邊；重點句是第一句「講者自己看法＋利率」的原文，「偏向收緊／放寬／觀望」只看這一句裡的字眼，不是 AI 判讀，也不翻譯以免失真，請點全文確認。'
-            '2 年期殖利率最貼近市場對聯準會未來一兩年利率的猜測；同一天常有其他消息，所以只寫「同一天」，不說是演講造成的。資料來源 FRED DGS2，比市場晚一天。')
+            '2 年期殖利率最貼近市場對聯準會未來一兩年利率的猜測；同一天常有其他消息，所以只寫「同一天」，不說是演講造成的。資料來源 FRED DGS2，比市場晚一天'
+            + (f'；FRED 還沒更新的 {", ".join(x.strftime("%m/%d") for x in sorted(from_ust))} 先用<a href="{FS.UST_PAGE}" target="_blank" rel="noopener">美國財政部當天公布的殖利率曲線</a>補上（FRED 之後刊登的是同一個數字）'
+               if from_ust else "") + '。')
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
             + (f'<ul>{"".join(quotes)}</ul>' if quotes else "")
             + (f'<h3>接下來兩週誰要講</h3><ul class="small">{up_html}</ul>' if up_html else '<p class="small muted">官方行事曆上接下來兩週沒有理事演講。</p>')

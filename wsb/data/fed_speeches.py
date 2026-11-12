@@ -3,7 +3,7 @@
 每篇演講抓原文（美國政府著作，公有領域），算：
   * 提到通膨幾次、提到就業／勞動市場幾次 → 這篇比較擔心哪一邊
   * 講到利率、而且是講者自己看法（I / my）的第一句原文，當作「這篇的重點句」
-市場反應（卡片端算）：演講當天 2 年期美債殖利率（FRED DGS2）變多少，和平常一天的波動比。同一天常有其他消息，
+市場反應（卡片端算）：演講當天 2 年期美債殖利率（FRED DGS2；FRED 還沒刊的最近幾天用財政部當天的殖利率曲線補）變多少，和平常一天的波動比。同一天常有其他消息，
 所以只說「同一天」，不說「因為這篇演講」。字數統計不是 AI 判讀，只是讓你知道這篇在講什麼。
 地方聯準會總裁的演講不在理事會 RSS 裡，這裡沒有。快取 data_cache/econ_fedspeech.json，6 小時一次。"""
 from __future__ import annotations
@@ -29,6 +29,8 @@ RSS = "https://www.federalreserve.gov/feeds/speeches.xml"
 CAL = "https://www.federalreserve.gov/json/calendar.json"
 PAGE = "https://www.federalreserve.gov/newsevents/speeches.htm"
 CAL_PAGE = "https://www.federalreserve.gov/newsevents/calendar.htm"
+UST = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"   # 財政部每日殖利率曲線（當天收盤後公布）
+UST_PAGE = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve"
 UA = {"User-Agent": "Mozilla/5.0"}
 KEEP = 40                                     # speeches kept in the cache
 SCORE_V = 5                                   # bump when score() changes so cached speeches are re-read
@@ -56,6 +58,18 @@ def load() -> Dict:
         return json.loads(FILE.read_text(encoding="utf-8")) if FILE.exists() else {}
     except Exception:  # noqa: BLE001
         return {}
+
+
+def parse_ust2(xml: str) -> Dict[str, float]:
+    """Treasury daily par yield curve XML → {YYYY-MM-DD: 2-year yield %}. FRED DGS2 is the same Treasury number,
+    one day later; this fills the days FRED has not posted yet."""
+    out = {}
+    for blk in re.findall(r"<m:properties>(.*?)</m:properties>", xml, re.S):
+        d = re.search(r"<d:NEW_DATE[^>]*>(\d{4}-\d{2}-\d{2})", blk)
+        v = re.search(r"<d:BC_2YEAR[^>]*>([\d.]+)<", blk)
+        if d and v:
+            out[d.group(1)] = float(v.group(1))
+    return out
 
 
 def parse_rss(xml: str) -> List[Dict]:
@@ -149,7 +163,7 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     now = time.time()
     d["ts_check"] = now
-    todo = due(d, ["rss", "cal"], TTL, now, force)
+    todo = due(d, ["rss", "cal", "ust2"], TTL, now, force)
     bad = []
     if "rss" in todo:
         d["try_each"]["rss"] = now
@@ -178,6 +192,20 @@ async def refresh(force: bool = False) -> Dict:
             d["ts_each"]["cal"] = now
         except Exception as e:  # noqa: BLE001
             bad.append(f"cal: {e if str(e) else type(e).__name__}")
+    if "ust2" in todo:
+        d["try_each"]["ust2"] = now
+        try:
+            first = date.today().replace(day=1)
+            got: Dict[str, float] = {}
+            for m in ((first - timedelta(days=1)).strftime("%Y%m"), first.strftime("%Y%m")):   # last month + this month
+                got.update(parse_ust2(await http.get(UST, params={"data": "daily_treasury_yield_curve", "field_tdr_date_value_month": m},
+                                                      kind="text", headers=UA, timeout=40, retries=1)))
+            if not got:
+                raise ValueError("no 2-year rows")
+            d["ust2"] = dict(sorted({**(d.get("ust2") or {}), **got}.items())[-60:])
+            d["ts_each"]["ust2"] = now
+        except Exception as e:  # noqa: BLE001
+            bad.append(f"ust2: {e if str(e) else type(e).__name__}")
     if todo:
         d["ts"] = min(float(d["ts_each"].get(k, 0)) for k in ("rss", "cal"))
         if bad:
