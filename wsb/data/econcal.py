@@ -183,6 +183,7 @@ def save(days: Dict[str, Dict]) -> None:
         log.warning("econ cache not saved: %s", e)
 
 
+BLOCKED = False                  # the last refresh got no Nasdaq answer at all → the official FRED fallback fills the window
 EMPTY_MAX = 5                    # an empty answer for a weekday is retried this many times before it is accepted as final
 
 
@@ -264,6 +265,8 @@ async def refresh(budget_s: Optional[float] = None, force_days: Optional[List[da
         days = {k: v for k, v in days.items() if k >= cut}
         save(days)
         _clock_save()
+    global BLOCKED
+    BLOCKED = bool(n_err and not n_ok)
     if n_err and not n_ok:
         HEALTH.fail("econ_calendar", RuntimeError(f"{n_err} Nasdaq calendar requests failed"), every=3600)
     else:
@@ -395,10 +398,31 @@ class EconCalendar:
             log.warning("econ refresh failed: %s", res[0])
         self.ff = res[1] if not isinstance(res[1], Exception) else self.ff
         self.fomc = res[2] if not isinstance(res[2], Exception) else self.fomc
+        if BLOCKED:
+            await self.official()
+
+    async def official(self) -> int:
+        """Nasdaq unreachable: fill release days and actuals from FRED (official schedule + data vintages)."""
+        from . import econ_official as EO
+        try:
+            n = await EO.fill(self.days, us_today(), int(cfg().get("days_ahead", 45)), self.ff)
+            if n:
+                save(self.days)
+            self.ts = time.time()
+            HEALTH.ok("econ_official", n, every=3600)
+            return n
+        except Exception as e:  # noqa: BLE001
+            HEALTH.fail("econ_official", e, every=3600)
+            log.warning("econ official fallback failed: %s", e)
+            return 0
 
     async def poll_day(self, day: date) -> List[Dict]:
         """Fast path for the release watcher: re-fetch one day now and store it (an empty answer keeps the old rows)."""
-        rows, n_raw = await _fetch(day)
+        try:
+            rows, n_raw = await _fetch(day)
+        except Exception:  # noqa: BLE001
+            await self.official()                       # Nasdaq blocked → the official release values instead
+            return (self.days.get(day.isoformat()) or {}).get("rows") or []
         rec = store_day(self.days, day, rows, n_raw, us_today())
         rec["final"] = False
         save(self.days)

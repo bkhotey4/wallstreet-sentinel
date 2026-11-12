@@ -256,7 +256,8 @@ def _row(r: Optional[Dict], lab: str, lab_en: str, ff: Optional[Dict] = None) ->
     cons = r.get("cons") or ((ff or {}).get("forecast") or "")
     a, c, p = EC.num(r.get("actual")), EC.num(cons), EC.num(r.get("prev"))
     return {"label": lab, "label_en": lab_en, "actual": r.get("actual", ""), "cons": cons, "prev": r.get("prev", ""),
-            "a": a, "c": c, "p": p, "diff": (a - c) if a is not None and c is not None else None, "cons_src": "ff" if (not r.get("cons") and cons) else ""}
+            "a": a, "c": c, "p": p, "diff": (a - c) if a is not None and c is not None else None, "cons_src": "ff" if (not r.get("cons") and cons) else "",
+            **({"actual_src": "fred"} if r.get("src") == "fred" else {})}
 
 
 def _ff_for(ff: List[Dict], day: str, name: str, var: str) -> Optional[Dict]:

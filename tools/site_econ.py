@@ -48,6 +48,16 @@ def _val_line(e: Dict) -> str:
 
 
 # ============================================================ 財經日曆 tab
+def _official_note(events) -> str:
+    """When some actuals came from the official FRED fallback (Nasdaq blocks the build server), say so."""
+    n = sum(1 for e in events or [] for r in e.get("rows") or [] if r.get("actual_src") == "fred")
+    if not n:
+        return ""
+    return ("Nasdaq 經濟日曆擋掉本站的雲端主機時，公布日與公布值改用聖路易聯準會 FRED 的官方發布日程與原始數據"
+            f"（勞工統計局、經濟分析局、普查局、勞工部、聯準會；目前 {n} 個數字來自這裡），和官方公布的一樣；官方沒有預期值，"
+            "預期值是擋掉前已存的紀錄或 ForexFactory 本週預期。ISM 採購經理人指數與耐久財訂單不在 FRED，這段期間會缺。")
+
+
 def sec_econ_week(eng) -> str:
     ev = getattr(eng, "econ_view", None) or {}
     if not ev.get("available"):
@@ -72,7 +82,7 @@ def sec_econ_week(eng) -> str:
                      f'<div>{_val_line(e)}</div>{_dir_badge(e)}</a>')
     body = f'<div class="wkgrid">{"".join(cards)}</div>' if cards else f'<p class="muted">{T("未來 7 天沒有重要數據", "No key releases in the next 7 days")}</p>'
     note = T("時間以台北時間為主（美東 08:30 的數據＝台北晚上 8:30，冬令時間 9:30；FOMC 美東 14:00＝台北隔天凌晨 2:00／3:00）。"
-             "預期值來自 Nasdaq 經濟日曆（缺的時候用 ForexFactory 補，標示 FF）。點卡片跳到詳細的影響劇本。",
+             "預期值來自 Nasdaq 經濟日曆（缺的時候用 ForexFactory 補，標示 FF）。" + _official_note(ev["events"]) + "點卡片跳到詳細的影響劇本。",
              "Times in Taipei; consensus from Nasdaq (ForexFactory when missing). Click a card for the scenarios.")
     return card("本週重要經濟數據", "This week's key releases", body + f'<p class="note">{note}</p>', "wide")
 
@@ -334,7 +344,7 @@ def sec_econ_list(eng) -> str:
            f'<option value="3" data-en="Top (★★★)">最重要（★★★）</option><option value="1" data-en="All">全部</option></select>'
            f'<input type="search" class="btn evq" placeholder="搜尋，例如 CPI、非農、FOMC" aria-label="search">'
            f'<label class="small muted"><input type="checkbox" class="evpast"> {T("顯示過去 7 天", "Show the last 7 days")}</label></div>')
-    note = T(f"資料：Nasdaq 經濟日曆（預期值、前值、公布值）、ForexFactory（本週預期補值）、聯準會官網（會議日期）。影響劇本是依總經傳導機制寫成的判斷框架，"
+    note = T(f"資料：Nasdaq 經濟日曆（預期值、前值、公布值）、ForexFactory（本週預期補值）、聯準會官網（會議日期）。{_official_note(ev.get('events') or [])}影響劇本是依總經傳導機制寫成的判斷框架，"
              f"不是預測——實際反應取決於市場事先定價了什麼。歷史反應用快取中的 {ev.get('n_hist', 0)} 筆過去公布（自 {ev.get('hist_from') or '—'} 起）計算。"
              "本頁不構成投資建議。", "Sources: Nasdaq, ForexFactory, federalreserve.gov. Scenarios are a framework, not forecasts. Not advice.")
     return card("美國經濟日曆（未來約 45 天）", "US economic calendar (next ~45 days)", ctl + f'<div class="evlist">{"".join(days)}</div><p class="note">{note}</p>', "wide")
