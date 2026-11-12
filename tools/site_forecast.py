@@ -138,14 +138,16 @@ def _why(xs: List[Dict]) -> str:
 
 def _score(xs: List[Dict]) -> str:
     done = [x for x in xs if x.get("result") in ("對", "錯")]
+    void = [x for x in xs if x.get("result") and x.get("result") not in ("對", "錯")]   # e.g. 無法判定: shown, never counted
+    vrows = "".join(f'<p class="small"><b>{_e(x["name"])}</b>（估 {_e(x.get("prob"))}%）<b>{_e(x["result"])}</b>（不計入成績）：{_e(x.get("note"))}</p>' for x in void)
     if not done:
-        return ""
+        return (f'<p class="small"><b>過去成績</b>：還沒有可判定對錯的題目。</p><details class="sgx"><summary>看每一題結果</summary>{vrows}</details>') if void else ""
     hit = sum(x["result"] == "對" for x in done)
     ps = [float(x["prob"]) for x in done if x.get("prob") is not None]
     avg = sum(ps) / len(ps) if ps else 0.0
     rows = "".join(f'<p class="small"><b>{_e(x["name"])}</b>（估 {_e(x.get("prob"))}%）<b class="{"up" if x["result"] == "對" else "dn"}">{_e(x["result"])}</b>：{_e(x.get("note"))}</p>' for x in done)
     return (f'<p class="small"><b>過去成績</b>：{len(done)} 題對 {hit} 題（{hit / len(done) * 100:.0f}%），當時平均估 {avg:.0f}%，兩者越接近代表機率估得越準。</p>'
-            f'<details class="sgx"><summary>看每一題結果</summary>{rows}</details>')
+            f'<details class="sgx"><summary>看每一題結果</summary>{rows}{vrows}</details>')
 
 
 def sec_forecast(eng) -> str:

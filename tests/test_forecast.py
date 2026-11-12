@@ -64,6 +64,7 @@ def test_forecast():
     d = {"updated": "2026-11-07", "one": "偏鷹但沒壞", "paths": [{"name": "偏鷹", "prob": 55, "what": "升息"}],
          "calls": [{"name": "利率", "call": "會升息", "prob": 70, "by": "2026-12-09", "measure": "FOMC", "why": "就業強", "wrong": "CPI 轉弱", "now": "4.00%"},
                    {"name": "舊題", "call": "舊預判不再列", "prob": 80, "result": "對", "note": "收 3.5%"}, {"name": "舊題二", "call": "舊二", "prob": 60, "result": "錯"},
+                   {"name": "年增題", "call": "年增不再列", "prob": 70, "result": "無法判定", "note": "BLS 沒公布年增率"},
                    {"name": "空"}],
          "nextq": {"one": "錢往供應商移動", "groups": [{"name": "AI 供應商", "trend": "上修", "read": "預估調高", "evidence": "TSM +11%"}, {"name": "空"}]},
          "sources": [{"name": "Fed", "url": "https://example.com/a"}, {"name": "壞", "url": "javascript:x"}]}
@@ -73,6 +74,12 @@ def test_forecast():
         h = F.sec_forecast(None)
     assert "偏鷹但沒壞" in h and "偏鷹 <b>55%</b>" in h and "<td>會升息</td>" in h and "12-09" in h and "看依據" in h and "可能錯在" in h
     assert "舊預判不再列" not in h and "2 題對 1 題（50%），當時平均估 70%" in h and "AI 供應商" in h and "TSM +11%" in h and "收 3.5%" in h
+    assert "年增不再列" not in h and "無法判定</b>（不計入成績）：BLS 沒公布年增率" in h
+    void = {"calls": [{"name": "只有作廢", "call": "x", "prob": 70, "result": "無法判定", "note": "查無"}]}
+    dump(base, "void.json", void)
+    with patch.object(F, "FILE", base / "void.json"):
+        hv = F.sec_forecast(None)
+    assert "還沒有可判定對錯的題目" in hv and "查無" in hv and "題對" not in hv
     assert 'href="javascript' not in h and not any(w in h for w in BANNED)
     with patch.object(F, "FILE", base / "none.json"):
         assert F.sec_forecast(None) == ""
