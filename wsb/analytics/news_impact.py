@@ -3,7 +3,8 @@
 對每一家公司 S：
   * 大盤：S 在標普 500 的權重（State Street SPY 官方每日持股檔）→ S 動 x%，標普約動 權重 × x%（只算 S 本身，不含連帶效應）
   * 同族群：同主題（本站追蹤池）＋全部追蹤池裡，過去 120 個交易日和 S 日報酬相關最高的 5 檔；β＝S 動 1% 時它平均動幾 %
-  * 台股：tw_link（個股台美連動，樣本外驗證過）裡「最連動的美股」就是 S、而且通過驗證的台股；β＝S 昨晚動 1% 時隔天平均動幾 %
+  * 台股：每一檔追蹤的台股，隔天報酬對 S 前一晚漲跌，用 tw_link 同一套方法（前段估 β、最後 250 組沒看過的資料驗證）通過的；
+    β＝S 昨晚動 1% 時隔天平均動幾 %
 結果寫 impact_map.json（公開、只有行情統計）。這是過去的平均關係，不是預測；重大消息當天常比平均更極端。"""
 from __future__ import annotations
 
@@ -85,6 +86,32 @@ def peers(ret: pd.DataFrame, s: str, us: List[str], names: Dict[str, tuple]) -> 
     return [d for d in out if d["corr"] >= 0.4][:TOP]
 
 
+def tw_direct(cl: pd.DataFrame, s: str, tw_syms: List[str], names: Dict[str, tuple]) -> List[Dict]:
+    """Taiwan stocks whose next session follows S's last night, checked the tw_link way: β fitted on the older pairs, judged
+    on the last TEST pairs it never saw (correlation ≥ KEEP_CORR and out-of-sample R² > 0). Not limited to each Taiwan
+    stock's single best US partner, so a stock led mostly by 費城半導體 still shows when it also follows S."""
+    from . import tw_link as TL
+    if s not in cl.columns or not tw_syms:
+        return []
+    tw = cl[tw_syms].dropna(how="all")
+    tw = tw[tw.index.dayofweek < 5]
+    tw_r = tw.pct_change(fill_method=None) * 100
+    us = cl[[s]].dropna()
+    us = us[us.index.dayofweek < 5]
+    x = TL.paired((us.pct_change(fill_method=None) * 100).iloc[1:], tw_r.index)[s]
+    if x.notna().sum() < TL.MIN_TRAIN + TL.TEST:
+        return []
+    tr, te = slice(None, len(x) - TL.TEST), slice(len(x) - TL.TEST, None)
+    out = []
+    for t in tw_syms:
+        y = tw_r[t].reindex(x.index)
+        f = TL._fit(x.iloc[tr], y.iloc[tr])
+        o = TL._oos(f["beta"], x.iloc[te], y.iloc[te]) if f else None
+        if o and o["corr"] >= TL.KEEP_CORR and (o["r2"] or 0) > 0:
+            out.append({"sym": t, "zh": names.get(t, (t,))[0], "beta": round(f["beta"], 2), "corr": round(o["corr"], 2)})
+    return sorted(out, key=lambda d: -d["corr"])[:TOP]
+
+
 def build(eng, watch: Dict[str, list], spy: Dict) -> Dict:
     """{sym: {zh, w_spx, peers, tw}} for every company in the alert watch list."""
     from ..data.stocks import universe
@@ -95,6 +122,7 @@ def build(eng, watch: Dict[str, list], spy: Dict) -> Dict:
         for k, v in ((universe().get(mk) or {}).get("symbols") or {}).items():
             allu[k] = (v[0], v[1] if len(v) > 1 else k, mk)
     us = [k for k, v in allu.items() if v[2] == "us"]
+    tws = [k for k, v in allu.items() if v[2] == "tw" and cl is not None and k in cl.columns]
     ret = cl.pct_change(fill_method=None) * 100 if cl is not None and not cl.empty else pd.DataFrame()
     tl = ((getattr(eng, "sx", None) or {}).get("tlink") or {}).get("rows") or []
     w = spy.get("w") or {}
@@ -102,6 +130,9 @@ def build(eng, watch: Dict[str, list], spy: Dict) -> Dict:
     for _cik, (s, zh) in watch.items():
         tw = [{"sym": r["sym"], "zh": r["name"], "beta": round(float(r["beta"]), 2), "corr": round(float(r["corr"]), 2)}
               for r in tl if r.get("p") == s and r.get("ok")]
+        if cl is not None and not cl.empty:
+            have = {d["sym"] for d in tw}
+            tw += [d for d in tw_direct(cl, s, tws, allu) if d["sym"] not in have]
         out[s] = {"zh": zh, "w_spx": w.get(s), "peers": peers(ret, s, us, allu) if not ret.empty else [],
                   "tw": sorted(tw, key=lambda d: -d["corr"])[:TOP]}
     return {"ts": int(time.time()), "spy_asof": spy.get("asof", ""), "win": WIN, "map": out}

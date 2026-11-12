@@ -13,7 +13,7 @@ import re
 import time
 from datetime import datetime, timezone
 from html import unescape
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from ..config import DATA_DIR, SEC_USER_AGENT
 from . import http
@@ -25,6 +25,7 @@ FEED = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&com
 HDR = {"User-Agent": SEC_USER_AGENT}
 KEEP_S = 3 * 86400
 PAGES = 8
+KIND_V = 2                      # bump when kind() changes: stored personnel alerts are read again once
 
 
 def load() -> Dict:
@@ -61,17 +62,42 @@ def parse_feed(xml: str) -> List[Dict]:
     return out
 
 
+def main_doc(index_html: str) -> str:
+    """The 8-K document itself from a filing index page (the row typed 8-K), not an exhibit such as the press release."""
+    for row in re.findall(r"<tr.*?</tr>", index_html or "", re.S | re.I):
+        m = re.search(r'href="(?:/ix\?doc=)?(/Archives/edgar/data/[^"]+?\.htm)"', row)       # inline-XBRL viewer links too
+        if m and re.search(r">\s*8-K\s*<", row):
+            return m.group(1)
+    return ""
+
+
 def kind(text: str) -> Dict[str, str]:
     """離職 / 任命 / 薪酬安排 and the seat, from the start of Item 5.02 in the filing."""
     t = text[:12000]
     i = re.search(r"Item\s*5\.02", t, re.I)
     w = t[i.start(): i.start() + 4000] if i else t
-    what = ("離職" if re.search(r"resign|step(?:ped|s)? down|retire|depart|terminat|will not stand|leave the company", w, re.I)
-            else "任命" if re.search(r"appoint|named|elect|promot", w, re.I)
-            else "薪酬安排" if re.search(r"compensat|bonus|award|salary|incentive", w, re.I) else "")
-    seat = ("執行長" if re.search(r"Chief Executive Officer|\bCEO\b", w) else "財務長" if re.search(r"Chief Financial Officer|\bCFO\b", w)
-            else "董事長" if re.search(r"Chair(?:man|woman|person)? of the Board|Chair\b", w) else "總裁" if re.search(r"President", w)
-            else "董事" if re.search(r"director", w, re.I) else "")
+    # the item's standard heading names every kind ("Departure of Directors…; Appointment…; Compensatory Arrangements…") — drop it
+    w = re.sub(r"Item\s*5\.02[.:]?\s*Departure of Directors.*?Compensatory Arrangements of Certain Officers\.?", " ", w, count=1, flags=re.I | re.S)
+    w = re.split(r"Item\s*9\.01", w, maxsplit=1, flags=re.I)[0]
+    # the seat comes from the sentence that carries the action, not from biographies further down
+    # ("…appointment of three independent directors…"; a new director's bio may say "former Chief Executive Officer of X")
+    sents = re.split(r"(?<=[.;])\s+", w)
+    leave = r"resign|step(?:ped|s)? down|retire|depart|terminat|will not stand|leave the company"
+    join = r"appoint|named|elect|promot"
+    pay = r"compensat|bonus|award|salary|incentive"
+    what, sent = "", ""
+    for lab, rx in (("離職", leave), ("任命", join), ("薪酬安排", pay)):
+        sent = next((x for x in sents if re.search(rx, x, re.I)), "")
+        if sent:
+            what = lab
+            break
+    seat = ""
+    if what in ("離職", "任命"):
+        seat = ("執行長" if re.search(r"Chief Executive Officer|\bCEO\b", sent) else "財務長" if re.search(r"Chief Financial Officer|\bCFO\b", sent)
+                else "營運長" if re.search(r"Chief Operating Officer|\bCOO\b", sent)
+                else "董事長" if re.search(r"Chair(?:man|woman|person)? of the Board|Chair\b", sent)
+                else "董事" if re.search(r"independent director|to (?:its|the|our) Board|as (?:a )?director|board of directors", sent, re.I)
+                else "總裁" if re.search(r"President", sent) else "董事" if re.search(r"director|Board", sent, re.I) else "")
     return {"what": what, "seat": seat}
 
 
@@ -87,12 +113,29 @@ def title_of(sym: str, zh: str, k: Dict[str, str], item: str = "5.02") -> str:
     return f"SEC 申報：{zh}（{sym}）{body}（8-K 第 5.02 項）"
 
 
+async def read_kind(index_url: str) -> Optional[Dict[str, str]]:
+    """Open the filing index, then the 8-K document, and classify it; None when SEC could not be read."""
+    try:
+        doc = main_doc(await http.get(index_url, kind="text", headers=HDR, timeout=30, retries=1))
+        if not doc:
+            return {"what": "", "seat": ""}
+        return kind(_text(await http.get("https://www.sec.gov" + doc, kind="text", headers=HDR, timeout=30, retries=1)))
+    except Exception as e:  # noqa: BLE001
+        log.info("SEC 8-K %s: %s", index_url, e)
+        return None
+
+
 async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
     """Page the SEC current-8-K feed back to the last entry seen; record 5.02 filings by watched companies."""
     now = now or time.time()
     st = load()
     seen_ts = int(st.get("last_ts") or (now - 6 * 3600))
     alerts = {a["acc"]: a for a in st.get("alerts") or [] if now - a["ts"] < KEEP_S}
+    for a in alerts.values():                            # written under older rules → classify again from the filing
+        if a.get("item", "5.02") == "5.02" and a.get("v") != KIND_V:
+            k = await read_kind(a["url"])
+            if k is not None:
+                a.update(k, v=KIND_V, t=title_of(a["sym"], a["zh"], k))
     newest = seen_ts
     for p in range(PAGES):
         xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=30, retries=1)
@@ -106,14 +149,8 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
             if hit and item and r["acc"] and r["acc"] not in alerts and now - r["ts"] < KEEP_S:
                 k = {"what": "", "seat": ""}
                 if item == "5.02":                           # only personnel filings need the text read
-                    try:
-                        ix = await http.get(r["url"], kind="text", headers=HDR, timeout=30, retries=1)
-                        m = re.search(r'href="(/Archives/edgar/data/[^"]+?\.htm)"', ix)
-                        if m:
-                            k = kind(_text(await http.get("https://www.sec.gov" + m.group(1), kind="text", headers=HDR, timeout=30, retries=1)))
-                    except Exception as e:  # noqa: BLE001
-                        log.info("SEC 8-K %s: %s", r["acc"], e)
-                alerts[r["acc"]] = {"acc": r["acc"], "ts": r["ts"], "sym": hit[0], "zh": hit[1], "url": r["url"], **k, "item": item,
+                    k = (await read_kind(r["url"])) or k
+                alerts[r["acc"]] = {"acc": r["acc"], "ts": r["ts"], "sym": hit[0], "zh": hit[1], "url": r["url"], **k, "item": item, "v": KIND_V,
                                     "t": title_of(hit[0], hit[1], k, item)}
         if min(r["ts"] for r in rows) <= seen_ts:
             break

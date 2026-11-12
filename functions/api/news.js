@@ -105,16 +105,38 @@ export function parseSec(xml, watch) {
   return out;
 }
 
-// what the filing says, from its first pages: departure / appointment / pay only, and which seat (CEO, CFO, chair, director)
+// what the filing says (same rules as wsb/data/sec_officers.kind): departure / appointment / pay, and the seat, judged on the
+// sentence that carries the action — the item's standard heading and the new directors' biographies are left out
 export function kind(text) {
   const t = text.slice(0, 12000);
   const i = t.search(/Item\s*5\.02/i);
-  const w = i >= 0 ? t.slice(i, i + 4000) : t;
-  const what = /resign|step(?:ped|s)? down|retire|depart|terminat|will not stand|leave the company/i.test(w) ? "離職"
-    : /appoint|named|elect|promot/i.test(w) ? "任命" : /compensat|bonus|award|salary|incentive/i.test(w) ? "薪酬安排" : "";
-  const seat = /Chief Executive Officer|CEO/.test(w) ? "執行長" : /Chief Financial Officer|CFO/.test(w) ? "財務長"
-    : /Chair(?:man|woman|person)? of the Board|Chair/.test(w) ? "董事長" : /President/.test(w) ? "總裁" : /director/i.test(w) ? "董事" : "";
+  let w = i >= 0 ? t.slice(i, i + 4000) : t;
+  w = w.replace(/Item\s*5\.02[.:]?\s*Departure of Directors[\s\S]*?Compensatory Arrangements of Certain Officers\.?/i, " ").split(/Item\s*9\.01/i)[0];
+  const sents = w.split(/(?<=[.;])\s+/);
+  const rules = [["離職", /resign|step(?:ped|s)? down|retire|depart|terminat|will not stand|leave the company/i],
+    ["任命", /appoint|named|elect|promot/i], ["薪酬安排", /compensat|bonus|award|salary|incentive/i]];
+  let what = "", sent = "";
+  for (const [lab, rx] of rules) {
+    sent = sents.find((x) => rx.test(x)) || "";
+    if (sent) { what = lab; break; }
+  }
+  let seat = "";
+  if (what === "離職" || what === "任命") {
+    seat = /Chief Executive Officer|\bCEO\b/.test(sent) ? "執行長" : /Chief Financial Officer|\bCFO\b/.test(sent) ? "財務長"
+      : /Chief Operating Officer|\bCOO\b/.test(sent) ? "營運長" : /Chair(?:man|woman|person)? of the Board|Chair\b/.test(sent) ? "董事長"
+      : /independent director|to (?:its|the|our) Board|as (?:a )?director|board of directors/i.test(sent) ? "董事"
+      : /President/.test(sent) ? "總裁" : /director|Board/i.test(sent) ? "董事" : "";
+  }
   return { what, seat };
+}
+
+// the 8-K document itself from a filing index page (the row typed 8-K), not an exhibit such as the press release
+export function mainDoc(html) {
+  for (const row of html.match(/<tr[\s\S]*?<\/tr>/gi) || []) {
+    const m = row.match(/href="(?:\/ix\?doc=)?(\/Archives\/edgar\/data\/[^"]+?\.htm)"/);
+    if (m && />\s*8-K\s*</.test(row)) return m[1];
+  }
+  return "";
 }
 
 async function secItems(ctx) {
@@ -128,7 +150,7 @@ async function secItems(ctx) {
     for (const x of items.filter((y) => y.item === "5.02").slice(0, 5)) {   // personnel: read the filing itself (rare)
       try {
         const ix = await fetch(x.u, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } });
-        const doc = ((await ix.text()).match(/href="(\/Archives\/edgar\/data\/[^"]+?\.htm)"/) || [])[1];
+        const doc = mainDoc(await ix.text());
         if (!doc) continue;
         const r = await fetch("https://www.sec.gov" + doc, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } });
         const k = kind(unesc(await r.text()));
