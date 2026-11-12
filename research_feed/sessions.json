@@ -1,6 +1,99 @@
 {
  "items": [
   {
+   "date": "2026-11-12",
+   "phase": "盤前",
+   "at": "21:03",
+   "one": "盤前市場被輝達執行長黃仁勳的風波壓住：董事會傳出可能撤換他，輝達盤前約 -4.9%（CNBC 標題寫盤後曾跌 8%），AI 股前一天的大漲今天要接受考驗。",
+   "chain": [
+    {
+     "step": "發生什麼",
+     "text": "傳輝達董事會討論撤換執行長黃仁勳；他涉與疑似中國間諜的婚外情，FBI 也在查",
+     "time": "台北 11/12 清晨至中午",
+     "src": "MarketWatch／中央社／BBC"
+    },
+    {
+     "step": "最先動的",
+     "text": "輝達盤前 160.45、較昨收 168.80 約 -4.9%；CNBC 標題稱曾跌 8%"
+    },
+    {
+     "step": "怎麼傳下去",
+     "text": "AI 龍頭出事，市場怕整條 AI 供應鏈受影響；路透標題稱那斯達克、標普期貨下跌"
+    },
+    {
+     "step": "影響到誰",
+     "text": "台灣 AI 伺服器供應鏈、晶片股；歐股創高，顯示壓力集中在 AI"
+    }
+   ],
+   "story": [
+    "今天美股開盤前，最大的事是輝達。輝達是做 AI 晶片的龍頭，市值很大，很多 AI 公司都靠它供貨。《華爾街日報》與中央社報導，執行長黃仁勳涉及第二宗婚外情，對象與疑似替中國做事的女子有關；BBC 說 FBI 在調查，輝達已請紐約的 Wachtell 律師事務所獨立調查，輝達市值自上週五以來蒸發約 5,000 億美元。",
+    "人怕什麼？投資人怕兩件事：一是輝達換掉靈魂人物，AI 計畫會不會亂；二是華盛頓趁機收緊對中國的晶片出口管制（CNBC 標題寫在川普與習近平會面前）。錢往哪裡走？輝達盤前下跌，MarketWatch 也提到科技股可能出現「劇烈反彈」，但有策略師提醒別急著相信（只看到標題）。",
+    "時間檢查：MarketWatch 在美東約 23:41 報導輝達盤後跌 8%，我查到輝達 5 分鐘線在美東 4 點已在 161 左右，盤前一路在 160 到 164 之間，方向和時間對得上。但油價、美元、10 年期殖利率都沒有大動（油價 -0.9%、美元 +0.02%），所以今天的第一張骨牌是公司事件，不是總經消息。",
+    "我的判斷是：昨天 CoreWeave 財報帶動半導體指數大漲 5.7%，今天輝達事件正好打在這個反彈上。昨天晚上報導時輝達曾先反彈，今天又轉弱，說明市場對這件事還沒定論。歐股創高，我沒有看到風險擴散到全球，但這只是盤前，開盤後要看 AMD、台積電這些同族群會不會一起被拖下去。"
+   ],
+   "movers": [
+    {
+     "sym": "NVDA",
+     "name": "輝達",
+     "chg": -4.92,
+     "why": "傳董事會討論撤換執行長黃仁勳，MarketWatch、中央社、BBC 皆有報導，時間對得上（盤前價 160.45，昨收 168.80）"
+    }
+   ],
+   "macro": [
+    {
+     "name": "景氣",
+     "read": "今天沒有重要美國數據；英國第 3 季 GDP 季增 0.7%，CNBC 稱 AI 是「額外成長引擎」，AI 熱度仍在。"
+    },
+    {
+     "name": "通膨",
+     "read": "10 月 CPI 月增 0.4%、高於預期的 0.3%（BBC）；明晚 PPI（批發物價）預期 0.4%，物價壓力還沒退。"
+    },
+    {
+     "name": "利率與聯準會",
+     "read": "10 年期殖利率 4.998%，昨收小升 0.3%，CNBC 說殖利率小升、等待通膨與房市數據；BBC 提到聯準會 12 月可能升息，下次決議 12/9。"
+    },
+    {
+     "name": "信用",
+     "read": "高收益債 ETF（HYG）昨 +0.22%、投資級債 ETF（LQD）+0.08%，VIX 盤前 18.34、較昨天 +4.9%，信用沒有緊張，只是情緒轉謹慎。"
+    },
+    {
+     "name": "美元與台幣",
+     "read": "美元指數 102.92、幾乎持平；美元兌台幣 32.93、小升 0.2%，台幣小貶。"
+    },
+    {
+     "name": "油價",
+     "read": "紐約原油 85.76、-0.9%，布蘭特 92.07、-0.7%；沒有找到時間對得上的消息，美俄烏談判（BBC，美特使在莫斯科見普丁）暫時沒有推動油價。黃金 -1.5% 至 3,941。"
+    }
+   ],
+   "next": "今晚 21:30 開盤後，看輝達董事會有沒有結論、AMD 與台積電是否同跌；明晚 21:30 看 PPI。",
+   "sources": [
+    {
+     "name": "MarketWatch：Nasdaq futures fall as Nvidia sinks 8% after hours",
+     "url": "https://www.marketwatch.com/story/nasdaq-futures-fall-as-nvidia-sinks-8-after-hours-on-rep"
+    },
+    {
+     "name": "CNBC：Nvidia stock falls 8% as investors await Jensen Huang's fate",
+     "url": "https://www.cnbc.com/2026/11/12/nvidia-nvda-jensen-huang-second-affair.html"
+    },
+    {
+     "name": "BBC：Nvidia hires major US law firm to investigate alleged Chinese spy affair",
+     "url": "https://www.bbc.co.uk/news/articles/ck1wvwwl3x0go"
+    },
+    {
+     "name": "BBC：US inflation higher than expected in October",
+     "url": "https://www.bbc.co.uk/news/articles/cwy8lx3pg4k2o"
+    },
+    {
+     "name": "BBC：Ukraine says military Starlink disrupted as US envoys meet Putin",
+     "url": "https://www.bbc.co.uk/news/articles/cwrkgmymk55zo"
+    },
+    {
+     "name": "本站即時新聞彙整",
+     "url": "https://wallstreet-sentinel.pages.dev/api/news"
+    }
+   ]
+  },
+  {
    "date": "2026-11-11",
    "phase": "盤後",
    "at": "06:05",
@@ -1269,5 +1362,5 @@
    ]
   }
  ],
- "updated": "2026-11-12 06:05 台北"
+ "updated": "2026-11-12 21:03 台北"
 }
