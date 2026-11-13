@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from wsb.analytics import breaking as BR  # noqa: E402
 
-NOW = datetime(2026, 11, 9, 15, 0, tzinfo=timezone.utc)        # 23:00 台北: not a quiet window
+NOW = datetime(2026, 11, 9, 14, 0, tzinfo=timezone.utc)        # 22:00 台北: not a quiet window
 
 
 def eng(sig):
@@ -34,10 +34,12 @@ def test_rule():
 
 def test_guards():
     hs = BR.hits(eng({"^GSPC": -6.0}), NOW)
-    quiet = datetime(2026, 11, 9, 11, 30, tzinfo=timezone.utc)      # 19:30 台北: the evening edition is about to run
+    quiet = datetime(2026, 11, 9, 11, 40, tzinfo=timezone.utc)      # 19:40 台北: the evening edition is about to run
     assert not BR.decide(hs, {}, quiet)["fire"]
     assert not BR.decide(hs, {"last_ts": NOW.timestamp() - 3600}, NOW)["fire"]
-    assert BR.decide(hs, {"last_ts": NOW.timestamp() - 13 * 3600}, NOW)["fire"]
+    assert BR.decide(hs, {"last_ts": NOW.timestamp() - 7 * 3600}, NOW)["fire"]                # 6-hour cooldown
+    assert ("19:30", "20:00") in BR.QUIET and ("03:00", "03:30") in BR.QUIET and len(BR.QUIET) == 8
+    assert BR.decide(hs, {}, datetime(2026, 11, 9, 11, 0, tzinfo=timezone.utc))["fire"]        # 19:00: 30 min rule, not an hour
     d = BR.build(eng({"^GSPC": -6.0}), NOW)
     assert d["fire"] and not BR.build(eng({"^GSPC": -6.0}), NOW)["fire"]   # state saved → cooldown
 

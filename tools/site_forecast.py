@@ -73,7 +73,7 @@ def make_audio(dest: Path) -> None:
         log.exception("macro audio failed")
 
 
-def voice_history(x: Dict, keep: int = 12) -> List[Dict]:
+def voice_history(x: Dict, keep: int = 24) -> List[Dict]:
     """Every edition the build has seen (the routines overwrite macro_voice.json), newest first. Kept in data_cache/econ_* so
     the Actions cache carries it between builds; the current file is added when its `updated` is new."""
     try:
@@ -108,7 +108,7 @@ def sec_macro_voice(eng) -> str:
     x = voice()
     if not x.get("script"):
         return ""
-    earlier = [h for h in voice_history(x) if h.get("updated") != x.get("updated") and h.get("script")][:5]
+    earlier = [h for h in voice_history(x) if h.get("updated") != x.get("updated") and h.get("script")][:8]   # a day of editions
     player = (f'<audio controls preload="none" style="width:100%" src="market/macro.mp3?v={AUDIO["v"]}">你的瀏覽器不支援播放。</audio>' if AUDIO["v"] else "")
     prev = ""
     if earlier:

@@ -2,7 +2,7 @@
 
 規則（2015 年起回測平均每年約 5 次，抓到的是 2020 年 3 月、2024-08-05、2025 年 4 月這類日子）：
   任一主要行情的單日變動 ≥ 自己近 60 日波動的 5 倍，或同一天有 2 項 ≥ 4 倍。
-冷卻 12 小時；台北 05:30–06:30、13:10–14:10、19:00–20:00 不發（早班、午班、晚班馬上就到）。
+冷卻 6 小時；每一班固定口播（約每 3 小時一班，見 EDITIONS）前 30 分鐘不發，因為那一班馬上就到。
 每次建置寫 breaking.json（公開，只有行情數字），fire=true 時 workflow 才去叫 routine。
 狀態存 data_cache/econ_breaking.json（CI 保留 econ_*）。描述現況，不是預測。"""
 from __future__ import annotations
@@ -19,9 +19,20 @@ from ..config import DATA_DIR, SETTINGS
 FILE = DATA_DIR / "econ_breaking.json"
 ASSETS = ("^GSPC", "^NDX", "^VIX", "^TNX", "HYG", "DX-Y.NYB", "JPY=X", "BZ=F", "GC=F", "^TWII")
 ONE, TWO = 5.0, 4.0
-COOLDOWN = 12 * 3600
+COOLDOWN = 6 * 3600             # 6 h since 2026-11-14 (was 12 h): the user asked for extra editions on urgent news
 TPE = timezone(timedelta(hours=8))
-QUIET = (("05:30", "06:30"), ("13:10", "14:10"), ("19:00", "20:00"))     # an hour before 早班 / 午班 (11-14) / 晚班
+# 口播約每 3 小時一班（2026-11-14）：早班 06:30、盤中 09:30／12:30、午班 14:10、盤中 17:30、晚班 20:00、盤中 23:30／03:30。
+# 每一班前 30 分鐘不發加班（那一班馬上就到，會講同一件事）
+EDITIONS = ("06:30", "09:30", "12:30", "14:10", "17:30", "20:00", "23:30", "03:30")
+
+
+def _before(hhmm: str, minutes: int = 30) -> str:
+    h, m = int(hhmm[:2]), int(hhmm[3:])
+    t = (h * 60 + m - minutes) % 1440
+    return f"{t // 60:02d}:{t % 60:02d}"
+
+
+QUIET = tuple((_before(t), t) for t in EDITIONS)
 
 
 def _load() -> Dict:
@@ -97,7 +108,7 @@ def decide(hs: List[Dict], state: Dict, now: datetime, ev: Optional[List[Dict]] 
     quiet = any(a <= hm < b for a, b in QUIET)
     cool = now.timestamp() - float(state.get("last_ts") or 0) < COOLDOWN
     fire = trig and not quiet and not cool
-    why = ("沒有達到條件" if not trig else "早班、午班或晚班馬上就到" if quiet else "12 小時內已經加班過" if cool else "發車")
+    why = ("沒有達到條件" if not trig else "下一班固定口播 30 分鐘內就到" if quiet else "6 小時內已經加班過" if cool else "發車")
     return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why, "reasons": ev,
             "rule": (f"任一行情 ≥ 平常波動 {ONE:g} 倍，或兩項 ≥ {TWO:g} 倍；或族群紅燈／兩個族群黃燈；"
                      "或 3 小時內有 SEC 重大申報（破產、資安、減損、下市通知、財報重編、執行長／財務長／董事長離職）")}
