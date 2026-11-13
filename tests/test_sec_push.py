@@ -38,9 +38,11 @@ def main() -> None:
 
     async def fake_dm(sess):
         return "dm"
-    real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel)
+    async def no_sectors(sess, now):
+        return []
+    real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts)
     try:
-        SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list = fake_refresh, fake_impact, fake_post, fake_dm, lambda: {}
+        SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.sector_alerts = fake_refresh, fake_impact, fake_post, fake_dm, lambda: {}, no_sectors
         P.DISCORD_TOKEN, P.alert_channel = "t", lambda: "123"
         n = asyncio.run(P.run_once(now=1200))
         assert n == 3 and sent[0].startswith("🔴 SEC 申報：某公司") and sent[1].startswith("🔴 SEC 申報：輝達"), sent   # worst first; 7h-old skipped
@@ -54,7 +56,7 @@ def main() -> None:
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
-        SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel = real
+        SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
     print("test_sec_push ok")
 
 

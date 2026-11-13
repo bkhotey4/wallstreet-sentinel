@@ -30,7 +30,9 @@ def test_anomaly_scan():
     h = pd.DataFrame({"^GSPC": 100 * np.cumprod(1 + rng.normal(0, 0.01, 300)), "JPY=X": [150.0] * 300}, index=idx)
     sig = SL.sigmas(types.SimpleNamespace(market=types.SimpleNamespace(history=h)))
     assert 0.8 < sig["^GSPC"] < 1.2 and "JPY=X" not in sig            # flat series: no normal move to compare against
-    assert SL.sigmas(None) == {} and len(SL.EXTRA) <= 25                 # one /api/quote request carries every symbol
+    assert SL.sigmas(None) == {} and "i+=20" in SL.JS                   # symbols go out in batches of 20 (the service takes 25)
+    assert all(s[0] in SL.EXTRA for s in __import__("wsb.analytics.sector_shock", fromlist=["x"]).SECTORS)   # 族群急跌 is scanned live
+    assert 'id="lqsec"' in SL.bar_html(None) and "data-ssig=" in SL.bar_html(None)
     bar = SL.bar_html(types.SimpleNamespace(market=types.SimpleNamespace(history=h)))
     assert "data-sig=" in bar and json.dumps(sig).replace('"', "&quot;") in bar and 'id="lqan"' in bar
     assert all(a[0] in SL.EXTRA for a in SL.ANOM) and all(v[3] in ("up", "down") for v in SL.VOLS)

@@ -155,6 +155,73 @@ def embed_of(a: Dict, lines: List[str]) -> Dict:
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(a["ts"]))}
 
 
+NEWS = "https://wallstreet-sentinel.pages.dev/api/news"
+
+
+def sector_sigmas() -> Dict[str, float]:
+    """One year of daily % changes per sector ETF, from the bot's own price history (same σ the site uses)."""
+    from wsb.analytics import sector_shock as SS
+    try:
+        h = pd.read_pickle(DATA_DIR / "history_close.pkl")
+    except Exception:  # noqa: BLE001
+        return {}
+    out = {}
+    for sym, *_ in SS.SECTORS:
+        if sym in h.columns:
+            v = SS.robust_sd(h[sym])
+            if v:
+                out[sym] = v
+    return out
+
+
+async def sector_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
+    """Sectors down ≥ 2× their normal day (and ≥ 1.5 %), with same-hours headlines and the Taiwan names that follow them."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from wsb.analytics import news_impact as NI
+    from wsb.analytics import sector_shock as SS
+    from wsb.data.stocks import universe
+    syms = [s[0] for s in SS.SECTORS]
+    q: Dict = {}
+    for i in range(0, len(syms), 20):
+        async with sess.get(QUOTE, params={"s": ",".join(syms[i:i + 20])}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            q.update((await r.json()).get("q") or {})
+    q = {k: v for k, v in q.items() if v.get("t") and now - float(v["t"]) < 20 * 3600}     # stale quotes never alert
+    try:
+        async with sess.get(NEWS, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            news = (await r.json()).get("items") or []
+    except Exception:  # noqa: BLE001
+        news = []
+    hits = SS.check(q, sector_sigmas(), news, now)
+    if not hits:
+        return []
+    cl = _close()
+    try:
+        h = pd.read_pickle(DATA_DIR / "history_close.pkl")
+    except Exception:  # noqa: BLE001
+        h = pd.DataFrame()
+    allu = {k: (v[0], v[1] if len(v) > 1 else k, "tw") for k, v in ((universe().get("tw") or {}).get("symbols") or {}).items()}
+    for a in hits:
+        a["day"] = datetime.fromtimestamp(float(a["t"]), ZoneInfo("America/New_York")).date().isoformat()
+        a["tw"] = []
+        if not cl.empty and a["sym"] in getattr(h, "columns", []):
+            both = cl.join(h[[a["sym"]]], how="outer")
+            a["tw"] = NI.tw_direct(both, a["sym"], [k for k in allu if k in cl.columns], allu)
+    return hits
+
+
+def sector_embed(a: Dict) -> Dict:
+    from wsb.analytics import sector_shock as SS
+    tpe = lambda ts: time.strftime("%m/%d %H:%M", time.gmtime(float(ts) + 8 * 3600))  # noqa: E731
+    lines = [SS.sentence(a, tpe)]
+    if a.get("tw"):
+        lines.append("台股隔天（樣本外驗證過的連動）：" + "、".join(f'{p["zh"]} 約 {p["beta"] * a["chg"]:+.1f}%' for p in a["tw"]))
+    return {"title": f'{"🔴" if a["lv"] >= 2 else "🟠"} 族群急跌：{a["zh"]} {a["chg"]:+.1f}%（平常一天的 {abs(a["z"]):.1f} 倍）',
+            "color": 0xE5484D if a["lv"] >= 2 else 0xD97706,
+            "description": ("\n".join(lines) + "\n新聞只代表同時段、同主題，不等於就是原因；台股估算是過去平均關係，不是預測。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 族群急跌警報 · 不構成投資建議"}}
+
+
 async def run_once(now: Optional[float] = None) -> int:
     from wsb.data import http
     from wsb.data import sec_officers as SOF
@@ -186,6 +253,19 @@ async def run_once(now: Optional[float] = None) -> int:
                     if dm:
                         await post(sess, dm, e)
             await asyncio.sleep(1)
+        try:                                               # 族群急跌（same rules as the site's live bar）
+            for a in await sector_alerts(sess, now):
+                key = f'sector:{a["sym"]}:{a["day"]}:{a["lv"]}'
+                if key in done or (a["lv"] == 1 and f'sector:{a["sym"]}:{a["day"]}:2' in done):
+                    continue
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", sector_embed(a)):
+                    done.add(key)
+                    sent += 1
+                await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("sector check failed: %s", e)
     PUSHED.write_text(json.dumps({"acc": sorted(done)[-300:], "ts": int(now)}), encoding="utf-8")
     try:
         s = await http.session()

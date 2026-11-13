@@ -34,6 +34,10 @@ ANOM = [("ES=F", "標普期貨", "S&P futures"), ("NQ=F", "那指期貨", "Nasda
         ("^VIX", "VIX", "VIX"), ("^TNX", "美債 10 年殖利率", "10Y yield"), ("DX-Y.NYB", "美元指數", "Dollar index"), ("JPY=X", "美元兌日圓", "USD/JPY"),
         ("TWD=X", "美元兌台幣", "USD/TWD"), ("GC=F", "黃金", "Gold"), ("BZ=F", "布蘭特原油", "Brent"), ("BTC-USD", "比特幣", "Bitcoin"), ("HYG", "高收益債 ETF", "HYG"),
         ("IEF", "7–10 年美債 ETF", "IEF (7-10y Treasuries)"), ("TLT", "20 年以上長債 ETF", "TLT (20y+ Treasuries)")]
+# 族群急跌警報 (wsb/analytics/sector_shock): the sector ETFs join the unusual-move scan, and a fall of ≥ 2× normal gets one plain
+# sentence on top of the bar with the headlines of the same hours
+from wsb.analytics import sector_shock as SS  # noqa: E402
+ANOM += [(sym, zh, en) for sym, zh, en, _kw in SS.SECTORS if sym not in {a[0] for a in ANOM}]
 ANOM_Y, ANOM_R = 2.0, 3.0
 # which direction is the stress for each market (default: a fall).  A big move the other way is shown green, not as a warning
 BAD_UP = ("^VIX", "^TNX", "DX-Y.NYB", "TWD=X", "BZ=F")       # fear, rates, dollar, TWD weakness, oil spikes
@@ -126,6 +130,23 @@ def sigmas(eng) -> dict:
     return out
 
 
+def sector_sigmas(eng) -> dict:
+    """族群急跌 uses the robust normal day (median absolute deviation), see sector_shock.robust_sd."""
+    try:
+        h = eng.market.history
+    except Exception:  # noqa: BLE001
+        return {}
+    if h is None or not hasattr(h, "columns"):
+        return {}
+    out = {}
+    for sym, *_ in SS.SECTORS:
+        if sym in h.columns:
+            v = SS.robust_sd(h[sym])
+            if v:
+                out[sym] = round(v, 4)
+    return out
+
+
 def credit_betas(eng) -> dict:
     """{HYG / LQD: {b: rate beta on IEF, sd: daily std of the residual (%)}} from one year of daily closes — data-driven
     instead of hard-coded durations (both drift as the funds' holdings change)."""
@@ -153,6 +174,7 @@ def credit_betas(eng) -> dict:
 def bar_html(eng=None) -> str:
     """Status line + live threshold lights; hidden until the first live quote arrives."""
     sig = html.escape(json.dumps(sigmas(eng) if eng is not None else {}), quote=True)
+    ssig = html.escape(json.dumps(sector_sigmas(eng) if eng is not None else {}), quote=True)
     crb = html.escape(json.dumps(credit_betas(eng) if eng is not None else {}), quote=True)
     note = ("四層即時燈號，每分鐘自動檢查：①固定門檻（上面第一排）；②異常波動掃描：17 個市場（含盤前就在交易的標普／那指期貨），"
             "加上三個風向球（私募信貸 BDC、區域銀行、靠借錢蓋 AI 算力中心的公司），各自和自己過去一年的平常單日波動比，"
@@ -169,8 +191,8 @@ def bar_html(eng=None) -> str:
             "模型判斷（AI 判斷、泡沫分組等）仍每小時更新。報價：Yahoo Finance，約有數分鐘延遲。")
     en = ("Three live layers, checked every minute: fixed thresholds; each market vs its own normal daily move (2x yellow, 3x red, "
           "index futures included for pre-market); SPY/QQQ volume vs the same time on prior days, and short-ETF volume. Reminders, not forecasts.")
-    return (f'<div class="lqbar" id="lqbar" hidden data-sig="{sig}" data-cr="{crb}"><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
-            '<div id="lqal" class="lqal"></div><div id="lqan" class="lqal"></div><button type="button" id="lqmore" class="lqmore" hidden></button>'
+    return (f'<div class="lqbar" id="lqbar" hidden data-sig="{sig}" data-ssig="{ssig}" data-cr="{crb}"><div class="lqhead"><b id="lqone"></b><span id="lqst" class="lqst"></span></div>'
+            '<div id="lqsec" class="lqsec" hidden></div><div id="lqal" class="lqal"></div><div id="lqan" class="lqal"></div><button type="button" id="lqmore" class="lqmore" hidden></button>'
             f'<details class="lqd"><summary class="lqnote">{T("燈號規則", "Rules")}</summary><p class="lqnote">{T(note, en)}</p></details></div>')
 
 
@@ -205,6 +227,7 @@ CSS = (".lqbar{margin:8px 0 4px;padding:9px 12px;border:1px solid var(--bd);bord
        ".lqchip.hit{border-color:var(--dn);color:var(--dn);font-weight:600}.lqchip.ok{color:var(--mu)}"
        ".lqbar:not(.lqall) .lqchip.ok{display:none}.lqmore{font-size:12.5px;padding:2px 9px;margin-top:4px;border-radius:999px;border:1px dashed var(--bd);background:none;color:var(--mu);cursor:pointer}"
        ".lqchip.warn{border-color:#d97706;color:#b45309;font-weight:600}.lqchip.good{border-color:var(--up);color:var(--up);font-weight:600}"
+       ".lqsec{margin:6px 0;padding:6px 10px;border-left:3px solid var(--dn);background:var(--wash);line-height:1.6;font-size:13.5px}"
        ".lqchip.info{border-color:var(--ac);color:var(--ac)}.lqd summary{cursor:pointer}"
        ".lqnote{margin:4px 0 0;font-size:11.5px;color:var(--mu)}.tile .asof.lv{color:var(--up)}"
        ".wlt td,.wlt th{white-space:nowrap}.wlx{background:none;border:0;color:var(--mu);cursor:pointer;font-size:14px}.wlx:hover{color:var(--dn)}"
@@ -212,7 +235,7 @@ CSS = (".lqbar{margin:8px 0 4px;padding:9px 12px;border:1px solid var(--bd);bord
        "border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px}.lqout{font-size:15px;margin:6px 0}.lqoff{font-size:12.5px;color:var(--mu)}")
 
 _JS = r"""
-(function(){var R=__RULES__,EX=__EXTRA__,POLL=__POLL__*1000,AN=__ANOM__,VS=__VOLS__,BK=__BASKETS__,CB=__COMBOS__,BUP=__BUP__,NEU=__NEU__,AY=__AY__,AR=__AR__,VX=__VX__,IVY=__IVY__,IVP=__IVP__,CR=__CREDIT__,IVR=__IVR__,SPP=__SPP__,SPX=__SPX__,SPM=__SPM__,ivq={},ivT=0,ivBad=0;
+(function(){var R=__RULES__,EX=__EXTRA__,POLL=__POLL__*1000,AN=__ANOM__,VS=__VOLS__,BK=__BASKETS__,CB=__COMBOS__,BUP=__BUP__,NEU=__NEU__,AY=__AY__,AR=__AR__,VX=__VX__,IVY=__IVY__,IVP=__IVP__,CR=__CREDIT__,IVR=__IVR__,SPP=__SPP__,SPX=__SPX__,SPM=__SPM__,SECT=__SECT__,SMAC=__SMAC__,SZY=__SZY__,SZR=__SZR__,SMIN=__SMIN__,SNH=__SNH__,ivq={},ivT=0,ivBad=0;
  var bar=document.getElementById('lqbar');var tiles=[].slice.call(document.querySelectorAll('.tile[data-lq]'));
  var want={};tiles.forEach(function(t){want[t.getAttribute('data-lq')]=1;});EX.forEach(function(s){want[s]=1;});
  var dead=false,lastOk=0,data={};function en(){return document.documentElement.lang==='en';}
@@ -283,7 +306,24 @@ _JS = r"""
    else if(ivn&&!sc.some(function(o){return o.txt&&(o.lv>0||o.good);}))h+='<span class="lqchip ok">○ '+(en()?'Intraday detail: '+ivn+' markets, yield speed, VWAP and spreads normal'
      :'盤中細項：'+ivn+' 檔有 5 分鐘資料，利率速度、均價（VWAP）、推算價差都正常')+'</span>';
    el.innerHTML=h;return hits;}
- function paintRules(q){var hits=[],h='',nr=0;R.forEach(function(r){var v=val(r,q);if(v==null)return;nr++;var hit=r.op==='>='?v>=r.v:v<=r.v;if(hit)hits.push(r);
+ // 族群急跌：哪個族群跌到平常的 2 倍以上，配對過去 6 小時同主題的新聞（找不到就說原因還不清楚）
+ var NEWS=[],nT=0,SSIG={};try{SSIG=JSON.parse((bar&&bar.getAttribute('data-ssig'))||'{}');}catch(e){}
+ function news(){if(Date.now()-nT<240000)return;nT=Date.now();fetch('api/news',{cache:'no-store'}).then(function(r){return r.ok?r.json():{};}).then(function(d){NEWS=d.items||[];if(LASTQ)paintSector(LASTQ);}).catch(function(){});}
+ var LASTQ=null;
+ function nmatch(kw,k){var rx=new RegExp(kw,'i'),now=Date.now()/1000;return NEWS.filter(function(x){return now-x.ts<=SNH*3600&&rx.test(x.t);}).slice(0,k);}
+ function escH(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+ function paintSector(q){LASTQ=q;var el=document.getElementById('lqsec');if(!el)return;var hits=[];
+   SECT.forEach(function(s){var x=q[s[0]],sd=SSIG[s[0]]||SIG[s[0]];if(!x||x.chg==null||!sd)return;var z=x.chg/sd;if(x.chg>-SMIN||z>-SZY)return;
+     hits.push({s:s,chg:x.chg,z:z,red:z<=-SZR});});
+   if(!hits.length){el.hidden=true;el.innerHTML='';return;}
+   hits.sort(function(a,b){return a.z-b.z;});var mac=nmatch(SMAC,1);
+   var h=hits.map(function(o){var ns=nmatch(o.s[3],2),t=(o.red?'🔴 ':'🟠 ')+'<b>族群急跌：'+escH(o.s[1])+' '+sg(o.chg,1)+'%</b>（平常一天的 '+f(Math.abs(o.z),1)+' 倍）';
+     t+=ns.length?'；同時段新聞：'+ns.map(function(n){return '<a href="'+escH(n.u)+'" target="_blank" rel="noopener">〈'+escH(n.t.slice(0,80))+'〉</a>（'+hhmm(n.ts)+'）';}).join('、')
+       :'；找不到時間和主題都對得上的新聞，原因還不清楚';
+     return '<div>'+t+'</div>';}).join('');
+   if(mac.length)h+='<div class="small">同時段的總經消息：<a href="'+escH(mac[0].u)+'" target="_blank" rel="noopener">〈'+escH(mac[0].t.slice(0,90))+'〉</a>（'+hhmm(mac[0].ts)+'）</div>';
+   el.innerHTML=h+'<div class="small muted">族群 ETF 今天跌幅 ÷ 它平常一天的幅度（過去一年的中位數絕對偏差，不被少數崩盤日撐大）；新聞只代表同時段、同主題，不等於就是原因。</div>';el.hidden=false;}
+ function paintRules(q){news();paintSector(q);var hits=[],h='',nr=0;R.forEach(function(r){var v=val(r,q);if(v==null)return;nr++;var hit=r.op==='>='?v>=r.v:v<=r.v;if(hit)hits.push(r);
    h+='<span class="lqchip '+(hit?'hit':'ok')+'">'+(hit?'● ':'○ ')+(en()?r.en:r.zh)+'：'+(r.f==='chg'?sg(v,r.dg)+'%':f(v,r.dg))+'</span>';});
    document.getElementById('lqal').innerHTML=h;var one=document.getElementById('lqone');var sh=paintScan(q),red=sh.filter(function(o){return o.lv>=2;}).length,yel=sh.length-red;
    var all=hits.length+red,gd=(window.__lqgood||[]),gc=gd.filter(function(o){return o.combo;})[0],cv=window.__lqcov||{sc:0,vol:0,cb:0},
@@ -355,4 +395,6 @@ JS = (_JS.replace("__RULES__", json.dumps(RULES, ensure_ascii=False)).replace("_
       .replace("__IVY__", json.dumps(IV_Y, ensure_ascii=False)).replace("__IVP__", json.dumps(IV_P, ensure_ascii=False))
       .replace("__CREDIT__", json.dumps(CREDIT, ensure_ascii=False)).replace("__IVR__", str(IV_RVOL)).replace("__SPP__", str(SPR_P))
       .replace("__SPX__", str(SPR_X)).replace("__SPM__", str(SPR_MIN))
+      .replace("__SECT__", json.dumps(SS.SECTORS, ensure_ascii=False)).replace("__SMAC__", json.dumps(SS.MACRO))
+      .replace("__SZY__", str(SS.Z_WARN)).replace("__SZR__", str(SS.Z_RED)).replace("__SMIN__", str(SS.MIN_DROP)).replace("__SNH__", str(SS.NEWS_H))
       .replace("__AY__", str(ANOM_Y)).replace("__AR__", str(ANOM_R)).replace("__VX__", str(VOL_X)))
