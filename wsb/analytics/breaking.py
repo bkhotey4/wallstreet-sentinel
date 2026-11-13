@@ -2,7 +2,7 @@
 
 規則（2015 年起回測平均每年約 5 次，抓到的是 2020 年 3 月、2024-08-05、2025 年 4 月這類日子）：
   任一主要行情的單日變動 ≥ 自己近 60 日波動的 5 倍，或同一天有 2 項 ≥ 4 倍。
-冷卻 12 小時；台北 05:30–06:30 與 19:00–20:00 不發（早班、晚班馬上就到）。
+冷卻 12 小時；台北 05:30–06:30、13:10–14:10、19:00–20:00 不發（早班、午班、晚班馬上就到）。
 每次建置寫 breaking.json（公開，只有行情數字），fire=true 時 workflow 才去叫 routine。
 狀態存 data_cache/econ_breaking.json（CI 保留 econ_*）。描述現況，不是預測。"""
 from __future__ import annotations
@@ -21,7 +21,7 @@ ASSETS = ("^GSPC", "^NDX", "^VIX", "^TNX", "HYG", "DX-Y.NYB", "JPY=X", "BZ=F", "
 ONE, TWO = 5.0, 4.0
 COOLDOWN = 12 * 3600
 TPE = timezone(timedelta(hours=8))
-QUIET = (("05:30", "06:30"), ("19:00", "20:00"))
+QUIET = (("05:30", "06:30"), ("13:10", "14:10"), ("19:00", "20:00"))     # an hour before 早班 / 午班 (11-14) / 晚班
 
 
 def _load() -> Dict:
@@ -97,7 +97,7 @@ def decide(hs: List[Dict], state: Dict, now: datetime, ev: Optional[List[Dict]] 
     quiet = any(a <= hm < b for a, b in QUIET)
     cool = now.timestamp() - float(state.get("last_ts") or 0) < COOLDOWN
     fire = trig and not quiet and not cool
-    why = ("沒有達到條件" if not trig else "早班或晚班馬上就到" if quiet else "12 小時內已經加班過" if cool else "發車")
+    why = ("沒有達到條件" if not trig else "早班、午班或晚班馬上就到" if quiet else "12 小時內已經加班過" if cool else "發車")
     return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why, "reasons": ev,
             "rule": (f"任一行情 ≥ 平常波動 {ONE:g} 倍，或兩項 ≥ {TWO:g} 倍；或族群紅燈／兩個族群黃燈；"
                      "或 3 小時內有 SEC 重大申報（破產、資安、減損、下市通知、財報重編、執行長／財務長／董事長離職）")}
