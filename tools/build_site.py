@@ -1864,11 +1864,6 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     (out / "index.html").write_text(page_html, encoding="utf-8")
     vb = re.search(r'id="liveb" data-b="(\d+)"', page_html)                 # same stamp as the page → open pages reload once
     (out / "version.json").write_text(json.dumps({"b": int(vb.group(1)) if vb else int(time.time())}), encoding="utf-8")
-    try:                                           # 緊急加班車：市場異常大動 → workflow 叫醒加班口播
-        from wsb.analytics import breaking as BRK
-        (out / "breaking.json").write_text(json.dumps(BRK.build(eng), ensure_ascii=False), encoding="utf-8")
-    except Exception:  # noqa: BLE001
-        log.exception("breaking check failed")
     try:                                           # SEC 人事申報警報：/api/news 用這份名單比對最新 8-K 第 5.02 項
         from tools import site_secwatch as SSW
         sw = SSW.build(eng)
@@ -1889,6 +1884,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         (out / "impact_map.json").write_text(json.dumps(NI.build(eng, sw["ciks"], spy), ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("sec watch list failed")
+    try:                                           # 緊急加班車：市場異常大動 → workflow 叫醒加班口播
+        from wsb.analytics import breaking as BRK
+        (out / "breaking.json").write_text(json.dumps(BRK.build(eng), ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("breaking check failed")
     (out / "alerts.json").write_text(json.dumps(getattr(eng, "web_alerts", None) or {"ts": 0, "items": []}, ensure_ascii=False), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")

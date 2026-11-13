@@ -106,6 +106,14 @@ ITEMS = {"5.02": "高層人事異動", "1.03": "破產或接管", "1.05": "重�
          "3.01": "收到下市或不符上市規定通知", "4.02": "過去財報不可再信賴（須重編）"}
 
 
+def severity(a: Dict) -> int:
+    """4 for the rare items (bankruptcy, cyber incident, impairment, delisting notice, restatement), +2 a departure,
+    +1 a top seat (CEO / CFO / chair): ≥ 3 is a filing worth an extra voice edition and a direct message."""
+    t = a.get("t", "")
+    return ((4 if a.get("item", "5.02") != "5.02" else 0) + (2 if "離職" in t else 0)
+            + (1 if re.search(r"執行長|財務長|董事長", t) else 0))
+
+
 def title_of(sym: str, zh: str, k: Dict[str, str], item: str = "5.02") -> str:
     if item != "5.02":
         return f"SEC 申報：{zh}（{sym}）{ITEMS[item]}（8-K 第 {item} 項）"

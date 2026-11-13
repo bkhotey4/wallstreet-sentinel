@@ -48,17 +48,59 @@ def hits(eng, now: Optional[datetime] = None) -> List[Dict]:
     return sorted(out, key=lambda h: -abs(h["sigma"]))
 
 
-def decide(hs: List[Dict], state: Dict, now: datetime) -> Dict:
+SEC_H = 3 * 3600                 # an SEC filing counts for the next 3 hours
+
+
+def events(eng, now: Optional[datetime] = None) -> List[Dict]:
+    """「有事才加班」的另外兩種事（user, 2026-11-14）：
+       * 族群急跌：任一族群紅燈（≥ 平常一天 3 倍），或兩個族群同時黃燈（≥ 2 倍且跌逾 1.5%），規則見 sector_shock
+       * SEC 重大申報（3 小時內）：破產、資安事件、減損、下市通知、財報重編，或執行長／財務長／董事長離職
+    [{kind, key, text}]；text 是給加班口播的白話原因。"""
+    now = now or datetime.now(timezone.utc)
+    out: List[Dict] = []
+    cut = (now - timedelta(days=2)).strftime("%Y-%m-%d")
+    try:
+        from . import sector_shock as SS
+        h = eng.market.history
+        lit = []
+        for sym, zh, _en, _kw in SS.SECTORS:
+            x = eng.market.q(sym)
+            if not x or x.get("chg_pct") is None or str(x.get("asof", "")) < cut or h is None or sym not in h.columns:
+                continue
+            sd = SS.robust_sd(h[sym])
+            lv = SS.level(float(x["chg_pct"]), sd)
+            if lv:
+                lit.append({"sym": sym, "zh": zh, "chg": float(x["chg_pct"]), "z": float(x["chg_pct"]) / sd, "lv": lv})
+        if any(a["lv"] >= 2 for a in lit) or len(lit) >= 2:
+            for a in sorted(lit, key=lambda a: a["z"]):
+                out.append({"kind": "sector", "key": f'sec:{a["sym"]}',
+                            "text": f'族群急跌：{a["zh"]} {a["chg"]:+.1f}%（平常一天的 {abs(a["z"]):.1f} 倍）'})
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from ..data import sec_officers as SOF
+        for a in SOF.load().get("alerts") or []:
+            if now.timestamp() - a["ts"] <= SEC_H and SOF.severity(a) >= 3:
+                out.append({"kind": "sec", "key": f'8k:{a["acc"]}', "text": a["t"], "url": a.get("url", "")})
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def decide(hs: List[Dict], state: Dict, now: datetime, ev: Optional[List[Dict]] = None) -> Dict:
     big = [h for h in hs if abs(h["sigma"]) >= ONE]
-    trig = bool(big) or len(hs) >= 2
-    key = "brk:" + now.astimezone(TPE).strftime("%Y-%m-%d") + ":" + ",".join(sorted(h["t"] for h in hs)) if trig else ""
+    ev = ev or []
+    trig = bool(big) or len(hs) >= 2 or bool(ev)
+    tags = sorted(h["t"] for h in hs) + sorted(e["key"] for e in ev)
+    key = "brk:" + now.astimezone(TPE).strftime("%Y-%m-%d") + ":" + ",".join(tags) if trig else ""
     hm = now.astimezone(TPE).strftime("%H:%M")
     quiet = any(a <= hm < b for a, b in QUIET)
     cool = now.timestamp() - float(state.get("last_ts") or 0) < COOLDOWN
     fire = trig and not quiet and not cool
     why = ("沒有達到條件" if not trig else "早班或晚班馬上就到" if quiet else "12 小時內已經加班過" if cool else "發車")
-    return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why,
-            "rule": f"任一行情 ≥ 平常波動 {ONE:g} 倍，或兩項 ≥ {TWO:g} 倍"}
+    return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why, "reasons": ev,
+            "rule": (f"任一行情 ≥ 平常波動 {ONE:g} 倍，或兩項 ≥ {TWO:g} 倍；或族群紅燈／兩個族群黃燈；"
+                     "或 3 小時內有 SEC 重大申報（破產、資安、減損、下市通知、財報重編、執行長／財務長／董事長離職）")}
 
 
 def build(eng, now: Optional[datetime] = None) -> Dict:
@@ -67,8 +109,12 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
         hs = hits(eng, now)
     except Exception:  # noqa: BLE001
         hs = []
+    try:
+        ev = events(eng, now)
+    except Exception:  # noqa: BLE001
+        ev = []
     st = _load()
-    d = decide(hs, st, now)
+    d = decide(hs, st, now, ev)
     if d["fire"]:
         st.update(last_ts=d["ts"], last_key=d["key"])
         st.setdefault("log", []).append({"ts": d["ts"], "key": d["key"], "hits": hs})

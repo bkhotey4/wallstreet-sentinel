@@ -56,9 +56,8 @@ def watch_list() -> Dict[str, list]:
 
 
 def severity(a: Dict) -> int:
-    t = a.get("t", "")
-    return ((4 if a.get("item", "5.02") != "5.02" else 0) + (2 if "離職" in t else 0)
-            + (1 if re.search(r"執行長|財務長|董事長", t) else 0))
+    from wsb.data.sec_officers import severity as sev
+    return sev(a)
 
 
 def _close() -> pd.DataFrame:
