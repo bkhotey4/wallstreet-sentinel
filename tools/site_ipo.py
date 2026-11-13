@@ -24,6 +24,53 @@ def _stat(x: Optional[Dict], what: str, pos: str) -> str:
     return f"{what}中位數 {x['med']:+.0f}%（{pos} {x['pos']:.0f}%，{x['n']} 家）" if x else ""
 
 
+def _money(v: Optional[float]) -> str:
+    if v is None:
+        return "—"
+    a = abs(v)
+    return f"{v / 1e8:,.1f} 億美元" if a >= 1e8 else f"{v / 1e6:,.1f} 百萬美元" if a >= 1e6 else f"{v:,.0f} 美元"
+
+
+def fin_block(fin: Optional[Dict]) -> str:
+    """招股書財務：每季營收、季增（QoQ）、和去年同季比（YoY）、營益率；沒有季度表就用年度／期中數字。只寫數字，不下判斷。"""
+    if not fin:
+        return ""
+    q, sm = fin.get("q") or {}, fin.get("summary") or {}
+    parts = []
+    if q.get("quarters"):
+        qs = q["quarters"][-6:]
+        lead = ""
+        if q.get("qoq_last") is not None and q.get("qoq_prev") is not None:
+            sl = q["qoq_last"] < q["qoq_prev"]
+            lead = (f'最新一季營收季增 {q["qoq_last"]:+.0f}%，'
+                    + (f'比上一季的 {q["qoq_prev"]:+.0f}% {"放緩" if sl else "加快"}' )
+                    + (f'；新增的營收 {_money(q["add_last"])}，上一季新增 {_money(q["add_prev"])}' if q.get("add_last") is not None and q.get("add_prev") is not None else "")
+                    + "。")
+        rows = "".join(f'<tr><td class="nw">{esc(x["end"][:7])}</td><td class="r">{_money(x.get("rev"))}</td><td class="r">{_pc(x.get("qoq"))}</td>'
+                       f'<td class="r">{_pc(x.get("yoy"))}</td><td class="r">{_p1(x.get("gp_m"))}</td><td class="r">{_p1(x.get("op_m"))}</td></tr>' for x in qs)
+        parts.append(f'<p class="small"><b>{esc(lead)}</b></p><div class="scroll"><table class="mini"><thead><tr><th>季度（結束月）</th><th class="r">營收</th>'
+                     f'<th class="r">季增 QoQ</th><th class="r">年增 YoY</th><th class="r">毛利率</th><th class="r">營益率</th></tr></thead><tbody>{rows}</tbody></table></div>')
+    for key, nm in (("interim", "期中"), ("annual", "全年")):
+        r = sm.get(key)
+        if not r or r.get("rev") is None:
+            continue
+        span = "全年" if r["months"] == 12 else f'前 {r["months"]} 個月'
+        bits = [f'{r["year"]} 年{span}營收 {_money(r["rev"])}' + (f'（年增 {r["rev_yoy"]:+.0f}%）' if r.get("rev_yoy") is not None else "")]
+        if r.get("gp_m") is not None:
+            bits.append(f'毛利率 {r["gp_m"]:.1f}%' + (f'（去年同期 {r["gp_m_prev"]:.1f}%）' if r.get("gp_m_prev") is not None else ""))
+        if r.get("op_m") is not None:
+            bits.append(f'營益率 {r["op_m"]:.1f}%' + (f'（去年同期 {r["op_m_prev"]:.1f}%）' if r.get("op_m_prev") is not None else ""))
+        if r.get("ni") is not None:
+            bits.append(("淨損 " if r["ni"] < 0 else "淨利 ") + _money(abs(r["ni"])))
+        parts.append(f'<p class="small">{esc("；".join(bits))}。</p>')
+    if not parts:
+        return ""
+    note = ("數字由程式從招股書的摘要財務表與季度營運表直接讀出（不是 AI），單位照原文換算；季增＝和上一季比，年增＝和去年同一季比。"
+            "高速成長的公司，季增從很高的基期往下掉很常見，要同時看「新增的營收金額」與獲利率。")
+    return ('<details class="sgx" open><summary class="small">' + T("招股書財務（季增／年增）", "Prospectus financials") + "</summary>"
+            + "".join(parts) + f'<p class="small muted">{note}</p></details>')
+
+
 def _us_pending(u: Dict) -> str:
     rows = u.get("pending") or []
     if not rows:
@@ -42,6 +89,7 @@ def _us_pending(u: Dict) -> str:
             det = ('<details class="sgx"><summary class="small">' + T("招股書重點", "Prospectus") + "</summary>"
                    + "".join(f'<p class="small"><b>{esc(k)}</b>：{esc(ai[k])}</p>' for k in ("業務", "財務", "資金用途", "主要風險", "要留意") if ai.get(k))
                    + f'<p class="small muted">{T("AI 依招股書節錄整理，數字照原文；有對不上原文的句子會被拿掉。", "")}</p></details>')
+        det = fin_block(r.get("fin")) + det
         sec = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={esc(r["cik"])}&type=S-1&dateb=&owner=include&count=40'
         tr += (f'<tr><td><b>{esc(r["name"])}</b>' + (f' <span class="tk">{esc(r["symbol"])}</span>' if r.get("symbol") else "")
                + f'<div class="small muted">{esc(r.get("sicd") or "")}{"・外國公司" if r.get("foreign") else ""}</div>{det}</td>'

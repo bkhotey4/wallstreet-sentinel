@@ -101,7 +101,7 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
         row = {"cik": f["cik"], "name": f.get("name"), "sicd": f.get("sicd"), "foreign": f.get("foreign"), "drs": f.get("drs"),
                "s1": f["s1"], "last": f.get("last"), "amends": f.get("amends", 0), "since": since, "exchange": cv.get("exchange"),
                "symbol": cv.get("symbol"), "lo": cv.get("lo"), "hi": cv.get("hi"), "shares": cv.get("shares"), "lockup": cv.get("lockup"),
-               "acc": (f.get("doc") or {}).get("acc")}
+               "acc": (f.get("doc") or {}).get("acc"), "fin": f.get("fin")}
         if tf:
             row["win_lo"] = str(_d(f["s1"]) + timedelta(days=int(tf["p25"])))
             row["win_hi"] = str(_d(f["s1"]) + timedelta(days=int(tf["p75"])))

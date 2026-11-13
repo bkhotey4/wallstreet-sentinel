@@ -45,6 +45,8 @@ BACK_DAYS = 730
 PERIODIC = ("10-K", "10-Q", "20-F", "40-F", "10-KT", "10-K405")
 REG = ("S-1", "F-1")
 HEAD_BYTES = 2_500_000
+FIN_BYTES = 16_000_000          # whole prospectus: the quarterly table sits in MD&A (Anthropic's at ~5.5 MB of 14.8 MB)
+FIN_PER_RUN = 6
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
 
@@ -347,6 +349,7 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
     # prospectus heads: newest registration of operating IPOs still in process (and the 424B4 cover for the offer price)
     act = sorted(((int(c), f) for c, f in filers.items() if f.get("kind") == "ipo" and not f.get("rw") and f.get("doc")),
                  key=lambda x: x[1].get("last", ""), reverse=True)
+    fin_n = [0]
     for cik, f in act:
         if time.time() > deadline - 5:
             break
@@ -360,6 +363,19 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
                 f["cover"], f["cover_acc"] = cv, f["doc"]["acc"]
             except Exception as e:  # noqa: BLE001
                 log.info("ipo cover %s: %s", cik, e)
+            await asyncio.sleep(0.15)
+        # the prospectus's own numbers (summary table + quarterly table, often deep in MD&A): read the whole document once
+        # per amendment, the newest filers first, a few per build (S-1s run to 15 MB)
+        if (not f.get("priced") and f.get("last", "") >= (today - timedelta(days=270)).isoformat() and f.get("cover", {}).get("exchange")
+                and f.get("fin_acc") != f["doc"]["acc"] and fin_n[0] < FIN_PER_RUN and time.time() < deadline - 30):
+            fin_n[0] += 1
+            try:
+                from .ipo_fin import parse_fin, parse_quarters
+                raw = await _head(ARCH.format(cik=cik, acc=f["doc"]["acc"].replace("-", ""), doc=f["doc"]["file"]), FIN_BYTES)
+                f["fin"] = {"summary": parse_fin(raw), "q": parse_quarters(raw), "acc": f["doc"]["acc"]}
+                f["fin_acc"] = f["doc"]["acc"]
+            except Exception as e:  # noqa: BLE001
+                log.info("ipo financials %s: %s", cik, e)
             await asyncio.sleep(0.15)
         if f.get("priced") and f.get("p_doc") and not f.get("offer") and f.get("offer_try", 0) < 2:
             f["offer_try"] = f.get("offer_try", 0) + 1
