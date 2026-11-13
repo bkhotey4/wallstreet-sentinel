@@ -1,113 +1,112 @@
 {
- "updated": "2026-11-13T07:10",
- "verdict": "部分有根據",
- "summary": "大家怕的AI晶片崩跌和高利率有部分根據（標普單日重挫4.4%、10年債殖利率仍在10年來99百分位），但金融體系壓力指數仍低於平均，信用市場也平靜。",
+ "updated": "2026-11-13T23:25",
+ "verdict": "恐慌被誇大",
+ "summary": "大家怕的 AI 崩盤，股價只比一個月前低約 1.6%，金融體系壓力指數 -1.95 仍遠低於平均，但 10 年期殖利率近 5% 是真的偏高。",
  "narratives": [
   {
-   "claim": "AI 泡沫破裂：11/5 晶片股史上第二慘單日，納指大跌",
-   "source": "https://247wallst.com/investing/2026/11/06/chip-stocks-just-had-their-second-worst-day-on-record/",
-   "judgement": "部分支持",
-   "reason": "標普500 11/5 單日從 7688.62 跌到 7353.73（約 -4.4%），是真的。但之後三天已回到 7619.38（11/11），離一個月前 7807.24 只差約 2.4%，仍在 10 年來 98 百分位的高檔。VIX 17.49 只在 54 百分位，不像系統性恐慌。",
+   "claim": "AI 股票大崩跌，AI 泡沫正在破裂",
+   "source": "https://www.valleynewslive.com/2026/11/05/brutal-sell-off-ai-stocks-sends-wall-street-reeling-sp-500-sees-worst-day-since-2025-liberation-day-tariffs/",
+   "judgement": "被誇大",
+   "reason": "11/5 AI 股確實重挫，但 S&P 500 到 11/12 收 7592，只比一個月前（7719）低約 1.6%，仍在 10 年高檔（百分位 97）。VIX 18.7，不算恐慌區。股價有修正，但還不是崩盤。",
    "data": [
     {
      "name": "S&P 500",
-     "value": "7619.38（11/4 7688.62、11/5 7353.73、一個月前 7807.24）",
-     "date": "2026-11-11",
+     "value": "7592.4（21 個交易日前 7718.9；10 年百分位 97）",
+     "date": "2026-11-12",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500"
     },
     {
      "name": "VIX",
-     "value": "17.49（一個月前 15.21，10年 54 百分位）",
-     "date": "2026-11-11",
+     "value": "18.7（一個月前 16.87；10 年百分位 62）",
+     "date": "2026-11-12",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS"
     }
    ]
   },
   {
-   "claim": "美債殖利率逼近 5%，高利率壓垮股市",
-   "source": "https://fortune.com/2026/09/13/stock-market-outlook-late-stage-bubble-crash-2027-treasury-yields-5-percent/",
+   "claim": "美債殖利率飆高，利率壓垮股市",
+   "source": "https://www.fxstreet.com/analysis/ai-selloff-what-bonds-and-credit-markets-reveal-202611082143",
    "judgement": "部分支持",
-   "reason": "10 年期殖利率 4.98%，在 10 年來 99 百分位，確實很高；但比一個月前的 5.24% 已經下來。2 年期 4.73%（93 百分位），10年減2年利差 +0.24%（正值，沒有倒掛）。利率高是真的，但近一個月是下降，不是惡化。",
+   "reason": "10 年期殖利率 4.98%，落在過去 10 年的第 99 百分位，2 年期 4.73% 也偏高，利率水準確實很高。但 10 年期比一個月前（5.24%）下降約 0.26 個百分點，高利率是現況，近期並沒有在惡化。",
    "data": [
     {
-     "name": "10年期美債殖利率",
-     "value": "4.98%（一個月前 5.24%，10年 99 百分位）",
+     "name": "10 年期殖利率",
+     "value": "4.98%（一個月前 5.24%；百分位 99）",
      "date": "2026-11-10",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
     },
     {
-     "name": "2年期美債殖利率",
-     "value": "4.73%（一個月前 4.80%）",
+     "name": "2 年期殖利率",
+     "value": "4.73%（百分位 93）",
      "date": "2026-11-10",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2"
     },
     {
-     "name": "10年減2年利差",
-     "value": "0.24%（一個月前 0.42%）",
+     "name": "10Y-2Y 利差",
+     "value": "0.24（一個月前 0.42）",
      "date": "2026-11-12",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y"
     }
    ]
   },
   {
-   "claim": "債市出現裂縫，信用風險是 AI 泡沫真正的引爆點",
-   "source": "https://www.tmgm.com/fr/analysis/market-insight/ai-bond-market-cracks",
-   "judgement": "被誇大",
-   "reason": "高收益債利差 3.30%（81 百分位），一個月前 3.11%，略升但不高。Baa 利差 1.51%（7 百分位，很低）。OFR 金融壓力指數 -1.834，低於歷史平均 0，信用分項 -0.91 也在平均之下。資料沒有看到信用市場失火。",
+   "claim": "信用市場出現裂痕，金融體系壓力升高",
+   "source": "https://www.fxstreet.com/analysis/ai-selloff-what-bonds-and-credit-markets-reveal-202611082143",
+   "judgement": "數據不支持",
+   "reason": "OFR 金融壓力指數 -1.95，遠低於歷史平均 0，信用分項 -0.90（百分位 17）。高收益債利差 3.20%、Baa 利差 1.51%（百分位 7）都很低。注意：有文章說高收益利差 3.48，但 FRED 官方資料最新是 3.20，以官方為準。",
    "data": [
     {
-     "name": "高收益債利差",
-     "value": "3.30%（一個月前 3.11%）",
+     "name": "OFR 金融壓力指數",
+     "value": "-1.95（一個月前 -2.14；10 年百分位 52）",
      "date": "2026-11-11",
+     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
+    },
+    {
+     "name": "OFR 信用分項",
+     "value": "-0.904（百分位 17）",
+     "date": "2026-11-11",
+     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
+    },
+    {
+     "name": "高收益債利差",
+     "value": "3.20%（一個月前 3.16%；百分位 72）",
+     "date": "2026-11-12",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
     },
     {
      "name": "Baa 利差",
-     "value": "1.51%（一個月前 1.45%，10年 7 百分位）",
+     "value": "1.51%（百分位 7）",
      "date": "2026-11-10",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA10Y"
-    },
-    {
-     "name": "OFR 金融壓力指數",
-     "value": "-1.834（21 個交易日前 -2.154；信用分項 -0.91、波動分項 0.024）",
-     "date": "2026-11-10",
-     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
     }
    ]
   },
   {
-   "claim": "外資和日本拋售美債、日圓貶值引爆全球資金撤退",
-   "source": "https://investinglive.com/education/falling-treasury-yields-may-be-hiding-a-darker-story-about-the-ai-boom/",
+   "claim": "日圓過弱、日本因素可能引爆全球拋售",
+   "source": "https://www.fxstreet.com/analysis/ai-selloff-what-bonds-and-credit-markets-reveal-202611082143",
    "judgement": "部分支持",
-   "reason": "外國央行託管美債 2.524 兆（11/11），一個月前 2.565 兆，約減 1.6%，是 10 年來最低水準，值得留意。但這是託管量，不等於賣出；日圓 158.23（11/6）和一個月前 158.11 幾乎沒動。另外 CFTC 持倉資料這次抓不到（連線被擋）。",
+   "reason": "美元兌日圓 158.23，在 10 年的第 95 百分位，日圓確實很弱，但一個月內幾乎沒變（158.11），沒有急速變動的跡象。CFTC 持倉資料這次連線被擋，抓不到。",
    "data": [
     {
-     "name": "外國央行託管美債",
-     "value": "2,524,189（百萬美元；一個月前 2,565,477）",
-     "date": "2026-11-11",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WMTSECL1"
-    },
-    {
      "name": "美元兌日圓",
-     "value": "158.23（一個月前 158.11）",
+     "value": "158.23（一個月前 158.11；百分位 95）",
      "date": "2026-11-06",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXJPUS"
-    },
-    {
-     "name": "CFTC 資產管理機構 E-mini 持倉",
-     "value": "抓不到",
-     "date": "-",
-     "url": "https://publicreporting.cftc.gov/resource/gpe5-46if.json"
     }
    ]
   }
  ],
  "watch": [
-  "OFR 金融壓力指數升破 0（高於歷史平均），判讀才會往「恐慌有根據」移動",
-  "高收益債利差升破 4.5%，或 Baa 利差升破 2.5%",
-  "VIX 連續多日收在 30 以上，或 10 年期殖利率重回 5.3% 以上並伴隨信用利差擴大"
+  "OFR 金融壓力指數由 -1.95 升到 0 以上（高於歷史平均）",
+  "高收益債利差由 3.2% 升破 4.5%",
+  "VIX 升破 30，或 10 年期殖利率升破 5.5%"
  ],
  "history": [
+  {
+   "time": "2026-11-13T23:25",
+   "verdict": "恐慌被誇大",
+   "summary": "大家怕的 AI 崩盤，股價只比一個月前低約 1.6%，金融體系壓力指數 -1.95 仍遠低於平均，但 10 年期殖利率近 5% 是真的偏高。"
+  },
   {
    "time": "2026-11-13T07:10",
    "verdict": "部分有根據",
