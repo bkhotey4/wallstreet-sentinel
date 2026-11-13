@@ -5,7 +5,7 @@
   * 講到利率、而且是講者自己看法（I / my）的第一句原文，當作「這篇的重點句」
 市場反應（卡片端算）：演講當天 2 年期美債殖利率（FRED DGS2；FRED 還沒刊的最近幾天用財政部當天的殖利率曲線補）變多少，和平常一天的波動比。同一天常有其他消息，
 所以只說「同一天」，不說「因為這篇演講」。字數統計不是 AI 判讀，只是讓你知道這篇在講什麼。
-地方聯準會總裁的演講不在理事會 RSS 裡，這裡沒有。快取 data_cache/econ_fedspeech.json，6 小時一次。"""
+地方聯準會總裁的演講不在理事會 RSS 裡；有乾淨官方 RSS 的銀行另外抓（REGIONAL，目前是達拉斯聯準會）。快取 data_cache/econ_fedspeech.json，6 小時一次。"""
 from __future__ import annotations
 
 import json
@@ -13,7 +13,7 @@ import logging
 import os
 import re
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from html import unescape
 from typing import Dict, List, Optional
@@ -32,8 +32,12 @@ CAL_PAGE = "https://www.federalreserve.gov/newsevents/calendar.htm"
 UST = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"   # 財政部每日殖利率曲線（當天收盤後公布）
 UST_PAGE = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve"
 UA = {"User-Agent": "Mozilla/5.0"}
+# 地方聯準會總裁：只收有乾淨官方 RSS 的銀行。紐約聯準會的 RSS 會回機器人檢查頁，不繞過，所以沒有。
+REGIONAL = {"dallas": {"rss": "https://www.dallasfed.org/rss/speeches.xml", "page": "https://www.dallasfed.org/news/speeches",
+                       "name": "達拉斯聯準會", "tz": "America/Chicago"}}
+REGIONAL_DAYS = 45                            # only recent regional speeches (their feeds hold years of items)
 KEEP = 40                                     # speeches kept in the cache
-SCORE_V = 5                                   # bump when score() changes so cached speeches are re-read
+SCORE_V = 8                                 # bump when score() changes so cached speeches are re-read
 
 INFL = re.compile(r"\binflation\w*|\bprices?\b", re.I)
 JOBS = re.compile(r"\blabor market|\bemployment\b|\bunemployment\b|\bjobs?\b|\bhiring\b|\blayoffs?\b", re.I)
@@ -41,15 +45,20 @@ RATE = re.compile(r"policy rate|federal funds rate|monetary policy|rate cuts?|ra
 _RATES = r"\s+(?:in\s+|of\s+)?(?:the\s+|our\s+)?(?:policy\s+|federal\s+funds\s+|interest\s+)?rates?\b"
 # direction words count only when they point at the policy rate: "reduce inflation" or "rising prices" is not a rate call
 EASE = re.compile(r"\b(?:(?:cut|cuts|cutting|lower(?:ing)?|reduc(?:e|ed|ing)|eas(?:e|ing))" + _RATES
-                  + r"|rate cuts?|(?:further|additional) (?:cuts|easing)|less restrictive|accommodat\w*"
+                  + r"|rate cuts?|(?:further|additional) (?:cuts|easing)|less restrictive|(?:more|additional|further|provid\w* (?:more )?)accommodat\w*|basis[- ]points? (?:cut|reduction)"
                   + r"|rates?\s+(?:\w+\s+){0,3}(?:be\s+)?(?:lowered|reduced|cut)\b)", re.I)
 HOLD = re.compile(r"\b(should wait|wait until|patient|patience|hold(ing)? (the|our) (policy )?rate|on hold|well positioned|maintain(ing)? the (current )?(policy|rate|target)"
                   r"|(remain|stay|keep)\w* (sufficiently |moderately )?restrictive)\b", re.I)
 MINE = re.compile(r"\bmy view|\bI (?:support|expect|believe|think|see|favor|would|judge|anticipate)\b|\bin my\b")   # the speaker's own view
 TIGHT = re.compile(r"\b(?:(?:rais(?:e|ed|ing)|hik(?:e|es|ing)|increas(?:e|es|ing)|tighten(?:ing)?)" + _RATES
                    + r"|rate (?:hikes?|increases?)|(?:further|additional) (?:tightening|firming|hikes|increases)|more restrictive|firming|hold(?:ing)? .{0,20}longer"
+                   + r"|basis[- ]points? (?:increase|hike|rise)"
+                   # calling today's policy too loose is a tightening view, not an easing one
+                   + r"|accommodative (?:monetary )?policy (?:is|remains) (?:\w+ )?(?:adding|fueling|feeding|contributing)|policy (?:is|remains) (?:still |too )?accommodative"
                    + r"|rates?\s+(?:\w+\s+){0,3}(?:be\s+)?(?:raised|increased|hiked)\b)", re.I)
-AGENDA = re.compile(r"\bwill (then )?(turn|discuss|conclude)|\btoday I\b|before I turn|\bI (will|want to|would like to) (explain|describe|spend|focus|discuss|talk)", re.I)
+AGENDA = re.compile(r"\bwill (then )?(turn|discuss|conclude|follow)|\btoday I\b|before I turn|\bI (will|want to|would like to) (explain|describe|spend|focus|discuss|talk)"
+                    r"|\bI['’]?ll (then )?(turn|discuss|follow|describe|conclude|explain|focus|talk)|\b(then|and) describe my views?\b|\bdiscussion of\b"
+                    r"|\bin my remarks today\b", re.I)
 ABBR = re.compile(r"\b(U\.S|U\.K|e\.g|i\.e|Mr|Ms|Mrs|Dr|St|No|vs)\.", re.I)
 
 
@@ -72,7 +81,29 @@ def parse_ust2(xml: str) -> Dict[str, float]:
     return out
 
 
-def parse_rss(xml: str) -> List[Dict]:
+PRES = re.compile(r"President(?: and CEO)? ((?:[A-Z][\w.'-]* ){0,3}[A-Z][\w'-]+)")
+
+
+def parse_regional(xml: str, bank: str, today: date, days: int = REGIONAL_DAYS) -> List[Dict]:
+    """A regional bank's speech RSS → items like parse_rss. The title is the topic only; the speaker comes from the
+    description ('Remarks delivered by Dallas Fed President Lorie Logan …'). `day` = the pubDate's local date there."""
+    from zoneinfo import ZoneInfo
+    meta = REGIONAL[bank]
+    out = []
+    for it in parse_rss(xml, split_who=False):
+        m = PRES.search(it["where"])
+        try:
+            dt = parsedate_to_datetime(re.search(r"<pubDate>(.*?)</pubDate>", it.pop("_raw"), re.S).group(1).strip())
+            day = dt.astimezone(ZoneInfo(meta["tz"])).date() if dt.tzinfo else dt.date()
+        except Exception:  # noqa: BLE001
+            continue
+        if not m or not (today - timedelta(days=days) <= day <= today):
+            continue
+        out.append({**it, "who": m.group(1).split()[-1], "bank": bank, "role": meta["name"] + "總裁", "day": day.isoformat()})
+    return out
+
+
+def parse_rss(xml: str, split_who: bool = True) -> List[Dict]:
     out = []
     for it in re.findall(r"<item>(.*?)</item>", xml, re.S):
         def g(tag):
@@ -81,21 +112,26 @@ def parse_rss(xml: str) -> List[Dict]:
         title, link, when = g("title"), g("link"), g("pubDate")
         if not title or not link:
             continue
-        who, _, topic = title.partition(",")
+        who, _, topic = title.partition(",") if split_who else ("", "", title)
         try:
             dt = parsedate_to_datetime(when)
-            iso = dt.strftime("%Y-%m-%dT%H:%MZ")
+            iso = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%MZ") if dt.tzinfo else dt.strftime("%Y-%m-%dT%H:%MZ")
         except Exception:  # noqa: BLE001
             iso = ""
-        out.append({"url": link, "who": who.strip(), "topic": topic.strip() or title, "where": g("description"),
-                    "kind": g("category") or "Speech", "time": iso})
+        row = {"url": link, "who": who.strip(), "topic": topic.strip() or title, "where": g("description"),
+               "kind": g("category") or "Speech", "time": iso}
+        if not split_who:
+            row["_raw"] = it
+        out.append(row)
     return out
 
 
 def text_of(html: str) -> str:
     i = html.find('id="article"')
+    if i < 0:
+        i = html.find('id="content"')                              # regional banks (Dallas Fed)
     a = html[html.find(">", i) + 1:] if i >= 0 else html          # start after the opening tag itself
-    for stop in ("Last Update", 'class="footnotes"', ">References<", ">Footnotes<"):
+    for stop in ("Last Update", 'class="footnotes"', ">References<", ">Footnotes<", "The views expressed"):
         j = a.find(stop)
         if j > 0:
             a = a[:j]
@@ -163,27 +199,43 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     now = time.time()
     d["ts_check"] = now
-    todo = due(d, ["rss", "cal", "ust2"], TTL, now, force)
+    todo = due(d, ["rss", "cal", "ust2", *REGIONAL], TTL, now, force)
     bad = []
+
+    async def merge(items: List[Dict]) -> None:
+        old = {s["url"]: s for s in d.get("speeches") or []}
+        for it in items:
+            if it["url"] in old and old[it["url"]].get("v") == SCORE_V:
+                continue
+            try:
+                it.update(score(text_of(await http.get(it["url"], kind="text", headers=UA, timeout=30, retries=1))), v=SCORE_V)
+            except Exception as e:  # noqa: BLE001
+                log.warning("Fed speech %s: %s", it["url"], e)
+            old[it["url"]] = {**old.get(it["url"], {}), **it}
+        d["speeches"] = sorted(old.values(), key=lambda s: s.get("time", ""), reverse=True)[:KEEP]
+
     if "rss" in todo:
         d["try_each"]["rss"] = now
         try:
             items = parse_rss(await http.get(RSS, kind="text", headers=UA, timeout=30, retries=1))
             if not items:
                 raise ValueError("empty feed")
-            old = {s["url"]: s for s in d.get("speeches") or []}
-            for it in items:
-                if it["url"] in old and old[it["url"]].get("v") == SCORE_V:
-                    continue
-                try:
-                    it.update(score(text_of(await http.get(it["url"], kind="text", headers=UA, timeout=30, retries=1))), v=SCORE_V)
-                except Exception as e:  # noqa: BLE001
-                    log.warning("Fed speech %s: %s", it["url"], e)
-                old[it["url"]] = {**old.get(it["url"], {}), **it}
-            d["speeches"] = sorted(old.values(), key=lambda s: s.get("time", ""), reverse=True)[:KEEP]
+            await merge(items)
             d["ts_each"]["rss"] = now
         except Exception as e:  # noqa: BLE001
             bad.append(f"rss: {e if str(e) else type(e).__name__}")
+    for bank, meta in REGIONAL.items():
+        if bank not in todo:
+            continue
+        d["try_each"][bank] = now
+        try:
+            xml = await http.get(meta["rss"], kind="text", headers=UA, timeout=30, retries=1)
+            if "<item>" not in xml:
+                raise ValueError("not an RSS feed")
+            await merge(parse_regional(xml, bank, date.today()))      # a quiet month is fine: zero recent items
+            d["ts_each"][bank] = now
+        except Exception as e:  # noqa: BLE001
+            bad.append(f"{bank}: {e if str(e) else type(e).__name__}")
     if "cal" in todo:
         d["try_each"]["cal"] = now
         try:

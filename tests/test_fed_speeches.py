@@ -28,6 +28,22 @@ def main() -> None:
     assert FS.lean(sc) == "多談通膨"
     assert FS.key_dir("My view is that further changes in the policy rate should wait, despite the recent rate increase.") == "hold"
     assert FS.key_dir("I support further rate cuts this year.") == "ease"
+    # 11-13: Waller's agenda line was picked as the key sentence
+    assert FS.AGENDA.search("I'll follow that by a discussion of recent inflation data and then describe my views about the future path of monetary policy.")
+    assert FS.AGENDA.search("In my remarks today, I’ll describe my outlook for economic activity, then discuss how monetary policy should adjust.")
+    assert FS.key_dir("Even if this occurs, I would still support a 25 basis point increase in the FOMC's policy rate at our December meeting.") == "tight"
+    assert FS.key_dir("In my view, accommodative monetary policy is adding to inflationary pressures.") == "tight"
+    assert FS.key_dir("I would support providing more accommodation through further rate cuts.") == "ease"
+    # regional bank (Dallas Fed): speaker from the description, local day, 45-day window
+    dal = ("<rss><channel><item><title>Economic and monetary policy outlook</title><link>https://www.dallasfed.org/news/speeches/logan/2026/lkl261110</link>"
+           "<pubDate>Tue, 10 Nov 2026 21:50:00 CST</pubDate><description>Remarks delivered by Dallas Fed President Lorie Logan at the energy conference.</description></item>"
+           "<item><title>Old talk</title><link>https://www.dallasfed.org/x/old</link><pubDate>Fri, 02 Jan 2026 09:00:00 CST</pubDate>"
+           "<description>Remarks delivered by Dallas Fed President Lorie Logan.</description></item></channel></rss>")
+    rg = FS.parse_regional(dal, "dallas", date(2026, 11, 13))
+    assert len(rg) == 1 and rg[0]["who"] == "Logan" and rg[0]["day"] == "2026-11-10" and rg[0]["role"] == "達拉斯聯準會總裁", rg
+    assert rg[0]["time"] == "2026-11-11T03:50Z" and "_raw" not in rg[0]                # UTC time, local-day kept separately
+    dpage = '<div id="content" class="x"><p>Thank you.</p><p>I think the policy rate should stay restrictive for some time.</p><p>The views expressed are my own.</p>Footer</div>'
+    assert "Footer" not in FS.text_of(dpage) and FS.text_of(dpage).startswith("Thank you")
     cal = {"events": [{"type": "Speeches", "month": "2026-11", "days": "13", "time": "7:00 p.m.", "title": "Speech - Vice Chair Philip N. Jefferson",
                        "description": "Productivity", "location": "UCSD"},
                       {"type": "Speeches", "month": "2027-01", "days": "5", "title": "too far"}, {"month": "2026-11", "days": "12"}]}
@@ -45,7 +61,7 @@ def main() -> None:
     assert S.yield_move(y, pd.Timestamp("2026-11-08")) is None                      # weekend: no row
 
     S._today = lambda: date(2026, 11, 11)
-    d = {"ts": 1.0, "speeches": [{**it[0], **sc}], "upcoming": up}
+    d = {"ts": 1.0, "speeches": [{**it[0], **sc}, {**rg[0], **sc}], "upcoming": up}
     FS.load, real = (lambda: d), FS.load
 
     class F:
@@ -60,6 +76,7 @@ def main() -> None:
         FS.load = real
     assert "Waller" in html and "重點句偏向再收緊" in html and "+15bp，比平常一天大很多" in html, html[:600]
     assert "11/14 08:00 台北" in html
+    assert "2 位聯準會官員" in html and "Logan（達拉斯聯準會總裁）" in html and "達拉斯聯準會總裁演講" in html, html[:900]
     for w in ("買進", "賣出", "目標價", "低估", "高估"):
         assert w not in html
 

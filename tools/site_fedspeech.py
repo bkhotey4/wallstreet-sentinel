@@ -19,6 +19,11 @@ def _role(title: str) -> str:
     return next((zh for en, zh in ROLE if en in title), "")
 
 
+def _who(s: Dict) -> str:
+    """Board members by name; regional presidents get their bank so a beginner knows who they are."""
+    return f'{s["who"]}（{s["role"]}）' if s.get("role") else s["who"]
+
+
 def _ny_day(iso: str) -> Optional[pd.Timestamp]:
     try:
         dt = datetime.strptime(iso, "%Y-%m-%dT%H:%MZ").replace(tzinfo=ZoneInfo("UTC")).astimezone(NY)
@@ -33,7 +38,12 @@ def _today():
 
 def speech_day(s: Dict) -> Optional[pd.Timestamp]:
     """The day the speech was GIVEN: the Board's URL carries it (…/waller20260928a.htm); the RSS pubDate is when the
-    page was posted, often the next day. Falls back to the pubDate's New York date."""
+    page was posted, often the next day. Regional banks store `day` (pubDate's local date). Falls back to the pubDate's New York date."""
+    if s.get("day"):
+        try:
+            return pd.Timestamp(s["day"])
+        except ValueError:
+            pass
     m = re.search(r"(20\d{6})[a-z]?\.htm", s.get("url", ""))
     if m:
         try:
@@ -110,29 +120,31 @@ def sec_fed_speeches(eng) -> str:
     for s in sp:
         s["_mv"] = yield_move(dgs2, speech_day(s))
     if policy:
-        lead = (f'最近兩週有 {len({s["who"] for s in policy})} 位聯準會理事公開談經濟與利率：'
-                + "；".join(f'{esc(s["who"])}（{_dtxt(s)}）{FS.lean(s)}'
+        lead = (f'最近兩週有 {len({s["who"] for s in policy})} 位聯準會官員公開談經濟與利率：'
+                + "；".join(f'{esc(_who(s))}（{_dtxt(s)}）{FS.lean(s)}'
                            + (f'，{FS.DIR_ZH[s.get("key_dir", "")]}' if s.get("key_dir") else "") for s in policy[:3]) + "。")
     else:
-        lead = ("最近兩週聯準會理事的公開講話都不是談利率，市場沒有新的利率訊號從這裡來。" if recent
-                else "最近兩週聯準會理事沒有新的公開講話（下面是更早的紀錄）。")
+        lead = ("最近兩週聯準會官員的公開講話都不是談利率，市場沒有新的利率訊號從這裡來。" if recent
+                else "最近兩週聯準會官員沒有新的公開講話（下面是更早的紀錄）。")
     quotes = []
     for s in policy[:3]:
         if s.get("key"):
-            quotes.append(f'<li><b>{esc(s["who"])}</b> <span class="small muted">{esc(_dtxt(s))} 演講（美東日期）・'
+            quotes.append(f'<li><b>{esc(_who(s))}</b> <span class="small muted">{esc(_dtxt(s))} 演講（美東日期）・'
                           f'同一天 2 年期美債殖利率 {esc(_move_txt(s["_mv"]))}</span><br>'
                           f'<span class="small">原文重點句：「{esc(s["key"])}」</span> <a class="small" href="{esc(s["url"])}" target="_blank" rel="noopener">全文</a></li>')
     today_ny = _today().isoformat()
     up = [u for u in (d.get("upcoming") or []) if u.get("date", "") >= today_ny]   # a stale calendar must not list past talks
     up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))}・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
                       f'{esc(_role(u["title"]))} {esc(u["title"].split(" - ")[-1].split()[-1])}：{esc(u.get("topic", ""))}</li>' for u in up[:6])
-    trs = "".join(f'<tr><td>{esc(_dtxt(s))}</td><td>{esc(s["who"])}</td><td class="small">{esc(s.get("topic", ""))}</td>'
+    trs = "".join(f'<tr><td>{esc(_dtxt(s))}</td><td>{esc(_who(s))}</td><td class="small">{esc(s.get("topic", ""))}</td>'
                   f'<td>{FS.lean(s)}</td><td class="r small">{s.get("infl", "—")}／{s.get("jobs", "—")}</td>'
                   f'<td class="r small">{esc(_move_txt(s["_mv"]))}</td></tr>' for s in sp[:12])
     table = (f'<div class="scroll"><table class="mini"><thead><tr><th>演講日（美東）</th><th>誰</th><th>題目（原文）</th><th>多談哪邊</th>'
              f'<th class="r">通膨／就業 次數</th><th class="r">當天 2 年期殖利率</th></tr></thead><tbody>{trs}</tbody></table></div>')
     note = (f'資料：<a href="{FS.PAGE}" target="_blank" rel="noopener">聯準會理事會演講</a>與<a href="{FS.CAL_PAGE}" target="_blank" rel="noopener">官方行事曆</a>'
-            '（主席、副主席與理事都有 FOMC 永久投票權；地方聯準會總裁的講話不在這裡）。「多談哪邊」只是數原文提到通膨和就業的次數，'
+            '（主席、副主席與理事都有 FOMC 永久投票權）'
+            + "".join(f'＋<a href="{m["page"]}" target="_blank" rel="noopener">{m["name"]}總裁演講</a>' for m in FS.REGIONAL.values())
+            + '（地方聯準會總裁 12 位輪流投票，目前只收有乾淨官方 RSS 的銀行；紐約聯準會的 RSS 會擋自動程式，所以沒有）。「多談哪邊」只是數原文提到通膨和就業的次數，'
             '多 1.5 倍以上算多談那一邊；重點句是第一句「講者自己看法＋利率」的原文，「偏向收緊／放寬／觀望」只看這一句裡的字眼，不是 AI 判讀，也不翻譯以免失真，請點全文確認。'
             '2 年期殖利率最貼近市場對聯準會未來一兩年利率的猜測；同一天常有其他消息，所以只寫「同一天」，不說是演講造成的。資料來源 FRED DGS2，比市場晚一天'
             + (f'；FRED 還沒更新的 {", ".join(x.strftime("%m/%d") for x in sorted(from_ust))} 先用<a href="{FS.UST_PAGE}" target="_blank" rel="noopener">美國財政部當天公布的殖利率曲線</a>補上（FRED 之後刊登的是同一個數字）'
