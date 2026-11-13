@@ -1616,6 +1616,24 @@ async def ai_commentary_cached(eng, now: Optional[float] = None) -> Tuple[str, s
 SOFT_BUDGET_S = 30 * 60      # Actions job times out at 40 min: past this, skip the (slow, optional) AI steps so the site still ships
 
 
+def ipo_fin_public(view) -> dict:
+    """Pending US IPOs with the numbers read from their own prospectus (no AI): price range, quarterly revenue with QoQ / YoY,
+    and the latest annual / interim period.  Public filings only."""
+    out = []
+    for r in ((view or {}).get("us") or {}).get("pending") or []:
+        fin = r.get("fin") or {}
+        q = fin.get("q") or {}
+        qs = [{k: x.get(k) for k in ("end", "rev", "qoq", "yoy", "add", "gp_m", "op_m")} for x in (q.get("quarters") or [])[-6:]]
+        sm = fin.get("summary") or {}
+        out.append({"name": r.get("name"), "symbol": r.get("symbol"), "exchange": r.get("exchange"), "lo": r.get("lo"), "hi": r.get("hi"),
+                    "first_filing": r.get("s1"), "last_amendment": r.get("last"), "quarters": qs,
+                    "qoq_last": q.get("qoq_last"), "qoq_prev": q.get("qoq_prev"), "slowing": q.get("slowing"),
+                    "annual": {k: v for k, v in (sm.get("annual") or {}).items() if k != "periods"},
+                    "interim": {k: v for k, v in (sm.get("interim") or {}).items() if k != "periods"}})
+    return {"asof": ((view or {}).get("asof")), "note": "數字由程式從招股書的摘要財務表與季度營運表讀出（不是 AI）；季增＝和上一季比，年增＝和去年同一季比",
+            "pending": out}
+
+
 async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[Path] = None, fullmarket: bool = False) -> Path:
     from wsb.engine import Engine
     t_start = time.time()
@@ -1889,6 +1907,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         (out / "breaking.json").write_text(json.dumps(BRK.build(eng), ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("breaking check failed")
+    try:                                           # 招股書財務（給雲端口播與讀者）：申請中的美股 IPO 與程式讀出的季增／年增
+        (out / "ipo_fin.json").write_text(json.dumps(ipo_fin_public(getattr(eng, "ipo", None)), ensure_ascii=False, default=str), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("ipo_fin.json failed")
     (out / "alerts.json").write_text(json.dumps(getattr(eng, "web_alerts", None) or {"ts": 0, "items": []}, ensure_ascii=False), encoding="utf-8")
     (out / "data.json").write_text(json.dumps(snapshot(eng), ensure_ascii=False, default=str, indent=1), encoding="utf-8")
     (out / ".nojekyll").write_text("")
