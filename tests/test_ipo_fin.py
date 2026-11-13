@@ -49,6 +49,11 @@ def main() -> None:
     for w in ("買進", "賣出", "目標價", "低估", "高估", "清空"):
         assert w not in h
     assert S.fin_block(None) == ""
+    from wsb.data import ipo_data as D                     # Anthropic's wording: "price per share will be between $70.00 and $78.00"
+    cv = D.parse_cover("It is currently estimated that the initial public offering price per share will be between $70.00 and $78.00 . "
+                       "We have applied to list our Class A common stock on the Nasdaq Global Select Market under the symbol “ANT.”")
+    assert cv["lo"] == 70.0 and cv["hi"] == 78.0 and cv["symbol"] == "ANT"
+    assert "lo" not in D.parse_cover("revenue grew between $70.00 and $78.00 million")         # not a price range
     print("test_ipo_fin ok")
 
 

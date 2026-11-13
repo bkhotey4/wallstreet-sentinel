@@ -47,6 +47,7 @@ REG = ("S-1", "F-1")
 HEAD_BYTES = 2_500_000
 FIN_BYTES = 16_000_000          # whole prospectus: the quarterly table sits in MD&A (Anthropic's at ~5.5 MB of 14.8 MB)
 FIN_PER_RUN = 6
+COVER_V = 2                     # bump when parse_cover learns a new pattern: active filers' covers are read once more
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
 
@@ -113,7 +114,9 @@ def parse_cover(t: str) -> Dict:
         out["exchange"], out["symbol"] = m.group(1), m.group(2).rstrip(".")
     elif re.search(r"(apply|applied|approved)[^.]{0,80}(Nasdaq|New York Stock Exchange|NYSE)", t[:60000], re.I):
         out["exchange"] = re.search(r"Nasdaq|New York Stock Exchange|NYSE", t[:60000]).group(0)
-    m = re.search(r"between \$\s?([\d.,]+) and \$\s?([\d.,]+) per (?:share|ADS)", t[:80000])
+    # "between $X and $Y per share", or "…offering price per share will be between $X and $Y" (Anthropic's S-1/A, 2026-11-10)
+    m = (re.search(r"between (?:US)?\$\s?([\d.,]+) and (?:US)?\$\s?([\d.,]+) per (?:share|ADS)", t[:80000])
+         or re.search(r"price per (?:share|ADS|ordinary share)[^.$]{0,60}?between (?:US)?\$\s?([\d.,]+) and (?:US)?\$\s?([\d.,]+)", t[:80000]))
     if m and _num(m.group(1)) and _num(m.group(2)):
         out["lo"], out["hi"] = _num(m.group(1)), _num(m.group(2))
     m = re.search(r"(?:offering|are offering|is offering)\s+([\d,]{5,}) (?:shares|American Depositary Shares|ADSs)", t[:40000])
@@ -353,14 +356,14 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
     for cik, f in act:
         if time.time() > deadline - 5:
             break
-        if not f.get("priced") and f.get("last", "") >= (today - timedelta(days=270)).isoformat() and f.get("cover_acc") != f["doc"]["acc"]:
+        if not f.get("priced") and f.get("last", "") >= (today - timedelta(days=270)).isoformat() and (f.get("cover_acc") != f["doc"]["acc"] or f.get("cover_v") != COVER_V):
             try:
                 raw = await _head(ARCH.format(cik=cik, acc=f["doc"]["acc"].replace("-", ""), doc=f["doc"]["file"]))
                 cv = parse_cover(text_of(raw))
                 docs[f["doc"]["acc"]] = cv.pop("excerpt")
                 if cv.get("spac"):
                     f["kind"], f["spac_text"] = "spac", True
-                f["cover"], f["cover_acc"] = cv, f["doc"]["acc"]
+                f["cover"], f["cover_acc"], f["cover_v"] = cv, f["doc"]["acc"], COVER_V
             except Exception as e:  # noqa: BLE001
                 log.info("ipo cover %s: %s", cik, e)
             await asyncio.sleep(0.15)
