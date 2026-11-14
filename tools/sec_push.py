@@ -13,6 +13,8 @@
      13D/A（舊的大股東申報更新）只列在網站，不推。
   5. （2026-11-14 第二批）央行非例行動作（/api/news 標 kind=cb 的官方公告）與日圓急升（美元兌日圓一天跌 ≥ 平常 3 倍）；
      離線補課：這支程式停了 1 小時以上再啟動時，補一則「這段時間漏了什麼」（超過 6 小時、原本會被略過的重大申報也列進去）。
+  6. （A1）系統健康：tools/sys_health.py，每 10 分鐘檢查機器人心跳、連續出錯的資料來源、網站建置、新聞來源數、本機收盤價，
+     有新問題才私訊擁有者，同一件事 24 小時說一次。
 送過的記在 data_cache/sec_push.json，不會重送。Windows 工作排程每 3 分鐘跑一次：python -m tools.sec_push
 影響估算是過去平均關係的推算，不是預測，也不是投資建議。"""
 from __future__ import annotations
@@ -425,6 +427,14 @@ def catchup_embed(prev: float, now: float, late: List[Dict], cbs: List[Dict], mo
             "footer": {"text": "WallStreet Sentinel · 不構成投資建議"}}
 
 
+HEALTH_EVERY = 600
+
+
+async def health_check(now: float, news: Dict, sent: Dict[str, float]):
+    from tools import sys_health as SH
+    return await SH.check(now, news, sent)
+
+
 async def holdings_run(sess: aiohttp.ClientSession, now: float, ctx: Optional[Dict] = None) -> int:
     """tools/holdings_watch.py is private (not copied to the public repo): without it there is simply nothing to send.
     ctx hands over what this round already fetched (SEC alerts, earnings releases, news bursts)."""
@@ -452,6 +462,8 @@ async def run_once(now: Optional[float] = None) -> int:
     done: Dict[str, float] = ({k: now for k in acc} if isinstance(acc, list) else {k: v for k, v in acc.items() if now - float(v) < 10 * 86400})
     bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
     prev = float(mem.get("ts") or 0)
+    health = mem.get("health") or {}
+    hsent: Dict[str, float] = dict(health.get("sent") or {})
     st = await SOF.refresh(watch_list(), now=now)
     todo = sorted((a for a in st.get("alerts") or [] if a["acc"] not in done and now - a["ts"] < MAX_AGE
                    and a.get("item") != "13D/A"),          # an update to an old 13D is listed on the site only
@@ -550,11 +562,25 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("night futures check failed: %s", e)
+        try:                                               # 系統健康（A1）：每 10 分鐘看一次，有新問題才私訊擁有者
+            if now - float(health.get("ts") or 0) >= HEALTH_EVERY:
+                new, open_n = await health_check(now, nj, hsent)
+                health = {"ts": now, "sent": hsent}
+                if new:
+                    from tools import sys_health as SH
+                    dm = dm or await dm_channel(sess)
+                    if dm and await post(sess, dm, SH.embed(new, open_n)):
+                        sent += 1
+                        for i in new:
+                            hsent[i["key"]] = now
+        except Exception as e:  # noqa: BLE001
+            log.warning("health check failed: %s", e)
+        health["sent"] = hsent
         try:                                               # 持股晚報與累積跌幅：只私訊擁有者
             sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
-    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "ts": int(now)}), encoding="utf-8")
+    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "ts": int(now)}), encoding="utf-8")
     try:
         s = await http.session()
         await s.close()

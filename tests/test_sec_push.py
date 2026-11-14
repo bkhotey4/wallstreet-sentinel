@@ -59,8 +59,12 @@ def main() -> None:
 
     async def fake_mkt(sess, tags, now):
         return ["・相關行情現在：布蘭特原油 +3.0%"]
-    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves)
-    P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump = fake_news, no_night, no_hold, fake_mkt, no_yen
+    hp = {"new": []}
+
+    async def fake_health(now, nj, hsent):
+        return hp["new"], len(hp["new"])
+    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check)
+    P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.health_check = fake_news, no_night, no_hold, fake_mkt, no_yen, fake_health
     P.CATCH_GAP = 10 ** 12                                  # the catch-up message has its own test below
     real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts)
     try:
@@ -166,11 +170,21 @@ def main() -> None:
         # a short stop (under an hour) says nothing
         assert asyncio.run(P.run_once(now=back + 180 + 1800)) == 0
         news["items"] = []
+        # A1 system health: a new problem goes to the owner's DM only, at most every 10 minutes
+        hp["new"] = [{"key": "bot_down", "urgent": True, "text": "**機器人停了**：已經 45 分鐘沒有心跳。"}]
+        sent.clear(); dms.clear()
+        t9 = back + 180 + 1800 + 700
+        assert asyncio.run(P.run_once(now=t9)) == 1 and dms == ["🩺 系統健康：需要處理"] and not sent, (sent, dms)
+        dms.clear()
+        assert asyncio.run(P.run_once(now=t9 + 180)) == 0 and not dms                         # checked 3 minutes ago: not yet
+        import json as _j
+        assert "bot_down" in _j.loads(P.PUSHED.read_text(encoding="utf-8"))["health"]["sent"]
+        hp["new"] = []
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
-        P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves = real2
+        P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check = real2
 
     # the front futures contract from the exchange's own rows: largest volume, monthly contracts only
     from wsb.data import taifex_live as TL
@@ -181,6 +195,37 @@ def main() -> None:
     q = TL.near(rows)
     assert q["sym"] == "TXFK6-M" and abs(q["pct"] - (42500 / 43839 - 1) * 100) < 1e-9 and q["chg"] == -1339.0 and q["status"] == ""
     assert TL.near([]) is None and TL.near(rows[:1]) is None
+
+    # A1: what counts as a problem, in plain words, and when it is said again
+    from tools import sys_health as SH
+    NOW = 1794700000
+    from datetime import datetime as _dt
+    line = lambda h, lg, msg, lvl="WARNING": _dt.fromtimestamp(NOW - h * 3600).strftime("%Y-%m-%d %H:%M:%S") + f",123 {lvl} {lg}: {msg}"  # noqa: E731
+    lines = [line(h, "wsb.data.fred", f"FRED CPILFESL failed: ClientResponseError: 429, try {h}") for h in range(0, 24)]
+    lines += [line(h, "wsb.data.taiwan", "TWSE failed: timeout") for h in range(0, 10)]                 # 10 hours only: not persistent
+    lines += [line(h, "asyncio", "Exception in callback _ProactorBasePipeTransport", "ERROR") for h in range(0, 24)]   # noise
+    lines += [line(30, "wsb.data.fred", "FRED old failure"), "garbage line"]
+    li = SH.log_issues(lines, NOW)
+    assert len(li) == 1 and li[0]["logger"] == "wsb.data.fred" and li[0]["hours"] >= 23 and li[0]["n"] == 24, li
+    assert SH.what_of("wsb.data.fred")["zh"].startswith("聯準會資料庫") and SH.what_of("x.y")["zh"] == "x.y"
+    iso = lambda h: _dt.utcfromtimestamp(NOW - h * 3600).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    run = lambda h, c: {"status": "completed", "conclusion": c, "updated_at": iso(h)}  # noqa: E731
+    assert SH.build_issue([run(0.5, "success"), run(1.5, "failure")], NOW) is None
+    assert "沒有成功重新產生" in SH.build_issue([run(5, "success")], NOW)
+    assert "都失敗" in SH.build_issue([run(0.2, "failure"), run(1, "failure"), run(2, "failure"), run(3, "success")], NOW)
+    assert SH.build_issue([run(0.2, "cancelled"), run(1, "failure"), run(2, "failure"), run(3, "success")], NOW) is None   # a cancelled run is not a failure
+    assert SH.build_issue([{"status": "in_progress"}], NOW) is None
+    ok = SH.collect(NOW, [], 60.0, [run(0.5, "success")], 24, 1)
+    assert ok == []
+    bad = SH.collect(NOW, lines, 45 * 60.0, [run(6, "success")], 9, 6)
+    assert [i["key"].split(":")[0] for i in bad] == ["bot_down", "log", "build", "news", "prices"] and bad[0]["urgent"] and not bad[1]["urgent"]
+    assert "總經卡片" in bad[1]["text"] and "只有 9 個來源" in bad[3]["text"]
+    assert SH.collect(NOW, [], None, [], None, None) == []                                          # nothing readable → nothing claimed
+    sent_h = {"bot_down": NOW - 3600, "build": NOW - 25 * 3600}
+    assert [i["key"].split(":")[0] for i in SH.due(bad, sent_h, NOW)] == ["log", "build", "news", "prices"]   # said within a day → not again
+    e = SH.embed(bad[:2], 5)
+    assert e["title"] == "🩺 系統健康：需要處理" and "目前共 5 件沒解決" in e["description"]
+    assert SH.embed(bad[1:2], 1)["title"] == "🩺 系統健康：資料來源連續出錯"
     print("test_sec_push ok")
 
 
