@@ -154,6 +154,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           node tests_js/quote.test.mjs        # functions/api/quote.js = 即時報價（行情列、盤中門檻、查任何股票）
+          node tests_js/news.test.mjs         # functions/api/news.js = 即時新聞、SEC 申報警報、多家媒體同時報導
           # Cloudflare 版用青綠底＋「即時」圖示與名稱，手機主畫面上和 GitHub 版（黑底）分得開；GitHub 版的檔案上面已打包，不受影響
           cp tools/static/cf/*.png site/
           python - <<'EOF'

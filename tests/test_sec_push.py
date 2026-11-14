@@ -40,6 +40,21 @@ def main() -> None:
         return "dm"
     async def no_sectors(sess, now):
         return []
+    news = {"bursts": []}
+
+    async def fake_news(sess):
+        return news
+
+    async def no_night(sess, now):
+        return None
+
+    async def no_hold(sess, now):
+        return 0
+
+    async def fake_mkt(sess, tags, now):
+        return ["・相關行情現在：布蘭特原油 +3.0%"]
+    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now)
+    P.news_json, P.tx_night, P.holdings_run, P.market_now = fake_news, no_night, no_hold, fake_mkt
     real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts)
     try:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.sector_alerts = fake_refresh, fake_impact, fake_post, fake_dm, lambda: {}, no_sectors
@@ -53,10 +68,67 @@ def main() -> None:
         sent.clear(); dms.clear()
         P.alert_channel = lambda: ""
         assert asyncio.run(P.run_once(now=1500)) == 3 and len(dms) == 3 and not sent
+        # ---- 2026-11-14: an update to an old 13D is never pushed; a new 13D is, like any other alert
+        P.PUSHED.unlink()
+        sent.clear(); dms.clear()
+        P.alert_channel = lambda: "123"
+        d13 = {"acc": "d1", "ts": 1400, "sym": "NVDA", "zh": "輝達", "url": "https://www.sec.gov/d1", "item": "13D",
+               "t": "SEC 申報：ICAHN CARL C 申報持有 輝達（NVDA）逾 5% 股權，不排除介入經營（Schedule 13D）"}
+
+        async def refresh13(watch, now=0):
+            return {"alerts": [d13, dict(d13, acc="d2", item="13D/A", t="SEC 申報：X 更新對 輝達（NVDA）的大股東持股申報（Schedule 13D/A）")]}
+        SOF.refresh = refresh13
+        assert asyncio.run(P.run_once(now=1500)) == 1 and "13D）" in sent[0] and len(dms) == 1, (sent, dms)
+        # several newsrooms at once: 3 or more are pushed once per 12 hours, 2 stay on the site; a company gets the impact lines, an event the markets
+        co = {"key": "co:NVDA", "kind": "co", "sym": "NVDA", "label": "輝達（NVDA）", "n": 3, "base": 0, "first": 1000, "last": 1900, "mins": 15,
+              "tags": ["科技"], "items": [{"t": "輝達執行長辭職", "u": "https://x.test/1", "s": "中央社財經", "ts": 1000, "lang": "zh"}]}
+        ev = {"key": "攻擊+伊朗", "kind": "topic", "sym": "", "label": "攻擊＋伊朗", "n": 4, "base": 1, "first": 1100, "last": 1900, "mins": 13,
+              "tags": ["地緣", "油價"], "items": [{"t": "Iran fires missiles", "u": "https://x.test/2", "s": "CNBC 國際", "ts": 1100, "lang": "en"}]}
+        news["bursts"] = [co, ev, dict(co, key="co:MSFT", label="微軟（MSFT）", n=2)]
+        sent.clear(); dms.clear()
+        assert asyncio.run(P.run_once(now=2000)) == 2 and len(sent) == 2 and "輝達（NVDA）（3 家）" in sent[0] and "攻擊＋伊朗（4 家）" in sent[1], sent
+        assert asyncio.run(P.run_once(now=2000 + 3600)) == 0                                   # same story within 12 h
+        assert asyncio.run(P.run_once(now=2000 + 13 * 3600)) == 2                              # still listed 13 h later → said again
+        e1, e2 = P.burst_embed(co, ["輝達 今天 **-5.6%**"]), P.burst_embed(ev, ["・相關行情現在：布蘭特原油 +3.0%"])
+        assert "前 6 小時幾乎沒有人提" in e1["description"] and "影響估算" in e1["description"] and "[輝達執行長辭職](https://x.test/1)" in e1["description"]
+        assert "最多同時只有 1 家" in e2["description"] and "不代表內容已經證實" in e2["description"]
+        for w in ("買進", "賣出", "目標價", "低估", "高估"):
+            assert w not in e1["description"] + e2["description"]
+        assert P.burst_todo([co, dict(co, n=2)], {}, 5000) == [co] and P.burst_todo([co], {"co:NVDA": 5000 - 3600}, 5000) == []
+        news["bursts"] = []
+        # the night session of Taiwan index futures: one alert per session and level; nothing when it is closed or in day hours
+        night = {"sym": "TXFK6-M", "last": 42500.0, "ref": 43839.0, "chg": -1339.0, "pct": -3.05, "status": "", "z": -2.4, "lv": 1, "day": "2026-11-13"}
+
+        async def yes_night(sess, now):
+            return night
+
+        async def fake_tx_embed(sess, a):
+            return {"title": "🟠 台指期夜盤急跌 lv" + str(a["lv"])}
+        P.tx_night, real_txe = yes_night, P.tx_embed
+        P.tx_embed = fake_tx_embed
+        sent.clear()
+        assert asyncio.run(P.run_once(now=60000)) == 1 and sent == ["🟠 台指期夜盤急跌 lv1"], sent
+        assert asyncio.run(P.run_once(now=60100)) == 0
+        night = dict(night, lv=2)
+        assert asyncio.run(P.run_once(now=60200)) == 1 and sent[-1].endswith("lv2")            # it got worse → said once more
+        night = dict(night, lv=1)
+        assert asyncio.run(P.run_once(now=60300)) == 0                                         # back to the lower level: nothing new
+        P.tx_embed = real_txe
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
+        P.news_json, P.tx_night, P.holdings_run, P.market_now = real2
+
+    # the front futures contract from the exchange's own rows: largest volume, monthly contracts only
+    from wsb.data import taifex_live as TL
+    rows = [{"SymbolID": "TXF-P", "CLastPrice": "", "CRefPrice": "43675.12", "CTotalVolume": ""},
+            {"SymbolID": "TXFK6-M", "DispCName": "臺指期116", "CLastPrice": "42,500.00", "CRefPrice": "43839.00", "CTotalVolume": "55924", "Status": "", "CTime": "213000"},
+            {"SymbolID": "TXFL6-M", "CLastPrice": "42600.00", "CRefPrice": "43917.00", "CTotalVolume": "1472", "Status": ""},
+            {"SymbolID": "MXFK6-M", "CLastPrice": "42500.00", "CRefPrice": "43839.00", "CTotalVolume": "999999", "Status": ""}]
+    q = TL.near(rows)
+    assert q["sym"] == "TXFK6-M" and abs(q["pct"] - (42500 / 43839 - 1) * 100) < 1e-9 and q["chg"] == -1339.0 and q["status"] == ""
+    assert TL.near([]) is None and TL.near(rows[:1]) is None
     print("test_sec_push ok")
 
 

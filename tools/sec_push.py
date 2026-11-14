@@ -6,6 +6,11 @@
   3. 還沒送過、6 小時內的警報：附上影響估算（標普 500 權重、最常一起動的美股、隔天跟著動的台股，乘上現在的漲跌），
      用同一個機器人身分送到警報頻道（和機器人同一個規則：/setchannel 設的，或 ALERT_CHANNEL_ID）；沒有設頻道就私訊你
      （OWNER_USER_ID）；有頻道時，破產、財報重編這類，或執行長／財務長／董事長離職，另外再私訊一份。
+  4. （2026-11-14）同一趟順便做三件事，各自失敗不影響別的：
+     ・多家媒體同時報導：/api/news 算好的 bursts，3 家以上才推，公司附影響估算，事件附相關行情現在的漲跌；同一件事 12 小時推一次
+     ・台指期夜盤急跌：期交所官方即時報價，跌幅 ≥ 台股平常一天的 2 倍且 ≥ 1.5%（規則同族群急跌）
+     ・持股晚報與累積跌幅（tools/holdings_watch.py）：只私訊擁有者
+     13D/A（舊的大股東申報更新）只列在網站，不推。
 送過的記在 data_cache/sec_push.json，不會重送。Windows 工作排程每 3 分鐘跑一次：python -m tools.sec_push
 影響估算是過去平均關係的推算，不是預測，也不是投資建議。"""
 from __future__ import annotations
@@ -221,6 +226,128 @@ def sector_embed(a: Dict) -> Dict:
             "footer": {"text": "WallStreet Sentinel · 族群急跌警報 · 不構成投資建議"}}
 
 
+# ------------------------------------------------------------------ 多家媒體同時報導（/api/news 的 bursts，規則在 functions/api/news.js）
+BURST_MIN = 3                    # Discord 只推 3 家以上；2 家的公司消息只在網站上列出
+BURST_GAP = 12 * 3600            # 同一件事 12 小時內只推一次
+# 新聞分類 → 最直接相關的行情（看「現在動了多少」，不是預測）
+TAG_ASSET = {"美股": [("^GSPC", "標普 500")], "科技": [("^SOX", "費城半導體")], "利率": [("^TNX", "美債 10 年殖利率")], "油價": [("BZ=F", "布蘭特原油")],
+             "匯率": [("DX-Y.NYB", "美元指數")], "黃金": [("GC=F", "黃金")], "地緣": [("BZ=F", "布蘭特原油"), ("GC=F", "黃金"), ("^VIX", "VIX")],
+             "台股": [("^TWII", "台股加權")]}
+
+
+async def news_json(sess: aiohttp.ClientSession) -> Dict:
+    try:
+        async with sess.get(NEWS, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            return (await r.json()) or {}
+    except Exception as e:  # noqa: BLE001
+        log.info("news: %s", e)
+        return {}
+
+
+async def market_now(sess: aiohttp.ClientSession, tags: List[str], now: float) -> List[str]:
+    """How the markets a headline points at are moving right now, each against its own normal day."""
+    from wsb.analytics import sector_shock as SS
+    want: Dict[str, str] = {}
+    for t in tags:
+        for sym, zh in TAG_ASSET.get(t, []):
+            want.setdefault(sym, zh)
+    if not want:
+        return []
+    try:
+        async with sess.get(QUOTE, params={"s": ",".join(want)}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            q = (await r.json()).get("q") or {}
+    except Exception:  # noqa: BLE001
+        return []
+    try:
+        h = pd.read_pickle(DATA_DIR / "history_close.pkl")
+    except Exception:  # noqa: BLE001
+        h = pd.DataFrame()
+    live, shut = [], []
+    for sym, zh in want.items():
+        x = q.get(sym) or {}
+        if not isinstance(x.get("chg"), (int, float)) or not x.get("t"):
+            continue
+        sd = SS.robust_sd(h[sym]) if sym in getattr(h, "columns", []) else None
+        mv = f'{x["chg"]:+.1f}%'
+        if sym == "^TNX" and isinstance(x.get("price"), (int, float)):          # a yield moves in basis points, not in % of itself
+            mv = f'{(x["price"] - x["price"] / (1 + x["chg"] / 100)) * 100:+.0f} 個基點（現 {x["price"]:.2f}%）'
+        txt = f"{zh} {mv}" + (f'（平常一天的 {abs(x["chg"]) / sd:.1f} 倍）' if sd else "")
+        (live if now - float(x["t"]) < 2 * 3600 else shut).append(txt)
+    if live:
+        return ["・相關行情現在：" + "、".join(live)] + (["・其他相關行情休市中。"] if shut else [])
+    return ["・相關的行情現在都休市，開盤後才看得到反應。"] if shut else []
+
+
+def burst_embed(b: Dict, lines: List[str]) -> Dict:
+    tpe = lambda ts: time.strftime("%H:%M", time.gmtime(float(ts) + 8 * 3600))  # noqa: E731
+    heads = "\n".join(f'・[{x["t"][:140]}]({x["u"]})（{x["s"]} {tpe(x["ts"])}）' for x in b.get("items") or [])
+    usual = f'；它前 6 小時最多同時只有 {b["base"]} 家在報' if b.get("base") else "；前 6 小時幾乎沒有人提"
+    return {"title": f'🟠 多家媒體同時報導：{b["label"]}（{b["n"]} 家）'[:256], "color": 0xD97706,
+            "description": (f'一句話看懂：{tpe(b["first"])} 起 {b["mins"]} 分鐘內，{b["n"]} 家不同的新聞編輯室都在報 {b["label"]}{usual}。\n' + heads
+                            + (("\n**影響估算**（過去的平均關係乘上現在的漲跌，不是預測）\n" if b.get("kind") == "co" else
+                                "\n**相關行情**（只是現在的漲跌，不代表就是這則消息造成的）\n") + "\n".join(lines) if lines else "")
+                            + "\n很多家同時報只代表消息正在擴散，不代表內容已經證實，也不代表市場一定會動。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 多家媒體同時報導 · 不構成投資建議"},
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(b["first"]))}
+
+
+def burst_todo(bs: List[Dict], sent: Dict[str, float], now: float) -> List[Dict]:
+    return [b for b in bs or [] if b.get("n", 0) >= BURST_MIN and (b["key"] not in sent or now - float(sent[b["key"]]) >= BURST_GAP)]
+
+
+# ------------------------------------------------------------------ 台指期夜盤急跌（期交所官方即時報價；規則同族群急跌）
+async def tx_night(sess: aiohttp.ClientSession, now: float) -> Optional[Dict]:
+    """The night session (15:00–05:00 Taipei) down ≥ 2× a normal day of the TAIEX and ≥ 1.5 %; None otherwise or when it is closed."""
+    from wsb.analytics import sector_shock as SS
+    from wsb.data import taifex_live as TL
+    t = time.gmtime(now + 8 * 3600)
+    if 5 <= t.tm_hour < 15:
+        return None
+    q = TL.near(await TL.quotes(sess, night=True))
+    if not q or q["status"] == "TC":                       # closed: nothing live to report
+        return None
+    try:
+        sd = SS.robust_sd(pd.read_pickle(DATA_DIR / "history_close.pkl")["^TWII"])
+    except Exception:  # noqa: BLE001
+        return None
+    lv = SS.level(q["pct"], sd)
+    if not lv:
+        return None
+    day = time.strftime("%Y-%m-%d", time.gmtime(now + 8 * 3600 - (86400 if t.tm_hour < 5 else 0)))     # the day the session opened
+    return {**q, "z": q["pct"] / sd, "lv": lv, "day": day}
+
+
+async def tx_embed(sess: aiohttp.ClientSession, a: Dict) -> Dict:
+    side = []
+    try:
+        async with sess.get(QUOTE, params={"s": "TSM,^SOX,^NDX", "ext": "TSM"}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            q = (await r.json()).get("q") or {}
+        e = (q.get("TSM") or {}).get("ext") or {}
+        if isinstance(e.get("chg"), (int, float)):
+            side.append(f'台積電 ADR {"盤前" if e.get("sess") == "pre" else "盤後"} {e["chg"]:+.1f}%')
+        for s, zh in (("TSM", "台積電 ADR"), ("^SOX", "費城半導體"), ("^NDX", "那斯達克 100")):
+            x = q.get(s) or {}
+            if isinstance(x.get("chg"), (int, float)) and x.get("t") and time.time() - float(x["t"]) < 2 * 3600:
+                side.append(f'{zh} {x["chg"]:+.1f}%')
+    except Exception as e:  # noqa: BLE001
+        log.info("tx side quotes: %s", e)
+    return {"title": f'{"🔴" if a["lv"] >= 2 else "🟠"} 台指期夜盤急跌：{a["pct"]:+.1f}%（台股平常一天的 {abs(a["z"]):.1f} 倍）',
+            "color": 0xE5484D if a["lv"] >= 2 else 0xD97706,
+            "description": (f'一句話看懂：台股已經收盤，但台指期夜盤現在 {a["last"]:,.0f} 點，比今天日盤結算價 {a["ref"]:,.0f} 低 {abs(a["chg"]):,.0f} 點。\n'
+                            + ("・同一時間：" + "、".join(side) + "\n" if side else "・美股現在沒有即時報價可以對照。\n")
+                            + "夜盤的成交量比日盤小，明天開盤不一定照這個幅度；它反映的是台股收盤後才出現的消息。")[:4000],
+            "footer": {"text": "期交所官方報價 · WallStreet Sentinel · 不構成投資建議"}}
+
+
+async def holdings_run(sess: aiohttp.ClientSession, now: float) -> int:
+    """tools/holdings_watch.py is private (not copied to the public repo): without it there is simply nothing to send."""
+    try:
+        from tools import holdings_watch as HW
+    except ImportError:
+        return 0
+    return await HW.run(sess, post, dm_channel, now)
+
+
 async def run_once(now: Optional[float] = None) -> int:
     from wsb.data import http
     from wsb.data import sec_officers as SOF
@@ -230,11 +357,14 @@ async def run_once(now: Optional[float] = None) -> int:
         log.warning("DISCORD_BOT_TOKEN, or both the alert channel and the owner id, not set")
         return 0
     try:
-        done = set(json.loads(PUSHED.read_text(encoding="utf-8")).get("acc") or []) if PUSHED.exists() else set()
+        mem = json.loads(PUSHED.read_text(encoding="utf-8")) if PUSHED.exists() else {}
     except (OSError, ValueError):
-        done = set()
+        mem = {}
+    done = set(mem.get("acc") or [])
+    bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
     st = await SOF.refresh(watch_list(), now=now)
-    todo = sorted((a for a in st.get("alerts") or [] if a["acc"] not in done and now - a["ts"] < MAX_AGE),
+    todo = sorted((a for a in st.get("alerts") or [] if a["acc"] not in done and now - a["ts"] < MAX_AGE
+                   and a.get("item") != "13D/A"),          # an update to an old 13D is listed on the site only
                   key=lambda a: (-severity(a), -a["ts"]))
     sent = 0
     async with aiohttp.ClientSession() as sess:
@@ -265,7 +395,35 @@ async def run_once(now: Optional[float] = None) -> int:
                 await asyncio.sleep(1)
         except Exception as e:  # noqa: BLE001
             log.warning("sector check failed: %s", e)
-    PUSHED.write_text(json.dumps({"acc": sorted(done)[-300:], "ts": int(now)}), encoding="utf-8")
+        try:                                               # 多家媒體同時報導（3 家以上）＋影響
+            for b in burst_todo((await news_json(sess)).get("bursts") or [], bsent, now):
+                lines = (await impact(sess, b["sym"], b["label"].split("（")[0]) if b.get("kind") == "co" and b.get("sym")
+                         else await market_now(sess, b.get("tags") or [], now))
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", burst_embed(b, lines)):
+                    bsent[b["key"]] = now
+                    sent += 1
+                await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("burst check failed: %s", e)
+        try:                                               # 台指期夜盤急跌
+            a = await tx_night(sess, now)
+            if a:
+                key = f'txnight:{a["day"]}:{a["lv"]}'
+                if key not in done and not (a["lv"] == 1 and f'txnight:{a["day"]}:2' in done):
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", await tx_embed(sess, a)):
+                        done.add(key)
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("night futures check failed: %s", e)
+        try:                                               # 持股晚報與累積跌幅：只私訊擁有者
+            sent += await holdings_run(sess, now)
+        except Exception as e:  # noqa: BLE001
+            log.warning("holdings watch failed: %s", e)
+    PUSHED.write_text(json.dumps({"acc": sorted(done)[-300:], "burst": bsent, "ts": int(now)}), encoding="utf-8")
     try:
         s = await http.session()
         await s.close()

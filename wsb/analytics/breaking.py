@@ -65,7 +65,8 @@ SEC_H = 3 * 3600                 # an SEC filing counts for the next 3 hours
 def events(eng, now: Optional[datetime] = None) -> List[Dict]:
     """「有事才加班」的另外兩種事（user, 2026-11-14）：
        * 族群急跌：任一族群紅燈（≥ 平常一天 3 倍），或兩個族群同時黃燈（≥ 2 倍且跌逾 1.5%），規則見 sector_shock
-       * SEC 重大申報（3 小時內）：破產、資安事件、減損、下市通知、財報重編，或執行長／財務長／董事長離職
+       * SEC 重大申報（3 小時內，嚴重度 ≥ 3，見 sec_officers.SEV）：破產、資安事件、減損、下市通知、財報重編、債務被要求提前清償、
+         控制權變動、裁員重整、新的 13D（有人持股逾 5%），或執行長／財務長／董事長離職
     [{kind, key, text}]；text 是給加班口播的白話原因。"""
     now = now or datetime.now(timezone.utc)
     out: List[Dict] = []
@@ -111,7 +112,8 @@ def decide(hs: List[Dict], state: Dict, now: datetime, ev: Optional[List[Dict]] 
     why = ("沒有達到條件" if not trig else "下一班固定口播 30 分鐘內就到" if quiet else "6 小時內已經加班過" if cool else "發車")
     return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why, "reasons": ev,
             "rule": (f"任一行情 ≥ 平常波動 {ONE:g} 倍，或兩項 ≥ {TWO:g} 倍；或族群紅燈／兩個族群黃燈；"
-                     "或 3 小時內有 SEC 重大申報（破產、資安、減損、下市通知、財報重編、執行長／財務長／董事長離職）")}
+                     "或 3 小時內有 SEC 重大申報（破產、資安、減損、下市通知、財報重編、債務被要求提前清償、控制權變動、裁員重整、"
+                     "有人申報持股逾 5%、執行長／財務長／董事長離職）")}
 
 
 def build(eng, now: Optional[datetime] = None) -> Dict:
