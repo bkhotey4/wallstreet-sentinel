@@ -200,12 +200,20 @@ async def generate(eng, limit: int = 6, deadline_s: float = 150) -> int:
     return n
 
 
+def note_fits(text: str, e: Dict) -> bool:
+    """A cached note may only talk about 年增 / 月增 when the event's table still has such a row. A note written while a
+    row was mislabelled (2026-11-10 CPI: the m/m shown as y/y) would otherwise keep quoting a number the table dropped."""
+    labs = " ".join(str(r.get("label", "")) for r in e.get("rows") or [])
+    return not any(w in text and w not in labs for w in ("年增", "月增"))
+
+
 def attach(eng) -> None:
     """Copy cached notes onto the current results (no API calls)."""
     cache = load()
     ev = getattr(eng, "econ_view", None) or {}
     for e in ev.get("events") or []:
-        if (cache.get(e["id"]) or {}).get("text"):
+        text = (cache.get(e["id"]) or {}).get("text")
+        if text and note_fits(text, e):
             e["ai"] = cache[e["id"]]
     te = getattr(eng, "techearn", None) or {}
     for r in te.get("rows") or []:

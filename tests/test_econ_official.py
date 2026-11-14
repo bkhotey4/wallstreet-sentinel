@@ -95,6 +95,11 @@ def main() -> None:
     evs = ME.events_for_day("2026-11-10", EO.merge(old, new, ff), [])
     cpi = next(e for e in evs if e["key"] == "cpi")
     assert cpi["released"] and cpi["rows"][0]["label"] == "核心 CPI 月增" and cpi["rows"][0]["a"] == 0.3 and cpi["dir"] == "hot"
+    # a cached AI note that quotes a 年增 the table no longer has is not shown
+    from wsb.ai import econ_ai as A
+    only_m = {"rows": [{"label": "核心 CPI 月增"}, {"label": "CPI 月增"}]}
+    assert not A.note_fits("核心 CPI 月增與年增皆達 0.3%", only_m) and A.note_fits("核心 CPI 月增 0.3%", only_m)
+    assert A.note_fits("年增 6.5%", {"rows": [{"label": "PPI 年增"}]}) and A.note_fits("失業率上升", {"rows": [{"label": "失業率"}]})
     print("test_econ_official ok")
 
 
