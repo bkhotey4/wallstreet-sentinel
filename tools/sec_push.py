@@ -11,6 +11,8 @@
      ・台指期夜盤急跌：期交所官方即時報價，跌幅 ≥ 台股平常一天的 2 倍且 ≥ 1.5%（規則同族群急跌）
      ・持股晚報與累積跌幅（tools/holdings_watch.py）：只私訊擁有者
      13D/A（舊的大股東申報更新）只列在網站，不推。
+  5. （2026-11-14 第二批）央行非例行動作（/api/news 標 kind=cb 的官方公告）與日圓急升（美元兌日圓一天跌 ≥ 平常 3 倍）；
+     離線補課：這支程式停了 1 小時以上再啟動時，補一則「這段時間漏了什麼」（超過 6 小時、原本會被略過的重大申報也列進去）。
 送過的記在 data_cache/sec_push.json，不會重送。Windows 工作排程每 3 分鐘跑一次：python -m tools.sec_push
 影響估算是過去平均關係的推算，不是預測，也不是投資建議。"""
 from __future__ import annotations
@@ -339,13 +341,98 @@ async def tx_embed(sess: aiohttp.ClientSession, a: Dict) -> Dict:
             "footer": {"text": "期交所官方報價 · WallStreet Sentinel · 不構成投資建議"}}
 
 
-async def holdings_run(sess: aiohttp.ClientSession, now: float) -> int:
-    """tools/holdings_watch.py is private (not copied to the public repo): without it there is simply nothing to send."""
+# ------------------------------------------------------------------ 央行非例行動作（/api/news 標 kind=cb 的官方公告）與日圓急升
+def cb_embed(x: Dict, lines: List[str]) -> Dict:
+    return {"title": ("🔴 央行非例行動作：" + x["t"])[:256], "url": x["u"], "color": 0xE5484D,
+            "description": (f'一句話看懂：{x["s"]}發了一則不在例行時程裡的公告（緊急、臨時、聯合行動這一類，或非會議日的利率聲明）。'
+                            "央行很少這樣做，通常代表市場或銀行體系出了狀況，或它要搶在市場前面動作。\n"
+                            + ("**相關行情**（只是現在的漲跌，不代表就是這則公告造成的）\n" + "\n".join(lines) + "\n" if lines else "")
+                            + "標題是用關鍵字比對的，請點進去看原文確認。")[:4000],
+            "footer": {"text": "央行官方公告 · WallStreet Sentinel · 不構成投資建議"},
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(x["ts"]))}
+
+
+YEN_Z, YEN_MIN = 3.0, 1.5        # 美元兌日圓一天跌 ≥ 平常 3 倍且 ≥ 1.5%（日圓急升）
+
+
+async def yen_jump(sess: aiohttp.ClientSession, now: float) -> Optional[Dict]:
+    from wsb.analytics import sector_shock as SS
+    async with sess.get(QUOTE, params={"s": "JPY=X"}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+        x = ((await r.json()).get("q") or {}).get("JPY=X") or {}
+    if not isinstance(x.get("chg"), (int, float)) or not x.get("t") or now - float(x["t"]) > 2 * 3600:
+        return None
+    try:
+        sd = SS.robust_sd(pd.read_pickle(DATA_DIR / "history_close.pkl")["JPY=X"])
+    except Exception:  # noqa: BLE001
+        return None
+    if not sd or x["chg"] > -YEN_MIN or x["chg"] / sd > -YEN_Z:
+        return None
+    return {"chg": float(x["chg"]), "z": x["chg"] / sd, "price": x.get("price"), "day": time.strftime("%Y-%m-%d", time.gmtime(float(x["t"])))}
+
+
+def yen_embed(a: Dict, lines: List[str]) -> Dict:
+    return {"title": f'🔴 日圓急升：美元兌日圓 {a["chg"]:+.1f}%（平常一天的 {abs(a["z"]):.1f} 倍）', "color": 0xE5484D,
+            "description": ("一句話看懂：日圓在一天內升值這麼多很少見" + (f'，美元兌日圓現在 {a["price"]:.2f}' if isinstance(a.get("price"), (int, float)) else "")
+                            + "。常見原因是日本官方進場買日圓（干預），或避險資金大舉回流；日本財務省通常事後才證實有沒有干預。\n"
+                            "・接著會怎樣：借日圓去買其他資產的資金成本變高，可能被迫把手上的股票換回現金來還日圓。\n"
+                            + ("\n".join(lines) + "\n" if lines else "") + "這是從匯價推測，不是官方消息。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 日圓急升 · 不構成投資建議"}}
+
+
+# ------------------------------------------------------------------ 離線補課：這支程式停了一小時以上，重新開始時補一則
+CATCH_GAP = 3600
+GAP_ASSETS = (("^GSPC", "標普 500"), ("^NDX", "那斯達克 100"), ("^SOX", "費城半導體"), ("^TWII", "台股加權"), ("BZ=F", "布蘭特原油"), ("^TNX", "美債 10 年殖利率"))
+
+
+async def gap_moves(sess: aiohttp.ClientSession, prev: float) -> List[str]:
+    """Each main market: now against its last close on or before the day the program stopped."""
+    try:
+        h = pd.read_pickle(DATA_DIR / "history_close.pkl")
+        async with sess.get(QUOTE, params={"s": ",".join(a for a, _ in GAP_ASSETS)}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            q = (await r.json()).get("q") or {}
+    except Exception as e:  # noqa: BLE001
+        log.info("gap moves: %s", e)
+        return []
+    day = pd.Timestamp(time.strftime("%Y-%m-%d", time.gmtime(prev)))
+    out = []
+    for sym, zh in GAP_ASSETS:
+        px = (q.get(sym) or {}).get("price")
+        if sym not in h.columns or not isinstance(px, (int, float)):
+            continue
+        v = h[sym].dropna()
+        v = v[v.index <= day]
+        if not len(v) or not v.iloc[-1]:
+            continue
+        if abs(px / v.iloc[-1] - 1) < 0.0005:              # nothing traded in between (a weekend): no line
+            continue
+        out.append(f"{zh} {(px - v.iloc[-1]) * 100:+.0f} 個基點（現 {px:.2f}%）" if sym == "^TNX" else f"{zh} {(px / v.iloc[-1] - 1) * 100:+.1f}%")
+    return out
+
+
+def catchup_embed(prev: float, now: float, late: List[Dict], cbs: List[Dict], moves: List[str]) -> Dict:
+    tpe = lambda ts: time.strftime("%m/%d %H:%M", time.gmtime(float(ts) + 8 * 3600))  # noqa: E731
+    hours = (now - prev) / 3600
+    lines = [f"一句話看懂：推播程式從 {tpe(prev)} 到 {tpe(now)} 沒有在跑（{hours:.0f} 小時，電腦關機、睡眠或斷網），"
+             + (f"這段時間有 {len(late) + len(cbs)} 則重大申報或公告沒有即時通知到你。" if late or cbs else "這段時間沒有漏掉追蹤公司的重大申報。")]
+    for a in late[:8]:
+        lines.append(f'・{tpe(a["ts"])} [{a["t"][:150]}]({a["url"]})')
+    for x in cbs[:4]:
+        lines.append(f'・{tpe(x["ts"])} [央行公告：{x["t"][:140]}]({x["u"]})')
+    if moves:
+        lines.append("**這段時間的行情**（和停止那天的收盤比）：" + "、".join(moves))
+    lines.append("多家媒體同時報導的紀錄只留 3 小時，離線期間的補不回來；較新的申報（6 小時內）會照常另外通知。")
+    return {"title": f"🔁 離線補課：{hours:.0f} 小時沒有即時通知", "color": 0x6366F1, "description": "\n".join(lines)[:4000],
+            "footer": {"text": "WallStreet Sentinel · 不構成投資建議"}}
+
+
+async def holdings_run(sess: aiohttp.ClientSession, now: float, ctx: Optional[Dict] = None) -> int:
+    """tools/holdings_watch.py is private (not copied to the public repo): without it there is simply nothing to send.
+    ctx hands over what this round already fetched (SEC alerts, earnings releases, news bursts)."""
     try:
         from tools import holdings_watch as HW
     except ImportError:
         return 0
-    return await HW.run(sess, post, dm_channel, now)
+    return await HW.run(sess, post, dm_channel, now, ctx=ctx)
 
 
 async def run_once(now: Optional[float] = None) -> int:
@@ -360,8 +447,11 @@ async def run_once(now: Optional[float] = None) -> int:
         mem = json.loads(PUSHED.read_text(encoding="utf-8")) if PUSHED.exists() else {}
     except (OSError, ValueError):
         mem = {}
-    done = set(mem.get("acc") or [])
+    acc = mem.get("acc") or {}
+    # what was sent, with when: kept 10 days (a plain list capped by count would drop new keys before old ones)
+    done: Dict[str, float] = ({k: now for k in acc} if isinstance(acc, list) else {k: v for k, v in acc.items() if now - float(v) < 10 * 86400})
     bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
+    prev = float(mem.get("ts") or 0)
     st = await SOF.refresh(watch_list(), now=now)
     todo = sorted((a for a in st.get("alerts") or [] if a["acc"] not in done and now - a["ts"] < MAX_AGE
                    and a.get("item") != "13D/A"),          # an update to an old 13D is listed on the site only
@@ -369,13 +459,31 @@ async def run_once(now: Optional[float] = None) -> int:
     sent = 0
     async with aiohttp.ClientSession() as sess:
         dm = None
+        nj = await news_json(sess)
+        cbs = [x for x in nj.get("items") or [] if x.get("kind") == "cb" and "cb:" + x["u"] not in done]
+        try:                                               # 離線補課：先講漏掉什麼，較新的再照常通知
+            if prev and now - prev >= CATCH_GAP:
+                late = [a for a in st.get("alerts") or [] if a["acc"] not in done and prev < a["ts"] and now - a["ts"] >= MAX_AGE
+                        and a.get("item") != "13D/A"]
+                late_cb = [x for x in cbs if prev < x["ts"] and now - x["ts"] >= MAX_AGE]
+                if late or late_cb or now - prev >= 3 * 3600:
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", catchup_embed(prev, now, sorted(late, key=lambda a: -severity(a)), late_cb, await gap_moves(sess, prev))):
+                        sent += 1
+                        for a in late:
+                            done[a["acc"]] = now
+                        for x in late_cb:
+                            done["cb:" + x["u"]] = now
+        except Exception as e:  # noqa: BLE001
+            log.warning("catch-up failed: %s", e)
         for a in todo:
             lines = await impact(sess, a["sym"], a["zh"])
             e = embed_of(a, lines)
             if not chan:                                   # no alert channel set (same as the bot): everything goes to the DM
                 dm = dm or await dm_channel(sess)
             if await post(sess, chan or dm or "", e):
-                done.add(a["acc"])
+                done[a["acc"]] = now
                 sent += 1
                 if chan and severity(a) >= 3:              # the worst ones also reach the owner directly
                     dm = dm or await dm_channel(sess)
@@ -390,13 +498,36 @@ async def run_once(now: Optional[float] = None) -> int:
                 if not chan:
                     dm = dm or await dm_channel(sess)
                 if await post(sess, chan or dm or "", sector_embed(a)):
-                    done.add(key)
+                    done[key] = now
                     sent += 1
                 await asyncio.sleep(1)
         except Exception as e:  # noqa: BLE001
             log.warning("sector check failed: %s", e)
+        try:                                               # 央行非例行動作
+            for x in cbs:
+                if now - x["ts"] >= MAX_AGE or "cb:" + x["u"] in done:
+                    continue
+                e = cb_embed(x, await market_now(sess, ["利率", "匯率", "美股", "黃金"], now))
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", e):
+                    done["cb:" + x["u"]] = now
+                    sent += 1
+                    if chan:
+                        dm = dm or await dm_channel(sess)
+                        if dm:
+                            await post(sess, dm, e)
+            a = await yen_jump(sess, now)
+            if a and f'yen:{a["day"]}' not in done:
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", yen_embed(a, await market_now(sess, ["美股", "科技", "利率"], now))):
+                    done[f'yen:{a["day"]}'] = now
+                    sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("central bank check failed: %s", e)
         try:                                               # 多家媒體同時報導（3 家以上）＋影響
-            for b in burst_todo((await news_json(sess)).get("bursts") or [], bsent, now):
+            for b in burst_todo(nj.get("bursts") or [], bsent, now):
                 lines = (await impact(sess, b["sym"], b["label"].split("（")[0]) if b.get("kind") == "co" and b.get("sym")
                          else await market_now(sess, b.get("tags") or [], now))
                 if not chan:
@@ -415,15 +546,15 @@ async def run_once(now: Optional[float] = None) -> int:
                     if not chan:
                         dm = dm or await dm_channel(sess)
                     if await post(sess, chan or dm or "", await tx_embed(sess, a)):
-                        done.add(key)
+                        done[key] = now
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("night futures check failed: %s", e)
         try:                                               # 持股晚報與累積跌幅：只私訊擁有者
-            sent += await holdings_run(sess, now)
+            sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
-    PUSHED.write_text(json.dumps({"acc": sorted(done)[-300:], "burst": bsent, "ts": int(now)}), encoding="utf-8")
+    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "ts": int(now)}), encoding="utf-8")
     try:
         s = await http.session()
         await s.close()

@@ -1,7 +1,8 @@
 """SEC 人事申報警報的名單：每次建置寫 sec_watch.json（公開），給 /api/news 的 Cloudflare 函式比對 SEC 最新 8-K。
 
 名單＝本站追蹤池（公開的那份）＋財報日曆裡出現過、市值 ≥ 1,000 億美元的公司；用 SEC 官方 ticker → CIK 對照。
-不含任何持股資料。格式 {"ts":…, "ciks": {"1045810": ["NVDA", "輝達"], …}, "names": {"NVDA": ["輝達", "Nvidia"], …}}。
+不含任何持股資料。格式 {"ts":…, "ciks": {"1045810": ["NVDA", "輝達"], …}, "names": {"NVDA": ["輝達", "Nvidia"], …}, "fomc": ["2026-12-09", …]}。
+fomc 是聯準會排定的會議日：/api/news 看到聯準會在其他日子發利率聲明，就當成非例行動作。
 
 names 是給「多家媒體同時報導」比對標題用的（2026-11-14）：[中文名, 英文名（可用 | 分隔多個寫法）]。英文名來自追蹤池的英文簡稱，
 或財報日曆的公司全名去掉 Inc.／Corp.／Holdings 這類字尾；去掉之後是常見單字的（Target、Visa、Block…）不比對，寧可漏掉也不要認錯。"""
@@ -69,6 +70,17 @@ def names_of(names: Dict, big: Dict, syms: List[str]) -> Dict[str, list]:
     return out
 
 
+def fomc_days(today: str = "") -> List[str]:
+    """Scheduled FOMC decision days around now (the Fed's own calendar, cached by the build): a statement on any other day is unscheduled."""
+    try:
+        from wsb.data.econcal import _fomc_cached
+        today = today or time.strftime("%Y-%m-%d", time.gmtime())
+        ds = sorted(str(m.get("date"))[:10] for m in _fomc_cached() if m.get("date"))
+        return [d for d in ds if d >= today][:8] + [d for d in ds if d < today][-2:]
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def build(eng) -> Dict:
     from wsb.data.stocks import universe
     from wsb.data import earn_official as EO
@@ -86,4 +98,4 @@ def build(eng) -> Dict:
         if cik and str(int(cik)) not in out:
             zh = names[s][0] if s in names else (big.get(s) or {}).get("name") or s
             out[str(int(cik))] = [s, zh]
-    return {"ts": int(time.time()), "ciks": out, "names": names_of(names, big, [v[0] for v in out.values()])}
+    return {"ts": int(time.time()), "ciks": out, "names": names_of(names, big, [v[0] for v in out.values()]), "fomc": fomc_days()}

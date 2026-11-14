@@ -48,13 +48,20 @@ def main() -> None:
     async def no_night(sess, now):
         return None
 
-    async def no_hold(sess, now):
+    got_ctx = {}
+
+    async def no_hold(sess, now, ctx=None):
+        got_ctx.update(ctx or {})
         return 0
+
+    async def no_yen(sess, now):
+        return None
 
     async def fake_mkt(sess, tags, now):
         return ["・相關行情現在：布蘭特原油 +3.0%"]
-    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now)
-    P.news_json, P.tx_night, P.holdings_run, P.market_now = fake_news, no_night, no_hold, fake_mkt
+    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves)
+    P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump = fake_news, no_night, no_hold, fake_mkt, no_yen
+    P.CATCH_GAP = 10 ** 12                                  # the catch-up message has its own test below
     real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts)
     try:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.sector_alerts = fake_refresh, fake_impact, fake_post, fake_dm, lambda: {}, no_sectors
@@ -114,11 +121,56 @@ def main() -> None:
         night = dict(night, lv=1)
         assert asyncio.run(P.run_once(now=60300)) == 0                                         # back to the lower level: nothing new
         P.tx_embed = real_txe
+        P.tx_night = no_night
+        assert set(got_ctx) == {"alerts", "earn", "bursts"}                                    # the private part gets what this round fetched
+        # ---- second batch: an unscheduled central-bank release (flagged by /api/news), once, and also to the owner directly
+        T = 200000
+        news["items"] = [{"t": "Federal Reserve issues FOMC statement", "u": "https://www.federalreserve.gov/x", "s": "聯準會", "ts": T - 300, "kind": "cb"},
+                         {"t": "Fed speech", "u": "https://www.federalreserve.gov/y", "s": "聯準會", "ts": T - 300}]
+        sent.clear(); dms.clear()
+        assert asyncio.run(P.run_once(now=T)) == 1 and sent == ["🔴 央行非例行動作：Federal Reserve issues FOMC statement"] and len(dms) == 1, (sent, dms)
+        assert asyncio.run(P.run_once(now=T + 180)) == 0
+        ce = P.cb_embed(news["items"][0], ["・相關行情現在：美元指數 +1.0%"])
+        assert "不在例行時程裡" in ce["description"] and "請點進去看原文確認" in ce["description"] and ce["url"].endswith("/x")
+        # a sudden jump in the yen: once per day
+        async def yes_yen(sess, now):
+            return {"chg": -2.6, "z": -4.1, "price": 148.2, "day": "2026-11-16"}
+        P.yen_jump = yes_yen
+        sent.clear()
+        assert asyncio.run(P.run_once(now=T + 360)) == 1 and sent[0].startswith("🔴 日圓急升：美元兌日圓 -2.6%（平常一天的 4.1 倍）")
+        assert asyncio.run(P.run_once(now=T + 540)) == 0
+        ye = P.yen_embed({"chg": -2.6, "z": -4.1, "price": 148.2, "day": "x"}, [])
+        assert "干預" in ye["description"] and "不是官方消息" in ye["description"]
+        P.yen_jump = no_yen
+        # the program was off for 10 hours: one catch-up message with what would otherwise have been skipped as too old
+        P.CATCH_GAP = 3600
+
+        async def fake_gap(sess, prev):
+            return ["標普 500 -3.0%"]
+        P.gap_moves = fake_gap
+        back = T + 540 + 10 * 3600
+        late = {"acc": "L1", "ts": T + 4000, "sym": "NVDA", "zh": "輝達", "url": "https://www.sec.gov/L1", "item": "5.02",
+                "t": "SEC 申報：輝達（NVDA）執行長離職（8-K 第 5.02 項）"}
+        fresh = dict(late, acc="F1", ts=back - 600, t="SEC 申報：輝達（NVDA）財務長離職（8-K 第 5.02 項）")
+
+        async def refresh_gap(watch, now=0):
+            return {"alerts": [late, fresh]}
+        SOF.refresh = refresh_gap
+        sent.clear(); dms.clear()
+        assert asyncio.run(P.run_once(now=back)) == 2 and sent[0].startswith("🔁 離線補課：10 小時") and "財務長離職" in sent[1], sent
+        assert asyncio.run(P.run_once(now=back + 180)) == 0                                    # the old filing is not said again
+        cu = P.catchup_embed(T, back, [late], [], ["標普 500 -3.0%"])
+        assert "有 1 則重大申報或公告沒有即時通知到你" in cu["description"] and "執行長離職" in cu["description"] and "標普 500 -3.0%" in cu["description"]
+        assert "沒有漏掉追蹤公司的重大申報" in P.catchup_embed(T, back, [], [], [])["description"]
+        SOF.refresh = refresh13
+        # a short stop (under an hour) says nothing
+        assert asyncio.run(P.run_once(now=back + 180 + 1800)) == 0
+        news["items"] = []
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
-        P.news_json, P.tx_night, P.holdings_run, P.market_now = real2
+        P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves = real2
 
     # the front futures contract from the exchange's own rows: largest volume, monthly contracts only
     from wsb.data import taifex_live as TL

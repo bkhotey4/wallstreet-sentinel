@@ -239,6 +239,22 @@ export function bursts(items, now, names, labels, min = B_MIN) {
   return keep.slice(0, 6).map(({ _u, ...b }) => b).sort((a, b) => b.first - a.first);
 }
 
+// ---- 央行非例行動作（2026-11-14）：聯準會、歐洲央行、日本央行的官方公告，標題出現「緊急、臨時、非例行、聯合行動、換匯額度、
+// 流動性工具」這類字，或聯準會在排定的會議日（/sec_watch.json 的 fomc，建置時產生）以外發利率聲明，就標 alert、kind=cb。
+// 用關鍵字比對標題，不是 AI；例行的統計、演講、會議日的聲明都不會中。
+const CB = new Set(["fed", "ecb", "boj"]);
+const CB_RX = /unscheduled|emergency|extraordinary|ad hoc|inter-?meeting|coordinated (?:central bank )?action|swap lines?|liquidity (?:facility|measures|operations?|provision)|special (?:funds-supplying|operations)|temporary [^.]{0,40}facility|\bintervention\b/i;
+
+export function cbSurprise(x, fomc) {
+  if (!x || !x.off || !CB.has(x.o)) return false;
+  if (CB_RX.test(x.t)) return true;
+  if (x.o === "fed" && /FOMC statement/i.test(x.t) && Array.isArray(fomc) && fomc.length) {
+    const day = new Date((x.ts - 5 * 3600) * 1000).toISOString().slice(0, 10);     // US Eastern date, near enough for a date test
+    return !fomc.includes(day);
+  }
+  return false;
+}
+
 // ---- SEC 重大申報警報：SEC 最新 8-K 清單（官方 Atom，約最近 100 份）裡，追蹤公司（/sec_watch.json，建置時產生）申報第 5.02 項
 // （董事或高階主管離職、任命、薪酬安排）或下面幾種少見的項目，就列成一則官方新聞並標 alert；人事申報會點進原文判斷是哪一種。
 // 另外讀最新的 Schedule 13D（有人持股逾 5% 而且不排除介入經營）。規則和 wsb/data/sec_officers.py 相同。
@@ -391,6 +407,9 @@ export async function onRequest(ctx) {
       return [];
     }
   }));
+  for (const l of res) for (const x of l) {
+    if (cbSurprise(x, watch.fomc)) { x.alert = true; x.kind = "cb"; x.sev = 4; x.tags = [...new Set([...(x.tags || []), "利率", "央行"])]; }
+  }
   const sec = await secP;
   res.push(sec);
   const now = Math.floor(Date.now() / 1000);

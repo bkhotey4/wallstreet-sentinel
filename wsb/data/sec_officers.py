@@ -189,6 +189,8 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
             k = await read_kind(a["url"])
             if k is not None:
                 a.update(k, v=KIND_V, t=title_of(a["sym"], a["zh"], k))
+    # 財報新聞稿（8-K 第 2.02 項）：不是警報，只記下「這家公司剛公布財報」，給財報出爐後的通知用（保留 3 天）
+    earn = {e["acc"]: e for e in st.get("earn") or [] if now - e["ts"] < KEEP_S}
     newest = seen_ts
     for p in range(PAGES):
         xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=30, retries=1)
@@ -198,6 +200,8 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
         for r in rows:
             newest = max(newest, r["ts"])
             hit = watch.get(r["cik"])
+            if hit and "2.02" in r["items"] and r["acc"] and now - r["ts"] < KEEP_S:
+                earn.setdefault(r["acc"], {"acc": r["acc"], "ts": r["ts"], "sym": hit[0], "zh": hit[1], "url": r["url"]})
             item = pick_item(r["items"])
             if hit and item and r["acc"] and r["acc"] not in alerts and now - r["ts"] < KEEP_S:
                 k = {"what": "", "seat": ""}
@@ -225,7 +229,8 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
                 break
     except Exception as e:  # noqa: BLE001
         log.info("SEC 13D feed: %s", e)
-    st = {"last_ts": newest, "last_13d": new13, "alerts": sorted(alerts.values(), key=lambda a: -a["ts"]), "ts": int(now)}
+    st = {"last_ts": newest, "last_13d": new13, "alerts": sorted(alerts.values(), key=lambda a: -a["ts"]),
+          "earn": sorted(earn.values(), key=lambda e: -e["ts"]), "ts": int(now)}
     tmp = FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     tmp.replace(FILE)

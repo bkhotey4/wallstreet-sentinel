@@ -95,4 +95,18 @@ const war = [it("Iran fires missiles at Israel", "cnbc", 0), it("伊朗向以色
 assert.equal(bursts(war.slice(0, 2), T0 + 15 * 60, NAMES, LAB).length, 0);
 bs = bursts(war, T0 + 15 * 60, NAMES, LAB);
 assert.ok(bs.length === 1 && bs[0].kind === "topic" && bs[0].n === 3 && bs[0].tags.includes("地緣"), JSON.stringify(bs));
+// central banks: an unscheduled or emergency release is flagged; routine ones and a statement on a meeting day are not
+import { cbSurprise } from "../functions/api/news.js";
+const cb = (t, o, ts) => ({ t, o, off: true, ts: ts || Date.parse("2026-11-16T15:00:00Z") / 1000 });
+const FOMC = ["2026-10-28", "2026-12-09"];
+assert.ok(cbSurprise(cb("Federal Reserve issues FOMC statement", "fed"), FOMC));                                   // 11/16 is not a meeting day
+assert.ok(!cbSurprise(cb("Federal Reserve issues FOMC statement", "fed", Date.parse("2026-12-09T19:00:00Z") / 1000), FOMC));
+assert.ok(!cbSurprise(cb("Federal Reserve issues FOMC statement", "fed"), []));                                     // no schedule known → not judged
+assert.ok(cbSurprise(cb("Coordinated central bank action to enhance the provision of U.S. dollar liquidity", "fed"), FOMC));
+assert.ok(cbSurprise(cb("ECB announces emergency measures", "ecb"), FOMC) && cbSurprise(cb("Statement on unscheduled Monetary Policy Meeting", "boj"), FOMC));
+for (const t of ["Federal Reserve Board announces pricing, effective January 1, 2027", "Christine Lagarde: Interview with Yomiuri Shimbun",
+  "Basic Figures on Fails (Oct.)", "ECB publishes consolidated banking data for end-June 2026", "Agencies extend comment period"]) {
+  assert.ok(!cbSurprise(cb(t, "fed"), FOMC) && !cbSurprise(cb(t, "ecb"), FOMC) && !cbSurprise(cb(t, "boj"), FOMC), t);
+}
+assert.ok(!cbSurprise({ t: "Emergency meeting at the Fed", o: "cnbc", off: false, ts: 1 }, FOMC));                  // only the banks' own releases
 console.log("news tests 2 ok");
