@@ -88,3 +88,84 @@ def sec_asia(eng) -> str:
             f'<tbody>{rows}</tbody></table></div>' + (f'<p class="small">{T(cline, "")}</p>' if cline else "")
             + f'<details class="sgx"><summary>{T("為什麼要看亞洲？", "Why Asia")}</summary><p class="note">{T(AS_NOTE, "")}</p></details>')
     return card("亞洲：中國、香港、韓國、日本", "Asia: China, Hong Kong, Korea, Japan", body, "wide")
+
+
+# ------------------------------------------------------------------ 各國危機雷達（新興市場會不會點火）
+CR_NOTE = ("燈號是數「踩線的項目」：貨幣一年貶超過 15%、貨幣在 5 年最弱附近（2% 以內）、外匯存底一年少超過 10%、存底不夠付 3 個月進口、"
+           "一年內到期的外債比存底多、經常帳逆差超過 GDP 的 4%、股市（美元計價的國家 ETF）離一年高點超過 30%。踩 2～3 項黃燈，4 項以上紅燈。"
+           "這些是文獻和實務常用的警戒線，不是預測模型，本站沒有對它做回測；踩線的國家不一定出事，沒踩線也不保證平安。"
+           "「有沒有擴散」看三件事：紅燈達 3 國、一個月內貶值超過 3% 的貨幣達 5 國、或新興市場美元債三個月比美國公債多跌 3 個百分點以上。"
+           "新興市場匯率常在幾天內來回跳 3% 以上，所以變化用幾天的中位數算，表上「1 美元換多少」是最新一筆收盤。"
+           "資料：Yahoo Finance（匯率、在美國掛牌的單一國家 ETF）、國際貨幣基金（外匯存底經 FRED，月資料；經常帳、政府債、GDP 為當年估計值）、"
+           "世界銀行（存底可付幾個月進口、短期外債對存底，年資料，會慢一年）。不是投資建議。")
+CR_WHY = ("新興市場出事會傳到美股和台股，主要走三條路：外國銀行借給它們的錢收不回來；新興市場基金被贖回時，會把手上的台股、韓股一起賣掉；"
+          "以及這些國家被迫升息、砍進口，全球需求變少。只有一國出事、其他國家的債沒有跟著跌，通常就停在那一國。")
+LIGHT = ("🟢", "🟡", "🔴")
+
+
+def _cr(eng) -> dict:
+    c = getattr(eng, "_country_risk", None)
+    if c is None:
+        try:
+            from wsb.data import country_risk as CR
+            c = CR.view(eng)
+        except Exception:  # noqa: BLE001
+            c = {}
+        try:
+            eng._country_risk = c
+        except Exception:  # noqa: BLE001
+            pass
+    return c
+
+
+def _p(v, d: int = 1, suf: str = "%") -> str:
+    return "—" if v is None else f"{v:+.{d}f}{suf}"
+
+
+def cr_headline(v: dict) -> str:
+    rows, sp = v.get("rows") or [], v.get("spread") or {}
+    red = [r["zh"] for r in rows if r["light"] == 2]
+    yel = [r["zh"] for r in rows if r["light"] == 1]
+    bonds = (f"新興市場美元債三個月 {sp['emb3']:+.1f}%、美國公債 {sp['ief3']:+.1f}%" if sp.get("emb3") is not None and sp.get("ief3") is not None else "")
+    weak = sp.get("weak") or []
+    wline = f"過去一個月貨幣貶超過 3% 的有 {len(weak)} 國" + (f"（{'、'.join(weak)}）" if weak else "")
+    if sp.get("state") == "spread":
+        return (f"一句話看懂：新興市場的壓力正在擴散：{len(red)} 國紅燈" + (f"（{'、'.join(red)}）" if red else "") + f"，{wline}" + (f"，{bonds}" if bonds else "") + "。")
+    if not red and not yel:
+        return f"一句話看懂：{len(rows)} 個新興市場裡，沒有國家踩到兩項以上的警戒線；{wline}。"
+    who = ("、".join(red) + "紅燈" if red else "") + ("；" if red and yel else "") + ("、".join(yel) + "黃燈" if yel else "")
+    return (f"一句話看懂：{len(rows)} 個新興市場裡，{who}，但還看不到擴散：{wline}" + (f"，{bonds}，沒有明顯落後" if bonds else "") + "。")
+
+
+def sec_country(eng) -> str:
+    v = _cr(eng)
+    rows = (v or {}).get("rows")
+    if not rows:
+        return ""
+    main = "".join(f'<tr><td>{LIGHT[r["light"]]} {T(r["zh"], "")}</td><td class="r"><b class="{"dn" if (r.get("fx_y1") or 0) <= -15 else ""}">{_p(r.get("fx_y1"))}</b></td>'
+                   f'<td class="r"><b class="{"dn" if (r.get("off") or 0) <= -30 else ""}">{_p(r.get("off"), 0)}</b></td>'
+                   f'<td class="small">{T("、".join(r["flags"]) or "沒有踩線", "")}</td></tr>' for r in rows)
+    full = "".join(f'<tr><td>{T(r["zh"], "")}</td><td class="r nw">{r["rate"]:,.2f} {r["cur"]}</td><td class="r">{_p(r.get("fx_w2"))}</td><td class="r">{_p(r.get("fx_m1"))}</td>'
+                   f'<td class="r">{_p(r.get("weak"))}</td><td class="r">{_p(r.get("res_y1"))}</td><td class="r">{_p(r.get("mo"), 1, "").lstrip("+")}</td>'
+                   f'<td class="r">{_p(r.get("st"), 0).lstrip("+")}</td><td class="r">{_p(r.get("ca"))}</td><td class="r">{_p(r.get("debt"), 0).lstrip("+")}</td>'
+                   f'<td class="r">{_p(r.get("share"), 2).lstrip("+")}</td></tr>' for r in rows)
+    past = v.get("past") or []
+    idn = next((r for r in rows if r["iso3"] == "IDN"), None)
+    size = ""
+    if past:
+        size = ("當年出事的國家佔全球 GDP：" + "、".join(f'{p["year"]} 年{p["zh"]} {p["share"]:.2f}%' for p in past) + "。"
+                + (f'現在印尼佔 {idn["share"]:.2f}%。' if idn and idn.get("share") else "") + "規模不大的國家也能引發連鎖反應，關鍵在有沒有擴散。")
+    miss = v.get("missing") or []
+    res_m = max((r.get("res_month") or "" for r in rows), default="")
+    body = (f'<p class="rimp big2"><b>{T(cr_headline(v), "")}</b></p>'
+            f'<div class="scroll"><table class="mini"><thead><tr><th>{T("國家", "")}</th><th class="r">{T("貨幣一年", "")}</th><th class="r">{T("股市離高點", "")}</th>'
+            f'<th>{T("踩線的項目", "")}</th></tr></thead><tbody>{main}</tbody></table></div>'
+            f'<p class="small">{T("貨幣一年＝這個貨幣對美元一年的變化，負數是貶值；股市＝在美國掛牌、用美元計價的單一國家 ETF，等於外國投資人實際的感受。資料到 " + str(v.get("asof") or "") + "。", "")}</p>'
+            f'<details class="sgx"><summary>{T("每一國的完整數字", "All numbers")}</summary><div class="scroll"><table class="mini"><thead><tr>'
+            + "".join(f'<th class="r">{T(h, "")}</th>' if i else f'<th>{T(h, "")}</th>' for i, h in enumerate(
+                ("國家", "1 美元換", "兩週", "一個月", "離 5 年最弱", "存底一年", "可付幾個月進口", "短期外債／存底", "經常帳占 GDP", "政府債占 GDP", "佔全球 GDP")))
+            + f'</tr></thead><tbody>{full}</tbody></table></div>'
+            f'<p class="small">{T("離 5 年最弱＝0% 代表現在就是 5 年來最弱；外匯存底資料到 " + (res_m or "（暫缺）") + "。" + ("這次沒抓到的欄位：" + "、".join(miss) + "，下次建置會再試。" if miss else ""), "")}</p></details>'
+            + (f'<details class="sgx"><summary>{T("規模夠不夠大到引發海嘯？", "Is it big enough")}</summary><p class="note">{T(size + CR_WHY, "")}</p></details>' if size else "")
+            + f'<details class="sgx"><summary>{T("燈號怎麼算、資料哪裡來", "How the lights work")}</summary><p class="note">{T(CR_NOTE, "")}</p></details>')
+    return card("各國危機雷達：新興市場會不會點火", "Country crisis radar", body, "wide", sub="14 個新興市場的市場壓力與國家帳本，以及有沒有擴散")

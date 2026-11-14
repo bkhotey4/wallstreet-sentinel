@@ -272,6 +272,17 @@ def _ldi():
     return (_ts(min(ts)) if ts else None), (min(last) if last else None)
 
 
+def _country():
+    """(when the prices were last fetched, the newest trading day in them)."""
+    try:
+        from wsb.data import country_risk as CR
+        d = CR.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    last = max((v["d"][-1] for v in (d.get("px") or {}).values() if v.get("d")), default=None)
+    return _ts((d.get("ts_each") or {}).get("px")), last
+
+
 def _fsr():
     """(oldest fetch ts, oldest last quarter) over the OFR, New York Fed and FDIC series, so a stuck one shows."""
     try:
@@ -560,6 +571,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
     "fsr": ("OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（季資料）", "OFR / NY Fed / FDIC quarterly", lambda e: _fsr(), 200),
     "ecb": ("歐洲央行 CISS＋各國公債（FRED 月資料）", "ECB CISS / FRED", lambda e: (_ts(_ead("ts_check")), _ead_date()), 7),
+    "country": ("Yahoo 匯率與國家 ETF、國際貨幣基金、世界銀行、FRED 外匯存底", "Yahoo / IMF / World Bank / FRED", lambda e: _country(), 6),
     "capexq": ("SEC 季報（資本支出／營收）", "SEC quarterly", lambda e: (_ts(_cxl("ts")), None), 0),
     "stockchk": ("SEC 季報＋每週股價（個股體檢）", "SEC filings + weekly prices", lambda e: (_ts(_sck("ts")), None), 0),
     "fundgl": ("財報（SEC／FinMind／Yahoo 年報）", "Filings (SEC / FinMind / Yahoo)", lambda e: (_ts(_fgl("ts")), None), 0),
@@ -593,7 +605,7 @@ CARD: Dict[str, List[str]] = {
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
-    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ldi": ["ldi", "fred", "jgb"], "sec_st_fsr": ["fsr", "fred"], "sec_migration_polls": ["fred", "polls"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_fund_trend": ["fundgl"], "sec_ipo": ["ipo"], "sec_drop_check": ["fundgl", "px"], "sec_crisis": ["px"], "sec_timemachine": ["ssi"], "sec_dual": ["ssi", "px", "fred", "ofr"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
+    "sec_bottom": ["px", "crypto"], "sec_crisis_track": ["ssi", "px"], "sec_credit_health": ["px", "sec"], "sec_ebp": ["fedres"], "sec_research_feed": ["feed"], "sec_st_brief": ["refund", "funding", "cftc"], "sec_st_refunding": ["refund", "fred"], "sec_st_funding": ["funding", "fred"], "sec_st_basis": ["cftc"], "sec_st_ldi": ["ldi", "fred", "jgb"], "sec_st_fsr": ["fsr", "fred"], "sec_migration_polls": ["fred", "polls"], "sec_st_ai": ["fund"], "sec_st_coverage": ["cover"], "sec_tr_fsi": ["ofr", "px"], "sec_ai_observer": ["observer"], "sec_tw_foi": ["twfoi", "tw"], "sec_vix_term": ["px"], "sec_nh_nl": ["stocks", "px"], "sec_tr_custody": ["custody"], "sec_tr_dollar": ["swpt"], "sec_tr_yen": ["jpy", "px"], "sec_ai_cross": ["px", "ssi"], "sec_ai_brief": ["px", "ssi"], "sec_ai_score": ["px"], "sec_ai_heat": ["px", "fred", "fedres"], "sec_ai_bubble": ["ff49", "baa", "px"], "sec_ai_chain": ["stocks", "px", "ff49"], "sec_ai_capex": ["capexq"], "sec_stock_check": ["stockchk"], "sec_fund_trend": ["fundgl"], "sec_ipo": ["ipo"], "sec_drop_check": ["fundgl", "px"], "sec_crisis": ["px"], "sec_timemachine": ["ssi"], "sec_dual": ["ssi", "px", "fred", "ofr"], "sec_europe": ["ecb", "px"], "sec_asia": ["px"], "sec_country": ["country", "px"], "sec_event_clock": ["rel", "econ", "px"], "sec_ai_elephant": ["cftc_eq"], "sec_ai_intro": ["px"], "sec_ai_turb": ["px"], "sec_ai_flock": ["px"], "sec_ai_quake": ["px"], "sec_ai_analog": ["px"], "sec_research_now": ["ssi", "fedres", "fred"], "sec_mpd": ["fedres"], "sec_vulnerability": ["fred", "fedres"], "sec_credit_rates": ["fred", "px"], "sec_distress": ["sec"], "sec_shock": ["ssi"], "sec_playbook_breaks": ["ssi", "px"],
     "sec_gamma": ["options"], "sec_darkpool": ["darkpool"], "sec_positioning": ["crypto", "px"],
     "sec_gurus": ["gurus"], "sec_insiders": ["insiders"], "sec_rates_radar": ["fred", "px"], "sec_bonds": ["fred", "treasury"],
     "sec_news": ["news"], "sec_calendar": ["calendar"], "sec_news_digest": ["news"], "sec_street": ["street"],

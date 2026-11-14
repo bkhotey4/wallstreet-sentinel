@@ -13,6 +13,7 @@
      13D/A（舊的大股東申報更新）只列在網站，不推。
   5. （2026-11-14 第二批）央行非例行動作（/api/news 標 kind=cb 的官方公告）與日圓急升（美元兌日圓一天跌 ≥ 平常 3 倍）；
      離線補課：這支程式停了 1 小時以上再啟動時，補一則「這段時間漏了什麼」（超過 6 小時、原本會被略過的重大申報也列進去）。
+  7. 各國危機雷達：每 30 分鐘讀網站的 country_risk.json，新紅燈、3 國以上貨幣兩週內一起貶、或開始擴散時推一則（各一個月一次）。
   6. （A1）系統健康：tools/sys_health.py，每 10 分鐘檢查機器人心跳、連續出錯的資料來源、網站建置、新聞來源數、本機收盤價，
      有新問題才私訊擁有者，同一件事 24 小時說一次。
 送過的記在 data_cache/sec_push.json，不會重送。Windows 工作排程每 3 分鐘跑一次：python -m tools.sec_push
@@ -428,6 +429,36 @@ def catchup_embed(prev: float, now: float, late: List[Dict], cbs: List[Dict], mo
 
 
 HEALTH_EVERY = 600
+# ------------------------------------------------------------------ 各國危機雷達（網站每次建置算好的 country_risk.json；規則在 wsb/data/country_risk.py）
+COUNTRY = "https://wallstreet-sentinel.pages.dev/country_risk.json"
+CR_EVERY = 1800
+
+
+async def country_json(sess: aiohttp.ClientSession) -> Dict:
+    try:
+        async with sess.get(COUNTRY, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            return (await r.json(content_type=None)) or {} if r.status < 300 else {}
+    except Exception as e:  # noqa: BLE001
+        log.info("country risk: %s", e)
+        return {}
+
+
+def country_embed(a: Dict, d: Dict, lines: List[str]) -> Dict:
+    rows, sp = d.get("rows") or [], d.get("spread") or {}
+    red = [r["zh"] for r in rows if r.get("light") == 2]
+    yel = [r["zh"] for r in rows if r.get("light") == 1]
+    weak = sp.get("weak") or []
+    state = {"spread": "壓力正在擴散", "local": "目前還是個別國家的事", "calm": "整體平靜"}.get(sp.get("state"), "")
+    return {"title": (("🔴 " if a.get("lv", 1) >= 2 else "🟠 ") + a["title"])[:256], "color": 0xE5484D if a.get("lv", 1) >= 2 else 0xD97706,
+            "url": "https://wallstreet-sentinel.pages.dev/",
+            "description": ("一句話看懂：" + a["text"] + "\n"
+                            + f'・目前燈號：紅燈 {"、".join(red) or "沒有"}；黃燈 {"、".join(yel) or "沒有"}。{state}。\n'
+                            + f'・過去一個月貨幣貶超過 3% 的有 {len(weak)} 國' + (f'（{"、".join(weak)}）' if weak else "") + "。\n"
+                            + ("\n".join(lines) + "\n" if lines else "")
+                            + "新興市場出事會經由三條路傳到美股和台股：外國銀行的放款、基金被贖回時一起賣台股韓股、全球需求變少。"
+                              "燈號是常用的警戒線，不是預測；完整表格在網站「全球行情」。")[:4000],
+            "footer": {"text": "Yahoo／國際貨幣基金／世界銀行／FRED · WallStreet Sentinel · 不構成投資建議"}}
+
 
 
 async def health_check(now: float, news: Dict, sent: Dict[str, float]):
@@ -459,9 +490,11 @@ async def run_once(now: Optional[float] = None) -> int:
         mem = {}
     acc = mem.get("acc") or {}
     # what was sent, with when: kept 10 days (a plain list capped by count would drop new keys before old ones)
-    done: Dict[str, float] = ({k: now for k in acc} if isinstance(acc, list) else {k: v for k, v in acc.items() if now - float(v) < 10 * 86400})
+    done: Dict[str, float] = ({k: now for k in acc} if isinstance(acc, list)
+                              else {k: v for k, v in acc.items() if now - float(v) < (40 if k.startswith("cr:") else 10) * 86400})   # cr: keys are per month
     bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
     prev = float(mem.get("ts") or 0)
+    cr_ts = float(mem.get("cr_ts") or 0)
     health = mem.get("health") or {}
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     st = await SOF.refresh(watch_list(), now=now)
@@ -562,6 +595,20 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("night futures check failed: %s", e)
+        try:                                               # 各國危機雷達：新紅燈、多國貨幣一起貶、開始擴散（各一個月一次）
+            if now - float(mem.get("cr_ts") or 0) >= CR_EVERY:
+                cr_ts = now
+                cd = await country_json(sess)
+                for a in cd.get("alerts") or []:
+                    if a["key"] in done:
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", country_embed(a, cd, await market_now(sess, ["匯率", "美股", "利率", "台股"], now))):
+                        done[a["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("country risk check failed: %s", e)
         try:                                               # 系統健康（A1）：每 10 分鐘看一次，有新問題才私訊擁有者
             if now - float(health.get("ts") or 0) >= HEALTH_EVERY:
                 new, open_n = await health_check(now, nj, hsent)
@@ -580,7 +627,7 @@ async def run_once(now: Optional[float] = None) -> int:
             sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
-    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "ts": int(now)}), encoding="utf-8")
+    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "cr_ts": cr_ts, "ts": int(now)}), encoding="utf-8")
     try:
         s = await http.session()
         await s.close()

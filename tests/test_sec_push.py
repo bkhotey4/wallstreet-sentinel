@@ -63,8 +63,13 @@ def main() -> None:
 
     async def fake_health(now, nj, hsent):
         return hp["new"], len(hp["new"])
-    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check)
-    P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.health_check = fake_news, no_night, no_hold, fake_mkt, no_yen, fake_health
+    cr = {}
+
+    async def fake_country(sess):
+        return cr
+    real2 = (P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check, P.country_json)
+    P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.health_check, P.country_json = (
+        fake_news, no_night, no_hold, fake_mkt, no_yen, fake_health, fake_country)
     P.CATCH_GAP = 10 ** 12                                  # the catch-up message has its own test below
     real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts)
     try:
@@ -180,11 +185,26 @@ def main() -> None:
         import json as _j
         assert "bot_down" in _j.loads(P.PUSHED.read_text(encoding="utf-8"))["health"]["sent"]
         hp["new"] = []
+        # the country radar: each alert key once (they are per month), read from the site every 30 minutes
+        cr.update({"rows": [{"zh": "土耳其", "light": 2}, {"zh": "印尼", "light": 1}, {"zh": "巴西", "light": 0}],
+                   "spread": {"state": "local", "weak": ["巴西"]},
+                   "alerts": [{"key": "cr:red:TUR:2026-11", "lv": 2, "title": "各國危機雷達：土耳其亮紅燈（4 項踩線）", "text": "土耳其踩線的項目：貨幣一年貶超過 15%。"}]})
+        sent.clear(); dms.clear()
+        t10 = t9 + 180 + 2000
+        assert asyncio.run(P.run_once(now=t10)) == 1 and sent == ["🔴 各國危機雷達：土耳其亮紅燈（4 項踩線）"], sent
+        cr["alerts"].append({"key": "cr:fx:2026-11", "lv": 1, "title": "新興市場貨幣同時走弱：3 國兩週內貶超過 2%", "text": "…"})
+        assert asyncio.run(P.run_once(now=t10 + 600)) == 0                                     # read 10 minutes ago: not yet
+        assert asyncio.run(P.run_once(now=t10 + 1900)) == 1 and sent[-1].startswith("🟠 新興市場貨幣同時走弱")
+        assert asyncio.run(P.run_once(now=t10 + 4000)) == 0
+        ce2 = P.country_embed(cr["alerts"][0], cr, ["・相關行情現在：美元指數 +1.0%"])
+        assert "紅燈 土耳其；黃燈 印尼" in ce2["description"] and "目前還是個別國家的事" in ce2["description"] and "（巴西）" in ce2["description"]
+        assert "不是預測" in ce2["description"]
+        cr.clear()
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
-        P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check = real2
+        P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check, P.country_json = real2
 
     # the front futures contract from the exchange's own rows: largest volume, monthly contracts only
     from wsb.data import taifex_live as TL

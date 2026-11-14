@@ -1373,7 +1373,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("longhist", "人類與市場長歷史", "People and markets", [SLH.sec_longhist]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
-            ("markets", "全球行情", "Markets", [SEA.sec_asia, sec_markets]),
+            ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
@@ -1692,6 +1692,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(EAD.refresh(), 120)
     except Exception as e:  # noqa: BLE001
         log.warning("euro/asia data failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 各國危機雷達：14 個新興市場的匯率、國家 ETF、外匯存底、IMF／世界銀行（每一段抓完就存）
+        from wsb.data import country_risk as CRD
+        await asyncio.wait_for(CRD.refresh(), 200)
+    except Exception as e:  # noqa: BLE001
+        log.warning("country risk data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 移民與民意：VoteHub 總統支持度民調（12 小時一次）
         from wsb.data import migration_polls as MGP
         await asyncio.wait_for(MGP.refresh(), 90)
@@ -1893,6 +1898,12 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.exception("SEC 5.02 refresh failed")
             st = SOF.load()
         (out / "sec_alerts.json").write_text(json.dumps(SOF.public(st), ensure_ascii=False), encoding="utf-8")
+        try:                                       # 各國危機雷達：燈號、原因與警報清單（給推播程式和口播用）
+            from wsb.data import country_risk as CRD
+            cv = getattr(eng, "_country_risk", None) or CRD.view(eng)
+            (out / "country_risk.json").write_text(json.dumps(CRD.public(cv), ensure_ascii=False), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            log.exception("country_risk.json failed")
         from wsb.analytics import news_impact as NI           # 影響估算：大盤權重、最常一起動的美股、台股隔天連動
         try:
             spy = await asyncio.wait_for(NI.spy_weights(), 70)
