@@ -32,8 +32,12 @@ def _ny_day(iso: str) -> Optional[pd.Timestamp]:
         return None
 
 
+def _now() -> datetime:
+    return datetime.now(NY)
+
+
 def _today():
-    return datetime.now(NY).date()
+    return _now().date()
 
 
 def speech_day(s: Dict) -> Optional[pd.Timestamp]:
@@ -90,14 +94,40 @@ def _move_txt(m: Optional[Dict]) -> str:
     return f'{m["bp"]:+.0f}bp{size}'
 
 
-def _cal_time(day: str, t: str) -> str:
-    """'10:00 a.m.' Eastern on `day` → Taipei 'MM/DD HH:MM'."""
+def _cal_dt(day: str, t: str) -> Optional[datetime]:
+    """'10:00 a.m.' Eastern on `day` → the moment (New York time); None when the calendar gives no time."""
     m = re.match(r"(\d{1,2}):(\d{2})\s*([ap])", t or "")
     if not m:
-        return day[5:].replace("-", "/") + "（美東日期，時間未公布）"
+        return None
     h = int(m.group(1)) % 12 + (12 if m.group(3) == "p" else 0)
-    dt = datetime.fromisoformat(day).replace(hour=h, minute=int(m.group(2)), tzinfo=NY).astimezone(TPE)
-    return dt.strftime("%m/%d %H:%M") + " 台北"
+    return datetime.fromisoformat(day).replace(hour=h, minute=int(m.group(2)), tzinfo=NY)
+
+
+def _cal_time(day: str, t: str) -> str:
+    """'10:00 a.m.' Eastern on `day` → Taipei 'MM/DD HH:MM'."""
+    dt = _cal_dt(day, t)
+    if dt is None:
+        return day[5:].replace("-", "/") + "（美東日期，時間未公布）"
+    return dt.astimezone(TPE).strftime("%m/%d %H:%M") + " 台北"
+
+
+def upcoming_talks(up, now: datetime):
+    """Talks still ahead of `now`, in the order they happen. The calendar sorts '12:00 p.m.' before '5:00 a.m.' (text order)
+    and keeps today's talks after they are over; a talk with no time stays for its whole day, at the end of that day."""
+    out = []
+    for u in up or []:
+        day = u.get("date", "")
+        if not day:
+            continue
+        dt = _cal_dt(day, u.get("time", ""))
+        if dt is None:
+            if day < now.astimezone(NY).date().isoformat():
+                continue
+            dt = datetime.fromisoformat(day).replace(hour=23, minute=59, tzinfo=NY)
+        elif dt + timedelta(hours=1) < now:           # one hour of grace: the talk may still be going on
+            continue
+        out.append((dt, u))
+    return [u for _, u in sorted(out, key=lambda x: x[0])]
 
 
 def sec_fed_speeches(eng) -> str:
@@ -132,8 +162,7 @@ def sec_fed_speeches(eng) -> str:
             quotes.append(f'<li><b>{esc(_who(s))}</b> <span class="small muted">{esc(_dtxt(s))} 演講（美東日期）・'
                           f'同一天 2 年期美債殖利率 {esc(_move_txt(s["_mv"]))}</span><br>'
                           f'<span class="small">原文重點句：「{esc(s["key"])}」</span> <a class="small" href="{esc(s["url"])}" target="_blank" rel="noopener">全文</a></li>')
-    today_ny = _today().isoformat()
-    up = [u for u in (d.get("upcoming") or []) if u.get("date", "") >= today_ny]   # a stale calendar must not list past talks
+    up = upcoming_talks(d.get("upcoming"), _now())                       # a stale calendar must not list past talks
     up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))}・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
                       f'{esc(_role(u["title"]))} {esc(u["title"].split(" - ")[-1].split()[-1])}：{esc(u.get("topic", ""))}</li>' for u in up[:6])
     trs = "".join(f'<tr><td>{esc(_dtxt(s))}</td><td>{esc(_who(s))}</td><td class="small">{esc(s.get("topic", ""))}</td>'

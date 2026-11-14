@@ -109,15 +109,38 @@ def transform(vals: List[Tuple[str, float]], how: str) -> List[Tuple[str, float]
     """[(date, value)] sorted → [(date, transformed)] (mm / yy / diff / lvl)."""
     out = []
     lag = 12 if how == "yy" else 1
+    by = dict(vals)
+
+    def back(dt: str) -> Optional[str]:
+        """The month `lag` months before a month-start date; None when dt is not one (then the position is used)."""
+        try:
+            y, m, d = int(dt[:4]), int(dt[5:7]), dt[8:10]
+        except ValueError:
+            return None
+        if len(dt) != 10 or d != "01":
+            return None
+        k = y * 12 + (m - 1) - lag
+        return f"{k // 12:04d}-{k % 12 + 1:02d}-01"
+
     for i, (dt, v) in enumerate(vals):
         if how == "lvl":
             out.append((dt, v))
+            continue
+        b = back(dt)
+        if b is not None:
+            # monthly series: compare with the exact month, never with a neighbour. A month the agency never published
+            # (2025-10 CPI) leaves the change blank instead of quietly becoming a 13-month or 2-month change.
+            if b not in by:
+                continue
+            p = by[b]
         elif i >= lag:
             p = vals[i - lag][1]
-            if how == "diff":
-                out.append((dt, v - p))
-            elif p:
-                out.append((dt, (v / p - 1) * 100))
+        else:
+            continue
+        if how == "diff":
+            out.append((dt, v - p))
+        elif p:
+            out.append((dt, (v / p - 1) * 100))
     return out
 
 
@@ -142,7 +165,7 @@ async def values(day: str, rid: int, cache: Dict[str, List]) -> List[Dict]:
     hh, mm, spec = SPECS[rid]
     utc = et_utc(day, hh, mm)
     prior = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
-    start = (date.fromisoformat(day) - timedelta(days=430)).isoformat()
+    start = (date.fromisoformat(day) - timedelta(days=470)).isoformat()      # 13 months for a y/y plus one more for its previous value
     rows = []
     for name, var, sid, how, f in spec:
         key = f"{sid}|{day}"
@@ -201,6 +224,8 @@ def merge(old: List[Dict], new: List[Dict], ff: Optional[List[Dict]] = None) -> 
                 best = min(twins, key=lambda x: abs((ref(x) if ref(x) is not None else 1e9) - e))
                 tgt = same[0] if best is n else None
                 if tgt is None:
+                    if not n.get("actual") and same[0].get("actual"):
+                        continue                    # no official value for it (e.g. no year-ago month): an empty twin would be mistaken for the m/m row
                     same = []                       # the other variant: added as its own row below
         else:
             tgt = same[0] if len(same) == 1 else None
@@ -242,7 +267,10 @@ async def fill(days: Dict[str, Dict], today: date, ahead: int, ff: Optional[List
             names = {s[0].lower() for s in spec}
             have = [r for r in rows if r["name"].lower() in names]
             out = et_utc(day, hh, mm) <= now
-            need = out and (not have or any(not r.get("actual") for r in have))
+            # a name the release publishes twice (m/m and y/y) but the day holds once: the other source gave only one of them
+            twice = {n.lower() for n, v, *_ in spec if v and sum(1 for s in spec if s[0] == n and s[1]) >= 2}
+            lone = any(sum(1 for r in have if r["name"].lower() == n) == 1 for n in twice)
+            need = out and (not have or lone or any(not r.get("actual") for r in have))
             if need and calls + len(spec) <= MAX_CALLS:
                 try:
                     new = await values(day, rid, cache)

@@ -244,8 +244,10 @@ def _pick(rows: List[Dict], name: str, var: str) -> Optional[Dict]:
     same = [r for r in rows if r["name"].lower() == name.lower()]
     if not same:
         return None
-    if len(same) == 1 or not var:
-        return same[0] if (len(same) == 1 or not var) else None
+    if not var:
+        return same[0]
+    if len(same) == 1:                                 # only one of m/m and y/y arrived: never show it under the y/y label
+        return same[0] if var == "m" else None
     s = sorted(same[:2], key=_mag)                     # two same-named rows: the smaller one is m/m, the larger y/y
     return s[0] if var == "m" else s[-1]
 
@@ -447,7 +449,10 @@ def context(past: List[Dict], upcoming: List[Dict], hist: pd.DataFrame) -> Dict[
             fed += f"；下次會議 {nxt['date']}{exp}"
     infl = []
     if cc:
-        infl.append(f"核心 CPI 年增 {cc[-1][1]:.1f}%" + (f"（{len(cc) - 1} 次前 {cc[0][1]:.1f}%）" if len(cc) > 1 else ""))
+        newest = max((e["date"] for e in past if e["key"] == "cpi"), default=cc[-1][0])
+        # the newest report can lack a y/y (no year-ago month, or the source gave only m/m): say which report the number is from
+        old = f"（{cc[-1][0][5:]} 那次公布，之後的沒有年增數字）" if newest > cc[-1][0] else ""
+        infl.append(f"核心 CPI 年增 {cc[-1][1]:.1f}%" + old + (f"（{len(cc) - 1} 次前 {cc[0][1]:.1f}%）" if len(cc) > 1 and not old else ""))
     if pc:
         infl.append(f"核心 PCE 年增 {pc[-1][1]:.1f}%（聯準會目標 2%）")
     ur = _last_vals(past, "nfp", "失業率")

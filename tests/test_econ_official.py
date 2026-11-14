@@ -21,6 +21,10 @@ def main() -> None:
     yy = EO.transform(v, "yy")
     assert yy[-1][0] == "2026-10-01" and abs(yy[-1][1] - (330 / 310 - 1) * 100) < 1e-9
     assert EO.transform([("a", 100.0), ("b", 165.0)], "diff")[-1][1] == 65.0
+    # a month the agency never published (2025-10 CPI): no y/y for 2026-10 and no m/m for 2025-11, never a 13- or 2-month change
+    gap = [x for x in v if x[0] != "2025-10-01"]
+    assert [d for d, _ in EO.transform(gap, "yy")] == ["2026-09-01"] and "2025-11-01" not in dict(EO.transform(gap, "mm"))
+    assert abs(dict(EO.transform(gap, "mm"))["2026-10-01"] - (330 / 322 - 1) * 100) < 1e-9
     assert EO.fmt(0.4123, "pct") == "0.4%" and EO.fmt(165, "k") == "165K" and EO.fmt(189000, "kn") == "189K"
     assert EO.fmt(7227, "M") == "7.227M" and EO.fmt(51.04, "n") == "51.0"
     assert EO.et_utc("2026-11-10", 8, 30) == "2026-11-10T13:30:00Z" and EO.et_utc("2026-07-15", 8, 30) == "2026-07-15T12:30:00Z"
@@ -46,6 +50,14 @@ def main() -> None:
     out = EO.merge(one, list(reversed(new[:2])))
     cpi = [r for r in out if r["name"] == "CPI"]
     assert len(cpi) == 2 and cpi[0]["actual"] == "0.4%" and cpi[1]["actual"] == "3.2%", cpi
+    # the day holds only the m/m with its actual and the official y/y is blank: no empty twin (it would sort as the m/m row)
+    lone = [{"name": "CPI", "utc": "t", "actual": "0.4%", "cons": "0.3%", "prev": "0.6%"}]
+    blank_y = [dict(new[0]), dict(new[1], actual="", prev="")]
+    assert len(EO.merge(lone, blank_y)) == 1
+    # … and a lone row is never shown under the y/y label
+    from wsb.analytics import macro_events as ME0
+    labs = [r["label"] for e in ME0.events_for_day("2026-11-10", lone, []) if e["key"] == "cpi" for r in e["rows"]]
+    assert labs == ["CPI 月增"], labs
     # a Nasdaq actual already there is never replaced
     done = [{"name": "Nonfarm Payrolls", "utc": "t", "actual": "165K", "cons": "100K", "prev": "60K"}]
     assert EO.merge(done, [{"name": "Nonfarm Payrolls", "var": "", "utc": "t", "actual": "170K", "cons": "", "prev": "60K"}])[0]["actual"] == "165K"
@@ -70,6 +82,11 @@ def main() -> None:
         um = days["2026-11-20"]["rows"]
         assert um[0]["name"] == "Michigan Consumer Sentiment" and um[0]["utc"] == "2026-11-20T15:00:00Z" and um[0]["actual"] == ""
         assert "2026-12-30" not in days                                                    # beyond the window
+        # a released day that holds only the m/m (with its actual) still asks the official source for the y/y
+        days = {"2026-11-10": {"ts": 0, "rows": [{"name": "CPI", "utc": "t", "actual": "0.4%", "cons": "0.3%", "prev": "0.6%"}], "final": False}}
+        asyncio.run(EO.fill(days, date(2026, 11, 12), 45, ff))
+        got = [r["actual"] for r in days["2026-11-10"]["rows"] if r["name"] == "CPI"]
+        assert got == ["0.4%", "3.2%"], got
     finally:
         EO.schedule, EO.values, EO.FRED_API_KEY = real
 

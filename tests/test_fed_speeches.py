@@ -60,7 +60,16 @@ def main() -> None:
     assert round(m["bp"]) == 15 and m["k"] > 2, m
     assert S.yield_move(y, pd.Timestamp("2026-11-08")) is None                      # weekend: no row
 
-    S._today = lambda: date(2026, 11, 11)
+    # upcoming list: real time order (text order puts 12:00 p.m. before 5:00 a.m.), finished talks dropped, no-time talks kept for the day
+    from datetime import datetime as _dt
+    cal_up = [{"date": "2026-11-13", "time": "10:50 a.m.", "title": "a"}, {"date": "2026-11-13", "time": "7:00 p.m.", "title": "b"},
+              {"date": "2026-11-16", "time": "12:00 p.m.", "title": "c"}, {"date": "2026-11-16", "time": "5:00 a.m.", "title": "d"},
+              {"date": "2026-11-13", "time": "", "title": "e"}, {"date": "2026-11-12", "time": "", "title": "f"}]
+    got = [u["title"] for u in S.upcoming_talks(cal_up, _dt(2026, 11, 13, 17, 50, tzinfo=S.NY))]
+    assert got == ["b", "e", "d", "c"], got
+    assert [u["title"] for u in S.upcoming_talks(cal_up[:1], _dt(2026, 11, 13, 11, 30, tzinfo=S.NY))] == ["a"]     # within the hour of grace
+
+    S._now = lambda: _dt(2026, 11, 11, 9, 0, tzinfo=S.NY)
     d = {"ts": 1.0, "speeches": [{**it[0], **sc}, {**rg[0], **sc}], "upcoming": up}
     FS.load, real = (lambda: d), FS.load
 
