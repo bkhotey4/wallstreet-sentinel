@@ -1,6 +1,143 @@
 {
- "updated": "2026-11-07",
+ "updated": "2026-11-14",
  "notes": [
+  {
+   "month": "2026-W46",
+   "date": "2026-11-14",
+   "title": "2026 年第 46 週產業筆記：輝達董事會調查拖累科技、通膨偏熱升息預期升溫、雲端記憶體成本墊高",
+   "summary": [
+    "【深入：科技與半導體】本週變化最大的是輝達：董事會 11/8 宣布就「執行長黃仁勳被指為外國情報行動目標」的報導展開獨立調查，11/9 股價跌逾 4% 至 177.91 美元，市值蒸發近 1,920 億美元，並遭提起集體訴訟（GMA、Onmanorama 11/9～11/10）。11/13 納斯達克再跌 0.91%，科技類股是大盤最大拖累（TheStreet 11/13）。這代表：輝達在指數權重大，單一公司的治理風險會牽動整個 AI 供應鏈情緒。（註：本站數據網址本次無法連線，選題依據是公開新聞，不是站內標籤。）",
+    "大盤週線仍收高：S&P 500 本週漲 2.5%、Nasdaq 漲 2.3%，11/13 收 7,561.67 與 25,136.27 點；當日科技、工業、非必需消費、原物料下跌，其餘類股上漲（TheStreet／AP 整理 11/13）。這代表資金出現從科技輪向其他類股的跡象，但只是一天的資料。",
+    "10 月 CPI（11/10）整體月增 0.4%（預期 0.3%）、核心月增 0.3%（預期 0.2%）；二手車下跌 1.2% 壓低讀數，家具用品月增 0.7%（Morningstar、investinglive 11/10）。市場對 12/9 聯準會會議升息 25 個基點的機率估計約 67%～80%，各來源不一致。傳導邏輯：利率偏高 → 借款成本敏感的不動產、公用事業與高本益比成長股壓力較大，銀行淨利息收入相對有支撐。",
+    "油價：美伊戰爭停火期待使布蘭特原油 11/9 單日跌約 5% 至約 92.57 美元，為 9 月初以來低點（oilprice／FXStreet 整理 11/9）。這代表能源業獲利預期降溫，但航空、運輸等用油產業的成本壓力減輕；11/13 報導提到美伊緊張再起，油價仍不穩。",
+    "AI 資本支出與記憶體：TrendForce 估 2026 年大型雲端業者資本支出年增 98%、2027 年再增 50%，其中 DRAM 與 NAND 占 2026 年資本支出約 47%、2027 年升至 68%；伺服器 DRAM 合約價 2025 下半年累計漲 64%（TrendForce 10/16 更新）。這代表記憶體廠受惠，但雲端業者零組件成本上升、自由現金流承壓，後續公司債發行可能增加；Barclays 提醒部分硬體營收成長來自漲價而非銷量。"
+   ],
+   "sectors": [
+    {
+     "name": "科技",
+     "state": "轉弱",
+     "read": "11/13 科技類股是大盤最大拖累，納斯達克單日跌 0.91%；輝達遭董事會調查後單日跌逾 4%。"
+    },
+    {
+     "name": "通訊服務",
+     "state": "持平",
+     "read": "11/13 通訊服務屬於上漲的類股之一（TheStreet），但本週沒有查到足夠的產業層級數據。"
+    },
+    {
+     "name": "非必需消費",
+     "state": "轉弱",
+     "read": "11/13 下跌；10 月核心 CPI 偏熱、升息預期升高，對消費者負擔有壓力。"
+    },
+    {
+     "name": "必需消費",
+     "state": "持平",
+     "read": "11/13 上漲；本週未查到獨立的產業數據。"
+    },
+    {
+     "name": "金融",
+     "state": "分歧",
+     "read": "11/13 上漲，利率偏高有利利息收入；但報導提到 BofA 一週曾跌 7.9%（日期不明，僅供參考）。"
+    },
+    {
+     "name": "工業",
+     "state": "轉弱",
+     "read": "11/13 下跌；本週未查到產業層級原因。"
+    },
+    {
+     "name": "原物料",
+     "state": "轉弱",
+     "read": "11/13 下跌；本週未查到產業層級原因。"
+    },
+    {
+     "name": "能源",
+     "state": "轉弱",
+     "read": "布蘭特 11/9 跌約 5% 至約 92.57 美元；但 11/13 美伊緊張再起，油價方向不穩。"
+    },
+    {
+     "name": "醫療保健",
+     "state": "持平",
+     "read": "11/13 上漲；本週未查到足夠的政策或財報資料。"
+    },
+    {
+     "name": "公用事業",
+     "state": "持平",
+     "read": "11/13 上漲；但利率預期偏高對此類股的評價是壓力。"
+    },
+    {
+     "name": "不動產",
+     "state": "持平",
+     "read": "11/13 上漲；但升息預期升高對借款成本敏感的不動產不利。"
+    },
+    {
+     "name": "半導體",
+     "state": "轉弱",
+     "read": "輝達治理疑慮與集體訴訟拖累族群情緒；本週未取得台積電 10 月營收等數字。"
+    },
+    {
+     "name": "記憶體",
+     "state": "分歧",
+     "read": "TrendForce 指出 DRAM 供給仍偏緊、合約價續漲，但記憶體成本占雲端資本支出比重升高，需求端有定價成分。"
+    },
+    {
+     "name": "AI 伺服器",
+     "state": "分歧",
+     "read": "Dell 營收成長被指部分來自漲價，Barclays 提醒量價需拆開看；需求仍被供給限制。"
+    },
+    {
+     "name": "雲端與 GPU 雲端",
+     "state": "分歧",
+     "read": "資本支出預估年增 98%，但元件成本上升壓縮自由現金流；本週未查到最新雲端業者財報數字。"
+    },
+    {
+     "name": "軟體",
+     "state": "持平",
+     "read": "本週未查到軟體產業的具體數據。"
+    }
+   ],
+   "watch": [
+    "11/17（週二）輝達財報（盤後）與 Home Depot 財報（盤前）：看輝達對供給、記憶體成本與董事會調查的說明；Home Depot 反映住宅與利率環境。",
+    "11/12 Cisco、Applied Materials 財報（11/12 盤後公布）：本次未查到結果，下週回頭檢視網通與半導體設備的訂單說明。",
+    "12/9 聯準會會議前的後續數據與官員談話：觀察升息預期是否繼續升高。",
+    "美伊停火談判與油價：觀察布蘭特是否守在 90 美元附近。"
+   ],
+   "sources": [
+    {
+     "name": "TheStreet：11/13 美股收盤",
+     "url": "https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-nov-13-2026"
+    },
+    {
+     "name": "KRMG／AP：11/13 美股指數",
+     "url": "https://krmg.com/2026/11/13/how-major-us-stock-indexes-fared-friday-11-13-2026/"
+    },
+    {
+     "name": "GMA：輝達股價下跌與董事會調查",
+     "url": "https://www.goodmorningamerica.com/news/story/nvidia-stock-falls-after-company-opens-probe-ceo-137970524"
+    },
+    {
+     "name": "Onmanorama：輝達市值損失",
+     "url": "https://www.onmanorama.com/news/business/2026/11/10/nvidia-loses-192-billion-as-peers-climb-2-how-jensen-huang-s-controversy-rattled-ai-chipmaker.amp.html"
+    },
+    {
+     "name": "Morningstar：10 月 CPI",
+     "url": "https://www.morningstar.com/economy/october-cpi-report-shows-inflation-04-monthly-rate-above-forecasts"
+    },
+    {
+     "name": "oilprice：油價與通膨",
+     "url": "https://oilprice.com/Energy/Energy-General/Wall-Street-Sees-Inflation-Easing-Even-With-Oil-Above-90.html"
+    },
+    {
+     "name": "TrendForce：雲端資本支出與記憶體",
+     "url": "https://www.trendforce.com/research/category/DRAM?page=2"
+    }
+   ],
+   "data_gaps": [
+    "本站數據（growth_us.json、ustech.json）與網站頁面：wallstreet-sentinel.pages.dev 無法連線（需在 session 網路設定中允許該網域），無法用站內標籤選題或彙整各產業中位數。",
+    "investinglive.com、thriveinmarkets.com 無法連線，僅能引用搜尋摘要。",
+    "台積電 10 月月營收、Cisco 與 Applied Materials 11/12 財報結果：未查到。",
+    "通訊服務、必需消費、醫療保健、公用事業、不動產、軟體、工業、原物料的產業層級數據：只有 11/13 單日漲跌，狀態判斷信心較低。",
+    "升息機率各來源不一致（67%～80%）；Walmart 財報日未確認。"
+   ]
+  },
   {
    "month": "2026-W45",
    "date": "2026-11-07",
