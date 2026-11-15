@@ -37,10 +37,15 @@ def sec_terms(eng) -> str:
 
 def sec_privacy(eng) -> str:
     items = [
-        ("本站沒有後端伺服器、沒有帳號系統，也不使用追蹤 Cookie、分析工具或廣告。網站本身是 GitHub Pages 上的靜態網頁。",
-         "No server, no accounts, no tracking cookies, analytics or ads — a static site on GitHub Pages."),
-        ("「我的持股」的股數、成本、現金只存在你自己這個瀏覽器的本機儲存空間（localStorage），不會上傳到本站或 GitHub。所有計算（損益、規則檢查、因子曝險、營收曝險、事件雷達）都在你的瀏覽器裡完成。",
-         "Holdings live only in your browser’s local storage; every calculation runs in your browser."),
+        ("本站沒有帳號系統，也不使用追蹤 Cookie、分析工具或廣告。頁面是事先產生好的靜態網頁；即時報價和即時新聞則由本站自己的兩支小程式"
+         "（放在 Cloudflare 上的 /api/quote、/api/news）代你向 Yahoo 和各新聞來源查詢。本站的程式不儲存這些查詢，"
+         "但 Cloudflare、Yahoo 這些服務提供者會看到連線本身（你的 IP 位址、查了哪些代號）。",
+         "No accounts, tracking cookies, analytics or ads. Pages are pre-built static files; live quotes and news go through the site's own two small "
+         "functions on Cloudflare (/api/quote, /api/news), which do not store requests — Cloudflare and Yahoo see the connection (IP, symbols)."),
+        ("「我的持股」的股數、成本、現金只存在你自己這個瀏覽器的本機儲存空間（localStorage），不會上傳。損益、規則檢查、因子曝險、營收曝險、事件雷達"
+         "都在你的瀏覽器裡計算。唯一會送出去的是「股票代號」：查即時價（含盤前／盤後）時，你持有的代號會送到上面那支報價程式，不含股數、成本或金額。",
+         "Share counts, cost and cash stay in your browser’s local storage and are never uploaded; calculations run in your browser. "
+         "Only ticker symbols are sent, to the quote function above, when live prices are fetched."),
         ("選擇「用 Google 同步」時，網頁會向 Google 申請 drive.appdata 權限：只能讀寫你自己 Google 雲端硬碟裡一個專屬於本網頁、你看不到的隱藏資料夾，用來存同一份持股檔。本網頁看不到你雲端硬碟裡的其他任何檔案，站主也看不到這個資料夾。",
          "Google sync requests only drive.appdata: a hidden app folder in YOUR Drive holding the same file. No other Drive files are visible, and the author cannot see the folder."),
         ("Google 登入權杖只在你的瀏覽器裡使用，用來存取上述資料夾，不會傳給本站或任何第三方。",

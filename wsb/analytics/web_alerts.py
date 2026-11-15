@@ -189,6 +189,27 @@ def _vol_ratio(v: pd.Series, sym: str, day: str, now: datetime) -> Optional[floa
     return float(v.iloc[-1]) / frac / base
 
 
+def _heavy(n: int = 8) -> tuple:
+    """The heaviest names in the S&P 500 from the cached SPY holdings file (refreshed every build), plus TSMC's two listings.
+    Typed tickers went stale whenever the ranking changed; without the file only the indexes are checked."""
+    import json
+    try:
+        from .news_impact import SPY_FILE
+        w = json.loads(SPY_FILE.read_text(encoding="utf-8")).get("w") or {}
+    except (OSError, ValueError, ImportError):
+        w = {}
+    top = [s for s, _ in sorted(w.items(), key=lambda kv: -float(kv[1] or 0))]
+    seen, out = set(), []
+    for s in top:                                             # GOOGL / GOOG are one company: keep the heavier line
+        k = s[:4] if s.startswith("GOOG") else s
+        if k not in seen:
+            seen.add(k)
+            out.append(s)
+        if len(out) >= n:
+            break
+    return tuple(out) + ("TSM", "2330.TW")
+
+
 def _momentum(eng, out: List[Dict], now: datetime) -> None:
     """強勢上漲: a main index up >= 2x its own normal daily move (one-year std), or a heavyweight up >= 2.5x with >= 1.5x
     volume.  The 3-sigma moves are already in _vol; this adds the 2-sigma rallies so the page is not silent when markets surge."""
@@ -198,7 +219,7 @@ def _momentum(eng, out: List[Dict], now: datetime) -> None:
     have = {x["key"].rsplit(":", 2)[0] for x in out if x["key"].startswith("sigma:")}
     have |= {"sigma:" + {"us": "^GSPC", "tw": "^TWII"}[x["key"].split(":")[1]] for x in out if x["key"].startswith("rally:")}
     idx = ("^GSPC", "^NDX", "^SOX", "^TWII")
-    heavy = ("NVDA", "MSFT", "AAPL", "AMZN", "GOOGL", "META", "AVGO", "TSM", "2330.TW")
+    heavy = _heavy()
     for t in idx + heavy:
         x, h = q(t), eng.market.series(t).dropna()
         if not x or x.get("chg_pct") is None or str(x.get("asof", "")) < cut or len(h) < 260 or f"sigma:{t}" in have:

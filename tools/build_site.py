@@ -667,7 +667,7 @@ def sec_taiwan(eng) -> str:
         oi_chg = fu.get("oi_foreign_chg")
         chg_txt = f" (日變化 {oi_chg:+,.0f})" if oi_chg is not None else ""
         if oi < -40000:
-            badge = T("🔴 歷史級巨額空單警戒", "🔴 Extreme Bear Alert (< -40k)")
+            badge = T("🔴 淨空單超過 4 萬口", "🔴 Net short above 40k contracts")
             cls_oi = "dn"
         elif oi < -20000:
             badge = T("🟠 偏空防守格局", "🟠 Bearish Lean")
@@ -694,6 +694,9 @@ def sec_taiwan(eng) -> str:
         elif c1 is not None and c1 >= 1.5:
             m_badge = T("⚠️ 融資暴增／散戶浮額急增", "⚠️ Margin Spike")
             cls_m = "warn"
+        elif c1 is None:                                    # no day change: say so, never a green light on missing data
+            m_badge = T("⚪ 日變化資料缺", "⚪ Daily change missing")
+            cls_m = ""
         else:
             m_badge = T("🟢 籌碼安定", "🟢 Stable Float")
             cls_m = "up"

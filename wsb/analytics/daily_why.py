@@ -285,7 +285,7 @@ def build_day(q: Dict, why: Dict, jump: Optional[Dict], day: str) -> Optional[Di
     a = sorted([x for x in mg if (x["c"] > 0) != up and abs(x["c"]) >= 1], key=lambda x: -abs(x["c"]))
     if w or a:
         W.append(f"各產業權值股{'帶頭漲' if up else '帶頭跌'}：" + ("、".join(nm(x) for x in w[:4]) if w else "沒有")
-                 + "（25 檔各產業最大的公司中，當天動最大的）" + ("；反方向：" + "、".join(nm(x) for x in a[:3]) if a else "") + "。")
+                 + f"（{len(SI.MEGA)} 檔各產業最大的公司中，當天動最大的）" + ("；反方向：" + "、".join(nm(x) for x in a[:3]) if a else "") + "。")
     sec = sorted([{"s": x[0], "zh": x[1], "k": x[3], "c": q[x[0]]["chg"]} for x in SI.SECTORS if x[0] in q], key=lambda x: -x["c"])
     if len(sec) >= 8:
         oil, tn = q.get("CL=F"), q.get("^TNX")

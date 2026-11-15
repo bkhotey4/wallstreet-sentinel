@@ -18,6 +18,12 @@ COVERAGE = Path(__file__).resolve().parents[1] / "research_feed" / "coverage.jso
 TAB = "stability"
 
 
+def _abp() -> str:
+    """The ABP transition date is a fixed plan; the tense is not — after the day it reads as a past plan, not a future one."""
+    from datetime import date
+    return "預定 2027 年 1 月 1 日轉換" if date.today() < date(2027, 1, 1) else "原訂 2027 年 1 月 1 日轉換（是否如期請看來源）"
+
+
 def _v(eng) -> Dict:
     cache = getattr(eng, "_stability_view", None)
     if cache is None:
@@ -284,7 +290,7 @@ def sec_st_ldi(eng) -> str:
                   + (f'約占這個緩衝的 {used:.0f}%。</p>' if uk["c3"] > 0 else '沒有上升。</p>'))
     if eu and eu.get("slope") is not None:
         story += (f'<p class="small"><b>荷蘭退休金改革（時程是官方的，對利率的影響是研究機構預估）</b>：荷蘭退休金約 1.5 兆歐元，正從「保證給多少」改成「看投資成果給」，'
-                  f'各基金要在 2028 年 1 月前轉換，最大的 ABP 預定 2027 年 1 月 1 日轉換。轉換後不需要那麼多 30 年以上的避險，'
+                  f'各基金要在 2028 年 1 月前轉換，最大的 ABP {_abp()}（時程與規模是 2026 年 11 月整理的，之後有沒有改請看來源）。轉換後不需要那麼多 30 年以上的避險，'
                   f'ING 等研究預期歐元 30 年利率相對 10 年會被推高（<a href="https://think.ing.com/articles/dutch-pension-reforms-are-bumping-up-rates-from-the-long-end" target="_blank" rel="noopener">ING</a>）。'
                   f'本站量到的歐元區 AAA 30 年減 10 年是 {eu["slope"]:+.0f}bp（{eu["since"]} 年以來第 {num(eu.get("slope_pct"), 0)} 百分位）'
                   + (f'，一年 {eu["slope_1y"]:+.0f}bp' if eu.get("slope_1y") is not None else "") + '。這個差距若在轉換日前後明顯拉大，代表預期正在發生。</p>')

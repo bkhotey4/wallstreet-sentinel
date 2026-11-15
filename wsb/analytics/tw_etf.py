@@ -17,6 +17,17 @@ MIN_AUM = 10.0             # 億元: tiny ETFs are left out of the premium list 
 MIN_HIST = 40              # daily snapshots before an ETF's own premium / flow history is used
 
 
+def _day_zh(asof) -> str:
+    """「今天」 only when the data really is today's (Taipei); otherwise the data's own date, so a weekend, a holiday or a
+    stuck feed never reads as today."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    a = str(asof or "")[:10]
+    if a and a == datetime.now(ZoneInfo("Asia/Taipei")).date().isoformat():
+        return "今天"
+    return (f"{int(a[5:7])}/{int(a[8:10])} " if len(a) == 10 and a[5:7].isdigit() and a[8:10].isdigit() else "最新一日")
+
+
 def _tr(c: pd.Series, dv: List) -> pd.Series:
     """Total-return index: the dividend is added back on its ex-date (reinvested at that close)."""
     div = pd.Series(0.0, index=c.index)
@@ -202,7 +213,7 @@ def headline(r: Dict) -> str:
     k = r.get("kinds") or {}
     if k and r.get("flow_all") is not None:
         big = sorted(((g["flow"], n) for n, g in k.items() if abs(g["flow"]) >= 1), key=lambda x: -abs(x[0]))[:2]
-        parts.append(f"今天台股 ETF 合計淨{'流入' if r['flow_all'] >= 0 else '流出'} {abs(r['flow_all']):,.0f} 億元"
+        parts.append(f"{_day_zh(r.get('asof'))}台股 ETF 合計淨{'流入' if r['flow_all'] >= 0 else '流出'} {abs(r['flow_all']):,.0f} 億元"
                      + ("（" + "、".join(f"{n} {f:+,.0f} 億" for f, n in big) + "）" if big else ""))
     if r.get("n_prem_known"):
         parts.append(f"{len(r['prem'])} 檔規模 {MIN_AUM:.0f} 億以上的 ETF 市價和淨值差 1% 以上" if r["prem"] else

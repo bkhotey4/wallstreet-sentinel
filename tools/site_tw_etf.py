@@ -55,8 +55,8 @@ def sec_etf_flow(eng) -> str:
         rows.append(f'<tr><td>{T(name, KIND_EN[name])}</td><td class="r">{g["n"]}</td><td class="r">{num(g["aum"], 0)}</td>'
                     f'<td class="r">{_yi(g["flow"], 1, True)}</td><td class="r">{_yi(g.get("flow20"), 0, True)}</td><td class="r">{zt}</td></tr>')
     tab = (f'<div class="scroll"><table class="mini"><thead><tr><th>{T("類型", "Kind")}</th><th class="r">{T("檔數", "N")}</th>'
-           f'<th class="r">{T("規模（億元）", "Assets (NT$100m)")}</th><th class="r">{T("今天申贖（億）", "Today net (NT$100m)")}</th>'
-           f'<th class="r">{T("近 20 日（億）", "20 days")}</th><th class="r">{T("今天和自己歷史比", "vs own history")}</th></tr></thead>'
+           f'<th class="r">{T("規模（億元）", "Assets (NT$100m)")}</th><th class="r">{T("最新一日申贖（億）", "Latest day net (NT$100m)")}</th>'
+           f'<th class="r">{T("近 20 日（億）", "20 days")}</th><th class="r">{T("最新一日和自己歷史比", "vs own history")}</th></tr></thead>'
            f'<tbody>{"".join(rows)}</tbody></table></div>')
     hist_note = (f"資料日 {r.get('asof') or '—'}。申贖歷史累積 {r['n_days']} 天" +
                  ("（滿 40 天後才和自己的歷史比較，σ＝標準差，超過 ±3σ 標 ⚠️）。" if r["n_days"] < E.MIN_HIST + 1 else "。"))

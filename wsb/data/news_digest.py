@@ -27,7 +27,7 @@ FEEDS = [("Business Insider", "https://www.businessinsider.com/rss"),
          ("Business Insider Markets", "https://markets.businessinsider.com/rss/news")]
 TOPICS = [("ai", "AI 與晶片", "AI & chips", r"\b(ai|a\.i\.|nvidia|chip|chips|semiconductor|gpu|data ?cent(er|re)s?|openai|anthropic|llm|hyperscaler)\b"),
           ("power", "電力與能源", "Power & energy", r"\b(power|electricity|grid|energy|nuclear|utilit(y|ies)|oil|gas|solar|uranium)\b"),
-          ("fed", "聯準會與利率", "Fed & rates", r"\b(fed|federal reserve|powell|rate cut|rate hike|interest rates?|inflation|cpi|pce|treasur(y|ies)|yields?|bond market)\b"),
+          ("fed", "聯準會與利率", "Fed & rates", r"\b(fed|federal reserve|fomc|rate cut|rate hike|interest rates?|inflation|cpi|pce|treasur(y|ies)|yields?|bond market)\b"),
           ("credit", "信用與負債", "Credit & debt", r"\b(debt|credit|default|private credit|loans?|lenders?|bankrupt\w*|junk)\b"),
           ("earnings", "財報", "Earnings", r"\b(earnings|revenue|guidance|quarter|q[1-4]|profit|outlook)\b"),
           ("market", "市場動向", "Markets", r"\b(stocks?|s&p|nasdaq|dow|market|rally|selloff|sell-off|bear|bull|recession|tariffs?)\b")]

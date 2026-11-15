@@ -87,7 +87,7 @@ def sec_migration_polls(eng) -> str:
         rec = "".join(f'<li>{_e(p["end"])} {_e(p["who"])}：支持 {p["app"]:.0f}%、不支持 {p["dis"]:.0f}%'
                       + (f'（<a href="{_e(p["url"])}" target="_blank" rel="noopener noreferrer">原文</a>）' if p["url"].startswith("https://") else "") + "</li>"
                       for p in a.get("recent") or [])
-        body += (f'<h3>民意：總統支持度 {a["app"]:.0f}%，不支持 {a["dis"]:.0f}% <span class="muted small">最近 {a["win"]} 天 {a["n"]} 家，最新 {_e(a["latest"])}</span></h3>'
+        body += (f'<h3>民意：總統{("（" + _e(a["who"]) + "）") if a.get("who") else ""}支持度 {a["app"]:.0f}%，不支持 {a["dis"]:.0f}% <span class="muted small">最近 {a["win"]} 天 {a["n"]} 家，最新 {_e(a["latest"])}</span></h3>'
                  '<p>支持度本身不會讓股市漲跌，但它會改變政府接下來做什麼：支持度低時，執政者常調整移民、關稅或預算的方向，'
                  '國會也比較難通過法案。政策方向越不清楚，企業越傾向延後招人和投資，這會慢慢傳到就業和獲利。</p>'
                  + (spark(_ser(a["hist"]), 160, 36) if len(a.get("hist") or []) > 5 else "")

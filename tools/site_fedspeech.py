@@ -173,7 +173,7 @@ def sec_fed_speeches(eng) -> str:
     note = (f'資料：<a href="{FS.PAGE}" target="_blank" rel="noopener">聯準會理事會演講</a>與<a href="{FS.CAL_PAGE}" target="_blank" rel="noopener">官方行事曆</a>'
             '（主席、副主席與理事都有 FOMC 永久投票權）'
             + "".join(f'＋<a href="{m["page"]}" target="_blank" rel="noopener">{m["name"]}總裁演講</a>' for m in FS.REGIONAL.values())
-            + '（地方聯準會總裁 12 位輪流投票，目前只收有乾淨官方 RSS 的銀行；紐約聯準會的 RSS 會擋自動程式，所以沒有）。「多談哪邊」只是數原文提到通膨和就業的次數，'
+            + '（12 位地方聯準會總裁中，紐約固定有投票權，其餘 11 位每年輪 4 席；目前只收有乾淨官方 RSS 的銀行；紐約聯準會的 RSS 會擋自動程式，所以沒有）。「多談哪邊」只是數原文提到通膨和就業的次數，'
             '多 1.5 倍以上算多談那一邊；重點句是第一句「講者自己看法＋利率」的原文，「偏向收緊／放寬／觀望」只看這一句裡的字眼，不是 AI 判讀，也不翻譯以免失真，請點全文確認。'
             '2 年期殖利率最貼近市場對聯準會未來一兩年利率的猜測；同一天常有其他消息，所以只寫「同一天」，不說是演講造成的。資料來源 FRED DGS2，比市場晚一天'
             + (f'；FRED 還沒更新的 {", ".join(x.strftime("%m/%d") for x in sorted(from_ust))} 先用<a href="{FS.UST_PAGE}" target="_blank" rel="noopener">美國財政部當天公布的殖利率曲線</a>補上（FRED 之後刊登的是同一個數字）'

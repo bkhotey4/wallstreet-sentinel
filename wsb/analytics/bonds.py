@@ -194,7 +194,9 @@ def read(r: Dict) -> Dict:
     if (tp or {}).get("now") is not None and tp["pct"] >= 80:
         imp.append(f"美國 10 年期的期限溢酬 {tp['now']:.2f}%（{tp['since']} 年以來第 {tp['pct']:.0f} 百分位）：投資人要求更多補償才願意長期借錢給美國政府，反映對財政赤字與通膨的擔心。")
     if jp and (jp.get("chg6") or 0) <= -5:
-        imp.append(f"日本是美債最大的海外持有者，半年減少 {abs(jp['chg6']):.0f}%：美國長債少了一個大買家，長天期利率比較容易往上。")
+        rank = [x["name"] for x in tic.get("rows") or []].index("Japan") + 1          # rows are sorted by size: the rank is computed, not typed
+        imp.append(f"日本是美債{'最大' if rank == 1 else f'第 {rank} 大'}的海外持有者（{tic.get('month') or '最新一期'}），半年減少 {abs(jp['chg6']):.0f}%："
+                   "美國長債少了一個大買家，長天期利率比較容易往上。")
     if calm and up and not wide:
         imp.append("政府借錢成本在升、公司債利差卻還很低：市場要求的違約補償偏低，利差被壓縮時估值偏貴、緩衝變薄；經濟一轉弱，利差常會一次補漲（擴大）。")
     if wide:

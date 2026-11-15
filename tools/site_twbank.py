@@ -36,7 +36,15 @@ def lead(v: Dict) -> str:
         parts.append(f"中小企業逾放比 {s['now']:.2f}%（{s['since']} 年以來第 {num(s['pct'], 0)} 百分位）")
     if not parts:
         return ""
-    tail = ("；" + "、".join(v["hot"]) + "落在自己歷史最高一成，要留意。") if v.get("hot") else "，都在自己歷史的低檔，銀行壞帳壓力現在不高。"
+    pcts = [x["pct"] for x in (s, q) if x and x.get("pct") is not None]
+    if v.get("hot"):
+        tail = "；" + "、".join(v["hot"]) + "落在自己歷史最高一成，要留意。"
+    elif pcts and max(pcts) < 50:
+        tail = "，都在自己歷史的下半部，銀行壞帳壓力現在不高。"
+    elif pcts:                                             # 50th–89th percentile is not "low": say where it is
+        tail = f"，沒有一項落在自己歷史最高一成，但最高的已經在第 {max(pcts):.0f} 百分位，不算低。"
+    else:
+        tail = "。"
     return "一句話看懂：" + "，".join(parts) + tail
 
 

@@ -128,7 +128,7 @@ def _table(rows: List[Dict]) -> str:
         f'<td class="r">{r["now"]:.1f}{r["unit"]}</td><td class="r">{ago(r)}</td>'
         f'<td>{_pill(r["tone"])}</td><td class="r">{r["rank"]}%</td><td class="r muted">{r["asof"]}</td></tr>' for r in rows)
     return ('<div class="scroll"><table class="mini"><thead><tr><th>指標</th><th class="r">現在</th><th class="r">一年前</th>'
-            '<th>方向</th><th class="r">1995 年來位置</th><th class="r">資料月份</th></tr></thead>'
+            '<th>方向</th><th class="r">在自己歷史的位置</th><th class="r">資料月份</th></tr></thead>'
             f'<tbody>{body}</tbody></table></div>')
 
 
@@ -151,7 +151,7 @@ def sec_human(eng) -> str:
                      f'這種感受常常先反映在選票上。</p><div class="scroll"><table class="mini"><thead><tr><th>開銷</th><th class="r">一年漲幅</th>'
                      f'<th>和工資比</th><th class="r">資料月份</th></tr></thead><tbody>{items}</tbody></table></div>')
     pol = policy(eng)
-    pol_html = (f'<h3>政策不確定性</h3><p class="small">近 30 天平均 {pol["now"]:.0f}，在 1995 年以來第 {pol["rank"]} 百分位，資料到 {pol["asof"]}。'
+    pol_html = (f'<h3>政策不確定性</h3><p class="small">近 30 天平均 {pol["now"]:.0f}，在自己有資料以來第 {pol["rank"]} 百分位，資料到 {pol["asof"]}。'
                 '數字越高，代表新聞裡談政策風險越多。</p>' if pol else "")
     cn = china(eng)
     cn_html = ('<h3>中國</h3><ul class="lines">' + "".join(

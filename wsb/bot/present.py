@@ -54,6 +54,20 @@ async def send_pngs(dest, pngs: Sequence[bytes], content: Optional[str] = None) 
     return ok
 
 
+def headline(embeds) -> Optional[str]:
+    """One line of plain text for a push that is otherwise only pictures: the embed's title and its first field names.
+    A message made of slide images arrives on the phone as a notification with no words; with this line the lock screen
+    says what the alert is.  None when there is nothing to say."""
+    try:
+        em = embeds() if callable(embeds) else embeds
+        em = (em if isinstance(em, list) else [em])[0]
+        names = [f.name for f in (em.fields or [])[:3] if f.name]
+        txt = (em.title or "") + ("：" + "；".join(names) if names else "")
+        return txt[:300] or None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
                   embeds: Optional[Callable[[], Union[discord.Embed, List[discord.Embed]]]] = None,
                   text: Optional[str] = None, title: str = "AI 研判", engine_name: str = "",
@@ -71,6 +85,8 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
             if text:
                 pngs += await asyncio.to_thread(S.deck_text, title, text, engine_name)
             if pngs:
+                if content is None and embeds and not isinstance(dest, discord.Interaction):   # a push, not a reply to a command
+                    content = headline(embeds)
                 return await send_pngs(dest, pngs, content)
         except Exception:  # noqa: BLE001
             log.exception("slide rendering failed → falling back to embeds")

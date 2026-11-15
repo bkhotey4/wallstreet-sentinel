@@ -16,6 +16,12 @@
   7. 各國危機雷達：每 30 分鐘讀網站的 country_risk.json，新紅燈、3 國以上貨幣兩週內一起貶、或開始擴散時推一則（各一個月一次）。
   6. （A1）系統健康：tools/sys_health.py，每 10 分鐘檢查機器人心跳、連續出錯的資料來源、網站建置、新聞來源數、本機收盤價，
      有新問題才私訊擁有者，同一件事 24 小時說一次。
+  8. （2026-11-15）台股重大訊息即時版：公開資訊觀測站官方 RSS（wsb/data/mops_rt.py），追蹤的台股公司一有公告就送，一家公司一則，
+     附這檔現在的漲跌與最常一起動的台股；只在持股裡的公司只私訊。原本走機器人的整批檔，實測中位數晚 12 小時。
+  9. （2026-11-15）網站警示補位：每 10 分鐘讀網站的 alerts.json，新出現的警示級項目如果機器人沒有對應的通知就補送；
+     機器人停了（心跳超過 20 分鐘）則全部代送。
+ 10. （2026-11-15）送得到、不重送：每則訊息都帶一行文字（手機通知看得到標題）；Discord 忙線或斷線會在同一輪重試兩次；
+     每送出一段就存檔；整輪超過 95 秒就把剩下的留到下一輪（Windows 排程 2 分鐘會強制結束）；有發生時間的通知會記下慢了多久。
 送過的記在 data_cache/sec_push.json，不會重送。Windows 工作排程每 3 分鐘跑一次：python -m tools.sec_push
 影響估算是過去平均關係的推算，不是預測，也不是投資建議。"""
 from __future__ import annotations
@@ -122,13 +128,40 @@ async def impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:
     return out
 
 
+def plain(embed: Dict) -> str:
+    """The message's own text line = the embed's title.  A message that is only an embed can arrive on the phone as a
+    notification with no words in it; with this line the lock screen says what happened."""
+    return re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", str(embed.get("title") or "")).replace("*", "")[:190]
+
+
 async def post(sess: aiohttp.ClientSession, channel: str, embed: Dict) -> bool:
+    """Send one message; True only when Discord accepted it.  Busy (429) or a server/network error is retried twice in the
+    same run — whatever still fails stays unmarked and goes out on the next run 3 minutes later."""
+    if not channel:
+        return False
     h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
-    async with sess.post(f"{API}/channels/{channel}/messages", headers=h, json={"embeds": [embed]},
-                         timeout=aiohttp.ClientTimeout(total=20)) as r:
-        if r.status >= 300:
-            log.warning("discord %s: HTTP %s", channel, r.status)
-        return r.status < 300
+    for attempt in range(3):
+        wait = 2.0
+        try:
+            async with sess.post(f"{API}/channels/{channel}/messages", headers=h, json={"content": plain(embed), "embeds": [embed]},
+                                 timeout=aiohttp.ClientTimeout(total=15)) as r:
+                if r.status < 300:
+                    return True
+                if r.status == 429:
+                    try:
+                        wait = min(float((await r.json()).get("retry_after") or 2), 10.0)
+                    except Exception:  # noqa: BLE001
+                        wait = 3.0
+                elif r.status < 500:                       # 400/401/403/404: retrying the same request cannot help
+                    log.warning("discord %s: HTTP %s %s", channel, r.status, (await r.text())[:200])
+                    return False
+                log.info("discord %s: HTTP %s, retry %d", channel, r.status, attempt + 1)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            log.info("discord %s: %s, retry %d", channel, type(e).__name__, attempt + 1)
+        if attempt < 2:
+            await asyncio.sleep(wait)
+    log.warning("discord %s: not delivered after 3 tries (kept for the next run)", channel)
+    return False
 
 
 def alert_channel() -> str:
@@ -152,9 +185,13 @@ async def dm_channel(sess: aiohttp.ClientSession) -> Optional[str]:
     if not owner_id():
         return None
     h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
-    async with sess.post(f"{API}/users/@me/channels", headers=h, json={"recipient_id": owner_id()},
-                         timeout=aiohttp.ClientTimeout(total=20)) as r:
-        return (await r.json()).get("id") if r.status < 300 else None
+    try:
+        async with sess.post(f"{API}/users/@me/channels", headers=h, json={"recipient_id": owner_id()},
+                             timeout=aiohttp.ClientTimeout(total=15)) as r:
+            return (await r.json()).get("id") if r.status < 300 else None
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:   # no network: nothing is marked sent, the next run tries again
+        log.info("dm channel: %s", type(e).__name__)
+        return None
 
 
 def embed_of(a: Dict, lines: List[str]) -> Dict:
@@ -232,7 +269,7 @@ def sector_embed(a: Dict) -> Dict:
 
 
 # ------------------------------------------------------------------ 個股大動（網站公開的美股追蹤名單；規則在 wsb/analytics/stock_shock.py）
-STOCK_EVERY = 900
+STOCK_EVERY = 300
 
 
 async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
@@ -477,7 +514,147 @@ def catchup_embed(prev: float, now: float, late: List[Dict], cbs: List[Dict], mo
             "footer": {"text": "WallStreet Sentinel · 不構成投資建議"}}
 
 
+# ------------------------------------------------------------------ 台股重大訊息（即時）：公開資訊觀測站官方 RSS（規則在 wsb/data/mops_rt.py）
+def mops_codes() -> tuple:
+    """({code: 中文名} for the public Taiwan list + settings.taiwan.watch_stocks, {code: 名稱} held but not public → owner DM only)."""
+    from wsb.config import SETTINGS
+    from wsb.data.stocks import universe
+    pub = {s.split(".")[0]: v[0] for s, v in ((universe().get("tw") or {}).get("symbols") or {}).items()}
+    for c in (SETTINGS.get("taiwan", {}) or {}).get("watch_stocks", []) or []:
+        pub.setdefault(str(c), str(c))
+    priv: Dict[str, str] = {}
+    try:
+        from wsb.analytics import portfolio as PF
+        for t in PF.load_holdings() or {}:
+            if str(t).endswith((".TW", ".TWO")) and t.split(".")[0] not in pub:
+                priv[t.split(".")[0]] = t.split(".")[0]
+    except Exception:  # noqa: BLE001
+        pass
+    return pub, priv
+
+
+async def mops_new(sess: aiohttp.ClientSession, now: float) -> Dict:
+    """{"groups": [[item…] per company], "sent": {key: ts}, "priv": {codes}}; nothing on a test clock."""
+    from wsb.data import mops_rt as MR
+    if now < 1.7e9:
+        return {"groups": [], "sent": {}, "priv": set()}
+    pub, priv = mops_codes()
+    sent = MR.load()
+    items = await MR.fetch(sess)
+    names = {x["code"]: x["name"] for x in items}
+    codes = {c: (names.get(c, z) if z == c else z) for c, z in {**priv, **pub}.items()}
+    return {"groups": MR.group(MR.fresh(items, codes, sent, now)), "sent": sent, "priv": set(priv)}
+
+
+async def tw_impact(sess: aiohttp.ClientSession, code: str, zh: str, now: float) -> List[str]:
+    """How the stock is moving now (or that Taipei is closed) and the Taiwan names that most often move with it."""
+    from wsb.analytics import news_impact as NI
+    from wsb.data.stocks import universe
+    tw = (universe().get("tw") or {}).get("symbols") or {}
+    sym = next((s for s in tw if s.split(".")[0] == code), None)
+    if not sym:
+        return []
+    allu = {k: (v[0], v[1] if len(v) > 1 else k, "tw") for k, v in tw.items()}
+    cl = _close()
+    ret = cl.pct_change(fill_method=None) * 100 if not cl.empty else pd.DataFrame()
+    peers = NI.peers(ret, sym, list(tw), allu) if not ret.empty else []
+    q: Dict = {}
+    try:
+        async with sess.get(QUOTE, params={"s": ",".join([sym] + [p["sym"] for p in peers])}, timeout=aiohttp.ClientTimeout(total=15)) as r:
+            q = (await r.json()).get("q") or {}
+    except Exception as e:  # noqa: BLE001
+        log.info("quote %s: %s", sym, e)
+    x = q.get(sym) or {}
+    mv = x.get("chg") if isinstance(x.get("chg"), (int, float)) else None
+    live = mv is not None and x.get("t") and now - float(x["t"]) < 1800
+    if live:
+        out = [f"{zh} 現在 **{mv:+.1f}%**"]
+    else:
+        out = [f"台股現在休市，{zh} 要到下一個交易日開盤才會反應" + (f"（上一個交易日 {mv:+.1f}%）。" if mv is not None else "。")]
+    if peers:
+        out.append("・過去 120 個交易日最常一起動的台股：" + "、".join(
+            p["zh"] + (f" 約 {p['beta'] * mv:+.1f}%" if live else f"（它動 1%，這檔平均動 {p['beta']:.1f}%）") for p in peers))
+    return out
+
+
+def mops_embed(g: List[Dict], lines: List[str]) -> Dict:
+    top = max(g, key=lambda x: (x["lv"], x["ts"]))
+    red = top["lv"] >= 2
+    rows = "\n".join(f'・{x["when"]}【{x["kind"]}】{x["subject"][:170]}' for x in sorted(g, key=lambda x: (-x["lv"], -x["ts"]))[:8])
+    return {"title": (f'{"🔴" if red else "🟠"} 台股重大訊息：{top["zh"]}（{top["code"]}）{top["kind"]}' + (f" 等 {len(g)} 則" if len(g) > 1 else ""))[:256],
+            "url": top["url"][:2000], "color": 0xE5484D if red else 0xD97706,
+            "description": (f'一句話看懂：{top["zh"]} 剛在公開資訊觀測站發布' + (f"{len(g)} 則重大訊息" if len(g) > 1 else "重大訊息")
+                            + f'（{top.get("market") or "台股"}）。\n' + rows
+                            + ("\n**可能影響**（過去的平均關係，不是預測）\n" + "\n".join(lines) if lines else "")
+                            + "\n分類與標紅只看主旨裡的關鍵字（事故、財務危機、司法、高層異動、澄清報導、更正財報會標紅），沒有讀懂內容；請點標題看原文。")[:4000],
+            "footer": {"text": "公開資訊觀測站官方 RSS · WallStreet Sentinel · 不構成投資建議"},
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(top["ts"]))}
+
+
+# ------------------------------------------------------------------ 網站警示補位：網站算出來、機器人沒有對應通知的警示；機器人停了就全部代送
+SITE_ALERTS = "https://wallstreet-sentinel.pages.dev/alerts.json"
+SITE_EVERY = 600
+SITE_STALE = 3 * 3600            # 網站超過 3 小時沒重建：上面的警示是舊的，不推（系統健康會另外說）
+# 機器人自己就有同一類通知的警示（key 的第一段）；不在這裡面的新類別一律補推，寧可多說
+BOT_HAS = {"danger", "ssi", "ssi_jump", "vix_back", "sigma", "gamma", "canary", "playbook", "bottom", "stab"}
+
+
+async def site_alerts_json(sess: aiohttp.ClientSession, now: float) -> Dict:
+    if now < 1.7e9:                                        # a test clock: never fetch the live page
+        return {}
+    try:
+        async with sess.get(SITE_ALERTS, timeout=aiohttp.ClientTimeout(total=15)) as r:
+            return (await r.json(content_type=None)) or {} if r.status < 300 else {}
+    except Exception as e:  # noqa: BLE001
+        log.info("site alerts: %s", e)
+        return {}
+
+
+def site_todo(d: Dict, seen: Dict[str, float], now: float, bot_alive: bool) -> List[Dict]:
+    """Alert-level items that appeared since the last look.  `seen` is updated in place; the first look only remembers
+    (an alert that was already on the page is not news)."""
+    items = d.get("items") or []
+    if not d.get("ts") or abs(now - float(d["ts"])) > SITE_STALE:
+        return []
+    first = not seen
+    new = [x for x in items if x.get("key") and x["key"] not in seen]
+    for x in items:
+        if x.get("key"):
+            seen[x["key"]] = now
+    if first:
+        return []
+    return [x for x in new if x.get("lv") == "alert" and (not bot_alive or x["key"].split(":")[0] not in BOT_HAS)]
+
+
+def site_embed(xs: List[Dict], bot_alive: bool) -> Dict:
+    rows = "\n".join(f'・**{x.get("zh") or x["key"]}**' + (f'\n　{str(x["detail"]).strip("｜ ")[:260]}' if x.get("detail") else "") for x in xs[:6])
+    why = ("這幾項是網站算出來的警示，機器人沒有對應的通知，所以由這裡補上。" if bot_alive
+           else "機器人目前沒有在跑，網站上新出現的警示改由這裡代送。")
+    return {"title": ("⚠️ 網站警示：" + str(xs[0].get("zh") or xs[0]["key"]) + (f" 等 {len(xs)} 則" if len(xs) > 1 else ""))[:256],
+            "url": "https://wallstreet-sentinel.pages.dev/", "color": 0xE5484D,
+            "description": ("一句話看懂：網站最近一次重新計算後，新出現了下面的警示。\n" + rows + "\n" + why
+                            + "網站大約每 20 分鐘重算一次，所以這類通知會比事情發生晚一些。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 網站警示 · 不構成投資建議"}}
+
+
+# ------------------------------------------------------------------ 通知慢了多久：有「事情發生時間」的通知，記下發生到送出的秒數（系統健康會看）
+LAG = DATA_DIR / "push_lag.json"
+
+
+def note_lag(kind: str, ev_ts: float, now: float) -> None:
+    try:
+        rows = json.loads(LAG.read_text(encoding="utf-8")) if LAG.exists() else []
+    except (OSError, ValueError):
+        rows = []
+    rows = [r for r in rows if now - float(r.get("at") or 0) < 7 * 86400][-400:] + [{"k": kind, "ev": float(ev_ts), "at": float(now)}]
+    try:
+        LAG.write_text(json.dumps(rows), encoding="utf-8")
+    except OSError:
+        pass
+
+
 HEALTH_EVERY = 600
+BUDGET = 95.0                    # 這支程式每 3 分鐘跑一次、Windows 排程 2 分鐘就會強制結束：超過 95 秒，剩下的留到下一輪
 # ------------------------------------------------------------------ 各國危機雷達（網站每次建置算好的 country_risk.json；規則在 wsb/data/country_risk.py）
 COUNTRY = "https://wallstreet-sentinel.pages.dev/country_risk.json"
 CR_EVERY = 1800
@@ -529,6 +706,7 @@ async def run_once(now: Optional[float] = None) -> int:
     from wsb.data import http
     from wsb.data import sec_officers as SOF
     now = now or time.time()
+    t0 = time.monotonic()
     chan = alert_channel()
     if not DISCORD_TOKEN or not (chan or owner_id()):
         log.warning("DISCORD_BOT_TOKEN, or both the alert channel and the owner id, not set")
@@ -543,11 +721,32 @@ async def run_once(now: Optional[float] = None) -> int:
                               else {k: v for k, v in acc.items() if now - float(v) < (40 if k.startswith("cr:") else 10) * 86400})   # cr: keys are per month
     bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
     prev = float(mem.get("ts") or 0)
-    cr_ts = float(mem.get("cr_ts") or 0)
-    st_ts = float(mem.get("st_ts") or 0)
     health = mem.get("health") or {}
     hsent: Dict[str, float] = dict(health.get("sent") or {})
-    st = await SOF.refresh(watch_list(), now=now)
+    site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
+    S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
+         "ts": int(now), "skipped": []}
+
+    def save() -> None:
+        """Written after every section, not only at the end: if Windows ends the run at its 2-minute limit, what was
+        already sent is on disk and is not sent a second time."""
+        health["sent"] = hsent
+        tmp = PUSHED.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "ts": S["ts"]}), encoding="utf-8")
+        tmp.replace(PUSHED)
+
+    def left(name: str) -> bool:
+        if time.monotonic() - t0 < BUDGET:
+            return True
+        S["skipped"].append(name)
+        return False
+
+    try:
+        st = await asyncio.wait_for(SOF.refresh(watch_list(), now=now), 60)
+    except Exception as e:  # noqa: BLE001  (SEC unreachable: the other checks still run; nothing is marked, so nothing is lost)
+        log.warning("SEC refresh failed: %s", e)
+        st = {}
     todo = sorted((a for a in st.get("alerts") or [] if a["acc"] not in done and now - a["ts"] < MAX_AGE
                    and a.get("item") != "13D/A"),          # an update to an old 13D is listed on the site only
                   key=lambda a: (-severity(a), -a["ts"]))
@@ -570,63 +769,34 @@ async def run_once(now: Optional[float] = None) -> int:
                             done[a["acc"]] = now
                         for x in late_cb:
                             done["cb:" + x["u"]] = now
+                    else:
+                        S["ts"] = int(prev)                # not delivered: keep the old stamp so the next run tries the catch-up again
         except Exception as e:  # noqa: BLE001
             log.warning("catch-up failed: %s", e)
-        for a in todo:
-            lines = await impact(sess, a["sym"], a["zh"])
-            e = embed_of(a, lines)
-            if not chan:                                   # no alert channel set (same as the bot): everything goes to the DM
-                dm = dm or await dm_channel(sess)
-            if await post(sess, chan or dm or "", e):
-                done[a["acc"]] = now
-                sent += 1
-                if chan and severity(a) >= 3:              # the worst ones also reach the owner directly
+            S["ts"] = int(prev)
+        save()
+        for a in todo:                                     # SEC 重大申報：最嚴重的先送
+            if not left("sec"):
+                break
+            try:
+                lines = await impact(sess, a["sym"], a["zh"])
+                e = embed_of(a, lines)
+                if not chan:                               # no alert channel set (same as the bot): everything goes to the DM
                     dm = dm or await dm_channel(sess)
-                    if dm:
-                        await post(sess, dm, e)
-            await asyncio.sleep(1)
-        try:                                               # 族群急跌（same rules as the site's live bar）
-            for a in await sector_alerts(sess, now):
-                key = f'sector:{a["sym"]}:{a["day"]}:{a["lv"]}'
-                if key in done or (a["lv"] == 1 and f'sector:{a["sym"]}:{a["day"]}:2' in done):
-                    continue
-                if not chan:
-                    dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", sector_embed(a)):
-                    done[key] = now
+                if await post(sess, chan or dm or "", e):
+                    done[a["acc"]] = now
                     sent += 1
-                await asyncio.sleep(1)
-        except Exception as e:  # noqa: BLE001
-            log.warning("sector check failed: %s", e)
-        try:                                               # 個股大動：一天最多 3 則個別通知＋1 則彙總（每 15 分鐘看一次）
-            if now - float(mem.get("st_ts") or 0) >= STOCK_EVERY:
-                from wsb.analytics import stock_shock as ST
-                st_ts = now
-                hits = await stock_alerts(sess, now)
-                day = hits[0]["day"] if hits else ""
-                n_day = sum(1 for k in done if k.startswith(f"stock:{day}:"))
-                for a in hits:
-                    key = f'stock:{a["day"]}:{a["sym"]}'
-                    if key in done or n_day >= ST.DAY_CAP:
-                        continue
-                    if not chan:
+                    note_lag("sec", a["ts"], time.time())
+                    save()
+                    if chan and severity(a) >= 3:          # the worst ones also reach the owner directly
                         dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", stock_embed(a, await impact(sess, a["sym"], a["zh"]))):
-                        done[key] = now
-                        n_day += 1
-                        sent += 1
-                    await asyncio.sleep(1)
-                rest = [a for a in hits if f'stock:{a["day"]}:{a["sym"]}' not in done]
-                if rest and day and f"stockmany:{day}" not in done:
-                    if not chan:
-                        dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits))):
-                        done[f"stockmany:{day}"] = now
-                        sent += 1
-        except Exception as e:  # noqa: BLE001
-            log.warning("stock check failed: %s", e)
-        try:                                               # 央行非例行動作
-            for x in cbs:
+                        if dm:
+                            await post(sess, dm, e)
+            except Exception as e:  # noqa: BLE001  (one bad filing must not stop the rest of the run)
+                log.warning("SEC alert %s failed: %s", a.get("acc"), e)
+            await asyncio.sleep(1)
+        try:                                               # 央行非例行動作、日圓急升
+            for x in cbs if left("cb") else []:
                 if now - x["ts"] >= MAX_AGE or "cb:" + x["u"] in done:
                     continue
                 e = cb_embed(x, await market_now(sess, ["利率", "匯率", "美股", "黃金"], now))
@@ -635,6 +805,7 @@ async def run_once(now: Optional[float] = None) -> int:
                 if await post(sess, chan or dm or "", e):
                     done["cb:" + x["u"]] = now
                     sent += 1
+                    note_lag("cb", x["ts"], time.time())
                     if chan:
                         dm = dm or await dm_channel(sess)
                         if dm:
@@ -648,8 +819,72 @@ async def run_once(now: Optional[float] = None) -> int:
                     sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("central bank check failed: %s", e)
+        save()
+        try:                                               # 族群急跌（same rules as the site's live bar）
+            for a in await sector_alerts(sess, now) if left("sector") else []:
+                key = f'sector:{a["sym"]}:{a["day"]}:{a["lv"]}'
+                if key in done or (a["lv"] == 1 and f'sector:{a["sym"]}:{a["day"]}:2' in done):
+                    continue
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", sector_embed(a)):
+                    done[key] = now
+                    sent += 1
+                await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("sector check failed: %s", e)
+        save()
+        try:                                               # 個股大動：一天最多 3 則個別通知＋1 則彙總（每 5 分鐘看一次）
+            if now - S["st_ts"] >= STOCK_EVERY and left("stock"):
+                from wsb.analytics import stock_shock as ST
+                S["st_ts"] = now
+                hits = await stock_alerts(sess, now)
+                day = hits[0]["day"] if hits else ""
+                n_day = sum(1 for k in done if k.startswith(f"stock:{day}:"))
+                for a in hits:
+                    key = f'stock:{a["day"]}:{a["sym"]}'
+                    if key in done or n_day >= ST.DAY_CAP:
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", stock_embed(a, await impact(sess, a["sym"], a["zh"]))):
+                        done[key] = now
+                        n_day += 1
+                        sent += 1
+                        save()
+                    await asyncio.sleep(1)
+                rest = [a for a in hits if f'stock:{a["day"]}:{a["sym"]}' not in done]
+                if rest and day and f"stockmany:{day}" not in done:
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits))):
+                        done[f"stockmany:{day}"] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("stock check failed: %s", e)
+        save()
+        try:                                               # 台股重大訊息（即時，官方 RSS）：一家公司一則；只有持股才有的公司只私訊
+            if left("mops"):
+                from wsb.data import mops_rt as MR
+                mo = await mops_new(sess, now)
+                for g in mo["groups"]:
+                    if not left("mops"):
+                        break
+                    top = max(g, key=lambda x: (x["lv"], x["ts"]))
+                    private = top["code"] in mo["priv"]
+                    if private or not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, (dm if private else chan or dm) or "", mops_embed(g, await tw_impact(sess, top["code"], top["zh"], now))):
+                        for x in g:
+                            mo["sent"][x["key"]] = now
+                        MR.save(mo["sent"], now)
+                        sent += 1
+                        note_lag("mops", min(x["ts"] for x in g), time.time())
+                    await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Taiwan material news check failed: %s", e)
         try:                                               # 多家媒體同時報導（3 家以上）＋影響
-            for b in burst_todo(nj.get("bursts") or [], bsent, now):
+            for b in burst_todo(nj.get("bursts") or [], bsent, now) if left("burst") else []:
                 lines = (await impact(sess, b["sym"], b["label"].split("（")[0]) if b.get("kind") == "co" and b.get("sym")
                          else await market_now(sess, b.get("tags") or [], now))
                 if not chan:
@@ -657,11 +892,12 @@ async def run_once(now: Optional[float] = None) -> int:
                 if await post(sess, chan or dm or "", burst_embed(b, lines)):
                     bsent[b["key"]] = now
                     sent += 1
+                    save()
                 await asyncio.sleep(1)
         except Exception as e:  # noqa: BLE001
             log.warning("burst check failed: %s", e)
         try:                                               # 台指期夜盤急跌
-            a = await tx_night(sess, now)
+            a = await tx_night(sess, now) if left("txnight") else None
             if a:
                 key = f'txnight:{a["day"]}:{a["lv"]}'
                 if key not in done and not (a["lv"] == 1 and f'txnight:{a["day"]}:2' in done):
@@ -672,9 +908,10 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("night futures check failed: %s", e)
+        save()
         try:                                               # 各國危機雷達：新紅燈、多國貨幣一起貶、開始擴散（各一個月一次）
-            if now - float(mem.get("cr_ts") or 0) >= CR_EVERY:
-                cr_ts = now
+            if now - S["cr_ts"] >= CR_EVERY and left("country"):
+                S["cr_ts"] = now
                 cd = await country_json(sess)
                 for a in cd.get("alerts") or []:
                     if a["key"] in done:
@@ -686,8 +923,26 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
+        try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
+            if now - S["site_ts"] >= SITE_EVERY and left("site"):
+                from tools import sys_health as SH
+                S["site_ts"] = now
+                hb = SH.heartbeat_age(now)
+                alive = hb is not None and hb < SH.BOT_DOWN_S
+                xs = site_todo(await site_alerts_json(sess, now), site_seen, now, alive)
+                if xs:
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", site_embed(xs, alive)):
+                        sent += 1
+                    else:
+                        for x in xs:                       # not delivered: forget them so the next look offers them again
+                            site_seen.pop(x["key"], None)
+        except Exception as e:  # noqa: BLE001
+            log.warning("site alert check failed: %s", e)
+        save()
         try:                                               # 系統健康（A1）：每 10 分鐘看一次，有新問題才私訊擁有者
-            if now - float(health.get("ts") or 0) >= HEALTH_EVERY:
+            if now - float(health.get("ts") or 0) >= HEALTH_EVERY and left("health"):
                 new, open_n = await health_check(now, nj, hsent)
                 health = {"ts": now, "sent": hsent}
                 if new:
@@ -699,18 +954,21 @@ async def run_once(now: Optional[float] = None) -> int:
                             hsent[i["key"]] = now
         except Exception as e:  # noqa: BLE001
             log.warning("health check failed: %s", e)
-        health["sent"] = hsent
+        save()
         try:                                               # 持股晚報與累積跌幅：只私訊擁有者
-            sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
+            if left("holdings"):
+                sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
-    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "cr_ts": cr_ts, "st_ts": st_ts, "ts": int(now)}), encoding="utf-8")
+    save()
     try:
         s = await http.session()
         await s.close()
     except Exception:  # noqa: BLE001
         pass
-    log.info("SEC push: %d sent", sent)
+    if S["skipped"]:
+        log.warning("out of time after %.0f s: %s left for the next run", time.monotonic() - t0, ", ".join(S["skipped"]))
+    log.info("SEC push: %d sent (%.0f s)", sent, time.monotonic() - t0)
     return sent
 
 

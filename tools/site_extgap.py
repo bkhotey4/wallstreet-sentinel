@@ -15,8 +15,19 @@ KEY = [("SPY", "標普 500 ETF"), ("QQQ", "那斯達克 100 ETF"), ("SMH", "半�
 BIG, WATCH = 2.0, 1.0          # |move| in multiples of the stock's normal daily move: 明顯跳空 / 留意
 
 
+def tpe_hours() -> str:
+    """US pre-market (04:00–09:30 ET) and after-hours (16:00–20:00 ET) in Taipei time today — computed, because typed hours
+    are wrong for the half of the year the US is on the other clock."""
+    from datetime import datetime, time as _t
+    from zoneinfo import ZoneInfo
+    ny, tp = ZoneInfo("America/New_York"), ZoneInfo("Asia/Taipei")
+    d = datetime.now(ny).date()
+    f = lambda h, m: datetime.combine(d, _t(h, m), ny).astimezone(tp).strftime("%H:%M")  # noqa: E731
+    return f"{f(4, 0)}–{f(9, 30)} 盤前、{f(16, 0)}–{f(20, 0)} 盤後"
+
+
 def sec_ext_gaps(eng) -> str:
-    note = ("美股正常交易時間以外（台北時間約 16:00–21:30 盤前、04:00–08:00 盤後，依夏令／冬令時間調整）也有成交，"
+    note = (f"美股正常交易時間以外（台北時間現在是 {tpe_hours()}；美國換夏令／冬令時間時會差一小時，這行會跟著變）也有成交，"
             "這裡每分鐘抓一次最新的盤前／盤後成交價，和前一個交易日收盤比較。平常波動＝過去一年每日漲跌幅的標準差；"
             f"跳空超過 {BIG:.0f} 倍平常波動標「明顯跳空」，超過 {WATCH:.0f} 倍標「留意」。盤前盤後成交量小，價格容易誇大，開盤後常常會修正。"
             "「你的持股／自選股」只從你這台瀏覽器讀取，查詢時只把代號送到本站的報價服務，不會公開也不會保存。"

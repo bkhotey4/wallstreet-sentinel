@@ -176,8 +176,8 @@ def bar_html(eng=None) -> str:
     sig = html.escape(json.dumps(sigmas(eng) if eng is not None else {}), quote=True)
     ssig = html.escape(json.dumps(sector_sigmas(eng) if eng is not None else {}), quote=True)
     crb = html.escape(json.dumps(credit_betas(eng) if eng is not None else {}), quote=True)
-    note = ("四層即時燈號，每分鐘自動檢查：①固定門檻（上面第一排）；②異常波動掃描：17 個市場（含盤前就在交易的標普／那指期貨），"
-            "加上三個風向球（私募信貸 BDC、區域銀行、靠借錢蓋 AI 算力中心的公司），各自和自己過去一年的平常單日波動比，"
+    note = ("四層即時燈號，每分鐘自動檢查：①固定門檻（上面第一排）；②異常波動掃描：" + f"{len(ANOM)} 個市場與類股" + "（含盤前就在交易的標普／那指期貨），"
+            + f"加上 {len(BASKETS)} 個風向球（{'、'.join(b[1] for b in BASKETS)}），" + "各自和自己過去一年的平常單日波動比，"
             f"再看幾個市場有沒有一起出現已知的組合（股債金同跌、日圓套利平倉、股跌債漲、信用先跌、AI 借貸鏈等 {sum(1 for c in COMBOS if c[3] > 0)} 組壓力型態，"
             "紅色的組合代表歷史上大跌時出現過的型態；另有恐慌退潮的大漲、全面風險偏好、健康震盪等正面型態，用綠色或藍色顯示），"
             "往「好的方向」的大波動（例如股市大漲、VIX 大跌）顯示為綠色，不算警示，"

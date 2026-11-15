@@ -58,6 +58,26 @@ def clean_polls(js) -> List[Dict]:
     return sorted(out, key=lambda x: x["end"])
 
 
+def pick_subject(js, days: int = 120) -> str:
+    """Whose approval the card shows: the subject polled most often in the newest `days` of approval polls.  The sitting
+    president is polled several times more often than Congress, the Court or anyone else, so no name is typed here —
+    when the office changes hands the card follows the polls."""
+    rows = [p for p in js if isinstance(p, dict) and p.get("subject") and p.get("end_date")] if isinstance(js, list) else []
+    if not rows:
+        return ""
+    last = max(str(p["end_date"])[:10] for p in rows)
+    try:
+        from datetime import date, timedelta
+        cut = (date.fromisoformat(last) - timedelta(days=days)).isoformat()
+    except ValueError:
+        cut = ""
+    n: Dict[str, int] = {}
+    for p in rows:
+        if str(p["end_date"])[:10] >= cut:
+            n[str(p["subject"])] = n.get(str(p["subject"]), 0) + 1
+    return max(n, key=n.get) if n else ""
+
+
 async def refresh(force: bool = False) -> Dict:
     from .freshness import bundle_ts, due
     d = load()
@@ -67,10 +87,12 @@ async def refresh(force: bool = False) -> Dict:
     if due(d, ["approval"], TTL, now, force):
         d["try_each"]["approval"] = now
         try:
-            ps = clean_polls(await http.get(POLLS_URL, params={"poll_type": "approval", "subject": "Trump"}, timeout=60, retries=1))
+            raw = await http.get(POLLS_URL, params={"poll_type": "approval"}, timeout=90, retries=1)
+            who = pick_subject(raw)
+            ps = clean_polls([p for p in raw if p.get("subject") == who] if who else [])
             if len(ps) < 50:
-                raise ValueError(f"only {len(ps)} polls")
-            d["approval"], each["approval"] = ps, now
+                raise ValueError(f"only {len(ps)} polls for {who or 'nobody'}")
+            d["approval"], d["approval_who"], each["approval"] = ps, who, now
             HEALTH.ok("polls", len(ps), every=TTL)
         except Exception as e:  # noqa: BLE001
             log.warning("polls: %s", e)
@@ -113,7 +135,8 @@ def approval(d: Dict, today: Optional[date] = None) -> Optional[Dict]:
     df["m"] = df["end"].str[:7]
     hist = [[m + "-15", round(float(g["app"].mean()), 1)] for m, g in df.groupby("m")]
     rec = sorted(ps, key=lambda x: x["end"])[-5:][::-1]
-    return {**now, "chg90": (now["app"] - then["app"]) if then else None, "net": now["app"] - now["dis"], "hist": hist[-24:], "recent": rec}
+    return {**now, "chg90": (now["app"] - then["app"]) if then else None, "net": now["app"] - now["dis"], "hist": hist[-24:], "recent": rec,
+            "who": str(d.get("approval_who") or "")}
 
 
 def _yoy(s: pd.Series) -> Optional[float]:

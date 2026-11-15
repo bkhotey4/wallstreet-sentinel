@@ -7,6 +7,8 @@
   3. 網站建置：最近一次成功超過 4 小時，或最近 3 次都失敗
   4. 即時新聞：/api/news 回應的來源少於 15 個
   5. 本機收盤價：超過 4 天沒有新的一天（週末、連假算進去）
+  6. 通知慢了多久（2026-11-15）：有「事情發生時間」的通知（SEC 申報、央行公告、台股重大訊息、機器人的官方事件），
+     最近 3 天從發生到送出的時間中位數 ≥ 45 分鐘 → 說出來。起因：台股重大訊息晚了 12 小時、連續幾週都沒有人發現。
 每一項都用白話寫「哪裡壞了、影響什麼」。只描述狀況，不會自己去修。"""
 from __future__ import annotations
 
@@ -139,6 +141,58 @@ def collect(now: float, lines: List[str], hb_age: Optional[float], runs: List[Di
     return out
 
 
+LAG_DAYS, LAG_MIN_N, LAG_LIMIT_S = 3, 5, 45 * 60
+LAG_ZH = {"sec": "SEC 重大申報", "cb": "央行公告", "mops": "台股重大訊息", "SEC 公告": "機器人的 SEC 公告", "Fed 公告": "聯準會公告"}
+# 機器人的整批來源已經有更快的即時路徑（tools/sec_push.py）在送，慢是已知的，不重複提醒
+FASTER = {"台股重大訊息": "mops"}
+
+
+def lag_issues(rows: List[Dict], now: float) -> List[Dict]:
+    """rows: [{k: kind, ev: when it happened, at: when the message went out}].  A kind whose median delay over the last
+    3 days (at least 5 messages) is 45 minutes or more: the alerts arrive, but too late to be called timely."""
+    by: Dict[str, List[float]] = {}
+    for r in rows:
+        try:
+            if now - float(r["at"]) <= LAG_DAYS * 86400 and float(r["at"]) >= float(r["ev"]):
+                by.setdefault(str(r["k"]), []).append(float(r["at"]) - float(r["ev"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    out = []
+    for k, v in by.items():
+        v.sort()
+        med = v[len(v) // 2]
+        if len(v) >= LAG_MIN_N and med >= LAG_LIMIT_S:
+            how = f"{med / 3600:.1f} 小時" if med >= 5400 else f"{med / 60:.0f} 分鐘"
+            out.append({"key": "lag:" + k, "urgent": True,
+                        "text": f"**通知太慢**：{LAG_ZH.get(k, k)} 最近 {LAG_DAYS} 天 {len(v)} 則，從事情發生到通知你的時間中位數是 {how}"
+                                f"（最慢 {v[-1] / 3600:.1f} 小時）。消息有送到，但已經不算即時。"})
+    return out
+
+
+def lag_rows(now: float) -> List[Dict]:
+    """This program's own delay log plus the bot's (sentinel.db event_log, read-only)."""
+    rows: List[Dict] = []
+    try:
+        rows += json.loads((DATA_DIR / "push_lag.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    own = {r.get("k") for r in rows}
+    try:
+        import sqlite3
+        c = sqlite3.connect(f"file:{(DATA_DIR / 'sentinel.db').as_posix()}?mode=ro", uri=True, timeout=5)
+        try:
+            for src, ev, sent in c.execute("select src, event_ts, sent_ts from event_log where sent_ts > ? and event_ts is not null",
+                                           (now - LAG_DAYS * 86400,)):
+                if FASTER.get(src) in own or (src in FASTER and (DATA_DIR / "mops_rt.json").exists()):
+                    continue
+                rows.append({"k": src, "ev": ev, "at": sent})
+        finally:
+            c.close()
+    except Exception as e:  # noqa: BLE001
+        log.info("lag rows: %s", e)
+    return rows
+
+
 def due(issues: List[Dict], sent: Dict[str, float], now: float) -> List[Dict]:
     return [i for i in issues if i["key"] not in sent or now - float(sent[i["key"]]) >= RESEND_S]
 
@@ -167,6 +221,7 @@ async def check(now: float, news: Dict, sent: Dict[str, float]) -> tuple:
     """(problems not reported in the last 24 hours, how many are open in all).  The caller marks them in `sent` once the message is out."""
     issues = collect(now, read_tail(DATA_DIR / "sentinel.log"), heartbeat_age(now), await build_runs(),
                      len(news.get("sources") or []) if news and news.get("sources") is not None else None, price_age_days(now))
+    issues += lag_issues(lag_rows(now), now)
     for k in [k for k, v in sent.items() if now - float(v) > 7 * 86400]:
         sent.pop(k, None)
     return due(issues, sent, now), len(issues)

@@ -26,7 +26,14 @@ from . import bankruptcy as BK
 from ..data.econcal import us_today
 
 PTS = {"ok": 0, "watch": 1, "alert": 2}
-BK_ALERT, BK_WATCH = 0.10, 0.02   # model probability: ≈ top 1 % / top 10 % of companies out of sample (2015-2025)
+def _bk_cuts() -> tuple:
+    """Model probability at the top 1 % / top 10 % of companies out of sample — read from the fitted model file, so a refit
+    moves the lights with it (the typed 0.10 / 0.02 are only used when the file has no cutoffs)."""
+    c = (BK.model() or {}).get("cutoffs") or {}
+    return float(c.get("top1") or 0.10), float(c.get("top10") or 0.02)
+
+
+BK_ALERT, BK_WATCH = _bk_cuts()
 STALE_SEC_H, STALE_PX_BDAYS = 48, 5           # older than this → the row shows a data-age warning
 ALERT_PTS, WATCH_PTS = 5, 3
 SKIP_THEMES = ("電信公用",)          # regulated utilities / telcos: high leverage is their normal business model

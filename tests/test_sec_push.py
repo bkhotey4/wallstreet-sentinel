@@ -24,7 +24,20 @@ def main() -> None:
         assert w not in e["description"]
 
     P.PUSHED = pathlib.Path(tempfile.mkdtemp()) / "p.json"
+    P.LAG = P.PUSHED.parent / "lag.json"                    # never write test rows into the real delay log
     sent, dms = [], []
+    site, mops = {}, {"groups": [], "sent": {}, "priv": set()}
+
+    async def fake_site(sess, now):
+        return site
+
+    async def fake_mops(sess, now):
+        return mops
+
+    async def fake_tw_impact(sess, code, zh, now):
+        return [f"{zh} 現在 **-2.0%**"]
+    real3 = (P.site_alerts_json, P.mops_new, P.tw_impact)
+    P.site_alerts_json, P.mops_new, P.tw_impact = fake_site, fake_mops, fake_tw_impact
 
     async def fake_refresh(watch, now=0):
         return {"alerts": [dirs, ceo, rst, dict(ceo, acc="old", ts=now - 7 * 3600)]}
@@ -201,11 +214,58 @@ def main() -> None:
         assert "紅燈 土耳其；黃燈 印尼" in ce2["description"] and "目前還是個別國家的事" in ce2["description"] and "（巴西）" in ce2["description"]
         assert "不是預測" in ce2["description"]
         cr.clear()
+        # Taiwan material news in real time: one message per company, the most serious item in the title; a company that is
+        # only in the holdings goes to the owner DM even when an alert channel is set; what was sent is remembered on disk
+        from wsb.data import mops_rt as MR
+        MR.FILE = P.PUSHED.parent / "mops.json"
+        t11 = t10 + 9000
+        g1 = [{"code": "2330", "zh": "台積電", "name": "台積電", "market": "上市", "subject": "澄清媒體報導", "ts": t11 - 300, "when": "11/16 13:45",
+               "url": "https://mopsov.twse.com.tw/x", "key": "2330|a", "lv": 2, "kind": "澄清媒體報導"},
+              {"code": "2330", "zh": "台積電", "name": "台積電", "market": "上市", "subject": "公告董事會決議股利分派", "ts": t11 - 200, "when": "11/16 13:47",
+               "url": "https://mopsov.twse.com.tw/y", "key": "2330|b", "lv": 1, "kind": "股利與庫藏股"}]
+        g2 = [{"code": "9999", "zh": "某持股", "name": "某持股", "market": "上櫃", "subject": "公告取得設備", "ts": t11 - 100, "when": "11/16 13:48",
+               "url": "https://mopsov.twse.com.tw/z", "key": "9999|c", "lv": 1, "kind": "資產買賣"}]
+        mops.update(groups=[g1, g2], sent={}, priv={"9999"})
+        sent.clear(); dms.clear()
+        assert asyncio.run(P.run_once(now=t11)) == 2, (sent, dms)
+        assert sent == ["🔴 台股重大訊息：台積電（2330）澄清媒體報導 等 2 則"] and dms == ["🟠 台股重大訊息：某持股（9999）資產買賣"], (sent, dms)
+        assert set(MR.load()) == {"2330|a", "2330|b", "9999|c"}
+        lag = _j.loads(P.LAG.read_text(encoding="utf-8"))
+        assert [r["k"] for r in lag].count("mops") == 2 and any(r["k"] == "sec" for r in lag)
+        me = P.mops_embed(g1, ["台積電 現在 **-2.0%**"])
+        assert "一句話看懂：台積電 剛在公開資訊觀測站發布2 則重大訊息（上市）" in me["description"] and "【澄清媒體報導】" in me["description"]
+        assert "只看主旨裡的關鍵字" in me["description"] and me["url"].endswith("/x") and P.plain(me) == me["title"]
+        mops.update(groups=[], sent={}, priv=set())
+        # the site's own alerts: the first look only remembers; later a new alert-level item of a kind the bot has no message
+        # for is passed on, the bot's own kinds are not — unless the bot is down, then everything new is passed on
+        seen = {}
+        page = {"ts": t11, "items": [{"key": "canary:a:1", "lv": "alert", "zh": "金絲雀"}, {"key": "rate:up:1", "lv": "watch", "zh": "利率"}]}
+        assert P.site_todo(page, seen, t11, True) == [] and set(seen) == {"canary:a:1", "rate:up:1"}
+        page["items"] += [{"key": "odds:20:2.0:1", "lv": "alert", "zh": "崩跌機率升到平常的 2 倍", "detail": "｜細節"},
+                          {"key": "canary:b:1", "lv": "alert", "zh": "新金絲雀"}, {"key": "mom:x:1", "lv": "watch", "zh": "動能"}]
+        new = P.site_todo(page, seen, t11 + 600, True)
+        assert [x["key"] for x in new] == ["odds:20:2.0:1"] and "canary:b:1" in seen
+        page["items"].append({"key": "ssi:3:w", "lv": "alert", "zh": "壓力指數升級"})
+        down = P.site_todo(page, seen, t11 + 1200, False)
+        assert [x["key"] for x in down] == ["ssi:3:w"]                                        # bot down: its kinds are passed on too
+        assert P.site_todo({"ts": t11 - 4 * 3600, "items": [{"key": "odds:9", "lv": "alert"}]}, seen, t11, True) == []   # a stale page says nothing
+        se = P.site_embed(new, True)
+        assert se["title"] == "⚠️ 網站警示：崩跌機率升到平常的 2 倍" and "機器人沒有對應的通知" in se["description"] and "細節" in se["description"]
+        assert "機器人目前沒有在跑" in P.site_embed(down, False)["description"]
+        site.update(ts=t11 + 2000, items=[{"key": "odds:1", "lv": "alert", "zh": "甲"}])
+        sent.clear()
+        assert asyncio.run(P.run_once(now=t11 + 2000)) == 0                                    # first look: remember only
+        site["items"].append({"key": "rule:vix35:1", "lv": "alert", "zh": "VIX 規則觸發"})
+        assert asyncio.run(P.run_once(now=t11 + 2300)) == 0                                    # looked 5 minutes ago: not yet
+        assert asyncio.run(P.run_once(now=t11 + 2700)) == 1 and sent == ["⚠️ 網站警示：VIX 規則觸發"], sent
+        assert asyncio.run(P.run_once(now=t11 + 3400)) == 0
+        site.clear()
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
         P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check, P.country_json = real2
+        P.site_alerts_json, P.mops_new, P.tw_impact = real3
 
     # the front futures contract from the exchange's own rows: largest volume, monthly contracts only
     from wsb.data import taifex_live as TL

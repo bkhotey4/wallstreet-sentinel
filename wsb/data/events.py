@@ -88,6 +88,18 @@ def parse_mops(rows, market: str) -> List[Dict]:
     return out
 
 
+def drop_sent(rows: List[Dict]) -> List[Dict]:
+    """The OpenAPI file is a once-a-day batch (measured 2026-11-15: a median of 12 hours after the company spoke), so
+    tools/sec_push.py now sends the same announcements within minutes from the official RSS (wsb/data/mops_rt.py).
+    Rows it already sent are left out here; anything it missed (the PC was off, the RSS failed) still comes through."""
+    try:
+        from . import mops_rt as MR
+        sent = MR.load()
+    except Exception:  # noqa: BLE001
+        return rows
+    return [m for m in rows if MR.key_of(m["code"], m["subject"]) not in sent] if sent else rows
+
+
 class OfficialEvents:
     def __init__(self) -> None:
         self.halts: List[Dict] = []
@@ -128,5 +140,5 @@ class OfficialEvents:
         self.fed = f if f is not None else self.fed
         self._m1 = m1 if m1 is not None else getattr(self, "_m1", [x for x in self.mops if x.get("market") == "上市"])
         self._m2 = m2 if m2 is not None else getattr(self, "_m2", [x for x in self.mops if x.get("market") == "上櫃"])
-        self.mops = self._m1 + self._m2
+        self.mops = drop_sent(self._m1 + self._m2)
         self.ts = time.time()
