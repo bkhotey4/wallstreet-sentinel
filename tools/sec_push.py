@@ -231,6 +231,55 @@ def sector_embed(a: Dict) -> Dict:
             "footer": {"text": "WallStreet Sentinel · 族群急跌警報 · 不構成投資建議"}}
 
 
+# ------------------------------------------------------------------ 個股大動（網站公開的美股追蹤名單；規則在 wsb/analytics/stock_shock.py）
+STOCK_EVERY = 900
+
+
+async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
+    """Tracked US stocks moving ≥ 3.5× their normal day and ≥ 4 % (either way), with the headlines that name them."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from tools import site_secwatch as SW
+    from wsb.analytics import stock_shock as ST
+    from wsb.data.stocks import universe
+    names = (universe().get("us") or {}).get("symbols", {})
+    if now < 1.7e9:                                        # a test clock: never fetch live quotes
+        return []
+    sd = ST.sigmas(_close(), list(names))
+    if not sd:
+        return []
+    syms, q = list(sd), {}
+    for i in range(0, len(syms), 20):
+        async with sess.get(QUOTE, params={"s": ",".join(syms[i:i + 20])}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            q.update((await r.json()).get("q") or {})
+    q = {k: v for k, v in q.items() if v.get("t") and 0 <= now - float(v["t"]) < 20 * 3600}     # stale quotes never alert
+    news = (await news_json(sess)).get("items") or []
+    keys = {s: [k for k in [v[0]] + str(v[1] or "").split("|") if k] for s, v in SW.names_of(names, {}, syms).items()}
+    hits = ST.check(q, sd, names, news, now, keys)
+    for a in hits:
+        a["day"] = datetime.fromtimestamp(float(a["t"]), ZoneInfo("America/New_York")).date().isoformat()
+    return hits
+
+
+def stock_embed(a: Dict, lines: List[str]) -> Dict:
+    from wsb.analytics import stock_shock as ST
+    tpe = lambda ts: time.strftime("%m/%d %H:%M", time.gmtime(float(ts) + 8 * 3600))  # noqa: E731
+    up = a["chg"] > 0
+    return {"title": f'{"🔴" if a["lv"] >= 2 else "🟠"} 個股大{"漲" if up else "跌"}：{a["zh"]} {a["chg"]:+.1f}%（平常一天的 {abs(a["z"]):.1f} 倍）',
+            "color": 0xE5484D if a["lv"] >= 2 else 0xD97706,
+            "description": ("\n".join([ST.sentence(a, tpe), "**可能影響**"] + lines[1:])
+                            + "\n新聞只代表同時段提到這家公司，不等於就是原因；連動估算是過去平均關係，不是預測。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 個股大動警報 · 不構成投資建議"}}
+
+
+def stock_many_embed(rest: List[Dict], n_all: int) -> Dict:
+    return {"title": f"🟠 今天有 {n_all} 檔追蹤的美股大動",
+            "color": 0xD97706,
+            "description": ("同一天這麼多檔一起大動，通常是整體行情或同一個族群的事，不是每家公司各自出事；先看族群急跌警報和即時新聞。\n其餘："
+                            + "、".join(f'{a["zh"]} {a["chg"]:+.1f}%（{abs(a["z"]):.1f} 倍）' for a in rest[:25]))[:4000],
+            "footer": {"text": "WallStreet Sentinel · 個股大動警報 · 不構成投資建議"}}
+
+
 # ------------------------------------------------------------------ 多家媒體同時報導（/api/news 的 bursts，規則在 functions/api/news.js）
 BURST_MIN = 3                    # Discord 只推 3 家以上；2 家的公司消息只在網站上列出
 BURST_GAP = 12 * 3600            # 同一件事 12 小時內只推一次
@@ -495,6 +544,7 @@ async def run_once(now: Optional[float] = None) -> int:
     bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
     prev = float(mem.get("ts") or 0)
     cr_ts = float(mem.get("cr_ts") or 0)
+    st_ts = float(mem.get("st_ts") or 0)
     health = mem.get("health") or {}
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     st = await SOF.refresh(watch_list(), now=now)
@@ -548,6 +598,33 @@ async def run_once(now: Optional[float] = None) -> int:
                 await asyncio.sleep(1)
         except Exception as e:  # noqa: BLE001
             log.warning("sector check failed: %s", e)
+        try:                                               # 個股大動：一天最多 3 則個別通知＋1 則彙總（每 15 分鐘看一次）
+            if now - float(mem.get("st_ts") or 0) >= STOCK_EVERY:
+                from wsb.analytics import stock_shock as ST
+                st_ts = now
+                hits = await stock_alerts(sess, now)
+                day = hits[0]["day"] if hits else ""
+                n_day = sum(1 for k in done if k.startswith(f"stock:{day}:"))
+                for a in hits:
+                    key = f'stock:{a["day"]}:{a["sym"]}'
+                    if key in done or n_day >= ST.DAY_CAP:
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", stock_embed(a, await impact(sess, a["sym"], a["zh"]))):
+                        done[key] = now
+                        n_day += 1
+                        sent += 1
+                    await asyncio.sleep(1)
+                rest = [a for a in hits if f'stock:{a["day"]}:{a["sym"]}' not in done]
+                if rest and day and f"stockmany:{day}" not in done:
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits))):
+                        done[f"stockmany:{day}"] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("stock check failed: %s", e)
         try:                                               # 央行非例行動作
             for x in cbs:
                 if now - x["ts"] >= MAX_AGE or "cb:" + x["u"] in done:
@@ -627,7 +704,7 @@ async def run_once(now: Optional[float] = None) -> int:
             sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
-    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "cr_ts": cr_ts, "ts": int(now)}), encoding="utf-8")
+    PUSHED.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "cr_ts": cr_ts, "st_ts": st_ts, "ts": int(now)}), encoding="utf-8")
     try:
         s = await http.session()
         await s.close()

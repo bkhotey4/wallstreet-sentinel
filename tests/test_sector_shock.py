@@ -49,6 +49,14 @@ def main() -> None:
     async def no_sec(watch, now=0):
         return {"alerts": []}
 
+    async def no_stocks(sess, now):                                     # 個股大動 has its own test
+        return []
+    P.stock_alerts = no_stocks
+
+    async def no_country(sess):                                         # 各國危機雷達 has its own test; the live file made this one count 2
+        return {}
+    P.country_json = no_country
+
     async def fake_sectors(sess, now):
         return [dict(hits[0], day="2026-11-13", tw=[{"zh": "台積電", "beta": 0.45}])]
 

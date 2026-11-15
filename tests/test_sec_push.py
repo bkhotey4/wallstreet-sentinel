@@ -40,6 +40,7 @@ def main() -> None:
         return "dm"
     async def no_sectors(sess, now):
         return []
+    P.stock_alerts = no_sectors                             # 個股大動 has its own test (tests/test_stock_shock.py)
     news = {"bursts": []}
 
     async def fake_news(sess):
