@@ -59,7 +59,19 @@ FLOWS = {"ebit": ("OperatingIncomeLoss",), "rev": ("Revenues", "RevenueFromContr
          "ocf": ("NetCashProvidedByUsedInOperatingActivities",),
          "capex": ("PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets"),
          "da": ("DepreciationDepletionAndAmortization", "DepreciationAndAmortization", "Depreciation"),
-         "ni": ("NetIncomeLoss",)}
+         "ni": ("NetIncomeLoss",),
+         # 2026-11-16 (user's items 4–5): share supply — buybacks, new shares sold, dividends paid
+         "buyback": ("PaymentsForRepurchaseOfCommonStock",),
+         "issue": ("ProceedsFromIssuanceOfCommonStock", "ProceedsFromIssuanceOrSaleOfEquity"),
+         "divpaid": ("PaymentsOfDividendsCommonStock", "PaymentsOfDividends")}
+# debt maturity schedule (10-K footnote, fiscal-year-end instants): principal due in each of the next five years and after
+MATURITY = (("mat1", "LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths"),
+            ("mat2", "LongTermDebtMaturitiesRepaymentsOfPrincipalInYearTwo"),
+            ("mat3", "LongTermDebtMaturitiesRepaymentsOfPrincipalInYearThree"),
+            ("mat4", "LongTermDebtMaturitiesRepaymentsOfPrincipalInYearFour"),
+            ("mat5", "LongTermDebtMaturitiesRepaymentsOfPrincipalInYearFive"),
+            ("mat_after", "LongTermDebtMaturitiesRepaymentsOfPrincipalAfterYearFive"))
+OFFER_FORMS = ("S-3", "S-3ASR", "424B5", "424B3", "S-1")     # shelf registrations and prospectus supplements (share or debt sales)
 SHARES = (("dei", "EntityCommonStockSharesOutstanding"), ("us-gaap", "CommonStockSharesOutstanding"),
           ("us-gaap", "WeightedAverageNumberOfDilutedSharesOutstanding"), ("us-gaap", "WeightedAverageNumberOfSharesOutstandingBasic"))
 
@@ -178,7 +190,7 @@ def _near(series: Dict[str, float], at: str, days: int, tol: int = 25) -> Option
     return series[min(c, key=lambda e: abs((_d(e) - tgt).days))] if c else None
 
 
-BS_V = 3      # balance-sheet parser version (cached sheets below it are re-read)
+BS_V = 5      # balance-sheet parser version (cached sheets below it are re-read); 4 = maturity schedule, buybacks; 5 = split-safe share change
 
 
 def parse_balance(cf: Dict) -> Optional[Dict]:
@@ -217,8 +229,51 @@ def parse_balance(cf: Dict) -> Optional[Dict]:
         if vals:
             last = max(vals, key=lambda f: (f["end"], f.get("filed", "")))
             out["shares"] = float(last["val"])
+            hist = instants([f for f in fs if f.get("val")])
+            out["shares_end"] = last["end"]
+            out["shares_yago"] = _near(hist, last["end"], 365, 60) if hist else None
+            out["shares_tag"] = tag
             break
+    # split-safe share change: the latest period's weighted diluted shares vs the same period a year earlier AS RESTATED IN THE
+    # SAME FILING (a stock split restates the comparative figure, so a 10-for-1 split does not read as +900 %)
+    for tag in ("WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasic"):
+        fs = [f for f in _facts(cf, tag) if f.get("val") and f.get("start") and f.get("end")]
+        pair = None
+        for lo, hi in ((80, 100), (350, 380)):
+            per = [f for f in fs if lo <= _span(f) <= hi]
+            if not per:
+                continue
+            last = max(per, key=lambda f: (f["end"], f.get("filed", "")))
+            same = [f for f in per if f.get("accn") == last.get("accn") and abs((_d(last["end"]) - _d(f["end"])).days - 365) <= 20]
+            if same and (_d(at) - _d(last["end"])).days <= 200:
+                pair = (float(last["val"]), float(same[0]["val"]), last["end"])
+                break
+        if pair:
+            out["wsh"], out["wsh_yago"], out["wsh_end"] = pair
+            break
+    # maturity schedule: the latest fiscal-year end that reports next-twelve-months principal, all buckets at that end
+    m1 = instants(_facts(cf, MATURITY[0][1]))
+    ends = [e for e in m1 if (_d(at) - _d(e)).days <= 400]
+    if ends:
+        me = max(ends)
+        out["mat_end"] = me
+        for k, tag in MATURITY:
+            out[k] = instants(_facts(cf, tag)).get(me)
     return out
+
+
+def parse_offerings(js: Dict, today: date, days: int = 180) -> List[Dict]:
+    """Shelf registrations / prospectus supplements filed in the last `days` (newest first): a company getting ready to sell
+    new shares or bonds.  424B5 under an at-the-market program is the common way to sell shares a little at a time."""
+    r = (js or {}).get("filings", {}).get("recent", {})
+    lo = (today - timedelta(days=days)).isoformat()
+    cik = int(js.get("cik") or 0)
+    out = []
+    for form, dt, acc in zip(r.get("form", []), r.get("filingDate", []), r.get("accessionNumber", [])):
+        if form in OFFER_FORMS and dt and dt >= lo:
+            out.append({"form": form, "date": dt,
+                        "url": f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc.replace('-', '')}/" if cik and acc else None})
+    return out[:12]
 
 
 def parse_flags(js: Dict, today: date, days: int = 365) -> List[Dict]:
@@ -290,6 +345,7 @@ async def refresh(syms: List[str], budget_s: Optional[float] = None) -> Dict[str
             if time.time() - float(rec.get("fl_ts", 0)) > fl_ttl:
                 js = await http.get(f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json", headers=SEC_HDR, timeout=30, retries=1)
                 rec["flags"] = parse_flags(js, today)
+                rec["offer"] = parse_offerings(js, today)
                 # a new 10-Q / 10-K since the cached balance sheet → refresh it now instead of waiting a week
                 r = js.get("filings", {}).get("recent", {})
                 last_rep = max((d for f, d in zip(r.get("form", []), r.get("reportDate", [])) if f in ("10-Q", "10-K") and d), default="")

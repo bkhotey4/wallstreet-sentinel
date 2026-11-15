@@ -24,6 +24,9 @@
      每送出一段就存檔；整輪超過 95 秒就把剩下的留到下一輪（Windows 排程 2 分鐘會強制結束）；有發生時間的通知會記下慢了多久。
  12. （2026-11-15）夜間分級：台北 23:30～07:00（settings.yaml delivery.night）標題不是 🔴／🚨 的訊息用 Discord 靜音訊息送
      （照樣即時到、手機不響），記在 data_cache/night_silent.json，早安摘要會說夜裡靜音送了幾則。SEC 申報嚴重度未達 3 的改標 🟠。
+ 13. （2026-11-16）被迫進出的錢（wsb/data/forced_flows.py）：指數調整日（標普 500、羅素、MSCI、台灣 50）前一天台北 18:00 後、
+     標普 500 趨勢跟隨分數翻轉、波動控制股票比重一週掉 2 成，各一次；韓國出口快報（每月 1、11、21 日公布後兩天內）；
+     法院與監管（最高法院判決、SEC／CFTC 通過的規則、司法部反壟斷，有市場主題的才送）。每則都附相關行情現在的漲跌。
  11. （2026-11-15）雲端備援：同一支程式也在 GitHub Actions 上跑（公開倉庫的 heartbeat.yml，環境變數 WSB_CLOUD=1）。
      兩邊用 Discord 上的訊息本身對帳：每則訊息的標題連結尾端帶一個看不見的編號（#k=…），送之前先讀頻道最近 200 則，
      對方送過的就不再送。雲端看到一件事後先等 10 分鐘（個股與網站警示 15 分鐘、各國雷達 45 分鐘），家裡電腦沒送才補送；
@@ -40,6 +43,7 @@ import os
 import re
 import sys
 import time
+from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from urllib.parse import quote, unquote
@@ -802,6 +806,77 @@ def fiscal_embed(a: Dict, v: Dict, lines: List[str]) -> Dict:
     return {"title": title[:256], "url": SITE + "#bonds", "color": 0xE5484D if red else 0xD97706,
             "description": ("一句話看懂：" + lead + "\n" + why + ("\n**相關行情現在**\n" + "\n".join(lines) if lines else ""))[:4000],
             "footer": {"text": "GovInfo 法律原文・財政部每日報表 · WallStreet Sentinel · 倒數不是預測 · 不構成投資建議"}}
+NL = "\n"
+FORCED_EVERY = 3600             # 被迫進出的錢：指數調整日前一天、標普趨勢翻轉、波動控制比重一週掉 2 成（模組自己 4 小時才真的去抓）
+
+
+def forced_embed(a: Dict, v: Dict, lines: List[str]) -> Dict:
+    """One forced-flow alert (rules in wsb/data/forced_flows.alerts)."""
+    from wsb.data import forced_flows as FF
+    from tools import site_forced as SFO
+    if a["kind"] == "event":
+        e = a["ev"]
+        zh = FF.KIND[e["kind"]][0]
+        med = (v.get("past_med") or {}).get(e["kind"])
+        title = f"🟠 {SFO._md(e['date'])}{zh}：指數基金被迫在收盤調整"
+        lead = (f"{SFO._md(e['date'])}{zh}" + (f"，台股在 {SFO._md(e['tw_date'])} 收盤調整" if e.get("tw_date") and e["tw_date"] != e["date"] else "")
+                + (f"。過去同一種日子，收盤成交量的中位數是平常的 {med:.1f} 倍。" if med else "。"))
+        why = SFO.EV_WHY.get(e["kind"], "") + "這種量是照規則被迫的，價格常在收盤前被推動、隔天不一定延續。"
+        url = SITE + "#forced"
+    elif a["kind"] == "trend":
+        tr = a["tr"]
+        f1 = (tr.get("flips") or {}).get("21") or (tr.get("flips") or {}).get(21) or {}
+        up = tr["score"] > 0
+        title = f"{'🟢' if up else '🟠' if a['lv'] < 2 else '🔴'} 趨勢跟隨基金推估：標普 500 轉為{'偏多' if up else '偏空'}"
+        lead = (f"照 1、3、12 個月漲跌方向推算，趨勢分數從 {tr['prev']:+.2f} 變成 {tr['score']:+.2f}（−1 全空～+1 全多）。"
+                + (f"1 個月趨勢的翻轉點在 {f1['price']:,.0f}。" if f1.get("price") else ""))
+        why = ("趨勢跟隨基金（CTA）照規則跟著趨勢調整部位：轉空時會陸續減少股票、甚至放空，把下跌放大；轉多時反過來。"
+               "這是模型估算，不是它們實際的部位。")
+        url = SITE + "#forced"
+    else:
+        vc = a["vc"]
+        title = f"🟠 波動控制基金推估：股票比重一週從 {vc['week'] * 100:.0f}% 降到 {vc['now'] * 100:.0f}%"
+        lead = f"標普 500 近期實際波動升到年化約 {max(vc['rv21'], vc['rv63']) * 100:.0f}%，目標 10% 的基金得把股票比重往下調。"
+        why = "波動越大、這類基金越要減少股票；波動回落後才會慢慢加回來。這是照公開規則的模型估算，不是實際部位。"
+        url = SITE + "#forced"
+    return {"title": title[:256], "url": url, "color": 0xD97706 if a["lv"] < 2 else 0xE5484D,
+            "description": ("一句話看懂：" + lead + NL + why + (NL + "**相關行情現在**" + NL + NL.join(lines) if lines else ""))[:4000],
+            "footer": {"text": "指數公司規則推算・Yahoo 日線 · WallStreet Sentinel · 規則推算與模型估算，不是預測 · 不構成投資建議"}}
+
+
+KOREA_EVERY = 1800               # 韓國出口快報：每月 1、11、21 日（韓國 9:00＝台北 8:00）公布，公布後兩天內送一次
+
+
+def korea_embed(a: Dict, lines: List[str]) -> Dict:
+    from tools import site_korea as SKO
+    r = a["row"]
+    d = r.get("day_yoy") if r.get("day_yoy") is not None else r.get("yoy")
+    lamp = "🟢" if d is not None and d > 0 else "🟠"
+    title = f"{lamp} 韓國出口快報（{SKO.period_zh(r['key'])}）：年增 {r['yoy']:+.1f}%"
+    why = ("韓國出口大約一半是晶片，每 10 天公布一次，比台灣出口早兩到三週；晶片出口轉弱常是記憶體、AI 伺服器需求變化的早期訊號，"
+           "之後才反映到台積電與台灣伺服器供應鏈。")
+    return {"title": title[:256], "url": SITE + "#tw_econ", "color": 0x16A34A if lamp == "🟢" else 0xD97706,
+            "description": ("一句話看懂：" + SKO.lead_of(r).replace("<b>", "").replace("</b>", "") + NL + why
+                            + (NL + "**相關行情現在**" + NL + NL.join(lines) if lines else ""))[:4000],
+            "footer": {"text": "韓國關稅廳報導資料 · WallStreet Sentinel · 不構成投資建議"}}
+
+
+RULINGS_EVERY = 3 * 3600         # 法院與監管：最高法院判決、SEC／CFTC 通過的規則、司法部反壟斷（模組 6 小時才真的去抓）
+
+
+def ruling_embed(a: Dict, lines: List[str]) -> Dict:
+    from wsb.data import rulings as RL
+    x = a["item"]
+    src = RL.SRC_ZH.get(x["src"], x["src"])
+    title = f"📜 {src}：{x['title']}"
+    lead = f"{src}在 {x['date']} 公布「{x['title']}」，主題是{x.get('topic', '')}，最先會動的是{x.get('sym_zh', '相關資產')}。"
+    why = ("判決和監管規則是「規則本身變了」：直接被管到的資產最先動，接著才傳到其他市場。"
+           + (NL + f"官方摘要：{x['sum'][:500]}" if x.get("sum") else ""))
+    return {"title": title[:256], "url": x["url"], "color": 0x6366F1,
+            "description": ("一句話看懂：" + lead + NL + why + (NL + "**相關行情現在**" + NL + NL.join(lines) if lines else ""))[:4000],
+            "footer": {"text": "最高法院・SEC・CFTC・司法部官方發布 · WallStreet Sentinel · 不構成投資建議"}}
+
+
 BUDGET = 95.0                    # 這支程式每 3 分鐘跑一次、Windows 排程 2 分鐘就會強制結束：超過 95 秒，剩下的留到下一輪
 # ------------------------------------------------------------------ 各國危機雷達（網站每次建置算好的 country_risk.json；規則在 wsb/data/country_risk.py）
 COUNTRY = "https://wallstreet-sentinel.pages.dev/country_risk.json"
@@ -873,7 +948,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -887,7 +962,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1189,6 +1264,75 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("fiscal check failed: %s", e)
+        try:                                               # 被迫進出的錢（指數調整日前一天、標普趨勢翻轉、波動控制比重驟降）
+            if now - S["ff_ts"] >= FORCED_EVERY and now > 1.7e9 and left("forced"):
+                from wsb.data import forced_flows as FF
+                from wsb.data import exchange_cal as XC
+                S["ff_ts"] = now
+                await asyncio.wait_for(XC.refresh(), 40)
+                v = FF.view(await asyncio.wait_for(FF.refresh(), 90))
+                tpe = time.gmtime(now + 8 * 3600)
+                today = date(tpe.tm_year, tpe.tm_mon, tpe.tm_mday)
+                for a in FF.alerts(v, today):
+                    if a["key"] in done:
+                        continue
+                    if a["kind"] == "event" and a["ev"]["date"] > today.isoformat() and tpe.tm_hour < 18:
+                        continue                           # the evening before (Taipei), not in the small hours
+                    w = await want(a["key"], "forced")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    tags = ["台股", "美股"] if a.get("ev", {}).get("kind") in ("msci", "tw50") else ["美股", "利率"]
+                    if await post(sess, chan or dm or "", forced_embed(a, v, await market_now(sess, tags, now)), a["key"]):
+                        done[a["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("forced flows check failed: %s", e)
+        try:                                               # 韓國出口快報（公布後兩天內一次）
+            tpe = time.gmtime(now + 8 * 3600)
+            if tpe.tm_mday in (1, 2, 11, 12, 21, 22) and now - S["ko_ts"] >= KOREA_EVERY and now > 1.7e9 and left("korea"):
+                from wsb.data import korea_exports as KE
+                S["ko_ts"] = now
+                v = KE.view(await asyncio.wait_for(KE.refresh(force=True, per_run=6), 60))
+                for a in KE.alerts(v, date(tpe.tm_year, tpe.tm_mon, tpe.tm_mday)):
+                    if a["key"] in done:
+                        continue
+                    w = await want(a["key"], "korea")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", korea_embed(a, await market_now(sess, ["台股", "科技"], now)), a["key"]):
+                        done[a["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("korea exports check failed: %s", e)
+        try:                                               # 法院與監管的決定（有市場主題、30 小時內第一次看到的）
+            if now - S["ru_ts"] >= RULINGS_EVERY and now > 1.7e9 and left("rulings"):
+                from wsb.data import rulings as RL
+                S["ru_ts"] = now
+                d = await asyncio.wait_for(RL.refresh(), 60)
+                for a in RL.alerts(d, now):
+                    if a["key"] in done:
+                        continue
+                    w = await want(a["key"], "rulings")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    tags = {"^TNX": ["利率", "美股"], "^NDX": ["美股", "科技"]}.get(a["item"].get("sym"), ["美股", "利率"])
+                    if await post(sess, chan or dm or "", ruling_embed(a, await market_now(sess, tags, now)), a["key"]):
+                        done[a["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("rulings check failed: %s", e)
         try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
             if CLOUD:                                      # no heartbeat file in the cloud: go by the bot's last site build
                 alive = age is None or age < BOT_QUIET_MIN

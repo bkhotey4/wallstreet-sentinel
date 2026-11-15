@@ -74,6 +74,11 @@ from tools import site_routines as SRT
 from tools import site_chokepoints as SCP
 from tools import site_fedspeech as SFS
 from tools import site_fiscal as SFI
+from tools import site_forced as SFO
+from tools import site_korea as SKO
+from tools import site_china as SCN
+from tools import site_rulings as SRU
+from tools import site_corpfund as SCF
 from tools import site_fedreg as SFR
 from tools import site_after as SAF
 from tools import site_forecast as SFC
@@ -1352,8 +1357,8 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
                                                        SEN.sec_cheap, SEN.sec_phased, SEN.sec_entry_links]),
             ("scores", "個股評分", "Stock scores", [S2.sec_scores, lambda e: S2.sec_fullmarket(e, "score")]),
             ("signals", "技術型態觀察", "Pattern watch", [S2.sec_signals, SQ.sec_signal_scorecard, SQ.sec_rule_sim, S4.sec_exhaust, lambda e: S2.sec_fullmarket(e, "signal")]),
-            ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
-            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, SEVR.sec_event_react, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
+            ("intel", "個股情報", "Stock intel", [SQ.sec_rev_exposure, SCF.sec_share_supply, S4.sec_earn_moves, S4.sec_analyst, S4.sec_dividends, S4.sec_filings]),
+            ("econ", "財經日曆", "Econ calendar", [SAF.sec_earn_after, S3.sec_econ_week, SFO.sec_exchange_cal, SEVR.sec_event_react, S3.sec_nowcast, S3.sec_fomc, SA.sec_fomc_drift, S3.sec_econ_list, S3.sec_latest_reports, S3.sec_earn_cal, SIPO.sec_ipo]),
             ("tech", "美股財報", "US earnings", [SPV.sec_earn_preview, S3.sec_earn_verdict, SER.sec_est_rev, SAF.sec_earn_after_us, SAF.sec_earn_all, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
@@ -1361,6 +1366,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SDC.sec_drop_check, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health, STK.sec_track_record, SRT.sec_routine_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
+            ("forced", "被迫進出的錢", "Forced flows", [SFO.sec_index_events, SFO.sec_mech_funds, SFO.sec_rebalance]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("gbonds", "AI 視角看債券", "AI view of bonds", [SBR.sec_bond_read, SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
             ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, SR.sec_rate_pressure, SFS.sec_fed_speeches, SFI.sec_fiscal, S2.sec_bonds, SBD.sec_gb_tic]),
@@ -1368,7 +1374,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),
             ("wbonds", "各國債券", "Bonds by country", [SBD.sec_gb_sovereign]),
             ("cbonds", "AI 視角看公司債", "AI view of corporate bonds", [SBD.sec_cb_brief, SBD.sec_gb_corp]),
-            ("cb_us", "美國公司債", "US corporate bonds", [SBD.sec_cb_us, SCR.sec_credit_rates, SSL.sec_ebp]),
+            ("cb_us", "美國公司債", "US corporate bonds", [SBD.sec_cb_us, SCF.sec_maturity_wall, SCR.sec_credit_rates, SSL.sec_ebp]),
             ("cb_eu", "歐洲公司債", "European corporate bonds", [SBD.sec_cb_eu]),
             ("cb_em", "新興與亞洲公司債", "EM & Asian corporate bonds", [SBD.sec_cb_em]),
             ("human", "人類溫度計", "Human thermometer", [SHM.sec_human, SPP.sec_migration_polls]),
@@ -1377,16 +1383,16 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("longhist", "人類與市場長歷史", "People and markets", [SLH.sec_longhist]),
             ("crisis", "歷史危機", "Past crises", [SCT.sec_crisis_track, sec_crisis, SRG.sec_analogs]),
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
-            ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, sec_markets]),
+            ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, SCN.sec_china, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
-            ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ]),
+            ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, SKO.sec_korea_exports]),
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),
-            ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, SFR.sec_fed_register, sec_calendar, sec_news]),
+            ("news", "新聞日曆", "News & calendar", [SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
@@ -1441,7 +1447,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SNL.CSS}{SE.OIL_CSS}{SSN.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{COMPLY_CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SNL.CSS}{SE.OIL_CSS}{SSN.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{SCF.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <div class="tbtns">{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="reloadBtn" type="button" aria-label="refresh page" title="重新載入最新資料" data-en="↻ Refresh">↻ 更新</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><button class="btn tmore" id="tmoreBtn" type="button" aria-label="more buttons" aria-expanded="false">⋯</button><span class="fsg"><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></span></div></div>
@@ -1721,6 +1727,36 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(FSP.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("fed speeches failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 休市日曆：證交所官方開休市日期（一週一次）；被迫進出的錢要用它
+        from wsb.data import exchange_cal as XCL
+        await asyncio.wait_for(XCL.refresh(), 60)
+    except Exception as e:  # noqa: BLE001
+        log.warning("exchange calendar failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 法院與監管：最高法院、SEC、CFTC、司法部反壟斷（6 小時一次）
+        from wsb.data import rulings as RUL
+        await asyncio.wait_for(RUL.refresh(), 90)
+    except Exception as e:  # noqa: BLE001
+        log.warning("rulings failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 中國經濟：FRED（OECD 貿易）、IMF 世界經濟展望、Yahoo（12 小時一次）
+        from wsb.data import china_watch as CWT
+        await asyncio.wait_for(CWT.refresh(), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("china watch failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 韓國出口快報：韓國關稅廳報導資料（3 小時一次；每月 1、11、21 日更新）
+        from wsb.data import korea_exports as KEX
+        await asyncio.wait_for(KEX.refresh(), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("korea exports failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 被迫進出的錢：指數成交量、趨勢、退休金（4 小時一次）
+        from wsb.data import forced_flows as FFL
+        await asyncio.wait_for(FFL.refresh(), 120)
+    except Exception as e:  # noqa: BLE001
+        log.warning("forced flows failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 債務到期牆用的公司債殖利率（FRED，12 小時一次）
+        from wsb.analytics import corp_funding as CFD
+        await asyncio.wait_for(CFD.refresh(), 60)
+    except Exception as e:  # noqa: BLE001
+        log.warning("corp funding yields failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 政府停擺與債務上限：GovInfo 法律原文＋財政部每日報表（12 小時一次）
         from wsb.data import us_fiscal as USF
         await asyncio.wait_for(USF.refresh(), 150)

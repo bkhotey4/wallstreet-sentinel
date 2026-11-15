@@ -20,24 +20,15 @@ EARLY_CLOSE = 13 * 60                 # NYSE half days close at 13:00 New York t
 
 
 def us_calendar(today: Optional[date] = None, days: int = 400) -> Dict:
-    """NYSE full holidays (python-holidays) and early closes over the next `days`: the day after Thanksgiving,
-    Christmas Eve and July 3 when they fall on a trading day (July 3 only Mon–Thu; on a Friday it is the observed holiday)."""
+    """NYSE full holidays and early closes over the next `days` (rules in wsb/data/exchange_cal.py, shared with the
+    休市與提早收盤 card since 2026-11-16)."""
+    from wsb.data import exchange_cal as XC
     today = today or date.today()
     end = today + timedelta(days=days)
-    try:
-        import holidays
-        cal = holidays.financial_holidays("NYSE", years=range(today.year, end.year + 1))
-    except Exception:  # noqa: BLE001
-        return {"hol": [], "early": {}}
-    hol = sorted(d for d in cal if today - timedelta(days=1) <= d <= end)
-    early = {}
-    for y in range(today.year, end.year + 1):
-        nov = date(y, 11, 1)
-        thanks = nov + timedelta(days=(3 - nov.weekday()) % 7 + 21)
-        for d, ok in ((thanks + timedelta(days=1), True), (date(y, 12, 24), True), (date(y, 7, 3), date(y, 7, 3).weekday() <= 3)):
-            if ok and d.weekday() < 5 and d not in cal and today - timedelta(days=1) <= d <= end:
-                early[d.isoformat()] = EARLY_CLOSE
-    return {"hol": [d.isoformat() for d in hol], "early": early}
+    hol = XC.us_holidays(today.year, end.year)
+    early = XC.us_early(today.year, end.year, hol)
+    lo, hi = (today - timedelta(days=1)).isoformat(), end.isoformat()
+    return {"hol": sorted(k for k in hol if lo <= k <= hi), "early": {k: EARLY_CLOSE for k in sorted(early) if lo <= k <= hi}}
 
 MKT_JS = r"""
  var MKT_WAIT=__WAIT__,MKT_CAL=__CAL__;

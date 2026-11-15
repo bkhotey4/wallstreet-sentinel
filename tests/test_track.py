@@ -134,7 +134,7 @@ def test_rules_and_alerts_keep_holdings_out():
     orig_t, orig_k = store.tracked_alerts, K._alert_rows
     try:
         store.tracked_alerts = lambda days=365: sent + [(ts, "pf_dd:2026-10-01", "risk", "🚨", "private", 4900.0, 40.0)]
-        assert all(not x[1].startswith("pf_dd") for x in K._alert_rows())
+        assert all(not x[1].startswith("pf_dd") for x in K._alert_rows()[0])      # (rows, source)
         rows = K.alert_rows(e)
         assert rows and rows[0]["n"] == 3 and rows[0]["v"] == "small" and rows[0]["false"] == 3
         assert all("持倉" not in f["name"] for f in rows[0]["fam"])

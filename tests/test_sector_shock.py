@@ -57,10 +57,14 @@ def main() -> None:
         return {}
     P.country_json = no_country
 
+    async def no_news(sess):                                            # live bursts (e.g. 6 newsrooms on NVDA) are not this test's subject
+        return {"bursts": [], "items": []}
+    P.news_json = no_news
+
     async def fake_sectors(sess, now):
         return [dict(hits[0], day="2026-11-13", tw=[{"zh": "台積電", "beta": 0.45}])]
 
-    async def fake_post(sess, ch, emb):
+    async def fake_post(sess, ch, emb, key=None):
         sent.append(emb)
         return True
     from wsb.data import sec_officers as SOF
@@ -68,7 +72,9 @@ def main() -> None:
     try:
         SOF.refresh, P.sector_alerts, P.post, P.watch_list = no_sec, fake_sectors, fake_post, lambda: {}
         P.DISCORD_TOKEN, P.alert_channel = "t", lambda: "123"
-        assert asyncio.run(P.run_once(now=now)) == 1
+        P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = 10 ** 12   # slow official-data checks have their own tests
+        n = asyncio.run(P.run_once(now=now))
+        assert n == 1, [x.get("title") for x in sent]
         e = sent[0]
         assert e["title"] == "🟠 族群急跌：費城半導體 -5.5%（平常一天的 2.3 倍）" and "台積電 約 -2.5%" in e["description"]
         assert asyncio.run(P.run_once(now=now + 180)) == 0                       # once per sector, day and level

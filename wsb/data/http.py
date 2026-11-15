@@ -51,6 +51,25 @@ async def get(url: str, *, kind: str = "json", headers: dict | None = None,
     raise last  # type: ignore[misc]
 
 
+async def post(url: str, *, data: dict | None = None, kind: str = "text", headers: dict | None = None,
+               retries: int = 1, timeout: float = 25) -> Any:
+    """A form POST (a site's own 'open this article' form); kind: json | text."""
+    last: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            s = await session()
+            async with s.post(url, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=timeout)) as r:
+                r.raise_for_status()
+                return await (r.json(content_type=None) if kind == "json" else r.text())
+        except Exception as e:  # noqa: BLE001
+            last = e
+            if attempt < retries:
+                await asyncio.sleep(1.5 * (attempt + 1))
+    if isinstance(last, asyncio.TimeoutError):
+        raise TimeoutError(f"timeout after {timeout}s: {url.split('?')[0]}")
+    raise last  # type: ignore[misc]
+
+
 async def close() -> None:
     if _session and not _session.closed:
         await _session.close()

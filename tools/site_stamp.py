@@ -349,6 +349,64 @@ def _fedspeech():
     return _ts(d.get("ts")), (sp[0].get("time", "")[:10] or None) if sp else None
 
 
+def _forced():
+    try:
+        from wsb.data import forced_flows as FF
+        d = FF.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    return _ts(d.get("ts")), ((d.get("view") or {}).get("asof") or {}).get("^GSPC")
+
+
+def _korea():
+    try:
+        from wsb.data import korea_exports as KE
+        v = KE.view()
+    except Exception:  # noqa: BLE001
+        return None, None
+    rows = v.get("rows") or []
+    return _ts(v.get("ts")), (KE.released(rows[0]["key"]).isoformat() if rows else None)
+
+
+def _china():
+    try:
+        from wsb.data import china_watch as CW
+        d = CW.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    return _ts(d.get("ts")), ((d.get("mkt") or {}).get("CNY=X") or {}).get("asof")
+
+
+def _rulings():
+    try:
+        from wsb.data import rulings as RL
+        d = RL.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    return _ts(d.get("ts")), max((x.get("date", "") for x in d.get("items") or []), default=None) or None
+
+
+def _xcal():
+    try:
+        from wsb.data import exchange_cal as XC
+        d = XC.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    return _ts(d.get("ts")), None
+
+
+def _corpfund():
+    try:
+        from wsb.data import distress_data as DD
+        from wsb.analytics import distress as DZ
+        c, names = DD.load(), DZ.watchlist()
+    except Exception:  # noqa: BLE001
+        return None, None
+    ts = [float((c.get(s) or {}).get("bs_ts") or 0) for s in names if (c.get(s) or {}).get("bs")]
+    ends = [((c.get(s) or {}).get("bs") or {}).get("end") or "" for s in names]
+    return _ts(max(ts) if ts else None), (max(ends) or None) if ends else None
+
+
 def _fiscal():
     try:
         from wsb.data import us_fiscal as USF
@@ -576,6 +634,12 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "fedreg": ("美國聯邦公報（總統文件、出口管制、301 關稅）", "Federal Register", lambda e: _fedreg(), 30),
     "fedspeech": ("聯準會理事與達拉斯聯準會總裁演講、行事曆＋財政部 2 年期殖利率", "Fed Board + Dallas Fed speeches & calendar + Treasury 2y", lambda e: _fedspeech(), 45),
     "fiscal": ("GovInfo 撥款法律原文＋財政部每日報表（債務上限）", "GovInfo laws + Daily Treasury Statement", lambda e: _fiscal(), 5),
+    "forced": ("Yahoo 日線（指數成交量、趨勢）＋聯準會金融帳 Z.1", "Yahoo daily + Fed Z.1", lambda e: _forced(), 4),
+    "korea": ("韓國關稅廳出口快報", "Korea Customs Service", lambda e: _korea(), 15),
+    "china": ("FRED（OECD 中國貿易）＋IMF 世界經濟展望＋Yahoo 行情", "FRED / IMF WEO / Yahoo", lambda e: _china(), 5),
+    "rulings": ("最高法院判決頁＋SEC／CFTC／司法部新聞稿", "Supreme Court + SEC / CFTC / DOJ releases", lambda e: _rulings(), 30),
+    "xcal": ("紐約證交所規則＋證交所市場開休市日期", "NYSE rules + TWSE holiday schedule", lambda e: _xcal(), 30),
+    "corpfund": ("SEC 財報（債務到期表、股數、買回、增資文件）", "SEC filings (maturities, shares, buybacks)", lambda e: _corpfund(), 10),
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
@@ -597,7 +661,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
 TAB_DEFAULT: Dict[str, List[str]] = {
     "overview": ["px", "ssi"], "premarket": ["px"], "tw_ai": ["twmacro"], "tw_bonds": ["twmacro"], "tw_credit": ["twmacro"], "tw_econ": ["twmacro"], "tw_money": ["twmacro", "tw"], "tw_life": ["twmacro"], "tw_etf": ["twetf", "tw"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
-    "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "gurus": ["gurus"], "bonds": ["fred", "px"],
+    "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "forced": ["forced"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
     "news": ["news"], "history": ["ssi"], "entry": ["px", "ssi"], "gbonds": ["fred"], "jgb": ["fred"], "ebonds": ["fred"], "wbonds": ["fred"], "cbonds": ["fred"],
     "cb_us": ["fred"], "cb_eu": ["fred"], "cb_em": ["fred"], "inputs": ["px", "fred"], "ai": ["px"], "stability": ["funding"],
@@ -639,7 +703,7 @@ MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not 
 
 CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
     "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
-    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fiscal": ["fiscal"], "sec_fed_register": ["fedreg", "px"], "sec_rate_pressure": ["fred", "px"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fiscal": ["fiscal"], "sec_index_events": ["forced"], "sec_mech_funds": ["forced"], "sec_rebalance": ["forced", "px"], "sec_exchange_cal": ["xcal"], "sec_korea_exports": ["korea"], "sec_china": ["china"], "sec_rulings": ["rulings", "px"], "sec_maturity_wall": ["corpfund", "fred"], "sec_share_supply": ["corpfund"], "sec_fed_register": ["fedreg", "px"], "sec_rate_pressure": ["fred", "px"],
 })
 
 
