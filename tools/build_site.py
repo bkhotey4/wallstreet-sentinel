@@ -73,6 +73,7 @@ from tools import site_track as STK
 from tools import site_routines as SRT
 from tools import site_chokepoints as SCP
 from tools import site_fedspeech as SFS
+from tools import site_fiscal as SFI
 from tools import site_fedreg as SFR
 from tools import site_after as SAF
 from tools import site_forecast as SFC
@@ -1362,7 +1363,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
             ("gurus", "大師持倉", "Gurus & insiders", [S2.sec_gurus, S2.sec_insiders]),
             ("gbonds", "AI 視角看債券", "AI view of bonds", [SBR.sec_bond_read, SBD.sec_gb_brief, SBD.sec_gb_rotation, SEF.sec_etf_flows, SBD.sec_gb_flows]),
-            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, SR.sec_rate_pressure, SFS.sec_fed_speeches, S2.sec_bonds, SBD.sec_gb_tic]),
+            ("bonds", "美債", "Treasuries", [SR.sec_rates_radar, SR.sec_rate_pressure, SFS.sec_fed_speeches, SFI.sec_fiscal, S2.sec_bonds, SBD.sec_gb_tic]),
             ("jgb", "日債", "Japanese bonds", [SBD.sec_gb_jgb, SBD.sec_gb_mof]),
             ("ebonds", "歐債", "European bonds", [SBD.sec_gb_europe, SEA.sec_europe]),
             ("wbonds", "各國債券", "Bonds by country", [SBD.sec_gb_sovereign]),
@@ -1720,6 +1721,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(FSP.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("fed speeches failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 政府停擺與債務上限：GovInfo 法律原文＋財政部每日報表（12 小時一次）
+        from wsb.data import us_fiscal as USF
+        await asyncio.wait_for(USF.refresh(), 150)
+    except Exception as e:  # noqa: BLE001
+        log.warning("US fiscal data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 航道監測：IMF PortWatch 每日船隻通過數（12 小時一次）
         from wsb.data import chokepoints as CKP
         await asyncio.wait_for(CKP.refresh(), 180)

@@ -816,10 +816,15 @@ class Sentinel(commands.Bot):
             if len(hs) and str(q.get("asof", ""))[:10] < hs.index[-1].strftime("%Y-%m-%d"):
                 continue                                   # stale quote: σ would be the newer history bar's move, the % the quote's
             sev = "🚨 CRITICAL" if abs(sg) >= thr + 1.5 or t in A.get("key_assets", []) else "⚠️ WARNING"
-            # keyed on the BAR date → a Friday move alerts once, not again on Sat/Sun/Mon morning
-            out.append(Alert(f"sigma:{t}:{q['asof']}:{int(np.sign(sg))}", sev,
-                             f"異常波動：{names.get(t, t)} ({t}) {q['chg_pct']:+.2f}%（{sg:+.1f}σ）",
-                             f"現價 {q['price']:.4g} · 自身60日波動的 {abs(sg):.1f} 倍"))
+            # keyed on the BAR date → a Friday move alerts once, not again on Sat/Sun/Mon morning.
+            # 2026-11-15 (user chose B-3): the same day getting worse by every further 2σ (3σ → 5σ → 7σ) alerts again;
+            # the step rides inside the date part ("2026-11-16+5") so the key keeps its four parts for the scorecard.
+            step = int((abs(sg) - thr) // 2)
+            band = thr + 2 * step
+            out.append(Alert(f"sigma:{t}:{q['asof']}{'+%g' % band if step else ''}:{int(np.sign(sg))}", sev,
+                             f"異常波動{'再擴大' if step else ''}：{names.get(t, t)} ({t}) {q['chg_pct']:+.2f}%（{sg:+.1f}σ）",
+                             f"現價 {q['price']:.4g} · 自身60日波動的 {abs(sg):.1f} 倍"
+                             + (f"\n同一天已經超過 {band:g} 倍（前一次通知時還沒到），所以再通知一次。" if step else "")))
         for t, (n, day) in getattr(eng.market, "splits", {}).items():
             ratio = f"1 拆 {n}" if n > 0 else f"{-n} 併 1"
             out.append(Alert(f"split:{t}:{day}", "ℹ️ INFO", f"疑似股票分割：{names.get(t, t)} ({t}) 約 {ratio}（{day}）",
@@ -1498,7 +1503,7 @@ class Sentinel(commands.Bot):
                 e_ = discord.Embed(title="🔒 持倉警報（僅你可見）", color=0xE67E22, timestamp=datetime.now(timezone.utc))
                 for a in priv[:10]:
                     e_.add_field(name=f"{a.severity} {a.title}"[:256], value=a.detail[:1024] or "—", inline=False)
-                ok_ = await self._safe_send(dm, embed=e_)
+                ok_ = await self._safe_send(dm, embed=e_, **P.night_kw(dm, "🚨" if any(a.severity.startswith("🚨") for a in priv[:10]) else "⚠️"))   # 夜間分級
                 store.event_result([a.key for a in priv if _event_src(a.key)], ok_, "owner DM failed")
                 if ok_:                                         # not delivered → not marked → retried next round
                     for a in priv:

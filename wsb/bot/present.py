@@ -45,13 +45,28 @@ async def _send(dest, content: Optional[str] = None, **kw):
     return None
 
 
-async def send_pngs(dest, pngs: Sequence[bytes], content: Optional[str] = None) -> bool:
+async def send_pngs(dest, pngs: Sequence[bytes], content: Optional[str] = None, **kw) -> bool:
     ok = False
     for i in range(0, len(pngs), 10):
         files = [discord.File(io.BytesIO(b), filename=f"sentinel_{i + j + 1:02d}.png")
                  for j, b in enumerate(pngs[i:i + 10])]
-        ok = bool(await _send(dest, content if i == 0 else None, files=files)) or ok
+        ok = bool(await _send(dest, content if i == 0 else None, files=files, **kw)) or ok
     return ok
+
+
+def night_kw(dest, probe: str) -> dict:
+    """Night tiering (wsb/quiet.py): a push at night whose headline is not 🔴 / 🚨 goes out as a silent message — it
+    arrives at once but the phone does not ring.  Replies to a command are never silenced."""
+    if isinstance(dest, discord.Interaction):
+        return {}
+    try:
+        from .. import quiet as Q
+        if Q.silent(probe or ""):
+            Q.note(probe or "", "bot")
+            return {"silent": True}
+    except Exception:  # noqa: BLE001
+        pass
+    return {}
 
 
 def headline(embeds) -> Optional[str]:
@@ -76,6 +91,7 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
     Returns True when at least one message was actually delivered."""
     if text == llm.OFF_NOTE:                                 # one line of text, not a slide of its own
         content, text = "\n".join(x for x in (content, text) if x), None
+    qk = night_kw(dest, (headline(embeds) if embeds else None) or content or (text and title) or "")
     if style() == "slides" and (slides or text):
         try:
             from . import slides as S
@@ -87,7 +103,7 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
             if pngs:
                 if content is None and embeds and not isinstance(dest, discord.Interaction):   # a push, not a reply to a command
                     content = headline(embeds)
-                return await send_pngs(dest, pngs, content)
+                return await send_pngs(dest, pngs, content, **qk)
         except Exception:  # noqa: BLE001
             log.exception("slide rendering failed → falling back to embeds")
     sent = False
@@ -95,16 +111,16 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
         em = embeds()
         em = em if isinstance(em, list) else [em]
         for i in range(0, len(em), 10):
-            sent = bool(await _send(dest, content if i == 0 else None, embeds=em[i:i + 10])) or sent
+            sent = bool(await _send(dest, content if i == 0 else None, embeds=em[i:i + 10], **qk)) or sent
         content = None
     if text:
         head = f"**🧠 {title}**（{engine_name}）\n" if engine_name else ""
         if content:                                          # never glue content onto a 1900-char chunk
-            sent = bool(await _send(dest, content[:2000])) or sent
+            sent = bool(await _send(dest, content[:2000], **qk)) or sent
         for part in E.chunks(head + text):
-            sent = bool(await _send(dest, part)) or sent
+            sent = bool(await _send(dest, part, **qk)) or sent
     elif content and not embeds:
-        sent = bool(await _send(dest, content)) or sent
+        sent = bool(await _send(dest, content, **qk)) or sent
     return sent
 
 

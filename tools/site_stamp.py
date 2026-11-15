@@ -349,6 +349,15 @@ def _fedspeech():
     return _ts(d.get("ts")), (sp[0].get("time", "")[:10] or None) if sp else None
 
 
+def _fiscal():
+    try:
+        from wsb.data import us_fiscal as USF
+        d = USF.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    return _ts(d.get("ts")), ((d.get("debt") or {}).get("asof"))
+
+
 def _fedreg():
     try:
         from wsb.data import fed_register as FR
@@ -566,6 +575,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "ldi": ("英國央行與歐洲央行長天期公債", "BoE / ECB long yields", lambda e: _ldi(), 7),
     "fedreg": ("美國聯邦公報（總統文件、出口管制、301 關稅）", "Federal Register", lambda e: _fedreg(), 30),
     "fedspeech": ("聯準會理事與達拉斯聯準會總裁演講、行事曆＋財政部 2 年期殖利率", "Fed Board + Dallas Fed speeches & calendar + Treasury 2y", lambda e: _fedspeech(), 45),
+    "fiscal": ("GovInfo 撥款法律原文＋財政部每日報表（債務上限）", "GovInfo laws + Daily Treasury Statement", lambda e: _fiscal(), 5),
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
@@ -629,7 +639,7 @@ MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not 
 
 CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
     "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
-    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fed_register": ["fedreg", "px"], "sec_rate_pressure": ["fred", "px"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fiscal": ["fiscal"], "sec_fed_register": ["fedreg", "px"], "sec_rate_pressure": ["fred", "px"],
 })
 
 

@@ -132,7 +132,7 @@ def _run_env():
     st = {"alerts": [], "sent": [], "led": {}, "led_fail": False, "mops": {"groups": [], "sent": {}, "priv": set()}, "site": {},
           "country": {}, "bursts": [], "health": 0, "hold": 0, "led_calls": 0}
     names = ("impact post dm_channel watch_list alert_channel sector_alerts stock_alerts news_json tx_night holdings_run market_now "
-             "yen_jump gap_moves health_check country_json site_alerts_json mops_new tw_impact ledger PUSHED LAG DISCORD_TOKEN CLOUD CATCH_GAP").split()
+             "yen_jump gap_moves health_check country_json site_alerts_json mops_new tw_impact ledger PUSHED LAG DISCORD_TOKEN CLOUD CATCH_GAP FISCAL_EVERY").split()
     real = {n: getattr(P, n) for n in names}
     real_refresh, real_mr = SOF.refresh, MR.FILE
     real_env = os.environ.get("WSB_BOT_AGE_MIN")
@@ -194,6 +194,7 @@ def _run_env():
     P.yen_jump, P.gap_moves, P.health_check, P.country_json, P.site_alerts_json, P.mops_new, P.tw_impact, P.ledger = (
         none, gap, health, country, site, mops, twi, led)
     P.PUSHED, P.LAG, P.DISCORD_TOKEN, P.CATCH_GAP = tmp / "p.json", tmp / "lag.json", "t", 10 ** 12
+    P.FISCAL_EVERY = 10 ** 12                                   # the fiscal countdown has its own test (tests/test_fiscal_night.py)
     SOF.refresh, MR.FILE = refresh, tmp / "mops.json"
 
     def restore():

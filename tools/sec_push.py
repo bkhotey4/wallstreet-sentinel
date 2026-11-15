@@ -22,6 +22,8 @@
      機器人停了（心跳超過 20 分鐘）則全部代送。
  10. （2026-11-15）送得到、不重送：每則訊息都帶一行文字（手機通知看得到標題）；Discord 忙線或斷線會在同一輪重試兩次；
      每送出一段就存檔；整輪超過 95 秒就把剩下的留到下一輪（Windows 排程 2 分鐘會強制結束）；有發生時間的通知會記下慢了多久。
+ 12. （2026-11-15）夜間分級：台北 23:30～07:00（settings.yaml delivery.night）標題不是 🔴／🚨 的訊息用 Discord 靜音訊息送
+     （照樣即時到、手機不響），記在 data_cache/night_silent.json，早安摘要會說夜裡靜音送了幾則。SEC 申報嚴重度未達 3 的改標 🟠。
  11. （2026-11-15）雲端備援：同一支程式也在 GitHub Actions 上跑（公開倉庫的 heartbeat.yml，環境變數 WSB_CLOUD=1）。
      兩邊用 Discord 上的訊息本身對帳：每則訊息的標題連結尾端帶一個看不見的編號（#k=…），送之前先讀頻道最近 200 則，
      對方送過的就不再送。雲端看到一件事後先等 10 分鐘（個股與網站警示 15 分鐘、各國雷達 45 分鐘），家裡電腦沒送才補送；
@@ -254,12 +256,19 @@ async def post(sess: aiohttp.ClientSession, channel: str, embed: Dict, key: Unio
     if CLOUD:                                              # say who sent it: a message from the cloud means the PC did not
         embed = {**embed, "footer": {"text": (str((embed.get("footer") or {}).get("text") or "WallStreet Sentinel") + " · ☁️ 雲端備援代送")[:2048]}}
     h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
+    body = {"content": plain(embed), "embeds": [embed]}
+    from wsb import quiet as Q
+    hush = Q.silent(str(embed.get("title") or ""))         # 夜間分級：不是 🔴／🚨 的照樣即時送，但不讓手機響
+    if hush:
+        body["flags"] = Q.SILENT_FLAG
     for attempt in range(3):
         wait = 2.0
         try:
-            async with sess.post(f"{API}/channels/{channel}/messages", headers=h, json={"content": plain(embed), "embeds": [embed]},
+            async with sess.post(f"{API}/channels/{channel}/messages", headers=h, json=body,
                                  timeout=aiohttp.ClientTimeout(total=15)) as r:
                 if r.status < 300:
+                    if hush and not CLOUD:
+                        Q.note(str(embed.get("title") or ""), "push")
                     return True
                 if r.status == 429:
                     try:
@@ -312,7 +321,7 @@ async def dm_channel(sess: aiohttp.ClientSession) -> Optional[str]:
 
 
 def embed_of(a: Dict, lines: List[str]) -> Dict:
-    return {"title": ("🔴 " + a["t"])[:256], "url": a["url"], "color": 0xE5484D,
+    return {"title": (("🔴 " if severity(a) >= 3 else "🟠 ") + a["t"])[:256], "url": a["url"], "color": 0xE5484D if severity(a) >= 3 else 0xD97706,
             "description": ("**影響估算**（依過去的平均關係推算，不是預測；重大消息當天常比平均更極端）\n" + "\n".join(lines))[:4000],
             "footer": {"text": "SEC 官方申報 · WallStreet Sentinel · 不構成投資建議"},
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(a["ts"]))}
@@ -771,6 +780,28 @@ def note_lag(kind: str, ev_ts: float, now: float) -> None:
 
 
 HEALTH_EVERY = 600
+FISCAL_EVERY = 6 * 3600          # 政府撥款與債務上限：資料一天才變一次（模組自己 12 小時才真的去抓）
+
+
+def fiscal_embed(a: Dict, v: Dict, lines: List[str]) -> Dict:
+    """One stage of the shutdown / debt-limit countdown (rules in wsb/data/us_fiscal.alerts)."""
+    from tools import site_fiscal as SF
+    red = a["lv"] >= 2
+    if a["kind"] == "cr":
+        f = v.get("funding") or {}
+        title = (f"{'🔴' if red else '🟠'} 美國政府撥款" + (f"還有 {a['days']} 天到期" if a["days"] > 0 else "已到期，可能停擺"))
+        lead = SF.funding_lead(f).replace("<b>", "").replace("</b>", "")
+        why = ("到期前國會沒通過新的撥款法律，沒拿到全年預算的機關會停擺：聯邦員工停薪，勞工統計局等機關停止發布就業、物價數據，"
+               "聯準會和市場少了最重要的數字。過去停擺時股市通常反應不大，衝擊多半在數據空窗和經濟本身。")
+    else:
+        dv = v.get("debt") or {}
+        title = f"{'🔴' if red else '🟠'} 美國債務上限：照最近速度約 {a['months']:.1f} 個月用完"
+        lead = SF.debt_lead(dv).replace("<b>", "").replace("</b>", "")
+        why = ("快到期限時，在期限附近到期的短期公債殖利率會被拉高；上限一調高，財政部會大量發債把現金補回來，"
+               "吸走銀行體系的資金，這段時間股市和高風險資產比較容易震盪。用完之後財政部還有「非常措施」可以撐一段時間。")
+    return {"title": title[:256], "url": SITE + "#bonds", "color": 0xE5484D if red else 0xD97706,
+            "description": ("一句話看懂：" + lead + "\n" + why + ("\n**相關行情現在**\n" + "\n".join(lines) if lines else ""))[:4000],
+            "footer": {"text": "GovInfo 法律原文・財政部每日報表 · WallStreet Sentinel · 倒數不是預測 · 不構成投資建議"}}
 BUDGET = 95.0                    # 這支程式每 3 分鐘跑一次、Windows 排程 2 分鐘就會強制結束：超過 95 秒，剩下的留到下一輪
 # ------------------------------------------------------------------ 各國危機雷達（網站每次建置算好的 country_risk.json；規則在 wsb/data/country_risk.py）
 COUNTRY = "https://wallstreet-sentinel.pages.dev/country_risk.json"
@@ -835,13 +866,14 @@ async def run_once(now: Optional[float] = None) -> int:
     acc = mem.get("acc") or {}
     # what was sent, with when: kept 10 days (a plain list capped by count would drop new keys before old ones)
     done: Dict[str, float] = ({k: now for k in acc} if isinstance(acc, list)
-                              else {k: v for k, v in acc.items() if now - float(v) < (40 if k.startswith("cr:") else 10) * 86400})   # cr: keys are per month
+                              else {k: v for k, v in acc.items() if now - float(v) < (40 if k.startswith("cr:") else 120 if k.startswith("fiscal:") else 10) * 86400})   # cr: per month; fiscal: per deadline / limit
     bsent: Dict[str, float] = {k: v for k, v in (mem.get("burst") or {}).items() if now - float(v) < 3 * 86400}
     prev = float(mem.get("ts") or 0)
     health = mem.get("health") or {}
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -855,7 +887,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1137,6 +1169,26 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
+        try:                                               # 政府撥款到期、債務上限（各階段一次）
+            if now - S["fi_ts"] >= FISCAL_EVERY and now > 1.7e9 and left("fiscal"):
+                from wsb.data import us_fiscal as USF
+                S["fi_ts"] = now
+                v = USF.view(await asyncio.wait_for(USF.refresh(), 60))
+                for a in USF.alerts(v):
+                    if a["key"] in done:
+                        continue
+                    w = await want(a["key"], "fiscal")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", fiscal_embed(a, v, await market_now(sess, ["利率", "美股"], now)), a["key"]):
+                        done[a["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("fiscal check failed: %s", e)
         try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
             if CLOUD:                                      # no heartbeat file in the cloud: go by the bot's last site build
                 alive = age is None or age < BOT_QUIET_MIN
