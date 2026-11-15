@@ -45,7 +45,7 @@ def main() -> None:
     async def fake_impact(sess, sym, zh):
         return [f"{zh} 影響"]
 
-    async def fake_post(sess, ch, emb):
+    async def fake_post(sess, ch, emb, key=None):
         (dms if ch == "dm" else sent).append(emb["title"])
         return True
 

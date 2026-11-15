@@ -1,9 +1,14 @@
-name: 雲端心跳（電腦關機也照常更新）
+name: 雲端心跳（電腦關機也照常更新、照常警報）
 
 # 平常由家裡電腦上的 bot 每 20 分鐘觸發網站建置；電腦關機時改由這個心跳接手。
 # 每 5 分鐘看一次：最近一次網站建置超過「間隔」而且沒有建置在跑，才觸發一次完整建置。
 # bot 在線時它每次都會看到剛建置過而略過，所以不會重複建置。
 # 一次執行約 5.5 小時，結束前觸發下一次自己，接力不停；下面的排程只是萬一接力斷掉時的備援。
+#
+# 2026-11-15 加上「警報備援」：同一條接力每 2.5～5 分鐘跑一次 tools/sec_push.py（WSB_CLOUD=1）。
+# 家裡電腦送過的不會再送（兩邊用 Discord 上的訊息對帳），電腦沒送的等 10 分鐘後由雲端補送；
+# 電腦超過 45 分鐘沒動靜就只等 3 分鐘。雲端沒有持股資料，只送公開的警報。規則寫在 tools/sec_push.py 開頭。
+# 需要 repo Secrets：DISCORD_BOT_TOKEN、OWNER_USER_ID（沒設就只做網站心跳，和以前一樣）。
 on:
   workflow_dispatch:
   schedule:
@@ -24,27 +29,135 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
+      HAS_DC: ${{ secrets.DISCORD_BOT_TOKEN != '' && secrets.OWNER_USER_ID != '' }}   # step 的 if 不能直接讀 secrets，先轉成旗標
     steps:
-      - name: 每 5 分鐘檢查，網站太久沒更新就建置
+      # 下面四步只給警報備援用；任何一步失敗都不影響網站心跳（最後那個迴圈照跑）
+      - uses: actions/checkout@v4
+        if: ${{ env.HAS_DC == 'true' }}
+        continue-on-error: true
+
+      - uses: actions/setup-python@v5
+        if: ${{ env.HAS_DC == 'true' }}
+        continue-on-error: true
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-site.txt
+
+      - name: 安裝套件（警報備援用）
+        id: pip
+        if: ${{ env.HAS_DC == 'true' }}
+        continue-on-error: true
+        run: pip install -q -r requirements-site.txt
+
+      # 和 update.yml 同一份快取（路徑清單必須一字不差才對得上）：歷史收盤價用來算「平常一天動多少」與連動關係
+      - name: 還原資料快取
+        if: ${{ env.HAS_DC == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data_cache/history_close.pkl
+            data_cache/history_fail.json
+            data_cache/fred_series.pkl
+            data_cache/darkpool.json
+            data_cache/darkpool_meta.json
+            data_cache/sentinel.db
+            data_cache/stock_prices.pkl
+            data_cache/stock_news.json
+            data_cache/stockscore_hist.json
+            data_cache/signals_seen.json
+            data_cache/signal_ledger.json
+            data_cache/sec_segments.json
+            data_cache/snap
+            data_cache/twse_t86.json
+            data_cache/gurus.json
+            data_cache/insiders.json
+            data_cache/sec_tickers.json
+            data_cache/treasury_auctions.json
+            data_cache/fullmarket_*
+            data_cache/econ_*
+            data_cache/earn_*
+            data_cache/sinfo_*
+            data_cache/growth_*
+          key: data-relay-never-saved
+          restore-keys: data-
+
+      # 警報備援自己的記憶（送過什麼、正在等家裡電腦的是哪些）。只有公開警報的編號，沒有持股、沒有金鑰
+      - name: 還原警報備援的記憶
+        if: ${{ env.HAS_DC == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data_cache/sec_push.json
+            data_cache/mops_rt.json
+          key: relay-${{ github.run_id }}
+          restore-keys: relay-
+
+      - name: 每 2.5 分鐘一圈：網站太久沒更新就建置；家裡電腦沒送的警報由雲端補送
+        env:
+          PIP_OK: ${{ steps.pip.outcome }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          OWNER_USER_ID: ${{ secrets.OWNER_USER_ID }}
+          ALERT_CHANNEL_ID: ${{ secrets.ALERT_CHANNEL_ID }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          WSB_CLOUD: "1"
+          WSB_AI_OFF: "1"
+          PYTHONUNBUFFERED: "1"
         run: |
           end=$(( $(date +%s) + 330*60 ))
+          n=0
           while [ "$(date +%s)" -lt "$end" ]; do
-            if [ "$(date -u +%u)" -le 5 ]; then gap=20; else gap=60; fi        # 平日 20 分鐘、週末 60 分鐘
-            runs=$(gh api "repos/$REPO/actions/workflows/update.yml/runs?per_page=5" \
-                     --jq '[.workflow_runs[] | {s: .status, t: .created_at}]' 2>/dev/null || echo '[]')
-            busy=$(echo "$runs" | jq '[.[] | select(.s != "completed")] | length')
-            newest=$(echo "$runs" | jq -r '.[0].t // empty')
-            age=9999
-            if [ -n "$newest" ]; then age=$(( ($(date +%s) - $(date -d "$newest" +%s)) / 60 )); fi
-            if [ "$busy" -eq 0 ] && [ "$age" -ge $((gap - 2)) ]; then
-              if gh workflow run update.yml -R "$REPO" --ref main -f fast=false; then
-                echo "$(date -u +%H:%M) 觸發建置（上次建置 ${age} 分鐘前）"
+            t0=$(date +%s)
+
+            # ---- 網站心跳：每兩圈（5 分鐘）看一次
+            if [ $((n % 2)) -eq 0 ]; then
+              if [ "$(date -u +%u)" -le 5 ]; then gap=20; else gap=60; fi        # 平日 20 分鐘、週末 60 分鐘
+              runs=$(gh api "repos/$REPO/actions/workflows/update.yml/runs?per_page=5" \
+                       --jq '[.workflow_runs[] | {s: .status, t: .created_at}]' 2>/dev/null || echo '[]')
+              busy=$(echo "$runs" | jq '[.[] | select(.s != "completed")] | length')
+              newest=$(echo "$runs" | jq -r '.[0].t // empty')
+              age=9999
+              if [ -n "$newest" ]; then age=$(( ($(date +%s) - $(date -d "$newest" +%s)) / 60 )); fi
+              if [ "$busy" -eq 0 ] && [ "$age" -ge $((gap - 2)) ]; then
+                if gh workflow run update.yml -R "$REPO" --ref main -f fast=false; then
+                  echo "$(date -u +%H:%M) 觸發建置（上次建置 ${age} 分鐘前）"
+                fi
+              else
+                echo "$(date -u +%H:%M) 略過：建置中 ${busy}、上次建置 ${age} 分鐘前"
               fi
-            else
-              echo "$(date -u +%H:%M) 略過：建置中 ${busy}、上次建置 ${age} 分鐘前"
             fi
-            sleep 300
+
+            # ---- 警報備援：家裡的 bot 多久沒觸發網站建置了？（它每 20 分鐘一次；這個心跳自己觸發的不算）
+            if [ "$HAS_DC" = "true" ] && [ "$PIP_OK" = "success" ] && [ -f tools/sec_push.py ]; then
+              bot=""
+              if list=$(gh api "repos/$REPO/actions/workflows/update.yml/runs?per_page=30&event=workflow_dispatch" \
+                          --jq '[.workflow_runs[] | select(.actor.login != "github-actions[bot]") | .created_at]' 2>/dev/null); then
+                last=$(echo "$list" | jq -r '.[0] // empty')
+                if [ -n "$last" ]; then bot=$(( ($(date +%s) - $(date -d "$last" +%s)) / 60 )); else bot=9999; fi
+              fi
+              # 電腦在線：每 5 分鐘看一次就夠（只是保險）；電腦沒動靜或查不到：每圈都看
+              if [ -z "$bot" ] || [ "$bot" -ge 45 ] || [ $((n % 2)) -eq 1 ]; then
+                git fetch -q --depth 1 origin main && git reset -q --hard FETCH_HEAD || true      # 用最新的程式
+                WSB_BOT_AGE_MIN="$bot" timeout 140 python tools/sec_push.py || echo "$(date -u +%H:%M) 警報備援這一圈沒跑完（下一圈再試）"
+              fi
+            fi
+
+            n=$((n + 1))
+            used=$(( $(date +%s) - t0 ))
+            if [ "$used" -lt 150 ]; then sleep $((150 - used)); fi
           done
+
+      - name: 儲存警報備援的記憶
+        if: ${{ always() && env.HAS_DC == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data_cache/sec_push.json
+            data_cache/mops_rt.json
+          key: relay-${{ github.run_id }}
 
       - name: 接力：啟動下一次心跳
         if: ${{ always() }}

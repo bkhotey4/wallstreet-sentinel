@@ -22,6 +22,11 @@
      機器人停了（心跳超過 20 分鐘）則全部代送。
  10. （2026-11-15）送得到、不重送：每則訊息都帶一行文字（手機通知看得到標題）；Discord 忙線或斷線會在同一輪重試兩次；
      每送出一段就存檔；整輪超過 95 秒就把剩下的留到下一輪（Windows 排程 2 分鐘會強制結束）；有發生時間的通知會記下慢了多久。
+ 11. （2026-11-15）雲端備援：同一支程式也在 GitHub Actions 上跑（公開倉庫的 heartbeat.yml，環境變數 WSB_CLOUD=1）。
+     兩邊用 Discord 上的訊息本身對帳：每則訊息的標題連結尾端帶一個看不見的編號（#k=…），送之前先讀頻道最近 200 則，
+     對方送過的就不再送。雲端看到一件事後先等 10 分鐘（個股與網站警示 15 分鐘、各國雷達 45 分鐘），家裡電腦沒送才補送；
+     機器人超過 45 分鐘沒觸發網站更新（＝電腦多半關了）就只等 3 分鐘，超過 60 分鐘另外說一聲「電腦沒有動靜」。
+     雲端沒有持股資料：持股通知、系統健康、離線補課都只在家裡電腦做。雲端第一次啟動只記不送。
 送過的記在 data_cache/sec_push.json，不會重送。Windows 工作排程每 3 分鐘跑一次：python -m tools.sec_push
 影響估算是過去平均關係的推算，不是預測，也不是投資建議。"""
 from __future__ import annotations
@@ -29,11 +34,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
+from urllib.parse import quote, unquote
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -49,6 +56,108 @@ PUSHED = DATA_DIR / "sec_push.json"
 MAX_AGE = 6 * 3600
 API = "https://discord.com/api/v10"
 QUOTE = "https://wallstreet-sentinel.pages.dev/api/quote"
+SITE = "https://wallstreet-sentinel.pages.dev/"
+
+# ------------------------------------------------------------------ 雲端備援（GitHub Actions）與 Discord 對帳
+CLOUD = os.environ.get("WSB_CLOUD") == "1"
+KEY_RE = re.compile(r"[#&]k=([^&#\s]+)$")
+GRACE = {"stock": 900, "site": 900, "cr": 2700}            # 雲端等家裡電腦多久（秒）：電腦多久看一次＋緩衝；其餘 600
+GRACE_QUIET = 180                # 電腦看起來關了：只等 3 分鐘
+BOT_QUIET_MIN = 45               # 機器人平常每 20 分鐘觸發一次網站更新；連兩次沒來＝多半關機、睡眠或斷網
+PC_QUIET_MIN = 60                # 超過這麼久沒動靜：雲端私訊說一聲
+
+
+def tag(embed: Dict, keys: Union[str, List[str]]) -> Dict:
+    """The same embed with the alert's key(s) riding on the title link (…#k=key1,key2).  Nobody sees it, the link still
+    opens the same page, and the other machine can read back what was already sent."""
+    ks = [keys] if isinstance(keys, str) else list(keys)
+    base = str(embed.get("url") or SITE)
+    url = base + ("&" if "#" in base else "#") + "k="
+    for i, k in enumerate(ks):
+        nxt = ("," if i else "") + quote(str(k), safe="")
+        if len(url) + len(nxt) > 1990:                     # Discord's limit for a link is 2,048 characters
+            break
+        url += nxt
+    return {**embed, "url": url}
+
+
+def keys_of(msg: Dict) -> List[str]:
+    out: List[str] = []
+    for e in msg.get("embeds") or []:
+        m = KEY_RE.search(str(e.get("url") or ""))
+        if m:
+            out += [unquote(k) for k in m.group(1).split(",") if k]
+    return out
+
+
+async def ledger(sess: aiohttp.ClientSession, channel: str, pages: int = 2) -> Optional[Dict[str, float]]:
+    """{key: when it was sent} read back from the channel's last 200 messages; None when Discord cannot be read."""
+    if not channel:
+        return None
+    h = {"Authorization": f"Bot {DISCORD_TOKEN}"}
+    out: Dict[str, float] = {}
+    before = None
+    for page in range(pages):
+        params = {"limit": "100"}
+        if before:
+            params["before"] = before
+        try:
+            async with sess.get(f"{API}/channels/{channel}/messages", headers=h, params=params,
+                                timeout=aiohttp.ClientTimeout(total=15)) as r:
+                if r.status >= 300:
+                    log.info("ledger: HTTP %s", r.status)
+                    return out if page else None
+                msgs = await r.json()
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as e:
+            log.info("ledger: %s", type(e).__name__)
+            return out if page else None
+        for m in msgs or []:
+            try:
+                ts = ((int(m["id"]) >> 22) + 1420070400000) / 1000      # a Discord id carries its own time
+            except (KeyError, TypeError, ValueError):
+                continue
+            for k in keys_of(m):
+                out.setdefault(k, ts)
+        if len(msgs or []) < 100:
+            break
+        before = msgs[-1]["id"]
+    return out
+
+
+def bot_age_min() -> Optional[float]:
+    """Cloud only: minutes since the home bot last started a site build (the workflow works it out and passes it in)."""
+    try:
+        return float(os.environ["WSB_BOT_AGE_MIN"])
+    except (KeyError, ValueError):
+        return None
+
+
+def grace(fam: str, age: Optional[float]) -> float:
+    return GRACE_QUIET if age is not None and age >= BOT_QUIET_MIN else GRACE.get(fam, 600)
+
+
+def quiet_due(q: Dict, age: Optional[float], now: float) -> bool:
+    """Say once per outage that the home PC has gone quiet (again only after it came back and 3 hours passed, or a day)."""
+    if age is None:
+        return False
+    if age < BOT_QUIET_MIN:
+        q["up"] = True
+        return False
+    last = float(q.get("ts") or 0)
+    return age >= PC_QUIET_MIN and (not last or (q.get("up") and now - last >= 3 * 3600) or now - last >= 86400)
+
+
+def quiet_embed(age: float) -> Dict:
+    how = f"{age / 60:.1f} 小時" if age >= 90 else f"{age:.0f} 分鐘"
+    if age >= 9000:
+        how = "很久"
+    return {"title": "☁️ 家裡電腦沒有動靜，雲端備援已接手", "url": SITE, "color": 0xD97706,
+            "description": (f"一句話看懂：家裡電腦上的機器人已經 {how}沒有觸發網站更新（平常每 20 分鐘一次），多半是關機、睡眠或斷網。\n"
+                            "・這段時間公開的警報改由雲端送：SEC 重大申報、台股重大訊息、央行公告、多家媒體同時報導、族群與個股大動、"
+                            "台指期夜盤、網站警示。會比平常晚幾分鐘到十幾分鐘。\n"
+                            "・和你的持股有關的通知（持股晚報、累積跌幅、盤中異常）雲端做不到：雲端沒有、也不該有你的持股資料，要等電腦回來。\n"
+                            "・電腦回來後會自動補一則「這段時間漏了什麼」。"),
+            "footer": {"text": "WallStreet Sentinel · 雲端備援"}}
 
 
 def watch_list() -> Dict[str, list]:
@@ -134,11 +243,16 @@ def plain(embed: Dict) -> str:
     return re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", str(embed.get("title") or "")).replace("*", "")[:190]
 
 
-async def post(sess: aiohttp.ClientSession, channel: str, embed: Dict) -> bool:
+async def post(sess: aiohttp.ClientSession, channel: str, embed: Dict, key: Union[str, List[str], None] = None) -> bool:
     """Send one message; True only when Discord accepted it.  Busy (429) or a server/network error is retried twice in the
-    same run — whatever still fails stays unmarked and goes out on the next run 3 minutes later."""
+    same run — whatever still fails stays unmarked and goes out on the next run 3 minutes later.
+    key: the alert's own key(s), carried on the title link so the other machine (home PC ↔ cloud) does not send it again."""
     if not channel:
         return False
+    if key:
+        embed = tag(embed, key)
+    if CLOUD:                                              # say who sent it: a message from the cloud means the PC did not
+        embed = {**embed, "footer": {"text": (str((embed.get("footer") or {}).get("text") or "WallStreet Sentinel") + " · ☁️ 雲端備援代送")[:2048]}}
     h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
     for attempt in range(3):
         wait = 2.0
@@ -153,14 +267,14 @@ async def post(sess: aiohttp.ClientSession, channel: str, embed: Dict) -> bool:
                     except Exception:  # noqa: BLE001
                         wait = 3.0
                 elif r.status < 500:                       # 400/401/403/404: retrying the same request cannot help
-                    log.warning("discord %s: HTTP %s %s", channel, r.status, (await r.text())[:200])
+                    log.warning("discord: HTTP %s %s", r.status, (await r.text())[:200])
                     return False
-                log.info("discord %s: HTTP %s, retry %d", channel, r.status, attempt + 1)
+                log.info("discord: HTTP %s, retry %d", r.status, attempt + 1)
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            log.info("discord %s: %s, retry %d", channel, type(e).__name__, attempt + 1)
+            log.info("discord: %s, retry %d", type(e).__name__, attempt + 1)
         if attempt < 2:
             await asyncio.sleep(wait)
-    log.warning("discord %s: not delivered after 3 tries (kept for the next run)", channel)
+    log.warning("discord: not delivered after 3 tries (kept for the next run)")
     return False
 
 
@@ -188,7 +302,10 @@ async def dm_channel(sess: aiohttp.ClientSession) -> Optional[str]:
     try:
         async with sess.post(f"{API}/users/@me/channels", headers=h, json={"recipient_id": owner_id()},
                              timeout=aiohttp.ClientTimeout(total=15)) as r:
-            return (await r.json()).get("id") if r.status < 300 else None
+            cid = (await r.json()).get("id") if r.status < 300 else None
+            if cid and CLOUD:                              # the cloud's log is public: keep the channel id out of it
+                print(f"::add-mask::{cid}", flush=True)
+            return cid
     except (aiohttp.ClientError, asyncio.TimeoutError) as e:   # no network: nothing is marked sent, the next run tries again
         log.info("dm channel: %s", type(e).__name__)
         return None
@@ -725,7 +842,12 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "ts": int(now), "skipped": []}
+         "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
+    pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
+    quiet: Dict = dict(mem.get("quiet") or {})
+    age = bot_age_min() if CLOUD else None
+    cold = CLOUD and not PUSHED.exists()                   # the cloud's very first run: remember what is there, send nothing
+    L: Dict = {"d": None, "fail": False}
 
     def save() -> None:
         """Written after every section, not only at the end: if Windows ends the run at its 2-minute limit, what was
@@ -733,7 +855,8 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "ts": S["ts"]}), encoding="utf-8")
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
     def left(name: str) -> bool:
@@ -753,13 +876,49 @@ async def run_once(now: Optional[float] = None) -> int:
     sent = 0
     async with aiohttp.ClientSession() as sess:
         dm = None
+
+        async def want(key: str, fam: str = "", private: bool = False) -> str:
+            """'go' = send it now · 'known' = it is already in Discord (the other machine sent it) · 'wait' = not yet.
+            The channel is read once per run, and only when there is something to send."""
+            nonlocal dm
+            if private:                                    # holdings-only messages exist on the home PC alone
+                return "wait" if CLOUD else "go"
+            if cold:
+                return "known"
+            if L["d"] is None and not L["fail"]:
+                if now < 1.7e9:                            # a test clock: never read the live channel
+                    L["d"] = {}
+                else:
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    L["d"] = await ledger(sess, chan or dm or "")
+                    L["fail"] = L["d"] is None
+            if L["fail"]:                                  # Discord unreadable: the PC sends as before, the cloud never sends blind
+                return "wait" if CLOUD else "go"
+            if key in L["d"]:
+                pend.pop(key, None)
+                return "known"
+            if CLOUD and now - pend.setdefault(key, now) < grace(fam, age):
+                return "wait"
+            return "go"
+
         nj = await news_json(sess)
         cbs = [x for x in nj.get("items") or [] if x.get("kind") == "cb" and "cb:" + x["u"] not in done]
         try:                                               # 離線補課：先講漏掉什麼，較新的再照常通知
-            if prev and now - prev >= CATCH_GAP:
-                late = [a for a in st.get("alerts") or [] if a["acc"] not in done and prev < a["ts"] and now - a["ts"] >= MAX_AGE
-                        and a.get("item") != "13D/A"]
-                late_cb = [x for x in cbs if prev < x["ts"] and now - x["ts"] >= MAX_AGE]
+            if not CLOUD and prev and now - prev >= CATCH_GAP:
+                late, late_cb = [], []
+                for a in st.get("alerts") or []:
+                    if a["acc"] not in done and prev < a["ts"] and now - a["ts"] >= MAX_AGE and a.get("item") != "13D/A":
+                        if await want(a["acc"], "sec") == "known":      # the cloud sent it while this PC was off
+                            done[a["acc"]] = now
+                        else:
+                            late.append(a)
+                for x in cbs:
+                    if prev < x["ts"] and now - x["ts"] >= MAX_AGE:
+                        if await want("cb:" + x["u"], "cb") == "known":
+                            done["cb:" + x["u"]] = now
+                        else:
+                            late_cb.append(x)
                 if late or late_cb or now - prev >= 3 * 3600:
                     if not chan:
                         dm = dm or await dm_channel(sess)
@@ -779,11 +938,16 @@ async def run_once(now: Optional[float] = None) -> int:
             if not left("sec"):
                 break
             try:
+                w = await want(a["acc"], "sec")
+                if w != "go":
+                    if w == "known":
+                        done[a["acc"]] = now
+                    continue
                 lines = await impact(sess, a["sym"], a["zh"])
                 e = embed_of(a, lines)
                 if not chan:                               # no alert channel set (same as the bot): everything goes to the DM
                     dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", e):
+                if await post(sess, chan or dm or "", e, a["acc"]):
                     done[a["acc"]] = now
                     sent += 1
                     note_lag("sec", a["ts"], time.time())
@@ -799,10 +963,15 @@ async def run_once(now: Optional[float] = None) -> int:
             for x in cbs if left("cb") else []:
                 if now - x["ts"] >= MAX_AGE or "cb:" + x["u"] in done:
                     continue
+                w = await want("cb:" + x["u"], "cb")
+                if w != "go":
+                    if w == "known":
+                        done["cb:" + x["u"]] = now
+                    continue
                 e = cb_embed(x, await market_now(sess, ["利率", "匯率", "美股", "黃金"], now))
                 if not chan:
                     dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", e):
+                if await post(sess, chan or dm or "", e, "cb:" + x["u"]):
                     done["cb:" + x["u"]] = now
                     sent += 1
                     note_lag("cb", x["ts"], time.time())
@@ -812,11 +981,15 @@ async def run_once(now: Optional[float] = None) -> int:
                             await post(sess, dm, e)
             a = await yen_jump(sess, now)
             if a and f'yen:{a["day"]}' not in done:
-                if not chan:
-                    dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", yen_embed(a, await market_now(sess, ["美股", "科技", "利率"], now))):
+                w = await want(f'yen:{a["day"]}', "yen")
+                if w == "known":
                     done[f'yen:{a["day"]}'] = now
-                    sent += 1
+                if w == "go":
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", yen_embed(a, await market_now(sess, ["美股", "科技", "利率"], now)), f'yen:{a["day"]}'):
+                        done[f'yen:{a["day"]}'] = now
+                        sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("central bank check failed: %s", e)
         save()
@@ -825,9 +998,14 @@ async def run_once(now: Optional[float] = None) -> int:
                 key = f'sector:{a["sym"]}:{a["day"]}:{a["lv"]}'
                 if key in done or (a["lv"] == 1 and f'sector:{a["sym"]}:{a["day"]}:2' in done):
                     continue
+                w = await want(key, "sector")
+                if w != "go":
+                    if w == "known":
+                        done[key] = now
+                    continue
                 if not chan:
                     dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", sector_embed(a)):
+                if await post(sess, chan or dm or "", sector_embed(a), key):
                     done[key] = now
                     sent += 1
                 await asyncio.sleep(1)
@@ -845,21 +1023,31 @@ async def run_once(now: Optional[float] = None) -> int:
                     key = f'stock:{a["day"]}:{a["sym"]}'
                     if key in done or n_day >= ST.DAY_CAP:
                         continue
+                    w = await want(key, "stock")
+                    if w != "go":
+                        if w == "known":
+                            done[key] = now
+                            n_day += 1
+                        continue
                     if not chan:
                         dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", stock_embed(a, await impact(sess, a["sym"], a["zh"]))):
+                    if await post(sess, chan or dm or "", stock_embed(a, await impact(sess, a["sym"], a["zh"])), key):
                         done[key] = now
                         n_day += 1
                         sent += 1
                         save()
                     await asyncio.sleep(1)
                 rest = [a for a in hits if f'stock:{a["day"]}:{a["sym"]}' not in done]
-                if rest and day and f"stockmany:{day}" not in done:
-                    if not chan:
-                        dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits))):
+                if rest and day and f"stockmany:{day}" not in done and (n_day >= ST.DAY_CAP or not CLOUD):
+                    w = await want(f"stockmany:{day}", "stock")
+                    if w == "known":
                         done[f"stockmany:{day}"] = now
-                        sent += 1
+                    if w == "go":
+                        if not chan:
+                            dm = dm or await dm_channel(sess)
+                        if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits)), f"stockmany:{day}"):
+                            done[f"stockmany:{day}"] = now
+                            sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("stock check failed: %s", e)
         save()
@@ -870,11 +1058,23 @@ async def run_once(now: Optional[float] = None) -> int:
                 for g in mo["groups"]:
                     if not left("mops"):
                         break
+                    private = g[0]["code"] in mo["priv"]
+                    go = []
+                    for x in g:
+                        w = await want("mops:" + x["key"], "mops", private)
+                        if w == "go":
+                            go.append(x)
+                        elif w == "known":
+                            mo["sent"][x["key"]] = now
+                            MR.save(mo["sent"], now)
+                    g = go
+                    if not g:
+                        continue
                     top = max(g, key=lambda x: (x["lv"], x["ts"]))
-                    private = top["code"] in mo["priv"]
                     if private or not chan:
                         dm = dm or await dm_channel(sess)
-                    if await post(sess, (dm if private else chan or dm) or "", mops_embed(g, await tw_impact(sess, top["code"], top["zh"], now))):
+                    if await post(sess, (dm if private else chan or dm) or "", mops_embed(g, await tw_impact(sess, top["code"], top["zh"], now)),
+                                  None if private else ["mops:" + x["key"] for x in g]):
                         for x in g:
                             mo["sent"][x["key"]] = now
                         MR.save(mo["sent"], now)
@@ -885,11 +1085,16 @@ async def run_once(now: Optional[float] = None) -> int:
             log.warning("Taiwan material news check failed: %s", e)
         try:                                               # 多家媒體同時報導（3 家以上）＋影響
             for b in burst_todo(nj.get("bursts") or [], bsent, now) if left("burst") else []:
+                w = await want("burst:" + b["key"], "burst")
+                if w != "go":
+                    if w == "known":
+                        bsent[b["key"]] = now
+                    continue
                 lines = (await impact(sess, b["sym"], b["label"].split("（")[0]) if b.get("kind") == "co" and b.get("sym")
                          else await market_now(sess, b.get("tags") or [], now))
                 if not chan:
                     dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", burst_embed(b, lines)):
+                if await post(sess, chan or dm or "", burst_embed(b, lines), "burst:" + b["key"]):
                     bsent[b["key"]] = now
                     sent += 1
                     save()
@@ -901,11 +1106,15 @@ async def run_once(now: Optional[float] = None) -> int:
             if a:
                 key = f'txnight:{a["day"]}:{a["lv"]}'
                 if key not in done and not (a["lv"] == 1 and f'txnight:{a["day"]}:2' in done):
-                    if not chan:
-                        dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", await tx_embed(sess, a)):
+                    w = await want(key, "txnight")
+                    if w == "known":
                         done[key] = now
-                        sent += 1
+                    if w == "go":
+                        if not chan:
+                            dm = dm or await dm_channel(sess)
+                        if await post(sess, chan or dm or "", await tx_embed(sess, a), key):
+                            done[key] = now
+                            sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("night futures check failed: %s", e)
         save()
@@ -916,33 +1125,55 @@ async def run_once(now: Optional[float] = None) -> int:
                 for a in cd.get("alerts") or []:
                     if a["key"] in done:
                         continue
+                    w = await want(a["key"], "cr")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
                     if not chan:
                         dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", country_embed(a, cd, await market_now(sess, ["匯率", "美股", "利率", "台股"], now))):
+                    if await post(sess, chan or dm or "", country_embed(a, cd, await market_now(sess, ["匯率", "美股", "利率", "台股"], now)), a["key"]):
                         done[a["key"]] = now
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
         try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
-            if now - S["site_ts"] >= SITE_EVERY and left("site"):
+            if CLOUD:                                      # no heartbeat file in the cloud: go by the bot's last site build
+                alive = age is None or age < BOT_QUIET_MIN
+            else:
                 from tools import sys_health as SH
-                S["site_ts"] = now
                 hb = SH.heartbeat_age(now)
                 alive = hb is not None and hb < SH.BOT_DOWN_S
-                xs = site_todo(await site_alerts_json(sess, now), site_seen, now, alive)
-                if xs:
-                    if not chan:
-                        dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", site_embed(xs, alive)):
-                        sent += 1
-                    else:
-                        for x in xs:                       # not delivered: forget them so the next look offers them again
-                            site_seen.pop(x["key"], None)
+            ok = left("site")
+            if ok and now - S["site_ts"] >= SITE_EVERY:
+                S["site_ts"] = now
+                S["hold"] += [{"x": x, "first": now} for x in site_todo(await site_alerts_json(sess, now), site_seen, now, alive)]
+            ready, keep = [], []
+            for h in S["hold"] if ok else []:
+                w = await want("site:" + h["x"]["key"], "site")
+                if w == "go":
+                    ready.append(h)
+                elif w == "wait":
+                    keep.append(h)
+            if ready:
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", site_embed([h["x"] for h in ready], alive), ["site:" + h["x"]["key"] for h in ready]):
+                    sent += 1
+                else:
+                    keep += ready                          # not delivered: offered again on the next run
+            if ok:
+                S["hold"] = keep
         except Exception as e:  # noqa: BLE001
             log.warning("site alert check failed: %s", e)
         save()
         try:                                               # 系統健康（A1）：每 10 分鐘看一次，有新問題才私訊擁有者
-            if now - float(health.get("ts") or 0) >= HEALTH_EVERY and left("health"):
+            if CLOUD and quiet_due(quiet, age, now):          # 雲端：家裡電腦超過 60 分鐘沒動靜，說一聲（一次停機一則）
+                dm = dm or await dm_channel(sess)
+                if dm and await post(sess, dm, quiet_embed(age)):
+                    quiet.update(ts=now, up=False)
+                    sent += 1
+            if not CLOUD and now - float(health.get("ts") or 0) >= HEALTH_EVERY and left("health"):
                 new, open_n = await health_check(now, nj, hsent)
                 health = {"ts": now, "sent": hsent}
                 if new:
@@ -956,7 +1187,7 @@ async def run_once(now: Optional[float] = None) -> int:
             log.warning("health check failed: %s", e)
         save()
         try:                                               # 持股晚報與累積跌幅：只私訊擁有者
-            if left("holdings"):
+            if not CLOUD and left("holdings"):
                 sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
@@ -968,10 +1199,15 @@ async def run_once(now: Optional[float] = None) -> int:
         pass
     if S["skipped"]:
         log.warning("out of time after %.0f s: %s left for the next run", time.monotonic() - t0, ", ".join(S["skipped"]))
-    log.info("SEC push: %d sent (%.0f s)", sent, time.monotonic() - t0)
+    log.info("SEC push: %d sent (%.0f s)%s", sent, time.monotonic() - t0,
+             f" · cloud, bot last seen {age:.0f} min ago, {len(pend)} waiting{', first run: remembered only' if cold else ''}"
+             if CLOUD and age is not None else (" · cloud" if CLOUD else ""))
     return sent
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, filename=str(DATA_DIR / "sec_push.log"), format="%(asctime)s %(levelname)s %(message)s")
+    if CLOUD:                                              # GitHub Actions: the log is the job's (public) output, no file
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s %(levelname)s %(message)s")
+    else:
+        logging.basicConfig(level=logging.INFO, filename=str(DATA_DIR / "sec_push.log"), format="%(asctime)s %(levelname)s %(message)s")
     asyncio.run(run_once())
