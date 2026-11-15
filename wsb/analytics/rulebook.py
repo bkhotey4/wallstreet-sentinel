@@ -207,6 +207,39 @@ def summarize(checks: List[Dict]) -> Dict:
 
 
 ORDER = {"exit2": 0, "exit1": 1, "trim": 2, "add": 3, "pend": 4, "hold": 5}
+ICON = {"exit2": "🔴", "exit1": "🟠", "trim": "🟡", "add": "🟢", "pend": "⏳", "hold": "⚪"}
+
+
+def state_file():
+    from ..config import DATA_DIR
+    return DATA_DIR / "rulebook_state.json"
+
+
+def save_state(res: Dict) -> None:
+    """A private copy of each holding's rule state (data_cache/, never published, never in the site build) so programs
+    outside the engine — the IPO radar — can say which of the user's own rules are met instead of typing prices."""
+    import json
+    import time
+    if not res.get("available"):
+        return
+    rows = [{"sym": r["sym"], "name": r.get("name"), "state": r["state"], "zh": r["zh"], "asof": r.get("asof")} for r in res["rows"]]
+    p = state_file()
+    try:
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"ts": time.time(), "asof": res.get("asof"), "rows": rows}, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(p)
+    except OSError:
+        pass
+
+
+def load_state() -> Dict[str, Dict]:
+    """{sym: {state, zh, asof}} from the last engine run; {} when there is none."""
+    import json
+    try:
+        d = json.loads(state_file().read_text(encoding="utf-8"))
+        return {r["sym"]: r for r in d.get("rows") or []}
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
 
 
 def build(eng) -> Dict:
@@ -260,4 +293,6 @@ def build(eng) -> Dict:
         rows.append({"sym": s, "name": p.get("name") or s, "weight": p.get("weight"), "pnl_pct": p.get("pnl_pct"),
                      "price": ps.get("price"), "asof": ps.get("asof"), "vol": ps.get("vol"), "checks": ch, **summarize(ch)})
     rows.sort(key=lambda r: (ORDER[r["state"]], -(r["weight"] or 0)))
-    return {"available": bool(rows), "asof": max((r["asof"] for r in rows if r["asof"]), default=None), "rows": rows, "ssi": ssi}
+    res = {"available": bool(rows), "asof": max((r["asof"] for r in rows if r["asof"]), default=None), "rows": rows, "ssi": ssi}
+    save_state(res)
+    return res
