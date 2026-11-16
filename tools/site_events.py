@@ -157,11 +157,11 @@ def sec_event_clock(eng) -> str:
     if not tiles:
         return ""
     note = T("震幅＝標普 500 在事件當天收盤對前一天收盤的漲跌幅絕對值，不分方向；CPI、非農在美東 8:30 開盤前公布，FOMC 在 14:00 公布，所以都看當天。"
-             "日期：聯準會會議日、FRED 官方發布日（含已排定日期）、四巫日按交易所規則推算；市值 5,000 億美元以上的公司財報讀網站的財報日曆（盤後以美東 16:05 計，實際以公司公告為準）。這是歷史上波動有多大的統計，不預測方向，也不是投資建議。",
+             f"日期：聯準會會議日、FRED 官方發布日（含已排定日期）、四巫日按交易所規則推算；市值 {EARN_FLOOR / 1e8:,.0f} 億美元以上的公司財報讀網站的財報日曆（盤後以美東 16:05 計，實際以公司公告為準）。這是歷史上波動有多大的統計，不預測方向，也不是投資建議。",
              "Absolute S&P 500 close-to-close move on the event day vs all days. Historical, not a forecast.")
     body = f'<div class="ecg">{tiles}</div><p class="note">{note}</p>'
     return card("重大事件倒數：下一個會讓市場晃的日子", "Countdown to the next market-moving events", body, "wide",
-                sub="聯準會、CPI、非農、四巫日、指數調整日，以及市值 5,000 億美元以上的公司財報")
+                sub=f"聯準會、CPI、非農、四巫日、指數調整日，以及市值 {EARN_FLOOR / 1e8:,.0f} 億美元以上的公司財報")
 
 
 CSS = (".ecg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}"

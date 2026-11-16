@@ -618,11 +618,11 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "indnote": ("每週產業筆記（雲端 AI）", "Weekly industry note", lambda e: (None, _feed_updated("site_indnote", "load_note")), 9),
     "refund": ("財政部再融資", "Treasury refunding", lambda e: (_ts(_stab_ts("refunding")), _stab_date("refunding")), 100),
     "funding": ("紐約聯準會 SOFR", "NY Fed SOFR", lambda e: (_ts(_stab_ts("sofr")), _stab_date("sofr")), 4),
-    "cftc": ("CFTC 持倉", "CFTC positions", lambda e: (_ts(_stab_ts("cftc")), _stab_date("cftc")), 10),
+    "cftc": ("CFTC 持倉", "CFTC positions", lambda e: (_ts(_stab_ts("cftc")), _stab_date("cftc")), 14),   # Tuesday data, released Friday; a federal holiday pushes it to Monday (11-03 data still newest on 11-16)
     "fund": ("SEC 財報（XBRL）", "SEC XBRL", lambda e: (_ts(_fund_ts()), _stab_date("ai")), 120),
     "ff49": ("產業歷史（Ken French，每月更新）", "Ken French industries", lambda e: (_ts(_bub_ts("ts_check")), _bub_end()), 75),
     "baa": ("穆迪公司債利差（FRED，每月）", "Moody's Baa−Aaa", lambda e: (_ts(_bub_ts("ts_check")), _bub_credit_month()), 75),
-    "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 10),
+    "cftc_eq": ("CFTC 股指期貨持倉（每週）", "CFTC equity futures", lambda e: (_ts(_bub_ts("ts_check")), _bub_cftc_date()), 14),   # same weekly CFTC schedule
     "nowcast": ("FRED CPI／PPI／PCE／ADP／初領／GDPNow", "FRED nowcast inputs", lambda e: (_ts(_ncd("ts")), _ncd_date()), 14),
     "rel": ("FRED 發布日程", "FRED release dates", lambda e: (_ts(_rel_ts()), None), 0),
     "ofr": ("OFR 金融壓力指數（每日）", "OFR FSI", lambda e: (_ts(_trm("ts_check")), _trm_date("fsi")), 7),
@@ -639,7 +639,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "china": ("FRED（OECD 中國貿易）＋IMF 世界經濟展望＋Yahoo 行情", "FRED / IMF WEO / Yahoo", lambda e: _china(), 5),
     "rulings": ("最高法院判決頁＋SEC／CFTC／司法部新聞稿", "Supreme Court + SEC / CFTC / DOJ releases", lambda e: _rulings(), 30),
     "xcal": ("紐約證交所規則＋證交所市場開休市日期", "NYSE rules + TWSE holiday schedule", lambda e: _xcal(), 30),
-    "corpfund": ("SEC 財報（債務到期表、股數、買回、增資文件）", "SEC filings (maturities, shares, buybacks)", lambda e: _corpfund(), 10),
+    "corpfund": ("SEC 財報（債務到期表、股數、買回、增資文件）", "SEC filings (maturities, shares, buybacks)", lambda e: _corpfund(), 130),   # quarterly filings: the period end is weeks old by design
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),

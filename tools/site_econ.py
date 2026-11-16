@@ -209,7 +209,18 @@ def sec_fomc(eng) -> str:
     for e in sorted(ev["events"], key=lambda x: x["date"]):
         if e["key"] == "fomc" and e["released"] and e.get("rows"):
             last_any = e
-    rate = _prim(last_any).get("a") if last_any else None
+    # 2026-11-16 backlog fix: the official target upper bound (FRED DFEDTARU) first — the calendar row behind `last_any`
+    # came from Nasdaq, which has blocked the build since 11-10, so it could be weeks old
+    rate, rate_src = None, ""
+    try:
+        from wsb.data.fedwatch import _last
+        rate, rate_d = _last(getattr(eng, "fred", None), "DFEDTARU")
+        if rate is not None:
+            rate_src = f"聯準會官方目標利率，{str(rate_d)[5:].replace('-', '/')}" if rate_d else "聯準會官方目標利率"
+    except Exception:  # noqa: BLE001
+        rate = None
+    if rate is None:
+        rate = _prim(last_any).get("a") if last_any else None
     if rate is None:                                 # outside the 7-day window → use the history stats' latest row
         lr = (stats.get("last") or [{}])[0].get("row") or {}
         rate = lr.get("a")
@@ -226,7 +237,8 @@ def sec_fomc(eng) -> str:
                      f'<div>{T("下次 FOMC 決議（美東 14:00）", "Next FOMC decision (14:00 ET)")}・{T("台北", "Taipei")} {esc(nx.get("tpe") or "—")}'
                      f'・<b>{T(f"還有 {dd} 天", f"in {dd} days")}</b>'
                      + (f' <span class="pill">{T("有經濟預測與點陣圖", "SEP + dot plot")}</span>' if nx.get("sep") else "") + "</div>"
-                     f'<div>{T("目前政策利率上限", "Current upper bound")} <b>{num(rate, 2)}%</b>　{exp}</div></div>')
+                     f'<div>{T("目前政策利率上限", "Current upper bound")} <b>{num(rate, 2)}%</b>'
+                     + (f' <span class="small muted">（{esc(rate_src)}）</span>' if rate_src else "") + f'　{exp}</div></div>')
     fwb = _fw_block(eng, _prim(nx).get("c") if nx else None, rate)
     parts.append(fwb or _fed_proxy(eng, rate))
     meets = [m for m in (getattr(ec, "fomc", None) or []) if m["date"] >= today][:8]
