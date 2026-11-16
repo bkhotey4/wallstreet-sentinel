@@ -132,3 +132,20 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def test_earnings_reaction_named():
+    from wsb.analytics import stock_shock as ST
+    cal = {"2026-11-17": {"rows": [{"sym": "NVDA", "time": "after"}, {"sym": "HD", "time": "pre"}]},
+           "2026-11-13": {"rows": [{"sym": "AMAT", "time": "after"}]}}
+    assert ST.earnings_note("NVDA", "2026-11-18", cal) == "11/17 收盤後公布財報"
+    assert ST.earnings_note("HD", "2026-11-17", cal) == "今天開盤前公布財報"
+    assert ST.earnings_note("NVDA", "2026-11-17", cal) is None          # the report comes after this session's close
+    assert ST.earnings_note("AMAT", "2026-11-16", cal) == "11/13 收盤後公布財報"   # over the weekend
+    s = ST.sentence({"zh": "輝達", "sym": "NVDA", "chg": -8.0, "z": -3.9, "earn": "11/17 收盤後公布財報", "news": []}, lambda t: "")
+    assert "財報後的反應" in s and "原因還不清楚" not in s
+
+
+if __name__ == "__main__":
+    test_earnings_reaction_named()
+    print("ok test_earnings_reaction_named")

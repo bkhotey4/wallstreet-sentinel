@@ -434,10 +434,20 @@ async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
             news = (await news_json(sess)).get("items") or []
         keys = {s: [k for k in [v[0]] + str(v[1] or "").split("|") if k] for s, v in SW.names_of(names, {}, syms).items()}
         hits = ST.check(q, sd, names, news, now, keys, mk)
+        cal = _earn_cal() if mk == "us" else {}
         for a in hits:
             a["day"] = datetime.fromtimestamp(float(a["t"]), ZoneInfo(tz)).date().isoformat()
+            a["earn"] = ST.earnings_note(a["sym"], a["day"], cal)
         out += hits
     return out
+
+
+def _earn_cal() -> Dict:
+    """The site's earnings calendar cache (data_cache/earn_days.json): {US date: {rows: [{sym, time}]}}."""
+    try:
+        return json.loads((DATA_DIR / "earn_days.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
 
 
 async def stock_tw_impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:

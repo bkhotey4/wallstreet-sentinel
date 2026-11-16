@@ -78,13 +78,41 @@ def split(hits: List[Dict], cap: int = DAY_CAP) -> tuple:
     return hits[:cap], hits[cap:]
 
 
+def earnings_note(sym: str, day: str, cal: Dict) -> Optional[str]:
+    """'昨天收盤後公布財報' / '今天開盤前公布財報' when the move's trading day is the reaction day to its own report
+    (2026-11-16: earnings days were the main 'big move, no headline' case; NVIDIA reports 11/17 after the close)."""
+    from datetime import date, timedelta
+    try:
+        d = date.fromisoformat(day)
+    except ValueError:
+        return None
+
+    def row(x: date) -> Optional[Dict]:
+        v = cal.get(x.isoformat()) or {}
+        return next((r for r in (v.get("rows") if isinstance(v, dict) else None) or [] if r.get("sym") == sym), None)
+    r = row(d)
+    if r and r.get("time") != "after":
+        return "今天開盤前公布財報" if r.get("time") == "pre" else "今天公布財報"
+    for back in range(1, 5):                                   # the previous trading day (skip a weekend / holiday)
+        p = d - timedelta(days=back)
+        r = row(p)
+        if r:
+            return f"{p.month}/{p.day} 收盤後公布財報" if r.get("time") in ("after", None, "") else None
+        if p.weekday() < 5:
+            break
+    return None
+
+
 def sentence(a: Dict, tz_hhmm) -> str:
-    """One plain line: what moved, how unusual, and the same-hours headlines that name it (or that none were found)."""
+    """One plain line: what moved, how unusual, the earnings report it reacts to (if any), and the same-hours headlines that
+    name it (or that none were found)."""
     s = f'{a["zh"]}（{a["sym"]}）{a["chg"]:+.1f}%，是它平常一天的 {abs(a["z"]):.1f} 倍'
+    if a.get("earn"):
+        s += f'。{a["earn"]}，這是財報後的反應'
     hs = a.get("news") or []
     if hs:
         s += "。同時段提到它的新聞：" + "、".join(f'〈{h["t"][:70]}〉（{tz_hhmm(h["ts"])}）' for h in hs)
-    else:
+    elif not a.get("earn"):
         s += "。找不到對得上的新聞，原因還不清楚"
     return s
 
