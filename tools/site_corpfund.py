@@ -123,12 +123,17 @@ def sec_share_supply(eng) -> str:
         return ""
     if not any(r.get("chg") is not None for r in rows):      # the SEC parser (v4) has not re-read the filings yet
         return ""
+    odd = sorted((r for r in rows if r.get("chg") is not None and abs(r["chg"]) > 1.0), key=lambda r: -abs(r["chg"]))
+    rows = [r for r in rows if r not in odd]                  # >100 % in a year: an IPO year, a share-class conversion or a stock deal
     up = sorted((r for r in rows if r.get("chg") is not None and r["chg"] > 0.02), key=lambda r: -r["chg"])
     down = sorted((r for r in rows if r.get("chg") is not None and r["chg"] < -0.01), key=lambda r: r["chg"])
     offers = [r for r in rows if r.get("offers")]
     lead = ("股數一年增加最多（舊股東被稀釋）：" + ("、".join(f"{esc(r['zh'])} {_pc(r['chg'], 1, True)}" for r in up[:5]) or "沒有超過 2% 的")
             + "；減少最多（公司買回自家股票）：" + ("、".join(f"{esc(r['zh'])} {_pc(r['chg'], 1, True)}" for r in down[:5]) or "沒有")
-            + f"。最近 180 天有 {len(offers)} 家向 SEC 申報增資或發債的文件。")
+            + "。" + (f"最近 180 天有 {len(offers)} 家向 SEC 申報增資或發債的文件。" if any("offer" in (cache.get(r["sym"]) or {}) for r in rows) else ""))
+    odd_txt = ("<p class='small muted'>股數一年變化超過一倍、沒有列進上面排名的："
+               + "、".join(f"{esc(r['zh'])} {_pc(r['chg'], 0, True)}" for r in odd[:8])
+               + "。這種幅度多半是上市未滿一年、不同股票類別互相轉換或用股票併購，不是一般的增資稀釋，請看公司公告。</p>") if odd else ""
 
     def tr(r: Dict) -> str:
         last = r["offers"][0] if r.get("offers") else None
@@ -150,7 +155,7 @@ def sec_share_supply(eng) -> str:
     note = ("股數用最近一季的稀釋後加權平均股數，和同一份財報裡重新表達的去年同期比（股票分割會回溯調整，所以分割不會被算成稀釋）；買回與發行新股取自現金流量表（近 12 個月）。"
             "文件清單來自 SEC 申報索引：S-3／S-3ASR 是先登記、之後可分批發行（股票或債券），424B 是每次實際發行時的補充說明，"
             "不一定是賣股票，可能是發債；點連結看原文。併購用股票付款、上市未滿一年、或不同股票類別互相轉換（例如 B 股轉成 A 股）也會讓股數一次大增，請對照公司公告。")
-    body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p><p>{chain}</p>'
+    body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p><p>{chain}</p>{odd_txt}'
             f'<details><summary>股數變化最大、最近有申報的公司</summary><div class="scroll"><table class="mini srt"><thead>{head}</thead>'
             f'<tbody>{"".join(tr(r) for r in show)}</tbody></table></div></details><p class="note">{note}</p>')
     return card("股票供給：誰在買回、誰在發新股", "Share supply: buybacks vs new shares", body, "wide",

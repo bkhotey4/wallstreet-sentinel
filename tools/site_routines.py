@@ -65,13 +65,16 @@ def _stamp(name: str, d: Dict) -> Optional[float]:
 
 
 def weekday_hours(t0: float, t1: float) -> float:
-    """Hours between t0 and t1 not counting the US weekend as seen from Taipei (Sat 08:00 → Mon 08:00)."""
+    """Hours between t0 and t1 not counting the US weekend or NYSE holidays as seen from Taipei (Sat 08:00 → Mon 08:00;
+    a holiday likewise runs 08:00 → 08:00).  Holidays from the shared calendar (wsb/data/exchange_cal.py, 2026-11-16)."""
+    from wsb.data.exchange_cal import us_holidays
     total, cur = 0.0, datetime.fromtimestamp(t0, TPE)
     end = datetime.fromtimestamp(t1, TPE)
+    hol = us_holidays(cur.year - 1, end.year)
     while cur < end:
         nxt = min(end, cur.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
         shifted = cur - timedelta(hours=8)            # Sat 08:00 Taipei → Sat 00:00 on the shifted clock
-        if shifted.weekday() < 5:
+        if shifted.weekday() < 5 and shifted.date().isoformat() not in hol:
             total += (nxt - cur).total_seconds() / 3600
         cur = nxt
     return total

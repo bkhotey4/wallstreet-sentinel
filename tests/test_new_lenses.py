@@ -128,6 +128,17 @@ def test_korea():
     assert (v["exp"], v["yoy"], v["chip"], v["day_yoy"]) == (335.0, 111.9, 166.0, 97.7)
     assert KE.parse_detail("수출은 158억달러로 전년동기대비 3.2% 감소")["yoy"] == -3.2
     assert KE.released("2026-11-10") == date(2026, 11, 11) and KE.released("2026-12-M") == date(2027, 1, 1)
+    att = ("<p>수출현황</p><p>ㅇ (주요품목) 전년동기대비 반도체 (331.2%) , 석유제품 (100.7%) 등 증가, 승용차 (△4.3%) 등 감소 "
+           "- 반도체 수출 비중은 49.7%로 25.3%p 증가 ㅇ (주요국가) 중국 (148.0%) , 미국 (163.6%) , 대만 (182.5%) , 일본 (△2.0%) 등</p>")
+    a = KE.parse_att(att)
+    assert a["chip_yoy"] == 331.2 and a["chip_share"] == 49.7 and a["ctry"] == {"中國": 148.0, "美國": 163.6, "台灣": 182.5, "日本": -2.0}
+    import io, zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("Contents/section0.xml", att)
+    assert "주요품목" in KE.read_hwpx(buf.getvalue())
+    v2 = KE.view({"rel": {"2026-11-10": {"exp": 335.0, "chip_share": 49.7}}})
+    assert abs(v2["rows"][0]["chip"] - 335.0 * 0.497) < 1e-9
     vw = {"rows": [{"key": "2026-11-10", "exp": 335.0}]}
     assert KE.alerts(vw, date(2026, 11, 12)) and not KE.alerts(vw, date(2026, 11, 16))
 

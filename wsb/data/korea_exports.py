@@ -78,6 +78,38 @@ def parse_detail(page: str) -> Dict:
     return out
 
 
+ATT = re.compile(r'nttFileDownload\.do\?fileKey=([0-9a-f]+)"\s+title="[^"]*\.hwpx')
+CTRY_ZH = {"중국": "中國", "미국": "美國", "베트남": "越南", "대만": "台灣", "일본": "日本", "홍콩": "香港", "EU": "歐盟", "유럽연합": "歐盟", "인도": "印度", "중동": "中東", "아세안": "東協"}
+
+
+def parse_att(xml_text: str) -> Dict:
+    """The release's own attachment (HWPX = a zip of XML; only its text is read): chip exports' year-on-year change,
+    chips' share of exports, and exports by main destination."""
+    s = re.sub(r"\s+", " ", _html.unescape(re.sub(r"<[^>]+>", " ", xml_text)))
+    out: Dict = {}
+    i = s.find("수출현황")
+    seg = s[i:] if i >= 0 else s
+    m = re.search(r"\(주요품목\)\s*전년동[기월]대비\s*반도체\s*\(\s*(△?)\s*([\d\.]+)\s*%\s*\)", seg)
+    if m:
+        out["chip_yoy"] = float(m.group(2)) * (-1 if m.group(1) else 1)
+    m = re.search(r"반도체\s*수출\s*비중은\s*([\d\.]+)\s*%", seg)
+    if m:
+        out["chip_share"] = float(m.group(1))
+    m = re.search(r"\(주요국가\)(.{0,300}?)등", seg)
+    if m:
+        out["ctry"] = {CTRY_ZH.get(k.strip(), k.strip()): float(v) * (-1 if neg else 1)
+                       for k, neg, v in re.findall(r"([가-힣A-Z]{1,6})\s*\(\s*(△?)\s*([\d\.]+)\s*%\s*\)", m.group(1))}
+    return out
+
+
+def read_hwpx(blob: bytes) -> str:
+    import io
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(blob)) as z:
+        parts = [n for n in z.namelist() if n.startswith("Contents/section") and n.endswith(".xml")]
+        return " ".join(z.read(n)[:3_000_000].decode("utf-8", "ignore") for n in parts[:4])
+
+
 def prior_key(k: str) -> str:
     return f"{int(k[:4]) - 1:04d}{k[4:]}"
 
@@ -90,6 +122,8 @@ def view(d: Optional[Dict] = None) -> Dict:
     for k in sorted(rel, key=lambda x: (x[:7], x[8:] if x[8:] != "M" else "99"), reverse=True):
         r = dict(rel[k], key=k)
         p = rel.get(prior_key(k)) or {}
+        if not r.get("chip") and r.get("chip_share") and r.get("exp"):
+            r["chip"] = r["exp"] * r["chip_share"] / 100              # the attachment gives the share, not the amount
         if r.get("chip_yoy") is None and r.get("chip") and p.get("chip"):
             r["chip_yoy"], r["chip_yoy_calc"] = (r["chip"] / p["chip"] - 1) * 100, True
         rows.append(r)
@@ -120,14 +154,31 @@ async def refresh(force: bool = False, pages: int = 3, per_run: int = 30) -> Dic
         except Exception as e:  # noqa: BLE001
             bad.append(f"list {p}: {e if str(e) else type(e).__name__}")
             break
-    todo = [x for x in items if x["key"] not in rel][:per_run]
+    known = {x["key"]: x for x in items}
+    for k, r in rel.items():                                   # releases read before the attachment was used
+        known.setdefault(k, {"key": k, "id": r.get("id"), "u": r.get("u"), "title": r.get("title"), "kind": r.get("kind")})
+    todo = [x for x in known.values() if x.get("id") and (x["key"] not in rel or "att" not in rel[x["key"]])]
+    todo = sorted(todo, key=lambda x: x["key"], reverse=True)[:per_run]
     for x in todo:
         try:
             page = await http.post(f"{BASE}/selectNttInfo.do", data={"mi": "2891", "bbsId": "1362", "nttSn": x["id"], "nttSnUrl": x["u"]},
                                    kind="text", headers=HDR, timeout=40, retries=1)
             v = parse_detail(page)
-            if v.get("exp") is not None:
-                rel[x["key"]] = dict(v, title=x["title"], kind=x["kind"], id=x["id"], u=x["u"], seen=now)
+            if v.get("exp") is None:
+                continue
+            att = {}
+            m = ATT.search(page)
+            if m:
+                try:
+                    blob = await http.get(f"https://www.customs.go.kr/common/nttFileDownload.do?fileKey={m.group(1)}", kind="bytes",
+                                          headers=HDR, timeout=60, retries=1)
+                    if len(blob) < 20_000_000:
+                        att = parse_att(read_hwpx(blob))
+                except Exception as e:  # noqa: BLE001
+                    log.info("korea attachment %s: %s", x["key"], e)
+            old = rel.get(x["key"]) or {}
+            rel[x["key"]] = dict(v, **{k2: v2 for k2, v2 in att.items() if v.get(k2) is None}, att=bool(att), title=x["title"],
+                                 kind=x["kind"], id=x["id"], u=x["u"], seen=old.get("seen") or now)
         except Exception as e:  # noqa: BLE001
             bad.append(f"{x['key']}: {e if str(e) else type(e).__name__}")
     d["rel"] = rel
