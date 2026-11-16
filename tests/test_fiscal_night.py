@@ -154,6 +154,9 @@ def test_push_is_silent_at_night_unless_red():
         Q.is_night = lambda ts=None, win=None: False
         asyncio.run(P.post(s, "1", {"title": "🟠 族群急跌：記憶體 -4%"}))
         assert "flags" not in s.bodies[2]                                                    # daytime: everything rings
+        Q.is_night = lambda ts=None, win=None: True
+        asyncio.run(P.post(s, "1", {"title": "📊 財報出爐：輝達（NVDA）", "loud": True}))
+        assert "flags" not in s.bodies[3] and "loud" not in s.bodies[3]["embeds"][0]          # the user's own earnings: rings at night
         assert P.embed_of({"t": "SEC 申報：X 董事任命", "url": "u", "ts": 0, "item": "5.02"}, [])["title"].startswith("🟠")
     finally:
         Q.is_night, P.CLOUD, Q.LOG = real

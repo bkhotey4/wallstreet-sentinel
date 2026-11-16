@@ -260,9 +260,11 @@ async def post(sess: aiohttp.ClientSession, channel: str, embed: Dict, key: Unio
     if CLOUD:                                              # say who sent it: a message from the cloud means the PC did not
         embed = {**embed, "footer": {"text": (str((embed.get("footer") or {}).get("text") or "WallStreet Sentinel") + " · ☁️ 雲端備援代送")[:2048]}}
     h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
+    loud = bool(embed.get("loud"))                         # 使用者指定一定要響的（2026-11-16：持股財報出爐）
+    embed = {k: v for k, v in embed.items() if k != "loud"}
     body = {"content": plain(embed), "embeds": [embed]}
     from wsb import quiet as Q
-    hush = Q.silent(str(embed.get("title") or ""))         # 夜間分級：不是 🔴／🚨 的照樣即時送，但不讓手機響
+    hush = not loud and Q.silent(str(embed.get("title") or ""))   # 夜間分級：不是 🔴／🚨 的照樣即時送，但不讓手機響
     if hush:
         body["flags"] = Q.SILENT_FLAG
     for attempt in range(3):
