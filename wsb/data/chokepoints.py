@@ -87,10 +87,13 @@ def parse_gscpi(raw: bytes) -> Dict[str, float]:
     return out
 
 
-async def refresh(force: bool = False) -> Dict:
+async def refresh(force: bool = False, budget_s: float = 140) -> Dict:
+    """2026-11-16 backlog fix: a time budget below the build's 180-second timeout, so ports fetched before a slow one are
+    kept (the file used to be written only at the end, and a timeout threw everything away)."""
     from .freshness import bundle_ts, due
     d = load()
     now = time.time()
+    t0 = time.monotonic()
     d["ts_check"] = now
     keys = ["ports", "gscpi"]
     todo = due(d, keys, TTL, now, force)
@@ -101,7 +104,12 @@ async def refresh(force: bool = False) -> Dict:
         d["try_each"]["ports"] = now
         ports = d.get("ports") or {}
         pbad = []
+        cut = False
         for pid, *_ in PORTS:
+            if time.monotonic() - t0 > budget_s:
+                cut = True
+                pbad.append(f"{pid}: out of time")
+                continue
             old = ports.get(pid) or {}
             since = START if len(old) < 365 else (date.fromisoformat(max(old)) - timedelta(days=30)).isoformat()
             try:
@@ -112,9 +120,11 @@ async def refresh(force: bool = False) -> Dict:
             except Exception as e:  # noqa: BLE001
                 pbad.append(f"{pid}: {e if str(e) else type(e).__name__}")
         if len(pbad) < len(PORTS):
-            d["ports"], d["ts_each"]["ports"] = ports, now
+            d["ports"] = ports
+            if not cut:                                     # all ports read: fresh; otherwise the next build reads the rest
+                d["ts_each"]["ports"] = now
         bad += pbad
-    if "gscpi" in todo:
+    if "gscpi" in todo and time.monotonic() - t0 <= budget_s:
         d["try_each"]["gscpi"] = now
         try:
             g = parse_gscpi(await http.get(GSCPI, kind="bytes", headers={"User-Agent": "Mozilla/5.0"}, timeout=60, retries=1))
