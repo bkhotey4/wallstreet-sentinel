@@ -137,7 +137,7 @@ def load() -> Dict:
         return {}
 
 
-async def refresh(force: bool = False, pages: int = 3, per_run: int = 30) -> Dict:
+async def refresh(force: bool = False, pages: int = 3, per_run: int = 10) -> Dict:
     d = load()
     now = time.time()
     if not force and now - float(d.get("ts_try", 0)) < TTL:
