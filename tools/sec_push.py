@@ -1349,6 +1349,62 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("fiscal check failed: %s", e)
+        try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
+            if CLOUD:                                      # no heartbeat file in the cloud: go by the bot's last site build
+                alive = age is None or age < BOT_QUIET_MIN
+            else:
+                from tools import sys_health as SH
+                hb = SH.heartbeat_age(now)
+                alive = hb is not None and hb < SH.BOT_DOWN_S
+            ok = left("site")
+            if ok and now - S["site_ts"] >= SITE_EVERY:
+                S["site_ts"] = now
+                S["hold"] += [{"x": x, "first": now} for x in site_todo(await site_alerts_json(sess, now), site_seen, now, alive)]
+            ready, keep = [], []
+            for h in S["hold"] if ok else []:
+                w = await want("site:" + h["x"]["key"], "site")
+                if w == "go":
+                    ready.append(h)
+                elif w == "wait":
+                    keep.append(h)
+            if ready:
+                if not chan:
+                    dm = dm or await dm_channel(sess)
+                if await post(sess, chan or dm or "", site_embed([h["x"] for h in ready], alive), ["site:" + h["x"]["key"] for h in ready]):
+                    sent += 1
+                else:
+                    keep += ready                          # not delivered: offered again on the next run
+            if ok:
+                S["hold"] = keep
+        except Exception as e:  # noqa: BLE001
+            log.warning("site alert check failed: %s", e)
+        save()
+        try:                                               # 系統健康（A1）：每 10 分鐘看一次，有新問題才私訊擁有者
+            if CLOUD and quiet_due(quiet, age, now):          # 雲端：家裡電腦超過 60 分鐘沒動靜，說一聲（一次停機一則）
+                dm = dm or await dm_channel(sess)
+                if dm and await post(sess, dm, quiet_embed(age)):
+                    quiet.update(ts=now, up=False)
+                    sent += 1
+            if not CLOUD and now - float(health.get("ts") or 0) >= HEALTH_EVERY and left("health"):
+                new, open_n = await health_check(now, nj, hsent)
+                health = {"ts": now, "sent": hsent}
+                if new:
+                    from tools import sys_health as SH
+                    dm = dm or await dm_channel(sess)
+                    if dm and await post(sess, dm, SH.embed(new, open_n)):
+                        sent += 1
+                        for i in new:
+                            hsent[i["key"]] = now
+        except Exception as e:  # noqa: BLE001
+            log.warning("health check failed: %s", e)
+        save()
+        try:                                               # 持股晚報與累積跌幅：只私訊擁有者
+            if not CLOUD and left("holdings"):
+                sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
+        except Exception as e:  # noqa: BLE001
+            log.warning("holdings watch failed: %s", e)
+        # 2026-11-16: the slow, low-urgency official-data checks run last, so a slow SEC / Yahoo day never pushes
+        # Taiwan material news, bursts, night futures or the holdings messages to the next run
         try:                                               # 被迫進出的錢（指數調整日前一天、標普趨勢翻轉、波動控制比重驟降）
             if now - S["ff_ts"] >= FORCED_EVERY and now > 1.7e9 and left("forced"):
                 from wsb.data import forced_flows as FF
@@ -1449,60 +1505,6 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("earnings-soon check failed: %s", e)
-        try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
-            if CLOUD:                                      # no heartbeat file in the cloud: go by the bot's last site build
-                alive = age is None or age < BOT_QUIET_MIN
-            else:
-                from tools import sys_health as SH
-                hb = SH.heartbeat_age(now)
-                alive = hb is not None and hb < SH.BOT_DOWN_S
-            ok = left("site")
-            if ok and now - S["site_ts"] >= SITE_EVERY:
-                S["site_ts"] = now
-                S["hold"] += [{"x": x, "first": now} for x in site_todo(await site_alerts_json(sess, now), site_seen, now, alive)]
-            ready, keep = [], []
-            for h in S["hold"] if ok else []:
-                w = await want("site:" + h["x"]["key"], "site")
-                if w == "go":
-                    ready.append(h)
-                elif w == "wait":
-                    keep.append(h)
-            if ready:
-                if not chan:
-                    dm = dm or await dm_channel(sess)
-                if await post(sess, chan or dm or "", site_embed([h["x"] for h in ready], alive), ["site:" + h["x"]["key"] for h in ready]):
-                    sent += 1
-                else:
-                    keep += ready                          # not delivered: offered again on the next run
-            if ok:
-                S["hold"] = keep
-        except Exception as e:  # noqa: BLE001
-            log.warning("site alert check failed: %s", e)
-        save()
-        try:                                               # 系統健康（A1）：每 10 分鐘看一次，有新問題才私訊擁有者
-            if CLOUD and quiet_due(quiet, age, now):          # 雲端：家裡電腦超過 60 分鐘沒動靜，說一聲（一次停機一則）
-                dm = dm or await dm_channel(sess)
-                if dm and await post(sess, dm, quiet_embed(age)):
-                    quiet.update(ts=now, up=False)
-                    sent += 1
-            if not CLOUD and now - float(health.get("ts") or 0) >= HEALTH_EVERY and left("health"):
-                new, open_n = await health_check(now, nj, hsent)
-                health = {"ts": now, "sent": hsent}
-                if new:
-                    from tools import sys_health as SH
-                    dm = dm or await dm_channel(sess)
-                    if dm and await post(sess, dm, SH.embed(new, open_n)):
-                        sent += 1
-                        for i in new:
-                            hsent[i["key"]] = now
-        except Exception as e:  # noqa: BLE001
-            log.warning("health check failed: %s", e)
-        save()
-        try:                                               # 持股晚報與累積跌幅：只私訊擁有者
-            if not CLOUD and left("holdings"):
-                sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
-        except Exception as e:  # noqa: BLE001
-            log.warning("holdings watch failed: %s", e)
     save()
     try:
         s = await http.session()
