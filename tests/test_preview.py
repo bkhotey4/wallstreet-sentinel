@@ -74,3 +74,20 @@ def test_live_card_must_show_big_reports():
 if __name__ == "__main__":
     test_live_card_must_show_big_reports()
     print("ok test_live_card_must_show_big_reports")
+
+
+def test_after_card_keeps_mega_caps():
+    from tools import site_after as A
+    from tools import sys_health as H
+    fake = [{"sym": f"S{i}", "date": "2026-11-19", "mcap_b": 30, "one": "x"} for i in range(6)] + [{"sym": "NVDA", "date": "2026-11-17", "mcap_b": 4000, "one": "x"}]
+    fake = sorted(fake, key=lambda x: (x["date"], x["mcap_b"]), reverse=True)
+    assert [x["sym"] for x in A.shown(fake, 6)][:2] == ["NVDA", "S0"] and len(A.shown(fake, 6)) == 6
+    old = [{"sym": "OLD", "date": "2026-11-01", "mcap_b": 4000, "one": "x"}] + fake
+    assert "OLD" not in [x["sym"] for x in A.shown(sorted(old, key=lambda x: x["date"], reverse=True), 6)]   # pinned 7 days only
+    html = '<section><h2>財報後白話解讀（美股）</h2><p>S0 S1</p></section><section>'
+    assert [i["key"] for i in H.after_issues(html, fake, "2026-11-19")] == ["shown_after:NVDA"]
+
+
+if __name__ == "__main__":
+    test_after_card_keeps_mega_caps()
+    print("ok test_after_card_keeps_mega_caps")

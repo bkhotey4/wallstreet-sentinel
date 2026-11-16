@@ -276,6 +276,26 @@ def shown_issues(html: str, feed: Dict, days: Dict, today: str) -> List[Dict]:
                      + " 有前瞻資料，但線上卡片上看不到（可能被排序或筆數上限擠掉）。"}]
 
 
+AFTER_CARD = "財報後白話解讀（美股）"
+
+
+def after_issues(html: str, reads: List[Dict], today: str, days: int = 5, floor_b: float = 300.0) -> List[Dict]:
+    """Every US company worth ≥ $300B whose post-earnings read exists (reported in the last few days) must be on the live card."""
+    from datetime import date, timedelta
+    cut = (date.fromisoformat(today) - timedelta(days=days)).isoformat()
+    want = {str(x["sym"]).upper(): x for x in reads if isinstance(x, dict) and x.get("sym") and x.get("one")
+            and (x.get("mk") or "us") == "us" and float(x.get("mcap_b") or 0) >= floor_b and str(x.get("date") or "") >= cut}
+    if not want:
+        return []
+    txt = card_text(html, AFTER_CARD)
+    lost = [x for s_, x in want.items() if s_ not in txt]
+    if not lost:
+        return []
+    return [{"key": "shown_after:" + ",".join(str(x["sym"]) for x in lost[:5]), "urgent": False,
+             "text": "**網站自我檢查**：" + "、".join(f"{x.get('name') or x['sym']}（{str(x['date'])[5:].replace('-', '/')}）" for x in lost[:5])
+                     + " 的財報後解讀已經寫好，但線上「財報後白話解讀（美股）」卡上看不到。"}]
+
+
 async def site_shown(now: float) -> List[Dict]:
     """Once an hour: fetch the live page and the preview feed, run shown_issues."""
     import aiohttp
@@ -293,13 +313,19 @@ async def site_shown(now: float) -> List[Dict]:
                 feed = json.loads(await r.text()) if r.status == 200 else {}
             async with s.get(SITE, params={"v": str(int(now))}, timeout=aiohttp.ClientTimeout(total=60)) as r:
                 html = await r.text() if r.status == 200 else ""
+            reads = []
+            for f in ("earn_after.json", "earn_after_more.json", "earn_after_rest.json"):
+                async with s.get(PREVIEW_RAW.replace("earn_preview.json", f), timeout=aiohttp.ClientTimeout(total=20)) as r:
+                    if r.status == 200:
+                        js = json.loads(await r.text())
+                        reads += js.get("items") if isinstance(js, dict) else (js or [])
     except Exception:  # noqa: BLE001
         return st.get("issues") or []
     if not html or not feed:
         return st.get("issues") or []
     from datetime import datetime, timedelta, timezone
     today = (datetime.fromtimestamp(now, timezone.utc) - timedelta(hours=5)).date().isoformat()
-    issues = shown_issues(html, feed, days, today)
+    issues = shown_issues(html, feed, days, today) + after_issues(html, reads, today)
     st_f.write_text(json.dumps({"ts": now, "issues": issues}, ensure_ascii=False), encoding="utf-8")
     return issues
 

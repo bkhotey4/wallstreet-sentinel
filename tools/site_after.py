@@ -97,6 +97,24 @@ def _items(tech_only: bool = False) -> List[Dict]:
     return sorted(items, key=lambda x: (str(x["date"]), float(x.get("mcap_b") or 0)), reverse=True)
 
 
+PIN_B, PIN_DAYS = 300.0, 7
+
+
+def shown(items: List[Dict], n: int) -> List[Dict]:
+    """What the card lists: companies worth ≥ $300B that reported in the last 7 days stay on top (2026-11-16: newest-first with a
+    cap of 6 would push NVIDIA's read off the card two days after its report), then the newest of the rest up to n."""
+    from datetime import date, timedelta
+    if not items:
+        return []
+    try:
+        cut = (date.fromisoformat(str(items[0]["date"])[:10]) - timedelta(days=PIN_DAYS)).isoformat()
+    except ValueError:
+        return items[:n]
+    pin = [x for x in items if float(x.get("mcap_b") or 0) >= PIN_B and str(x["date"]) >= cut]
+    rest = [x for x in items if x not in pin]
+    return pin + rest[:max(0, n - len(pin))] if len(pin) < n else pin + rest[:2]
+
+
 def _card(items: List[Dict], title: str, en: str, n: int) -> str:
     if not items:
         return ""
@@ -110,7 +128,7 @@ def _card(items: List[Dict], title: str, en: str, n: int) -> str:
             "以及當時的總經、利率、信用環境。股價反應只用時間對得上的新聞解釋。這是解讀，不是投資建議。")
     body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>'
             + (f'<p class="small"><b>大環境：</b>{_esc(bg)}</p>' if bg else "")
-            + "".join(_item(x) for x in items[:n])
+            + "".join(_item(x) for x in shown(items, n))
             + f'<p class="note">{note}{"　更新 " + _esc(d.get("updated")) if d.get("updated") else ""}</p>')
     return card(title, en, body, "wide")
 
