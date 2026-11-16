@@ -25,7 +25,7 @@ TTL = 7 * 86400
 ET = ZoneInfo("America/New_York")
 RELEASES = {"cpi": 10, "nfp": 50}
 EVENTS = (("fomc", "FOMC 利率決議", "FOMC decision", (14, 0)), ("cpi", "CPI 消費者物價", "CPI", (8, 30)),
-          ("nfp", "非農就業（NFP）", "Jobs report", (8, 30)), ("opex", "四巫日（季度選擇權／期貨到期）", "Quad witching", (16, 0)))
+          ("nfp", "非農就業（NFP）", "Jobs report", (8, 30)), ("opex", "四巫日＋標普 500 季度調整", "Quad witching + S&P 500 rebalance", (16, 0)))
 
 
 def load() -> Dict:

@@ -2,7 +2,7 @@
 標普 500 在這些日子的收盤對收盤平均漲跌幅（不分方向），和平常的日子比。"""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from tools.sitekit import T, card
@@ -74,6 +74,43 @@ def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_
     return out
 
 
+def index_events(now: datetime, days: int = 14) -> list:
+    """Index rebalance days from 被迫進出的錢 (rule-derived, checked against past closing volume) in the next `days` days.
+    MSCI / Taiwan 50 trade at the Taiwan close (13:30 Taipei); S&P / Russell at the New York close.  The S&P rebalance shares
+    its day with quad witching, which this card already shows, so it is folded into that tile instead of a second one."""
+    try:
+        from wsb.data import forced_flows as FF
+        v = FF.view()
+    except Exception:  # noqa: BLE001
+        return []
+    med = v.get("past_med") or {}
+    out = []
+    for e in v.get("events") or []:
+        if e["kind"] == "sp":
+            continue
+        if e["kind"] in ("msci", "tw50"):
+            d = e.get("tw_date") or e["date"]
+            t = datetime.fromisoformat(d).replace(hour=13, minute=30, tzinfo=TPE)
+        else:
+            t = datetime.fromisoformat(e["date"]).replace(hour=16, minute=0, tzinfo=ET)
+        if not (now < t <= now + timedelta(days=days)):
+            continue
+        zh = FF.KIND[e["kind"]][0] + ("（台股收盤調整）" if e["kind"] in ("msci", "tw50") else "（美股收盤調整）")
+        out.append({"key": "index", "kind": e["kind"], "zh": zh, "en": FF.KIND[e["kind"]][1], "next": t.isoformat(), "ts": int(t.timestamp()),
+                    "days": (t.astimezone(TPE).date() - now.astimezone(TPE).date()).days, "med": med.get(e["kind"])})
+    return out
+
+
+def _index_tile(r: dict) -> str:
+    t = datetime.fromisoformat(r["next"])
+    tp = t.astimezone(TPE)
+    return (f'<div class="ect"><div class="ecn">{T(r["zh"], r["en"])}</div>'
+            f'<div class="ecc" data-ts="{r["ts"]}">{r["days"]} {T("天", "d")}</div>'
+            f'<div class="small muted">{T("台北", "Taipei")} {tp:%m-%d %H:%M}</div>'
+            + (f'<div class="small">過去同一種日子，收盤成交量是平常的 {r["med"]:.1f} 倍（指數基金被迫在收盤買賣）</div>' if r.get("med") else "")
+            + '<div class="small"><a href="#forced">被迫進出的錢</a></div></div>')
+
+
 def _earn_tile(r: dict) -> str:
     et = datetime.fromisoformat(r["next"])
     tp = et.astimezone(TPE)
@@ -96,12 +133,16 @@ def _earn_tile(r: dict) -> str:
 def sec_event_clock(eng) -> str:
     ev = _ev(eng)
     earn = earn_events(eng, datetime.now(TPE))
-    if not ev.get("available") and not earn:
+    idx = index_events(datetime.now(TPE))
+    if not ev.get("available") and not earn and not idx:
         return ""
     tiles = ""
-    for r in sorted([x for x in ev.get("events") or [] if x.get("ts")] + earn, key=lambda x: x["ts"]):
+    for r in sorted([x for x in ev.get("events") or [] if x.get("ts")] + earn + idx, key=lambda x: x["ts"]):
         if r.get("key") == "earn":
             tiles += _earn_tile(r)
+            continue
+        if r.get("key") == "index":
+            tiles += _index_tile(r)
             continue
         et = datetime.fromisoformat(r["next"])
         tp = et.astimezone(TPE)
@@ -120,7 +161,7 @@ def sec_event_clock(eng) -> str:
              "Absolute S&P 500 close-to-close move on the event day vs all days. Historical, not a forecast.")
     body = f'<div class="ecg">{tiles}</div><p class="note">{note}</p>'
     return card("重大事件倒數：下一個會讓市場晃的日子", "Countdown to the next market-moving events", body, "wide",
-                sub="聯準會、CPI、非農、四巫日，以及市值 5,000 億美元以上的公司財報")
+                sub="聯準會、CPI、非農、四巫日、指數調整日，以及市值 5,000 億美元以上的公司財報")
 
 
 CSS = (".ecg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}"
@@ -156,6 +197,10 @@ def upcoming(eng, now=None, days: int = 7) -> dict:
         if r.get("ts") and r.get("days") is not None and r["days"] <= days:
             tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
             out.append({"kind": "macro", "key": r["key"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M")})
+    for r in index_events(now, days):
+        tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
+        out.append({"kind": "index", "key": r["kind"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
+                    "volume_x": r.get("med")})
     out.sort(key=lambda x: x["tpe"])
     return {"asof": now.strftime("%Y-%m-%d %H:%M"), "days": days, "items": out,
             "note": "財報時間：盤後以美東 16:05、盤前以 08:00 估，實際以公司公告為準。"}

@@ -301,6 +301,11 @@ def _third_thursday(y: int, m: int) -> date:
 
 def calendar_rows(d: Dict, today: Optional[date] = None) -> List[Dict]:
     today = today or date.today()
+    try:                                                        # official TWSE holidays (wsb/data/exchange_cal.py, 2026-11-16)
+        from ..data.exchange_cal import tw_closed
+        closed = set(tw_closed())
+    except Exception:  # noqa: BLE001
+        closed = set()
 
     def nxt(day: int) -> date:
         y, m = today.year, today.month
@@ -308,7 +313,7 @@ def calendar_rows(d: Dict, today: Optional[date] = None) -> List[Dict]:
         if x < today:
             y, m = (y + 1, 1) if m == 12 else (y, m + 1)
             x = date(y, m, min(day, calendar.monthrange(y, m)[1]))
-        while x.weekday() >= 5:                                 # releases fall on working days
+        while x.weekday() >= 5 or x.isoformat() in closed:      # releases fall on working days (not on national holidays)
             x = date.fromordinal(x.toordinal() + 1)
         return x
 
