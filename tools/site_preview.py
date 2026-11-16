@@ -87,6 +87,34 @@ def _mcaps() -> Dict[str, float]:
     return out
 
 
+BIG_FLOOR, BIG_DAYS = 3e11, 2
+
+
+def missing_big(items: List[Dict], earn_days: Dict, today: str, days: int = BIG_DAYS, floor: float = BIG_FLOOR) -> List[Dict]:
+    """Companies worth ≥ $300B reporting in the next `days` days (US dates) that have no preview yet — so a missing
+    NVIDIA preview shows up as a warning instead of silently not being there (2026-11-16, the user had to point it out)."""
+    from datetime import date, timedelta
+    have = {str(x.get("sym", "")).upper() for x in items if isinstance(x, dict)}
+    end = (date.fromisoformat(today) + timedelta(days=days)).isoformat()
+    out = []
+    for day, v in sorted(earn_days.items()):
+        if not (today <= day <= end):
+            continue
+        for r in (v.get("rows") if isinstance(v, dict) else None) or []:
+            sym = str(r.get("sym") or "").upper()
+            if sym and float(r.get("mcap") or 0) >= floor and sym not in have:
+                out.append({"sym": sym, "name": r.get("name") or sym, "date": day, "mcap": float(r["mcap"])})
+    return sorted(out, key=lambda r: (r["date"], -r["mcap"]))
+
+
+def _earn_days() -> Dict:
+    try:
+        from wsb.config import DATA_DIR
+        return json.loads((DATA_DIR / "earn_days.json").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def sec_earn_preview(eng) -> str:
     d = load()
     items = [x for x in (d.get("items") or []) if isinstance(x, dict) and x.get("sym") and x.get("date")]
@@ -114,8 +142,11 @@ def sec_earn_preview(eng) -> str:
            f'Brier 分數 {sc["brier"]:.2f}（0 是完美、0.67 等於每次都猜三分之一，越低越準）。</p>') if sc else '<p class="small muted">還沒有已公布的結果可以對答案；每次財報公布後會自動記錄猜中與否。</p>'
     note = ("每天晚上 8 點（台北）由 AI 分析任務讀取公開資料（公司上次的財測與管理層說法、供應鏈數據、分析師共識的公開報導、選擇權隱含波動），"
             "替未來 3 天要公布的重點財報寫機率估計，並在公布後記錄實際結果。機率是估計，會猜錯，所以本站公開成績單；不是投資建議。")
+    miss = missing_big(items, _earn_days(), today)
+    miss_txt = ('<p class="warn"><b>⚠ 快公布了、還沒有前瞻：</b>' + "、".join(f'{_esc(m["name"])}（{_esc(m["date"][5:].replace("-", "/"))}）' for m in miss)
+                + "。前瞻每天晚上 8 點（台北）由分析任務補上；這一行是本站自己的檢查，補上後就會消失。</p>") if miss else ""
     wait_txt = (f'<p class="small muted">另有 {len(waiting)} 家已經公布、還在等對答案（結果補進來後會算進成績單）。</p>' if waiting else "")
-    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + "".join(_item(x) for x in up[:8]) + wait_txt
+    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + miss_txt + "".join(_item(x) for x in up[:8]) + wait_txt
             + (f'<h3>前瞻指標</h3><ul>{gauges}</ul>' if gauges else "") + f'<h3>成績單</h3>{rec}'
             + ("".join(_item(x) for x in past[:4]) if past else "")
             + f'<p class="note">{note}{"　更新 " + _esc(d.get("updated")) if d.get("updated") else ""}</p>')

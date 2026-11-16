@@ -45,3 +45,15 @@ def test_card_and_score():
 if __name__ == "__main__":
     test_card_and_score()
     print("ok test_card_and_score")
+
+
+def test_missing_big_report_is_flagged():
+    days = {"2026-11-17": {"rows": [{"sym": "NVDA", "name": "NVIDIA", "mcap": 4.0e12}, {"sym": "SMALL", "mcap": 5e9}]},
+            "2026-11-25": {"rows": [{"sym": "AAPL", "mcap": 3.5e12}]}}
+    assert [m["sym"] for m in SP.missing_big([], days, "2026-11-16")] == ["NVDA"]          # AAPL is 9 days away; SMALL is small
+    assert SP.missing_big([{"sym": "NVDA"}], days, "2026-11-16") == []
+
+
+if __name__ == "__main__":
+    test_missing_big_report_is_flagged()
+    print("ok test_missing_big_report_is_flagged")

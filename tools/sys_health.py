@@ -217,11 +217,39 @@ async def build_runs() -> List[Dict]:
         return []
 
 
+PREVIEW_RAW = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/earn_preview.json"
+
+
+async def preview_issues(now: float) -> List[Dict]:
+    """A company worth ≥ $300B reports within two days and the 財報前瞻 card has no preview for it (2026-11-16: NVIDIA's
+    was missing from the card and the user had to point it out)."""
+    import aiohttp
+    from tools.site_preview import missing_big
+    try:
+        days = json.loads((DATA_DIR / "earn_days.json").read_text(encoding="utf-8"))
+        async with aiohttp.ClientSession() as s:
+            async with s.get(PREVIEW_RAW, timeout=aiohttp.ClientTimeout(total=20)) as r:
+                feed = json.loads(await r.text()) if r.status == 200 else None
+    except Exception:  # noqa: BLE001
+        return []
+    if not feed:
+        return []
+    from datetime import datetime, timedelta, timezone
+    today = (datetime.fromtimestamp(now, timezone.utc) - timedelta(hours=5)).date().isoformat()     # US date
+    miss = missing_big(feed.get("items") or [], days, today)
+    if not miss:
+        return []
+    names = "、".join(f"{m['name']}（{m['date'][5:].replace('-', '/')}）" for m in miss[:5])
+    return [{"key": "preview:" + ",".join(m["sym"] for m in miss[:5]), "urgent": False,
+             "text": f"**財報前瞻**：{names} 兩天內公布，網站上還沒有前瞻預判（每天 20:00 的分析任務沒寫到）。"}]
+
+
 async def check(now: float, news: Dict, sent: Dict[str, float]) -> tuple:
     """(problems not reported in the last 24 hours, how many are open in all).  The caller marks them in `sent` once the message is out."""
     issues = collect(now, read_tail(DATA_DIR / "sentinel.log"), heartbeat_age(now), await build_runs(),
                      len(news.get("sources") or []) if news and news.get("sources") is not None else None, price_age_days(now))
     issues += lag_issues(lag_rows(now), now)
+    issues += await preview_issues(now)
     for k in [k for k, v in sent.items() if now - float(v) > 7 * 86400]:
         sent.pop(k, None)
     return due(issues, sent, now), len(issues)
