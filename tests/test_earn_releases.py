@@ -23,6 +23,7 @@ def test_pieces():
     idx = {"directory": {"item": [{"name": "nvda-8k.htm", "size": "9000"}, {"name": "q3fy27pr-ex991.htm", "size": "50000"}]}}
     assert ER.pick_exhibit(idx) == "q3fy27pr-ex991.htm"
     assert ER.pick_exhibit({"directory": {"item": [{"name": "a.htm", "size": "10"}, {"name": "b.htm", "size": "99"}]}}) == "b.htm"
+    assert ER.pick_exhibit({"directory": {"item": [{"name": "d264008d6k.htm", "size": "9000"}]}}, "6-K") is None   # cover only
     t = ER.to_text("<html><style>x{}</style><p>Revenue&nbsp;was $57.0 billion</p><p>up 62%</p></html>")
     assert t == "Revenue was $57.0 billion\nup 62%"
 

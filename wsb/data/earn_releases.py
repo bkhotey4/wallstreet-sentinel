@@ -70,13 +70,16 @@ def recent_filings(js: Dict, since: str) -> List[Dict]:
     return out
 
 
-def pick_exhibit(index: Dict) -> Optional[str]:
-    """The press release inside a filing: exhibit 99(.1) first, else the largest .htm that is not the cover form."""
+def pick_exhibit(index: Dict, form: str = "8-K") -> Optional[str]:
+    """The press release inside a filing: exhibit 99(.1) first, else (8-K only) the largest .htm.  A 6-K without an exhibit
+    99 is skipped: its only .htm is usually the cover page (MUFG/SMFG/Mizuho put their results in PDFs), not the release."""
     items = (index.get("directory") or {}).get("item") or []
     htm = [x for x in items if str(x.get("name", "")).lower().endswith((".htm", ".html"))]
     ex = [x for x in htm if EX99.search(str(x["name"]))]
     if ex:
         return sorted(ex, key=lambda x: str(x["name"]))[0]["name"]
+    if form == "6-K":
+        return None
 
     def size(x):
         try:
@@ -132,7 +135,7 @@ async def refresh(force: bool = False, today: Optional[str] = None, extra: Optio
             f = fl[0]
             base = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{f['acc'].replace('-', '')}"
             idx = await http.get(f"{base}/index.json", headers=SEC_HDR, timeout=30, retries=1)
-            name = pick_exhibit(idx)
+            name = pick_exhibit(idx, f["form"])
             if not name:
                 continue
             page = await http.get(f"{base}/{name}", kind="text", headers=SEC_HDR, timeout=40, retries=1)
@@ -159,7 +162,8 @@ async def refresh(force: bool = False, today: Optional[str] = None, extra: Optio
 
 def public(d: Optional[Dict] = None) -> Dict:
     d = load() if d is None else d
-    items = sorted((d.get("rel") or {}).values(), key=lambda x: (x.get("date", ""), x.get("chars", 0)), reverse=True)
+    items = sorted((x for x in (d.get("rel") or {}).values() if x.get("form") != "6-K" or EX99.search(str(x.get("url") or ""))),
+                   key=lambda x: (x.get("date", ""), x.get("chars", 0)), reverse=True)   # cached 6-K cover pages stay out
     return {"updated": datetime.fromtimestamp(float(d.get("ts") or 0), timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if d.get("ts") else None,
             "note": "公司向美國證交會申報的財報新聞稿原文（8-K 項目 2.02 或 6-K 的附件 99.1），網站只去掉 HTML，前 30,000 字。",
             "items": [{k: x.get(k) for k in ("sym", "name", "date", "cal_date", "form", "url", "chars", "text")} for x in items]}

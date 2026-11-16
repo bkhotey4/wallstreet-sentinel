@@ -30,6 +30,7 @@ EXPECT = (
     ("earn_preview.json", "財報前瞻", "Earnings previews", 24, False),
     ("earn_after.json", "財報後解讀", "Post-earnings reads", 12, False),
     ("forecast.json", "一個月預判", "One-month calls", 96, False),
+    ("bonds.json", "債市深度判讀", "Bond deep read", 24, True),        # runs Mon–Fri (US)
     ("feed.json", "學術動態", "Research feed", 168, False),
     ("industry_note.json", "產業筆記", "Industry note", 168, False),
     ("tw_note.json", "台灣每月分析筆記", "Taiwan monthly note", 31 * 24, False),
