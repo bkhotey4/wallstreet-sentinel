@@ -95,7 +95,7 @@ def main() -> None:
         SOF.refresh, P.stock_alerts, P.sector_alerts, P.impact, P.post, P.watch_list = no_sec, fake_stocks, none, fake_impact, fake_post, lambda: {}
         P.news_json, P.tx_night, P.yen_jump, P.holdings_run, P.health_check, P.country_json = fake_news, no_one, no_one, no_hold, no_health, fake_country
         P.DISCORD_TOKEN, P.alert_channel, P.CATCH_GAP = "t", lambda: "123", 10 ** 12
-        P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = 10 ** 12   # slow official-data checks have their own tests
+        P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = P.EARNSOON_EVERY = 10 ** 12   # slow official-data checks have their own tests
         assert asyncio.run(P.run_once(now=now)) == ST.DAY_CAP + 1, [e["title"] for e in sent]
         assert sent[0]["title"] == "🔴 個股大跌：公司4 -9.0%（平常一天的 8.0 倍）", sent[0]["title"]
         assert "找不到對得上的新聞" in sent[0]["description"] and "**可能影響**" in sent[0]["description"] and "標普 500" in sent[0]["description"]

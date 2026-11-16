@@ -199,8 +199,9 @@ def _close() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-async def impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:
-    """Plain lines: the stock's move now × S&P weight, peers' beta, Taiwan next-session beta."""
+async def impact(sess: aiohttp.ClientSession, sym: str, zh: str, live: bool = True) -> List[str]:
+    """Plain lines: the stock's move now × S&P weight, peers' beta, Taiwan next-session beta.
+    live=False: relationships only (a reminder before an event, when today's move is not the point)."""
     from wsb.analytics import news_impact as NI
     from wsb.data.stocks import universe
     allu = {}
@@ -215,6 +216,8 @@ async def impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:
     syms = [sym] + [p["sym"] for p in peers]
     mv, ses, q = None, "今天", {}
     try:
+        if not live:
+            raise LookupError("relationships only")
         async with sess.get(QUOTE, params={"s": ",".join(syms), "ext": sym}, timeout=aiohttp.ClientTimeout(total=20)) as r:
             q = (await r.json()).get("q") or {}
         o = q.get(sym) or {}
@@ -222,6 +225,8 @@ async def impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:
             mv, ses = o["ext"]["chg"], "盤前" if o["ext"].get("sess") == "pre" else "盤後"
         elif isinstance(o.get("chg"), (int, float)):
             mv = o["chg"]
+    except LookupError:
+        pass
     except Exception as e:  # noqa: BLE001
         log.info("quote %s: %s", sym, e)
     pc = lambda v, d=1: f"{v:+.{d}f}%"  # noqa: E731
@@ -233,11 +238,11 @@ async def impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:
         out.append(f"・標普 500：它占 {w:.1f}%" + (f" → 光它本身約讓標普動 {pc(w * mv / 100, 2)}（不含連帶效應）" if mv is not None else ""))
     if peers:
         out.append("・過去 120 個交易日最常一起動的美股：" + "、".join(
-            p["zh"] + (f" 約 {pc(p['beta'] * mv)}" if mv is not None else f"（β {p['beta']:.2f}）")
+            p["zh"] + (f" 約 {pc(p['beta'] * mv)}" if mv is not None else f"（它動 1%、過去平均跟著動 {p['beta']:.2f}%）")
             + (f"（現 {pc(q[p['sym']]['chg'])}）" if isinstance((q.get(p["sym"]) or {}).get("chg"), (int, float)) else "") for p in peers))
     if tw:
         out.append("・台股隔天（樣本外驗證過的連動）：" + "、".join(
-            p["zh"] + (f" 約 {pc(p['beta'] * mv)}" if mv is not None else f"（β {p['beta']:.2f}）") for p in tw))
+            p["zh"] + (f" 約 {pc(p['beta'] * mv)}" if mv is not None else f"（它動 1%、過去平均跟著動 {p['beta']:.2f}%）") for p in tw))
     else:
         out.append("・台股：沒有和它連動夠穩定的台股")
     return out
@@ -458,7 +463,7 @@ async def stock_tw_impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> Lis
         out.append(f"・台股加權同時 {pc(ix, 2)}" + ("：大盤沒怎麼動，多半是這家公司自己的事" if abs(ix) < 1 else "：大盤也在動，先看是不是整體行情"))
     if peers:
         out.append("・過去 120 個交易日最常一起動的台股：" + "、".join(
-            p["zh"] + (f"（β {p['beta']:.2f}）")
+            p["zh"] + (f"（它動 1%、過去平均跟著動 {p['beta']:.2f}%）")
             + (f"（現 {pc(q[p['sym']]['chg'])}）" if isinstance((q.get(p["sym"]) or {}).get("chg"), (int, float)) else "") for p in peers))
     return out
 
@@ -913,6 +918,36 @@ def ruling_embed(a: Dict, lines: List[str]) -> Dict:
             "footer": {"text": "最高法院・SEC・CFTC・司法部官方發布 · WallStreet Sentinel · 不構成投資建議"}}
 
 
+EARNSOON_EVERY = 1800             # 大公司財報前一晚提醒（市值 5,000 億美元以上；台北 18:00 後，公布前 24 小時內；2026-11-16）
+PREVIEW_RAW = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/earn_preview.json"
+
+
+def earnsoon_due(rows: List[Dict], now: float) -> List[Dict]:
+    """Reports (from tools.site_events.earn_events) that come out within 24 hours, once it is 18:00 or later in Taipei
+    (an after-close US report lands around 05:00 Taipei, so the reminder goes out the evening before)."""
+    tpe = time.gmtime(now + 8 * 3600)
+    if tpe.tm_hour < 18:
+        return []
+    return [r for r in rows if 0 < r["ts"] - now <= 24 * 3600]
+
+
+def earnsoon_embed(r: Dict, lines: List[str], pv: Optional[Dict]) -> Dict:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    tp = datetime.fromisoformat(r["next"]).astimezone(ZoneInfo("Asia/Taipei"))
+    when = f"{tp.month}/{tp.day} {'清晨 ' if tp.hour < 8 else ''}{tp:%H:%M} 起（台北）"
+    name = r["zh"].split("財報")[0]
+    lead = (f"{name}（{r['sym']}）預計 {when}公布財報，市值約 {r['mcap'] / 1e12:.1f} 兆美元"
+            + (f"，每股盈餘預期 {r['eps_f']} 美元" if r.get("eps_f") else "") + "。")
+    if pv and pv.get("probs"):
+        pr = pv["probs"]
+        lead += f"本站財報前瞻：{pv.get('call', '')}（上修 {pr.get('上修')}%／維持 {pr.get('維持')}%／下修 {pr.get('下修')}%）。"
+    why = "大公司財報公布後，常帶著整個大盤和台股供應鏈一起動；下面是它占大盤多少、過去最常跟著它動的公司（過去的平均關係，不是預測）。"
+    return {"title": f"📊 大公司財報倒數：{name}（{r['sym']}）{when}"[:256], "url": SITE + "#tech", "color": 0x3B82F6,
+            "description": ("一句話看懂：" + lead + NL + why + NL + NL.join(lines))[:4000],
+            "footer": {"text": "財報日曆・本站財報前瞻 · WallStreet Sentinel · 時間以公司公告為準 · 不構成投資建議"}}
+
+
 BUDGET = 95.0                    # 這支程式每 3 分鐘跑一次、Windows 排程 2 分鐘就會強制結束：超過 95 秒，剩下的留到下一輪
 # ------------------------------------------------------------------ 各國危機雷達（網站每次建置算好的 country_risk.json；規則在 wsb/data/country_risk.py）
 COUNTRY = "https://wallstreet-sentinel.pages.dev/country_risk.json"
@@ -984,7 +1019,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -998,7 +1033,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "es_ts": S["es_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1373,6 +1408,37 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("rulings check failed: %s", e)
+        try:                                               # 大公司財報前一晚（市值 5,000 億美元以上）
+            if now - S["es_ts"] >= EARNSOON_EVERY and now > 1.7e9 and left("earnsoon"):
+                import types
+                from datetime import datetime, timezone
+                from tools import site_events as SEV
+                S["es_ts"] = now
+                due_rows = earnsoon_due(SEV.earn_events(types.SimpleNamespace(sx={}), datetime.fromtimestamp(now, timezone.utc)), now)
+                pv_items = {}
+                if due_rows:
+                    try:
+                        async with sess.get(PREVIEW_RAW, timeout=aiohttp.ClientTimeout(total=20)) as r_:
+                            pv_items = {(x.get("sym"), x.get("date")): x for x in (json.loads(await r_.text()).get("items") or [])} if r_.status == 200 else {}
+                    except Exception as e:  # noqa: BLE001
+                        log.info("preview feed: %s", e)
+                for r in due_rows:
+                    key = f"earnsoon:{r['sym']}:{r['next'][:10]}"
+                    if key in done:
+                        continue
+                    w = await want(key, "earnsoon")
+                    if w != "go":
+                        if w == "known":
+                            done[key] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    lines = await impact(sess, r["sym"], r["zh"].split("財報")[0], live=False)
+                    if await post(sess, chan or dm or "", earnsoon_embed(r, lines[1:], pv_items.get((r["sym"], r["next"][:10]))), key):
+                        done[key] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("earnings-soon check failed: %s", e)
         try:                                               # 網站警示補位：機器人沒有對應通知的，或機器人停了的時候全部代送
             if CLOUD:                                      # no heartbeat file in the cloud: go by the bot's last site build
                 alive = age is None or age < BOT_QUIET_MIN

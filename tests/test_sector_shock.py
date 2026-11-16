@@ -72,7 +72,7 @@ def main() -> None:
     try:
         SOF.refresh, P.sector_alerts, P.post, P.watch_list = no_sec, fake_sectors, fake_post, lambda: {}
         P.DISCORD_TOKEN, P.alert_channel = "t", lambda: "123"
-        P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = 10 ** 12   # slow official-data checks have their own tests
+        P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = P.EARNSOON_EVERY = 10 ** 12   # slow official-data checks have their own tests
         n = asyncio.run(P.run_once(now=now))
         assert n == 1, [x.get("title") for x in sent]
         e = sent[0]

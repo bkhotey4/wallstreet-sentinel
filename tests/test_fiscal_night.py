@@ -183,3 +183,21 @@ if __name__ == "__main__":
         if name.startswith("test_") and callable(fn):
             fn()
             print("ok", name)
+
+
+def test_earnings_eve_window():
+    from tools import sec_push as P
+    from datetime import datetime, timezone, timedelta
+    tpe = timezone(timedelta(hours=8))
+    rel = datetime(2026, 11, 18, 5, 5, tzinfo=tpe).timestamp()
+    rows = [{"sym": "NVDA", "ts": rel}]
+    at = lambda d, h: datetime(2026, 11, d, h, 0, tzinfo=tpe).timestamp()  # noqa: E731
+    assert P.earnsoon_due(rows, at(16, 21)) == []            # two nights before: too early
+    assert P.earnsoon_due(rows, at(17, 17)) == []            # the afternoon before: wait for 18:00
+    assert P.earnsoon_due(rows, at(17, 19)) == rows          # the evening before
+    assert P.earnsoon_due(rows, at(18, 6)) == []             # already out
+
+
+if __name__ == "__main__":
+    test_earnings_eve_window()
+    print("ok test_earnings_eve_window")
