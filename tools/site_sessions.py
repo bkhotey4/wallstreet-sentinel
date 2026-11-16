@@ -113,6 +113,52 @@ def _item(x: Dict, lead: bool = False) -> str:
             + (f'<details class="sgx"><summary>看完整解讀：誰動得最大、為什麼</summary>{more}</details>' if more else "") + "</div>")
 
 
+SPLIT_SYMS = ("^GSPC", "^NDX", "^SOX", "RSP", "IWM", "^VIX")
+
+
+def split_box(eng) -> str:
+    """The live line on top of 美股今天怎麼了 (2026-11-16, user: 「做1」): what fell today — the whole market, chips only, or
+    the heavyweights — read every minute from /api/quote by SPLIT_JS.  The one-year highs come from the build's daily closes so
+    the browser can say how far each index is from its high.  Public prices only, nothing about anyone's holdings."""
+    import json
+    hi = {}
+    for sym in ("^GSPC", "^SOX"):
+        try:
+            v = eng.market.series(sym).dropna()
+            if len(v) > 200:
+                hi[sym] = round(float(v.iloc[-252:].max()), 2)
+        except Exception:  # noqa: BLE001
+            pass
+    from html import escape
+    return (f'<div class="split" data-hi="{escape(json.dumps(hi))}" hidden><p class="rimp"><b>今天跌（漲）的是哪一塊：</b><span class="splt"></span></p>'
+            '<p class="small muted splm"></p></div>')
+
+
+SPLIT_JS = r"""
+(function(){var box=document.querySelector('.split');if(!box)return;var hi={};try{hi=JSON.parse(box.dataset.hi||'{}');}catch(e){}
+ var S=['^GSPC','^NDX','^SOX','RSP','IWM','^VIX'];
+ function f(x){return (x>=0?'+':'')+x.toFixed(1)+'%';}
+ function run(){fetch('api/quote?s='+encodeURIComponent(S.join(',')),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){
+  var q=j.q||{},g=function(s){var x=q[s]||{};return typeof x.chg==='number'?x:null;};
+  var sp=g('^GSPC'),nd=g('^NDX'),sox=g('^SOX'),rsp=g('RSP'),iwm=g('IWM'),vix=g('^VIX');if(!sp||!sox)return;
+  var d=sox.chg-sp.chg,b=rsp?rsp.chg-sp.chg:0,parts=[];
+  if(d<=-2)parts.push('主要是晶片股：費城半導體 '+f(sox.chg)+'，標普 500 只 '+f(sp.chg)+'，不是整個市場一起崩');
+  else if(d>=2)parts.push('晶片股領頭：費城半導體 '+f(sox.chg)+'，標普 500 '+f(sp.chg));
+  else parts.push('大盤和晶片股差不多：標普 500 '+f(sp.chg)+'、費城半導體 '+f(sox.chg));
+  if(rsp&&b<=-1)parts.push('多數股票比大盤更弱（等權重 '+f(rsp.chg)+'），跌得很廣');
+  else if(rsp&&b>=1)parts.push('多數股票其實比大盤好（等權重 '+f(rsp.chg)+'），是少數大型股在拖');
+  if(nd)parts.push('那斯達克 100 '+f(nd.chg)+(iwm?'、小型股 '+f(iwm.chg):''));
+  if(vix){var w=vix.price>=30?'恐慌':vix.price>=20?'擔心，但還不到恐慌':'平靜';parts.push('恐慌指數 VIX '+vix.price.toFixed(1)+'（'+w+'）');}
+  var m=[];['^GSPC','^SOX'].forEach(function(s){var x=g(s);if(x&&hi[s]&&x.price)m.push((s==='^GSPC'?'標普 500':'費城半導體')+' 離一年高點 '+f((x.price/hi[s]-1)*100));});
+  var t=sp.t?new Date(sp.t*1000):null,old=t&&(Date.now()/1000-sp.t>20*3600);
+  box.querySelector('.splt').textContent=parts.join('；')+'。';
+  box.querySelector('.splm').textContent=m.join('、')+(t?'。報價時間 '+t.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false,month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+(old?'（最近一個交易日）':''):'')
+   +'。規則：晶片比大盤多跌或多漲 2 個百分點以上、等權重和大盤差 1 個百分點以上才特別說；VIX 20 以上算擔心、30 以上算恐慌。';
+  box.hidden=false;}).catch(function(){});}
+ run();setInterval(run,60000);})();
+"""
+
+
 def sec_sessions(eng) -> str:
     d = load()
     items = [x for x in (d.get("items") or []) if isinstance(x, dict) and x.get("date") and x.get("one") and x.get("phase") in PHASES]
@@ -121,7 +167,7 @@ def sec_sessions(eng) -> str:
     day = max(str(x["date"]) for x in items)
     today = {x["phase"]: x for x in items if str(x["date"]) == day}
     shown = [today[p] for p in reversed(PHASES) if p in today]
-    return card("美股今天怎麼了", "US stocks today", stale_note(day) + f'<p class="rimp big2"><b>一句話看懂：{_e(shown[0]["one"])}</b></p>' + chain(shown[0])
+    return card("美股今天怎麼了", "US stocks today", stale_note(day) + split_box(eng) + f'<p class="rimp big2"><b>一句話看懂：{_e(shown[0]["one"])}</b></p>' + chain(shown[0])
                 + "".join(_item(x, i == 0) for i, x in enumerate(shown))
                 + f'<p class="note">美股開盤前、盤中、收盤後由雲端 AI 用公開資料整理，交易日 {_e(day)}。是對當下的解讀，不是股價預測。不構成投資建議。</p>',
                 "wide", sub="開盤前、盤中、收盤後各更新一次")

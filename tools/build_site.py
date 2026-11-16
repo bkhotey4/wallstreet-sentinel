@@ -1455,7 +1455,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 {SLY.topnav()}{SA.RIBBON_HTML}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{SE.OIL_JS}{COMPLY_JS}{TOP_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{SE.OIL_JS}{SSN.SPLIT_JS}{COMPLY_JS}{TOP_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
