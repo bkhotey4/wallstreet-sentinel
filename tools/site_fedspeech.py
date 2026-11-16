@@ -130,6 +130,20 @@ def upcoming_talks(up, now: datetime):
     return [u for _, u in sorted(out, key=lambda x: x[0])]
 
 
+def _no_talks(d: dict, now: float = None) -> str:
+    """'No governor talks in the next two weeks' only when the calendar was actually read recently (2026-11-16 backlog fix:
+    a failed calendar fetch used to print the same sentence)."""
+    import time
+    from datetime import datetime, timedelta, timezone
+    now = time.time() if now is None else now
+    ok = float(((d.get("ts_each") or {}).get("cal")) or 0)
+    if ok and now - ok < 2 * 86400:
+        return '<p class="small muted">官方行事曆上接下來兩週沒有理事演講。</p>'
+    when = datetime.fromtimestamp(ok, timezone(timedelta(hours=8))).strftime("%m/%d") if ok else None
+    return ('<p class="small muted">聯準會官方行事曆這次沒有抓到' + (f'（最後一次成功是 {when}）' if when else '')
+            + '，所以不確定接下來兩週誰要講，請以<a href="https://www.federalreserve.gov/newsevents/calendar.htm" target="_blank" rel="noopener">官方行事曆</a>為準。</p>')
+
+
 def sec_fed_speeches(eng) -> str:
     try:
         from wsb.data import fed_speeches as FS
@@ -180,7 +194,7 @@ def sec_fed_speeches(eng) -> str:
                if from_ust else "") + '。')
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
             + (f'<ul>{"".join(quotes)}</ul>' if quotes else "")
-            + (f'<h3>接下來兩週誰要講</h3><ul class="small">{up_html}</ul>' if up_html else '<p class="small muted">官方行事曆上接下來兩週沒有理事演講。</p>')
+            + (f'<h3>接下來兩週誰要講</h3><ul class="small">{up_html}</ul>' if up_html else _no_talks(d))
             + f'<details class="sgx"><summary>{T("看最近 12 篇講話", "Recent speeches")}</summary>{table}</details>'
             + f'<p class="note">{note}</p>')
     return card("聯準會官員怎麼說：利率的線索", "Fed speakers: clues on rates", body, "wide")
