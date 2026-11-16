@@ -1,6 +1,42 @@
 {
-  "updated": "2026-11-09",
+  "updated": "2026-11-16",
   "items": [
+    {
+      "title": "Banking System Vulnerability: 2026 Update",
+      "authors": "Matteo Crosignani, Thomas M. Eisenbach, Fulvia Fringuellotti",
+      "source": "Federal Reserve Bank of New York, Liberty Street Economics",
+      "published": "2026-11-12",
+      "url": "https://libertystreeteconomics.newyorkfed.org/2026/11/banking-system-vulnerability-2026-update/",
+      "added": "2026-11-16",
+      "summary": "用銀行控股公司的 FR Y-9C 監管資料（到 2026 年第二季），更新資本、拋售、流動性與擠兌四項脆弱度指標。「2008 重演」情境下的資本缺口為 169 億美元（2025 年第二季為 19 億）；「2022 重演」情境為 1,511 億美元，變化不大。流動性壓力比率升到 2014 年以來最高，但仍只有 2007 年第三季高點的一半多。",
+      "implication": "四項指標中有三項呈上升趨勢，銀行體系比前幾年脆弱，但離 2008 年前的高峰還有距離。這是需要持續觀察的緩慢變化，不是立即的警報。",
+      "site_relevance": "與本站壓力指數 SSI 的銀行體系成分及「累積脆弱度」頁有關，可考慮加入這四項指標作為參考。",
+      "topic": "風險預警"
+    },
+    {
+      "title": "U.S. Private Credit Vehicles: Institutional Structure and Aggregate Balance Sheets",
+      "authors": "Katie Brinkman, Christine Dobridge, Tim Dore, Simon Glossner, Elizabeth Holmquist, Nam Nguyen, Maria Perozek, Irina Stefanescu",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-11-09",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/u-s-private-credit-vehicles-institutional-structure-and-aggregate-balance-sheets-20261109.html",
+      "added": "2026-11-16",
+      "summary": "整理美國私募信貸工具的資產負債表，資料來自 SEC Form PF、BDC 申報與 N-PORT 等。2025 年底美國註冊的私募信貸工具資產約 1.9 兆美元（2012 年約 2,400 億）；加上海外工具約 2.6 兆。多數資金放在低槓桿的基金，私募債務基金平均負債/淨值約 0.25，BDC 約 1，銀行是主要融資來源。",
+      "implication": "整體槓桿不高，但銀行是這些工具的主要出借人，所以私募信貸出問題時，壓力仍可能傳回銀行。高槓桿的多是較小的工具。",
+      "site_relevance": "與本站「私募信貸燈號」直接相關，可引用其規模與槓桿數字，並補充銀行融資連結的說明。",
+      "topic": "風險預警"
+    },
+    {
+      "title": "US monetary policy, macroeconomic news and the global secular decline of interest rates",
+      "authors": "Boris Hofmann, Zehao Li, Steve Pak Yeung Wu",
+      "source": "BIS, Working Papers No 1393",
+      "published": "2026-11-10",
+      "url": "https://www.bis.org/publications/working-paper-1393-us-monetary-policy-macroeconomic-news-and-global-secular-decline-interest-rates",
+      "added": "2026-11-16",
+      "summary": "研究十個主要先進經濟體長期利率自 1990 年代以來的長期下滑。發現大部分下滑發生在美國聯準會 FOMC 公布決策的時間窗口內，且主要透過市場對未來短期利率的預期，而不是期限溢酬。下滑集中在 FOMC 之前剛出現總體經濟消息的場合。",
+      "implication": "全球長期殖利率受美國聯準會影響很深，而且主要反映對利率路徑的預期。看各國公債殖利率時，美國政策方向是不能忽略的背景。",
+      "site_relevance": "與本站「各國債券」與「美債」頁有關，可在說明中補充美國政策預期如何牽動全球殖利率。",
+      "topic": "債券"
+    },
     {
       "title": "How Do Banking Supervisors Deal with Failing Banks?",
       "authors": "Sergio Correia, Stephan Luck, Emil Verner",
