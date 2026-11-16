@@ -362,11 +362,41 @@ async def site_shown(now: float) -> List[Dict]:
     return issues
 
 
+def overrun_issues(lines: List[str], now: float, hours: float = 2, min_n: int = 3) -> List[Dict]:
+    """sec_push ran out of its 95-second budget ≥ 3 times in 2 hours: the checks named after 'left' were pushed to later runs
+    (2026-11-16 21:20–22:20: a slow SEC feed plus new checks delayed Taiwan news, bursts and holdings messages four times)."""
+    import re
+    from datetime import datetime
+    hits, left = 0, {}
+    for ln in lines:
+        m = re.match(r"(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d),\d+ WARNING out of time after \d+ s: (.*) left for the next run", ln)
+        if not m:
+            continue
+        try:
+            ts = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
+        except ValueError:
+            continue
+        if now - ts <= hours * 3600:
+            hits += 1
+            for x in m.group(2).split(", "):
+                left[x] = left.get(x, 0) + 1
+    if hits < min_n:
+        return []
+    zh = {"sec": "SEC 申報", "cb": "央行非例行動作", "sector": "族群急跌", "stock": "個股大動", "mops": "台股重大訊息",
+          "burst": "多家媒體同時報導", "txnight": "台指期夜盤", "country": "各國危機雷達", "fiscal": "政府停擺與債務上限",
+          "site": "網站警示補位", "health": "系統健康", "holdings": "持股私訊", "forced": "被迫進出的錢", "korea": "韓國出口快報",
+          "rulings": "法院與監管", "earnsoon": "大公司財報倒數"}
+    top = "、".join(zh.get(k, k) for k, _ in sorted(left.items(), key=lambda kv: -kv[1])[:5])
+    return [{"key": "overrun", "urgent": False,
+             "text": f"**即時推送**：過去 {hours:g} 小時有 {hits} 輪超過時間上限，被延到下一輪的檢查：{top}。要看是哪個來源變慢。"}]
+
+
 async def check(now: float, news: Dict, sent: Dict[str, float]) -> tuple:
     """(problems not reported in the last 24 hours, how many are open in all).  The caller marks them in `sent` once the message is out."""
     issues = collect(now, read_tail(DATA_DIR / "sentinel.log"), heartbeat_age(now), await build_runs(),
                      len(news.get("sources") or []) if news and news.get("sources") is not None else None, price_age_days(now))
     issues += lag_issues(lag_rows(now), now)
+    issues += overrun_issues(read_tail(DATA_DIR / "sec_push.log"), now)
     issues += await preview_issues(now)
     issues += await site_shown(now)
     for k in [k for k, v in sent.items() if now - float(v) > 7 * 86400]:

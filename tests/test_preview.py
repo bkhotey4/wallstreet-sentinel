@@ -91,3 +91,18 @@ def test_after_card_keeps_mega_caps():
 if __name__ == "__main__":
     test_after_card_keeps_mega_caps()
     print("ok test_after_card_keeps_mega_caps")
+
+
+def test_overrun_flagged():
+    from tools import sys_health as H
+    from datetime import datetime
+    lines = [f"2026-11-16 21:{m:02d}:00,000 WARNING out of time after 98 s: mops, holdings left for the next run" for m in (10, 30, 50)]
+    now = datetime(2026, 11, 16, 22, 0).timestamp()
+    out = H.overrun_issues(lines, now)
+    assert out and "台股重大訊息" in out[0]["text"] and "持股私訊" in out[0]["text"]
+    assert H.overrun_issues(lines[:2], now) == []
+
+
+if __name__ == "__main__":
+    test_overrun_flagged()
+    print("ok test_overrun_flagged")
