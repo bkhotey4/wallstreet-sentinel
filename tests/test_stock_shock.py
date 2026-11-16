@@ -16,6 +16,10 @@ def main() -> None:
     assert ST.level(-9.0, 1.68) == 2
     assert ST.level(-3.9, 0.9) == 0                                        # 4.3× but under 4 %
     assert ST.level(-6.0, 2.0) == 0 and ST.level(None, 2.0) == 0 and ST.level(-6.0, None) == 0
+    # Taiwan: a normal day is ~3 %, so 3.0× and ≥ 6 % (台達電 -9.3 % on 11-16 was 3.0×; the US rule would have missed it)
+    assert ST.level(-9.27, 3.06, "tw") == 1 and ST.level(-9.27, 3.06) == 0
+    assert ST.level(-5.5, 1.5, "tw") == 0                                  # 3.7× but under 6 %
+    assert ST.level(+9.9, 2.0, "tw") == 2
 
     now = 1794500000.0
     news = [{"t": "Cisco shares slide after outlook disappoints", "ts": now - 15 * 3600, "u": "https://x/1"},
@@ -101,6 +105,22 @@ def main() -> None:
         for a in five:
             a["day"] = "2026-11-16"
         assert asyncio.run(P.run_once(now=now + 2000)) == ST.DAY_CAP + 1                 # a new day starts a new count
+        # Taiwan hits keep their own daily count and their own summary, and use the Taiwan impact lines
+        tw5 = [{**a, "sym": f"T{i}.TW", "mk": "tw", "day": "2026-11-16"} for i, a in enumerate(five)]
+        five[:] = tw5
+        sent.clear()
+        tw_calls = []
+
+        async def fake_tw_impact(sess, sym, zh):
+            tw_calls.append(sym)
+            return [f"{zh} 今天 -9.0%", "・台股加權同時 -0.50%"]
+        real_tw, P.stock_tw_impact = P.stock_tw_impact, fake_tw_impact
+        try:
+            assert asyncio.run(P.run_once(now=now + 3000)) == ST.DAY_CAP + 1, [e["title"] for e in sent]
+        finally:
+            P.stock_tw_impact = real_tw
+        assert len(tw_calls) == ST.DAY_CAP and "台股加權" in sent[0]["description"]
+        assert sent[3]["title"] == "🟠 今天有 5 檔追蹤的台股大動", sent[3]["title"]
     finally:
         (SOF.refresh, P.stock_alerts, P.sector_alerts, P.impact, P.post, P.watch_list, P.DISCORD_TOKEN, P.alert_channel,
          P.news_json, P.tx_night, P.yen_jump, P.holdings_run, P.health_check, P.country_json, P.CATCH_GAP) = real

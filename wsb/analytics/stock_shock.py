@@ -8,7 +8,7 @@
   z＝今天漲跌 ÷ 平常一天的幅度；平常一天＝過去一年日漲跌的中位數絕對偏差 × 1.4826（和族群警報同一個算法）。
   同一天最多個別推 DAY_CAP 檔；超過時（通常是整體行情，族群警報已經會響）其餘合成一則只列名字，所以一天最多 DAY_CAP＋1 則。
   回放（2026-11-15，108 檔、近 60 個交易日）：32 天有觸發、共 100 檔次，最多的一天 22 檔；套上限後平均一天約 1 則、最多 4 則。
-名單只用網站公開的美股追蹤名單，不讀持股。新聞配對只代表「同時段有提到這家公司」，不等於就是原因；找不到就直說。
+名單只用網站公開的美股與台股追蹤名單（台股門檻見 MK），不讀持股。新聞配對只代表「同時段有提到這家公司」，不等於就是原因；找不到就直說。
 描述現況，不是預測，也不是投資建議。"""
 from __future__ import annotations
 
@@ -20,17 +20,22 @@ from wsb.analytics.sector_shock import robust_sd
 
 Z_MIN, Z_RED, PCT_MIN = 3.5, 5.0, 4.0
 DAY_CAP = 3
+# 每個市場自己的門檻（z 下限, 紅燈 z, 漲跌下限 %）。台股平常一天就動約 3%（漲跌停 10%），所以倍數放寬、幅度拉高：
+# 回放（2026-11-16，台股追蹤名單 54 檔、近 60 個交易日）3.5×／4% 只抓到 39 次而且漏掉台達電 -9.3%（3.0 倍）；
+# 3.0×／6% 共 47 次，套上限後平均一天約 0.8 則、最多 4 則。
+MK = {"us": (Z_MIN, Z_RED, PCT_MIN), "tw": (3.0, 4.5, 6.0)}
 NEWS_H = 18          # earnings come out after the close: the headline is often 12+ hours older than the move
 
 
-def level(chg: Optional[float], sd: Optional[float]) -> int:
-    """0 = nothing, 1 = 🟠 (≥ Z_MIN × normal and ≥ PCT_MIN %), 2 = 🔴 (≥ Z_RED × normal).  Both directions."""
+def level(chg: Optional[float], sd: Optional[float], mk: str = "us") -> int:
+    """0 = nothing, 1 = 🟠 (≥ z_min × normal and ≥ pct_min %), 2 = 🔴 (≥ z_red × normal).  Both directions."""
     if chg is None or not sd:
         return 0
+    z_min, z_red, pct_min = MK.get(mk, MK["us"])
     z = abs(chg) / sd
-    if abs(chg) < PCT_MIN or z < Z_MIN:
+    if abs(chg) < pct_min or z < z_min:
         return 0
-    return 2 if z >= Z_RED else 1
+    return 2 if z >= z_red else 1
 
 
 def sigmas(cl: pd.DataFrame, syms: List[str]) -> Dict[str, float]:
@@ -51,20 +56,20 @@ def match_news(items: List[Dict], keys: List[str], now: float, hours: float = NE
 
 
 def check(quotes: Dict[str, Dict], sd: Dict[str, float], names: Dict[str, list], news: List[Dict], now: float,
-          keys: Optional[Dict[str, List[str]]] = None) -> List[Dict]:
-    """[{sym, zh, chg, z, lv, t, news}] for tracked stocks moving unusually far, most unusual first."""
+          keys: Optional[Dict[str, List[str]]] = None, mk: str = "us") -> List[Dict]:
+    """[{sym, zh, chg, z, lv, t, news, mk}] for tracked stocks moving unusually far, most unusual first."""
     out = []
     for sym, v in sd.items():
         x = quotes.get(sym) or {}
         chg = x.get("chg")
         if not isinstance(chg, (int, float)):
             continue
-        lv = level(chg, v)
+        lv = level(chg, v, mk)
         if not lv:
             continue
         zh = (names.get(sym) or [sym])[0] or sym
         out.append({"sym": sym, "zh": zh, "chg": float(chg), "z": float(chg) / v, "lv": lv, "t": x.get("t"),
-                    "news": match_news(news, (keys or {}).get(sym) or [], now)})
+                    "news": match_news(news, (keys or {}).get(sym) or [], now), "mk": mk})
     return sorted(out, key=lambda a: -abs(a["z"]))
 
 

@@ -403,29 +403,62 @@ STOCK_EVERY = 300
 
 
 async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
-    """Tracked US stocks moving ≥ 3.5× their normal day and ≥ 4 % (either way), with the headlines that name them."""
+    """Tracked US stocks moving ≥ 3.5× their normal day and ≥ 4 %, and tracked Taiwan stocks ≥ 3.0× and ≥ 6 % (either way;
+    thresholds in stock_shock.MK), with the headlines that name them.  Each hit carries mk = "us" / "tw"."""
     from datetime import datetime
     from zoneinfo import ZoneInfo
     from tools import site_secwatch as SW
     from wsb.analytics import stock_shock as ST
     from wsb.data.stocks import universe
-    names = (universe().get("us") or {}).get("symbols", {})
     if now < 1.7e9:                                        # a test clock: never fetch live quotes
         return []
-    sd = ST.sigmas(_close(), list(names))
-    if not sd:
-        return []
-    syms, q = list(sd), {}
-    for i in range(0, len(syms), 20):
-        async with sess.get(QUOTE, params={"s": ",".join(syms[i:i + 20])}, timeout=aiohttp.ClientTimeout(total=20)) as r:
-            q.update((await r.json()).get("q") or {})
-    q = {k: v for k, v in q.items() if v.get("t") and 0 <= now - float(v["t"]) < 20 * 3600}     # stale quotes never alert
-    news = (await news_json(sess)).get("items") or []
-    keys = {s: [k for k in [v[0]] + str(v[1] or "").split("|") if k] for s, v in SW.names_of(names, {}, syms).items()}
-    hits = ST.check(q, sd, names, news, now, keys)
-    for a in hits:
-        a["day"] = datetime.fromtimestamp(float(a["t"]), ZoneInfo("America/New_York")).date().isoformat()
-    return hits
+    cl, news, out = _close(), None, []
+    for mk, tz in (("us", "America/New_York"), ("tw", "Asia/Taipei")):
+        names = (universe().get(mk) or {}).get("symbols", {})
+        sd = ST.sigmas(cl, list(names))
+        if not sd:
+            continue
+        syms, q = list(sd), {}
+        for i in range(0, len(syms), 20):
+            async with sess.get(QUOTE, params={"s": ",".join(syms[i:i + 20])}, timeout=aiohttp.ClientTimeout(total=20)) as r:
+                q.update((await r.json()).get("q") or {})
+        q = {k: v for k, v in q.items() if v.get("t") and 0 <= now - float(v["t"]) < 20 * 3600}     # stale quotes never alert
+        if news is None:
+            news = (await news_json(sess)).get("items") or []
+        keys = {s: [k for k in [v[0]] + str(v[1] or "").split("|") if k] for s, v in SW.names_of(names, {}, syms).items()}
+        hits = ST.check(q, sd, names, news, now, keys, mk)
+        for a in hits:
+            a["day"] = datetime.fromtimestamp(float(a["t"]), ZoneInfo(tz)).date().isoformat()
+        out += hits
+    return out
+
+
+async def stock_tw_impact(sess: aiohttp.ClientSession, sym: str, zh: str) -> List[str]:
+    """Plain lines for a Taiwan stock: its move now, 台股加權 now, and the Taiwan names that moved most with it."""
+    from wsb.analytics import news_impact as NI
+    from wsb.data.stocks import universe
+    tw = {k: (v[0], v[1] if len(v) > 1 else k, "tw") for k, v in ((universe().get("tw") or {}).get("symbols") or {}).items()}
+    cl = _close()
+    ret = cl.pct_change(fill_method=None) * 100 if not cl.empty else pd.DataFrame()
+    peers = NI.peers(ret, sym, [k for k in tw if k in ret.columns], tw) if not ret.empty else []
+    q = {}
+    try:
+        async with sess.get(QUOTE, params={"s": ",".join([sym, "^TWII"] + [p["sym"] for p in peers])},
+                            timeout=aiohttp.ClientTimeout(total=20)) as r:
+            q = (await r.json()).get("q") or {}
+    except Exception as e:  # noqa: BLE001
+        log.info("quote %s: %s", sym, e)
+    pc = lambda v, d=1: f"{v:+.{d}f}%"  # noqa: E731
+    mv = (q.get(sym) or {}).get("chg")
+    out = [f"{zh} 今天 **{pc(mv)}**" if isinstance(mv, (int, float)) else f"{zh} 的即時價格暫時拿不到，下面只列關係："]
+    ix = (q.get("^TWII") or {}).get("chg")
+    if isinstance(ix, (int, float)):
+        out.append(f"・台股加權同時 {pc(ix, 2)}" + ("：大盤沒怎麼動，多半是這家公司自己的事" if abs(ix) < 1 else "：大盤也在動，先看是不是整體行情"))
+    if peers:
+        out.append("・過去 120 個交易日最常一起動的台股：" + "、".join(
+            p["zh"] + (f"（β {p['beta']:.2f}）")
+            + (f"（現 {pc(q[p['sym']]['chg'])}）" if isinstance((q.get(p["sym"]) or {}).get("chg"), (int, float)) else "") for p in peers))
+    return out
 
 
 def stock_embed(a: Dict, lines: List[str]) -> Dict:
@@ -440,7 +473,8 @@ def stock_embed(a: Dict, lines: List[str]) -> Dict:
 
 
 def stock_many_embed(rest: List[Dict], n_all: int) -> Dict:
-    return {"title": f"🟠 今天有 {n_all} 檔追蹤的美股大動",
+    mkt = "台股" if rest and rest[0].get("mk") == "tw" else "美股"
+    return {"title": f"🟠 今天有 {n_all} 檔追蹤的{mkt}大動",
             "color": 0xD97706,
             "description": ("同一天這麼多檔一起大動，通常是整體行情或同一個族群的事，不是每家公司各自出事；先看族群急跌警報和即時新聞。\n其餘："
                             + "、".join(f'{a["zh"]} {a["chg"]:+.1f}%（{abs(a["z"]):.1f} 倍）' for a in rest[:25]))[:4000],
@@ -1123,38 +1157,42 @@ async def run_once(now: Optional[float] = None) -> int:
             if now - S["st_ts"] >= STOCK_EVERY and left("stock"):
                 from wsb.analytics import stock_shock as ST
                 S["st_ts"] = now
-                hits = await stock_alerts(sess, now)
-                day = hits[0]["day"] if hits else ""
-                n_day = sum(1 for k in done if k.startswith(f"stock:{day}:"))
-                for a in hits:
-                    key = f'stock:{a["day"]}:{a["sym"]}'
-                    if key in done or n_day >= ST.DAY_CAP:
-                        continue
-                    w = await want(key, "stock")
-                    if w != "go":
-                        if w == "known":
-                            done[key] = now
-                            n_day += 1
-                        continue
-                    if not chan:
-                        dm = dm or await dm_channel(sess)
-                    if await post(sess, chan or dm or "", stock_embed(a, await impact(sess, a["sym"], a["zh"])), key):
-                        done[key] = now
-                        n_day += 1
-                        sent += 1
-                        save()
-                    await asyncio.sleep(1)
-                rest = [a for a in hits if f'stock:{a["day"]}:{a["sym"]}' not in done]
-                if rest and day and f"stockmany:{day}" not in done and (n_day >= ST.DAY_CAP or not CLOUD):
-                    w = await want(f"stockmany:{day}", "stock")
-                    if w == "known":
-                        done[f"stockmany:{day}"] = now
-                    if w == "go":
+                allhits = await stock_alerts(sess, now)
+                for mk, pre in (("us", "stock"), ("tw", "stocktw")):   # each market keeps its own daily count
+                    hits = [a for a in allhits if a.get("mk", "us") == mk]
+                    day = hits[0]["day"] if hits else ""
+                    n_day = sum(1 for k in done if k.startswith(f"{pre}:{day}:"))
+                    for a in hits:
+                        key = f'{pre}:{a["day"]}:{a["sym"]}'
+                        if key in done or n_day >= ST.DAY_CAP:
+                            continue
+                        w = await want(key, "stock")
+                        if w != "go":
+                            if w == "known":
+                                done[key] = now
+                                n_day += 1
+                            continue
                         if not chan:
                             dm = dm or await dm_channel(sess)
-                        if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits)), f"stockmany:{day}"):
-                            done[f"stockmany:{day}"] = now
+                        imp = await (stock_tw_impact if mk == "tw" else impact)(sess, a["sym"], a["zh"])
+                        if await post(sess, chan or dm or "", stock_embed(a, imp), key):
+                            done[key] = now
+                            n_day += 1
                             sent += 1
+                            save()
+                        await asyncio.sleep(1)
+                    rest = [a for a in hits if f'{pre}:{a["day"]}:{a["sym"]}' not in done]
+                    mkey = f"{pre}many:{day}"
+                    if rest and day and mkey not in done and (n_day >= ST.DAY_CAP or not CLOUD):
+                        w = await want(mkey, "stock")
+                        if w == "known":
+                            done[mkey] = now
+                        if w == "go":
+                            if not chan:
+                                dm = dm or await dm_channel(sess)
+                            if await post(sess, chan or dm or "", stock_many_embed(rest, len(hits)), mkey):
+                                done[mkey] = now
+                                sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("stock check failed: %s", e)
         save()
