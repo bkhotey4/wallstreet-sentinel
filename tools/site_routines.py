@@ -24,7 +24,7 @@ FEED_DIR = Path(__file__).resolve().parents[1] / "research_feed"
 EXPECT = (
     ("sessions.json", "美股今天怎麼了", "US session notes", 6, True),
     ("macro_voice.json", "每日總經情勢（口播）", "Daily macro voice", 12, False),
-    ("deep.json", "每日深度研判", "Daily deep read", 24, False),
+    ("deep.json", "每日深度研判", "Daily deep read", 24, True),        # runs Mon–Fri (US): weekends do not count
     ("learn.json", "每日學習筆記", "Daily learning notes", 24, False),
     ("ai_view.json", "獨立 AI 觀察員", "AI observer", 12, False),
     ("earn_preview.json", "財報前瞻", "Earnings previews", 24, False),

@@ -1944,6 +1944,15 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.exception("SEC 5.02 refresh failed")
             st = SOF.load()
         (out / "sec_alerts.json").write_text(json.dumps(SOF.public(st), ensure_ascii=False), encoding="utf-8")
+        try:                                       # 財報新聞稿原文（SEC 8-K 2.02／6-K 附件 99.1）：雲端分析任務連不到 SEC，改讀這份（2026-11-16）
+            from wsb.data import earn_releases as ERL
+            try:
+                await asyncio.wait_for(ERL.refresh(), 100)
+            except Exception as e:  # noqa: BLE001
+                log.warning("earn releases refresh failed: %s", e if str(e) else type(e).__name__)
+            (out / "earn_releases.json").write_text(json.dumps(ERL.public(), ensure_ascii=False), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            log.exception("earn_releases.json failed")
         try:                                       # 接下來 7 天的大公司財報與總經事件（給口播用，2026-11-16）
             (out / "upcoming.json").write_text(json.dumps(SEVT.upcoming(eng), ensure_ascii=False), encoding="utf-8")
         except Exception:  # noqa: BLE001

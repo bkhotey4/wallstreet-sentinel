@@ -296,6 +296,25 @@ def after_issues(html: str, reads: List[Dict], today: str, days: int = 5, floor_
                      + " 的財報後解讀已經寫好，但線上「財報後白話解讀（美股）」卡上看不到。"}]
 
 
+RAW_FEED = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/"
+
+
+def routine_issues(rows: List[Dict]) -> List[Dict]:
+    """The 排程健康表 rows (tools/site_routines.rows) that are 🔴 stopped / never written, or 🟡 late — so a cloud routine that
+    keeps "succeeding" without writing anything (財報後解讀 11-14→11-16: blocked sources, every run gave up) reaches the owner
+    instead of sitting red on a page nobody opens.  Same key per routine and state, so each state is reported once a day."""
+    out = []
+    for r in rows:
+        if r.get("st") not in ("stop", "never", "late"):
+            continue
+        age = r.get("age")
+        when = "從來沒有產出" if age is None else (f"{age / 24:.1f} 天沒有更新" if age >= 48 else f"{age:.0f} 小時沒有更新")
+        out.append({"key": f"routine:{r['file']}:{r['st']}", "urgent": r["st"] != "late",
+                    "text": f"**排程健康**：{'🔴' if r['st'] != 'late' else '🟡'} {r['zh']} {when}（應該每 {r['every']} 小時一次）。"
+                            "排程本身可能顯示成功，但沒有寫出檔案；要看執行紀錄找原因。"})
+    return out
+
+
 async def site_shown(now: float) -> List[Dict]:
     """Once an hour: fetch the live page and the preview feed, run shown_issues."""
     import aiohttp
@@ -326,6 +345,19 @@ async def site_shown(now: float) -> List[Dict]:
     from datetime import datetime, timedelta, timezone
     today = (datetime.fromtimestamp(now, timezone.utc) - timedelta(hours=5)).date().isoformat()
     issues = shown_issues(html, feed, days, today) + after_issues(html, reads, today)
+    try:                                                     # 排程健康表 from the live feeds (raw GitHub, the same files the site reads)
+        import tempfile
+        from pathlib import Path
+        from tools import site_routines as R
+        tmp = Path(tempfile.mkdtemp(prefix="wsb_feeds_"))
+        async with aiohttp.ClientSession() as s:
+            for name, *_rest in R.EXPECT:
+                async with s.get(RAW_FEED + name, timeout=aiohttp.ClientTimeout(total=20)) as r:
+                    if r.status == 200:
+                        (tmp / name).write_bytes(await r.read())
+        issues += routine_issues(R.rows(now, tmp))
+    except Exception as e:  # noqa: BLE001
+        log.info("routine health: %s", e)
     st_f.write_text(json.dumps({"ts": now, "issues": issues}, ensure_ascii=False), encoding="utf-8")
     return issues
 
