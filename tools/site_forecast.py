@@ -155,7 +155,12 @@ def sec_forecast(eng) -> str:
     calls = _rows(d.get("calls"), "name", "call")
     if not calls:
         return ""
-    live = [x for x in calls if not x.get("result")]
+    # 2026-11-16 (same root cause as the earnings preview): "live" = not scored AND not yet due.  A past-due call waiting for
+    # its result must not keep sitting in the live table and push the newer calls down.
+    from datetime import date
+    today = date.today().isoformat()
+    live = [x for x in calls if not x.get("result") and str(x.get("by") or "9999")[:10] >= today]
+    overdue = [x for x in calls if not x.get("result") and str(x.get("by") or "9999")[:10] < today]
     paths = _rows(d.get("paths"), "name")
     nq = _rows((d.get("nextq") or {}).get("groups"), "name", "read")
     pline = "｜".join(f'{_e(p["name"])} <b>{_e(p.get("prob"))}%</b>' for p in paths)
@@ -165,6 +170,7 @@ def sec_forecast(eng) -> str:
             + _why(live) + (f'<p class="small muted">來源：{_src(d.get("sources"))}</p>' if d.get("sources") else ""))
     body = (f'<p class="rimp"><b>一句話看懂：{_e(d.get("one"))}</b></p>'
             + (f'<p class="small">三種走法：{pline}</p>' if pline else "") + _table(live)
+            + (f'<p class="small muted">另有 {len(overdue)} 題已到期、等對答案：{"、".join(_e(x["name"]) for x in overdue[:5])}。</p>' if overdue else "")
             + (f'<p class="small"><b>下一季</b>：{_e((d.get("nextq") or {}).get("one"))}</p><p class="small">{nline}</p>' if nq else "")
             + _score(calls) + f'<details class="sgx"><summary>看依據</summary>{more}</details>'
             + f'<p class="note">機率是 AI 的主觀判斷，{_e(d.get("updated"))} 更新，每週兩次，到期公開對答案。不構成投資建議。</p>')

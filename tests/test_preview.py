@@ -57,3 +57,20 @@ def test_missing_big_report_is_flagged():
 if __name__ == "__main__":
     test_missing_big_report_is_flagged()
     print("ok test_missing_big_report_is_flagged")
+
+
+def test_live_card_must_show_big_reports():
+    from tools import sys_health as H
+    days = {"2026-11-17": {"rows": [{"sym": "NVDA", "name": "NVIDIA", "mcap": 4e12}, {"sym": "HD", "name": "Home Depot", "mcap": 3.5e11}]}}
+    feed = {"items": [{"sym": "NVDA"}, {"sym": "HD"}]}
+    nav = "<nav>財報前瞻：公布前的機率估計與成績單</nav>"
+    hidden = nav + "<section><h2>財報前瞻：公布前的機率估計與成績單</h2><p>家得寶 HD・2026-11-17</p></section><section>x</section>"
+    shown = hidden.replace("家得寶 HD", "輝達 NVDA 家得寶 HD")
+    assert [i["key"] for i in H.shown_issues(hidden, feed, days, "2026-11-16")] == ["shown:NVDA"]
+    assert H.shown_issues(shown, feed, days, "2026-11-16") == []
+    assert H.shown_issues("<p>nothing</p>", feed, days, "2026-11-16")[0]["key"] == "shown:preview_card"
+
+
+if __name__ == "__main__":
+    test_live_card_must_show_big_reports()
+    print("ok test_live_card_must_show_big_reports")

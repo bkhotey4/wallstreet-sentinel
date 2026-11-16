@@ -244,12 +244,73 @@ async def preview_issues(now: float) -> List[Dict]:
              "text": f"**財報前瞻**：{names} 兩天內公布，網站上還沒有前瞻預判（每天 20:00 的分析任務沒寫到）。"}]
 
 
+SITE = "https://wallstreet-sentinel.pages.dev/"
+SHOWN_EVERY = 3600
+PREVIEW_CARD = "財報前瞻：公布前的機率估計與成績單"
+
+
+def card_text(html: str, title: str) -> str:
+    """Text of the card whose heading is `title` on the built page (the last occurrence: earlier ones are the sidebar)."""
+    import re
+    i = html.rfind(title)
+    if i < 0:
+        return ""
+    j = html.find("<section", i)
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html[i: j if j > 0 else i + 200000]))
+
+
+def shown_issues(html: str, feed: Dict, days: Dict, today: str) -> List[Dict]:
+    """The other half of the 11-16 lesson: the data can be right and still not reach the page.  Every company worth ≥ $300B
+    that reports in the next two days and HAS a preview must actually appear on the live card (by ticker)."""
+    from tools.site_preview import missing_big
+    big = missing_big([], days, today)                      # every big reporter, preview or not
+    have = {str(x.get("sym", "")).upper() for x in feed.get("items") or [] if isinstance(x, dict)}
+    txt = card_text(html, PREVIEW_CARD)
+    if not txt:
+        return [{"key": "shown:preview_card", "urgent": False, "text": "**網站自我檢查**：線上網站找不到「財報前瞻」卡。"}]
+    lost = [m for m in big if m["sym"] in have and m["sym"] not in txt]
+    if not lost:
+        return []
+    return [{"key": "shown:" + ",".join(m["sym"] for m in lost[:5]), "urgent": False,
+             "text": "**網站自我檢查**：" + "、".join(f"{m['name']}（{m['date'][5:].replace('-', '/')}）" for m in lost[:5])
+                     + " 有前瞻資料，但線上卡片上看不到（可能被排序或筆數上限擠掉）。"}]
+
+
+async def site_shown(now: float) -> List[Dict]:
+    """Once an hour: fetch the live page and the preview feed, run shown_issues."""
+    import aiohttp
+    st_f = DATA_DIR / "selfcheck_site.json"
+    try:
+        st = json.loads(st_f.read_text(encoding="utf-8")) if st_f.exists() else {}
+    except (OSError, ValueError):
+        st = {}
+    if now - float(st.get("ts", 0)) < SHOWN_EVERY:
+        return st.get("issues") or []
+    try:
+        days = json.loads((DATA_DIR / "earn_days.json").read_text(encoding="utf-8"))
+        async with aiohttp.ClientSession() as s:
+            async with s.get(PREVIEW_RAW, timeout=aiohttp.ClientTimeout(total=20)) as r:
+                feed = json.loads(await r.text()) if r.status == 200 else {}
+            async with s.get(SITE, params={"v": str(int(now))}, timeout=aiohttp.ClientTimeout(total=60)) as r:
+                html = await r.text() if r.status == 200 else ""
+    except Exception:  # noqa: BLE001
+        return st.get("issues") or []
+    if not html or not feed:
+        return st.get("issues") or []
+    from datetime import datetime, timedelta, timezone
+    today = (datetime.fromtimestamp(now, timezone.utc) - timedelta(hours=5)).date().isoformat()
+    issues = shown_issues(html, feed, days, today)
+    st_f.write_text(json.dumps({"ts": now, "issues": issues}, ensure_ascii=False), encoding="utf-8")
+    return issues
+
+
 async def check(now: float, news: Dict, sent: Dict[str, float]) -> tuple:
     """(problems not reported in the last 24 hours, how many are open in all).  The caller marks them in `sent` once the message is out."""
     issues = collect(now, read_tail(DATA_DIR / "sentinel.log"), heartbeat_age(now), await build_runs(),
                      len(news.get("sources") or []) if news and news.get("sources") is not None else None, price_age_days(now))
     issues += lag_issues(lag_rows(now), now)
     issues += await preview_issues(now)
+    issues += await site_shown(now)
     for k in [k for k, v in sent.items() if now - float(v) > 7 * 86400]:
         sent.pop(k, None)
     return due(issues, sent, now), len(issues)
