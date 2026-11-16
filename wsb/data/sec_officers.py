@@ -178,9 +178,13 @@ async def read_kind(index_url: str) -> Optional[Dict[str, str]]:
         return None
 
 
-async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
-    """Page the SEC current-8-K feed back to the last entry seen; record 5.02 filings by watched companies."""
+async def refresh(watch: Dict[str, list], now: float = 0, budget_s: float = 45) -> Dict:
+    """Page the SEC current-8-K feed back to the last entry seen; record 5.02 filings by watched companies.
+    2026-11-16: a time budget — when the SEC feed is slow (US market hours), stop paging, SAVE what was found, and keep the
+    old 'last seen' mark so the next run pages the rest again (before, a 60-second timeout threw the whole run away)."""
     now = now or time.time()
+    t0 = time.monotonic()
+    complete = True
     st = load()
     seen_ts = int(st.get("last_ts") or (now - 6 * 3600))
     alerts = {a["acc"]: a for a in st.get("alerts") or [] if now - a["ts"] < KEEP_S}
@@ -193,7 +197,17 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
     earn = {e["acc"]: e for e in st.get("earn") or [] if now - e["ts"] < KEEP_S}
     newest = seen_ts
     for p in range(PAGES):
-        xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=30, retries=1)
+        if time.monotonic() - t0 > budget_s:
+            complete = False
+            break
+        try:
+            xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=20, retries=0)
+        except Exception as e:  # noqa: BLE001
+            if p == 0:
+                raise
+            log.info("SEC feed page %d: %s", p, e)
+            complete = False
+            break
         rows = parse_feed(xml)
         if not rows:
             break
@@ -214,7 +228,7 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
     last13 = int(st.get("last_13d") or (now - 6 * 3600))
     new13 = last13
     try:                                                 # 大股東申報：一份申報有兩列（Subject＝被持股的公司、Filed by＝申報人）
-        for p in range(PAGES_13D):
+        for p in range(PAGES_13D if time.monotonic() - t0 <= budget_s else 0):
             rows = parse_13d(await http.get(FEED_13D.format(start=p * 100), kind="text", headers=HDR, timeout=30, retries=1))
             if not rows:
                 break
@@ -229,7 +243,7 @@ async def refresh(watch: Dict[str, list], now: float = 0) -> Dict:
                 break
     except Exception as e:  # noqa: BLE001
         log.info("SEC 13D feed: %s", e)
-    st = {"last_ts": newest, "last_13d": new13, "alerts": sorted(alerts.values(), key=lambda a: -a["ts"]),
+    st = {"last_ts": newest if complete else seen_ts, "last_13d": new13, "alerts": sorted(alerts.values(), key=lambda a: -a["ts"]),
           "earn": sorted(earn.values(), key=lambda e: -e["ts"]), "ts": int(now)}
     tmp = FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
