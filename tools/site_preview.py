@@ -72,21 +72,50 @@ def _item(it: Dict) -> str:
             + (f'<details class="sgx"><summary>判斷依據</summary><ul class="small">{basis}</ul></details>' if basis else "") + "</div>")
 
 
+def _mcaps() -> Dict[str, float]:
+    """Market caps from the earnings calendar cache, so the biggest report of a day leads the card."""
+    try:
+        from wsb.config import DATA_DIR
+        d = json.loads((DATA_DIR / "earn_days.json").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    out: Dict[str, float] = {}
+    for v in d.values():
+        for r in (v.get("rows") if isinstance(v, dict) else None) or []:
+            if r.get("sym") and r.get("mcap"):
+                out[str(r["sym"]).upper()] = max(out.get(str(r["sym"]).upper(), 0.0), float(r["mcap"]))
+    return out
+
+
 def sec_earn_preview(eng) -> str:
     d = load()
     items = [x for x in (d.get("items") or []) if isinstance(x, dict) and x.get("sym") and x.get("date")]
     if not items:
         return ""
-    up = sorted([x for x in items if not x.get("outcome")], key=lambda x: str(x["date"]))
+    # 2026-11-16: "upcoming" = no result yet AND the report day has not passed (US date).  Before this, past reports whose
+    # result the routine had not filled in yet (31 of them) sat at the top and pushed NVIDIA's 11/17 preview off the card.
+    try:
+        from wsb.data.econcal import us_today
+        today = us_today().isoformat()
+    except Exception:  # noqa: BLE001
+        from datetime import date
+        today = date.today().isoformat()
+    big = _mcaps()
+    up = sorted([x for x in items if not x.get("outcome") and str(x["date"]) >= today],
+                key=lambda x: (str(x["date"]), -big.get(str(x["sym"]).upper(), 0.0)))
+    waiting = [x for x in items if not x.get("outcome") and str(x["date"]) < today]
     past = sorted([x for x in items if x.get("outcome")], key=lambda x: str(x["date"]), reverse=True)
     sc = score(items)
-    lead = "一句話看懂：" + ("、".join(f'{x.get("name") or x["sym"]} {x.get("call", "")}' for x in up[:4]) + "（財報前的機率估計）。" if up else "最近沒有即將公布的重點財報。")
+    lead_items = sorted(up, key=lambda x: -big.get(str(x["sym"]).upper(), 0.0))[:4]      # the biggest reports first
+    lead = "一句話看懂：" + ("、".join(f'{x.get("name") or x["sym"]}（{str(x["date"])[5:].replace("-", "/")}）{x.get("call", "")}'
+                                       for x in lead_items) + "（財報前的機率估計）。" if up else "最近沒有即將公布的重點財報。")
     gauges = "".join(f'<li><b>{_esc(g.get("name"))}</b>：{_esc(g.get("read"))}</li>' for g in (d.get("gauges") or []) if isinstance(g, dict))
     rec = (f'<p class="rimp">過去 {sc["n"]} 次預估：最可能的情境猜中 {sc["hits"]} 次（{sc["hits"] / sc["n"] * 100:.0f}%）；'
            f'Brier 分數 {sc["brier"]:.2f}（0 是完美、0.67 等於每次都猜三分之一，越低越準）。</p>') if sc else '<p class="small muted">還沒有已公布的結果可以對答案；每次財報公布後會自動記錄猜中與否。</p>'
     note = ("每天晚上 8 點（台北）由 AI 分析任務讀取公開資料（公司上次的財測與管理層說法、供應鏈數據、分析師共識的公開報導、選擇權隱含波動），"
             "替未來 3 天要公布的重點財報寫機率估計，並在公布後記錄實際結果。機率是估計，會猜錯，所以本站公開成績單；不是投資建議。")
-    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + "".join(_item(x) for x in up[:6])
+    wait_txt = (f'<p class="small muted">另有 {len(waiting)} 家已經公布、還在等對答案（結果補進來後會算進成績單）。</p>' if waiting else "")
+    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + "".join(_item(x) for x in up[:8]) + wait_txt
             + (f'<h3>前瞻指標</h3><ul>{gauges}</ul>' if gauges else "") + f'<h3>成績單</h3>{rec}'
             + ("".join(_item(x) for x in past[:4]) if past else "")
             + f'<p class="note">{note}{"　更新 " + _esc(d.get("updated")) if d.get("updated") else ""}</p>')
