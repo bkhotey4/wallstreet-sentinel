@@ -37,7 +37,7 @@ def main() -> None:
             "Compensatory Arrangements of Certain Officers. ")
     doc = ("<html><p>" + head + "</p><p>On November 11, 2026, the Board accepted the resignation of Jen-Hsun Huang, as "
            "President, Chief Executive Officer and member of the Board, effective immediately.</p><p>Item 9.01. Exhibits</p></html>")
-    assert S.kind(S._text(doc)) == {"what": "離職", "seat": "執行長"}
+    k0 = S.kind(S._text(doc)); assert (k0["what"], k0["seat"]) == ("離職", "執行長"), k0
     # Marvell 11/12: three new directors; a bio mentions a past CEO job and the heading says "Departure" — still 董事任命
     mr = (head + "On November 11, 2026 the Board of Directors approved the appointments of Donna Morris, Douglas Bettinger and "
           "Sasan Goodarzi to the Board. Mr. Goodarzi was Chief Executive Officer of Intuit.")
@@ -66,7 +66,7 @@ def main() -> None:
         S.http.get = fake
         now = 1794491561 + 1800
         st = asyncio.run(S.refresh({"1045810": ["NVDA", "輝達"]}, now=now))
-        assert [a["t"] for a in st["alerts"]] == ["SEC 申報：輝達（NVDA）執行長離職（8-K 第 5.02 項）"], st
+        assert [a["t"] for a in st["alerts"]] == ["SEC 申報：輝達（NVDA）執行長離職（8-K 第 5.02 項）；文件沒寫原因、立即生效、沒有交接或留任（不像事先規劃的交接）"], st   # the test filing is a bare resignation
         assert st["last_ts"] == 1794491561
         n = len(asked)
         st = asyncio.run(S.refresh({"1045810": ["NVDA", "輝達"]}, now=now + 60))      # seen already: no second read of the filing
@@ -78,7 +78,7 @@ def main() -> None:
         S.FILE.write_text(json.dumps({"last_ts": now, "alerts": [{"acc": "old", "ts": now - 60, "sym": "NVDA", "zh": "輝達", "item": "5.02",
                                                                  "url": nv_url, "what": "任命", "seat": "董事長", "t": "wrong"}]}), encoding="utf-8")
         st = asyncio.run(S.refresh({"1045810": ["NVDA", "輝達"]}, now=now + 120))
-        assert st["alerts"][0]["t"] == "SEC 申報：輝達（NVDA）執行長離職（8-K 第 5.02 項）" and st["alerts"][0]["v"] == S.KIND_V, st
+        assert st["alerts"][0]["t"].startswith("SEC 申報：輝達（NVDA）執行長離職（8-K 第 5.02 項）") and st["alerts"][0]["v"] == S.KIND_V, st
     finally:
         S.http.get = real
     pub = S.public({"ts": 1, "alerts": [{"acc": "a", "ts": 5, "sym": "NVDA", "url": "https://www.sec.gov/x", "t": "T", "what": "離職"}]})

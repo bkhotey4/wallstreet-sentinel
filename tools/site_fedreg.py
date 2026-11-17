@@ -1,6 +1,7 @@
 """政府做了什麼卡（新聞日曆分頁）：聯邦公報上和市場有關的正式政策文件，以及「先動的資產」在刊登當天的反應。"""
 from __future__ import annotations
 
+import time
 from collections import Counter
 from datetime import date, timedelta
 from typing import Dict, Optional
@@ -103,7 +104,28 @@ def sec_fed_register(eng) -> str:
             '刊登日通常比總統簽署或宣布晚幾天，新聞往往在簽署當天就出來，所以總統文件會同時列出「簽署當天」和「刊登當天」的漲跌'
             '（簽署日遇週末或假日，看下一個交易日；機關公告多半沒有簽署日）；這只是同一天發生，不說是這份文件造成的。'
             '「大動」是當天漲跌超過平常一天波動的 2 倍。標題保留英文原文，點進去可看全文。')
-    body = (f'<p class="rimp big2"><b>{lead}</b></p>'
-            f'<details class="sgx" open><summary>{T(f"最近的政策文件（共 {len(items)} 項）", "Latest documents")}</summary>{fold_items(items, 10, "項", "ul")}</details>'
+    # 11-17：BIS 先發新聞稿「宣布」，聯邦公報幾天到幾週後才刊登——宣布的當下也要看得到
+    bis_html = ""
+    try:
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _Z
+        from wsb.data import bis_news as BN
+        cut_ts = time.time() - RECENT * 86400
+        rel = [c for c in (BN.classify(x) for x in BN.load().get("items") or [] if x["ts"] >= cut_ts) if c]
+        li = []
+        for x in rel:
+            t = _dt.fromtimestamp(x["ts"], _Z("Asia/Taipei"))
+            m = day_move(series(x["sym"]), _dt.fromtimestamp(x["ts"], _Z("America/New_York")).date().isoformat(), roll=True)
+            li.append(f'<li><span class="small muted">台北 {t:%m/%d %H:%M}・BIS 新聞稿（宣布）・{esc(x["topic"])}</span><br>'
+                      f'<a href="{esc(x["url"])}" target="_blank" rel="noopener">{esc(x["title"])}</a><br>'
+                      f'<span class="small">宣布當天（美股交易日）{esc(_mv(m, x["sym_zh"]))}</span></li>')
+        if li:
+            bis_html = (f'<h3>{T("先宣布、還沒正式刊登的（商務部工業安全局新聞稿）", "Announced by BIS (press releases)")}</h3>'
+                        f'<ul>{"".join(li)}</ul>')
+            lead += f'另外，商務部工業安全局最近 {RECENT} 天先用新聞稿宣布了 {len(li)} 項（正式刊登常晚幾天到幾週）。'
+    except Exception:  # noqa: BLE001
+        pass
+    body = (f'<p class="rimp big2"><b>{lead}</b></p>' + bis_html
+            + f'<details class="sgx" open><summary>{T(f"最近的政策文件（共 {len(items)} 項）", "Latest documents")}</summary>{fold_items(items, 10, "項", "ul")}</details>'
             f'<p class="note">{note}</p>')
     return card("政府做了什麼：美國正式公布的政策", "What Washington did: official policy actions", body, "wide")

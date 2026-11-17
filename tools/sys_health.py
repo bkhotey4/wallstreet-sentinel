@@ -16,7 +16,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -315,6 +315,29 @@ def routine_issues(rows: List[Dict]) -> List[Dict]:
     return out
 
 
+NL = chr(10)                           # newline (a literal escape gets mangled by shell edits — see memory)
+IPO_CARD = "IPO 觀察：誰要上市、什麼時候、招股書重點（美股／台股）"
+
+
+def cross_issues(html: str, ai_text: str, days: Dict, today) -> List[Dict]:
+    """Cards checked against each other (11-17, 「為何每次都是要我說?」): dates in the AI-written cards (learning notes,
+    macro voice, deep read) against the IPO card and the earnings calendar — see tools/cross_check.py."""
+    from tools import cross_check as X
+    i = html.rfind(IPO_CARD)
+    sec = html.rfind("<section", 0, i) if i >= 0 else -1
+    ipo_html = html[sec:html.find("</section>", i)] if sec >= 0 else ""
+    try:
+        from wsb.data.stocks import universe
+        zh = {k: v[0] for k, v in ((universe().get("us") or {}).get("symbols") or {}).items()}
+    except Exception:  # noqa: BLE001
+        zh = {}
+    found = (X.ipo_issues(ai_text, ipo_html, today) if ipo_html else []) + X.earn_issues(ai_text, days, zh, today)
+    if not found:
+        return []
+    return [{"key": "cross:" + ",".join(f"{x['name']}{x['text_date']}" for x in found[:5]), "urgent": False,
+             "text": "**卡片互相矛盾**：" + X.describe(found) + "。可能是 AI 寫錯，也可能是程式的資料慢了，要查是哪一邊。"}]
+
+
 async def site_shown(now: float) -> List[Dict]:
     """Once an hour: fetch the live page and the preview feed, run shown_issues."""
     import aiohttp
@@ -356,8 +379,13 @@ async def site_shown(now: float) -> List[Dict]:
                     if r.status == 200:
                         (tmp / name).write_bytes(await r.read())
         issues += routine_issues(R.rows(now, tmp))
+        texts = []
+        for name in ("learn.json", "macro_voice.json", "deep.json"):
+            if (tmp / name).exists():
+                texts.append((tmp / name).read_text(encoding="utf-8", errors="ignore"))
+        issues += cross_issues(html, NL.join(texts), days, date.fromisoformat(today))
     except Exception as e:  # noqa: BLE001
-        log.info("routine health: %s", e)
+        log.info("routine health / cross check: %s", e)
     st_f.write_text(json.dumps({"ts": now, "issues": issues}, ensure_ascii=False), encoding="utf-8")
     return issues
 

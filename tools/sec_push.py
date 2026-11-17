@@ -924,6 +924,24 @@ def korea_embed(a: Dict, lines: List[str]) -> Dict:
             "footer": {"text": "韓國關稅廳報導資料 · WallStreet Sentinel · 不構成投資建議"}}
 
 
+BIS_EVERY = 1800                 # 商務部工業安全局新聞稿：出口管制「宣布」的當下（聯邦公報要等正式刊登，常晚幾天到幾週；11-17）
+
+
+def bis_embed(a: Dict, lines: List[str]) -> Dict:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    x = a["item"]
+    tp = datetime.fromtimestamp(x["ts"], ZoneInfo("Asia/Taipei"))
+    et = datetime.fromtimestamp(x["ts"], ZoneInfo("America/New_York"))
+    lead = (f"美國商務部工業安全局（BIS）在台北 {tp:%m/%d %H:%M}（美東 {et:%m/%d %H:%M}）發布「{x['title']}」，"
+            f"主題是{x.get('topic', '')}，最先會動的通常是{x.get('sym_zh', '相關資產')}。")
+    why = ("這是政府「宣布」的當下；正式刊登在聯邦公報常晚幾天到幾週，市場通常在宣布時就反應。"
+           "出口管制先打到被管的晶片與設備公司，再傳到台灣的晶圓代工、伺服器與封測供應鏈。")
+    return {"title": f"🏛️ 美國出口管制：{x['title']}"[:256], "url": x["url"], "color": 0xDC2626,
+            "description": ("一句話看懂：" + lead + NL + why + (NL + "**相關行情現在**" + NL + NL.join(lines) if lines else ""))[:4000],
+            "footer": {"text": "美國商務部工業安全局官方新聞稿 · WallStreet Sentinel · 不構成投資建議"}}
+
+
 RULINGS_EVERY = 3 * 3600         # 法院與監管：最高法院判決、SEC／CFTC 通過的規則、司法部反壟斷（模組 6 小時才真的去抓）
 
 
@@ -1041,7 +1059,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -1055,7 +1073,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "es_ts": S["es_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1261,6 +1279,32 @@ async def run_once(now: Optional[float] = None) -> int:
                 sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
+        save()
+        try:                                               # 美國商務部 BIS 新聞稿（出口管制宣布的當下；11-17 新增）
+            if now - S["bi_ts"] >= BIS_EVERY and now > 1.7e9 and left("bis"):
+                from wsb.data import bis_news as BN
+                S["bi_ts"] = now
+                d = await asyncio.wait_for(BN.refresh(now=now), 45)
+                for a in BN.alerts(d, now):
+                    if a["key"] in done:
+                        continue
+                    w = await want(a["key"], "bis")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    lines = await market_now(sess, ["科技", "台股", "美股"], now)
+                    try:
+                        lines += await impact(sess, "NVDA", "輝達")
+                    except Exception:  # noqa: BLE001
+                        pass
+                    if await post(sess, chan or dm or "", bis_embed(a, lines), a["key"]):
+                        done[a["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("BIS check failed: %s", e)
         save()
         try:                                               # 台股重大訊息（即時，官方 RSS）：一家公司一則；只有持股才有的公司只私訊
             if left("mops"):

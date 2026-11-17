@@ -31,6 +31,46 @@ def _money(v: Optional[float]) -> str:
     return f"{v / 1e8:,.1f} 億美元" if a >= 1e8 else f"{v / 1e6:,.1f} 百萬美元" if a >= 1e6 else f"{v:,.0f} 美元"
 
 
+def _usd(x: float) -> str:
+    return f"{x / 1e8:,.0f} 億美元" if x < 1e12 else f"{x / 1e12:,.2f} 兆美元"
+
+
+def deal_block(r: Dict) -> str:
+    """承銷結構 (11-17, the user had to bring it from a video): deal size at the price range, the over-allotment (greenshoe)
+    and the 30-day stabilization it allows, a concurrent private placement, non-binding indications of interest, and a
+    share class holding fixed voting control — all read from the prospectus text by tools/../ipo_data.parse_cover."""
+    lo, hi, base = r.get("lo"), r.get("hi"), r.get("shares")
+    lines = []
+    if lo and hi and base:
+        sell = r.get("sell_shares") or 0
+        gs = r.get("gs_shares") or 0
+        tot = base + sell
+        txt = (f"公開發行 {tot / 1e6:,.1f} 百萬股" + (f"（公司新股 {base / 1e6:,.1f}、老股東賣出 {sell / 1e6:,.1f}；老股東賣的錢不進公司）" if sell else "")
+               + f"，以價格區間算約 {_usd(tot * lo)}～{_usd(tot * hi)}")
+        if gs:
+            txt += f"；加上超額配售最多再 {gs / 1e6:,.1f} 百萬股（基本量的 {gs / tot * 100:.0f}%），最高約 {_usd((tot + gs) * hi)}"
+        lines.append(txt + "。")
+    if r.get("gs_shares"):
+        lines.append(f"<b>超額配售（綠鞋）與穩價</b>：承銷商先多賣這些股票；上市後 {r.get('gs_days') or 30} 天內，股價漲就向公司加買（行使選擇權），"
+                     "股價跌到發行價附近就在市場買回來撐價格。這段期間結束後，少了這個支撐，常是新股第一個考驗。")
+    if r.get("pp"):
+        names = "、".join(f"{esc(x['name'])} {_usd(x['usd'])}" for x in r["pp"])
+        lines.append(f"<b>同步私募</b>：上市同時，以發行價直接賣股票給 {len(r['pp'])} 家公司，共 {_usd(r.get('pp_total') or 0)}（{names}；"
+                     "招股書以價格區間中點估算，實際股數照最終發行價）。這筆錢進公司、不經過承銷商，也不在公開發行的股數裡。"
+                     + (f"公開發行加同步私募合計約 {_usd((base + (r.get('sell_shares') or 0)) * hi + (r.get('pp_total') or 0))}"
+                        + (f"，含超額配售約 {_usd((base + (r.get('sell_shares') or 0) + (r.get('gs_shares') or 0)) * hi + (r.get('pp_total') or 0))}" if r.get("gs_shares") else "")
+                        + "（以區間上緣）。" if hi and base else ""))
+    if r.get("ioi_usd"):
+        lines.append(f"<b>認購意願</b>：部分董事或現有股東表示有意以發行價買最多 {_usd(r['ioi_usd'])}，但不具約束力，可多可少。")
+    if r.get("vote_ctrl"):
+        lines.append(f"<b>控制權</b>：招股書寫明有一類股票掌握 {r['vote_ctrl']:g}% 的投票權；一般買到的股票投票權有限，重大決定由這一類股東主導。")
+    if not lines:
+        return ""
+    return ('<details class="sgx"><summary class="small">' + T("承銷結構：募多少、超額配售、同步私募、控制權", "Deal structure") + "</summary>"
+            + "".join(f'<p class="small">{x}</p>' for x in lines)
+            + f'<p class="small muted">{T("全部由程式從招股書原文讀出（不是 AI），金額以價格區間估算，最終以定價後的 424B4 為準。", "")}</p></details>')
+
+
 def fin_block(fin: Optional[Dict]) -> str:
     """招股書財務：每季營收、季增（QoQ）、和去年同季比（YoY）、營益率；沒有季度表就用年度／期中數字。只寫數字，不下判斷。"""
     if not fin:
@@ -84,16 +124,17 @@ def _us_pending(u: Dict) -> str:
         if r.get("near"):
             when = f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{T("已公布價格區間", "Range set")}</div>'
         if r.get("stage"):
-            n = r.get("stage_n") or 0
-            when = (f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{esc(r["stage"])}，'
-                    + (f'過去 {n} 家多半 1～2 天內定價' if n >= 5 else '通常 1～3 天內定價') + '</div>')
+            n, md = r.get("stage_n") or 0, r.get("stage_med")
+            span = (f'過去 {n} 家從這一步到定價中位數 {md:.0f} 天（一半在 {r["stage_p25"]:.0f}～{r["stage_p75"]:.0f} 天）'
+                    if n >= 5 and md is not None else '已在掛牌前最後幾步')
+            when = f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{esc(r["stage"])}，{span}</div>'
         ai = r.get("ai") or {}
         det = ""
         if ai:
             det = ('<details class="sgx"><summary class="small">' + T("招股書重點", "Prospectus") + "</summary>"
                    + "".join(f'<p class="small"><b>{esc(k)}</b>：{esc(ai[k])}</p>' for k in ("業務", "財務", "資金用途", "主要風險", "要留意") if ai.get(k))
                    + f'<p class="small muted">{T("AI 依招股書節錄整理，數字照原文；有對不上原文的句子會被拿掉。", "")}</p></details>')
-        det = fin_block(r.get("fin")) + det
+        det = fin_block(r.get("fin")) + deal_block(r) + det
         sec = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={esc(r["cik"])}&type=S-1&dateb=&owner=include&count=40'
         tr.append(f'<tr><td><b>{esc(r["name"])}</b>' + (f' <span class="tk">{esc(r["symbol"])}</span>' if r.get("symbol") else "")
                + f'<div class="small muted">{esc(r.get("sicd") or "")}{"・外國公司" if r.get("foreign") else ""}</div>{det}</td>'
@@ -109,17 +150,30 @@ def _us_pending(u: Dict) -> str:
     return fold_rows(tr, 40, head, "家") + more
 
 
+def _stab(r: Dict) -> str:
+    """Stabilization window (greenshoe, ~30 days): when it ends and whether the stock broke the offer price during / after."""
+    if not r.get("stab_end"):
+        return "—"
+    from datetime import date as _date
+    end = r["stab_end"]
+    if _date.today().isoformat() <= end:
+        return f'{T("到", "to")} {_md(end)}<div class="small muted">{T("進行中", "ongoing")}' + ("・曾跌破發行價" if r.get("below_in") else "") + "</div>"
+    note = ("期間曾跌破" if r.get("below_in") else "期間守住") + ("、結束後跌破" if r.get("below_after") else "、結束後守住" if r.get("below_after") is False else "")
+    return f'{_md(end)} {T("結束", "ended")}<div class="small muted">{note}</div>'
+
+
 def _us_done(u: Dict) -> str:
     rows = u.get("recent") or []
     tr = [
         f'<tr><td><b>{esc(r["name"])}</b> <span class="tk">{esc(r.get("sym") or "")}</span><div class="small muted">{esc(r.get("sicd") or "")}</div></td>'
         f'<td class="nw">{_md(r["priced"])}</td><td class="r">{("$" + num(r["offer"], 2)) if r.get("offer") else "—"}</td>'
         f'<td class="r">{_pc(r.get("day1"))}</td><td class="r">{_pc(r.get("vs_offer"))}</td>'
+        f'<td class="nw">{_stab(r)}</td>'
         f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>' for r in rows]   # all; 30 shown
     if not tr:
         return ""
     head = (f'<tr><th>{T("公司", "Company")}</th><th>{T("定價", "Priced")}</th><th class="r">{T("發行價", "Offer")}</th>'
-            f'<th class="r">{T("第一天收盤", "Day 1")}</th><th class="r">{T("至今 vs 發行價", "Now vs offer")}</th><th>{T("禁售期到期", "Lock-up ends")}</th></tr>')
+            f'<th class="r">{T("第一天收盤", "Day 1")}</th><th class="r">{T("至今 vs 發行價", "Now vs offer")}</th><th>{T("穩價期", "Stabilization")}</th><th>{T("禁售期到期", "Lock-up ends")}</th></tr>')
     return fold_rows(tr, 30, head, "家")
 
 
@@ -168,7 +222,7 @@ def lead(b: Dict) -> str:
         s += f"，其中 {len(rng)} 家已公布價格區間、最接近定價（" + "、".join(r["name"] for r in rng[:3]) + ("等，全部列在下表" if len(rng) > 3 else "") + "）"
     stg = [r for r in pend if r.get("stage")]
     if stg:                                            # 11-17: the 8-A12B / EFFECT step means pricing within days
-        s += "；" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") for r in stg)              + f" 已經{stg[0]['stage'].replace('已向', '向').replace('SEC 已', 'SEC ')}，約 {_md(stg[0]['near'])} 前後定價、隨後掛牌"
+        s += "；即將定價：" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") + f' 約 {_md(r["near"])}' for r in stg)
     up = t.get("upcoming") or []
     s += f"；台股已公告 {len(up)} 家即將掛牌" + ("（" + "、".join(f"{r['name']} {_md(r.get('list'))}" for r in up[:3]) + "）" if up else "")
     s += f"、{len(t.get('applying') or [])} 家已申請上市櫃。"
@@ -211,6 +265,10 @@ def sec_ipo(eng) -> str:
                                     _stat(st.get("x60"), "60 個交易日後 vs 加權指數", "贏過指數"), _stat(st.get("vs_offer"), "至今 vs 承銷價", "高於承銷價")) if x)
     if t.get("win_med"):
         hist_tw += f"；公開抽籤中籤率中位數 {t['win_med']:.2f}%"
+    sb = (su.get("big") or {}).get("stab") or su.get("stab")
+    stab_txt = (f"穩價期（上市後約 30 天，承銷商可以在市場買回撐價格）：過去 {sb['n']} 家走完穩價期與之後 30 天的 IPO 中，"
+                f"穩價期間曾跌破發行價的占 {sb['in']:.0f}%，穩價期結束後 30 天內跌破的占 {sb['after']:.0f}%，"
+                f"其中「期間守住、結束後才跌破」的占 {sb['held_then_broke']:.0f}%。" if sb else "")
     soon = u.get("lock_soon") or []
     lock = ("未來 30 天禁售期到期：" + "、".join(f"{r['name']}（{r.get('sym') or ''}）{_md(r['lock'])}" for r in soon[:6])
             + "。禁售期結束後，上市前的股東可以開始賣股。") if soon else ""
@@ -218,7 +276,7 @@ def sec_ipo(eng) -> str:
             f'<details class="sgx" open><summary><b>{T("美股：申請中", "US: in registration")}</b> <span class="muted small">{len(u.get("pending") or [])}</span></summary>'
             f'<p class="small">{T(timing, "")}</p>{_us_pending(u)}</details>'
             f'<details class="sgx"><summary><b>{T("美股：最近 120 天已定價", "US: priced in the last 120 days")}</b> <span class="muted small">{len(u.get("recent") or [])}</span></summary>'
-            + (f'<p class="small">{T(lock, "")}</p>' if lock else "") + _us_done(u)
+            + (f'<p class="small">{T(lock, "")}</p>' if lock else "") + (f'<p class="small">{T(stab_txt, "")}</p>' if stab_txt else "") + _us_done(u)
             + (f'<p class="small">{T("過去紀錄（" + (u.get("from") or "—") + " 起）：" + hist_us + "。", "")}</p>' if hist_us else "") + "</details>"
             f'<details class="sgx" open><summary><b>{T("台股：即將掛牌", "Taiwan: listing soon")}</b> <span class="muted small">{len(t.get("upcoming") or [])}</span></summary>{_tw_up(t)}</details>'
             f'<details class="sgx"><summary><b>{T("台股：已申請上市櫃（興櫃審查中）", "Taiwan: applied to list")}</b> <span class="muted small">{len(t.get("applying") or [])}</span></summary>{_tw_apply(t)}</details>'

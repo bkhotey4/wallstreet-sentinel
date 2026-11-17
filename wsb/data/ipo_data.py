@@ -48,7 +48,7 @@ HEAD_BYTES = 2_500_000
 FIN_BYTES = 16_000_000          # whole prospectus: the quarterly table sits in MD&A (Anthropic's at ~5.5 MB of 14.8 MB)
 FIN_PER_RUN = 6
 TL_V = 2                        # bump when timeline() learns a new form: every filer's submissions are read once more
-COVER_V = 2                     # bump when parse_cover learns a new pattern: active filers' covers are read once more
+COVER_V = 3                     # bump when parse_cover learns a new pattern: active filers' covers are read once more
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
 
@@ -120,13 +120,47 @@ def parse_cover(t: str) -> Dict:
          or re.search(r"price per (?:share|ADS|ordinary share)[^.$]{0,60}?between (?:US)?\$\s?([\d.,]+) and (?:US)?\$\s?([\d.,]+)", t[:80000]))
     if m and _num(m.group(1)) and _num(m.group(2)):
         out["lo"], out["hi"] = _num(m.group(1)), _num(m.group(2))
-    m = re.search(r"(?:offering|are offering|is offering)\s+([\d,]{5,}) (?:shares|American Depositary Shares|ADSs)", t[:40000])
+    m = (re.search(r"(?:offering|are offering|is offering)\s+([\d,]{5,}) (?:shares|American Depositary Shares|ADSs)", t[:40000])
+         # the offering table form: "Class A common stock offered by us 801,351,354 shares" (Anthropic S-1/A, 11-17)
+         or re.search(r"(?:stock|shares|ADSs) offered by us\s+([\d,]{6,}) (?:shares|ADSs)", t[:400000]))
+    sm = re.search(r"(?:stock|shares|ADSs) offered by the selling (?:stockholders|shareholders)\s+([\d,]{5,}) (?:shares|ADSs)", t[:400000])
+    if sm and _num(sm.group(1)):
+        out["sell_shares"] = _num(sm.group(1))
     if m:
         out["shares"] = _num(m.group(1))
     out["spac"] = bool(re.search(r"initial business combination", t[:40000], re.I))
     m = re.search(r"(?:lock-up|lock up)[^.]{0,260}?(\d{2,3}) days", t, re.I)
     if m and 30 <= int(m.group(1)) <= 720:
         out["lockup"] = int(m.group(1))
+    # 11-17 超額配售（greenshoe）：承銷商可在 N 天內多買最多 X 股；上市後的穩價（承銷商在市場買回）就靠這個部位
+    head = t[:400000]
+    m = (re.search(r"option[^.]{0,200}?(?:to purchase|to buy)[^.]{0,40}?(?:up to )?(?:an aggregate of )?(?:an additional )?([\d,]{4,})"
+                   r"\s+additional (?:shares|American Depositary Shares|ADSs|ordinary shares)", head, re.I)
+         # the offering table form: "Underwriters' option to purchase additional shares of Class A common stock from us 123,750,000 shares"
+         or re.search(r"option to purchase additional (?:shares|ADSs)[^0-9]{0,120}?([\d,]{6,}) (?:shares|ADSs)", head, re.I))
+    if m and _num(m.group(1)):
+        out["gs_shares"] = _num(m.group(1))
+        dm = re.search(r"(\d{2}) days", t[m.start():m.end() + 300])
+        out["gs_days"] = int(dm.group(1)) if dm and 15 <= int(dm.group(1)) <= 60 else 30
+    # 同步私募（concurrent private placement）：公司在 IPO 同時，以發行價把股票直接賣給策略夥伴（Anthropic：7 家科技公司 260 億美元）
+    pp = []
+    for pm in re.finditer(r"([A-Z][\w.&,\- ]{2,60}?)(?: \(“[^”]{1,20}”\))? would purchase ([\d,]{4,}) shares of our [\w ]{0,30}?stock "
+                          r"for approximately \$\s?([\d.,]+) (billion|million)", head):
+        amt = _num(pm.group(3)) * (1e9 if pm.group(4) == "billion" else 1e6)
+        pp.append({"name": pm.group(1).strip(" ,").split(",")[-1].strip() if pm.group(1).count(",") > 1 else pm.group(1).strip(" ,"),
+                   "shares": _num(pm.group(2)), "usd": amt})
+    if pp:
+        out["pp"] = pp
+        tm = re.search(r"aggregate of \$\s?([\d.,]+) (billion|million) of our [\w ]{0,30}?stock from us in a (?:concurrent )?private placement", head)
+        out["pp_total"] = (_num(tm.group(1)) * (1e9 if tm.group(2) == "billion" else 1e6)) if tm else sum(x["usd"] for x in pp)
+    # 現有股東／董事表達認購意願（不具約束力）
+    im = re.search(r"indicated an interest in purchasing[^.]{0,200}?up to \$\s?([\d.,]+) (billion|million)", head)
+    if im:
+        out["ioi_usd"] = _num(im.group(1)) * (1e9 if im.group(2) == "billion" else 1e6)
+    # 控制權：某一類股票掌握多少投票權（Anthropic：創辦人 LLC 持有的 F 類股固定 50.1%，沒有經濟權益）
+    vm = re.search(r"(\d{1,2}(?:\.\d)?)% of the total voting power", head)
+    if vm:
+        out["vote_ctrl"] = float(vm.group(1))
     out["excerpt"] = excerpt(t)
     return out
 

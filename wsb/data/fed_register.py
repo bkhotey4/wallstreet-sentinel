@@ -37,7 +37,7 @@ QUERIES = (
 )
 # (主題, 英文, 關鍵字, 先動的資產 symbol, 資產中文) — 依序比對，第一個命中的算數
 TOPICS = (
-    ("出口管制／半導體", "Export controls / chips", r"export control|entity list|semiconductor|integrated circuit|chip|polysilicon|advanced computing|end-user",
+    ("出口管制／半導體", "Export controls / chips", r"export control|entity list|semiconductor|integrated circuit|chip|polysilicon|advanced computing|end-user|remote access|super ?intelligence|frontier (?:ai|model)|model weights|ai (?:model|chip|compute)",
      "SMH", "半導體 ETF"),
     ("關稅與貿易", "Tariffs & trade", r"tariff|duty|duties|section 301|section 232|import|trade agreement|reciprocal|customs|product exclusion|de minimis",
      "^GSPC", "標普 500"),

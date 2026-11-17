@@ -19,6 +19,8 @@ import pandas as pd
 
 ACTIVE_DAYS = 270
 LOCK = 180
+STAGE_DAYS = 21            # an 8-A12B / EFFECT older than this, still unpriced, no longer means "within days"
+STAB = 30                  # days of the underwriters' stabilization / over-allotment window (the usual greenshoe term)
 BIG_RAISE = 100.0          # US$ million raised in the IPO (offer price × shares offered on the 424B4 cover)
 
 
@@ -72,6 +74,15 @@ def after_listing(s: pd.Series, d: date, offer: Optional[float], bench: Optional
         if i + n < len(s):
             r, b = _ret(s, i, i + n), _bench(bench, t0, s.index[i + n])
             out[f"x{n}"] = r - b if r is not None and b is not None else None
+    # 穩價期（greenshoe window, 11-17）：承銷商可在約 30 天內在市場買回股票撐價格；結束後就沒有這個支撐
+    se = t0.date() + timedelta(days=STAB)
+    out["stab_end"] = str(se)
+    if offer:
+        w = s.iloc[i:][s.index[i:] <= pd.Timestamp(se)]
+        a = s[(s.index > pd.Timestamp(se)) & (s.index <= pd.Timestamp(se + timedelta(days=30)))]
+        out["below_in"] = bool(len(w) and (w < offer).any())
+        if today > se + timedelta(days=30) and len(a):
+            out["below_after"] = bool((a < offer).any())
     ld = t0.date() + timedelta(days=lock)
     out["lock"] = str(ld)
     k = int(s.index.searchsorted(pd.Timestamp(ld)))
@@ -104,7 +115,8 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
         row = {"cik": f["cik"], "name": f.get("name"), "sicd": f.get("sicd"), "foreign": f.get("foreign"), "drs": f.get("drs"),
                "s1": f["s1"], "last": f.get("last"), "amends": f.get("amends", 0), "since": since, "exchange": cv.get("exchange"),
                "symbol": cv.get("symbol"), "lo": cv.get("lo"), "hi": cv.get("hi"), "shares": cv.get("shares"), "lockup": cv.get("lockup"),
-               "acc": (f.get("doc") or {}).get("acc"), "fin": f.get("fin")}
+               "acc": (f.get("doc") or {}).get("acc"), "fin": f.get("fin"),
+               **{k: cv.get(k) for k in ("gs_shares", "gs_days", "pp", "pp_total", "ioi_usd", "vote_ctrl", "sell_shares") if cv.get(k) is not None}}
         if tf:
             row["win_lo"] = str(_d(f["s1"]) + timedelta(days=int(tf["p25"])))
             row["win_hi"] = str(_d(f["s1"]) + timedelta(days=int(tf["p75"])))
@@ -112,10 +124,14 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
         if cv.get("lo") and tl:
             row["near"] = str(_d(f["last"]) + timedelta(days=int(tl["med"])))
         late = max((x for x in (f.get("a12"), f.get("eff")) if x), default=None)
-        if late:                                        # registered on the exchange / declared effective: days, not weeks
+        # only a fresh step counts: filed in the last STAGE_DAYS days and no earlier than 3 days before the latest amendment
+        # (11-17 first build: 26 small filers with an old 8-A12B and no pricing were all marked "about to price")
+        fresh = (late and (today - _d(late)).days <= STAGE_DAYS and _d(late) >= _d(f.get("last") or late) - timedelta(days=3))
+        if fresh:                                       # registered on the exchange / declared effective: days, not weeks
             row["near"] = str(_d(late) + timedelta(days=int(ta["med"]) if ta else 1))
             row["stage"] = "SEC 已宣告生效" if f.get("eff") and f.get("eff") >= (f.get("a12") or "") else "已向交易所登記股票"
             row["stage_n"] = ta["n"] if ta else 0
+            row["stage_med"], row["stage_p25"], row["stage_p75"] = (ta["med"], ta["p25"], ta["p75"]) if ta else (None, None, None)
         pend.append(row)
     pend.sort(key=lambda r: r["last"], reverse=True)               # price range set first (closest to pricing), then newest
     pend.sort(key=lambda r: 0 if r.get("lo") else 1)
@@ -155,6 +171,12 @@ def stats_us(done: List[Dict]) -> Dict:
     for k in ("day1", "x60", "x120", "vs_offer", "lockx"):
         v = g(k)
         out[k] = {"n": len(v), "med": float(np.median(v)), "pos": _share(v)} if len(v) >= 10 else None
+    # 穩價期（11-17）：只算穩價期與之後 30 天都已經走完的案子，比較「期間」和「結束後」跌破發行價的比例
+    both = [r for r in done if r.get("below_after") is not None and r.get("below_in") is not None]
+    if len(both) >= 10:
+        out["stab"] = {"n": len(both), "in": sum(r["below_in"] for r in both) / len(both) * 100,
+                       "after": sum(r["below_after"] for r in both) / len(both) * 100,
+                       "held_then_broke": sum((not r["below_in"]) and r["below_after"] for r in both) / len(both) * 100}
     return out
 
 

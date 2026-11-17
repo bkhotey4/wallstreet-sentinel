@@ -27,7 +27,7 @@ FEED = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&com
 HDR = {"User-Agent": SEC_USER_AGENT}
 KEEP_S = 3 * 86400
 PAGES = 8
-KIND_V = 2                      # bump when kind() changes: stored personnel alerts are read again once
+KIND_V = 3                      # bump when kind() changes: stored personnel alerts are read again once
 FEED_13D = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=SCHEDULE+13D&company=&dateb=&owner=include"
             "&count=100&start={start}&output=atom")
 PAGES_13D = 3
@@ -126,7 +126,30 @@ def kind(text: str) -> Dict[str, str]:
                 else "董事長" if re.search(r"Chair(?:man|woman|person)? of the Board|Chair\b", sent)
                 else "董事" if re.search(r"independent director|to (?:its|the|our) Board|as (?:a )?director|board of directors", sent, re.I)
                 else "總裁" if re.search(r"President", sent) else "董事" if re.search(r"director|Board", sent, re.I) else "")
-    return {"what": what, "seat": seat}
+    out = {"what": what, "seat": seat}
+    if what == "離職":
+        k = sents.index(sent) if sent in sents else 0
+        out["flags"] = unsaid(w, " ".join(sents[k:k + 2]))      # the reason is looked for next to the departure, not in bios
+    return out
+
+
+def unsaid(w: str, zone: str = "") -> List[str]:
+    """What a departure filing does NOT say (11-17: NVIDIA's CEO 8-K gave no reason, took effect immediately, had no
+    transition or advisory role, named an interim CEO and a new board chair the same day — the pattern of a forced exit,
+    not a planned succession).  A pattern to look into, never a conclusion.  `zone` = the departure sentence and the next
+    one (a new director's biography can say 'a private family office')."""
+    out = []
+    if not re.search(r"reason|due to|in order to|to pursue|personal|health|family|retire|disagree|not the result of", zone or w, re.I):
+        out.append("沒寫原因")
+    if re.search(r"effective immediately|with immediate effect", w, re.I):
+        out.append("立即生效")
+    if not re.search(r"transition|remain|continue to serve|advis|consult|until (?:a|his|her) successor", w, re.I):
+        out.append("沒有交接或留任")
+    if re.search(r"\binterim\b|\bacting\b", w, re.I):
+        out.append("由人暫代")
+    if re.search(r"appointed [^.]{0,80}as (?:the )?(?:Chair|Chairman|Chairwoman|Chairperson)\b|as Chair of the Board", w, re.I):
+        out.append("同時換董事長")
+    return out
 
 
 # the 8-K items worth an alert: rare, and each one is news on its own (routine items like 7.01 / 8.01 / 9.01 are not;
@@ -163,7 +186,9 @@ def title_of(sym: str, zh: str, k: Dict[str, str], item: str = "5.02") -> str:
     if item != "5.02":
         return f"SEC 申報：{zh}（{sym}）{ITEMS[item]}（8-K 第 {item} 項）"
     body = f'{k.get("seat") or "高層"}{k["what"]}' if k.get("what") else "高層人事異動"
-    return f"SEC 申報：{zh}（{sym}）{body}（8-K 第 5.02 項）"
+    fl = k.get("flags") or []
+    odd = f"；文件{'、'.join(fl)}（不像事先規劃的交接）" if len(fl) >= 3 else ""   # 11-17: what the filing does not say
+    return f"SEC 申報：{zh}（{sym}）{body}（8-K 第 5.02 項）{odd}"
 
 
 async def read_kind(index_url: str) -> Optional[Dict[str, str]]:
