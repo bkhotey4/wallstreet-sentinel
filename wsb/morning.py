@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from .ai import context, llm, prompts
 from .config import SETTINGS
@@ -81,8 +81,31 @@ async def earnings_board(engine, private: bool = True) -> Tuple[Dict, str, str]:
     return {"ahead": ahead, "past": past, "asof": datetime.now().isoformat(timespec="minutes")}, txt, name
 
 
+VOICE_RAW = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/macro_voice.json"
+
+
+def site_theme(now: Optional[float] = None, max_age_h: float = 12) -> str:
+    """The site's own one-sentence read of the day (每日總經情勢 'one', written by the voice routine) when the bot's AI is
+    off — 11-18: the morning brief's 今日主題 said only 「AI 研判已停用」 while the site had 「輝達財報營收翻倍…」."""
+    import json
+    import time
+    import urllib.request
+    try:
+        js = json.loads(urllib.request.urlopen(urllib.request.Request(VOICE_RAW, headers={"User-Agent": "WallStreetSentinel bot"}),
+                                               timeout=15).read().decode("utf-8"))
+        up = datetime.strptime(str(js.get("updated", ""))[:16], "%Y-%m-%d %H:%M").timestamp()
+        if (now or time.time()) - up > max_age_h * 3600:
+            return ""
+        return str(js.get("one") or "").strip()[:80]
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def first_section(md: str) -> str:
-    """Pull the one-line theme from the AI text for the cover slide."""
+    """Pull the one-line theme from the AI text for the cover slide; with the bot's AI off, the site's own read of the day."""
+    from .ai import llm
+    if md == llm.OFF_NOTE or not md:
+        return site_theme() or ("AI 研判已停用，深度解讀請看網站" if md else "")
     from .bot.slides import parse_sections
     for h, items in parse_sections(md):
         if items and ("主題" in h or not h):

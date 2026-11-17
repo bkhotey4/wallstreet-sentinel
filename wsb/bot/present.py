@@ -89,6 +89,15 @@ async def deliver(dest, *, slides: Optional[Callable[[], List[bytes]]] = None,
                   content: Optional[str] = None) -> bool:
     """Render and send. `text` = AI markdown (becomes slides, or chunked text in classic mode).
     Returns True when at least one message was actually delivered."""
+    if callable(embeds):
+        # build the embeds ONCE, in a worker thread: embeds.dashboard reads every market series and blocked the event loop long
+        # enough for Discord to warn "heartbeat blocked" (11-17 22:00, the morning brief); later calls reuse the result
+        try:
+            _built = await asyncio.to_thread(embeds)
+            embeds = (lambda b=_built: b)
+        except Exception as _e:  # noqa: BLE001  (same failure surfaces where embeds() is used below)
+            def embeds(_e=_e):
+                raise _e
     if text == llm.OFF_NOTE:                                 # one line of text, not a slide of its own
         content, text = "\n".join(x for x in (content, text) if x), None
     qk = night_kw(dest, (headline(embeds) if embeds else None) or content or (text and title) or "")
