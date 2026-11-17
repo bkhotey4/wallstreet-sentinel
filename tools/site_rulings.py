@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 import pandas as pd
 
-from tools.sitekit import T, card, esc
+from tools.sitekit import T, card, esc, fold_rows
 from tools.site_fedreg import _mv, day_move
 
 RECENT = 30
@@ -35,10 +35,10 @@ def sec_rulings(eng) -> str:
             except Exception:  # noqa: BLE001
                 px[sym] = pd.Series(dtype=float)
         return px[sym]
-    rows = ""
-    for x in items[:25]:
+    rows = []
+    for x in items:                                     # all; first 25 shown, rest folded (user, 11-17)
         mv = _mv(day_move(series(x["sym"]), x["date"], roll=True), x["sym_zh"]) if x.get("sym") else "—"
-        rows += (f'<tr><td class="nw">{esc(x["date"])}</td><td class="nw">{esc(RL.SRC_ZH.get(x["src"], x["src"]))}</td>'
+        rows.append(f'<tr><td class="nw">{esc(x["date"])}</td><td class="nw">{esc(RL.SRC_ZH.get(x["src"], x["src"]))}</td>'
                  f'<td><a href="{esc(x["url"])}" target="_blank" rel="noopener">{esc(x["title"])}</a>'
                  + (f'<div class="small muted">{esc(x["sum"][:220])}</div>' if x.get("sum") else "")
                  + f'</td><td class="small">{esc(x.get("topic") or "—")}</td><td class="small">{esc(mv)}</td></tr>')
@@ -50,7 +50,7 @@ def sec_rulings(eng) -> str:
             "FTC 的新聞 RSS 網址目前回 404，沒有收。「當天」用判決或公布那一天的收盤，遇休市用下一個交易日；同一天常有其他消息，"
             "漲跌不一定是這件事造成的。標題保留英文原文，避免翻錯法律用語。")
     body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p><p>{chain}</p>'
-            f'<details><summary>最近的判決與規則</summary><div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{rows}</tbody></table></div></details>'
+            f'<details><summary>最近的判決與規則</summary>{fold_rows(rows, 25, head, "項")}</details>'
             f'<p class="note">{note}</p>')
     return card("法院與監管：判決、新規則、反壟斷", "Courts & regulators", body, "wide",
                 sub="最高法院判決、SEC／CFTC 規則、司法部反壟斷，和當天最先會動的資產")

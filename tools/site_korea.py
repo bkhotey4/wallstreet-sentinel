@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Dict, Optional
 
-from tools.sitekit import T, card, esc
+from tools.sitekit import T, card, esc, fold_rows
 
 
 def period_zh(k: str) -> str:
@@ -51,12 +51,12 @@ def sec_korea_exports(eng) -> str:
         seg = f"1–{int(same[0]['key'][8:10])} 日"
         trend = (f"同一段（每月 {seg}）比，兩個月前的日均年增率 {_pc(b)}，現在 {_pc(a)}："
                  + ("成長還在加速。" if a > b + 5 else "已經轉為衰退。" if a < 0 else "成長在放慢，但仍是增加。" if a < b - 5 else "大致持平。"))
-    trs = "".join(
+    trs = [
         f'<tr><td class="nw">{esc(period_zh(r["key"]))}</td><td class="r">{r["exp"]:,.0f}</td><td class="r {"up" if (r.get("yoy") or 0) > 0 else "dn"}">{_pc(r.get("yoy"))}</td>'
         f'<td class="r">{_pc(r.get("day_yoy"))}</td><td class="r">{_amt(r.get("chip"))}</td>'
         f'<td class="r">{_pc(r.get("chip_yoy"))}{"*" if r.get("chip_yoy_calc") else ""}</td>'
         f'<td class="r">{_pc((r.get("ctry") or {}).get("台灣"))}</td><td class="r">{_pc((r.get("ctry") or {}).get("中國"))}</td>'
-        f'<td class="r">{_pc((r.get("ctry") or {}).get("美國"))}</td></tr>' for r in rows[:12])
+        f'<td class="r">{_pc((r.get("ctry") or {}).get("美國"))}</td></tr>' for r in rows]   # all periods; 12 shown
     head = (f'<tr><th>{T("期間", "Period")}</th><th class="r">{T("出口（億美元）", "Exports ($100m)")}</th><th class="r">{T("年增", "YoY")}</th>'
             f'<th class="r">{T("日均年增", "Per working day YoY")}</th><th class="r">{T("晶片（億美元）", "Chips ($100m)")}</th><th class="r">{T("晶片年增", "Chips YoY")}</th>'
             f'<th class="r">{T("到台灣", "To Taiwan")}</th><th class="r">{T("到中國", "To China")}</th><th class="r">{T("到美國", "To US")}</th></tr>')
@@ -68,6 +68,6 @@ def sec_korea_exports(eng) -> str:
             "全月的新聞稿沒有附件，所以那幾列沒有晶片數字；*＝和去年同期那篇比算出的年增率。「到台灣」大增常是晶片送到台灣封測、組裝伺服器。"
             f'<a href="{esc("https://www.customs.go.kr/kcs/na/ntt/selectNttList.do?mi=2891&bbsId=1362")}" target="_blank" rel="noopener">韓國關稅廳報導資料</a>。')
     body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead_of(r0)}</p>' + (f"<p>{trend}</p>" if trend else "") + f"<p>{chain}</p>"
-            f'<div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{trs}</tbody></table></div><p class="note">{note}</p>')
+            f'{fold_rows(trs, 12, head, "期")}<p class="note">{note}</p>')
     return card("韓國出口快報：最早的晶片需求數字", "Korea's 10-day exports", body, "wide",
                 sub="韓國每 10 天公布一次出口，比台灣早兩到三週")

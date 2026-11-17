@@ -66,7 +66,7 @@ def sec_etf_flow(eng) -> str:
             t = "市價比淨值" + ("貴" if x["prem"] > 0 else "便宜") + " " + format(abs(x["prem"]), ".2f") + "%"
             return (f'<li><b>{esc(x["code"])} {esc(x["name"][:16])}</b>：{T(t, "")}'
                     f'<span class="small muted">（{T("規模", "size")} {num(x["aum"], 0)} {T("億", "")}）</span></li>')
-        li = "".join(_pl(x) for x in pr[:10])
+        li = "".join(_pl(x) for x in pr)                # all of them (user, 11-17: full data)
         pblock = (f'<h3>{T("⚠️ 市價和淨值差 1% 以上（規模 10 億以上）", "Premium / discount ≥ 1%")}</h3><ul>{li}</ul>'
                   f'<p class="small muted">{T("溢價＝你付的價格比 ETF 裡面的資產還貴；之後溢價收斂時，就算資產沒跌，市價也會跌。常見於額度用完暫停申購、或海外市場休市時。", "")}</p>')
     else:

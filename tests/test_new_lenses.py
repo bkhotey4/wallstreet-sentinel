@@ -43,6 +43,9 @@ def test_exchange_calendar():
     up = XC.upcoming(date(2026, 11, 16), 45, d)
     assert [(r["date"], r["us"], r["tw"]) for r in up][:4] == [("2026-11-26", "closed", "open"), ("2026-11-27", "early", "open"),
                                                                 ("2026-12-24", "early", "open"), ("2026-12-25", "closed", "closed")]
+    # the 偏舊 limit must be longer than the module's own refresh interval (11-17: 36 h vs a 7-day refresh)
+    from tools import site_stamp as STP
+    assert STP.MAX_AGE_H.get("xcal", 36) * 3600 > XC.TTL
 
 
 def test_index_dates_and_volume():

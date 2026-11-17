@@ -22,10 +22,10 @@ def test_lights_and_lead():
     assert set(by) == {"ci_big", "cre_office", "card", "auto"}, by.keys()
     assert by["ci_big"]["emoji"] == "🟢" and by["ci_big"]["dem"] == -12.0 and by["ci_big"]["max"] == 60.0
     assert by["cre_office"]["emoji"] == "🔴" and by["card"]["emoji"] in ("🟡", "🔴") and by["auto"]["emoji"] == "🟢"
-    assert by["auto"]["state"] == "放寬"
-    assert v["emoji"] == "🔴" and v["n_tight"] == 3 and v["n_loose"] == 1
+    assert by["auto"]["state"] == "大致持平" and by["ci_big"]["state"] == "大致持平"
+    assert v["emoji"] == "🔴" and v["n_tight"] == 2 and v["n_loose"] == 0
     t = SL.lead(v)
-    assert "4 類貸款裡，3 類銀行在收緊、1 類在放寬" in t and "商辦與其他商用不動產" in t and "企業借錢的需求淨 -12%（變弱）" in t, t
+    assert "4 類貸款裡，2 類明顯收緊、2 類大致持平（淨比例在 ±5% 以內）" in t and "商辦與其他商用不動產" in t and "企業借錢的需求淨 -12%（變弱）" in t, t
     assert SL.view(lambda sid: None) == {}
 
 

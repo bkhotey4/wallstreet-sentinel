@@ -295,8 +295,11 @@ def debate_prompt(r: Dict, info: Dict) -> str:
          f"營收年增（近四季）：{f('g', 0, '%')}；最近一季年增：{f('q_yoy', 0, '%')}；成長加速（百分點）：{f('accel', 0)}",
          f"毛利率：{f('gm', 0, '%')}；營業利益率：{f('om', 0, '%')}；40 法則：{f('r40', 0)}",
          f"估值：P/S {f('ps', 1)}；P/E {f('pe', 1)}；估值÷成長 {f('gav', 3)}（基準 {r.get('basis') or '—'}）",
-         f"現金：{b('cash')}；每年燒錢：{b('burn')}；可撐年數：{f('runway', 1)}",
+         (f"現金：{b('cash')}；沒有在燒錢（營運現金流沒有缺口）" if r.get("burn") is not None and r["burn"] <= 0
+          else f"現金：{b('cash')}；每年燒錢：{b('burn')}；可撐年數：{f('runway', 1)}"),
          f"營收含併購（商譽大增）：{'是' if r.get('ma') else '否'}；營收規模尚小：{'是' if r.get('small') else '否'}",
+         # 11-17: an 8,426% growth rate off a tiny base was praised as 極強的成長爆發力 — tell the model when the % means little
+         f"去年同期營收基期很小、年增率不具參考性：{'是（不要用這個百分比論證成長力道）' if r.get('odd') else '否'}",
          f"技術面狀態：{r.get('st') or '—'}"]
     if info.get("n"):                                  # analyst count + consensus rating only (no price-target figure)
         L.append(f"分析師：{info['n']} 位" + (f"；共識評等平均 {info['rm']:.1f}（1 最正面、5 最負面）" if isinstance(info.get("rm"), (int, float)) else ""))

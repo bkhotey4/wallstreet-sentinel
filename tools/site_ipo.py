@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from tools.sitekit import T, card, cls, esc, num
+from tools.sitekit import T, card, cls, esc, num, fold_rows
 
 
 def _md(s: Optional[str]) -> str:
@@ -107,16 +107,16 @@ def _us_pending(u: Dict) -> str:
 
 def _us_done(u: Dict) -> str:
     rows = u.get("recent") or []
-    tr = "".join(
+    tr = [
         f'<tr><td><b>{esc(r["name"])}</b> <span class="tk">{esc(r.get("sym") or "")}</span><div class="small muted">{esc(r.get("sicd") or "")}</div></td>'
         f'<td class="nw">{_md(r["priced"])}</td><td class="r">{("$" + num(r["offer"], 2)) if r.get("offer") else "—"}</td>'
         f'<td class="r">{_pc(r.get("day1"))}</td><td class="r">{_pc(r.get("vs_offer"))}</td>'
-        f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>' for r in rows[:30])
+        f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>' for r in rows]   # all; 30 shown
     if not tr:
         return ""
-    head = (f'<thead><tr><th>{T("公司", "Company")}</th><th>{T("定價", "Priced")}</th><th class="r">{T("發行價", "Offer")}</th>'
-            f'<th class="r">{T("第一天收盤", "Day 1")}</th><th class="r">{T("至今 vs 發行價", "Now vs offer")}</th><th>{T("禁售期到期", "Lock-up ends")}</th></tr></thead>')
-    return f'<div class="scroll"><table class="mini">{head}<tbody>{tr}</tbody></table></div>'
+    head = (f'<tr><th>{T("公司", "Company")}</th><th>{T("定價", "Priced")}</th><th class="r">{T("發行價", "Offer")}</th>'
+            f'<th class="r">{T("第一天收盤", "Day 1")}</th><th class="r">{T("至今 vs 發行價", "Now vs offer")}</th><th>{T("禁售期到期", "Lock-up ends")}</th></tr>')
+    return fold_rows(tr, 30, head, "家")
 
 
 def _tw_up(t: Dict) -> str:

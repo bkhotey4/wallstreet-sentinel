@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Dict, List, Optional
 
-from tools.sitekit import T, card, esc
+from tools.sitekit import T, card, esc, fold_rows
 
 WD = "一二三四五六日"
 US_HOL_ZH = {"New Year's Day": "元旦", "Martin Luther King Jr. Day": "馬丁路德金恩紀念日", "Washington's Birthday": "總統日",
@@ -49,13 +49,13 @@ def sec_index_events(eng) -> str:
     lead = (f"下一個是 <b>{_md(nxt['date'])}{zh}</b>（{'今天' if days == 0 else f'還有 {days} 天'}）"
             + (f"：過去同一種日子，收盤成交量的中位數是平常的 <b>{med[nxt['kind']]:.1f} 倍</b>" if med.get(nxt["kind"]) else "")
             + "。這些錢不管看法、在固定的日子一定要進出，所以那天的價格常被「量」推著走，隔天不一定延續。")
-    rows = ""
-    for e in evs[:8]:
+    rows = []
+    for e in evs:                                       # all dates; 8 shown, rest folded (user, 11-17)
         k = e["kind"]
         past = (v.get("past") or {}).get(k) or []
         hist = "、".join(f"{d[5:].replace('-', '/')} {r:.1f}×" for d, r in past[-4:])
         tw = (f"<div class='small muted'>台股在 {_md(e['tw_date'])} 收盤調整</div>" if e.get("tw_date") and e["tw_date"] != e["date"] else "")
-        rows += (f'<tr><td class="nw"><b>{_md(e["date"])}</b>{tw}</td><td>{esc(FF.KIND[k][0])}</td>'
+        rows.append(f'<tr><td class="nw"><b>{_md(e["date"])}</b>{tw}</td><td>{esc(FF.KIND[k][0])}</td>'
                  f'<td class="r">{f"{med[k]:.1f} 倍" if med.get(k) else "—"}</td><td class="small muted">{esc(hist)}</td>'
                  f'<td class="small">{esc(EV_WHY.get(k, ""))}</td></tr>')
     head = (f'<tr><th>{T("日期", "Date")}</th><th>{T("事件", "Event")}</th><th class="r">{T("過去收盤成交量（中位數）", "Past volume (median)")}</th>'
@@ -67,8 +67,8 @@ def sec_index_events(eng) -> str:
             "每種日子都拿過去幾年實際的成交量驗證過：「倍數」＝那天全市場成交量 ÷ 前 20 個交易日的中位數"
             f"（美股看標普 500 成分股、台股看上市股票；Yahoo，資料到 {esc(asof.get('^GSPC', '—'))}／{esc(asof.get('^TWII', '—'))}）。"
             "加入、剔除哪些公司由指數公司在生效前一到兩週公布，這裡不列名單。")
-    body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p><div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{rows}</tbody></table></div>'
-            f'<p class="note">{note}</p>')
+    body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p>' + fold_rows(rows, 8, head, "個日子")
+            + f'<p class="note">{note}</p>')
     return card("指數調整日曆：哪幾天會有被迫買賣的大單", "Index rebalance calendar", body, "wide",
                 sub="標普 500、羅素、MSCI、台灣 50 的調整日，和過去同一種日子的成交量")
 
@@ -159,7 +159,7 @@ def sec_rebalance(eng) -> str:
                      f"退休基金的股票比重從 {pm['w0'] * 100:.1f}% 變成 {pm['w1'] * 100:.1f}%。如果全部照規則調回去，季底前（{_md(pm['q_end'])}，"
                      f"還有 {(q_end - today).days} 天）要<b>{side}約 {abs(mv) / 1e8:,.0f} 億美元</b>的股票。")
     tl = _tax_loss(eng) if today >= date(today.year, 10, 15) else []
-    losers = [r for r in tl if r["ytd"] < -0.15][:8]
+    losers = [r for r in tl if r["ytd"] < -0.15]          # all of them (user, 11-17: full data)
     if losers:
         parts.append("年底節稅賣壓：美國投資人常在 12 月賣掉今年虧損的股票來抵稅（30 天內不能買回同一檔，否則不能抵）。"
                      f"追蹤的股票裡今年跌最多的：{'、'.join(esc(r['zh']) + ' ' + _pc(r['ytd'], 0) for r in losers)}。"

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from tools.site_sections import _tabset, _theme_chip
-from tools.sitekit import guard_safe, T, card, cls, esc, line_chart, num
+from tools.sitekit import guard_safe, T, card, cls, esc, line_chart, num, fold_rows
 
 MK = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
 WD = "一二三四五六日"
@@ -477,13 +477,12 @@ def sec_exhaust(eng) -> str:
             f'<th class="r">{T("警示數", "Flags")}</th><th>{T("哪些警示", "Which")}</th></tr></thead><tbody>{tr}</tbody></table></div>' if rows else
             f'<p class="muted">{T("目前追蹤池沒有同時出現 2 個以上力竭警示的股票。", "No stock shows two or more exhaustion flags right now.")}</p>')
     if watch:
-        wr = "".join(f'<tr><td class="nw">{_nm(r)}{_theme_chip(r.get("theme", "其他"))}</td><td>{T(*MK[mk])}</td><td class="r">{num(r.get("price"), 2)}</td>'
-                     f'<td class="small">{esc(PT.exh_text(r["exh"]))}</td></tr>' for mk, r in watch[:30])
+        wr = [f'<tr><td class="nw">{_nm(r)}{_theme_chip(r.get("theme", "其他"))}</td><td>{T(*MK[mk])}</td><td class="r">{num(r.get("price"), 2)}</td>'
+                     f'<td class="small">{esc(PT.exh_text(r["exh"]))}</td></tr>' for mk, r in watch]   # all; 30 shown, rest folded
         body += (f'<h3>{T(f"單一警示（觀察中，{len(watch)} 檔）", f"One flag (watch list, {len(watch)})")}</h3>'
                  f'<p class="small muted">{T("只出現 1 個警示，還不算過熱；再多一個就會進到上面的過熱清單。", "One flag only — not overheated yet; one more moves it to the list above.")}</p>'
-                 f'<div class="scroll"><table class="mini"><thead><tr><th>{T("個股", "Stock")}</th><th>{T("市場", "Market")}</th>'
-                 f'<th class="r">{T("現價", "Price")}</th><th>{T("哪個警示", "Which")}</th></tr></thead><tbody>{wr}</tbody></table></div>'
-                 + (f'<p class="small muted">{T(f"只列前 30 檔，共 {len(watch)} 檔", f"First 30 of {len(watch)}")}</p>' if len(watch) > 30 else ""))
+                 + fold_rows(wr, 30, f'<tr><th>{T("個股", "Stock")}</th><th>{T("市場", "Market")}</th>'
+                             f'<th class="r">{T("現價", "Price")}</th><th>{T("哪個警示", "Which")}</th></tr>', "檔"))
     elif not rows:
         body += f'<p class="muted">{T("也沒有只出現 1 個警示的股票：目前追蹤池整體不在過熱狀態。", "No stock has even one flag: the watch pool is not overheated.")}</p>'
     note = T("同時出現 2 個以上力竭警示的股票。這些是「短線追高風險較高」的描述，不代表會下跌，強勢股可以過熱很久；如果要加碼，可以等回到次級支撐觀察區再看。",

@@ -2,7 +2,7 @@
 這個分類之後的股價表現。只描述，不是買賣建議。"""
 from __future__ import annotations
 
-from tools.sitekit import T, card, esc, num
+from tools.sitekit import T, card, esc, fold_rows, num
 
 
 def _rng(x: dict) -> str:
@@ -28,14 +28,14 @@ def _hist(h: dict) -> str:
 def _rows(rs: list, daily: bool) -> str:
     from wsb.analytics import drop_check as D
     from wsb.analytics import fund_trend as F
-    trs = ""
-    for r in rs[:15]:
+    trs = []
+    for r in rs:                                        # all rows; first 15 shown, rest folded (user, 11-17)
         c = {"ok": "up", "weak": "dn"}.get(r["cls"], "")
         cash = r["fcf_lv"] if r.get("fcf_lv") is not None else r.get("nm_lv")
         cash_l = "自由現金流率" if r.get("fcf_lv") is not None else "淨利率"
         acc = {-1: "放慢", 1: "加速", 0: "持平"}.get(r.get("s_accel"), "")
         own = (f'<div class="small dn">{T("比同產業多跌很多：可能有公司自己的消息，先找時間對得上的新聞", "")}</div>' if r.get("own") else "")
-        trs += (f'<tr><td class="nw"><b>{esc(str(r["name"])[:22])}</b> <span class="tk">{esc(r["sym"].split(".")[0])}</span>'
+        trs.append(f'<tr><td class="nw"><b>{esc(str(r["name"])[:22])}</b> <span class="tk">{esc(r["sym"].split(".")[0])}</span>'
                 f'<div class="small muted">{esc(r["ind"])}</div></td>'
                 f'<td class="r dn">{num(r["r"], 0, sign=True)}%<div class="small muted">平常 ±{num(r["sd"], 0)}%</div></td>'
                 f'<td class="r">{num(r.get("ind_r"), 0, sign=True) + "%" if r.get("ind_r") is not None else "—"}{own}</td>'
@@ -46,7 +46,7 @@ def _rows(rs: list, daily: bool) -> str:
     head = (f'<tr><th>{T("公司", "Company")}</th><th class="r">{T("近" + win + "跌幅", "Drop")}</th><th class="r">{T("同產業中位數", "Industry median")}</th>'
             f'<th class="r">{T("① 營收年增", "① Revenue")}</th><th class="r">{T("③ 現金流／淨利", "③ Cash")}</th>'
             f'<th>{T("財報走向", "Trend")}</th><th>{T("分類", "Class")}</th></tr>')
-    return f'<div class="scroll"><table class="mini"><thead>{head}</thead><tbody>{trs}</tbody></table></div>'
+    return fold_rows(trs, 15, head, "家")
 
 
 def sec_drop_check(eng) -> str:

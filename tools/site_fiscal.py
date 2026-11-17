@@ -69,7 +69,7 @@ def sec_fiscal(eng) -> str:
         tga = (f"財政部現金帳戶（一般帳戶）餘額約 {_tn(dv['tga'])}（{esc(dv['tga_asof'])}）"
                + (f"，四週前比 {'+' if dv.get('tga_chg', 0) >= 0 else '−'}{_tn(abs(dv['tga_chg']))}" if dv.get("tga_chg") is not None else "") + "。")
     laws = "".join(f'<li>{esc(x["date"])}・<a href="{esc(x.get("url", ""))}" target="_blank" rel="noopener">{esc(x["title"])}</a>'
-                   + (f'（到期日 {esc(x["end"])}）' if x.get("end") else "") + "</li>" for x in (f.get("laws") or [])[:4])
+                   + (f'（到期日 {esc(x["end"])}）' if x.get("end") else "") + "</li>" for x in (f.get("laws") or []))
     body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p>'
             + (f"<p>{debt_lead(dv)}</p>" if dv else "")
             + f'<details><summary>卡關的話錢會怎麼動、資料怎麼來</summary><p class="small">{chain}</p><p class="small">{chain2}</p>'

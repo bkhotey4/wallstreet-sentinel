@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Dict
 
-from tools.sitekit import T, card, cls, esc, num
+from tools.sitekit import T, card, cls, esc, num, fold_items
 
 VERDICT = {"works": ("✅ 有效", "✅ Works", "up"), "backfires": ("⚠️ 反效果", "⚠️ Backfires", "dn"),
            "unclear": ("➖ 沒有明顯優勢", "➖ No clear edge", "muted"), "insufficient": ("⏳ 證據不足", "⏳ Not enough evidence", "muted")}
@@ -407,12 +407,12 @@ def sec_news_digest(eng) -> str:
         return f'<li data-syms="{esc(",".join(i.get("syms") or []))}"><span class="muted small">{when}</span> {tags}{a}</li>'
     groups = ""
     for k, tzh, ten, _rx in ND.TOPICS:
-        g = [i for i in items if k in (i.get("topics") or [])][:8]
+        g = [i for i in items if k in (i.get("topics") or [])]       # all; 8 shown, rest folded (user, 11-17)
         if g:
-            groups += f'<h3>{T(tzh, ten)}</h3><ul class="small nd">{"".join(li(i) for i in g)}</ul>'
-    other = [i for i in items if (i.get("topics") or []) == ["other"]][:8]
+            groups += f'<h3>{T(tzh, ten)}</h3>' + fold_items([li(i) for i in g], 8, "則", 'ul class="small nd"')
+    other = [i for i in items if (i.get("topics") or []) == ["other"]]
     if other:
-        groups += f'<h3>{T("其他（提到追蹤名單公司）", "Other (tracked companies)")}</h3><ul class="small nd">{"".join(li(i) for i in other)}</ul>'
+        groups += f'<h3>{T("其他（提到追蹤名單公司）", "Other (tracked companies)")}</h3>' + fold_items([li(i) for i in other], 8, "則", 'ul class="small nd"')
     mine = (f'<div id="ndmine" style="display:none"><h3>🔒 {T("和你的持股有關（只在這個瀏覽器比對）", "About your holdings (matched in this browser only)")}</h3>'
             f'<ul class="small nd"></ul></div>')
     upd = _dt.fromtimestamp(nd.get("ts", 0), tz).strftime("%m-%d %H:%M") if nd.get("ts") else "—"

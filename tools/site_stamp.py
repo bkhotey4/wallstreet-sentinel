@@ -698,6 +698,7 @@ MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 *
 
 MAX_AGE_H.update({k: 24 * (SOURCES[k][3] + 1) for k in ("after", "preview", "sessions", "forecast", "bondread", "voice", "afterall", "learn", "deep")})
 MAX_AGE_H["rel"] = 8 * 24             # refreshed weekly by design
+MAX_AGE_H["xcal"] = 8 * 24            # holiday calendars: wsb/data/exchange_cal.TTL is 7 days (11-17: flagged 偏舊 5 days a week)
 MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not a fault
 
 

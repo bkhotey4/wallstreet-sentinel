@@ -145,9 +145,20 @@ def sec_earn_preview(eng) -> str:
     miss = missing_big(items, _earn_days(), today)
     miss_txt = ('<p class="warn"><b>⚠ 快公布了、還沒有前瞻：</b>' + "、".join(f'{_esc(m["name"])}（{_esc(m["date"][5:].replace("-", "/"))}）' for m in miss)
                 + "。前瞻每天晚上 8 點（台北）由分析任務補上；這一行是本站自己的檢查，補上後就會消失。</p>") if miss else ""
-    wait_txt = (f'<p class="small muted">另有 {len(waiting)} 家已經公布、還在等對答案（結果補進來後會算進成績單）。</p>' if waiting else "")
-    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + miss_txt + "".join(_item(x) for x in up[:8]) + wait_txt
+    wait_txt = (f'<details class="sgx"><summary>另有 {len(waiting)} 家已經公布、還在等對答案（結果補進來後會算進成績單）</summary>'
+                + "".join(_item(x) for x in sorted(waiting, key=lambda x: str(x["date"]), reverse=True)) + '</details>' if waiting else "")
+    # 11-17: the 8-item cap filled with 11/17's smaller names and dropped Walmart (11/19, ~$1T) although the lead line named it.
+    # Every company named in the lead, and every one worth ≥ BIG_FLOOR, is always shown; the rest fill the cap by date.
+    must = {id(x) for x in lead_items} | {id(x) for x in up if big.get(str(x["sym"]).upper(), 0.0) >= BIG_FLOOR}
+    shown = [x for x in up if id(x) in must]
+    shown += [x for x in up if id(x) not in must][:max(0, 8 - len(shown))]
+    shown.sort(key=lambda x: (str(x["date"]), -big.get(str(x["sym"]).upper(), 0.0)))
+    # 11-17 (user): show ALL the data, not part of it — the rest are folded, never dropped
+    rest = [x for x in up if id(x) not in {id(y) for y in shown}]
+    more_txt = (f'<details class="sgx"><summary>看其餘 {len(rest)} 家公司的前瞻</summary>' + "".join(_item(x) for x in rest) + '</details>') if rest else ""
+    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + miss_txt + "".join(_item(x) for x in shown) + more_txt + wait_txt
             + (f'<h3>前瞻指標</h3><ul>{gauges}</ul>' if gauges else "") + f'<h3>成績單</h3>{rec}'
             + ("".join(_item(x) for x in past[:4]) if past else "")
+            + ((f'<details class="sgx"><summary>看其餘 {len(past) - 4} 筆已對答案的紀錄</summary>' + "".join(_item(x) for x in past[4:]) + '</details>') if len(past) > 4 else "")
             + f'<p class="note">{note}{"　更新 " + _esc(d.get("updated")) if d.get("updated") else ""}</p>')
     return card("財報前瞻：公布前的機率估計與成績單", "Earnings preview & track record", body, "wide")

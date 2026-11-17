@@ -119,7 +119,7 @@ def sec_st_brief(eng) -> str:
     sl = _sloos(eng) or {}
     if sl.get("rows"):
         bg = next((r for r in sl["rows"] if r["key"] == "ci_big"), sl["rows"][0])
-        tiles.append(("st-sloos", f"{sl['emoji']} 銀行放款門檻", f"{sl['n_tight']}<small> / {len(sl['rows'])} 類收緊</small>",
+        tiles.append(("st-sloos", f"{sl['emoji']} 銀行放款門檻", f"{sl['n_tight']}<small> / {len(sl['rows'])} 類明顯收緊</small>",
                       f"{bg['zh']}淨 {bg['std']:+.0f}%（歷史第 {num(bg['pct'], 0)} 百分位）・{sl['date']} 調查", ""))
     cv = coverage()
     gaps = cv.get("gaps") or []

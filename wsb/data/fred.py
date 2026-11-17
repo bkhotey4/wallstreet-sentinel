@@ -19,6 +19,29 @@ from . import http
 log = logging.getLogger(__name__)
 
 
+UST_XML = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"   # Treasury daily par yield curve
+UST_TENOR = {"BC_1MONTH": "DGS1MO", "BC_3MONTH": "DGS3MO", "BC_6MONTH": "DGS6MO", "BC_1YEAR": "DGS1", "BC_2YEAR": "DGS2",
+             "BC_3YEAR": "DGS3", "BC_5YEAR": "DGS5", "BC_7YEAR": "DGS7", "BC_10YEAR": "DGS10", "BC_20YEAR": "DGS20", "BC_30YEAR": "DGS30"}
+UST_SPREADS = {"T10Y2Y": ("DGS10", "DGS2"), "T10Y3M": ("DGS10", "DGS3MO")}
+
+
+def parse_ust_all(xml: str) -> Dict[str, Dict[str, float]]:
+    """Treasury daily par yield curve XML → {YYYY-MM-DD: {FRED id: yield %}} for every tenor present."""
+    out: Dict[str, Dict[str, float]] = {}
+    for blk in re.findall(r"<m:properties>(.*?)</m:properties>", xml, re.S):
+        d = re.search(r"<d:NEW_DATE[^>]*>(\d{4}-\d{2}-\d{2})", blk)
+        if not d:
+            continue
+        row = {}
+        for tag, sid in UST_TENOR.items():
+            v = re.search(rf"<d:{tag}[^>]*>([\d.]+)<", blk)
+            if v:
+                row[sid] = float(v.group(1))
+        if row:
+            out[d.group(1)] = row
+    return out
+
+
 def _redact(msg: str) -> str:
     """aiohttp errors carry the request URL; never let the API key reach the log."""
     return re.sub(r"(api_key=)[^&\s'\"]+", r"\g<1>***", msg)
@@ -131,6 +154,10 @@ class FredData:
         for sid in ids:                                   # failed this round → fall back to the archive
             if sid not in self.series and sid in self._archive:
                 self.series[sid] = self._archive[sid]
+        try:                                              # after the archive fallback, so a FRED outage is filled too
+            await self.fill_treasury()
+        except Exception as e:  # noqa: BLE001
+            log.info("Treasury fill skipped: %s", e)
         if ok:
             try:
                 tmp = _cache_file().with_suffix(".tmp")
@@ -143,6 +170,53 @@ class FredData:
             HEALTH.ok("fred", ok, every=every)
         else:
             HEALTH.fail("fred", f"unreachable ({last_err}); 建議設定 FRED_API_KEY", every=every)
+
+    async def fill_treasury(self, today=None) -> Dict[str, list]:
+        """FRED posts the Treasury yields (DGS*) a day or two after Treasury itself; cards then said 「官方值查無」 for
+        yesterday (11-17).  Treasury's own daily par-yield XML is the same number — append only the dates FRED does not
+        have yet (never overwrite FRED, never written to the archive), plus the spreads FRED derives from them."""
+        from datetime import date as _date
+        today = today or _date.today()
+        months = {today.strftime("%Y%m")}
+        if today.day <= 5:
+            months.add((today.replace(day=1) - pd.Timedelta(days=1)).strftime("%Y%m"))
+        got: Dict[str, Dict[str, float]] = {}
+        for m in sorted(months):
+            try:
+                xml = await http.get(UST_XML, params={"data": "daily_treasury_yield_curve", "field_tdr_date_value_month": m},
+                                     kind="text", timeout=20, retries=1)
+            except Exception as e:  # noqa: BLE001
+                log.info("Treasury yield XML %s: %s", m, e)
+                continue
+            for d, row in parse_ust_all(xml).items():
+                got.setdefault(d, {}).update(row)
+        return self.apply_treasury(got)
+
+    def apply_treasury(self, got: Dict[str, Dict[str, float]]) -> Dict[str, list]:
+        filled: Dict[str, list] = {}
+        for sid in list(UST_TENOR.values()):
+            s = self.series.get(sid)
+            if s is None or s.empty:
+                continue
+            last = s.index[-1]
+            add = {pd.Timestamp(d): row[sid] for d, row in got.items() if sid in row and pd.Timestamp(d) > last}
+            if add:
+                self.series[sid] = pd.concat([s, pd.Series(add).sort_index()])
+                filled[sid] = sorted(x.strftime("%Y-%m-%d") for x in add)
+        for sid, (a, b) in UST_SPREADS.items():               # T10Y2Y = DGS10 − DGS2 etc., exactly as FRED computes them
+            s = self.series.get(sid)
+            if s is None or s.empty:
+                continue
+            last = s.index[-1]
+            add = {pd.Timestamp(d): round(row[a] - row[b], 2) for d, row in got.items()
+                   if a in row and b in row and pd.Timestamp(d) > last}
+            if add:
+                self.series[sid] = pd.concat([s, pd.Series(add).sort_index()])
+                filled[sid] = sorted(x.strftime("%Y-%m-%d") for x in add)
+        self.treasury_filled = filled
+        if filled:
+            log.info("Treasury filled FRED lag: %s", {k: v[-1] for k, v in filled.items()})
+        return filled
 
     def get(self, sid: str) -> pd.Series:
         return self.series.get(sid, pd.Series(dtype=float))

@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from tools.sitekit import T, card, esc
+from tools.sitekit import T, card, esc, fold_items
 
 RECENT = 14
 
@@ -80,7 +80,7 @@ def sec_fed_register(eng) -> str:
         return px[sym]
 
     items, big = [], 0
-    for x in docs[:10]:
+    for x in docs:                                      # all documents; first 10 shown, rest folded (user, 11-17)
         routine = x.get("routine") or bool(FR.ROUTINE.search(x.get("title", "")))
         m = day_move(series(x["sym"]), x["date"])
         sg = x.get("signed")
@@ -104,6 +104,6 @@ def sec_fed_register(eng) -> str:
             '（簽署日遇週末或假日，看下一個交易日；機關公告多半沒有簽署日）；這只是同一天發生，不說是這份文件造成的。'
             '「大動」是當天漲跌超過平常一天波動的 2 倍。標題保留英文原文，點進去可看全文。')
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
-            f'<details class="sgx" open><summary>{T("最近 10 項政策文件", "Latest 10 documents")}</summary><ul>{"".join(items)}</ul></details>'
+            f'<details class="sgx" open><summary>{T(f"最近的政策文件（共 {len(items)} 項）", "Latest documents")}</summary>{fold_items(items, 10, "項", "ul")}</details>'
             f'<p class="note">{note}</p>')
     return card("政府做了什麼：美國正式公布的政策", "What Washington did: official policy actions", body, "wide")

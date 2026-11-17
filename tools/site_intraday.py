@@ -140,7 +140,7 @@ _JS = r"""
 __MKT__ var ST={st:'open'};
  function past(s){return ST.st==='open'?s:mktPast(s);}
  function f(x,d){return x==null||isNaN(x)?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
- function sg(x,d){return x==null||isNaN(x)?'—':(x>0?'+':'')+f(x,d);}
+ function sg(x,d){if(x==null||isNaN(x))return '—';var r=+(+x).toFixed(d==null?1:d);return r===0?f(0,d):(r>0?'+':'')+f(x,d);}
  function et(){var p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),o={};
    p.forEach(function(x){o[x.type]=x.value;});return {wd:o.weekday,m:(+o.hour%24)*60+(+o.minute)};}
  var dead=false;
@@ -187,7 +187,7 @@ __MKT__ var ST={st:'open'};
        if(x.k==='def'&&x.c<0&&c>0.3)return '，大盤漲時資金離開防禦型、轉向景氣循環股';return '';};
      var hi=sec[0],lo=sec[sec.length-1];
      if(Math.abs(hi.c)>=0.8||Math.abs(lo.c)>=0.8)W.push(en()?'Sectors: best '+hi.en+' '+sg(hi.c,1)+'%, worst '+lo.en+' '+sg(lo.c,1)+'%.'
-       :'類股：'+hi.zh+' '+sg(hi.c,1)+'% 漲最多'+clue(hi)+'；'+lo.zh+' '+sg(lo.c,1)+'% '+(lo.c<0?'跌最多':'漲最少')+clue(lo)+'。');}
+       :'類股：'+hi.zh+' '+sg(hi.c,1)+'% 漲最多'+clue(hi)+'；'+lo.zh+' '+sg(lo.c,1)+'% '+(+lo.c.toFixed(1)<0?'跌最多':+lo.c.toFixed(1)>0?'漲最少':'持平')+clue(lo)+'。');}
    var tn=q['^TNX'];if(tn&&tn.prev){var bp=(tn.price-tn.prev)*100;if(Math.abs(bp)>=4)W.push(en()?'10-year yield '+sg(bp,0)+' bp.'
      :'美國 10 年期公債殖利率 '+sg(bp,0)+' bp（'+f(tn.price,2)+'%）：'+(bp<0?'利率下降，未來獲利折現回來更值錢，通常有利科技成長股。':'利率上升，股票的相對吸引力下降，高本益比的成長股最受壓。'));}
    var dx=q['DX-Y.NYB'];if(dx&&dx.chg!=null&&Math.abs(dx.chg)>=0.4)W.push(en()?'Dollar '+sg(dx.chg,1)+'%.':'美元指數 '+sg(dx.chg,1)+'%：'+(dx.chg>0?'美元走強，資金偏保守，也不利新台幣與新興市場。':'美元走弱，資金較願意承擔風險，新台幣與新興市場通常受惠。'));

@@ -38,6 +38,10 @@ GROUPS: List[Tuple[str, str, List[Tuple[str, str, str, bool, str]]]] = [
 FLOW = 0.01                                         # a change under 1% of the level counts as flat
 
 
+def num_s(x: Optional[float]) -> str:
+    return "—" if x is None else f"{x:+.1f}%"
+
+
 def _series(eng, sid: str) -> pd.Series:
     try:
         s = eng.fred.get(sid)
@@ -81,6 +85,32 @@ def bills(eng) -> Dict:
             rows.append({"label": label, "yoy": y, "asof": s.index[-1].strftime("%Y-%m"),
                          "over": wage is not None and y > wage})
     return {"wage": wage, "rows": rows, "over": sum(r["over"] for r in rows)}
+
+
+def real_wage(eng) -> Optional[Dict]:
+    """Ordinary workers' hourly pay (production & nonsupervisory) divided by the CPI: did pay beat prices over the
+    last year, how long the current streak has lasted, and the worst year on record (11-17: the site compared single
+    bills with pay but never said whether pay beat prices overall)."""
+    w, c = _series(eng, WAGE), _series(eng, "CPIAUCSL")
+    if len(w) < 25 or len(c) < 25:
+        return None
+    w.index, c.index = w.index.to_period("M"), c.index.to_period("M")
+    r = (w / c).dropna()
+    y = ((r / r.shift(12) - 1) * 100).dropna()
+    if len(y) < 13:
+        return None
+    now = float(y.iloc[-1])
+    sign = now >= 0
+    run = 0
+    for v in reversed(y.values):
+        if (v >= 0) != sign:
+            break
+        run += 1
+    flip = y[(y >= 0) != sign]
+    lo = y.idxmin()
+    return {"yoy": now, "asof": str(y.index[-1]), "wage": yoy(_series(eng, WAGE)), "cpi": yoy(_series(eng, "CPIAUCSL")),
+            "run": run, "last_flip": str(flip.index[-1]) if len(flip) else None, "worst": float(y.min()), "worst_at": str(lo),
+            "since": str(y.index[0])[:4]}
 
 
 def group_rows(eng, items) -> List[Dict]:
@@ -136,12 +166,23 @@ def sec_human(eng) -> str:
     b = bills(eng)
     groups = [(t, d, group_rows(eng, items)) for t, d, items in GROUPS]
     rows = [r for _t, _d, g in groups for r in g]
-    if not b["rows"] and not rows:
+    rw = real_wage(eng)
+    if not b["rows"] and not rows and not rw:
         return ""
     worse = sum(r["tone"] == "變差" for r in rows)
     lead = (f'{b["over"]}／{len(b["rows"])} 項生活開銷漲得比工資快；家庭、工作等 {len(rows)} 項指標中，{worse} 項比一年前差。'
             if b["rows"] else f'{len(rows)} 項指標中，{worse} 項比一年前差。')
     bill_html = ""
+    rw_html = ""
+    if rw:
+        word = "多" if rw["yoy"] >= 0 else "少"
+        streak = (f'已經連續 {rw["run"]} 個月{"贏過" if rw["yoy"] >= 0 else "輸給"}物價'
+                  + (f'（上一次相反是 {rw["last_flip"]}）' if rw.get("last_flip") else ""))
+        rw_html = (f'<h3>扣掉物價，薪水是變多還是變少</h3><p>一般員工（生產與非主管職）的時薪一年 {num_s(rw["wage"])}，物價（CPI）一年 {num_s(rw["cpi"])}；'
+                   f'扣掉物價後，同樣工作一小時能買到的東西比一年前<b>{word} {abs(rw["yoy"]):.1f}%</b>（資料月份 {rw["asof"]}），{streak}。'
+                   f'{rw["since"]} 年以來最糟是 {rw["worst_at"]} 的 {rw["worst"]:+.1f}%。</p>'
+                   '<p class="small muted">薪水贏過物價，日子才會真的變好過；連續輸給物價時，就算有工作，人們也會覺得變窮，消費和選票常常跟著轉向。</p>')
+        lead = f'扣掉物價，一般員工的時薪比一年前{word} {abs(rw["yoy"]):.1f}%。' + lead
     if b["rows"]:
         wage = "—" if b["wage"] is None else f'{b["wage"]:+.1f}%'
         items = "".join(f'<tr><td>{r["label"]}</td><td class="r">{r["yoy"]:+.1f}%</td>'
@@ -157,7 +198,7 @@ def sec_human(eng) -> str:
     cn_html = ('<h3>中國</h3><ul class="lines">' + "".join(
         f'<li><b>{r["label"]}</b>：一年 {r["yoy"]:+.1f}%（資料到 {r["asof"]}）<div class="small muted">{r["why"]}</div></li>' for r in cn)
         + '</ul><p class="small muted">這些國際資料公布很慢，看的是長期方向，不是最近的狀況。</p>' if cn else "")
-    body = (f'<p class="rimp big2"><b>一句話看懂：{lead}</b></p>' + bill_html
+    body = (f'<p class="rimp big2"><b>一句話看懂：{lead}</b></p>' + rw_html + bill_html
             + "".join(f'<h3>{t}</h3><p class="small">{d}</p>{_table(g)}' for t, d, g in groups if g) + pol_html + cn_html
             + '<p class="note">資料來自 FRED 官方統計，「方向」只和一年前比較，用來觀察壓力在哪裡累積，沒有經過回測，不是預測。不構成投資建議。</p>')
     return card("人類溫度計：壓力先出現在人身上", "Human thermometer: stress shows up in people first", body, "wide",

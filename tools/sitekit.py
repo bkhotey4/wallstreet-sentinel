@@ -139,6 +139,29 @@ def spark(s, w=96, h=28) -> str:
             f'<circle cx="{w - 5:.1f}" cy="{ly:.1f}" r="2.5"/></svg>')
 
 
+def fold_rows(rows, n: int, head: str, what: str = "筆", tbl_cls: str = "mini") -> str:
+    """All table rows, never part of them (user, 11-17: 「希望能有全部的資料，不要只有部分」): the first n in the table,
+    the rest in a folded second table with the same header.  `rows` = list of '<tr>…</tr>' strings, `head` = the '<tr>' header."""
+    rows = list(rows)
+    t = lambda rs: f'<div class="scroll"><table class="{tbl_cls}"><thead>{head}</thead><tbody>{"".join(rs)}</tbody></table></div>'  # noqa: E731
+    if not rows:
+        return ""
+    out = t(rows[:n])
+    if len(rows) > n:
+        out += f'<details class="sgx"><summary>看其餘 {len(rows) - n} {what}</summary>{t(rows[n:])}</details>'
+    return out
+
+
+def fold_items(items, n: int, what: str = "筆", wrap: str = "") -> str:
+    """Same rule for blocks / list items: the first n shown, the rest folded.  `wrap` = 'ul' to put each part in a <ul>."""
+    items = list(items)
+    w = (lambda s: f"<{wrap}>{s}</{wrap.split()[0]}>") if wrap else (lambda s: s)  # noqa: E731   (wrap may carry attributes)
+    out = w("".join(items[:n])) if items else ""
+    if len(items) > n:
+        out += f'<details class="sgx"><summary>看其餘 {len(items) - n} {what}</summary>{w("".join(items[n:]))}</details>'
+    return out
+
+
 def card(title_zh: str, title_en: str, body: str, cls_: str = "", sub: str = "") -> str:
     s = f'<p class="sub">{sub}</p>' if sub else ""
     return f'<section class="card {cls_}"><h2>{T(title_zh, title_en)}</h2>{s}{body}</section>'

@@ -29,6 +29,7 @@ ROWS = [
 FRED_IDS = tuple(dict.fromkeys(x for r in ROWS for x in (r[2], r[3]) if x))
 BUSINESS = ("ci_big", "ci_small", "cre_build", "cre_office", "cre_multi")
 SOURCE = "https://www.federalreserve.gov/data/sloos.htm"
+FLAT = 5.0                 # |net %| below this = about unchanged
 
 
 def _pct(hist: pd.Series, v: float) -> Optional[float]:
@@ -54,7 +55,7 @@ def row_view(key: str, zh: str, std: Optional[pd.Series], dem: Optional[pd.Serie
     mx = s.idxmax()
     out = {"key": key, "zh": zh, "who": who, "std": v, "std_1y": v1, "pct": p, "since": s.index[0].year,
            "date": s.index[-1].strftime("%Y-%m"), "max": float(s.max()), "max_date": mx.strftime("%Y-%m"), "emoji": emoji,
-           "state": "收緊" if v > 0 else "放寬" if v < 0 else "持平",
+           "state": "收緊" if v >= FLAT else "放寬" if v <= -FLAT else "大致持平",
            "hist": [[i.strftime("%Y-%m"), round(float(x), 1)] for i, x in s.tail(60).items()]}
     if dem is not None and len(dem.dropna()):
         d = dem.dropna()
@@ -76,8 +77,9 @@ def view(get: Callable[[str], Optional[pd.Series]]) -> Dict:
     red = [r for r in rows if r["emoji"] == "🔴" and r["key"] in BUSINESS]
     yel = [r for r in rows if r["emoji"] != "🟢"]
     emoji = "🔴" if red else "🟡" if len(yel) >= 3 else "🟢"
-    tight = [r for r in rows if r["std"] > 0]
-    loose = [r for r in rows if r["std"] < 0]
+    # within ±FLAT the answer is "about the same as last quarter" (11-17: "+2%" was counted as tightening)
+    tight = [r for r in rows if r["std"] >= FLAT]
+    loose = [r for r in rows if r["std"] <= -FLAT]
     return {"rows": rows, "emoji": emoji, "date": max(r["date"] for r in rows), "n_tight": len(tight), "n_loose": len(loose),
             "hot": [r["zh"] for r in yel]}
 
@@ -88,7 +90,10 @@ def lead(v: Dict) -> str:
         return ""
     hot = [r for r in rows if r["emoji"] != "🟢"]
     big = next((r for r in rows if r["key"] == "ci_big"), None)
-    head = (f"{len(rows)} 類貸款裡，{v['n_tight']} 類銀行在收緊、{v['n_loose']} 類在放寬")
+    flat = len(rows) - v["n_tight"] - v["n_loose"]
+    parts = [f"{v['n_tight']} 類明顯收緊" if v["n_tight"] else "", f"{v['n_loose']} 類明顯放寬" if v["n_loose"] else "",
+             f"{flat} 類大致持平（淨比例在 ±{FLAT:.0f}% 以內）" if flat else ""]
+    head = f"{len(rows)} 類貸款裡，" + "、".join(p for p in parts if p)
     if not hot:
         tail = "，收緊的程度都還在各自歷史的正常範圍，借錢的門檻沒有明顯變高。"
     else:

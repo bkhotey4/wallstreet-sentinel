@@ -369,7 +369,7 @@ def sec_earn_verdict(eng) -> str:
     from wsb.analytics.earn_verdict import RES
     tm = {"pre": ("盤前", "pre-mkt"), "after": ("盤後", "after close")}
     cards = []
-    for r in v["rows"][:24]:
+    for r in v["rows"]:                                 # all reports; 24 shown, rest folded (user, 11-17)
         res = r.get("result")
         badge = (f'<span class="pill {DIR_CLS[{"beat": "hot", "inline": "inline", "miss": "cool"}[res]]}">{T(*RES[res])}</span>' if res
                  else f'<span class="pill">{T("已公布", "reported")}</span>' if r.get("status") == "reported"
@@ -419,7 +419,9 @@ def sec_earn_verdict(eng) -> str:
              "同族群＝本站同主題個股同期平均；之後 20 日＝過去財報後的走勢。營收指引、毛利率等法說會內容不在這些數據裡，結論不會替它們下判斷。不構成投資建議。",
              "Nasdaq EPS; 2-session price move; implied move saved before the report; peers = same theme. Guidance is not in the data. Not advice.")
     return card("財報結論（最近 7 天）", "Earnings verdicts (last 7 days)",
-                f'<div class="egrid">{"".join(cards)}</div><p class="note">{note}</p>', "wide",
+                f'<div class="egrid">{"".join(cards[:24])}</div>'
+                + (f'<details class="sgx"><summary>看其餘 {len(cards) - 24} 家</summary><div class="egrid">{"".join(cards[24:])}</div></details>' if len(cards) > 24 else "")
+                + f'<p class="note">{note}</p>', "wide",
                 sub=T("公布後：數字對預期、股價怎麼反應、有沒有擴散到族群與台股", "After the report: numbers vs estimates, reaction, spill-over"))
 
 

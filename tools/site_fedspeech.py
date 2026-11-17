@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from tools.sitekit import T, card, esc
+from tools.sitekit import T, card, esc, fold_rows
 
 NY, TPE = ZoneInfo("America/New_York"), ZoneInfo("Asia/Taipei")
 ROLE = (("Vice Chair for Supervision", "監理副主席"), ("Vice Chair", "副主席"), ("Chair", "主席"), ("Governor", "理事"))
@@ -179,11 +179,11 @@ def sec_fed_speeches(eng) -> str:
     up = upcoming_talks(d.get("upcoming"), _now())                       # a stale calendar must not list past talks
     up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))}・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
                       f'{esc(_role(u["title"]))} {esc(u["title"].split(" - ")[-1].split()[-1])}：{esc(u.get("topic", ""))}</li>' for u in up[:6])
-    trs = "".join(f'<tr><td>{esc(_dtxt(s))}</td><td>{esc(_who(s))}</td><td class="small">{esc(s.get("topic", ""))}</td>'
+    trs = [f'<tr><td>{esc(_dtxt(s))}</td><td>{esc(_who(s))}</td><td class="small">{esc(s.get("topic", ""))}</td>'
                   f'<td>{FS.lean(s)}</td><td class="r small">{s.get("infl", "—")}／{s.get("jobs", "—")}</td>'
-                  f'<td class="r small">{esc(_move_txt(s["_mv"]))}</td></tr>' for s in sp[:12])
-    table = (f'<div class="scroll"><table class="mini"><thead><tr><th>演講日（美東）</th><th>誰</th><th>題目（原文）</th><th>多談哪邊</th>'
-             f'<th class="r">通膨／就業 次數</th><th class="r">當天 2 年期殖利率</th></tr></thead><tbody>{trs}</tbody></table></div>')
+                  f'<td class="r small">{esc(_move_txt(s["_mv"]))}</td></tr>' for s in sp]   # all; 12 shown, rest folded
+    table = fold_rows(trs, 12, '<tr><th>演講日（美東）</th><th>誰</th><th>題目（原文）</th><th>多談哪邊</th>'
+                      '<th class="r">通膨／就業 次數</th><th class="r">當天 2 年期殖利率</th></tr>', "場演講")
     note = (f'資料：<a href="{FS.PAGE}" target="_blank" rel="noopener">聯準會理事會演講</a>與<a href="{FS.CAL_PAGE}" target="_blank" rel="noopener">官方行事曆</a>'
             '（主席、副主席與理事都有 FOMC 永久投票權）'
             + "".join(f'＋<a href="{m["page"]}" target="_blank" rel="noopener">{m["name"]}總裁演講</a>' for m in FS.REGIONAL.values())

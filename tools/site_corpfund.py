@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from tools.sitekit import T, card, esc
+from tools.sitekit import T, card, esc, fold_rows
 
 
 def _b(usd: Optional[float]) -> str:
@@ -94,7 +94,7 @@ def sec_maturity_wall(eng) -> str:
     chain = ("<b>為什麼要看</b>：公司幾年前用 2～4% 借的錢陸續到期，現在要用更高的利率借新還舊 → 利息吃掉更多獲利 → "
              "先砍的通常是買回股票、資本支出和招聘 → 獲利預估下修。借錢級別越低（高收益）、到期越集中的公司，越早感覺到。"
              + (f"美國 10 年期公債殖利率現在 {t10[1] * 100:.2f}%（{esc(t10[0])}），公司借錢的利率是在它上面再加風險溢價。" if t10 else ""))
-    heavy_txt = (f"<p>多付的利息超過營業利益 5% 的：{'、'.join(esc(r['zh']) + '（' + _pc(r['extra_ebit']) + '）' for r in heavy[:8])}。</p>" if heavy else "")
+    heavy_txt = (f"<p>多付的利息超過營業利益 5% 的：{'、'.join(esc(r['zh']) + '（' + _pc(r['extra_ebit']) + '）' for r in heavy)}。</p>" if heavy else "")
     note = ("到期金額來自各公司 10-K 附註「未來五年各年到期的長期債務本金」（XBRL：LongTermDebtMaturitiesRepaymentsOfPrincipal…），"
             "是上一個會計年度結束時的數字，之後新借或提前還的不在裡面；商業本票等短期借款不在這張表。"
             "「目前平均利率」＝近 12 個月利息費用 ÷ 負債；「現在的市場利率」依利息保障倍數粗分三級（≥ 8 倍投資級、3～8 倍 BBB、"
@@ -132,7 +132,7 @@ def sec_share_supply(eng) -> str:
             + "；減少最多（公司買回自家股票）：" + ("、".join(f"{esc(r['zh'])} {_pc(r['chg'], 1, True)}" for r in down[:5]) or "沒有")
             + "。" + (f"最近 180 天有 {len(offers)} 家向 SEC 申報增資或發債的文件。" if any("offer" in (cache.get(r["sym"]) or {}) for r in rows) else ""))
     odd_txt = ("<p class='small muted'>股數一年變化超過一倍、沒有列進上面排名的："
-               + "、".join(f"{esc(r['zh'])} {_pc(r['chg'], 0, True)}" for r in odd[:8])
+               + "、".join(f"{esc(r['zh'])} {_pc(r['chg'], 0, True)}" for r in odd)
                + "。這種幅度多半是上市未滿一年、不同股票類別互相轉換或用股票併購，不是一般的增資稀釋，請看公司公告。</p>") if odd else ""
 
     def tr(r: Dict) -> str:
@@ -145,6 +145,8 @@ def sec_share_supply(eng) -> str:
                 f'<td class="r">{_pc(r.get("net_yield"), 1, True)}</td><td class="small">{doc}</td>'
                 f'<td class="small muted">{esc(r.get("shares_end") or "")}</td></tr>')
     show = up[:12] + down[:8] + [r for r in offers if r not in up[:12] and r not in down[:8]][:6]
+    # 11-17 (user: full data): every other tracked company is listed too, folded, biggest change first
+    rest = sorted((r for r in rows if r not in show and r.get("chg") is not None), key=lambda r: -abs(r["chg"]))
     head = (f'<tr><th>{T("公司", "Company")}</th><th class="r">{T("股數一年變化", "Share count, 1y")}</th>'
             f'<th class="r">{T("近 12 個月買回", "Buybacks, 12m")}</th><th class="r">{T("近 12 個月發行新股", "New shares sold, 12m")}</th>'
             f'<th class="r">{T("淨買回 ÷ 市值", "Net buyback ÷ market cap")}</th><th>{T("最近的增資／發債文件", "Latest offering filing")}</th>'
@@ -156,8 +158,8 @@ def sec_share_supply(eng) -> str:
             "文件清單來自 SEC 申報索引：S-3／S-3ASR 是先登記、之後可分批發行（股票或債券），424B 是每次實際發行時的補充說明，"
             "不一定是賣股票，可能是發債；點連結看原文。併購用股票付款、上市未滿一年、或不同股票類別互相轉換（例如 B 股轉成 A 股）也會讓股數一次大增，請對照公司公告。")
     body = (f'<p class="rimp big2"><b>一句話看懂：</b>{lead}</p><p>{chain}</p>{odd_txt}'
-            f'<details><summary>股數變化最大、最近有申報的公司</summary><div class="scroll"><table class="mini srt"><thead>{head}</thead>'
-            f'<tbody>{"".join(tr(r) for r in show)}</tbody></table></div></details><p class="note">{note}</p>')
+            f'<details><summary>股數變化最大、最近有申報的公司</summary>{fold_rows([tr(r) for r in show + rest], len(show), head, "家公司", "mini srt")}'
+            f'</details><p class="note">{note}</p>')
     return card("股票供給：誰在買回、誰在發新股", "Share supply: buybacks vs new shares", body, "wide",
                 sub="股數一年變化、買回與發行新股的金額、最近的增資或發債文件")
 

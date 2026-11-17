@@ -30,7 +30,7 @@ def test_card_and_score():
     SP.FILE = p
     try:
         h = SP.sec_earn_preview(None)
-        assert f"一句話看懂：微軟（{fut[5:].replace('-', '/')}）樂觀" in h and "舊公司" not in h and "另有 1 家已經公布" in h and "上修 <b>55%</b>" in h and "±5.2%" in h and "CoreWeave 債券殖利率" in h
+        assert f"一句話看懂：微軟（{fut[5:].replace('-', '/')}）樂觀" in h and "另有 1 家已經公布" in h and h.find("舊公司") > h.find("另有 1 家已經公布") and "上修 <b>55%</b>" in h and "±5.2%" in h and "CoreWeave 債券殖利率" in h
         assert "✅ 猜中" in h and "❌ 沒猜中" in h and "最可能的情境猜中 1 次（50%）" in h
         sc = SP.score(d["items"])
         assert sc["n"] == 2 and sc["hits"] == 1 and abs(sc["brier"] - ((0.4 ** 2 + 0.3 ** 2 + 0.1 ** 2) + (0.8 ** 2 + 0.2 ** 2 + 0.6 ** 2)) / 2) < 1e-9
@@ -143,3 +143,26 @@ if __name__ == "__main__":
     print("ok test_overrun_flagged")
     test_slow_source_flagged()
     print("ok test_slow_source_flagged")
+
+
+def test_card_never_drops_big_or_lead():
+    """11-17: eight smaller 11/17 names filled the cap and Walmart (11/19, ~$1T) vanished although the lead line named it."""
+    from tools import site_preview as P
+    from wsb.data import econcal as EC
+    items = [{"sym": f"S{i}", "name": f"Small{i}", "date": "2026-11-17", "call": "中性"} for i in range(9)]
+    items += [{"sym": "WMT", "name": "沃爾瑪", "date": "2026-11-19", "call": "中性"}]
+    caps = {f"S{i}": 1e10 * (i + 1) for i in range(9)} | {"WMT": 1e12}
+    real = (P.load, P._mcaps, P._earn_days, EC.us_today)
+    from datetime import date
+    P.load, P._mcaps, P._earn_days, EC.us_today = (lambda: {"items": items}), (lambda: caps), (lambda: {}), (lambda: date(2026, 11, 17))
+    try:
+        h = P.sec_earn_preview(None)
+    finally:
+        P.load, P._mcaps, P._earn_days, EC.us_today = real
+    assert "WMT" in h and "沃爾瑪" in h, "Walmart must be on the card"
+    assert h.count("・2026-11-17") == 9 and "看其餘 2 家公司的前瞻" in h, h.count("・2026-11-17")   # all shown; 2 folded
+
+
+if __name__ == "__main__":
+    test_card_never_drops_big_or_lead()
+    print("ok test_card_never_drops_big_or_lead")

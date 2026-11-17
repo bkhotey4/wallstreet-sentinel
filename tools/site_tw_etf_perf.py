@@ -135,7 +135,7 @@ def sec_etf_rate(eng) -> str:
     tab = (f'<h3>{T("規模最大的 " + str(len(big)) + " 檔（和利率關係明顯的）", "")}</h3>'
            f'<div class="scroll"><table class="mini"><thead><tr>{hd}</tr></thead><tbody>{tr}</tbody></table></div>')
     weak = [x for x in rs if not x["clear"]]
-    wl = ("、".join(f'{esc(x["code"])} {esc(x["name"][:8])}' for x in weak[:12]) + (" 等" if len(weak) > 12 else "")) if weak else ""
+    wl = ("、".join(f'{esc(x["code"])} {esc(x["name"][:8])}' for x in weak)) if weak else ""
     wb = (f'<p class="small muted">{T(f"和美債殖利率關係不明顯的 {len(weak)} 檔：" + wl + "（多半是投資等級公司債、短天期、新興市場或非美元債，主要受信用利差或其他因素影響）。", "")}</p>'
           if weak else "")
     fx = (_r(eng) or {}).get("fx")

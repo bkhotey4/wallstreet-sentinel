@@ -175,6 +175,9 @@ def quotes(px: Dict, day: str) -> Dict[str, Dict]:
 
 
 def _sg(x: float, d: int = 1) -> str:
+    """Signed number; a value that rounds to zero prints without a sign (11-17: '-0.0% 跌最多' on a flat day)."""
+    if round(x, d) == 0:
+        return f"{0:.{d}f}"
     return f"{x:+.{d}f}"
 
 
@@ -303,7 +306,7 @@ def build_day(q: Dict, why: Dict, jump: Optional[Dict], day: str) -> Optional[Di
             return ""
         hi, lo = sec[0], sec[-1]
         if abs(hi["c"]) >= 0.8 or abs(lo["c"]) >= 0.8:
-            W.append(f"類股：{hi['zh']} {_sg(hi['c'])}% 漲最多{clue(hi)}；{lo['zh']} {_sg(lo['c'])}% {'跌最多' if lo['c'] < 0 else '漲最少'}{clue(lo)}。")
+            W.append(f"類股：{hi['zh']} {_sg(hi['c'])}% 漲最多{clue(hi)}；{lo['zh']} {_sg(lo['c'])}% {'跌最多' if round(lo['c'], 1) < 0 else '漲最少' if round(lo['c'], 1) > 0 else '持平'}{clue(lo)}。")
     tn = q.get("^TNX")
     if tn:
         bp = (tn["price"] - tn["prev"]) * 100

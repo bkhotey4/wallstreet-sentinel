@@ -18,7 +18,7 @@ from tools.sitekit import card, guard_safe
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "learn.json"   # public repo only
 SITE = {"已在本站": "up", "可以做": "", "做不到": "muted"}
 STATUS = {"已確認": "up", "據報": "muted"}
-WORLD_SHOWN = 6
+WORLD_SHOWN = 6                 # kept for callers; the card now lists every item (11-17)
 
 
 def load() -> Dict:
@@ -101,12 +101,12 @@ def sec_learn(eng) -> str:
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
             + (f'<div class="rpt"><h3>今天的故事 <span class="muted small">{_e(story.get("date"))}</span></h3>{told}</div>' if told else "")
             + (f'<p class="small">今天新學的術語：{"、".join(_e(t["term"]) for t in newt)}</p>' if newt else ""))
-    rest = ((f'<h3>今天人類世界發生什麼</h3>' + "".join(_world(x) for x in world[:WORLD_SHOWN]) if world else "")
+    rest = ((f'<h3>今天人類世界發生什麼</h3>' + "".join(_world(x) for x in world) if world else "")      # all (user, 11-17: full data)
             + (f'<h3>華爾街在談什麼</h3>' if world and stories else "")
-            + "".join(_story(x) for x in stories[:6])
+            + "".join(_story(x) for x in stories)
             + (f'<details class="sgx"><summary>華爾街術語小辭典（{len(terms)} 個）</summary><ul class="lines">'
                + "".join(_term(t) for t in sorted(terms, key=lambda t: str(t.get("added") or ""), reverse=True)) + "</ul></details>" if terms else ""))
-    nw, ns = min(len(world), WORLD_SHOWN), min(len(stories), 6)
+    nw, ns = len(world), len(stories)
     if rest:                                   # one line on the overview; the lists open on a tap
         body += f'<details class="sgx"><summary>看世界大事（{nw} 則）、華爾街情資（{ns} 則）與術語</summary>{rest}</details>'
     body += (f'<p class="note">每天由雲端 AI 讀可靠媒體、學術期刊與官方文件整理，「已確認」只放有文件的事實，「只是報導」要等官方證實。'
