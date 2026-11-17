@@ -8,6 +8,7 @@ when the data is older than that source normally allows — so a stuck feed is v
 the header.  The page's JS adds "N 分鐘前" from data-ts, so a page opened hours after the build still reads correctly."""
 from __future__ import annotations
 
+import re
 import time
 from datetime import date, datetime, timedelta
 from typing import Callable, Dict, List, Optional, Tuple
@@ -556,7 +557,9 @@ def _feed_stamp(mod: str, attr: str = "load"):
     try:
         import importlib
         raw = str(getattr(importlib.import_module(f"tools.{mod}"), attr)().get("updated") or "")
-        ts = datetime.strptime(raw[:16], "%Y-%m-%d %H:%M").replace(tzinfo=TPE).timestamp()
+        m = re.search(r"(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d)", raw)     # "2026-11-17 20:15（台北）", "2026-11-17T20:15+08:00" …
+        if m:
+            ts = datetime.strptime(m.group(1) + " " + m.group(2), "%Y-%m-%d %H:%M").replace(tzinfo=TPE).timestamp()
     except Exception:  # noqa: BLE001
         pass
     return ts, _feed_updated(mod, attr)
@@ -770,7 +773,8 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
     ts = min(fetched) if fetched else None
     d = max(dates) if dates else None
     when = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else None
-    parts = ([f'{T("最後更新", "Updated")} {when}'] if when else []) + ([f'{T("資料日", "data")} {esc(d[5:])}'] if d else [])
+    # a date-only source never claims "最後更新" (it may be a partial pass) — it says the time is not given (11-17)
+    parts = ([f'{T("最後更新", "Updated")} {when}'] if when else []) + ([f'{T("資料日", "data")} {esc(d[5:])}'] if d else [])         + ([T("（來源沒標更新時間）", " (no update time given)")] if d and not when else [])
     txt = "🕒 " + "・".join(parts)
     if fname in DETAIL and tips:
         txt += f'<span class="updd">{T("（各來源最後檢查：" + "；".join(tips) + "）", "")}</span>'

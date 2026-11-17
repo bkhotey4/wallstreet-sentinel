@@ -148,6 +148,62 @@ def changed_since(hours: int = 26) -> Dict[Path, List[int]]:
     return out
 
 
+# ------------------------------------------------------------------ 6. tracked stocks that stopped trading (11-17 full check: CCO, RAMP)
+def stopped_trading(close, days: int = 14) -> List[Dict]:
+    """Tracked tickers whose last price is more than `days` calendar days older than the newest one (delisted, acquired or
+    renamed): they keep sitting in lists and alerts with a frozen price."""
+    import pandas as pd
+    if close is None or close.empty:
+        return []
+    top = close.index.max()
+    last = close.apply(lambda s: s.last_valid_index())
+    old = last[last < top - pd.Timedelta(days=days)].sort_values()
+    return [{"sym": k, "last": str(v.date())} for k, v in old.items() if v is not None]
+
+
+STOP_WHY = (("1.03", "聲請破產"), ("3.01", "下市或不符上市標準"), ("2.01", "完成併購"), ("5.01", "控制權變更（被收購）"),
+            ("15-12", "撤銷 SEC 登記（不再是上市公司）"), ("25-NSE", "交易所申請下市"))
+
+
+def stop_reason(sub: Dict) -> List[str]:
+    """Why a stock stopped trading, from its SEC submissions (recent 8-K items and forms 15 / 25)."""
+    f = (sub or {}).get("filings", {}).get("recent", {})
+    forms, items = f.get("form") or [], f.get("items") or []
+    out = []
+    for i, form in enumerate(forms[:40]):
+        it = str(items[i] if i < len(items) else "")
+        for code, zh in STOP_WHY:
+            hit = (code in it and form.startswith("8-K")) if "." in code else form.startswith(code)
+            if hit and zh not in out:
+                out.append(zh)
+    return out
+
+
+def explain_stopped(rows: List[Dict]) -> List[Dict]:
+    """Add 'why' from SEC for each stopped ticker (company map first; efts entity search when the ticker left the map)."""
+    try:
+        from wsb.data.edgar_holdings import _MAP_FILE
+        cmap = json.loads(_MAP_FILE.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        cmap = {}
+    hdr = {"User-Agent": "WallStreetSentinel daily audit admin@example.invalid"}
+    for r in rows:
+        cik = (cmap.get(r["sym"]) or {}).get("cik")
+        try:
+            if not cik:
+                js = json.loads(urllib.request.urlopen(urllib.request.Request(
+                    f"https://efts.sec.gov/LATEST/search-index?keysTyped={r['sym']}", headers=hdr), timeout=20).read())
+                hit = next((h for h in js.get("hits", {}).get("hits", []) if r["sym"] in str(h["_source"].get("tickers") or "").split(", ")), None)
+                cik = hit["_id"] if hit else None
+            if cik:
+                sub = json.loads(urllib.request.urlopen(urllib.request.Request(
+                    f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json", headers=hdr), timeout=20).read())
+                r["name"], r["why"] = sub.get("name"), stop_reason(sub)
+        except Exception as e:  # noqa: BLE001
+            r["why_error"] = str(e)[:80]
+    return rows
+
+
 # ------------------------------------------------------------------ run
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
@@ -175,6 +231,11 @@ def main() -> Dict:
         rep["ahead"] = json.loads(_get(SITE + f"upcoming.json?v={int(time.time())}", 30)).get("items") or []
     except Exception:  # noqa: BLE001
         rep["ahead"] = []
+    try:
+        import pandas as pd
+        rep["stopped"] = explain_stopped(stopped_trading((pd.read_pickle(DATA_DIR / "stock_prices.pkl") or {}).get("close")))
+    except Exception:  # noqa: BLE001
+        rep["stopped"] = []
     OUT.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     return rep
 
@@ -195,6 +256,8 @@ def summary(rep: Dict) -> str:
         lines.append(f"  - {h['file']}:{h['line']} 「{h['text']}」 {h['context']}")
     lines.append(f"自我檢查 {len(rep.get('selfcheck') or [])} 項：" + "；".join(i["text"] for i in rep.get("selfcheck") or []))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))
+    lines.append("停止交易的追蹤股票：" + ("、".join(f"{x['sym']}（最後 {x['last']}；SEC：{'、'.join(x.get('why') or []) or '查不到原因'}）"
+                                                for x in rep.get("stopped") or []) or "沒有"))
     lines.append("接下來 3 天：" + "、".join(f"{x.get('zh')} {x.get('tpe')}" for x in (rep.get("ahead") or [])[:10]))
     return "\n".join(lines)
 

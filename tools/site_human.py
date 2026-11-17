@@ -50,17 +50,34 @@ def _series(eng, sid: str) -> pd.Series:
     return s.dropna() if s is not None else pd.Series(dtype=float)
 
 
+def yoy_at(s: pd.Series) -> Tuple[Optional[float], Optional[str]]:
+    """(% change against the SAME month a year earlier, that month 'YYYY-MM') for the newest month that has one.
+    11-17 full check: there is no Oct-2025 CPI (shutdown) and the old rule ('reading on or before a year ago') quietly
+    used Sep-2025 — a 13-month change labelled 「一年」.  The base month must exist; otherwise the newest month that has
+    one is used and named."""
+    if len(s) < 13:
+        return None, None
+    idx = set(s.index)
+    for t in reversed(s.index):
+        if t < s.index[-1] - pd.DateOffset(months=6):
+            break
+        base = t - pd.DateOffset(years=1)
+        if base in idx and s.loc[base]:
+            return float((s.loc[t] / s.loc[base] - 1) * 100), t.strftime("%Y-%m")
+    return None, None
+
+
 def yoy(s: pd.Series) -> Optional[float]:
-    """% change against the reading a year before the latest one."""
-    if len(s) < 2:
-        return None
-    past = s[s.index <= s.index[-1] - pd.DateOffset(years=1)]
-    return float((s.iloc[-1] / past.iloc[-1] - 1) * 100) if len(past) and past.iloc[-1] else None
+    """% change against the same month a year earlier (see yoy_at)."""
+    return yoy_at(s)[0]
 
 
 def year_ago(s: pd.Series) -> Optional[float]:
-    past = s[s.index <= s.index[-1] - pd.DateOffset(years=1)]
-    return float(past.iloc[-1]) if len(past) else None
+    """The reading exactly a year before the latest one; None when that month is missing (never the month before)."""
+    if not len(s):
+        return None
+    base = s.index[-1] - pd.DateOffset(years=1)
+    return float(s.loc[base]) if base in set(s.index) else None
 
 
 def rank(s: pd.Series) -> int:
@@ -80,9 +97,9 @@ def bills(eng) -> Dict:
     rows = []
     for sid, label in BILLS:
         s = _series(eng, sid)
-        y = yoy(s)
+        y, at = yoy_at(s)
         if y is not None:
-            rows.append({"label": label, "yoy": y, "asof": s.index[-1].strftime("%Y-%m"),
+            rows.append({"label": label, "yoy": y, "asof": at,
                          "over": wage is not None and y > wage})
     return {"wage": wage, "rows": rows, "over": sum(r["over"] for r in rows)}
 
@@ -96,7 +113,8 @@ def real_wage(eng) -> Optional[Dict]:
         return None
     w.index, c.index = w.index.to_period("M"), c.index.to_period("M")
     r = (w / c).dropna()
-    y = ((r / r.shift(12) - 1) * 100).dropna()
+    r = r.reindex(pd.period_range(r.index.min(), r.index.max(), freq="M"))   # a missing month stays missing (Oct-2025 CPI)
+    y = ((r / r.shift(12) - 1) * 100).dropna()                            # so shift(12) is always the same month last year
     if len(y) < 13:
         return None
     now = float(y.iloc[-1])
@@ -108,7 +126,11 @@ def real_wage(eng) -> Optional[Dict]:
         run += 1
     flip = y[(y >= 0) != sign]
     lo = y.idxmin()
-    return {"yoy": now, "asof": str(y.index[-1]), "wage": yoy(_series(eng, WAGE)), "cpi": yoy(_series(eng, "CPIAUCSL")),
+    wy, cy = _series(eng, WAGE), _series(eng, "CPIAUCSL")
+    at = pd.Timestamp(str(y.index[-1]) + "-01")                       # pay and prices over the SAME twelve months as `now`
+    w12 = (float(wy.loc[at] / wy.loc[at - pd.DateOffset(years=1)] - 1) * 100) if at in wy.index and at - pd.DateOffset(years=1) in wy.index else None
+    c12 = (float(cy.loc[at] / cy.loc[at - pd.DateOffset(years=1)] - 1) * 100) if at in cy.index and at - pd.DateOffset(years=1) in cy.index else None
+    return {"yoy": now, "asof": str(y.index[-1]), "wage": w12, "cpi": c12,
             "run": run, "last_flip": str(flip.index[-1]) if len(flip) else None, "worst": float(y.min()), "worst_at": str(lo),
             "since": str(y.index[0])[:4]}
 

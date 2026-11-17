@@ -59,6 +59,9 @@ def sec_tw_bank(eng) -> str:
            "通常代表訂單變少、老闆在撐；銀行放款又有很大一塊押在土地和房子上，房市一冷，擔保品就縮水。")
     body += f'<p>{T(why, "")}</p>'
     kv = []
+    if n and n.get("ratio") is not None:                 # the lead names it, so the body shows it too (11-17 fact check)
+        kv.append(f'<div><span class="muted">本國銀行整體逾放比</span><b>{n["ratio"]:.2f}%</b> <span class="small muted">'
+                  f'各銀行合計逾期放款 ÷ 放款・{esc(n.get("month") or "")}</span></div>')
     if s:
         kv.append(f'<div><span class="muted">中小企業逾放比</span><b>{s["now"]:.2f}%</b> <span class="small muted">一年前 {num(s["ago"], 2)}%・最高 {s["max"]:.2f}%（{esc(s["max_date"])}）・{esc(s["date"])}</span></div>')
     if q:

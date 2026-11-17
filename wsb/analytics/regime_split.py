@@ -113,6 +113,11 @@ def _yoy(s: Optional[pd.Series]) -> Optional[pd.Series]:
     if s is None or len(s.dropna()) < 13:
         return None
     s = s.dropna()
+    # monthly series: shift by calendar months so a missing month (Oct-2025 CPI) gives no value, not a 13-month change (11-17)
+    if isinstance(s.index, pd.DatetimeIndex) and pd.infer_freq(s.index[-24:]) in ("MS", "M") or (s.index.day == 1).all():
+        base = s.reindex(s.index - pd.DateOffset(years=1))
+        base.index = s.index
+        return (s / base - 1) * 100
     return (s / s.shift(12) - 1) * 100
 
 
@@ -143,7 +148,20 @@ def state_vector(get, at: pd.Timestamp) -> Dict[str, Optional[float]]:
     return {"cpi": _at(_yoy(get("CPIAUCSL")), at), "oil": _at(_yoy(get("WTISPLC")), at),
             "ff6": (None if _at(ff, at) is None or _at(ff, at - pd.DateOffset(months=6)) is None else _at(ff, at) - _at(ff, at - pd.DateOffset(months=6))),
             "y10": _at(get("DGS10"), at),
-            "un12": (None if _at(un, at) is None or _at(un, at - pd.DateOffset(months=12)) is None else _at(un, at) - _at(un, at - pd.DateOffset(months=12)))}
+            "un12": _exact12(un, at)}
+
+
+def _exact12(s: Optional[pd.Series], at: pd.Timestamp) -> Optional[float]:
+    """Change over exactly 12 months from the latest month on or before `at`; None when that base month is missing."""
+    if s is None or not len(s.dropna()):
+        return None
+    x = s.dropna()
+    x = x[x.index <= at]
+    if not len(x):
+        return None
+    t = x.index[-1]
+    b = t - pd.DateOffset(months=12)
+    return float(x.loc[t] - x.loc[b]) if b in x.index else None
 
 
 def similarity(now: Dict, starts: List[Dict], scale: Dict[str, float]) -> List[Optional[float]]:

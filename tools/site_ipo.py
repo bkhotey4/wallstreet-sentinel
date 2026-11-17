@@ -224,7 +224,7 @@ def lead(b: Dict) -> str:
     if stg:                                            # 11-17: the 8-A12B / EFFECT step means pricing within days
         s += "；即將定價：" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") + f' 約 {_md(r["near"])}' for r in stg)
     up = t.get("upcoming") or []
-    s += f"；台股已公告 {len(up)} 家即將掛牌" + ("（" + "、".join(f"{r['name']} {_md(r.get('list'))}" for r in up[:3]) + "）" if up else "")
+    s += f"；台股已公告 {len(up)} 家即將掛牌" + ("（" + "、".join(f"{r['name']} {_md(r.get('list'))}" for r in up) + "）" if up else "")   # every one of them (11-17: said 4, named 3)
     s += f"、{len(t.get('applying') or [])} 家已申請上市櫃。"
     su, st = u.get("stats") or {}, t.get("stats") or {}
     big = su.get("big") or {}

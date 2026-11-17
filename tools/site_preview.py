@@ -59,7 +59,11 @@ def _item(it: Dict) -> str:
     if p:
         bar = ('<p>資本支出／財測：' + "、".join(f'{k} <b>{p[k]:.0f}%</b>' for k in OUTS)
                + (f'；選擇權預期財報後股價波動 ±{float(it["implied_move"]):.1f}%' if isinstance(it.get("implied_move"), (int, float)) else "") + "</p>")
-    sc = "".join(f'<li><b>{_esc(s.get("name"))}（{_esc(s.get("prob"))}%）</b>：{_esc(s.get("what"))}'
+    # the scenario chance comes from the call's own probabilities (好=上修, 中間=維持, 壞=下修) so the two can never disagree
+    # (11-17 fact check: NVDA header 45/43/12, scenarios still 50/40/10 after the routine revised only `probs`)
+    sc_map = {"好": "上修", "中間": "維持", "壞": "下修"}
+    sp = lambda s: (p.get(sc_map.get(str(s.get("name")), "")) if p else None) or s.get("prob")  # noqa: E731
+    sc = "".join(f'<li><b>{_esc(s.get("name"))}（{_esc(f"{float(sp(s)):.0f}" if isinstance(sp(s), (int, float)) else sp(s))}%）</b>：{_esc(s.get("what"))}'
                  + (f'<div class="small muted">影響：{_esc(s.get("impact"))}</div>' if s.get("impact") else "") + "</li>"
                  for s in (it.get("scenarios") or []) if isinstance(s, dict))
     basis = "".join(f"<li>{_esc(b)}</li>" for b in (it.get("basis") or []) if b)

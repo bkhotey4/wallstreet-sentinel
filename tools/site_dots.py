@@ -47,6 +47,7 @@ def _read_html(r: Dict) -> str:
 
 
 def sec_dots(eng) -> str:
+    from tools import dots as D
     try:
         d = build(eng)
     except Exception:  # noqa: BLE001
@@ -67,7 +68,7 @@ def sec_dots(eng) -> str:
         blocks.append(head + "<ul>" + "".join(_ev(e) for e in c["events"]) + "</ul>" + (_read_html(r) if r else
                       '<p class="small muted">這一組還沒有人讀原文寫假設；每日排程會挑最重要的幾組讀。</p>'))
     how = ("時間表由程式從本站各處已經抓到的事件組成：SEC 重大申報與人事（含「文件沒說的」標記，例如離職沒寫原因、立即生效、同日換董事長）、"
-           "市值 1,000 億美元以上的財報日、聯邦公報與商務部工業安全局的政策（依主題對應到 AI 產業鏈公司）、即將上市的 IPO 與同步私募的出資者；"
+           f"市值 {D.EARN_FLOOR / 1e8:,.0f} 億美元以上的財報日、聯邦公報與商務部工業安全局的政策（依主題對應到 AI 產業鏈公司）、即將上市的 IPO 與同步私募的出資者；"
            "範圍是過去 10 天到未來 7 天。同一家公司在兩種以上的事件裡出現就列一組。交集只代表「值得一起看」，不代表有因果；"
            "「可能的主線」是每日排程讀原始文件後寫的假設，一定附上反對的理由和能證實的消息。不是投資建議。")
     upd = f"　假設更新 {esc(rd.get('updated'))}" if rd.get("updated") else ""

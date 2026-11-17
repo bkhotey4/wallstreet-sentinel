@@ -1936,6 +1936,8 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     out.mkdir(parents=True, exist_ok=True)
     SFC.make_audio(out / "market")          # before render: the card only shows a player when the file exists
     page_html = render(eng, ai_text, ai_engine)
+    from tools.sitekit import tidy_zero
+    page_html = tidy_zero(page_html)        # no '+0.0%' / '-0.0%' anywhere in the shown text (11-17 full check)
     (out / "index.html").write_text(page_html, encoding="utf-8")
     vb = re.search(r'id="liveb" data-b="(\d+)"', page_html)                 # same stamp as the page → open pages reload once
     (out / "version.json").write_text(json.dumps({"b": int(vb.group(1)) if vb else int(time.time())}), encoding="utf-8")

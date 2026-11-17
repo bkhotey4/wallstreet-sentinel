@@ -37,3 +37,20 @@ if __name__ == "__main__":
         if name.startswith("test_") and callable(fn):
             fn()
             print("ok", name)
+
+
+def test_stopped_trading():
+    import pandas as pd
+    from tools import daily_audit as A
+    idx = pd.date_range("2026-10-01", "2026-11-17", freq="B")
+    c = pd.DataFrame({"AAA": 1.0, "CCO": 1.0}, index=idx)
+    c.loc[c.index > "2026-10-15", "CCO"] = None
+    assert A.stopped_trading(c) == [{"sym": "CCO", "last": "2026-10-15"}]
+    assert A.stopped_trading(pd.DataFrame()) == []
+    sub = {"filings": {"recent": {"form": ["SCHEDULE 13G", "15-12G", "8-K/A", "4"], "items": ["", "", "5.01,9.01", ""]}}}
+    assert A.stop_reason(sub) == ["撤銷 SEC 登記（不再是上市公司）", "控制權變更（被收購）"], A.stop_reason(sub)
+
+
+if __name__ == "__main__":
+    test_stopped_trading()
+    print("ok test_stopped_trading")

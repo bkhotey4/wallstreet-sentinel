@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import math
+import re
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -179,6 +180,17 @@ _LEGACY_BANNED = (("高估值", "估值偏高"), ("低估值", "估值偏低"), 
                   ("低估", "估得偏低"), ("目標價", "預估價"), ("上漲空間", "價格差距"), ("何時買", "什麼時候"), ("何時放棄", "什麼時候"),  # _LEGACY map
                   ("買點", "價位"), ("買進", "買入"), ("賣出", "賣掉"))  # _LEGACY map
 GUARD_SAFE = GUARD_SAFE + _LEGACY_WORDING + _LEGACY_BANNED
+
+
+_ZERO_SIGN = re.compile(r"(?<![\d.])[+\-−]0\.(0+)(?=(?:</?[a-z]+[^>]*>)?\s?(?:%|bp|個百分點|百分點|pt))")
+_SCRIPT = re.compile(r"(<script\b.*?</script>|<style\b.*?</style>)", re.S | re.I)
+
+
+def tidy_zero(page: str) -> str:
+    """'+0.0%' / '-0.0%' / '−0.00 個百分點' → '0.0%' … in the shown text, never inside <script> / <style>
+    (11-17 full check: 21 cards printed a signed zero; one card's own formatter was fixed earlier, this covers all)."""
+    parts = _SCRIPT.split(page)
+    return "".join(p if i % 2 else _ZERO_SIGN.sub(lambda m: "0." + m.group(1), p) for i, p in enumerate(parts))
 
 
 def guard_safe(s: str) -> str:

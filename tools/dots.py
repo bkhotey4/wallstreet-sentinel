@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 PAST, AHEAD = 10, 7
+EARN_FLOOR = 1e11                                           # earnings of companies at least this big join the timeline
 KIND_ZH = {"sec": "SEC 申報", "earn": "財報", "policy": "政策", "ipo": "IPO", "pp": "出資 IPO"}
 WEIGHT = {"sec": 3, "policy": 3, "pp": 2, "ipo": 2, "earn": 1}
 READ = ROOT / "research_feed" / "dots_read.json"            # written by the daily task (public repo)
@@ -64,7 +65,7 @@ def events(now: float, names: Dict[str, tuple], sof: Dict, days: Dict, fr: Dict,
     for day, v in days.items():                                           # 財報（市值 1,000 億美元以上）
         if lo <= day <= hi:
             for r in (v.get("rows") if isinstance(v, dict) else None) or []:
-                if float(r.get("mcap") or 0) >= 1e11 and r.get("sym"):
+                if float(r.get("mcap") or 0) >= EARN_FLOOR and r.get("sym"):
                     out.append({"kind": "earn", "date": day, "syms": [r["sym"]], "t": f"{zh.get(r['sym'], r.get('name') or r['sym'])}財報"})
     tsyms = topic_syms()
     for x in fr.get("docs") or []:                                        # 聯邦公報正式刊登

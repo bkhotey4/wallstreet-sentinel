@@ -129,7 +129,9 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
         fresh = (late and (today - _d(late)).days <= STAGE_DAYS and _d(late) >= _d(f.get("last") or late) - timedelta(days=3)
                  # and the usual wait has not run out yet: past the 75th percentile with no 424B4, it stalled (11-17: 11 such
                  # filers were listed as "即將定價" with dates already gone)
-                 and (not ta or (today - _d(late)).days <= int(ta["p75"]) + 2))
+                 and (not ta or (today - _d(late)).days <= int(ta["p75"]) + 2)
+                 # and the estimated day itself has not gone by (11-17: "約 11-13" was still shown on 11-17)
+                 and _d(late) + timedelta(days=int(ta["med"]) if ta else 1) >= today - timedelta(days=1))
         if fresh:                                       # registered on the exchange / declared effective: days, not weeks
             row["near"] = str(_d(late) + timedelta(days=int(ta["med"]) if ta else 1))
             row["stage"] = "SEC 已宣告生效" if f.get("eff") and f.get("eff") >= (f.get("a12") or "") else "已向交易所登記股票"
