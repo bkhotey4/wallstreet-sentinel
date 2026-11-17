@@ -75,14 +75,18 @@ def _us_pending(u: Dict) -> str:
     rows = u.get("pending") or []
     if not rows:
         return f'<p class="muted small">{T("目前沒有說明要在主要交易所掛牌、仍在申請中的公司。", "")}</p>'
-    tr = ""
-    for r in rows[:40]:
+    tr = []
+    for r in rows:                                     # all filers; 40 shown, rest folded (user, 11-17: full data)
         rng = (f'${num(r["lo"], 2)}～{num(r["hi"], 2)}' if r.get("lo") else T("尚未公布", "Not yet"))
         when = ("—" if not r.get("win_lo") else
                 (f'{T("已比過去多數案子久", "Slower than most")}<div class="small muted">{T("常見區間", "Usual")} {_md(r["win_lo"])}～{_md(r["win_hi"])}</div>'
                  if r.get("slow") else f'{_md(r["win_lo"])}～{_md(r["win_hi"])}'))
         if r.get("near"):
             when = f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{T("已公布價格區間", "Range set")}</div>'
+        if r.get("stage"):
+            n = r.get("stage_n") or 0
+            when = (f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{esc(r["stage"])}，'
+                    + (f'過去 {n} 家多半 1～2 天內定價' if n >= 5 else '通常 1～3 天內定價') + '</div>')
         ai = r.get("ai") or {}
         det = ""
         if ai:
@@ -91,18 +95,18 @@ def _us_pending(u: Dict) -> str:
                    + f'<p class="small muted">{T("AI 依招股書節錄整理，數字照原文；有對不上原文的句子會被拿掉。", "")}</p></details>')
         det = fin_block(r.get("fin")) + det
         sec = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={esc(r["cik"])}&type=S-1&dateb=&owner=include&count=40'
-        tr += (f'<tr><td><b>{esc(r["name"])}</b>' + (f' <span class="tk">{esc(r["symbol"])}</span>' if r.get("symbol") else "")
+        tr.append(f'<tr><td><b>{esc(r["name"])}</b>' + (f' <span class="tk">{esc(r["symbol"])}</span>' if r.get("symbol") else "")
                + f'<div class="small muted">{esc(r.get("sicd") or "")}{"・外國公司" if r.get("foreign") else ""}</div>{det}</td>'
                f'<td class="small">{esc(r.get("exchange") or "")}</td>'
                f'<td class="nw">{_md(r["s1"])}<div class="small muted">{T("已過", "")} {r["since"]} {T("天", "d")}</div></td>'
                f'<td class="nw">{_md(r["last"])}<div class="small muted">{T("修正", "amend")} {r["amends"]} {T("次", "")}</div></td>'
                f'<td class="nw">{rng}</td><td class="nw">{when}</td>'
                f'<td><a href="{sec}" target="_blank" rel="noopener">SEC</a></td></tr>')
-    head = (f'<thead><tr><th>{T("公司", "Company")}</th><th>{T("預計掛牌", "Exchange")}</th><th>{T("首次公開申請", "First public filing")}</th>'
-            f'<th>{T("最近修正", "Latest amendment")}</th><th>{T("價格區間", "Price range")}</th><th>{T("依過去經驗可能定價", "Likely pricing")}</th><th></th></tr></thead>')
+    head = (f'<tr><th>{T("公司", "Company")}</th><th>{T("預計掛牌", "Exchange")}</th><th>{T("首次公開申請", "First public filing")}</th>'
+            f'<th>{T("最近修正", "Latest amendment")}</th><th>{T("價格區間", "Price range")}</th><th>{T("依過去經驗可能定價", "Likely pricing")}</th><th></th></tr>')
     oth = f"另有 {u.get('other', 0)} 家申請中的公司招股書還沒讀到，或沒說明要在 Nasdaq／紐約證交所掛牌（多為小型或場外）。"
     more = f'<p class="small muted">{T(oth, "")}</p>' if u.get("other") else ""
-    return f'<div class="scroll"><table class="mini">{head}<tbody>{tr}</tbody></table></div>{more}'
+    return fold_rows(tr, 40, head, "家") + more
 
 
 def _us_done(u: Dict) -> str:
@@ -161,7 +165,10 @@ def lead(b: Dict) -> str:
     s = ("一句話看懂：美股的 SEC 申報資料正在第一次建立（每 20 分鐘補一批，約需一天），完成前申請中的名單不完整"
          if u.get("filling") else f"一句話看懂：美股目前 {len(pend)} 家公司公開申請、要在主要交易所掛牌")
     if rng:
-        s += f"，其中 {len(rng)} 家已公布價格區間、最接近定價（" + "、".join(r["name"] for r in rng[:3]) + "）"
+        s += f"，其中 {len(rng)} 家已公布價格區間、最接近定價（" + "、".join(r["name"] for r in rng[:3]) + ("等，全部列在下表" if len(rng) > 3 else "") + "）"
+    stg = [r for r in pend if r.get("stage")]
+    if stg:                                            # 11-17: the 8-A12B / EFFECT step means pricing within days
+        s += "；" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") for r in stg)              + f" 已經{stg[0]['stage'].replace('已向', '向').replace('SEC 已', 'SEC ')}，約 {_md(stg[0]['near'])} 前後定價、隨後掛牌"
     up = t.get("upcoming") or []
     s += f"；台股已公告 {len(up)} 家即將掛牌" + ("（" + "、".join(f"{r['name']} {_md(r.get('list'))}" for r in up[:3]) + "）" if up else "")
     s += f"、{len(t.get('applying') or [])} 家已申請上市櫃。"

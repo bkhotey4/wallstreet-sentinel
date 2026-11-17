@@ -47,6 +47,7 @@ REG = ("S-1", "F-1")
 HEAD_BYTES = 2_500_000
 FIN_BYTES = 16_000_000          # whole prospectus: the quarterly table sits in MD&A (Anthropic's at ~5.5 MB of 14.8 MB)
 FIN_PER_RUN = 6
+TL_V = 2                        # bump when timeline() learns a new form: every filer's submissions are read once more
 COVER_V = 2                     # bump when parse_cover learns a new pattern: active filers' covers are read once more
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
@@ -176,6 +177,13 @@ def timeline(sub: Dict) -> Dict:
         out["p_doc"] = {"acc": p[0][2], "file": p[0][3]}
         pre = [x[1] for x in reg if x[1] < p[0][1]]
         out["last_pre"] = pre[-1] if pre else None
+    # 11-17: Form 8-A12B / 8-A12G registers the shares on the exchange and SEC posts EFFECT when the S-1 is declared
+    # effective — both come a day or two before pricing (Anthropic filed its 8-A12B on 11-17 for an 11-19 listing)
+    a12 = [x[1] for x in rows if x[0] in ("8-A12B", "8-A12G") and reg and x[1] >= reg[0][1]]
+    eff = [x[1] for x in rows if x[0] == "EFFECT" and reg and x[1] >= reg[0][1]]
+    out["a12"] = a12[-1] if a12 else None
+    out["eff"] = eff[-1] if eff else None
+    out["tl_v"] = TL_V
     rw = [x[1] for x in rows if x[0] == "RW" and (not reg or x[1] >= reg[-1][1])]
     out["rw"] = rw[-1] if rw else None
     first = out.get("s1") or out.get("drs")
@@ -329,6 +337,10 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
         if f.get("drop"):
             return False
         ttl = 86400 if not f.get("priced") else 14 * 86400
+        if not f.get("priced") and (f.get("cover") or {}).get("lo"):
+            ttl = 6 * 3600                              # price range set: pricing is days away, read the filings more often
+        if f.get("tl_v") != TL_V:
+            return True
         if f.get("seen", "") > f.get("sub_seen", "") or (f.get("priced") and "last_pre" not in f):
             return True
         return now - f.get("sts", 0) > ttl

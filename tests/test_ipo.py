@@ -144,6 +144,31 @@ def test_card_and_ai_parse():
     assert p and set(p) == {"業務", "財務", "資金用途", "主要風險"}                      # the advice sentence is scrubbed
 
 
+def test_exchange_registration_means_days():
+    """11-17: Anthropic filed its 8-A12B (exchange registration) on 11-17 for an 11-19 listing, but the card still said
+    'about 11-26' from the median wait after the last amendment.  The 8-A12B / EFFECT step now sets the date."""
+    from datetime import date
+    import pandas as pd
+    from wsb.analytics import ipo as IP
+    from wsb.data import ipo_data as I
+    sub = {"name": "Anthropic, PBC", "tickers": ["ANT"], "filings": {"recent": {
+        "form": ["8-A12B", "S-1/A", "S-1/A", "S-1/A", "S-1", "DRS"],
+        "filingDate": ["2026-11-17", "2026-11-17", "2026-11-10", "2026-11-02", "2026-10-26", "2026-07-13"],
+        "accessionNumber": ["a6", "a5", "a4", "a3", "a2", "a1"], "primaryDocument": ["x"] * 6}}}
+    tl = I.timeline(sub)
+    assert tl["a12"] == "2026-11-17" and tl["eff"] is None and tl["amends"] == 3 and tl["tl_v"] == I.TL_V
+    past = []                                          # 6 priced IPOs, each priced 1 day after its 8-A12B
+    for k in range(6):
+        past.append({"kind": "ipo", "name": f"P{k}", "s1": "2026-06-01", "last": "2026-07-01", "last_pre": "2026-07-01",
+                     "a12": f"2026-07-0{k + 2}", "priced": f"2026-07-0{k + 3}", "cover": {"exchange": "Nasdaq"}})
+    me = dict(tl, kind="ipo", cover={"exchange": "Nasdaq Global Select Market", "symbol": "ANT", "lo": 70.0, "hi": 78.0})
+    d = {"us": {"filers": {"2130357": me, **{str(k): p for k, p in enumerate(past)}}}}
+    v = IP.us_view(d, pd.DataFrame(), None, date(2026, 11, 17))
+    r = v["pending"][0]
+    assert r["name"] == "Anthropic, PBC" and r["stage"] == "已向交易所登記股票" and r["near"] == "2026-11-18", r
+    assert v["t_a12"]["med"] == 1 and r["stage_n"] == 6
+
+
 if __name__ == "__main__":
     fails = 0
     for n, f in list(globals().items()):

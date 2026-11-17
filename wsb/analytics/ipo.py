@@ -88,6 +88,9 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
     t_first = [(_d(f["priced"]) - _d(f["s1"])).days for f in priced if _d(f.get("s1")) and _d(f["priced"]) >= _d(f["s1"])]
     t_last = [(_d(f["priced"]) - _d(f["last_pre"])).days for f in priced if _d(f.get("last_pre"))]
     tf, tl = _pct(t_first), _pct(t_last)
+    # days from the exchange registration (8-A12B) to pricing, from IPOs already priced (11-17)
+    t_a12 = [(_d(f["priced"]) - _d(f["a12"])).days for f in priced if _d(f.get("a12")) and _d(f["priced"]) >= _d(f["a12"])]
+    ta = _pct(t_a12)
     lo_act = (today - timedelta(days=ACTIVE_DAYS)).isoformat()
     pend, other = [], 0
     for f in ipo:
@@ -108,9 +111,15 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
             row["slow"] = since > tf["p75"]
         if cv.get("lo") and tl:
             row["near"] = str(_d(f["last"]) + timedelta(days=int(tl["med"])))
+        late = max((x for x in (f.get("a12"), f.get("eff")) if x), default=None)
+        if late:                                        # registered on the exchange / declared effective: days, not weeks
+            row["near"] = str(_d(late) + timedelta(days=int(ta["med"]) if ta else 1))
+            row["stage"] = "SEC 已宣告生效" if f.get("eff") and f.get("eff") >= (f.get("a12") or "") else "已向交易所登記股票"
+            row["stage_n"] = ta["n"] if ta else 0
         pend.append(row)
     pend.sort(key=lambda r: r["last"], reverse=True)               # price range set first (closest to pricing), then newest
     pend.sort(key=lambda r: 0 if r.get("lo") else 1)
+    pend.sort(key=lambda r: 0 if r.get("stage") else 1)              # registered on the exchange: closest of all
     done = []
     for f in priced:
         sym = (f.get("tickers") or [None])[0] or (f.get("cover") or {}).get("symbol")
@@ -132,7 +141,7 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
     filling = (not fl or any("kind" not in f for f in fl.values()) or (d.get("us") or {}).get("disc_to", "") < str(today - timedelta(days=3))
                or covers_left > 20)
     return {"pending": pend, "other": other, "filling": filling, "recent": [r for r in done if r["priced"] >= (today - timedelta(days=120)).isoformat()],
-            "n_priced": len(priced), "t_first": tf, "t_last": tl, "stats": st, "lock_soon": sorted(soon, key=lambda r: r["lock"]),
+            "n_priced": len(priced), "t_first": tf, "t_last": tl, "t_a12": ta, "stats": st, "lock_soon": sorted(soon, key=lambda r: r["lock"]),
             "from": min((f["priced"] for f in priced), default=None)}
 
 
