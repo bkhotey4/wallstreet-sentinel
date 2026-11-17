@@ -31,6 +31,9 @@ def test_week_story():
     assert "WMT" not in syms                                # one kind of event only
     assert "AMD" not in syms                                # hit by the policy alone: no event of its own
     assert "GOOGL" not in syms                              # private placement only (one kind)
+    dup = evs + [{"kind": "pp", "date": "2026-11-17", "syms": ["NVDA"], "t": "輝達出資（手動補的另一份）"}]
+    n = [e["kind"] for e in D.clusters(dup, {})[0]["events"]].count("pp")
+    assert n == 1, n                                        # same company, same day: counted once
 
 
 def test_archive_keeps_old_events():

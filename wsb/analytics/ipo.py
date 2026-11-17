@@ -126,7 +126,10 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
         late = max((x for x in (f.get("a12"), f.get("eff")) if x), default=None)
         # only a fresh step counts: filed in the last STAGE_DAYS days and no earlier than 3 days before the latest amendment
         # (11-17 first build: 26 small filers with an old 8-A12B and no pricing were all marked "about to price")
-        fresh = (late and (today - _d(late)).days <= STAGE_DAYS and _d(late) >= _d(f.get("last") or late) - timedelta(days=3))
+        fresh = (late and (today - _d(late)).days <= STAGE_DAYS and _d(late) >= _d(f.get("last") or late) - timedelta(days=3)
+                 # and the usual wait has not run out yet: past the 75th percentile with no 424B4, it stalled (11-17: 11 such
+                 # filers were listed as "即將定價" with dates already gone)
+                 and (not ta or (today - _d(late)).days <= int(ta["p75"]) + 2))
         if fresh:                                       # registered on the exchange / declared effective: days, not weeks
             row["near"] = str(_d(late) + timedelta(days=int(ta["med"]) if ta else 1))
             row["stage"] = "SEC 已宣告生效" if f.get("eff") and f.get("eff") >= (f.get("a12") or "") else "已向交易所登記股票"

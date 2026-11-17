@@ -114,7 +114,13 @@ def clusters(evs: List[Dict], zh: Dict[str, str], min_kinds: int = 2) -> List[Di
     """Companies that show up in ≥ min_kinds different kinds of events, most kinds and weight first.  A policy event that
     hits a whole chain counts only for companies that also have an event of their own."""
     by: Dict[str, List[Dict]] = {}
+    seen = set()
     for e in evs:
+        if e["kind"] in ("pp", "earn", "ipo"):              # one per company and day (a hand-added copy and the program's own)
+            k = (e["kind"], e["date"], tuple(e["syms"]))
+            if k in seen:
+                continue
+            seen.add(k)
         for s in e["syms"]:
             by.setdefault(s, []).append(e)
     out = []
