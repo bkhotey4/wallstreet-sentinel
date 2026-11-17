@@ -6,6 +6,7 @@ Cloudflare site (the GitHub copy has no /api/quote and shows a pointer instead).
 from __future__ import annotations
 
 import html
+import re
 import json
 
 from tools.site_session import MKT_JS
@@ -277,6 +278,14 @@ JS = (_JS.replace("__MKT__", MKT_JS).replace("__SEC__", json.dumps(SECTORS, ensu
 WD = "一二三四五六日"
 
 
+_ZERO = re.compile(r"[+-]0\.0(?=%)")
+
+
+def tidy_zero(x: str) -> str:
+    """Archived lines written before the 11-17 fix: '-0.0% 跌最多' / '+0.0%' → '0.0% 持平' / '0.0%'."""
+    return _ZERO.sub("0.0", x).replace("0.0% 跌最多", "0.0% 持平").replace("0.0% 漲最少", "0.0% 持平")
+
+
 def sec_why_days(eng) -> str:
     """每日盤勢解讀: the archived after-close read of each US session (newest first, the latest opened)."""
     from datetime import date as _d
@@ -294,11 +303,11 @@ def sec_why_days(eng) -> str:
                        f'<span class="small muted">（對得上：{html.escape("、".join(n["why"]))}）</span></li>' if n.get("l") else
                        f'<li>{html.escape(n["t"])}<span class="small muted">（對得上：{html.escape("、".join(n["why"]))}）</span></li>'
                        for n in r.get("news") or [])
-        body = ("<ul>" + "".join(f"<li>{html.escape(x)}</li>" for x in r.get("why") or [])
+        body = ("<ul>" + "".join(f"<li>{html.escape(tidy_zero(x))}</li>" for x in r.get("why") or [])
                 + (news or ('<li class="muted">新聞：這一天是網站開始存檔前補建的，只有價格資料，沒有當時的新聞可以比對。</li>' if r.get("backfill")
                             else '<li class="muted">新聞：沒有找到和當天實際大動的股票、資產或時間點對得上的新聞。</li>')) + "</ul>"
                 + f'<p><b>{T("📅 和之前比", "Against the days before")}</b></p><ul>'
-                + ("".join(f"<li>{html.escape(x)}</li>" for x in r["trend"]) if r.get("trend")
+                + ("".join(f"<li>{html.escape(tidy_zero(x))}</li>" for x in r["trend"]) if r.get("trend")
                    else "<li>各類股、利率、油價、美元和 AI 主題股大致延續之前的走勢，沒有明顯的反轉或加速。</li>") + "</ul>")
         parts.append(f'<details class="sgx"{" open" if i == 0 else ""}><summary><b>{day[5:]}（{wd}）</b> {html.escape(r["one"])}</summary>{body}</details>')
     lead = f"一句話看懂：每天美股收盤後自動存一份當天的盤勢解讀，可以往回對照前幾天（目前存了 {len(arc)} 天，最多保留 {DW.KEEP} 天）。"
