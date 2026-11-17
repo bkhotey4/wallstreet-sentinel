@@ -42,6 +42,23 @@ def test_card_and_score():
         SP.FILE = old
 
 
+def test_slow_source_flagged():
+    from tools import sys_health as H
+    from datetime import datetime
+    lines = []
+    for i in range(8):                                     # 8 runs, the SEC list timed out in 5, the news API in 1
+        m = 3 * i
+        if i < 5:
+            lines.append(f"2026-11-17 01:{m:02d}:20,000 INFO SEC feed page 0: timeout after 14s: https://www.sec.gov/x")
+        if i == 0:
+            lines.append(f"2026-11-17 01:{m:02d}:30,000 INFO news: ")
+        lines.append(f"2026-11-17 01:{m:02d}:50,000 INFO SEC push: 0 sent (40 s)")
+    now = datetime(2026, 11, 17, 1, 30).timestamp()
+    out = H.slow_source_issues(lines, now)
+    assert out and "SEC 最新 8-K 清單（5/8 輪）" in out[0]["text"] and "/api/news" not in out[0]["text"], out
+    assert H.slow_source_issues(lines[:6], now) == []      # too few runs to judge
+
+
 if __name__ == "__main__":
     test_card_and_score()
     print("ok test_card_and_score")
@@ -103,6 +120,26 @@ def test_overrun_flagged():
     assert H.overrun_issues(lines[:2], now) == []
 
 
+def test_offline_flagged():
+    from datetime import datetime
+    from tools import sys_health as H
+    lines = []
+    for i in range(10):
+        m = 3 * i
+        if i % 2 == 0:
+            lines.append(f"2026-11-17 01:{m:02d}:20,000 INFO news: Cannot connect to host x:443 ssl:default [getaddrinfo failed]")
+        lines.append(f"2026-11-17 01:{m:02d}:50,000 INFO SEC push: 0 sent (99 s)")
+    now = datetime(2026, 11, 17, 1, 40).timestamp()
+    out = H.offline_issues(lines, now)
+    assert out and out[0]["key"] == "offline" and "5/10" in out[0]["text"], out
+    assert H.offline_issues([ln for ln in lines if "getaddrinfo" not in ln], now) == []
+    assert H.offline_issues(lines[:6], now) == []          # too few runs to judge
+
+
 if __name__ == "__main__":
+    test_offline_flagged()
+    print("ok test_offline_flagged")
     test_overrun_flagged()
     print("ok test_overrun_flagged")
+    test_slow_source_flagged()
+    print("ok test_slow_source_flagged")

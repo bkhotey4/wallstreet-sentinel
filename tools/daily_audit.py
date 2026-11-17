@@ -165,7 +165,9 @@ def main() -> Dict:
         if sc.exists():
             sc.unlink()                                       # force a fresh hourly check now
         rep["selfcheck"] = asyncio.run(H.site_shown(time.time()))
-        rep["overrun"] = H.overrun_issues(H.read_tail(DATA_DIR / "sec_push.log"), time.time())
+        sp = H.read_tail(DATA_DIR / "sec_push.log")
+        rep["offline"] = H.offline_issues(sp, time.time())
+        rep["overrun"] = [] if rep["offline"] else H.overrun_issues(sp, time.time()) + H.slow_source_issues(sp, time.time())
     except Exception as e:  # noqa: BLE001
         rep["selfcheck"], rep["overrun"] = [], []
         rep["selfcheck_error"] = str(e)
@@ -178,7 +180,10 @@ def main() -> Dict:
 
 
 def summary(rep: Dict) -> str:
-    lines = [f"偏舊卡片 {len(rep.get('stale') or [])} 張："]
+    # 2026-11-17: the site read timed out (home internet down) and this still printed 「偏舊卡片 0 張」 as if all were fresh
+    lines = ([f"⚠ 讀不到網站（{rep['site_error']}）：偏舊卡片無法判斷，不是 0 張"] if rep.get("site_error")
+             else [f"偏舊卡片 {len(rep.get('stale') or [])} 張："])
+    lines += ["⚠ " + i["text"] for i in rep.get("offline") or []]
     for c in rep.get("stale") or []:
         lines.append("  - " + c["card"] + "｜" + "；".join(
             f"{t['src']}（檢查 {t['checked']}，資料日 {t['data'] or '—'}"

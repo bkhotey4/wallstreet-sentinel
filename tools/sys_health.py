@@ -391,12 +391,82 @@ def overrun_issues(lines: List[str], now: float, hours: float = 2, min_n: int = 
              "text": f"**即時推送**：過去 {hours:g} 小時有 {hits} 輪超過時間上限，被延到下一輪的檢查：{top}。要看是哪個來源變慢。"}]
 
 
+def slow_source_issues(lines: List[str], now: float, hours: float = 2, min_runs: int = 6, share: float = 0.5) -> List[Dict]:
+    """A source sec_push reads failed (timed out) in at least half of the runs of the last 2 hours.  11-17: the SEC
+    current-8-K list and the site's own /api/news timed out on most runs for hours before anyone looked; the run still
+    finished, so the overrun check alone did not show which source was the cause."""
+    import re
+    from datetime import datetime
+    pats = {"SEC 最新 8-K 清單": r"INFO SEC feed page 0:|WARNING SEC refresh failed", "SEC 大股東（13D）清單": r"INFO SEC 13D feed:",
+            "網站即時新聞 /api/news": r"INFO news: ", "SEC 財報申報直接查": r"INFO SEC submissions "}
+    runs, fail = set(), {k: set() for k in pats}
+    for ln in lines:
+        m = re.match(r"(\d{4}-\d\d-\d\d \d\d:\d\d):\d\d,\d+ ", ln)
+        if not m:
+            continue
+        try:
+            ts = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M").timestamp()
+        except ValueError:
+            continue
+        if now - ts > hours * 3600:
+            continue
+        slot = int(ts // 180)                              # one run every 3 minutes
+        if "INFO SEC push:" in ln:
+            runs.add(slot)
+        for k, pt in pats.items():
+            if re.search(pt, ln):
+                fail[k].add(slot)
+    n = len(runs)
+    if n < min_runs:
+        return []
+    bad = [f"{k}（{len(v)}/{n} 輪）" for k, v in fail.items() if len(v) >= share * n]
+    if not bad:
+        return []
+    return [{"key": "slow_source", "urgent": False,
+             "text": f"**即時推送的來源變慢**：過去 {hours:g} 小時多數輪次逾時的來源：{'、'.join(bad)}。推送照常跑完，但這些來源的內容可能晚到。"}]
+
+
+OFFLINE_PAT = r"getaddrinfo failed|ClientConnectorDNSError|Could not resolve host|Name or service not known"
+
+
+def offline_issues(lines: List[str], now: float, hours: float = 2, min_runs: int = 6, share: float = 0.3) -> List[Dict]:
+    """This PC could not look up host names (DNS) in a good share of the sec_push runs of the last 2 hours.
+    2026-11-17 08:45–11:00: the home internet was down; the overrun and slow-source checks blamed 'a slow SEC feed and
+    /api/news' instead.  When the cause is no network, say that, and let the slow-source / overrun lines step aside."""
+    import re
+    from datetime import datetime
+    runs, bad = set(), set()
+    for ln in lines:
+        m = re.match(r"(\d{4}-\d\d-\d\d \d\d:\d\d):\d\d,\d+ ", ln)
+        if not m:
+            continue
+        try:
+            ts = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M").timestamp()
+        except ValueError:
+            continue
+        if now - ts > hours * 3600:
+            continue
+        slot = int(ts // 180)
+        if "INFO SEC push:" in ln:
+            runs.add(slot)
+        if re.search(OFFLINE_PAT, ln):
+            bad.add(slot)
+    n = len(runs)
+    if n < min_runs or len(bad) < share * n:
+        return []
+    return [{"key": "offline", "urgent": False,
+             "text": f"**這台電腦連不上網**：過去 {hours:g} 小時 {len(bad)}/{n} 輪查不到網址（DNS 失敗），不是來源變慢。"
+                     "這段時間的即時推送由雲端備援（GitHub Actions）接手；網路回來後看一下雲端有沒有發出、網站有沒有照常更新。"}]
+
+
 async def check(now: float, news: Dict, sent: Dict[str, float]) -> tuple:
     """(problems not reported in the last 24 hours, how many are open in all).  The caller marks them in `sent` once the message is out."""
     issues = collect(now, read_tail(DATA_DIR / "sentinel.log"), heartbeat_age(now), await build_runs(),
                      len(news.get("sources") or []) if news and news.get("sources") is not None else None, price_age_days(now))
     issues += lag_issues(lag_rows(now), now)
-    issues += overrun_issues(read_tail(DATA_DIR / "sec_push.log"), now)
+    sp = read_tail(DATA_DIR / "sec_push.log")
+    off = offline_issues(sp, now)
+    issues += off or (overrun_issues(sp, now) + slow_source_issues(sp, now))   # no network: the slowness is a symptom
     issues += await preview_issues(now)
     issues += await site_shown(now)
     for k in [k for k, v in sent.items() if now - float(v) > 7 * 86400]:
