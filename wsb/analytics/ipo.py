@@ -38,6 +38,16 @@ def _pct(v: List[float]) -> Optional[Dict]:
     return {"p25": float(np.percentile(a, 25)), "med": float(np.median(a)), "p75": float(np.percentile(a, 75)), "n": len(a)}
 
 
+def _trading(d: date) -> date:
+    """The next NYSE trading day on or after d (an IPO prices and lists on a trading day; 11-17: "約 11-21" was a Saturday)."""
+    from ..data.exchange_cal import us_open
+    for _ in range(7):
+        if us_open(d):
+            return d
+        d += timedelta(days=1)
+    return d
+
+
 def _first_bar(s: pd.Series, d: date) -> Optional[int]:
     """Index of the first close on/after the day before the 424B4 date (the IPO usually trades the day the final
     prospectus is filed or the day before)."""
@@ -102,6 +112,8 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
     # days from the exchange registration (8-A12B) to pricing, from IPOs already priced (11-17)
     t_a12 = [(_d(f["priced"]) - _d(f["a12"])).days for f in priced if _d(f.get("a12")) and _d(f["priced"]) >= _d(f["a12"])]
     ta = _pct(t_a12)
+    t_eff = [(_d(f["priced"]) - _d(f["eff"])).days for f in priced if _d(f.get("eff")) and _d(f["priced"]) >= _d(f["eff"])]
+    te = _pct(t_eff)
     lo_act = (today - timedelta(days=ACTIVE_DAYS)).isoformat()
     pend, other = [], 0
     for f in ipo:
@@ -122,21 +134,27 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
             row["win_hi"] = str(_d(f["s1"]) + timedelta(days=int(tf["p75"])))
             row["slow"] = since > tf["p75"]
         if cv.get("lo") and tl:
-            row["near"] = str(_d(f["last"]) + timedelta(days=int(tl["med"])))
-        late = max((x for x in (f.get("a12"), f.get("eff")) if x), default=None)
-        # only a fresh step counts: filed in the last STAGE_DAYS days and no earlier than 3 days before the latest amendment
-        # (11-17 first build: 26 small filers with an old 8-A12B and no pricing were all marked "about to price")
+            row["near"] = str(_trading(_d(f["last"]) + timedelta(days=int(tl["med"]))))
+        # the latest step and its own past wait: EFFECT (SEC declared the S-1 effective → prices that evening or the next
+        # day) is closer than the 8-A12B exchange registration, so each uses its own distribution (11-17)
+        is_eff = bool(f.get("eff") and f.get("eff") >= (f.get("a12") or ""))
+        late = f.get("eff") if is_eff else f.get("a12")
+        dist = (te if is_eff else ta) or ta
+        med = int(dist["med"]) if dist else 1
+        # only a fresh step counts: filed in the last STAGE_DAYS days, no earlier than 3 days before the latest amendment,
+        # the usual wait not run out (past the 75th percentile with no 424B4 = stalled), and the estimate not gone by
+        # (11-17: 26 old 8-A12Bs, then 11 dates already past, were all listed as "即將定價")
         fresh = (late and (today - _d(late)).days <= STAGE_DAYS and _d(late) >= _d(f.get("last") or late) - timedelta(days=3)
-                 # and the usual wait has not run out yet: past the 75th percentile with no 424B4, it stalled (11-17: 11 such
-                 # filers were listed as "即將定價" with dates already gone)
-                 and (not ta or (today - _d(late)).days <= int(ta["p75"]) + 2)
-                 # and the estimated day itself has not gone by (11-17: "約 11-13" was still shown on 11-17)
-                 and _d(late) + timedelta(days=int(ta["med"]) if ta else 1) >= today - timedelta(days=1))
+                 and (not dist or (today - _d(late)).days <= int(dist["p75"]) + 2)
+                 and _trading(_d(late) + timedelta(days=med)) >= today)
         if fresh:                                       # registered on the exchange / declared effective: days, not weeks
-            row["near"] = str(_d(late) + timedelta(days=int(ta["med"]) if ta else 1))
-            row["stage"] = "SEC 已宣告生效" if f.get("eff") and f.get("eff") >= (f.get("a12") or "") else "已向交易所登記股票"
-            row["stage_n"] = ta["n"] if ta else 0
-            row["stage_med"], row["stage_p25"], row["stage_p75"] = (ta["med"], ta["p25"], ta["p75"]) if ta else (None, None, None)
+            row["near"] = str(_trading(_d(late) + timedelta(days=med)))
+            if dist:
+                row["near_lo"] = str(_trading(max(today, _d(late) + timedelta(days=int(dist["p25"])))))
+                row["near_hi"] = str(_trading(_d(late) + timedelta(days=int(dist["p75"]))))
+            row["stage"] = "SEC 已宣告生效" if is_eff else "已向交易所登記股票"
+            row["stage_n"] = dist["n"] if dist else 0
+            row["stage_med"], row["stage_p25"], row["stage_p75"] = (dist["med"], dist["p25"], dist["p75"]) if dist else (None, None, None)
         pend.append(row)
     pend.sort(key=lambda r: r["last"], reverse=True)               # price range set first (closest to pricing), then newest
     pend.sort(key=lambda r: 0 if r.get("lo") else 1)

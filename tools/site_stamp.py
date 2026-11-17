@@ -519,6 +519,16 @@ def _cover_date() -> Optional[str]:
         return None
 
 
+def _mtime(mod: str, attr: str) -> Optional[float]:
+    """When a cache / feed file was last written (11-17: sources that carry a date only now show a real check time)."""
+    try:
+        import importlib
+        p = getattr(importlib.import_module(mod), attr)
+        return p.stat().st_mtime if p.exists() else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _feed_date() -> Optional[str]:
     try:
         import json
@@ -583,7 +593,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "econ": ("財經日曆", "Econ calendar", lambda e: (_ts(_g(e, "econ", "ts")), None), 0),
     "fedwatch": ("利率期貨", "Fed funds futures", lambda e: (_ts(_g(e, "fedwatch", "ts")), _d(_g(e, "fedwatch_view", "asof"))), 4),
     "options": ("CBOE 選擇權", "CBOE options", lambda e: (_ts(_g(e, "options", "ts")), _d(_g(e, "options", "spx", "asof"))), 4),
-    "darkpool": ("FINRA 暗池", "FINRA dark pool", lambda e: (None, _d(_g(e, "darkpool", "result", "asof"))), 7),
+    "darkpool": ("FINRA 暗池", "FINRA dark pool", lambda e: (_mtime("wsb.data.darkpool", "_FILE"), _d(_g(e, "darkpool", "result", "asof"))), 7),
     "jgb": ("日本財務省公債殖利率", "MOF JGB yields", lambda e: (_ts(_g(e, "global_yields", "ts")),
             _d(e.global_yields.jgb.index[-1]) if getattr(getattr(e, "global_yields", None), "jgb", None) is not None and len(e.global_yields.jgb) else None), 5),
     "bondflows": ("日本財務省週資料／美國 TIC", "MOF weekly / TIC", lambda e: (_ts(_bondflows()[0]), _bondflows()[1]), 16),   # MOF posts ~6 days after the week ends, weekly
@@ -605,7 +615,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "taiwan": ("台股籌碼", "Taiwan flows", lambda e: (_ts(_g(e, "taiwan", "ts")), _d(_g(e, "taiwan", "asof"))), 4),
     "street": ("華爾街觀點", "Street views", lambda e: (_ts(_g(e, "street", "ts")), _d(_g(e, "street", "pos", "asof") or _g(e, "street", "asof"))), 10),
     "fedres": ("聯準會研究資料", "Fed research data", lambda e: (_ts(_fedres().get("ts")), _fedres_date()), 40),
-    "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),
+    "feed": ("學術動態", "Research feed", lambda e: (None, _feed_date()), 10),   # git checkout mtime is not an update time
     "routines": ("雲端 AI 排程", "Cloud AI routines", lambda e: _routines_stamp(), 2),
     "after": ("財報後解讀（雲端 AI）", "Post-earnings notes", lambda e: _feed_stamp("site_after"), 2),
     "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: _feed_stamp("site_preview"), 2),

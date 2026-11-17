@@ -127,7 +127,8 @@ def _us_pending(u: Dict) -> str:
             n, md = r.get("stage_n") or 0, r.get("stage_med")
             span = (f'過去 {n} 家從這一步到定價中位數 {md:.0f} 天（一半在 {r["stage_p25"]:.0f}～{r["stage_p75"]:.0f} 天）'
                     if n >= 5 and md is not None else '已在掛牌前最後幾步')
-            when = f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{esc(r["stage"])}，{span}</div>'
+            rng = f'（{_md(r["near_lo"])}～{_md(r["near_hi"])}）' if r.get("near_lo") and r.get("near_hi") and r["near_lo"] != r["near_hi"] else ""
+            when = f'<b>{T("約", "~")} {_md(r["near"])}</b>{rng}<div class="small muted">{esc(r["stage"])}，{span}</div>'
         ai = r.get("ai") or {}
         det = ""
         if ai:

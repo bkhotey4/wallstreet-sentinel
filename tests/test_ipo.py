@@ -106,7 +106,7 @@ def test_views():
     assert u["t_first"]["med"] == 60 and u["t_last"]["med"] == 10
     a = next(r for r in u["pending"] if r["name"] == "Anthro")
     assert a["win_lo"] == a["win_hi"] == "2026-12-25" and not a["slow"]
-    assert next(r for r in u["pending"] if r["name"] == "RangeCo")["near"] == "2026-11-08"
+    assert next(r for r in u["pending"] if r["name"] == "RangeCo")["near"] == "2026-11-09"   # 11-08 is a Sunday → next trading day
     st = u["stats"]
     assert st["day1"]["n"] == 12 and st["day1"]["med"] > 0 and st["x120"]["med"] < 0
     assert st["big"]["day1"] is None and st["small"]["day1"] is None          # 6 each: below the 10-company floor

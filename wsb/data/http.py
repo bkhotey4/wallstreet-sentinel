@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import logging
 from typing import Any, Optional
 
@@ -28,6 +29,8 @@ async def session() -> aiohttp.ClientSession:
 async def get(url: str, *, kind: str = "json", headers: dict | None = None,
               params: dict | None = None, retries: int = 2, timeout: float = 25) -> Any:
     """kind: json | text | bytes"""
+    if os.environ.get("WSB_OFFLINE"):                 # tests: fail fast instead of waiting on the real network (11-17)
+        raise ConnectionError(f"offline (WSB_OFFLINE): {url}")
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
@@ -54,6 +57,8 @@ async def get(url: str, *, kind: str = "json", headers: dict | None = None,
 async def post(url: str, *, data: dict | None = None, kind: str = "text", headers: dict | None = None,
                retries: int = 1, timeout: float = 25) -> Any:
     """A form POST (a site's own 'open this article' form); kind: json | text."""
+    if os.environ.get("WSB_OFFLINE"):
+        raise ConnectionError(f"offline (WSB_OFFLINE): {url}")
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:

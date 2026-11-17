@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+os.environ.setdefault("WSB_OFFLINE", "1")          # no live network in tests (PortWatch / FRED hangs, 11-17)
 import sys
 import tempfile
 if hasattr(sys.stdout, "reconfigure"):
