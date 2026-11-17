@@ -353,17 +353,23 @@ export function mainDoc(html) {
   return "";
 }
 
+// 2026-11-17: every outside fetch has its own time limit — one slow source (the SEC current-8-K list can take 20+ s) used to
+// hold the whole answer, and the alert job (20 s limit) then got nothing at all.  A source past its limit is left out this time.
+const tfetch = (u, opt, ms) => fetch(u, { ...opt, signal: AbortSignal.timeout(ms) });
+
 async function secItems(ctx, watch) {
+  const t0 = Date.now();
   try {
-    const get = (u) => fetch(u, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 60 } }).then((r) => (r.ok ? r.text() : "")).catch(() => "");
+    const get = (u) => tfetch(u, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 60 } }, 7000).then((r) => (r.ok ? r.text() : "")).catch(() => "");
     const [fx, dx] = await Promise.all([get(SEC_FEED), get(SEC_13D)]);
     const items = parseSec(fx, watch);
     for (const x of items.filter((y) => y.item === "5.02").slice(0, 5)) {   // personnel: read the filing itself (rare)
+      if (Date.now() - t0 > 5000) break;             // past the budget: keep the generic title
       try {
-        const ix = await fetch(x.u, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } });
+        const ix = await tfetch(x.u, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } }, 3000);
         const doc = mainDoc(await ix.text());
         if (!doc) continue;
-        const r = await fetch("https://www.sec.gov" + doc, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } });
+        const r = await tfetch("https://www.sec.gov" + doc, { headers: { "user-agent": SEC_UA }, cf: { cacheTtl: 86400 } }, 3000);
         const k = kind(unesc(await r.text()));
         if (k.what) x.t = x.t.replace("高層人事異動", (k.seat ? k.seat : "高層") + k.what);
         x.kind = k.what;
@@ -372,7 +378,7 @@ async function secItems(ctx, watch) {
     }
     for (const x of parse13d(dx, watch)) items.push(x);
     try {                                            // the build's record (3 days): alerts stay after the live list scrolls on
-      const ar = await fetch(new URL("/sec_alerts.json", ctx.request.url).toString(), { cf: { cacheTtl: 300 } });
+      const ar = await tfetch(new URL("/sec_alerts.json", ctx.request.url).toString(), { cf: { cacheTtl: 300 } }, 3000);
       if (ar.ok) {
         const have = new Set(items.map((x) => x.u));
         for (const x of ((await ar.json()) || {}).items || []) {
@@ -395,13 +401,13 @@ export async function onRequest(ctx) {
   if (hit) return hit;
   let watch = {};
   try {
-    const wr = await fetch(new URL("/sec_watch.json", ctx.request.url).toString(), { cf: { cacheTtl: 600 } });
+    const wr = await tfetch(new URL("/sec_watch.json", ctx.request.url).toString(), { cf: { cacheTtl: 600 } }, 3000);
     if (wr.ok) watch = (await wr.json()) || {};
   } catch (e) { /* no list: headlines only */ }
   const secP = watch.ciks ? secItems(ctx, watch.ciks) : Promise.resolve([]);
   const res = await Promise.all(FEEDS.map(async (f) => {
     try {
-      const r = await fetch(f.u, { headers: { "user-agent": "Mozilla/5.0 (WallStreet Sentinel news)" }, cf: { cacheTtl: 60 } });
+      const r = await tfetch(f.u, { headers: { "user-agent": "Mozilla/5.0 (WallStreet Sentinel news)" }, cf: { cacheTtl: 60 } }, 6000);
       return r.ok ? parse(await r.text(), f) : [];
     } catch (e) {
       return [];

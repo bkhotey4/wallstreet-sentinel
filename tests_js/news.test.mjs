@@ -110,3 +110,26 @@ for (const t of ["Federal Reserve Board announces pricing, effective January 1, 
 }
 assert.ok(!cbSurprise({ t: "Emergency meeting at the Fed", o: "cnbc", off: false, ts: 1 }, FOMC));                  // only the banks' own releases
 console.log("news tests 2 ok");
+// 11-17: a source that never answers is cut at its own limit; the answer still comes back with the other sources
+{
+  const { onRequest } = await import("../functions/api/news.js");
+  const realFetch = globalThis.fetch, realCaches = globalThis.caches;
+  globalThis.caches = { default: { match: async () => null, put: async () => {} } };
+  globalThis.fetch = (u, opt = {}) => new Promise((res, rej) => {
+    const url = String(u);
+    if (url.includes("sec_watch.json")) return res(new Response("{}", { status: 404 }));
+    if (url.includes("cnbc")) {                                   // hangs until aborted
+      opt.signal?.addEventListener("abort", () => rej(new Error("aborted")));
+      return;
+    }
+    res(new Response("<rss></rss>", { status: 200 }));
+  });
+  const keep = setInterval(() => {}, 500);          // node: AbortSignal.timeout timers do not keep the process alive
+  const t = Date.now();
+  const r = await onRequest({ request: new Request("https://x.dev/api/news"), waitUntil: () => {} });
+  const ms = Date.now() - t;
+  clearInterval(keep);
+  globalThis.fetch = realFetch; globalThis.caches = realCaches;
+  assert.ok(r.status === 200 && ms < 6500 + 1500, "answered in " + ms + " ms");
+  console.log("news tests 3 ok (" + ms + " ms with one hung source)");
+}
