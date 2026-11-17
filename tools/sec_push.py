@@ -43,7 +43,7 @@ import os
 import re
 import sys
 import time
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from urllib.parse import quote, unquote
@@ -409,7 +409,7 @@ def sector_embed(a: Dict) -> Dict:
 STOCK_EVERY = 300
 
 
-async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
+async def stock_alerts(sess: aiohttp.ClientSession, now: float, news: Optional[List[Dict]] = None) -> List[Dict]:
     """Tracked US stocks moving ≥ 3.5× their normal day and ≥ 4 %, and tracked Taiwan stocks ≥ 3.0× and ≥ 6 % (either way;
     thresholds in stock_shock.MK), with the headlines that name them.  Each hit carries mk = "us" / "tw"."""
     from datetime import datetime
@@ -419,7 +419,7 @@ async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
     from wsb.data.stocks import universe
     if now < 1.7e9:                                        # a test clock: never fetch live quotes
         return []
-    cl, news, out = _close(), None, []
+    cl, out = _close(), []      # news: the run's /api/news items (11-17: a second 20 s fetch after a failed one cost runs)
     for mk, tz in (("us", "America/New_York"), ("tw", "Asia/Taipei")):
         names = (universe().get(mk) or {}).get("symbols", {})
         sd = ST.sigmas(cl, list(names))
@@ -440,6 +440,18 @@ async def stock_alerts(sess: aiohttp.ClientSession, now: float) -> List[Dict]:
             a["earn"] = ST.earnings_note(a["sym"], a["day"], cal)
         out += hits
     return out
+
+
+def earn_due_ciks(wl: Dict[str, list], now: float, floor: float = 5e10) -> Dict[str, list]:
+    """{cik: [sym, 中文名]} for watched companies (market cap ≥ floor) whose earnings fall on today or yesterday (US date) —
+    their 8-K 2.02 is also checked straight from data.sec.gov, so a slow SEC feed cannot hide a big report (11-17)."""
+    from zoneinfo import ZoneInfo
+    cal = _earn_cal()
+    d = datetime.fromtimestamp(now, ZoneInfo("America/New_York")).date()
+    days = {d.isoformat(), (d - timedelta(days=1)).isoformat()}
+    syms = {r.get("sym") for k in days for r in (cal.get(k) or {}).get("rows") or [] if (r.get("mcap") or 0) >= floor}
+    by_sym = {v[0]: c for c, v in wl.items()}
+    return {by_sym[s]: wl[by_sym[s]] for s in syms if s in by_sym}
 
 
 def _earn_cal() -> Dict:
@@ -1054,7 +1066,8 @@ async def run_once(now: Optional[float] = None) -> int:
         return False
 
     try:
-        st = await asyncio.wait_for(SOF.refresh(watch_list(), now=now), 60)
+        wl = watch_list()
+        st = await asyncio.wait_for(SOF.refresh(wl, now=now, due=earn_due_ciks(wl, now)), 55)
     except Exception as e:  # noqa: BLE001  (SEC unreachable: the other checks still run; nothing is marked, so nothing is lost)
         log.warning("SEC refresh failed: %s", e)
         st = {}
@@ -1204,7 +1217,7 @@ async def run_once(now: Optional[float] = None) -> int:
             if now - S["st_ts"] >= STOCK_EVERY and left("stock"):
                 from wsb.analytics import stock_shock as ST
                 S["st_ts"] = now
-                allhits = await stock_alerts(sess, now)
+                allhits = await stock_alerts(sess, now, nj.get("items") or [])
                 for mk, pre in (("us", "stock"), ("tw", "stocktw")):   # each market keeps its own daily count
                     hits = [a for a in allhits if a.get("mk", "us") == mk]
                     day = hits[0]["day"] if hits else ""
@@ -1242,6 +1255,12 @@ async def run_once(now: Optional[float] = None) -> int:
                                 sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("stock check failed: %s", e)
+        save()
+        try:                                               # 持股晚報、財報出爐、累積跌幅：只私訊擁有者（11-17 移到前面：慢的一輪也不會被擠到下一輪）
+            if not CLOUD and left("holdings"):
+                sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
+        except Exception as e:  # noqa: BLE001
+            log.warning("holdings watch failed: %s", e)
         save()
         try:                                               # 台股重大訊息（即時，官方 RSS）：一家公司一則；只有持股才有的公司只私訊
             if left("mops"):
@@ -1398,11 +1417,6 @@ async def run_once(now: Optional[float] = None) -> int:
         except Exception as e:  # noqa: BLE001
             log.warning("health check failed: %s", e)
         save()
-        try:                                               # 持股晚報與累積跌幅：只私訊擁有者
-            if not CLOUD and left("holdings"):
-                sent += await holdings_run(sess, now, {"alerts": st.get("alerts") or [], "earn": st.get("earn") or [], "bursts": nj.get("bursts") or []})
-        except Exception as e:  # noqa: BLE001
-            log.warning("holdings watch failed: %s", e)
         # 2026-11-16: the slow, low-urgency official-data checks run last, so a slow SEC / Yahoo day never pushes
         # Taiwan material news, bursts, night futures or the holdings messages to the next run
         try:                                               # 被迫進出的錢（指數調整日前一天、標普趨勢翻轉、波動控制比重驟降）

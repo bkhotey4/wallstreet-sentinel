@@ -39,7 +39,7 @@ def main() -> None:
     real3 = (P.site_alerts_json, P.mops_new, P.tw_impact)
     P.site_alerts_json, P.mops_new, P.tw_impact = fake_site, fake_mops, fake_tw_impact
 
-    async def fake_refresh(watch, now=0):
+    async def fake_refresh(watch, now=0, **kw):
         return {"alerts": [dirs, ceo, rst, dict(ceo, acc="old", ts=now - 7 * 3600)]}
 
     async def fake_impact(sess, sym, zh):
@@ -51,7 +51,7 @@ def main() -> None:
 
     async def fake_dm(sess):
         return "dm"
-    async def no_sectors(sess, now):
+    async def no_sectors(sess, now, *a):
         return []
     P.stock_alerts = no_sectors                             # 個股大動 has its own test (tests/test_stock_shock.py)
     news = {"bursts": []}
@@ -105,7 +105,7 @@ def main() -> None:
         d13 = {"acc": "d1", "ts": 1400, "sym": "NVDA", "zh": "輝達", "url": "https://www.sec.gov/d1", "item": "13D",
                "t": "SEC 申報：ICAHN CARL C 申報持有 輝達（NVDA）逾 5% 股權，不排除介入經營（Schedule 13D）"}
 
-        async def refresh13(watch, now=0):
+        async def refresh13(watch, now=0, **kw):
             return {"alerts": [d13, dict(d13, acc="d2", item="13D/A", t="SEC 申報：X 更新對 輝達（NVDA）的大股東持股申報（Schedule 13D/A）")]}
         SOF.refresh = refresh13
         assert asyncio.run(P.run_once(now=1500)) == 1 and "13D）" in sent[0] and len(dms) == 1, (sent, dms)
@@ -176,7 +176,7 @@ def main() -> None:
                 "t": "SEC 申報：輝達（NVDA）執行長離職（8-K 第 5.02 項）"}
         fresh = dict(late, acc="F1", ts=back - 600, t="SEC 申報：輝達（NVDA）財務長離職（8-K 第 5.02 項）")
 
-        async def refresh_gap(watch, now=0):
+        async def refresh_gap(watch, now=0, **kw):
             return {"alerts": [late, fresh]}
         SOF.refresh = refresh_gap
         sent.clear(); dms.clear()

@@ -46,10 +46,10 @@ def main() -> None:
     P.PUSHED = pathlib.Path(tempfile.mkdtemp()) / "p.json"
     sent = []
 
-    async def no_sec(watch, now=0):
+    async def no_sec(watch, now=0, **kw):
         return {"alerts": []}
 
-    async def no_stocks(sess, now):                                     # 個股大動 has its own test
+    async def no_stocks(sess, now, news=None):                                     # 個股大動 has its own test
         return []
     P.stock_alerts = no_stocks
 

@@ -134,6 +134,37 @@ def main() -> None:
     nm = W.names_of({"NVDA": ("輝達", "Nvidia"), "V": ("Visa", "Visa"), "GOOGL": ("Alphabet", "Google")}, {"GILD": {"name": "Gilead Sciences, Inc."}},
                     ["NVDA", "V", "GOOGL", "GILD"])
     assert nm == {"NVDA": ["輝達", "Nvidia"], "GOOGL": ["", "Google|Alphabet"], "GILD": ["", "Gilead"]}, nm
+    # 11-17: a slow current-8-K feed must not hide a big company's results — 8-K 2.02 read straight from submissions
+    import time as _t
+    from wsb.data import http as _H
+    now0 = _t.time()
+    iso = lambda ts: _t.strftime("%Y-%m-%dT%H:%M:%S.000Z", _t.gmtime(ts))  # noqa: E731
+    sub = {"filings": {"recent": {"form": ["8-K", "4", "8-K", "8-K"], "items": ["5.02", "", "2.02,9.01", "2.02"],
+                                  "accessionNumber": ["a-1", "a-2", "0001045810-26-000200", "old-1"],
+                                  "acceptanceDateTime": [iso(now0 - 600), iso(now0 - 700), iso(now0 - 900), iso(now0 - 30 * 86400)],
+                                  "primaryDocument": ["x.htm", "y.xml", "nvda-8k.htm", "z.htm"]}}}
+    real_get = _H.get
+
+    async def fake_get(url, **kw):
+        assert "data.sec.gov/submissions/CIK0001045810.json" in url
+        return sub
+    _H.get = fake_get
+    try:
+        got = asyncio.run(S.earn_direct({"1045810": ["NVDA", "輝達"]}, set(), now0))
+    finally:
+        _H.get = real_get
+    assert [g["acc"] for g in got] == ["0001045810-26-000200"] and got[0]["sym"] == "NVDA", got
+    from tools import sec_push as P
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _Z
+    real_cal = P._earn_cal
+    P._earn_cal = lambda: {"2026-11-17": {"rows": [{"sym": "NVDA", "mcap": 4e12}, {"sym": "TINY", "mcap": 1e9}]}}
+    try:
+        t = _dt(2026, 11, 18, 0, 30, tzinfo=_Z("America/New_York")).timestamp()        # the morning after: yesterday counts
+        assert P.earn_due_ciks({"1045810": ["NVDA", "輝達"], "9": ["TINY", "t"]}, t) == {"1045810": ["NVDA", "輝達"]}
+        assert P.earn_due_ciks({"1045810": ["NVDA", "輝達"]}, t + 2 * 86400) == {}
+    finally:
+        P._earn_cal = real_cal
     print("test_sec_officers ok")
 
 

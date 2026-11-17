@@ -153,7 +153,7 @@ def _run_env():
     async def none(sess, now):
         return None
 
-    async def empty(sess, now):
+    async def empty(sess, now, *a):
         return []
 
     async def news(sess):

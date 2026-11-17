@@ -116,6 +116,11 @@ def sec_st_brief(eng) -> str:
         au = next((r for r in (fw.get("house") or {}).get("rows") or [] if r["code"] == "AUTO"), None)
         tiles.append(("st-fsr", f"{'🟡' if lit else '🟢'} 官方點名的壓力點", f"{lit}<small> / {len(fl)} 黃燈</small>",
                       (f"車貸新增嚴重逾期 {au['flow']:.1f}%（10 年第 {au['p10']:.0f} 百分位）" if au and au.get("p10") is not None else "家庭貸款、銀行、避險基金、房價"), ""))
+    sl = _sloos(eng) or {}
+    if sl.get("rows"):
+        bg = next((r for r in sl["rows"] if r["key"] == "ci_big"), sl["rows"][0])
+        tiles.append(("st-sloos", f"{sl['emoji']} 銀行放款門檻", f"{sl['n_tight']}<small> / {len(sl['rows'])} 類收緊</small>",
+                      f"{bg['zh']}淨 {bg['std']:+.0f}%（歷史第 {num(bg['pct'], 0)} 百分位）・{sl['date']} 調查", ""))
     cv = coverage()
     gaps = cv.get("gaps") or []
     try:
@@ -411,6 +416,60 @@ def sec_st_fsr(eng) -> str:
               f'<a href="{FW.FDIC_PAGE}" target="_blank" rel="noopener">FDIC 全體銀行申報</a>（季）、<a href="{FW.OFR_PAGE}" target="_blank" rel="noopener">OFR 避險基金監測</a>（Form PF 季資料、結算所擔保回購）、'
               'FRED（Case-Shiller 房價、CPI 房租與二手車、60 個月車貸利率、銀行放款調查）、Yahoo（車貸公司股價）。季資料大約落後 2～5 個月。描述現況，不是預測，也不是投資建議。</p>')
     return card("官方點名的四個壓力點：家庭貸款、銀行、避險基金、房價", "Fed FSR pressure points", body, "wide")
+
+
+def _sloos(eng) -> Dict:
+    c = getattr(eng, "_sloos_view", None)
+    if c is None:
+        try:
+            from wsb.analytics import sloos as SL
+            fr = getattr(eng, "fred", None)
+            c = SL.view((lambda sid: fr.get(sid)) if fr is not None else (lambda sid: None))
+        except Exception:  # noqa: BLE001
+            c = {}
+        try:
+            eng._sloos_view = c
+        except Exception:  # noqa: BLE001
+            pass
+    return c
+
+
+@_anchor("st-sloos")
+def sec_st_sloos(eng) -> str:
+    """銀行放款調查（SLOOS）：九類貸款的放款標準與需求，各自和自己的歷史比。"""
+    from wsb.analytics import sloos as SL
+    v = _sloos(eng) or {}
+    rows = v.get("rows") or []
+    if not rows:
+        return ""
+    dem = lambda r: (f'{r["dem"]:+.0f}%' if r.get("dem") is not None else "—")  # noqa: E731
+    tr = "".join(f'<tr{" class=hl" if r["emoji"] != "🟢" else ""}><td>{r["emoji"]} {esc(r["zh"])}<div class="small muted">{esc(r["who"])}</div></td>'
+                 f'<td class="r"><b>{r["std"]:+.0f}%</b></td><td class="r">{"—" if r["std_1y"] is None else format(r["std_1y"], "+.0f") + "%"}</td>'
+                 f'<td class="r">{num(r["pct"], 0)}</td><td class="r">{dem(r)}</td>'
+                 f'<td class="r small muted">{r["max"]:+.0f}%（{esc(r["max_date"])}）</td></tr>' for r in rows)
+    tbl = (f'<div class="scroll"><table class="mini"><thead><tr><th>貸款</th><th class="r">淨收緊比例</th><th class="r">一年前</th>'
+           f'<th class="r">歷史百分位</th><th class="r">借錢需求（淨）</th><th class="r">歷史最緊</th></tr></thead><tbody>{tr}</tbody></table></div>')
+    big = next((r for r in rows if r["key"] == "ci_big"), None)
+    story = ""
+    if big:
+        story += (f'<p class="small"><b>怎麼讀</b>：「淨收緊 {big["std"]:+.0f}%」＝說「收緊」的銀行比說「放寬」的多 {abs(big["std"]):.0f} 個百分點'
+                  f'{"" if big["std"] >= 0 else "（負數代表放寬的比較多）"}。大中型企業這一條從 {big["since"]} 年開始，最緊是 {esc(big["max_date"][:4])} 年的 {big["max"]:+.0f}%。'
+                  '銀行通常在景氣轉壞「之前或剛開始」收緊，所以這是少數會比失業率早動的數字；但它一季才一次，也常常收緊了一陣子景氣才轉弱，'
+                  '不能拿來抓準確時點。</p>')
+    story += ('<p class="small"><b>連帶影響</b>：銀行對企業收緊，小公司最先借不到錢，接著是招人和投資變慢；'
+              '對商用不動產收緊，辦公大樓房東借新還舊更難，持有這類貸款的區域銀行壓力變大（2023 年的區域銀行股就是這樣被拖累）；'
+              '對信用卡和車貸收緊，收入最緊的家庭先少花錢，零售和車商的銷售會跟著慢；需求一起變弱時，代表大家本來就不想借，景氣降溫的訊號更清楚。</p>')
+    sp = "".join(f'<div><div class="small muted">{esc(r["zh"])}（淨收緊 %，近 15 年）</div>{spark(_ser(r["hist"]), 160, 36)}</div>'
+                 for r in rows if r["key"] in ("ci_big", "ci_small", "cre_office", "card") and len(r.get("hist") or []) > 5)
+    body = (f'<p class="rimp big2"><b>{T("一句話看懂：" + SL.lead(v), "")}</b></p>'
+            f'<p>{T("聯準會每季問美國各大銀行的放款主管：過去三個月，你們借錢給人的門檻變嚴還是變鬆？來借錢的人變多還是變少？銀行一收緊，公司和家庭就比較難借到錢，花錢和投資會慢下來。", "")}</p>'
+            f'<p class="small muted">調查季 {esc(v["date"])}（每年 1、4、7、10 月調查，約一個月後公布）</p>'
+            + tbl
+            + f'<details class="sgx"><summary>{T("看怎麼讀、連帶影響與歷史走勢", "Details")}</summary>{story}'
+            + (f'<div class="g3">{sp}</div>' if sp else "") + '</details>'
+            + f'<p class="note">{T("燈號：每一條只和自己的歷史比——收緊程度落在自己歷史最高 10%、而且淨收緊至少 10% → 🔴；最高 25%（或比一年前多收緊 20 個百分點以上）、而且淨收緊至少 5% → 🟡；放寬、接近 0 或在正常範圍 → 🟢。不用網路上流傳的固定門檻（只建立在少數幾次衰退上）。", "")}'
+              f'資料：<a href="{SL.SOURCE}" target="_blank" rel="noopener">聯準會 SLOOS</a>（經 FRED；企業與信用卡 1990 年代起，商用不動產與房貸 2013～2015 年起，車貸與消費貸 2011 年起）。描述現況，不是預測，也不是投資建議。</p>')
+    return card("銀行放款調查：銀行在收緊還是放寬借錢", "Bank lending standards (SLOOS)", body, "wide")
 
 
 @_anchor("st-cover")

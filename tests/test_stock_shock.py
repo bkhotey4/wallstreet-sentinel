@@ -57,14 +57,14 @@ def main() -> None:
     five.sort(key=lambda a: a["z"])
     calls = []
 
-    async def fake_stocks(sess, t):
+    async def fake_stocks(sess, t, news=None):
         calls.append(t)
         return [dict(a) for a in five]
 
     async def none(*a, **k):
         return []
 
-    async def no_sec(watch, now=0):
+    async def no_sec(watch, now=0, **kw):
         return {"alerts": []}
 
     async def fake_impact(sess, sym, zh):

@@ -178,7 +178,39 @@ async def read_kind(index_url: str) -> Optional[Dict[str, str]]:
         return None
 
 
-async def refresh(watch: Dict[str, list], now: float = 0, budget_s: float = 45) -> Dict:
+async def earn_direct(due: Dict[str, list], have: set, now: float, budget_s: float = 15) -> List[Dict]:
+    """8-K item 2.02 filings of the companies reporting today/yesterday, read straight from data.sec.gov submissions
+    (answers in ~0.5 s).  2026-11-17: the current-8-K feed can take 20+ s per page; this keeps the 財報出爐 notice for the
+    big reporters working when that feed is slow.  `due` = {cik: [sym, 中文名]}, at most a handful."""
+    t0, out = time.monotonic(), []
+    for cik, (sym, zh) in list(due.items())[:12]:
+        if time.monotonic() - t0 > budget_s:
+            break
+        try:
+            js = await http.get(f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json", headers=HDR, timeout=8, retries=0)
+        except Exception as e:  # noqa: BLE001
+            log.info("SEC submissions %s: %s", sym, e)
+            continue
+        f = ((js or {}).get("filings") or {}).get("recent") or {}
+        forms = f.get("form") or []
+        for i, form in enumerate(forms[:20]):
+            items = str((f.get("items") or [""] * len(forms))[i] or "")
+            acc = (f.get("accessionNumber") or [""] * len(forms))[i]
+            if form != "8-K" or "2.02" not in items or not acc or acc in have:
+                continue
+            try:
+                ts = datetime.fromisoformat(str((f.get("acceptanceDateTime") or [""] * len(forms))[i]).replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+            if now - ts >= KEEP_S:
+                continue
+            doc = (f.get("primaryDocument") or [""] * len(forms))[i]
+            url = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc.replace('-', '')}/{acc}-index.htm"
+            out.append({"acc": acc, "ts": int(ts), "sym": sym, "zh": zh, "url": url, "doc": doc})
+    return out
+
+
+async def refresh(watch: Dict[str, list], now: float = 0, budget_s: float = 30, due: Optional[Dict[str, list]] = None) -> Dict:
     """Page the SEC current-8-K feed back to the last entry seen; record 5.02 filings by watched companies.
     2026-11-16: a time budget — when the SEC feed is slow (US market hours), stop paging, SAVE what was found, and keep the
     old 'last seen' mark so the next run pages the rest again (before, a 60-second timeout threw the whole run away)."""
@@ -201,11 +233,13 @@ async def refresh(watch: Dict[str, list], now: float = 0, budget_s: float = 45) 
             complete = False
             break
         try:
-            xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=20, retries=0)
+            # the feed answers in 0.4 s or in 20+ s (11-17 00:00–00:45); page 0 gets 14 s and one retry so a single slow answer
+            # does not lose the round (a 20 s / no-retry setting made it fail on most runs), later pages one short try each
+            xml = await http.get(FEED.format(start=p * 100), kind="text", headers=HDR, timeout=14 if p == 0 else 10, retries=1 if p == 0 else 0)
         except Exception as e:  # noqa: BLE001
-            if p == 0:
-                raise
-            log.info("SEC feed page %d: %s", p, e)
+            # 11-17: page 0 used to raise and lose the whole round (and the 60 s outer timeout cut the save); now the round
+            # keeps going: the direct 2.02 check below still runs, and the old 'last seen' mark stays so nothing is skipped
+            log.info("SEC feed page %d: %s", p, e or type(e).__name__)
             complete = False
             break
         rows = parse_feed(xml)
@@ -225,11 +259,18 @@ async def refresh(watch: Dict[str, list], now: float = 0, budget_s: float = 45) 
                                     "t": title_of(hit[0], hit[1], k, item)}
         if min(r["ts"] for r in rows) <= seen_ts:
             break
+    if due:
+        acc_of = lambda a: a.replace("-", "")  # noqa: E731   (the feed and submissions may differ in dashes)
+        have = {acc_of(a) for a in earn}
+        for e in await earn_direct(due, set(), now):
+            if acc_of(e["acc"]) not in have:
+                earn[e["acc"]] = {k: e[k] for k in ("acc", "ts", "sym", "zh", "url")}
+                have.add(acc_of(e["acc"]))
     last13 = int(st.get("last_13d") or (now - 6 * 3600))
     new13 = last13
     try:                                                 # 大股東申報：一份申報有兩列（Subject＝被持股的公司、Filed by＝申報人）
         for p in range(PAGES_13D if time.monotonic() - t0 <= budget_s else 0):
-            rows = parse_13d(await http.get(FEED_13D.format(start=p * 100), kind="text", headers=HDR, timeout=30, retries=1))
+            rows = parse_13d(await http.get(FEED_13D.format(start=p * 100), kind="text", headers=HDR, timeout=12, retries=0))
             if not rows:
                 break
             for r in rows:
