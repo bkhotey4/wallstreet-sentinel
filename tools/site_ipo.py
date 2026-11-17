@@ -123,7 +123,12 @@ def _us_pending(u: Dict) -> str:
                  if r.get("slow") else f'{_md(r["win_lo"])}～{_md(r["win_hi"])}'))
         if r.get("near"):
             when = f'<b>{T("約", "~")} {_md(r["near"])}</b><div class="small muted">{T("已公布價格區間", "Range set")}</div>'
-        if r.get("stage"):
+        if r.get("listing"):
+            src = r.get("stage_src") or {}
+            when = (f'<b>{_md(r["listing"])} {T("掛牌", "listing")}</b><div class="small muted">{T("公司公布的時間表", "Company timetable")}'
+                    f'（<a href="{esc(src.get("url", ""))}" target="_blank" rel="noopener">{esc(src.get("filed", ""))} 申報</a>，{esc(src.get("tz", ""))}），'
+                    f'前一晚定價</div>')
+        elif r.get("stage"):
             n, md = r.get("stage_n") or 0, r.get("stage_med")
             span = (f'過去 {n} 家從這一步到定價中位數 {md:.0f} 天（一半在 {r["stage_p25"]:.0f}～{r["stage_p75"]:.0f} 天）'
                     if n >= 5 and md is not None else '已在掛牌前最後幾步')
@@ -223,7 +228,7 @@ def lead(b: Dict) -> str:
         s += f"，其中 {len(rng)} 家已公布價格區間、最接近定價（" + "、".join(r["name"] for r in rng[:3]) + ("等，全部列在下表" if len(rng) > 3 else "") + "）"
     stg = [r for r in pend if r.get("stage")]
     if stg:                                            # 11-17: the 8-A12B / EFFECT step means pricing within days
-        s += "；即將定價：" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") + f' 約 {_md(r["near"])}' for r in stg)
+        s += "；即將定價：" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") + (f' {_md(r["listing"])} 掛牌（公司時間表）' if r.get("listing") else f' 約 {_md(r["near"])}') for r in stg)
     up = t.get("upcoming") or []
     s += f"；台股已公告 {len(up)} 家即將掛牌" + ("（" + "、".join(f"{r['name']} {_md(r.get('list'))}" for r in up) + "）" if up else "")   # every one of them (11-17: said 4, named 3)
     s += f"、{len(t.get('applying') or [])} 家已申請上市櫃。"

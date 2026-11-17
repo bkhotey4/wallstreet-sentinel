@@ -155,6 +155,11 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
             row["stage"] = "SEC 已宣告生效" if is_eff else "已向交易所登記股票"
             row["stage_n"] = dist["n"] if dist else 0
             row["stage_med"], row["stage_p25"], row["stage_p75"] = (dist["med"], dist["p25"], dist["p75"]) if dist else (None, None, None)
+        fl_ = f.get("fwp_list") or {}
+        if fl_.get("list") and fl_["list"] >= today.isoformat():   # the company's own timetable beats any estimate (11-17)
+            row["near"], row["listing"] = str(_trading(_d(fl_["list"]) - timedelta(days=1))), fl_["list"]
+            row["stage"], row["stage_src"] = "公司公布的時間表", fl_
+            row.pop("near_lo", None), row.pop("near_hi", None)
         pend.append(row)
     pend.sort(key=lambda r: r["last"], reverse=True)               # price range set first (closest to pricing), then newest
     pend.sort(key=lambda r: 0 if r.get("lo") else 1)

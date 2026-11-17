@@ -169,6 +169,25 @@ def test_exchange_registration_means_days():
     assert v["t_a12"]["med"] == 1 and r["stage_n"] == 6
 
 
+def test_company_timetable_wins():
+    """11-17: Anthropic's UK / Australian FWPs gave the listing date (19 Nov US) while the card estimated 23 Nov."""
+    from datetime import date
+    import pandas as pd
+    from wsb.analytics import ipo as IP
+    from wsb.data import ipo_data as I
+    uk = "Expected timetable Registration Statement declared effective 18 November 2026 Listing on the Nasdaq Global Select Market 19 November 2026"
+    au = "All dates are in Australian Eastern Daylight Time (AEDT). It is expected that trading of the Shares will commence trading on Nasdaq on 20 November 2026."
+    assert I.listing_date(uk) == {"list": "2026-11-19", "tz": "倫敦時間"}
+    assert I.listing_date(au)["list"] == "2026-11-19"                  # AEDT date → previous US day
+    assert I.listing_date("no dates here") is None
+    me = {"kind": "ipo", "name": "Anthropic, PBC", "s1": "2026-10-26", "last": "2026-11-17", "a12": "2026-11-17", "doc": {"acc": "x"},
+          "cover": {"exchange": "Nasdaq", "symbol": "ANT", "lo": 70.0, "hi": 78.0},
+          "fwp_list": {"list": "2026-11-19", "tz": "倫敦時間", "filed": "2026-11-12", "url": "u"}}
+    v = IP.us_view({"us": {"filers": {"1": me}}}, pd.DataFrame(), None, date(2026, 11, 17))
+    r = v["pending"][0]
+    assert r["listing"] == "2026-11-19" and r["near"] == "2026-11-18" and r["stage"] == "公司公布的時間表", r
+
+
 if __name__ == "__main__":
     fails = 0
     for n, f in list(globals().items()):

@@ -187,13 +187,34 @@ def explain_stopped(rows: List[Dict]) -> List[Dict]:
     except Exception:  # noqa: BLE001
         cmap = {}
     hdr = {"User-Agent": "WallStreetSentinel daily audit admin@example.invalid"}
+    try:
+        from wsb.data.stocks import universe
+        names = {k: v[1] for k, v in ((universe().get("us") or {}).get("symbols") or {}).items()}
+    except Exception:  # noqa: BLE001
+        names = {}
+    try:
+        dcache = json.loads((DATA_DIR / "earn_distress.json").read_text(encoding="utf-8"))
+        auto = json.loads((DATA_DIR / "earn_distress_auto.json").read_text(encoding="utf-8"))
+        names.update({k: v.get("zh") for k, v in auto.items() if isinstance(v, dict) and v.get("zh") and k not in names})
+    except Exception:  # noqa: BLE001
+        dcache = {}
     for r in rows:
-        cik = (cmap.get(r["sym"]) or {}).get("cik")
+        cik = (cmap.get(r["sym"]) or {}).get("cik") or (dcache.get(r["sym"]) or {}).get("cik")   # distress radar keeps its own CIKs
         try:
             if not cik:
                 js = json.loads(urllib.request.urlopen(urllib.request.Request(
                     f"https://efts.sec.gov/LATEST/search-index?keysTyped={r['sym']}", headers=hdr), timeout=20).read())
                 hit = next((h for h in js.get("hits", {}).get("hits", []) if r["sym"] in str(h["_source"].get("tickers") or "").split(", ")), None)
+                cik = hit["_id"] if hit else None
+            if not cik and names.get(r["sym"]):                 # a delisted ticker leaves SEC's list: search by company name
+                from urllib.parse import quote
+                q = names[r["sym"]].split(",")[0].replace(" Inc", "").replace(" Corp", "").strip()
+                js = json.loads(urllib.request.urlopen(urllib.request.Request(
+                    f"https://efts.sec.gov/LATEST/search-index?keysTyped={quote(q)}", headers=hdr), timeout=20).read())
+                hit = next((h for h in js.get("hits", {}).get("hits", []) if "Holdings" in h["_source"].get("entity", "")
+                            or q.lower() in h["_source"].get("entity", "").lower()), None)
+                hits = js.get("hits", {}).get("hits", [])
+                hit = next((h for h in hits if "holdings" in h["_source"].get("entity", "").lower()), None) or hit
                 cik = hit["_id"] if hit else None
             if cik:
                 sub = json.loads(urllib.request.urlopen(urllib.request.Request(

@@ -165,6 +165,30 @@ def parse_cover(t: str) -> Dict:
     return out
 
 
+MONTHS = {m: i for i, m in enumerate(("january", "february", "march", "april", "may", "june", "july", "august", "september",
+                                       "october", "november", "december"), 1)}
+
+
+def listing_date(t: str) -> Optional[Dict]:
+    """The company's own timetable in a free writing prospectus (UK / Australian retail offers carry one):
+    'Listing on the Nasdaq Global Select Market 19 November 2026' (London time) or 'expected to commence trading on Nasdaq
+    on 20 November 2026' with 'Australian Eastern Daylight Time'.  Returns the US trading date: a date given in Australian
+    time is the previous US day (Nasdaq opens 01:30 AEDT the next calendar day).  11-17: Anthropic's UK FWP said 19 Nov
+    while the card estimated 23 Nov from averages."""
+    pat = (r"(?:Listing on (?:the )?(?:Nasdaq|New York Stock Exchange|NYSE)[^.]{0,40}?|commence trading on (?:the )?(?:Nasdaq|NYSE|New York Stock Exchange)"
+           r"[^.]{0,20}? on |begin trading on (?:the )?(?:Nasdaq|NYSE)[^.]{0,20}? on )"
+           r"(\d{1,2}) (January|February|March|April|May|June|July|August|September|October|November|December) (20\d\d)")
+    m = re.search(pat, t, re.I)
+    if not m:
+        return None
+    from datetime import date as _date
+    d = _date(int(m.group(3)), MONTHS[m.group(2).lower()], int(m.group(1)))
+    aus = bool(re.search(r"Australian Eastern (?:Daylight|Standard) Time|AEDT|AEST", t))
+    if aus:
+        d = d - timedelta(days=1)
+    return {"list": d.isoformat(), "tz": "澳洲時間（已換成美國日期）" if aus else "倫敦時間"}
+
+
 def excerpt(t: str, cap: int = 22000) -> str:
     """Cover + summary + summary financial data + use of proceeds + summary risk factors, for the AI summary."""
     parts = [t[:3500]]
@@ -216,6 +240,7 @@ def timeline(sub: Dict) -> Dict:
     a12 = [x[1] for x in rows if x[0] in ("8-A12B", "8-A12G") and reg and x[1] >= reg[0][1]]
     eff = [x[1] for x in rows if x[0] == "EFFECT" and reg and x[1] >= reg[0][1]]
     out["a12"] = a12[-1] if a12 else None
+    out["fwps"] = [[x[1], x[2], x[3]] for x in rows if x[0] == "FWP" and reg and x[1] >= reg[0][1]][-8:]   # [date, acc, doc]
     out["eff"] = eff[-1] if eff else None
     out["tl_v"] = TL_V
     rw = [x[1] for x in rows if x[0] == "RW" and (not reg or x[1] >= reg[-1][1])]
@@ -373,7 +398,7 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
         ttl = 86400 if not f.get("priced") else 14 * 86400
         if not f.get("priced") and (f.get("cover") or {}).get("lo"):
             ttl = 6 * 3600                              # price range set: pricing is days away, read the filings more often
-        if f.get("tl_v") != TL_V:
+        if f.get("tl_v") != TL_V or (not f.get("priced") and (f.get("cover") or {}).get("lo") and "fwps" not in f):
             return True
         if f.get("seen", "") > f.get("sub_seen", "") or (f.get("priced") and "last_pre" not in f):
             return True
@@ -413,6 +438,21 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
             except Exception as e:  # noqa: BLE001
                 log.info("ipo cover %s: %s", cik, e)
             await asyncio.sleep(0.15)
+        # 11-17: the company's own listing timetable from a free writing prospectus (read each new FWP once, newest first)
+        if not f.get("priced") and (f.get("cover") or {}).get("lo") and time.time() < deadline - 20:
+            seen = set(f.get("fwp_seen") or [])
+            for fd, facc, fdoc in reversed(f.get("fwps") or []):
+                if facc in seen or time.time() > deadline - 15:
+                    continue
+                seen.add(facc)
+                try:
+                    hit = listing_date(text_of(await _head(ARCH.format(cik=cik, acc=facc.replace("-", ""), doc=fdoc), 1_500_000)))
+                    if hit and hit["list"] >= (f.get("fwp_list") or {}).get("list", ""):
+                        f["fwp_list"] = {**hit, "filed": fd, "url": ARCH.format(cik=cik, acc=facc.replace("-", ""), doc=fdoc)}
+                except Exception as e:  # noqa: BLE001
+                    log.info("ipo fwp %s: %s", cik, e)
+                await asyncio.sleep(0.15)
+            f["fwp_seen"] = sorted(seen)
         # the prospectus's own numbers (summary table + quarterly table, often deep in MD&A): read the whole document once
         # per amendment, the newest filers first, a few per build (S-1s run to 15 MB)
         if (not f.get("priced") and f.get("last", "") >= (today - timedelta(days=270)).isoformat() and f.get("cover", {}).get("exchange")
