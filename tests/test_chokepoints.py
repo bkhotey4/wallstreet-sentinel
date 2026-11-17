@@ -61,3 +61,32 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def test_soft_error_retried():
+    """11-17: PortWatch answers HTTP 200 + {"error": "Invalid URL"} now and then; one retry later it works."""
+    import asyncio
+    from wsb.data import chokepoints as C
+    from wsb.data import http as Hh
+    calls = []
+
+    async def fake_get(url, params=None, **kw):
+        calls.append(1)
+        if len(calls) == 1:
+            return {"error": {"message": "Invalid URL"}}
+        return {"features": [{"attributes": {"date": "2026-11-16", "n_total": 40, "n_tanker": 10, "n_container": 5}}]}
+    real, sl = Hh.get, C.asyncio.sleep
+
+    async def no_sleep(_):
+        return None
+    Hh.get, C.asyncio.sleep = fake_get, no_sleep
+    try:
+        out = asyncio.run(C._fetch("chokepoint6", "2026-11-01"))
+    finally:
+        Hh.get, C.asyncio.sleep = real, sl
+    assert out == {"2026-11-16": [40, 10, 5]} and len(calls) == 2, (out, calls)
+
+
+if __name__ == "__main__":
+    test_soft_error_retried()
+    print("ok test_soft_error_retried")

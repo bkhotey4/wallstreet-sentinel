@@ -12,6 +12,7 @@
 快取 data_cache/econ_chokepoints.json（CI 保留 econ_*）；第一次抓 2019 年起全部，之後只補最近 30 天。描述現況，不是預測。"""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -58,10 +59,17 @@ async def _fetch(pid: str, since: str) -> Dict[str, List[int]]:
     """{date: [n_total, n_tanker, n_container]} for one chokepoint since `since` (paged, 1000 rows per call)."""
     out, off = {}, 0
     while True:
-        js = await http.get(API, params={"where": f"portid='{pid}' AND date>=DATE '{since}'",
-                                         "outFields": "date,n_total,n_tanker,n_container", "orderByFields": "date",
-                                         "resultOffset": str(off), "resultRecordCount": "1000", "f": "json"},
-                            timeout=60, retries=1)
+        # 11-17: ArcGIS answers HTTP 200 with {"error": "Invalid URL" / "Object reference not set…"} now and then (seen in
+        # CI and locally while the same query worked a minute later) — http.get never retries those, so retry here
+        for attempt in range(3):
+            js = await http.get(API, params={"where": f"portid='{pid}' AND date>=DATE '{since}'",
+                                             "outFields": "date,n_total,n_tanker,n_container", "orderByFields": "date",
+                                             "resultOffset": str(off), "resultRecordCount": "1000", "f": "json"},
+                                timeout=60, retries=1)
+            if not js.get("error"):
+                break
+            if attempt < 2:
+                await asyncio.sleep(2 + 3 * attempt)
         if js.get("error"):
             raise ValueError(f"PortWatch: {js['error'].get('message')}")
         fs = [f["attributes"] for f in js.get("features") or []]
