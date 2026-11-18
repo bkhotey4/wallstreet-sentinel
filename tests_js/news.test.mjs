@@ -64,6 +64,12 @@ assert.equal(parse(rss("Boeing names new finance chief"), { s: "A", o: "a", lang
 const q = parse(rss("Boeing names new finance chief"), { s: "A", o: "a", lang: "en", biz: true });
 assert.ok(q.length === 1 && q[0].q === true && q[0].o === "a");
 assert.equal(merge([q], q[0].ts + 60).length, 0);
+// 11-18: the two stories missed at the open — a Taiwan supply-chain report and an analyst note — now carry a tag; a topic-limited
+// feed (24/7 Wall St.) keeps them but drops its personal-finance pieces
+const only = { s: "B", o: "b", lang: "en", only: ["科技", "台股", "分析師"] };
+assert.equal(parse(rss("TSMC Is Reportedly Setting Credit Limits for AI Customers"), only).length, 1);
+assert.deepEqual(parse(rss("Nvidia price target lowered to $220 from $240 at UBS"), only)[0].tags, ["科技", "分析師"]);
+assert.equal(parse(rss("Invest $100,000 in These 4 Dividend Stocks"), only).length, 0);
 
 const NAMES = { NVDA: ["輝達", "Nvidia"], META: ["", "Meta|Facebook"], TSM: ["台積電", "TSMC"] };
 const mm = matcher(NAMES);
