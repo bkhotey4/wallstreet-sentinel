@@ -26,6 +26,35 @@ WHEN_RX = re.compile(r"(20\d\d)[-/.年](\d{1,2})[-/.月](\d{1,2})日?\s*(\d{1,2}
 HEAD_RX = re.compile(r"^#{2,4}\s*([A-Z][A-Z0-9.\-]{0,9})\s*[｜|]\s*(.+)$")
 
 
+def specific(url: Optional[str]) -> bool:
+    """A link to one article, not a home page or a section: 11-19 the first Gemini run cited only home pages
+    (finviz.com, tradingkey.com, tjx.com/news/news-releases) — nothing a reader can check, so those are not 'sourced'."""
+    from urllib.parse import urlparse
+    if not url:
+        return False
+    u = urlparse(url)
+    segs = [x for x in u.path.split("/") if x]
+    last = segs[-1] if segs else ""
+    return bool(re.search(r"\d", u.path) or (len(last) >= 12 and last.count("-") >= 2) or re.search(r"(^|&)(id|p|story|article)=", u.query or ""))
+
+
+def sanitize(d: Dict) -> Dict:
+    """Facts whose link is not one article become guesses (with the reason); rumors keep the link only if it is one article."""
+    for i in d.get("items") or []:
+        keep = []
+        for x in i.get("facts") or []:
+            if specific(x.get("url")):
+                keep.append(x)
+            else:
+                i.setdefault("guess", []).append(f"{x['t']}（來源只給網站首頁或分類頁，無法查證）")
+        i["facts"] = keep
+        for x in (i.get("rumors") or []) + (i.get("missed") or []):
+            if x.get("url") and not specific(x["url"]):
+                x["url"] = None
+    d["extra"] = [x for x in d.get("extra") or [] if specific(x.get("url"))]
+    return d
+
+
 def _file():
     from ..config import DATA_DIR
     return DATA_DIR / "econ_gemini.json"
@@ -81,12 +110,12 @@ def parse(text: str) -> Dict:
             cur["facts"].append({"t": clean, "url": urls[0]})
         elif clean:
             cur["guess"].append(clean)
-    return {"when": when, "items": [i for i in items if i["why"] or i["facts"]], "extra": extra[:10]}
+    return sanitize({"when": when, "items": [i for i in items if i["why"] or i["facts"]], "extra": extra[:10]})
 
 
 def load() -> Dict:
     try:
-        return json.loads(_file().read_text(encoding="utf-8"))
+        return sanitize(json.loads(_file().read_text(encoding="utf-8")))       # the file can be written by other tools too
     except (OSError, ValueError):
         return {}
 
