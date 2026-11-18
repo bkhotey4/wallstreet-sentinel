@@ -8,13 +8,18 @@ from typing import Dict, List
 from tools.sitekit import T, card, esc, fold_items
 
 
+GROUP = {"TASK": "🔍 Claude 指定查證", "AN": "📝 分析師", "POL": "🏛 美國政策", "TW": "🏭 亞洲供應鏈", "EARN": "📅 財報預期",
+         "FED": "🏦 聯準會", "SITE": "🛠 本站挑錯"}
+
+
 def _a(x: Dict) -> str:
     return f'{esc(x["t"])}' + (f' <a href="{esc(x["url"])}" target="_blank" rel="noopener">來源</a>' if x.get("url") else "")
 
 
 def block(i: Dict, zh: Dict[str, str]) -> str:
-    if i["sym"].startswith("TASK"):                         # a check Claude asked for in research_feed/gemini_tasks.md
-        out = [f'<h3>🔍 Claude 指定查證 <span class="tk">{esc(i["sym"])}</span>：{esc(i["why"])}</h3><ul class="small">']
+    lab = next((v for k, v in GROUP.items() if i["sym"].startswith(k + "-")), None)
+    if lab:                                                  # a section of research_feed/gemini_tasks.md, not a company
+        out = [f'<h3>{lab} <span class="tk">{esc(i["sym"])}</span>：{esc(i["why"])}</h3><ul class="small">']
     else:
         out = [f'<h3>{esc(zh.get(i["sym"], ""))} <span class="tk">{esc(i["sym"])}</span>：{esc(i["why"])}</h3><ul class="small">']
     out += [f"<li>✅ 有來源：{_a(x)}</li>" for x in i.get("facts") or []]
@@ -40,10 +45,12 @@ def sec_gemini(eng) -> str:
         zh = {}
     nf = sum(len(i.get("facts") or []) for i in items)
     ng = sum(len(i.get("guess") or []) for i in items)
-    cos = [i for i in items if not i["sym"].startswith("TASK")]
-    lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 題 Claude 指定查證），找到 {nf} 條附來源的原因"
-            + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + f"；最大的一家是{zh.get(items[0]['sym'], items[0]['sym'])}：{items[0]['why']}。")
-    blocks = [block(i, zh) for i in items]
+    cos = [i for i in items if not any(i["sym"].startswith(k + "-") for k in GROUP)]
+    lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 條分析師、政策、供應鏈、財報預期等補充），找到 {nf} 條附來源的原因"
+            + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + f"；" + (f"最大的一家是{zh.get(cos[0]['sym'], cos[0]['sym'])}：{cos[0]['why']}。" if cos else "。"))
+    order = {k: n for n, k in enumerate(["", "TASK", "POL", "AN", "TW", "EARN", "FED", "SITE"])}
+    key = lambda i: order.get(next((k for k in GROUP if i["sym"].startswith(k + "-")), ""), 0)  # noqa: E731
+    blocks = [block(i, zh) for i in sorted(items, key=key)]
     extra = d.get("extra") or []
     tail = ("<h3>Gemini 另外提到的大事</h3><ul class='small'>" + "".join(f"<li>{_a(x)}</li>" for x in extra) + "</ul>") if extra else ""
     how = ("使用者 Antigravity 裡的 Gemini 自動化每小時讀本站的題目清單（/api/gemini_ask：今天動最多、本站找不到對得上新聞的公司），"
