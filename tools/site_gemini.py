@@ -13,8 +13,10 @@ def _a(x: Dict) -> str:
 
 
 def block(i: Dict, zh: Dict[str, str]) -> str:
-    name = zh.get(i["sym"], "")
-    out = [f'<h3>{esc(name)} <span class="tk">{esc(i["sym"])}</span>：{esc(i["why"])}</h3><ul class="small">']
+    if i["sym"].startswith("TASK"):                         # a check Claude asked for in research_feed/gemini_tasks.md
+        out = [f'<h3>🔍 Claude 指定查證 <span class="tk">{esc(i["sym"])}</span>：{esc(i["why"])}</h3><ul class="small">']
+    else:
+        out = [f'<h3>{esc(zh.get(i["sym"], ""))} <span class="tk">{esc(i["sym"])}</span>：{esc(i["why"])}</h3><ul class="small">']
     out += [f"<li>✅ 有來源：{_a(x)}</li>" for x in i.get("facts") or []]
     out += [f"<li>💬 傳聞：{_a(x)}</li>" for x in i.get("rumors") or []]
     out += [f"<li>❔ Gemini 推測、未證實：{esc(t)}</li>" for t in i.get("guess") or []]
@@ -38,7 +40,8 @@ def sec_gemini(eng) -> str:
         zh = {}
     nf = sum(len(i.get("facts") or []) for i in items)
     ng = sum(len(i.get("guess") or []) for i in items)
-    lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(items)} 家公司，找到 {nf} 條附來源的原因"
+    cos = [i for i in items if not i["sym"].startswith("TASK")]
+    lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 題 Claude 指定查證），找到 {nf} 條附來源的原因"
             + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + f"；最大的一家是{zh.get(items[0]['sym'], items[0]['sym'])}：{items[0]['why']}。")
     blocks = [block(i, zh) for i in items]
     extra = d.get("extra") or []

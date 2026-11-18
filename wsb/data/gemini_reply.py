@@ -24,7 +24,7 @@ SEP = "以下是 Gemini 的回答"
 EVERY = 900                                                  # the file is local; the Doc fallback is cheap too
 URL_RX = re.compile(r"https?://[^\s)）\]>,，]+")
 WHEN_RX = re.compile(r"(20\d\d)[-/.年](\d{1,2})[-/.月](\d{1,2})日?\s*(\d{1,2})[:：](\d{2})")
-HEAD_RX = re.compile(r"^#{2,4}\s*([A-Z][A-Z0-9.\-]{0,9})\s*[｜|]\s*(.+)$")
+HEAD_RX = re.compile(r"^#{2,4}\s*([A-Z][A-Z0-9.\-]{0,11})\s*[｜|]\s*(.+)$")    # TASK-B1 = a check Claude asked for
 
 
 def specific(url: Optional[str]) -> bool:
