@@ -33,6 +33,18 @@ def _cmp(s) -> str:
 
 
 EARN_FLOOR, EARN_DAYS = 5e11, 10
+# 11-18 (user: 「這幾天很重要」): every AI-supply-chain company counts whatever its size — Dell / HP / Marvell report the
+# AI-server and custom-chip demand behind NVIDIA's numbers; HP and Marvell were below every floor
+AI_EXTRA = ("DELL", "HPQ", "HPE", "MRVL", "SMCI", "ANET", "MU", "AVGO", "AMD", "TSM", "ORCL", "CRWV", "NBIS", "VRT", "ASML",
+            "AMAT", "LRCX", "KLAC", "CEG", "VST", "GEV", "ETN")
+
+
+def ai_syms() -> set:
+    try:
+        from wsb.analytics.ai_chain import CHAIN
+        return {s for _zh, _en, ss in CHAIN for s in ss if "." not in s} | set(AI_EXTRA)
+    except Exception:  # noqa: BLE001
+        return set(AI_EXTRA)
 EARN_TIME = {"after": ((16, 5), "盤後", "after the close"), "pre": ((8, 0), "盤前", "before the open")}
 
 
@@ -56,11 +68,12 @@ def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_
     except Exception:  # noqa: BLE001
         zh = {}
     out = []
+    ai = ai_syms()
     for day, v in sorted(cal.items()):
         if not (et_now.date().isoformat() <= day <= end):
             continue
         for r in (v.get("rows") if isinstance(v, dict) else None) or []:
-            if float(r.get("mcap") or 0) < floor:
+            if float(r.get("mcap") or 0) < floor and r.get("sym") not in ai:
                 continue
             (hh, mm), tz, ten = EARN_TIME.get(r.get("time") or "", ((16, 5), "時間未定", "time n/a"))
             t = datetime.fromisoformat(day).replace(hour=hh, minute=mm, tzinfo=ET)
@@ -70,7 +83,31 @@ def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_
             out.append({"key": "earn", "sym": r["sym"], "zh": f"{zh.get(r['sym'], r.get('name') or r['sym'])}財報（{tz}）",
                         "en": f"{r.get('name') or r['sym']} earnings ({ten})", "next": t.isoformat(), "ts": int(t.timestamp()),
                         "days": (t.date() - et_now.date()).days, "mcap": float(r["mcap"]), "eps_f": r.get("eps_f"),
-                        "mv": x.get("mv"), "reacts": x.get("reacts") or [], "avg": x.get("avg"), "exact": bool(r.get("time"))})
+                        "mv": x.get("mv"), "reacts": x.get("reacts") or [], "avg": x.get("avg"), "exact": bool(r.get("time")),
+                        "ai": r["sym"] in ai})
+    return out
+
+
+def ipo_events(now: datetime, days: int = 7) -> list:
+    """IPOs about to list (the company's own timetable, or the exchange-registration estimate) — 11-18: Anthropic's
+    11/19 listing was in no shared calendar.  Listing trades from the New York open (09:30)."""
+    try:
+        from datetime import date as _date, timedelta
+        from wsb.analytics import ipo as IP
+        from wsb.data import ipo_data as I
+        v = IP.us_view(I.load(), I.load_px(), None, now.astimezone(ET).date())
+    except Exception:  # noqa: BLE001
+        return []
+    out = []
+    for r in v.get("pending") or []:
+        d = r.get("listing") or (r.get("near") if r.get("stage") else None)
+        if not d:
+            continue
+        t = datetime.fromisoformat(d).replace(hour=9, minute=30, tzinfo=ET)
+        if not (now < t <= now + timedelta(days=days)):
+            continue
+        out.append({"sym": r.get("symbol") or "", "zh": f"{r['name']} 上市（{'公司時間表' if r.get('listing') else '估計'}）",
+                    "next": t.isoformat(), "exact": bool(r.get("listing"))})
     return out
 
 
@@ -197,6 +234,10 @@ def upcoming(eng, now=None, days: int = 7) -> dict:
         if r.get("ts") and r.get("days") is not None and r["days"] <= days:
             tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
             out.append({"kind": "macro", "key": r["key"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M")})
+    for r in ipo_events(now, days):
+        tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
+        out.append({"kind": "ipo", "sym": r["sym"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
+                    "exact": r["exact"]})
     for r in index_events(now, days):
         tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
         out.append({"kind": "index", "key": r["kind"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
