@@ -1,4 +1,5 @@
-"""Gemini 第二意見（2026-11-19）：讀 Gemini App 排程動作寫進 Google 文件的回答。
+"""Gemini 第二意見（2026-11-19）：讀使用者 Antigravity 自動化（automation）寫的回答檔 research_feed/gemini_reply.md；
+沒有時才讀共用 Google 文件（備援）。
 
 流程：Gemini 排程讀本站 /api/gemini_ask（題目清單：今天動最多、本站找不到原因的公司）→ 用 Google 搜尋回答 →
 把回答加在文件「Sentinel_Gemini回覆」最上面。這支每小時用公開的匯出網址讀（文件設成知道連結的人可檢視，不用登入），
@@ -20,7 +21,7 @@ log = logging.getLogger("gemini_reply")
 DOC_ID = "1Vw5M_1kSH_Cafe1vOQJfqHtnM61r7ybCih2y31ra4TQ"      # created 2026-11-19 in the owner's Drive (memory: gemini-collab)
 URL = f"https://docs.google.com/document/d/{DOC_ID}/export?format=txt"
 SEP = "以下是 Gemini 的回答"
-EVERY = 3600
+EVERY = 900                                                  # the file is local; the Doc fallback is cheap too
 URL_RX = re.compile(r"https?://[^\s)）\]>,，]+")
 WHEN_RX = re.compile(r"(20\d\d)[-/.年](\d{1,2})[-/.月](\d{1,2})日?\s*(\d{1,2})[:：](\d{2})")
 HEAD_RX = re.compile(r"^#{2,4}\s*([A-Z][A-Z0-9.\-]{0,9})\s*[｜|]\s*(.+)$")
@@ -120,10 +121,34 @@ def load() -> Dict:
         return {}
 
 
+def local_reply() -> Optional[str]:
+    """The answer file the owner's Antigravity automation writes and pushes (research_feed/gemini_reply.md in the public
+    site repo, 2026-11-19): read here locally (this repo or the site checkout next to it) and in CI (the build checkout)."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    files = [f for f in (root / "research_feed" / "gemini_reply.md", root.parent / "wallstreet-sentinel" / "research_feed" / "gemini_reply.md")
+             if f.exists()]
+    if not files:
+        return None
+    try:
+        return max(files, key=lambda f: f.stat().st_mtime).read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
 def refresh(force: bool = False, timeout: int = 15) -> Dict:
     old = load()
     if not force and time.time() - float(old.get("fetched") or 0) < EVERY:
         return old
+    text = local_reply()
+    if text and parse(text)["items"]:
+        d = parse(text)
+        out = dict(d, fetched=int(time.time()), ok=True, src="antigravity")
+        try:
+            _file().write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+        return out
     try:
         import os
         import urllib.request

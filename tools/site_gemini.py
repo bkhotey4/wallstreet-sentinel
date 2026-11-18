@@ -43,8 +43,8 @@ def sec_gemini(eng) -> str:
     blocks = [block(i, zh) for i in items]
     extra = d.get("extra") or []
     tail = ("<h3>Gemini 另外提到的大事</h3><ul class='small'>" + "".join(f"<li>{_a(x)}</li>" for x in extra) + "</ul>") if extra else ""
-    how = ("Gemini App 的排程動作會讀本站的題目清單（/api/gemini_ask：今天動最多、本站找不到對得上新聞的公司），用 Google 搜尋回答後寫進共用文件；"
-           "本站每小時讀一次。✅＝附了來源網址；💬＝傳聞；❔＝沒附來源，只是推測，不要當事實。Gemini 也會出錯，請點來源自己看。不構成投資建議。")
+    how = ("使用者 Antigravity 裡的 Gemini 自動化每小時讀本站的題目清單（/api/gemini_ask：今天動最多、本站找不到對得上新聞的公司），"
+           "用 Google 搜尋回答後寫進 research_feed/gemini_reply.md；本站建置時讀取。來源必須是單篇文章，只給首頁的算「無法查證」。✅＝附了來源網址；💬＝傳聞；❔＝沒附來源，只是推測，不要當事實。Gemini 也會出錯，請點來源自己看。不構成投資建議。")
     when = f"　Gemini 回答時間：台北 {esc(d['when'])}" if d.get("when") else ""
     body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p>' + fold_items(blocks, 4, "家") + tail
             + f'<details class="sgx"><summary>{T("怎麼產生的", "How it is made")}</summary><p class="note">{T(how, "")}{when}</p></details>')
