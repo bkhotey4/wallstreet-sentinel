@@ -27,7 +27,7 @@ FEED = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&com
 HDR = {"User-Agent": SEC_USER_AGENT}
 KEEP_S = 3 * 86400
 PAGES = 8
-KIND_V = 4                      # bump when kind() changes: stored personnel alerts are read again once (4: 11-18 HD flags)
+KIND_V = 5                      # bump when kind() changes: stored personnel alerts are read again once (4/5: 11-18 HD flags, initials)
 FEED_13D = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=SCHEDULE+13D&company=&dateb=&owner=include"
             "&count=100&start={start}&output=atom")
 PAGES_13D = 3
@@ -155,7 +155,9 @@ def unsaid(w: str, zone: str = "") -> List[str]:
                  r"|\b(?:interim|acting) (?:Chief|CEO|President|principal)", w, re.I) and not re.search(
                  r"\binterim\b[^.]{0,120}\b(?:conclude|cease|end)\w*", w, re.I):
         out.append("由人暫代")
-    if re.search(r"(?:appoint|nam|elect)\w*[^.]{0,80}\bas (?:the )?(?:new |independent |non-executive )?(?:Chair|Chairman|Chairwoman|Chairperson)\b", w, re.I):
+    # an initial's period ("Harvey C. Jones", NVIDIA 11/11) must not end the gap between 「appointed」 and 「as Chair」
+    if re.search(r"(?:appoint|nam|elect)\w*(?:[^.]|(?<=\b[A-Z])\.){0,80}\bas (?:the )?(?:new |independent |non-executive )?"
+                 r"(?:Chair|Chairman|Chairwoman|Chairperson)\b", w, re.I):
         out.append("同時換董事長")
     return out
 

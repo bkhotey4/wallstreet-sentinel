@@ -55,7 +55,7 @@ def main() -> None:
     assert S.kind(hd) == {"what": "離職", "seat": "執行長", "flags": []}, S.kind(hd)
     nvr = (head + "On November 11, 2026, the Board accepted the resignation of Jen-Hsun Huang, as President, Chief Executive "
            "Officer and member of the Board, effective immediately. The Board appointed Colette Kress as interim Chief Executive "
-           "Officer. The Board also appointed Mark Stevens as Chair of the Board.")
+           "Officer. On November 11, 2026, the Board appointed Harvey C. Jones, age 73, as Chair of the Board.")   # real wording
     assert S.kind(nvr)["flags"] == ["沒寫原因", "立即生效", "沒有交接或留任", "由人暫代", "同時換董事長"], S.kind(nvr)
     ix = ('<tr><td>1</td><td>8-K</td><td><a href="/ix?doc=/Archives/edgar/data/1/2/a-8k.htm">a</a></td><td>8-K</td></tr>'
           '<tr><td>2</td><td>EX-99.1</td><td><a href="/Archives/edgar/data/1/2/pr.htm">pr</a></td><td>EX-99.1</td></tr>')
