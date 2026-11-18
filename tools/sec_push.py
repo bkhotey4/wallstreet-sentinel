@@ -977,12 +977,16 @@ def earnsoon_embed(r: Dict, lines: List[str], pv: Optional[Dict]) -> Dict:
     tp = datetime.fromisoformat(r["next"]).astimezone(ZoneInfo("Asia/Taipei"))
     when = f"{tp.month}/{tp.day} {'清晨 ' if tp.hour < 8 else ''}{tp:%H:%M} 起（台北）"
     name = r["zh"].split("財報")[0]
-    lead = (f"{name}（{r['sym']}）預計 {when}公布財報，市值約 {r['mcap'] / 1e12:.1f} 兆美元"
+    from tools.site_events import cap_txt          # 11-18: small AI-chain names (HP) printed 「0.0 兆美元」
+    lead = (f"{name}（{r['sym']}）預計 {when}公布財報，市值約 {cap_txt(r['mcap'])}"
             + (f"，每股盈餘預期 {r['eps_f']} 美元" if r.get("eps_f") else "") + "。")
     if pv and pv.get("probs"):
         pr = pv["probs"]
         lead += f"本站財報前瞻：{pv.get('call', '')}（上修 {pr.get('上修')}%／維持 {pr.get('維持')}%／下修 {pr.get('下修')}%）。"
-    why = "大公司財報公布後，常帶著整個大盤和台股供應鏈一起動；下面是它占大盤多少、過去最常跟著它動的公司（過去的平均關係，不是預測）。"
+    from tools.site_events import EARN_FLOOR
+    why = ("大公司財報公布後，常帶著整個大盤和台股供應鏈一起動" if r.get("mcap", 0) >= EARN_FLOOR or not r.get("ai") else
+           "這家是 AI 供應鏈公司，訂單與財測常牽動同一條鏈上的公司")
+    why += "；下面是它占大盤多少、過去最常跟著它動的公司（過去的平均關係，不是預測）。"
     return {"title": f"📊 大公司財報倒數：{name}（{r['sym']}）{when}"[:256], "url": SITE + "#tech", "color": 0x3B82F6,
             "description": ("一句話看懂：" + lead + NL + why + NL + NL.join(lines))[:4000],
             "footer": {"text": "財報日曆・本站財報前瞻 · WallStreet Sentinel · 時間以公司公告為準 · 不構成投資建議"}}

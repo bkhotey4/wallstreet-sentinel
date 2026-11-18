@@ -59,7 +59,21 @@ def test_card_renders_with_reads():
     assert "一句話看懂" in h and "輝達" in h and "可能的主線（假設，不是事實）" in h and "反對或還不確定的地方" in h, h[:300]
 
 
+def test_same_filing_counted_once():
+    """11-18: Home Depot's 8-K showed twice (unflagged copy + flagged copy) and inflated the group's weight."""
+    from tools import dots as D
+    t = "SEC 申報：家得寶（HD）執行長離職（8-K 第 5.02 項）"
+    ev = [dict(kind="sec", date="2026-11-17", syms=["HD"], t=t, w=2),
+          dict(kind="sec", date="2026-11-17", syms=["HD"], t=t + "；文件沒寫原因", w=2),
+          dict(kind="earn", date="2026-11-17", syms=["HD"], t="家得寶財報", w=1)]
+    c = D.clusters(ev, {"HD": "家得寶"})
+    secs = [e for e in c[0]["events"] if e["kind"] == "sec"]
+    assert len(secs) == 1 and secs[0]["t"].endswith("文件沒寫原因"), c
+
+
 if __name__ == "__main__":
+    test_same_filing_counted_once()
+    print("ok test_same_filing_counted_once")
     test_week_story()
     print("ok test_week_story")
     test_archive_keeps_old_events()

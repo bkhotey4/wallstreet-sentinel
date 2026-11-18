@@ -63,7 +63,10 @@ def ipo_dates(html: str) -> Dict[str, Optional[str]]:
         if not m:
             continue
         short = SUFFIX.sub("", m.group(1).split(",")[0]).strip()
-        d = re.search(r"<b>(?:<span[^>]*>)?約(?:</span>)?\s*(\d\d-\d\d)</b>", chunk)
+        # two shapes: the estimate '<b>約 MM-DD</b>', and the company's own timetable '<b>MM-DD <span>掛牌</span></b>'
+        # (11-18: the timetable shape was added on 11-17 and this read it as 'no date' — a false 卡片互相矛盾)
+        d = (re.search(r"<b>(?:<span[^>]*>)?約(?:</span>)?\s*(\d\d-\d\d)</b>", chunk)
+             or re.search(r"<b>(\d\d-\d\d)\s*(?:<span[^>]*>)?(?:掛牌|上市|定價)", chunk))
         out.setdefault(short, d.group(1) if d else None)
     return out
 

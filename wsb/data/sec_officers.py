@@ -27,7 +27,7 @@ FEED = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&com
 HDR = {"User-Agent": SEC_USER_AGENT}
 KEEP_S = 3 * 86400
 PAGES = 8
-KIND_V = 3                      # bump when kind() changes: stored personnel alerts are read again once
+KIND_V = 4                      # bump when kind() changes: stored personnel alerts are read again once (4: 11-18 HD flags)
 FEED_13D = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=SCHEDULE+13D&company=&dateb=&owner=include"
             "&count=100&start={start}&output=atom")
 PAGES_13D = 3
@@ -109,7 +109,9 @@ def kind(text: str) -> Dict[str, str]:
     w = re.split(r"Item\s*9\.01", w, maxsplit=1, flags=re.I)[0]
     # the seat comes from the sentence that carries the action, not from biographies further down
     # ("…appointment of three independent directors…"; a new director's bio may say "former Chief Executive Officer of X")
-    sents = re.split(r"(?<=[.;])\s+", w)
+    # 11-18: never split after an honorific / abbreviation — 「…succession process, … Mr. Decker will step down」 was cut at
+    # 「Mr.」 and the reason fell into the previous piece
+    sents = re.split(r"(?<!\bMr\.)(?<!\bMs\.)(?<!\bDr\.)(?<!Mrs\.)(?<!Inc\.)(?<!\bJr\.)(?<!\bSr\.)(?<!\bNo\.)(?<!\bSt\.)(?<=[.;])\s+", w)
     leave = r"resign|step(?:ped|s)? down|retire|depart|terminat|will not stand|leave the company"
     join = r"appoint|named|elect|promot"
     pay = r"compensat|bonus|award|salary|incentive"
@@ -138,16 +140,22 @@ def unsaid(w: str, zone: str = "") -> List[str]:
     transition or advisory role, named an interim CEO and a new board chair the same day — the pattern of a forced exit,
     not a planned succession).  A pattern to look into, never a conclusion.  `zone` = the departure sentence and the next
     one (a new director's biography can say 'a private family office')."""
+    # 11-18, Home Depot: a planned hand-over (「ongoing executive succession process」, effective 11/23, CFO promoted, the old
+    # CEO stays chair) was flagged 沒寫原因／由人暫代／同時換董事長 — a succession is a reason, an interim set-up that is
+    # ENDING is not a stand-in, and 「continue to serve as Chair」 is the same chair, not a new one
     out = []
-    if not re.search(r"reason|due to|in order to|to pursue|personal|health|family|retire|disagree|not the result of", zone or w, re.I):
+    if not re.search(r"reason|due to|in order to|to pursue|personal|health|family|retire|disagree|not the result of"
+                     r"|succession|planned", zone or w, re.I):
         out.append("沒寫原因")
     if re.search(r"effective immediately|with immediate effect", w, re.I):
         out.append("立即生效")
     if not re.search(r"transition|remain|continue to serve|advis|consult|until (?:a|his|her) successor", w, re.I):
         out.append("沒有交接或留任")
-    if re.search(r"\binterim\b|\bacting\b", w, re.I):
+    if re.search(r"(?:appoint|nam|designat|elect|serve)\w*[^.]{0,80}\b(?:interim|acting)\b(?![^.]{0,80}\b(?:conclude|cease|end)\w*)"
+                 r"|\b(?:interim|acting) (?:Chief|CEO|President|principal)", w, re.I) and not re.search(
+                 r"\binterim\b[^.]{0,120}\b(?:conclude|cease|end)\w*", w, re.I):
         out.append("由人暫代")
-    if re.search(r"appointed [^.]{0,80}as (?:the )?(?:Chair|Chairman|Chairwoman|Chairperson)\b|as Chair of the Board", w, re.I):
+    if re.search(r"(?:appoint|nam|elect)\w*[^.]{0,80}\bas (?:the )?(?:new |independent |non-executive )?(?:Chair|Chairman|Chairwoman|Chairperson)\b", w, re.I):
         out.append("同時換董事長")
     return out
 

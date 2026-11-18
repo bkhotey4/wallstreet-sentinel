@@ -44,6 +44,19 @@ def main() -> None:
     assert S.kind(mr) == {"what": "任命", "seat": "董事"}, S.kind(mr)
     assert S.kind(head.replace("5.02.", "5.02:") + "Appointment of Chief Operating Officer. The Board appointed Ann Lee as Chief "
                   "Operating Officer.") == {"what": "任命", "seat": "營運長"}
+    # Home Depot 11/17 (primary text, shortened): a planned succession — no red flags (it got three wrong ones on 11-17)
+    hd = (head + "On November 13, 2026, Edward P. Decker, Chair of the Board, concluded his temporary medical leave and resumed "
+          "his duties as Chair of the Company's Board. In connection with Mr. Decker's return from Leave, the Board determined "
+          "that the interim Office of the CEO structure will conclude as of the Effective Date, and Mr. McPhail's designation as "
+          "interim principal executive officer will cease. In connection with the Board's ongoing executive succession process, "
+          "the Board and Mr. Decker agreed that Mr. Decker will step down as President and CEO of the Company, effective as of "
+          "the Effective Date, and that Mr. Decker will continue to serve as Chair of the Board to support the leadership "
+          "transition. Mr. McPhail has been appointed CEO of the Company.")
+    assert S.kind(hd) == {"what": "離職", "seat": "執行長", "flags": []}, S.kind(hd)
+    nvr = (head + "On November 11, 2026, the Board accepted the resignation of Jen-Hsun Huang, as President, Chief Executive "
+           "Officer and member of the Board, effective immediately. The Board appointed Colette Kress as interim Chief Executive "
+           "Officer. The Board also appointed Mark Stevens as Chair of the Board.")
+    assert S.kind(nvr)["flags"] == ["沒寫原因", "立即生效", "沒有交接或留任", "由人暫代", "同時換董事長"], S.kind(nvr)
     ix = ('<tr><td>1</td><td>8-K</td><td><a href="/ix?doc=/Archives/edgar/data/1/2/a-8k.htm">a</a></td><td>8-K</td></tr>'
           '<tr><td>2</td><td>EX-99.1</td><td><a href="/Archives/edgar/data/1/2/pr.htm">pr</a></td><td>EX-99.1</td></tr>')
     assert S.main_doc(ix) == "/Archives/edgar/data/1/2/a-8k.htm"

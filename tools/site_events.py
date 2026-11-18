@@ -148,6 +148,18 @@ def _index_tile(r: dict) -> str:
             + '<div class="small"><a href="#forced">被迫進出的錢</a></div></div>')
 
 
+def cap_txt(v: float) -> str:
+    """Market value in words: ≥ $1T in 兆, below in 億 (11-18: HP showed 「市值約 0.0 兆美元」 once small AI-chain names joined)."""
+    return f"{v / 1e12:.1f} 兆美元" if v >= 1e12 else f"{v / 1e8:,.0f} 億美元"
+
+
+def _why(r: dict) -> str:
+    """Only the very large reports move the whole index; a small AI-chain name matters for the supply chain."""
+    if r.get("mcap", 0) >= EARN_FLOOR:
+        return "公布後常牽動整個大盤與台股供應鏈"
+    return "AI 供應鏈公司：公布的訂單與財測常牽動同一條鏈上的台股供應商" if r.get("ai") else "公布後可能牽動同類股"
+
+
 def _earn_tile(r: dict) -> str:
     et = datetime.fromisoformat(r["next"])
     tp = et.astimezone(TPE)
@@ -164,7 +176,7 @@ def _earn_tile(r: dict) -> str:
             f'<div class="ecc" data-ts="{r["ts"]}">{r["days"]} {T("天", "d")}</div>'
             f'<div class="small muted">{when}</div>'
             + (f'<div class="small">{"；".join(bits)}</div>' if bits else "")
-            + f'<div class="small muted">市值約 {r["mcap"] / 1e12:.1f} 兆美元，公布後常牽動整個大盤與台股供應鏈</div></div>')
+            + f'<div class="small muted">市值約 {cap_txt(r["mcap"])}，{_why(r)}</div></div>')
 
 
 def sec_event_clock(eng) -> str:

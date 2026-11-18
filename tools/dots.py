@@ -104,6 +104,11 @@ def remember(evs: List[Dict], now: float, path: Path, keep_days: int = 30) -> Li
     except (OSError, ValueError):
         arc = {}
     for e in evs:
+        if e.get("url"):
+            # 11-18: one filing = one entry; a re-read (better rules) replaces the old reading instead of sitting beside it
+            arc = {k: x for k, x in arc.items() if not (x.get("url") == e["url"] and x["kind"] == e["kind"])}
+            arc[f"{e['kind']}|{e['date']}|{e['url']}"] = e
+            continue
         arc[f"{e['kind']}|{e['date']}|{e['t'][:80]}"] = e
     cut, lo, hi = _d(now - keep_days * 86400), _d(now - PAST * 86400), _d(now + AHEAD * 86400)
     arc = {k: e for k, e in arc.items() if e["date"] >= cut}
@@ -116,12 +121,25 @@ def clusters(evs: List[Dict], zh: Dict[str, str], min_kinds: int = 2) -> List[Di
     hits a whole chain counts only for companies that also have an event of their own."""
     by: Dict[str, List[Dict]] = {}
     seen = set()
+    sec_first: Dict[tuple, Dict] = {}
     for e in evs:
         if e["kind"] in ("pp", "earn", "ipo"):              # one per company and day (a hand-added copy and the program's own)
             k = (e["kind"], e["date"], tuple(e["syms"]))
             if k in seen:
                 continue
             seen.add(k)
+        else:
+            # 11-18: the same 8-K came twice (an older copy without the 「文件沒寫…」 flags, then the flagged one) —
+            # same company, day and headline before 「；」 is one filing; keep the longer (flagged) text
+            k = (e["kind"], e["date"], tuple(e["syms"]), str(e.get("t", "")).split("；")[0])
+            old = sec_first.get(k)
+            if old is not None:
+                if len(str(e.get("t", ""))) > len(str(old.get("t", ""))):
+                    for s in e["syms"]:
+                        by[s] = [e if x is old else x for x in by.get(s, [])]
+                    sec_first[k] = e
+                continue
+            sec_first[k] = e
         for s in e["syms"]:
             by.setdefault(s, []).append(e)
     out = []
