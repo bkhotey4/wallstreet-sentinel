@@ -6,7 +6,8 @@ on:
     - cron: "7 */4 * * 0,6"      # 週末每 4 小時
   push:                          # 推送新程式後立刻重建，不必等排程
     branches: [main]
-    paths-ignore: ["**.md"]
+    # 文件（.md）不觸發重建，除了 Gemini 每半小時寫回的回答檔（2026-11-19：讓「Gemini 第二意見」卡片不必等下一次排程）
+    paths: ["**", "!**.md", "research_feed/gemini_reply.md"]
   workflow_dispatch:
     inputs:
       no_ai:
