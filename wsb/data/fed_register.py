@@ -4,6 +4,7 @@
   * 總統文件（行政命令、公告、備忘錄、國家緊急狀態延長）
   * 商務部工業安全局 BIS（出口管制、實體清單）的規則與公告
   * 美國貿易代表署 USTR（301 條款關稅、產品排除）的公告
+  * （2026-11-19）醫保署 CMS 的正式與擬議規則、財政部 OFAC 制裁
 只留和市場有關的（標題或摘要命中 TOPICS 關鍵字），去掉行政雜項（資料蒐集徵詢、個別公司的出口禁令續期、人事）。
 每則標一個主題和「先動的資產」，卡片端算該資產在公報刊登當天漲跌，和平常一天比。
 注意：刊登日常晚於簽署日（新聞通常在簽署當天就出來），所以市場反應可能早就發生；只說「刊登當天」，不說「因為這份文件」。
@@ -34,6 +35,11 @@ QUERIES = (
     ("pres", {"conditions[type][]": "PRESDOCU"}),
     ("bis", {"conditions[agencies][]": "industry-and-security-bureau"}),
     ("ustr", {"conditions[agencies][]": "trade-representative-office-of-united-states"}),
+    # 2026-11-19: UnitedHealth −6% and CVS −4% on a CMS anti-fraud rule that this card never saw (Gemini found it) —
+    # Medicare / Medicaid rules move the insurers and drug makers; final and proposed rules only (CMS posts many notices)
+    ("cms", {"conditions[agencies][]": "centers-for-medicare-medicaid-services", "conditions[type][]": "RULE"}),
+    ("cms_p", {"conditions[agencies][]": "centers-for-medicare-medicaid-services", "conditions[type][]": "PRORULE"}),
+    ("ofac", {"conditions[agencies][]": "foreign-assets-control-office"}),
 )
 # (主題, 英文, 關鍵字, 先動的資產 symbol, 資產中文) — 依序比對，第一個命中的算數
 TOPICS = (
@@ -49,12 +55,14 @@ TOPICS = (
     ("中國", "China", r"\bchina\b|people's republic|chinese", "KWEB", "中概網路股 ETF"),
     ("金融與加密資產", "Finance & crypto", r"digital asset|crypto|stablecoin|\bbank|federal reserve|treasury market",
      "BTC-USD", "比特幣"),
+    ("醫療保險與藥價", "Medicare & drug prices", r"medicare|medicaid|drug price|health insurance|managed care|risk adjustment|"
+     r"part d\b|affordable care|program integrity|fraud, waste", "XLV", "醫療保健 ETF"),
     ("人工智慧", "AI", r"artificial intelligence|\bai\b|data center", "SMH", "半導體 ETF"),
 )
 # 每年例行的延長（國家緊急狀態續期）：內容不變，不算新政策，不列入「大動」
 ROUTINE = re.compile(r"continuation of the national emergency|continuation of the emergency", re.I)
 SKIP = re.compile(r"information collection|performance review board|temporary denial|denying export privileges|order renewing|"
-                  r"sunshine act|meeting|national .{0,30} (day|week|month)|week, 20\d\d|day, 20\d\d|monument|anniversary|honoring", re.I)
+                  r"sunshine act|meeting|; correction$|national .{0,30} (day|week|month)|week, 20\d\d|day, 20\d\d|monument|anniversary|honoring", re.I)
 
 
 def load() -> Dict:
