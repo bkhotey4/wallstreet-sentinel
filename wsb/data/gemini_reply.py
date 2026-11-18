@@ -154,7 +154,14 @@ def refresh(force: bool = False, timeout: int = 15) -> Dict:
     texts = local_reply()
     d = merge(texts) if texts else None
     if d and d["items"]:
-        out = dict(d, fetched=int(time.time()), ok=True, src="antigravity")
+        # 11-19 the owner: 「可能要留意一下消耗速度」 — the quota itself is not visible from here, so keep a run log
+        # (answer time, size, items, searches implied by links) for the daily task to watch: runs that come late,
+        # shrink, or stop mean the model or the cadence should change
+        runs = [r for r in old.get("runs") or [] if r.get("when") != d["when"]][-71:]
+        links = sum(len(i["facts"]) + sum(1 for x in i["rumors"] if x.get("url")) for i in d["items"])
+        runs.append({"when": d["when"], "items": len(d["items"]), "links": links, "chars": sum(len(t) for t in texts),
+                     "seen": int(time.time())})
+        out = dict(d, fetched=int(time.time()), ok=True, src="antigravity", runs=runs)
         try:
             _file().write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
         except OSError:
