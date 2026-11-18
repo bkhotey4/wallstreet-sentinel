@@ -122,27 +122,38 @@ def load() -> Dict:
 
 
 def local_reply() -> Optional[str]:
-    """The answer file the owner's Antigravity automation writes and pushes (research_feed/gemini_reply.md in the public
-    site repo, 2026-11-19): read here locally (this repo or the site checkout next to it) and in CI (the build checkout)."""
+    """The answer files the owner's Antigravity automations write and push (2026-11-19), read here locally (this repo or the
+    site checkout next to it) and in CI: research_feed/gemini_reply.md (the frequent Flash run) and gemini_deep.md (the
+    twice-a-day deep run on a larger model: red team, second-order, blind spots, checking this site).  Both are joined; each
+    keeps its own time line, the newest batch of each is used."""
     from pathlib import Path
     root = Path(__file__).resolve().parents[2]
-    files = [f for f in (root / "research_feed" / "gemini_reply.md", root.parent / "wallstreet-sentinel" / "research_feed" / "gemini_reply.md")
-             if f.exists()]
-    if not files:
-        return None
-    try:
-        return max(files, key=lambda f: f.stat().st_mtime).read_text(encoding="utf-8")
-    except OSError:
-        return None
+    parts = []
+    for name in ("gemini_reply.md", "gemini_deep.md"):
+        fs = [f for f in (root / "research_feed" / name, root.parent / "wallstreet-sentinel" / "research_feed" / name) if f.exists()]
+        if fs:
+            try:
+                parts.append(max(fs, key=lambda f: f.stat().st_mtime).read_text(encoding="utf-8"))
+            except OSError:
+                pass
+    return parts or None
+
+
+def merge(texts: List[str]) -> Dict:
+    """Parse each file and join: items in file order, the newest time, extras from all."""
+    ds = [parse(t) for t in texts]
+    items = [i for d in ds for i in d["items"]]
+    return {"when": max((d["when"] for d in ds if d["when"]), default=None), "items": items,
+            "extra": [x for d in ds for x in d["extra"]][:10], "when_each": [d["when"] for d in ds]}
 
 
 def refresh(force: bool = False, timeout: int = 15) -> Dict:
     old = load()
     if not force and time.time() - float(old.get("fetched") or 0) < EVERY:
         return old
-    text = local_reply()
-    if text and parse(text)["items"]:
-        d = parse(text)
+    texts = local_reply()
+    d = merge(texts) if texts else None
+    if d and d["items"]:
         out = dict(d, fetched=int(time.time()), ok=True, src="antigravity")
         try:
             _file().write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
