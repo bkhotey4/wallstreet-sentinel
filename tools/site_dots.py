@@ -40,9 +40,11 @@ def _read_html(r: Dict) -> str:
     for k, lab in (("for", "支持的證據"), ("against", "反對或還不確定的地方"), ("confirm", "什麼消息能證實或推翻")):
         if r.get(k):
             parts.append(f'<p class="small"><b>{lab}</b></p><ul class="small">' + "".join(f"<li>{esc(x)}</li>" for x in r[k]) + "</ul>")
-    if r.get("sources"):
-        parts.append('<p class="small muted">原文：' + "、".join(f'<a href="{esc(s["url"])}" target="_blank" rel="noopener">{esc(s["name"])}</a>'
-                                                         for s in r["sources"] if s.get("url")) + "</p>")
+    # 11-18: a read with plain-URL sources raised here and the whole card vanished from the page — accept both shapes
+    src = [s if isinstance(s, dict) else {"url": str(s), "name": "原文"} for s in r.get("sources") or []]
+    if src:
+        parts.append('<p class="small muted">原文：' + "、".join(f'<a href="{esc(s["url"])}" target="_blank" rel="noopener">{esc(s.get("name") or "原文")}</a>'
+                                                         for s in src if s.get("url")) + "</p>")
     return "".join(parts)
 
 

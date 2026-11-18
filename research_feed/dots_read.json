@@ -98,8 +98,14 @@
     "財報電話會議上對房市與利率的說法"
    ],
    "sources": [
-    "https://www.sec.gov/Archives/edgar/data/354950/000035495026000182/hd-20261113.htm",
-    "https://www.sec.gov/Archives/edgar/data/60667/000006066726000122/low-20261113.htm"
+    {
+     "name": "家得寶 8-K（2026-11-17）",
+     "url": "https://www.sec.gov/Archives/edgar/data/354950/000035495026000182/hd-20261113.htm"
+    },
+    {
+     "name": "Lowe's 8-K（2026-11-17）",
+     "url": "https://www.sec.gov/Archives/edgar/data/60667/000006066726000122/low-20261113.htm"
+    }
    ],
    "date": "2026-11-18"
   }

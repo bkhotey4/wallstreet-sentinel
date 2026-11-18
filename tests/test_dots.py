@@ -71,7 +71,16 @@ def test_same_filing_counted_once():
     assert len(secs) == 1 and secs[0]["t"].endswith("文件沒寫原因"), c
 
 
+def test_plain_url_sources_do_not_drop_card():
+    """11-18: a read whose sources were plain URLs raised in the renderer and the whole card disappeared."""
+    from tools import site_dots as S
+    h = S._read_html({"hypothesis": "x", "sources": ["https://a", {"name": "n", "url": "https://b"}]})
+    assert 'href="https://a"' in h and ">n</a>" in h, h
+
+
 if __name__ == "__main__":
+    test_plain_url_sources_do_not_drop_card()
+    print("ok test_plain_url_sources_do_not_drop_card")
     test_same_filing_counted_once()
     print("ok test_same_filing_counted_once")
     test_week_story()
