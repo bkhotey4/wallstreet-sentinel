@@ -21,7 +21,7 @@ log = logging.getLogger("gemini_reply")
 DOC_ID = "1Vw5M_1kSH_Cafe1vOQJfqHtnM61r7ybCih2y31ra4TQ"      # created 2026-11-19 in the owner's Drive (memory: gemini-collab)
 URL = f"https://docs.google.com/document/d/{DOC_ID}/export?format=txt"
 SEP = "以下是 Gemini 的回答"
-EVERY = 900                                                  # the file is local; the Doc fallback is cheap too
+EVERY = 300                                                  # Gemini writes every 30 min; the local file is cheap to read
 URL_RX = re.compile(r"https?://[^\s)）\]>,，]+")
 WHEN_RX = re.compile(r"(20\d\d)[-/.年](\d{1,2})[-/.月](\d{1,2})日?\s*(\d{1,2})[:：](\d{2})")
 HEAD_RX = re.compile(r"^#{2,4}\s*([A-Z][A-Z0-9.\-]{0,11})\s*[｜|]\s*(.+)$")    # TASK-B1 = a check Claude asked for
