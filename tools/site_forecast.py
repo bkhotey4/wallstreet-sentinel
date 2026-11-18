@@ -104,6 +104,16 @@ def _ed_pill(ed: str) -> str:
     return f'<span class="pill{" warn" if ed == "加班" else ""}">{_e("🚨 緊急加班" if ed == "加班" else ed)}</span> ' if ed else ""
 
 
+def _dash(eng) -> str:
+    """Program-computed numbers and the next 72 hours under the AI script (11-18, user: 「每日總經可以再多補充的吧」)."""
+    try:
+        from tools import site_macro_dash as MD
+        return MD.block(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("macro dashboard failed")
+        return ""
+
+
 def sec_macro_voice(eng) -> str:
     x = voice()
     if not x.get("script"):
@@ -117,7 +127,7 @@ def sec_macro_voice(eng) -> str:
                           f'<b>{_e(h.get("one"))}</b></p><details class="sgx"><summary>看文字稿</summary>{_paras(h)}</details></div>' for h in earlier)
                 + '<p class="small muted">語音只有最新一班；前幾班保留文字稿。</p></details>')
     body = (f'<p class="rimp big2">{_ed_pill(str(x.get("edition") or ""))}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
-            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + prev
+            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _dash(eng) + prev
             + f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
             f'市場異常大動時會加班。語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
     return card("每日總經情勢", "Daily macro", body, "wide", sub="用聽的，約兩三分鐘")
