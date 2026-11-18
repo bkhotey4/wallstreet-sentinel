@@ -65,6 +65,7 @@ from tools import site_learn as SLN
 from tools import site_deep as SDP
 from tools import site_human as SHM
 from tools import site_dots as SDT
+from tools import site_gemini as SGM
 from tools import site_longhist as SLH
 from tools import site_sessions as SSN
 from tools import site_estrev as SER
@@ -1394,7 +1395,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),
-            ("news", "新聞日曆", "News & calendar", [SDT.sec_dots, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
+            ("news", "新聞日曆", "News & calendar", [SDT.sec_dots, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
