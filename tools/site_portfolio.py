@@ -380,6 +380,7 @@ def sec_portfolio(eng) -> str:
 <label class="btn" for="pfimp">{T("匯入", "Import")}</label><input id="pfimp" type="file" accept="application/json,.json" hidden>
 <button class="btn" type="button" id="pfclr">{T("清除全部", "Clear all")}</button><span class="small muted" id="pfmsg" role="status"></span></div>
 </div>
+<div class="pfrules" id="pfwhy" style="display:none"></div>
 <div class="pfrules" id="pfrules" style="display:none"></div>
 <div class="pfdx" id="pfdx" style="display:none"></div>
 <div class="pfcrisis" id="pfcrisis" style="display:none"></div>
@@ -1036,6 +1037,7 @@ function draw(d,FM){var tb=document.getElementById('pft').tBodies[0];tb.textCont
            { cost: totCost, costV: costV, cash: cashT, noCost: noCost, ok: totCost > 0 && !cashMiss });
  renderDx(rows, tot, totV, cashT, { cost: totCost, costV: costV, noCost: noCost });
  renderRules(rows, totV);
+ renderWhy(rows, totV);
 }
 
 // ---------------------------------------------------------------- 我的規則檢查（same rules as Discord /holdings rules）
@@ -1113,6 +1115,52 @@ function renderRules(rows, totV){
   x.appendChild(d);});
  var ft=el('p','small muted');ft.appendChild(L('自問：如果今天手上是現金，會用現在的價格買這麼多嗎？會 → 續抱；不會或不會買這麼多 → 考慮減碼；會而且想買更多 → 再看加碼條件。「－」＝沒有資料，不算成立。',
   'Ask: with cash today, would I buy this much at this price? "－" = no data, never counted as met.'));x.appendChild(ft);}
+
+// ---------------------------------------------------------------- 今天為什麼動（2026-11-18）
+// The owner asked 「為何這些你都沒告訴我」 after a night when NVIDIA/TSMC/KLA moved on news this page never showed. This box puts in
+// one place: today's P&L by holding (biggest first), each US holding's own headlines of the last 24 h (/api/tnews, Yahoo per-ticker
+// RSS — only the tickers typed in this browser are asked for, like /api/quote), analyst notes marked, and holdings / themes above
+// the size caps of 我的規則檢查. Headlines that do not name the company are left out; no headline → said so, nothing invented.
+var WHY = {t: 0, key: '', n: {}};
+function whyNames(sym, name){var w=(name||'').split(/[\s,.(]/)[0];return [sym].concat(w.length>=3&&w.toUpperCase()!==sym?[w]:[]);}
+function whyHit(t, keys){return keys.some(function(k){k=k.replace(/[^A-Za-z0-9]/g,'');return k.length>=2&&new RegExp('(^|[^A-Za-z])'+k+'(?![A-Za-z])','i').test(t);});}
+function renderWhy(rows, totV){
+ var x=document.getElementById('pfwhy');if(!x)return;
+ var live=rows.filter(function(r){return r.p&&r.day!=null&&r.vt!=null;});
+ if(!live.length||!totV){x.style.display='none';return;}
+ live.sort(function(a,b){return Math.abs(b.day)-Math.abs(a.day);});
+ var us=live.filter(function(r){return r.mk==='us';}).map(function(r){return (r.p.sym||r.h.s).toUpperCase();});
+ var key=us.slice().sort().join(',');
+ if(us.length&&(key!==WHY.key||Date.now()-WHY.t>300000)){WHY.key=key;WHY.t=Date.now();
+  fetch('api/tnews?s='+encodeURIComponent(key),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+   .then(function(j){if(j&&j.n){WHY.n=j.n;renderWhy(rows,totV);}}).catch(function(){});}
+ x.style.display='block';x.textContent='';
+ var tot=live.reduce(function(s,r){return s+r.day;},0),prev=live.reduce(function(s,r){return s+r.vt-r.day;},0),top=live[0];
+ var hd=el('h3');hd.appendChild(L('今天為什麼動','Why my holdings moved today'));x.appendChild(hd);
+ var nm=function(r){return (r.p.sym||r.h.s)+(r.p.name&&r.p.name!==(r.p.sym||r.h.s)?' '+r.p.name:'');};
+ var pc=function(r){var pv=r.p.prev>0?r.p.prev:(r.p.ch!=null?r.p.px/(1+r.p.ch/100):null);return pv?(r.p.px/pv-1)*100:null;};
+ var lead=el('p','rimp big2');lead.appendChild(el('b','','一句話看懂：你的持股今天合計 '+(tot>=0?'賺':'賠')+' NT$ '+num(Math.abs(tot),0)
+  +(prev?'（'+sgn(tot/prev*100,2,true)+'）':'')+'，影響最大的是 '+nm(top)+'（NT$ '+sgn(top.day,0)+(pc(top)!=null?'，'+sgn(pc(top),1,true):'')+'）。'));x.appendChild(lead);
+ var ul=el('ul');
+ live.forEach(function(r){var sym=(r.p.sym||r.h.s).toUpperCase(),p=pc(r),hs=(WHY.n[sym]||[]).filter(function(h){return whyHit(h.t,whyNames(sym,r.p.name));});
+  if(p!=null&&Math.abs(p)<1&&!hs.some(function(h){return h.a;}))return;
+  var li=el('li');li.appendChild(el('b','',nm(r)+' '+(p!=null?sgn(p,1,true):'')+'（NT$ '+sgn(r.day,0)+'）'));
+  if(r.mk!=='us')li.appendChild(el('span','small muted','　台股／港股的個股新聞還沒接上，看「即時新聞」分頁'));
+  else if(!WHY.n[sym])li.appendChild(el('span','small muted','　新聞讀取中…'));
+  else if(!hs.length)li.appendChild(el('span','small muted','　最近 24 小時沒有提到這家公司的新聞，可能是跟著同業或大盤動'));
+  else{var u2=el('ul','small');hs.sort(function(a,b){return (b.a?1:0)-(a.a?1:0)||b.ts-a.ts;}).slice(0,3).forEach(function(h){var l2=el('li');
+    if(h.a)l2.appendChild(el('b','','📝 分析師　'));var a=el('a','',h.t);a.href=h.u;a.target='_blank';a.rel='noopener';l2.appendChild(a);
+    var d=new Date(h.ts*1000);l2.appendChild(el('span','muted','　'+(d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)));u2.appendChild(l2);});
+   li.appendChild(u2);}
+  ul.appendChild(li);});
+ x.appendChild(ul);
+ var cfg=RBK.cfg||{},mw=cfg.max_weight_pct,mt=cfg.max_theme_pct,warn=[],tw={};
+ live.forEach(function(r){var w=r.vt/totV*100,S=rbStats((r.p&&r.p.sym)||r.h.s,r.h,r.mk);if(mw&&w>mw)warn.push((r.p.sym||r.h.s)+' 占 '+w.toFixed(1)+'%，超過你設定的單一持股上限 '+mw+'%');
+  if(S&&S[4])tw[S[4]]=(tw[S[4]]||0)+w;});
+ Object.keys(tw).sort(function(a,b){return tw[b]-tw[a];}).forEach(function(t){if(mt&&tw[t]>mt)warn.push('「'+t+'」合計 '+tw[t].toFixed(1)+'%，超過你設定的同主題上限 '+mt+'%');});
+ if(warn.length){x.appendChild(el('div','small','集中度'));var u3=el('ul','small');warn.forEach(function(w){u3.appendChild(el('li','',w));});x.appendChild(u3);}
+ var ft=el('p','small muted');ft.appendChild(L('新聞來自 Yahoo 個股新聞（每 5 分鐘更新），只列標題真的提到這家公司的；📝＝分析師調整評等或看法。停損與移動停損線在上方表格，逐條規則在下方「我的規則檢查」。Discord 只在大動或跌破你的規則線時通知。只在你的瀏覽器裡計算。不構成投資建議。',
+  'Headlines: Yahoo per-ticker news, refreshed every 5 minutes. Computed in your browser only. Not investment advice.'));x.appendChild(ft);}
 
 // ---------------------------------------------------------------- Diagnostics
 function renderDx(rows, tot, totV, cashT, CB){
