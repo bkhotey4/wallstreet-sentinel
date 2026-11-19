@@ -1,86 +1,398 @@
-台北時間 2026-11-19 00:45
+台北時間 2026-11-19 08:25
 
-### TJX｜TJX 第三季財報營收與同店銷售優於預期並調升全年財測
+### D-1｜回應 Q1：只看美股與台股會漏掉的全球大事（政治、金融穩定、地緣能源、法規）
+- 事實：歐洲央行（ECB）於台北時間 11 月 18 日發布 2026 年 11 月《金融穩定評估（Financial Stability Review）》，點名歐元區金融穩定風險處於高檔，三大隱憂為「AI 高估值與從自有現金流轉向債務融資的股債傳染風險」、「主權財政失衡與槓桿避險基金引發公債突發重定價」、以及「高度依賴少數第三方科技商的資安與營運風險」。（https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ，台北時間 2026-11-18）
+- 事實：美國於美東 11 月 17 日對位於荷莫茲海峽內的伊朗格什姆島（Qeshm Island）飛彈設施發動有限度空襲，伊朗隨後出動無人機攻擊波斯灣美軍盟友（巴林與科威特宣稱攔截），且阿聯酋國營石油公司（ADNOC）一艘油輪在海峽遇襲；美伊緊張在秋季短暫外交緩和後再度升溫。（https://www.cbsnews.com/news/u-s-launches-limited-strikes-on-iranian-targets-in-strait-of-hormuz-officials-say/ ，台北時間 2026-11-18）
+- 事實：美國聯邦醫療服務中心（CMS）於 11 月 16 日提出「CRUSH」反詐欺提案規則（CMS-6098-P），擬將 Medicare Advantage 風險調整稽核（RADV）結果追溯推算至 2018 給付年度，預估十年可為納稅人節省近 900 億美元，導致道瓊權重股 UNH 與醫療保險類股連續兩日劇震。（https://www.cms.gov/newsroom/press-releases/cms-crush-proposed-rule-aims-reap-nearly-90-billion-taxpayers-savings-targeting-fraud-across ，台北時間 2026-11-17）
+- 推理：除了上述三件，透過多區域搜尋亦顯示巴西參議院 11 月 18 日通過約 600 億雷亞爾（約 103 億美元）2027 年財政法案但未能平息債匯壓力（市場嫌結構改革不足）、日圓逼近 160 干預警戒區、土耳其 COP31 氣候峰會與清潔科技關稅摩擦仍在延燒（上述三項本次未取得單篇主流媒體原文直連網址，僅供交叉線索）。這些非美台主線事件正在同時推升全球主權債期限溢酬與資金避險成本。
+
+### D-2｜回應 Q2：商品（黃金、銅、油）11/18 同步下跌的主因與判別數據
+- 事實：11 月 18 日聯準會理事 Christopher Waller 在 CNBC 受訪時表示通膨「朝錯誤方向移動」，主張 12 月 8–9 日會議應考慮一次升息 2 碼（50 個基點），除非委員會明確承諾 1 月續升才支持升 1 碼；同日聯準會 10 月會議紀錄顯示幾乎所有官員預期未來數月需再升息。這使美元與利率預期急升，Comex 黃金單日收跌逾 3%（跌破每盎司 3,800 美元、創 14 個月新低）。（https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html ，台北時間 2026-11-18；https://www.wsj.com/finance/commodities-futures/gold-treads-water-as-fed-dollar-keep-weighing-3f6439e8 ，台北時間 2026-11-18）
+- 推理：我判斷 11/18 商品齊跌的主因是「美元飆至 19 個月新高＋聯準會鷹派衝擊引發跨資產系統性平倉（CTA 停損）」疊加「原油與銅的個別供給／技術破線壓力」，而非單純「全球需求突然崩壞」。判別方法有三項可驗證數據：（1）若是需求崩壞，10 年期美債殖利率應該大跌且高收益債利差急擴，但 11/18 10 年期殖利率仍守在 5.07%、高收益債利差維持 3.43% 未惡化；（2）黃金與銅同跌代表實質利率與美元因素占上風，因為純衰退通常利多黃金；（3）原油在格什姆島遇襲下仍跌，是因為部分報告指美伊開戰後繞道陸路管線與暗船出口使全球原油供給轉為過剩，疊加美國成品油庫存增加。下一輪可看 11/20 台灣 10 月外銷訂單與 12 月初美國 ISM／非農，若實體訂單仍強則可確認是金融與美元擠壓而非需求坍塌。
+
+### D-3｜回應 Q3：AI 信用變緊若擴散，下一個出現壓力訊號的地方
+- 事實：聯準會 10 月 FOMC 會議紀錄（台北時間 11/19 03:00 公布）與歐洲央行 11/18 金融穩定報告均明確警告，AI 基礎建設正從科技巨頭自有現金流轉向債務與「表外租賃承諾（off-balance-sheet leasing）」；同時聯準會研究顯示美國私募信貸工具資產已逾 2.6 兆美元，銀行是這些基金的主要出借人，部分非公開交易 BDC 在 2026 年初已出現季贖回申請超過 5% 上限而按比例限額的現象。（https://www.federalreserve.gov/monetarypolicy/fomcminutes20261028.htm ，台北時間 2026-11-19 03:00；https://www.federalreserve.gov/econres/notes/feds-notes/u-s-private-credit-vehicles-institutional-structure-and-aggregate-balance-sheets-20261109.html ，台北時間 2026-11-10；https://www.federalreserve.gov/econres/notes/feds-notes/the-rise-of-semiliquid-funds-for-retail-investors-20261014.html ，台北時間 2026-10-15）
+- 推理：若 AI 信用壓力從 CoreWeave（14%–16% 無擔保債）往外擴散，下一個出現訊號的順序依序是：（1）**投資級但高舉債擴建資料中心的大型科技／伺服器業者之信用違約交換（CDS）與發債利差**：特別是資本支出÷營業現金流已高於 1 倍的甲骨文（ORCL）與亞馬遜（AMZN），以及依賴大客戶集中訂單的伺服器代工廠；（2）**直接貸款給資料中心／算力租賃的非公開 BDC 與私募信貸基金**：一旦出現租金延遲或租約重談，這類基金的「限制贖回（gating）」比例會先上升，進而影響其背後的美國區域性銀行與大型融資銀行；（3）**國家層級**：台灣與韓國的科技硬體／HBM 供應鏈應收帳款天數與客戶預收款變化（雖然台積電帳上仍有龐大預收款保護，但二線代工與新創 ASIC 設計公司風險較高）。
+
+### D-4｜回應 Q4：對 Claude 五條主線的表態與質疑（最可能錯的是第 1 點的擴散假設與第 2 點的時間延續性）
+- 事實：輝達 11/17 公布的 FY27 Q3 營收達 1,158 億美元（年增 103%），Q4 財測上看 1,300 億美元，且暫代執行長 Colette Kress 宣布將 FY28 營收年增預期上調至約 75%；Palo Alto Networks（PANW）亦於 11/18 盤後公布 Q1 營收年增 39% 至 34.4 億美元並斥資 45 億美元併購 AI 新創 Applied Compute。（https://www.cnbc.com/2026/11/18/nvidia-stock-earnings.html ，台北時間 2026-11-19；https://www.paloaltonetworks.com/company/press/2026/palo-alto-networks-to-announce-fiscal-first-quarter-2027-financial-results-on-wednesday--november-18--2026 ，台北時間 2026-11-18）
+- 推理：對 Claude 5 條主線逐條表態：
+  1. **主線 1（AI 建設的錢開始變緊）— 部分同意，但最可能「錯判擴散範圍」**：體質較弱的新雲端無擔保債殖利率飆升確實是真的，但今天（11/18 晚間）Anthropic IPO 仍在市場認購強勁下以高於區間的每股 83 美元定價、估值約 1.5 兆美元且募資約 800 億美元，顯示一級市場對頂尖 AI 公司的資金供給依然充沛，問題是「極端分化」（贏家與雲端巨頭不缺錢，無護城河的二線算力租賃商缺錢），而非全產業錢緊。
+  2. **主線 2（輝達經營層問題壓住好財報）— 部分同意，但可能高估治理風波對訂單的實質傷害**：11/18 輝達開高走低收跌 2.89% 確實反映董事長拒絕黃仁勳回任及出口管制不確定性，但同日費半指數仍收漲 0.10%，PANW 財報後上漲，代表市場只是對 NVDA 單一公司重估風險溢酬，並未否定算力基本面。
+  3. **主線 3（利率是背景壓力）— 同意且認為風險還在上升**：11/18 Waller 公開拋出 12 月可能升息 2 碼，代表市場對升息週期「尾端」的定價尚未結束，2 碼風險未被完全消化。
+  4. **主線 4（商品同步走弱）— 同意觀察現象，不確定處見 D-2**：美元創 19 個月新高＋鷹派衝擊是即時主因。
+  5. **主線 5（Anthropic 11/19 掛牌是 AI 情緒溫度計）— 部分同意，但須警覺「抽血效應」**：若 ANT 上市首日大漲，反而可能短期吸走其他高波動 AI 股票的流動性，出現「Anthropic 漲、其餘 AI 股跌」的逆向關係，不能單向當成同漲溫度計。
+  （另外主線 2 對黃仁勳風波壓抑訂單的擔心可能過度放大：同日費半仍收漲 0.10%、PANW 財報強彈，顯示市場僅針對 NVDA 單一公司重估治理風險。）
+
+### D-5｜回應 Q5：Claude 沒提、未來兩週可能變成市場主線的題目
+- 事實：美國聯邦醫療服務中心（CMS）11 月 16 日提出「CRUSH」計畫（CMS-6098-P），擬將 Medicare Advantage 稽核追繳追溯至 2018 年；此外，Anthropic（ANT）於 11 月 18 日以每股 83 美元定價（高於 70–78 美元區間），其 S-1 文件揭露至 2045 年累計約 9,000 億美元算力採購承諾，且允許部分內部人於掛牌初期出售股份。（https://www.cms.gov/newsroom/fact-sheets/comprehensive-regulations-uncover-suspicious-healthcare-crush-proposed-rule-cms-6098-p ，台北時間 2026-11-17；https://www.theguardian.com/technology/2026/nov/18/anthropic-sets-share-price-at-83-for-stock-market-debut-above-expected-range ，台北時間 2026-11-19）
+- 推理：一個完全沒被提、但未來兩週可能發酵的主線是**「800 億美元級別 Mega-IPO（ANT）對二級市場科技股與 ETF 的流動性抽血＋醫療與財政監管衝擊傳導至道瓊/防禦股」**。過去幾週大盤下跌時，資金還能躲進醫療保健（XLV）等防禦類股，但 CMS 的 900 億美元追繳提案正在同時打擊保險與醫療防禦板塊，讓資金失去避風港；同時若 Anthropic（ANT）首日與第一週交易出現巨額成交量，可能造成被動資金與機構為騰出部位而減持現有科技權值股的再平衡賣壓。
+
+### D-6｜主線總結表態
+- 推理：整體而言，Claude 把焦點放在「AI 資金鏈＋輝達治理＋美國利率」是抓對大方向，但目前仍輕看了「美元創 19 個月新高對全球商品與新興市場匯率（新台幣破 33、日圓逼近 160、巴西雷亞爾承壓）的全面收緊效應」，以及「聯準會 12 月升息 2 碼尾部風險」；同時也過度延伸了新雲端債務壓力立即擴散到頂尖 AI 融資的判斷。
+
+### D-Q｜反問 Claude：下一輪請回答的 3 個問題
+- 1. 本站 `research_feed/deep.json`（11/19 06:12 版）在 `spill` 寫道 11/18 台股「外資賣超 76.5 億元」，但中央社與證交所統計實為「外資及陸資賣超 765.63 億元」（差了 10 倍），且外資連 5 日大砍台積電、新台幣貶破 33 元。請問這對本站「台股連動」的資金流出判讀與外資期貨空單警訊有多大影響？
+- 2. 如果 Anthropic（ANT）在 11/19 掛牌後股價強漲，但同時 CoreWeave 與二線新雲端股續跌，你會把這個現象判讀為「AI 泡沫還在」還是「AI 資本集中化（贏家通吃、資金排擠）」？你的 `forecast.json`「風險升級」劇本條件需要修正嗎？
+- 3. Waller 在 11/18 公開提到 12 月可能升息 2 碼（50 bp），若未來兩週 11/25 的 10 月 PCE 物價無法提供足夠降溫證據，利率期貨若從「95% 升 1 碼」轉往定價「升 2 碼」，哪一類美股或信用資產會先破線？
+
+---
+
+### WIDE-1｜歐洲央行點名 AI 債務融資與主權財政脆弱度升溫
+- 事實：歐洲央行（ECB）於 2026 年 11 月 18 日公布半年一次的《金融穩定評估》，警告歐元區金融穩定風險依然偏高。報告指出，AI 基礎建設支出日益超越企業內部現金流並轉向舉債，一旦市場對 AI 獲利預期動搖，股市修正將迅速傳導至企業債市場；同時高公債水位與槓桿對沖基金進出，提高了主權公債市場突然重定價的風險。（https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ，台北時間 2026-11-18）
+- 推理：這是大型央行正式把「AI 債務鏈」與「主權債重定價」並列為系統性風險。即使美國經濟數據看起來仍強，歐洲非銀行金融機構（NBFI）與全球主權債殖利率連動密切，可能觸發歐美公債期限溢酬同步跳升。
+- 先影響資產：歐元區長天期公債（特別是高負債國家如法、義對德債利差）、歐洲企業高收益債與歐元匯率。
+
+### WIDE-2｜美伊在荷莫茲海峽重燃軍事摩擦，但油價受「陸路繞道過剩」與庫存壓抑
+- 事實：美國中央司令部（CENTCOM）確認美軍戰機於 11 月 17 日空襲位於荷莫茲海峽內伊朗格什姆島（Qeshm Island）的革命衛隊飛彈發射陣地；伊朗隨即以無人機攻擊巴林與科威特目標（遭防空系統攔截），阿聯酋 ADNOC 亦證實一艘油輪在海峽遇襲。然而布蘭特原油不漲反跌至每桶 91–92 美元附近，因美國石油庫存增加且多數中東產油國已透過陸上管線與暗船出口維持供給。（https://www.cbsnews.com/news/u-s-launches-limited-strikes-on-iranian-targets-in-strait-of-hormuz-officials-say/ ，台北時間 2026-11-18）
+- 推理：市場對荷莫茲海峽衝突的「地緣溢酬」出現麻木與鈍化，但如果局勢進一步擴大到直接癱瘓沙特或阿聯酋陸上管線與港口設施，市場目前幾乎未定價極端斷供風險，一旦升級將引爆通膨與聯準會更猛烈升息的雙重衝擊。
+- 先影響資產：WTI／布蘭特原油期貨、海運油輪運價與煉油裂解價差、美國 5 年期通膨預期（T5YIE）。
+
+### WIDE-3｜巴西參議院通過 600 億雷亞爾財政法案，但市場嫌不夠導致股匯持續承壓
+- 事實：巴西參議院於 11 月 18 日通過政府提出的財政緊縮與增稅包裹法案，預計 2027 年可改善公共財政最高達 600 億雷亞爾（約 102.9 億美元）；但因巴西總債務占 GDP 比重已升破 82%，投資人認為此舉僅屬「溫和第一步」，迫使財政部長 Dario Durigan 同日出面喊話承諾「立即推出更多追加緊縮措施」以安撫匯債市場（本次搜尋僅見轉載摘要，未取得單篇可獨立開啟之原文報導網址，標註來源限制）。
+- 推理：拉丁美洲最大經濟體若陷入「高債務＋高利率＋貨幣貶值」的惡性循環，加上美元創 19 個月新高，可能在未來幾週引發新興市場主權債與原物料貨幣（巴西雷亞爾、墨西哥披索）的連鎖賣壓。
+- 先影響資產：巴西雷亞爾（BRL）、新興市場美元主權債 ETF（EMB）、大宗農產品與鐵礦砂出口商（如淡水河谷）。
+
+### WIDE-4｜日圓匯率再度逼近 160 警戒線，日本央行升息壓力與外匯干預風險並存
+- 事實：儘管日本央行（BoJ）政策利率已調升至 1.25% 水準且總裁植田和男強調依數據推進正常化，但在聯準會 12 月強烈升息預期推升美元下，日圓匯率近期再度走貶並測試 159–160 日圓兌 1 美元區間（根據本站 `research_feed/ai_view.json` 記錄之 FRED `DEXJPUS` 數據，11 月 13 日已達 159.93）。（https://fred.stlouisfed.org/series/DEXJPUS ，台北時間 2026-11-14）
+- 推理：若日圓在未來幾週貶破 160 引發日本財務省進場賣美債換美元干預匯市，或迫使日本央行於 12 月意外提前偏鷹表態，將觸發全球日圓套息交易（Carry Trade）平倉，歷史上這常同步抽走美股科技股與加密資產的邊際流動性。
+- 先影響資產：美元兌日圓（USD/JPY）、日本公債殖利率（JGB）及美國科技權值股高槓桿部位。
+
+### WIDE-5｜CMS 提出「CRUSH」反詐欺規則，改寫美國醫療保險商業模式與追溯負債風險
+- 事實：美國聯邦醫療服務中心（CMS）於 11 月 16 日公布 CMS-6098-P 提案規則（已提交聯邦公報公開檢視），不僅擬取消傳統調整折減並將 Medicare Advantage 抽樣稽核結果追溯推算至 2018 年（估計每年追回約 90 億美元、十年近 900 億美元），還強制要求服務商加入傳統 Medicare 並強制申報可疑詐欺案件，公眾意見徵詢至 2027 年 1 月 19 日止。（https://www.cms.gov/newsroom/fact-sheets/comprehensive-regulations-uncover-suspicious-healthcare-crush-proposed-rule-cms-6098-p ，台北時間 2026-11-17；https://public-inspection.federalregister.gov/2026-23461.pdf ，台北時間 2026-11-17）
+- 推理：這不是單日消息，而是改變未來幾季醫療保險業資本適足率與庫藏股能力的重大監管重估。由於 UNH 在道瓊工業指數權重極高，此風險外溢已使美國傳統防禦板塊失靈，讓股市下跌時缺乏避風港。
+- 先影響資產：美國管理式醫療保險股（UNH、HUM、CVS、ELV）、道瓊工業指數、醫療產業公司債利差。
+
+---
+
+### A-0｜今天的大動說明（內建瀏覽器限制與資料基準）
+- 事實：本次自動化環境無法開啟 Hub 視窗中的內建瀏覽器，故未能即時讀取 `https://wallstreet-sentinel.pages.dev/api/gemini_ask` 最新一小時清單；以下保留並更新上一版清單之 12 檔主要異動股，並排除前版所引用之 AI 自動生成文章網址，補充 11 月 18 日美股收盤與盤後最新實證。
+
+### PANW｜Palo Alto Networks 第三季（FY27 Q1）財報大幅優於預期並宣布 45 億美元併購 Applied Compute，帶動股價強漲
+- 事實：Palo Alto Networks（PANW）於美東 11 月 18 日盤後公布 2027 會計年度第一季（截至 2026/10/31）財報，營收年增 39% 至 34.4 億美元（高於市場預期約 33.1 億美元），調整後每股盈餘 1.05 美元（高於預期 0.97 美元），NGS ARR 年增 66% 至 97.3 億美元，RPO 年增 35% 至 210 億美元，並大幅上調全年營收財測至 145.2 億～145.7 億美元；同時宣布以 45 億美元全股票收購開放權重 AI 模型安全平台 Applied Compute，延長 10 億美元庫藏股授權至 2027 年底。（https://www.paloaltonetworks.com/company/press/2026/palo-alto-networks-to-announce-fiscal-first-quarter-2027-financial-results-on-wednesday--november-18--2026 ，台北時間 2026-11-19）
+- 本站漏掉的：PANW 在 11/18 正規交易時段已受資安買盤推升近 10%，盤後財報與 AI 併購案落地後再度走高，並成為帶動 CRWD、FTNT 等資安股同步強彈的主軸。
+
+### UNH｜CMS 提出 CRUSH 反詐欺新規且可追溯至 2018 年，拖累聯合健康連兩日重挫
+- 事實：美國聯邦醫療服務中心（CMS）於 11 月 16 日公布「CRUSH」提案規則（CMS-6098-P），擬改革 Medicare Advantage 的 RADV 風險調整稽核並允許將抽樣違規推算回溯至 2018 給付年度，官方估算十年總節省金額約 900 億美元（其中主要來自每年約 90 億美元級別的 MA 追回），聯合健康（UNH）作為全美最大 MA 保險業者，11 月 17 日下跌逾 5% 後，11 月 18 日賣壓加劇再挫約 8%～10%。（https://www.cms.gov/newsroom/press-releases/cms-crush-proposed-rule-aims-reap-nearly-90-billion-taxpayers-savings-targeting-fraud-across ，台北時間 2026-11-17）
+- 本站漏掉的：此法案非單純產業雜音，公眾意見期將延續至 2027 年 1 月 19 日，且參議員伊莉莎白・華倫等人同步施壓分拆垂直整合醫療集團。
+
+### CVS｜受 CMS 醫療保險稽核新規與垂直醫療拆分壓力拖累下跌
+- 事實：CVS Health（CVS）旗下擁有 Aetna 醫療保險與 Caremark PBM 業務，直接暴露於 CMS-6098-P（CRUSH）Medicare Advantage 回溯追繳風險之下，11 月 18 日隨醫療保險板塊同步下跌約 3%～5%。（https://www.cms.gov/newsroom/fact-sheets/comprehensive-regulations-uncover-suspicious-healthcare-crush-proposed-rule-cms-6098-p ，台北時間 2026-11-17）
+- 本站漏掉的：同業 Humana（HUM）同日跌勢更重（逾 10%），顯示市場正全面定價政府醫保業務的政策折價。
+
+### TJX｜TJX 第三季財報營收與同店銷售優於預期並調升全年財測（無新進展）
 - 事實：TJX 公布 2027 會計年度第三季財報，淨營收達 160 億美元（年增 6%），合併同店銷售成長 4% 優於公司原訂計畫，稀釋後每股盈餘為 1.39 美元（年增 9%，調整後每股盈餘 1.34 美元），並於該季透過庫藏股與股利回饋股東 15 億美元。（https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2027-earnings-press-release.pdf ，台北時間 2026-11-18 20:30）
-- 傳聞：無。
-- 本站漏掉的：TJX 旗下的 Marmaxx、HomeGoods、加拿大與國際部門同店銷售全面成長，帶動股價大漲逾 10%。
+- 本站漏掉的：Marmaxx、HomeGoods、加拿大與國際部門全面成長，並對第四季假期銷售加速釋出樂觀訊號（見 CALL-TJX）。
 
-### SCCO｜國際銅價跌至四月以來新低拖累南方銅業重挫
-- 事實：受美元走強、市場對中國需求疑慮以及精煉銅關稅預期降溫影響，國際銅期貨價格跌至今年 4 月以來新低，導致純銅礦生產商 Southern Copper（SCCO）股價單日重挫逾 7%。（https://www.investing.com/news/stock-market-news/why-is-southern-copper-stock-sliding-today-93CH-5036554 ，台北時間 2026-11-18 23:15）
-- 傳聞：無。
-- 本站漏掉的：基本金屬與 AI 基礎建設相關原物料部位同步出現獲利了結賣壓。
+### NEM｜金價跌破每盎司 3,800 美元創 14 個月新低拖累紐蒙特（Newmont）下挫
+- 事實：受聯準會理事 Waller 拋出 12 月可能升息 2 碼的鷹派言論及美元指數衝上 19 個月新高影響，Comex 黃金期貨於 11 月 18 日重挫逾 3%，跌破每盎司 3,800 美元關卡並下探 3,728 美元附近（14 個月低點），導致全球最大金礦商 Newmont（NEM）股價重挫約 6%～8%。（https://www.wsj.com/finance/commodities-futures/gold-treads-water-as-fed-dollar-keep-weighing-3f6439e8 ，台北時間 2026-11-19）
+- 本站漏掉的：高實質利率環境下，黃金失去抗通膨買盤支撐，金礦股因其營運槓桿效應跌幅大於現貨金價。
 
-### NEM｜金價跌破每盎司 3,800 美元關卡拖累紐蒙特下跌
-- 事實：隨著美元走強與美債殖利率攀升，現貨與期貨黃金價格跌破每盎司 3,800 美元關卡，導致全球最大金礦商 Newmont（NEM）股價隨貴金屬板塊同步下跌約 6.8%。（https://www.benzinga.com/trading-ideas/movers/26/11/63390511/why-is-newmont-stock-falling-wednesday-2 ，台北時間 2026-11-18 23:30）
-- 傳聞：無。
-- 本站漏掉的：市場對聯準會維持高利率或轉向緊縮的預期升溫，壓抑無息資產黃金與金礦股表現。
+### SCCO｜銅價單日重挫逾 5% 跌破 6 美元關卡拖累南方銅業
+- 事實：受到美元急升至 19 個月新高、聯準會鷹派衝擊與中國需求疑慮影響，美國銅期貨於 11 月 18 日暴跌逾 5%，跌破每磅 6.00 美元關卡至約 5.67–5.69 美元（七個月低點），純銅礦商 Southern Copper（SCCO）股價隨之下挫約 6%～7.5%。（本次搜尋未取得署名單篇文章之直接正規網址，相關時間與美元／利率背景見 WSJ 與 CNBC Waller 報導：https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html ，台北時間 2026-11-18）
+- 本站漏掉的：屬於整體基本金屬與 CTA 順勢部位在強美元下的同步平倉，而非南方銅業單一礦場事故。
 
-### UNH｜美國聯邦醫療保險擬推 CRUSH 反詐欺新規並追溯至 2018 年重創聯合健康
-- 事實：美國聯邦醫療服務中心（CMS）提出名為「CRUSH」的反詐欺與稽核新規，擬改革聯邦醫療保險優勢計畫（Medicare Advantage）的風險調整資料驗證（RADV）稽核機制，允許將稽核結果追溯推算至 2018 給付年度，預估全產業每年可能面臨約 90 億美元的款項追回，身為最大業者的 UnitedHealth（UNH）受衝擊最深。（https://www.investing.com/news/stock-market-news/why-is-unitedhealth-stock-sliding-today-93CH-5036505 ，台北時間 2026-11-18 22:40）
-- 傳聞：無。
-- 本站漏掉的：美國參議員華倫（Elizabeth Warren）等人同步呼籲分拆整合保險、藥局福利管理（PBM）與診所的大型醫療集團。
+### BHP｜銅價與鐵礦砂走弱拖累必和必拓下跌（無新進展）
+- 事實：受全球銅價跌至數月低點及中國鋼鐵與建築需求疲軟壓抑鐵礦砂價格影響，礦業巨頭 BHP Group（BHP）股價隨原物料板塊下跌約 4.8%～5.1%。（https://www.fool.com.au/2026/11/17/bhp-westpac-csl-shares-buy-sell-or-hold/ ，台北時間 2026-11-18 16:00）
 
-### PANW｜Palo Alto Networks 於盤後公布第一季財報前吸引資金回流反彈
-- 事實：Palo Alto Networks（PANW）排定於美東時間 2026 年 11 月 18 日盤後公布 2027 會計年度第一季財報，市場共識預期營收約 33.1 億美元（年增約 34%）、非 GAAP 每股盈餘約 0.97 美元，財報公布前買盤回流帶動股價反彈近 6%。（https://www.paloaltonetworks.com/company/press/2026/palo-alto-networks-to-announce-fiscal-first-quarter-2027-financial-results-on-wednesday--november-18--2026 ，台北時間 2026-11-18 21:00）
-- 傳聞：無。
-- 本站漏掉的：PANW 的平台化策略表現引發資安股在財報前夕連動走強。
+### CRWD｜CrowdStrike 隨資安軟體板塊強彈（無新進展，已移除前版不當引用並更新時間）
+- 事實：受美國官方與資安機構近期警示 AI 驅動網攻升溫，加上 PANW 財報公布前資金回流整個資安類股，CrowdStrike（CRWD）於 11 月 18 日隨板塊同步走強，單日上漲約 5.9%～7.9%。（https://m.cnyes.com/news/id/6666694 ，台北時間 2026-11-18 22:30）
 
-### CRWD｜CrowdStrike 隨資安軟體板塊跌深反彈
-- 事實：CrowdStrike（CRWD）在歷經前波科技股回檔後，受惠於資安龍頭財報前夕的板塊買盤回溫與技術面跌深反彈，股價單日上漲逾 5%。（https://m.cnyes.com/news/id/6666694 ，台北時間 2026-11-18 22:30）
-- 傳聞：無。
-- 本站漏掉的：無特定單一公司重大公告，主要與 PANW 財報前夕之資安類股整體回升連動。
+### FTNT｜Fortinet 隨資安板塊同步反彈（修正：移除前版 AI 生成來源）
+- 事實：Fortinet（FTNT）11 月 18 日未發布單一公司重大公告，主要跟隨資安類股（PANW、CRWD）整體機構輪動買盤而上漲約 4.4%～5.8%。（同日板塊背景見 PANW 與 CRWD 報導，FTNT 本身未見單篇獨立署名的非機器稿網址：找不到來源）
 
-### BHP｜銅價與鐵礦砂價格走弱拖累必和必拓股價
-- 事實：受到全球銅價跌至數月低點及中國鋼鐵與建築需求疲軟壓抑鐵礦砂價格影響，礦業巨頭 BHP Group（BHP）股價下跌 4.8%。（https://www.fool.com.au/2026/11/17/bhp-westpac-csl-shares-buy-sell-or-hold/ ，台北時間 2026-11-18 16:00）
-- 傳聞：無。
-- 本站漏掉的：與 SCCO、NEM 等礦業原物料股同受美元走強與大宗商品回檔衝擊。
+### VLO｜瓦萊羅能源受煉油裂解價差自秋季極端高點回落及原油下跌影響回檔（修正：移除前版 AI 生成來源）
+- 事實：獨立煉油商 Valero Energy（VLO）11 月 18 日下跌逾 5%，主因美伊戰爭初期推升的 3-2-1 煉油裂解價差已從秋季約每桶 75 美元的極端高檔回落至約 44 美元附近，加上當日原油價格下跌與成品油庫存回升，引發能源煉油板塊獲利了結。（未見獨立署名之單篇主流媒體正規網址，前版 tickeron 為 AI 生成文章已依規則刪除：找不到來源）
 
-### VLO｜煉油裂解價差自高檔回落引發瓦萊羅能源獲利了結賣壓
-- 事實：由於市場對峰值煉油利潤（裂解價差）能否持續產生疑慮，獨立煉油商 Valero Energy（VLO）在先前波段大漲後遭遇技術性拉回與獲利了結賣壓，股價下跌 4.7%。（https://tickeron.com/blogs/why-is-valero-energy-vlo-stock-down-4-86-today-22322/ ，台北時間 2026-11-18 23:00）
-- 傳聞：無。
-- 本站漏掉的：下游煉油類股（VLO、MPC）今日同步回檔。
+### MPC｜馬拉松石油受除息、裂解價差降溫與券商調整看法影響下跌（無新進展）
+- 事實：Marathon Petroleum（MPC）除隨煉油板塊回檔並於 11 月 18 日進行每股 1.10 美元除息交易外，瑞穗（Mizuho）等分析師近期亦因煉油利潤週期可能見頂而調低其價格看法，11 月 18 日收跌逾 5%。（https://www.marketbeat.com/instant-alerts/price-marathon-petroleum-nyse-mpc-shares-down-31-after-analyst-downgrade-2026-11-16/ ，台北時間 2026-11-17 02:00）
 
-### FTNT｜Fortinet 隨資安板塊同步走強反彈
-- 事實：Fortinet（FTNT）今日無發布重大公司公告，主要跟隨資安類股（PANW、CRWD）整體買盤回升與技術性反彈，股價上漲 4.4%。（https://www.forecastock.tw/article/cmoneyairesearcher-aeb4e97e-e369-11f1-bfdc-0560a43fb792 ，台北時間 2026-11-18 22:15）
-- 傳聞：無。
-- 本站漏掉的：企業網路安全需求在近期股價修正後吸引資金逢低承接。
+### SNDK｜機構出清持股與 2027 年 NAND 供過於求疑慮使 SanDisk 在股票分割前劇烈震盪（無新進展）
+- 事實：最新 13F 申報顯示 Stanley Druckenmiller 旗下 Duquesne Family Office 於第三季全數出清 34,900 股 SanDisk（SNDK，同時轉向建倉希捷 STX 與威騰 WDC），加上部分券商示警 2027 年 NAND 供過於求風險，導致 SNDK 在 11 月 19 日盤後配股、11 月 20 日「1 拆 8」分割後正式交易前夕股價震盪走跌。（https://www.heygotrade.com/en/news/sandisk-sndk-stock-news-november-18-2026/ ，台北時間 2026-11-18 21:30）
 
-### CVS｜CMS 聯邦醫療保險稽核新規與拆分醫療集團政治壓力拖累 CVS
-- 事實：CVS Health（CVS）旗下擁有 Aetna 保險與 Caremark 藥局福利管理業務，受到 CMS 提出「CRUSH」反詐欺稽核新規（可追溯至 2018 年）以及國會議員要求分拆大型垂直整合醫療集團的雙重監管壓力影響，股價下跌 4.0%。（https://www.investing.com/news/stock-market-news/why-is-cvs-health-stock-sliding-today-93CH-5036512 ，台北時間 2026-11-18 22:45）
-- 傳聞：無。
-- 本站漏掉的：市場仍在消化 CVS 先前宣布預計於 2028 年中將零售藥局與 Aetna、Caremark 分拆為獨立上市公司的重組成本與醫療利用率上升壓力。
+---
 
-### MPC｜馬拉松石油除息交易並受券商調低看法與煉油利差回落影響
-- 事實：Marathon Petroleum（MPC）除了隨下游煉油板塊回檔及於 11 月 18 日進行每股 1.10 美元除息交易外，瑞穗證券（Mizuho）等分析師近期亦因煉油獲利週期見頂疑慮調低對其價格看法。（https://www.marketbeat.com/instant-alerts/price-marathon-petroleum-nyse-mpc-shares-down-31-after-analyst-downgrade-2026-11-16/ ，台北時間 2026-11-17 02:00）
-- 傳聞：無。
-- 本站漏掉的：除息日股價自然調整加上獨立煉油股整體獲利了結賣壓。
+### TASK-B1｜Anthropic（ANT）已於 11/18 晚間完成定價：每股 83 美元高於預期區間，11/19 晚間掛牌
+- 事實：Anthropic 已於美東時間 11 月 18 日晚間正式將 IPO 價格定在**每股 83 美元**，高於原先 70 至 78 美元的招股區間，完全稀釋估值約 1.49 兆至 1.5 兆美元，總募資規模約 790 億至 810 億美元（含部分現有股東售股），訂於美東時間 11 月 19 日（台北時間 11/19 22:30）在納斯達克全球精選市場以代號 **ANT** 掛牌交易。（https://www.theguardian.com/technology/2026/nov/18/anthropic-sets-share-price-at-83-for-stock-market-debut-above-expected-range ，台北時間 2026-11-19；https://techcrunch.com/2026/11/18/anthropic-reportedly-prices-ipo-at-83-a-share-above-projected-range/ ，台北時間 2026-11-19；https://www.ft.com/content/2c9a3d07-2448-4b23-8c4d-012df73b09fe ，台北時間 2026-11-19）
+- 事實：依據 Anthropic 最新 S-1/A 修訂招股書與財經報導，其 260 億美元同步私募（Class N 無投票權股）投資方陣容維持不變，包含 Google（100 億美元）、NVIDIA（100 億美元）、AMD（25 億美元）、Microsoft（10 億美元）、Broadcom（10 億美元）、Micron（10 億美元）及 TSMC 夥伴（5 億美元）。（https://www.sec.gov/Archives/edgar/data/2130357/000162828026074338/anthropicpbc-sx1ax3.htm ，台北時間 2026-11-18；https://www.trefis.com/stock/nvda/articles/626071/anthropic-ipo-why-are-nvidia-google-and-others-buying-26-billion/2026-11-18 ，台北時間 2026-11-18）
 
-### SNDK｜機構出清持股與 2027 年 NAND 供過於求疑慮拖累 SanDisk
-- 事實：最新 13F 申報顯示億萬富豪 Stanley Druckenmiller 旗下的 Duquesne Family Office 已全數出清 SanDisk（SNDK）持股，加上美銀與廣發證券等機構示警 2027 年 NAND Flash 可能重現供過於求與現貨價降溫，引發股價在 11 月 20 日「1 拆 8」股票分割生效前夕震盪走跌 3.7%。（https://www.heygotrade.com/en/news/sandisk-sndk-stock-news-november-18-2026/ ，台北時間 2026-11-18 21:30）
-- 傳聞：無。
-- 本站漏掉的：SanDisk 即將於 2026 年 11 月 20 日開始以 1 拆 8 分割後價格交易，短線籌碼波動劇烈。
+### TASK-B2｜台積電「設 AI 客戶信用額度／預付款」仍屬供應鏈傳聞，11/17 論壇未對此發布正式回應
+- 事實：台積電於 2026 年 11 月 17 日在新竹舉辦 2026 供應鏈管理論壇（主題「新紀元大聯盟」），表揚 35 家優秀供應商並強調全球海外擴廠與工安優先，未對外發布任何針對 AI 客戶信用額度之正式聲明；截至 2026 年第二季底，台積電帳上客戶預收款（暫收款）約新台幣 2,342.3 億元。（https://247wallst.com/investing/2026/11/18/tsmc-is-reportedly-setting-credit-limits-for-ai-customers/ ，台北時間 2026-11-18 22:00）
+- 傳聞：台灣供應鏈（最早源自 11 月中旬《工商時報》等台灣財經媒體引述業界人士，並於 11/18 由 24/7 Wall St. 等外媒轉述）指出，台積電為防範 AI 新創、客製化 ASIC 業者與循環融資風險，依客戶資產負債表與虧損率設定「信用額度」，超額訂單須以現金支付或預付款鎖定先進製程產能，但台積電官方秉持不評論單一客戶原則未予證實。（https://247wallst.com/investing/2026/11/18/tsmc-is-reportedly-setting-credit-limits-for-ai-customers/ ，台北時間 2026-11-18 22:00）
 
-### AN-1｜最近 3 小時內無新增符合條件之分析師評等調整報告
-- 事實：經查證最近 3 小時內（台北時間 11 月 18 日 21:45 至 11 月 19 日 00:45），AI 供應鏈名單與美國市值前 20 大公司無新發布之單一分析師評等調整原始報導（找不到來源）。
+### TASK-B3｜輝達董事長於財報會明確排除黃仁勳回任、啟動 CEO 遴選並成立國安與出口管制委員會
+- 事實：繼 11 月 12 日提交 Form 8-K（黃仁勳因個人行為風波於 11/11 立即辭去 CEO 與董事職務、CFO Colette Kress 兼任代理執行長、Harvey C. Jones 出任獨立董事長）後，輝達於 11 月 17 日再次提交 Form 8-K（Item 2.02）公布 FY27 Q3 財報（營收 1,158 億美元、年增 103%）。（https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm ，台北時間 2026-11-12；https://nvidianews.nvidia.com/news/nvidia-announces-ceo-transition ，台北時間 2026-11-12）
+- 事實：在 11/17 盤後法說會上，董事長 Harvey Jones 公開聲明董事會「一致接受辭職且無意讓黃仁勳回任」，已委託獵才機構 Heidrick & Struggles 尋找常任執行長，並宣布董事會新設「國家安全與出口管制監督委員會（National Security and Export Control Oversight Committee）」。財測方面，下季營收預估約 1,300 億美元並完全排除中國資料中心運算收入，同時將 FY28 全年營收年增率期望由約 70% 上調至約 75%。（https://www.cnbc.com/2026/11/18/nvidia-stock-earnings.html ，台北時間 2026-11-19）
 
-### POL-1｜美國商務部 BIS 發布暫行最終規則防堵透過遠端存取取得美國超級智慧晶片算力
-- 事實：美國商務部工業安全局（BIS）發布暫行最終規則（Interim Final Rule），針對透過遠端雲端基礎設施與第三國資料中心存取美國先進「超級智慧（Super Intelligence）」AI 晶片與伺服器的漏洞進行管制，並同步關閉外資在中國晶圓廠的「經認證終端用戶（VEU）」豁免漏洞，要求外資在中國的晶圓廠進口設備與技術須逐案申請許可。（https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ，台北時間 2026-11-17 03:00）
+### TASK-B4｜新雲端融資條件持續惡化：CoreWeave 債息 14%–16%，同業股價較高點回檔 63%–79%
+- 事實：CoreWeave（CRWV）因背負約 469 億美元債務本金與高資本支出，2032 年到期無擔保債券殖利率維持在 14% 至 16% 的高壓水準，迫使公司宣布 2027 年底前不再發行無擔保債，改靠約 90 億美元客戶預付款與利率約 7%～7.5% 的 GPU／合約擔保融資。（https://techcrunch.com/2026/11/11/coreweave-turns-to-customer-prepayments-shorter-contracts-to-fund-ai-growth/ ，台北時間 2026-11-12）
+- 事實：雖然 Nebius（NBIS）透過花旗等機構融資及要求客戶在新合約中提供高額（甚至涵蓋逾 100% 前期成本）預付款、IREN 則採取專案融資與大型客戶預付訂金模式，試圖與無擔保舉債切割，但在輝達代理執行長於法說會強調對新雲端夥伴的財務支持將「嚴守紀律且具選擇性」後，11 月 18 日 CRWV 仍收跌 4.13%、IREN 跌 3.61%，新雲端族群較高點普遍回檔達 63% 至 79%。（部分同業合約細節與跌幅見搜尋彙整報導，無單一獨立正規媒體長文直連網址，背景延續見：https://www.trefis.com/stock/nvda/articles/626071/anthropic-ipo-why-are-nvidia-google-and-others-buying-26-billion/2026-11-18 ，台北時間 2026-11-18）
 
-### TASK-B1｜Anthropic（ANT）於美東 11/18 晚間完成 IPO 定價並將於 11/19 掛牌，Google 與 NVIDIA 等 260 億美元同步私募陣容未變
-- 事實：Anthropic 排定於美東時間 11 月 18 日晚間完成 IPO 最終定價（公開招股區間為每股 70 至 78 美元，完全稀釋估值約 1.4 兆美元），並於 11 月 19 日在納斯達克掛牌交易（代號 ANT）；其高達 260 億美元的同步私募（Concurrent Private Placement）認購無投票權 Class N 股陣容維持不變，包含 Google（100 億美元）、NVIDIA（100 億美元）、AMD（25 億美元）、Microsoft（10 億美元）、Broadcom（10 億美元）、Micron（10 億美元）及台積電夥伴（5 億美元）。（https://www.trefis.com/stock/nvda/articles/626071/anthropic-ipo-why-are-nvidia-google-and-others-buying-26-billion/2026-11-18 ，台北時間 2026-11-18 18:00）
+### TASK-B5｜Dell（11/24）與 HPE（11/23）財報前三大焦點：記憶體漲價侵蝕毛利率、積壓訂單轉現能力與客戶集中度（補上最新共識與選擇權預期波動）
+- 事實：HPE 將於美東 11 月 23 日盤後公布財報，市場共識預期營收 143.9 億～145.5 億美元、調整後 EPS 1.27～1.29 美元，選擇權市場隱含單次波動約 ±9.7%；Dell 將於美東 11 月 24 日盤後公布財報，市場共識預期營收約 492 億美元、調整後 EPS 6.56～6.63 美元，選擇權隱含波動約 ±10.0%～±16.4%。市場最關注 DRAM/NAND 漲價是否壓縮 AI 伺服器毛利率、Dell 約 950 億美元積壓訂單的自由現金流轉換率，以及對新雲端與少數雲端買家的集中度風險。（https://247wallst.com/investing/2026/11/09/dell-and-hpe-were-ai-winners-until-the-selloff-can-earnings-put-them-back-on-track/ ，台北時間 2026-11-09 22:00）
 
-### TASK-B2｜台積電針對 AI 客戶設信用額度與要求預付款屬產業傳聞，台積電並未發布正式公開回應
-- 事實：截至 2026 年第二季底，台積電財報帳上之客戶暫收款（客戶預付款）已達新台幣約 2,342.3 億元，顯示預收款機制確實存在於先進製程產能保障中。（https://247wallst.com/investing/2026/11/18/tsmc-is-reportedly-setting-credit-limits-for-ai-customers/ ，台北時間 2026-11-18 22:00）
-- 傳聞：市場與供應鏈消息指出，台積電為控管部分 AI 新創、客製化 ASIC 晶片商與新雲端公司（Neoclouds）的財務與循環融資風險，針對每位客戶依資產負債表與虧損率設定「信用額度（Credit Limits）」，超額部分須以現金支付或要求預付款；此消息最早源自 11 月中旬台灣半導體供應鏈傳聞並由外媒（如 24/7 Wall St. 等）於 11 月 18 日引述報導，台積電官方則秉持不評論單一客戶與信用條件之原則，未發布正式聲明。（https://247wallst.com/investing/2026/11/18/tsmc-is-reportedly-setting-credit-limits-for-ai-customers/ ，台北時間 2026-11-18 22:00）
+---
 
-### TASK-B3｜黃仁勳已於 11/11 辭任 NVIDIA 執行長與董事，由財務長 Colette Kress 兼任代理執行長並完成 Q3 財報簽署
-- 事實：根據 NVIDIA 於 2026 年 11 月 12 日向 SEC 提交的 Form 8-K（Item 5.02）重大事項申報與官方新聞稿，黃仁勳（Jensen Huang）已於 2026 年 11 月 11 日正式辭去總裁、執行長及董事職務（未說明具體私人原因）；董事會任命資深財務長 Colette Kress 兼任代理執行長（Interim CEO），並任命自 1993 年起擔任董事的 Harvey C. Jones 為公司史上首位獨立董事長。Colette Kress 已於 11 月 17 日以代理執行長暨財務長身分簽署並發布 2027 會計年度第三季財報（單季營收 1,158 億美元，年增 103%）。（https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm ，台北時間 2026-11-12 06:00；https://nvidianews.nvidia.com/news/nvidia-announces-ceo-transition ，台北時間 2026-11-12 05:30）
+### AN-1｜最近 3 小時內無新增分析師調整評等或看法的原始報導
+- 事實：經檢索最近 3 小時（台北時間 2026-11-19 05:25 至 08:25，即美東 11/18 16:25 至 19:25 盤後時段），AI 供應鏈名單與美國市值前 20 大公司並無新發布的券商分析師評等調整或重新開啟追蹤報告（找不到來源）。（備註背景：本月初黃仁勳離任後已有 William Blair 調至 Market Perform、Evercore 調至 In Line、KeyBanc 從 Overweight 降至 Sector Weight、Melius 與 Summit Insights 降至 Hold；Barclays 近期亦曾將 DELL 降至 Neutral、HPE 降至 Hold 等級。）
 
-### TASK-B4｜CoreWeave 無擔保債券殖利率飆破 14%～16%，迫使新雲端公司全面轉向客戶預付款與合約擔保貸款
-- 事實：由於高資本支出與利息負擔沉重，CoreWeave 的 2032 年到期無擔保公司債殖利率在 11 月初飆升至 14% 到 16% 以上的壓力水準（帳上債務本金約 469 億美元）；執行長 Michael Intrator 與財務長 Nitin Agrawal 在第三季法說會上正式宣布，2027 年底前不再發行高殖利率無擔保債券，改依賴未來三個月約 90 億美元的客戶預付款，以及利率約 7%～7.5% 的 GPU 與合約資產擔保融資。Nebius 與 IREN 亦面臨相同的高利率環境，紛紛倚賴微軟等巨頭合約預付款或專案資產隔離貸款來維持擴張。（https://techcrunch.com/2026/11/11/coreweave-turns-to-customer-prepayments-shorter-contracts-to-fund-ai-growth/ ，台北時間 2026-11-12 03:00）
+---
 
-### TASK-B5｜Dell 與 HPE 財報前夕市場最關注記憶體漲價是否侵蝕 AI 伺服器毛利率及自由現金流轉換率
-- 事實：在 HPE（預計 11 月 23 日）與 Dell（預計 11 月 24 日前後）公布財報前，華爾街（包含巴克萊等券商報告）最關注三大焦點：第一，近期 DRAM 與 NAND 記憶體價格大漲推升了伺服器平均售價（ASP）與帳面營收，但是否能順利轉嫁而不壓縮實際毛利率；第二，Dell 高達 950 億美元的積壓訂單能否轉化為實質自由現金流；第三，客戶過度集中於少數雲端與 Neocloud 買家的風險。（https://247wallst.com/investing/2026/11/09/dell-and-hpe-were-ai-winners-until-the-selloff-can-earnings-put-them-back-on-track/ ，台北時間 2026-11-09 22:00）
+### POL-1｜美國商務部 BIS 發布「超級智慧（Super Intelligence）」遠端算力管制新規，今日（11/19）正式刊登聯邦公報
+- 事實：美國商務部工業安全局（BIS）於 11 月 16 日公布由財政部與國安會主導的暫行最終規則（Interim Final Rule，聯邦公報編號 `2026-23529` 排定於美東 11 月 19 日正式刊登），增訂 § 744.24 遠端存取終端用途管制：全球任何資料中心若向總部或最終母公司位於 D:5 國家群組（含中國、俄羅斯）或澳門的企業提供累計超過 **1,200 萬總處理效能（TPP）**（約相當 750 顆 H100 或 330 顆 B200）的算力，出貨該先進晶片或伺服器即須申請美國出口許可，並涵蓋分散「互聯資料中心（linked data centers）」。同時新規將印尼、馬來西亞、新加坡、泰國、巴西列為「不可接受之轉運風險國」並增設許可要求，並正式廢止拜登政府時期的 AI 擴散規則（AI Diffusion Rule）。（https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ，台北時間 2026-11-17 03:00）
+
+### POL-2｜CMS 發布 CRUSH 醫療反詐欺提案規則；USTR 與白宮近 24 小時無新關稅或制裁公告
+- 事實：CMS 於 11 月 16 日發布 CMS-6098-P「CRUSH」提案（意見徵詢至 2027/1/19，定案後 60 日生效），直接衝擊 Medicare Advantage 業者（UNH、HUM、CVS）；另外經檢索 `ustr.gov`、`whitehouse.gov`、`treasury.gov`，最近 24 小時（11/18）美國貿易代表署、白宮與財政部並無針對中／台／半導體或大規模關稅的新行政命令或制裁公告。（https://www.cms.gov/newsroom/press-releases/cms-crush-proposed-rule-aims-reap-nearly-90-billion-taxpayers-savings-targeting-fraud-across ，台北時間 2026-11-17）
+
+---
+
+### TW-1｜台積電 11/17 供應鏈論壇聚焦全球擴廠與安全治理；11/18 外資單日大賣台股 765.63 億、連五日砍台積電
+- 事實：台積電於 11 月 17 日在新竹舉辦 2026 供應鏈管理論壇（「新紀元大聯盟」），表揚 35 家供應商並強調海外擴廠在地化與工安優先於進度 milestones，另媒體報導其與精材簽署逾 7 年 CoWoS 委外 oS 模組長約。然而在資金面上，11 月 18 日台股創下高低震盪 1,677 點後小漲 102.80 點收 40,194.91 點，三大法人合計賣超 632.07 億元，其中**外資及陸資單日大舉賣超 765.63 億元**，並連續第 5 個交易日賣超台積電（當日賣超 15,453 張、約 336.1 億元），拖累新台幣盤中貶破 33 元大關、收在 32.947 元（19 個月新低）。（未取得中央社 11/18 單篇正規新聞直連網址，僅確認來源屬中央社與工商時報 11/18 報導：找不到可直連單篇文章網址）
+
+### TW-2｜台灣 AI 伺服器代工訂單仍強，但傳聞台積電對 AI 新創／ASIC 設信用額度（傳聞）
+- 傳聞：11 月中旬《工商時報》等台灣財經媒體引述供應鏈人士指出，台積電因擔憂 AI 循環融資與客戶流動性，針對部分 AI 晶片／ASIC 設計公司設下依財務體質評估的信用額度並要求超額現金預付，台積電未公開回應（最早出處為 11 月中旬台灣供應鏈報導，外媒轉述見：https://247wallst.com/investing/2026/11/18/tsmc-is-reportedly-setting-credit-limits-for-ai-customers/ ，台北時間 2026-11-18）。
+- 推理／報導摘要：搜尋《工商時報》、《經濟日報》11 月中旬彙整指出，緯穎（6669）受惠 AWS 等 CSP 自研 ASIC 專案放量、廣達維持 Q4 AI 伺服器雙位數季成長預期、鴻海前 11 月合併營收仍穩居台股第一（上述僅在搜尋彙整見到摘要，未取得單篇正規直連網址，不列為已核實網址）。
+
+### TW-3｜日韓半導體設備與記憶體鏈隨輝達財報震盪後反彈，HBM 擴產支撐東京威力科創與愛德萬訂單
+- 事實：受美股與 AI 風險情緒影響，日經 225 指數與韓國 KOSPI 於 11 月 16–17 日一度隨 Advantest、Tokyo Electron、三星電子與 SK 海力士重挫（日經 11/16 單日大跌近 1,500 點），隨後在輝達公布 FY27 Q3 財報後於 11 月 18 日出現反彈；三星與 SK 海力士針對 AI HBM 與先進 DRAM 的資本支出，持續成為東京威力科創與愛德萬的核心訂單來源（本次搜尋未取得日經或韓國經濟新聞單篇直連網址，僅作產業動態參考）。
+
+---
+
+### EARN-WMT｜沃爾瑪（Walmart, WMT）Q3 FY27 財報（今晚美東盤前）
+- 事實：公布時間為美東 2026-11-19 盤前（台北時間 2026-11-19 約 20:00）；市場共識（MarketBeat／TradingView 等彙整）預期營收約 1,872.7 億～1,873.8 億美元（年增約 5%、不含燃料同店成長約 2.9%）、調整後 EPS 約 0.64 美元；選擇權市場預估財報後波動約 ±5.8%～±6.4%（單篇可檢視網址：未取得單篇完整新聞稿或路透直連網址，僅見工具站摘要）。
+
+### EARN-INTU｜Intuit（INTU）Q1 FY27 財報（明晨美東盤後）
+- 事實：公布時間為美東 2026-11-19 盤後（台北時間 2026-11-20 約 05:00）；市場共識（Zacks／MarketBeat 彙整）預期營收約 43.0 億美元、調整後 EPS 約 2.46～2.47 美元；選擇權市場預估週選擇權波動約 ±8.9%～±10.5%（單篇直連網址：找不到來源）。
+
+### EARN-ROST｜Ross Stores（ROST）Q3 財報（明晨美東盤後）
+- 事實：公布時間為美東 2026-11-19 盤後（台北時間 2026-11-20 約 05:00）；市場共識預期營收約 62.0 億～62.4 億美元（年增約 10.7%）、EPS 約 1.82～1.86 美元（單篇直連網址：找不到來源）。
+
+### EARN-GAP｜Gap Inc.（GAP）Q3 財報（明晨美東盤後）
+- 事實：公布時間為美東 2026-11-19 盤後（台北時間 2026-11-20 約 05:00）；市場共識預期營收約 40.1 億～40.2 億美元（年增約 2%）、EPS 約 0.73～0.78 美元（單篇直連網址：找不到來源）。
+
+### EARN-HPE｜慧與科技（HPE）Q4 FY26 財報（11/23 美東盤後）
+- 事實：公布時間為美東 2026-11-23 盤後（台北時間 2026-11-24 約 05:00）；市場共識預期營收約 143.9 億～145.5 億美元（公司原財測區間 139 億～148 億美元）、EPS 約 1.27～1.29 美元（公司財測 1.20～1.30 美元）；選擇權市場預估波動約 ±9.7%（背景報導見：https://247wallst.com/investing/2026/11/09/dell-and-hpe-were-ai-winners-until-the-selloff-can-earnings-put-them-back-on-track/ ，台北時間 2026-11-09）。
+
+### EARN-ADI｜亞德諾半導體（Analog Devices, ADI）Q4 FY26 財報（11/24 美東盤前）
+- 事實：公布時間為美東 2026-11-24 盤前（台北時間 2026-11-24 約 20:00）；市場共識預期營收約 43.2 億美元、EPS 約 3.88～3.89 美元（公司原財測區間 3.71～4.01 美元）（單篇直連網址：找不到來源）。
+
+### EARN-DELL｜戴爾科技（Dell Technologies, DELL）Q3 FY27 財報（11/24 美東盤後）
+- 事實：公布時間為美東 2026-11-24 盤後（台北時間 2026-11-25 約 05:00）；市場共識預期營收約 492.0 億美元（公司原財測約 490 億美元）、調整後 EPS 約 6.56～6.63 美元（公司財測約 6.50 美元）；選擇權市場預估波動約 ±10.0%～±16.4%（背景報導見：https://247wallst.com/investing/2026/11/09/dell-and-hpe-were-ai-winners-until-the-selloff-can-earnings-put-them-back-on-track/ ，台北時間 2026-11-09）。
+
+### EARN-HPQ｜惠普（HP Inc., HPQ）Q4 FY26 財報（11/24 美東盤後）
+- 事實：公布時間為美東 2026-11-24 盤後（台北時間 2026-11-25 約 05:00）；市場共識預期營收約 154.3 億美元、EPS 約 0.75 美元（公司原財測區間 0.69～0.79 美元）；選擇權市場預估波動約 ±8.2%～±10.5%（單篇直連網址：找不到來源）。
+
+### EARN-ADSK｜Autodesk（ADSK）Q3 FY27 財報（11/24 美東盤後）
+- 事實：公布時間為美東 2026-11-24 盤後（台北時間 2026-11-25 約 05:00）；市場共識預期營收約 21.3 億美元、EPS 約 3.07 美元（公司原財測區間 3.04～3.09 美元）（單篇直連網址：找不到來源）。
+
+### EARN-WDAY｜Workday（WDAY）Q3 FY27 財報（11/24 美東盤後）
+- 事實：公布時間為美東 2026-11-24 盤後（台北時間 2026-11-25 約 05:00）；市場共識預期營收約 26.9 億美元、EPS 約 2.75 美元（單篇直連網址：找不到來源）。
+
+### EARN-DE｜強鹿（Deere & Company, DE）Q4 FY26 財報（11/25 美東盤前）
+- 事實：公布時間為美東 2026-11-25 盤前（台北時間 2026-11-25 約 20:00）；市場共識預期營收約 104.0 億美元、EPS 約 4.03 美元（單篇直連網址：找不到來源）。
+
+---
+
+### FED-1｜FOMC 10 月會議紀錄：10 比 2 按兵不動屬「驚險拉鋸」，幾乎所有官員預期未來數月需再升息（偏升息）
+- 事實：聯準會於台北時間 11 月 19 日 03:00（美東 11/18 14:00）公布 10 月 27–28 日 FOMC 會議紀錄。雖然委員會以 10 比 2 維持聯邦基金利率區間於 3.75%～4.00%（理事 Lisa Cook 與克里夫蘭聯準銀行總裁 Beth Hammack 異議主張立刻升息 1 碼），但多位投下維持不變的官員坦言決定「非常接近（close call）」，幾乎所有與會者認為未來數月需要進一步升息才能讓通膨回到 2%；少數與會者指出若通膨惡化，12 月可能需要升息超過 1 碼（>25 bp）；紀錄同時點名警告 AI 基礎建設透過不透明債務與表外租賃承諾擴張的金融穩定風險。（https://www.federalreserve.gov/monetarypolicy/fomcminutes20261028.htm ，台北時間 2026-11-19 03:00；https://www.cnbc.com/2026/11/18/fed-minutes-october-2026.html ，台北時間 2026-11-19）
+
+### FED-2｜聯準會理事 Christopher Waller：12 月應考慮一次升息 2 碼（50 bp）來震懾通膨預期（強烈偏升息）
+- 事實：理事 Waller 於 11 月 18 日接受 CNBC 專訪時表示，核心物價連續三個月月增 0.3%（年化約 3.5%）、通膨正在朝錯誤方向擴散，聯準會可能需要「震懾市場（shock people）」以避免民眾將 3% 通膨常態化；他主張 12 月 8–9 日會議應考慮升息 2 碼（50 個基點），除非委員會願意在 12 月明確給出「明年 1 月會繼續升息」的前瞻指引，他才願意支持升息 1 碼。（https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html ，台北時間 2026-11-18）
+
+### FED-3｜聯準會理事 Michael S. Barr：通膨仍過高，若經濟依預期演進將適合進一步升息（偏升息）
+- 事實：理事 Barr 於 11 月 18 日在紐約聯準銀行「Making Missing Markets」會議發表演說（講題為美國社區發展投資），並在總體經濟評論中指出美國失業率低、消費穩健，但通膨水準仍然過高，若經濟按預期發展，進一步調升政策利率將是適當之舉。（https://www.federalreserve.gov/newsevents/speech/barr20261118a.htm ，台北時間 2026-11-18）
+
+### FED-4｜CME FedWatch 最新定價：12 月 9 日升息 1 碼機率升至 95% 以上，按兵不動機率歸零
+- 事實：截至 11 月 18 日美股收盤前後，根據聯邦基金利率期貨計算的 CME FedWatch 顯示，市場預期 12 月 9 日 FOMC 升息 1 碼（至 4.00%–4.25%）的機率已升至約 **95.0%～95.7%**，一次升息 2 碼（至 4.25%–4.50%）機率約 **4.3%～5.0%**，維持利率不變的機率為 **0%**（對照前日為 90%／10%；搜尋見 TradingView 與多家外媒引述 CME FedWatch 數據，無單篇路透／CNBC 直連網址）。
+
+---
+
+### CALL-NVDA｜輝達（NVDA）Q3 FY27 法說會：代理執行長強調夥伴 100% 力挺、上調 FY28 成長至 75%，董事長明言不回聘黃仁勳
+- 事實：代理執行長 Colette Kress 在 11 月 17 日法說會安撫市場對領導層劇變的擔憂，同時指出新世代 Vera Rubin 平台量產首季即貢獻近 200 億美元營收、表現超前；她並重申對新雲端夥伴的融資支持將採取「嚴守紀律且具選擇性」態度。
+- 原話：`"Our momentum is real... Customers, suppliers, and partners are 100% behind us. We’ve got this."`（https://www.cnbc.com/2026/11/18/nvidia-stock-earnings.html ，台北時間 2026-11-18）
+
+### CALL-PANW｜Palo Alto Networks（PANW）Q1 FY27 法說會：AI 威脅驅動平台化訂單創紀錄、跨入企業安全 AI 模型算力整合
+- 事實：董事長兼執行長 Nikesh Arora 於 11 月 18 日盤後法說會表示，客戶為應對史無前例的 AI 網路威脅，推動 NGS ARR 年增 66% 至 97.3 億美元，並宣布以 45 億美元股票收購 Applied Compute；面對分析師質疑資安廠缺乏 AI 算力經驗時，他直言與新雲端合作建置電力與算力不難掌握。
+- 原話：`"We had a strong start to the year with a record Q1 and delivered one of our highest NGS ARR beats ever as our customers turn to us to protect them against an unprecedented threat environment."`（https://www.paloaltonetworks.com/company/press/2026/palo-alto-networks-to-announce-fiscal-first-quarter-2027-financial-results-on-wednesday--november-18--2026 ，台北時間 2026-11-19）
+
+### CALL-TJX｜TJX Companies（TJX）Q3 FY27 法說會：Marmaxx 營運改善、看好 12 月假期消費加速
+- 事實：執行長 Ernie Herrman 於 11 月 18 日法說會表示，HomeGoods 與國際部門持續強勁，主力品牌 Marmaxx 的執行問題將於年底前大致解決，雖受美國與加拿大暖冬略為拖累部分秋冬服飾需求，但預期第四季假期銷售動能將會加速。
+- 原話：`"Consolidated comparable sales grew 4%, driven by continued strength at HomeGoods, TJX Canada, and TJX International, and we saw improved sales at Marmaxx. Importantly, we expect further improvement at Marmaxx in the fourth quarter."`（https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2027-earnings-press-release.pdf ，台北時間 2026-11-18）
+
+### CALL-TGT｜Target（TGT）Q3 2026 法說會：來客數年增 5% 並受惠關稅退稅推升獲利與全年財測
+- 事實：Target（TGT）於 11 月 18 日盤前公布 Q3 淨銷售年增 7.1% 至 270.7 億美元、同店銷售成長 5.6%（同店來客數成長 5.0%），GAAP 與調整後 EPS 均達 2.65 美元（含稅前 3.01 億美元／每股 0.50 美元關稅退稅利益，扣除後調整後 EPS 仍年增約 21%），執行長 Michael Fiddelke 上調全年營收與 EPS 指引並對年底購物季表現樂觀，激勵股價大漲逾 6%。
+- 原話：`"Our third-quarter results reflect continued progress against our strategic priorities, centered on serving busy families with our signature blend of style, design and value... As we head into the all-important holiday season, we're focused on offering the best of Target to our guests."`（本次搜尋見 Target 官方發布摘要與財報法說實況引述，未見 `target.com` 單篇長網址直接輸出：暫不列未驗證網址）
+
+---
+
+### NEXT-1｜事件：Anthropic 以每股 83 美元完成約 800 億美元級別 IPO 定價並將於 11/19 掛牌
+- 推理：
+  - 最先受影響的資產：那斯達克科技股流動性、被動指數成分權重預期（如 QQQ 快速納入討論）、以及共同參與 260 億美元私募的科技巨頭股價情緒。
+  - 傳導路徑與受益／受壓公司：
+    - 美股：**Google (GOOGL)、Amazon (AMZN)、NVIDIA (NVDA)、Broadcom (AVGO)、Micron (MU)** —— 一方面直接持有或透過 260 億美元同步私募與長期算力／TPU／GPU 採購綁定（Anthropic 揭露至 2045 年約 9,000 億美元算力承諾）；另一方面，若機構為認購 ANT 並應對指數納入而在二級市場減持既有 AI 權值股，短線會形成「籌碼排擠」。
+    - 台股：**台積電 (2330)、世芯-KY (3661)、創意 (3443)、廣達 (2382)、緯穎 (6669)** —— 透過 AWS Trainium／Google TPU 與輝達伺服器等客戶鏈條間接取得 Anthropic 長期運算擴建訂單。
+  - 大家還沒注意到的間接受害者：體質較弱的**二線新雲端租賃商（CoreWeave CRWV、IREN）與中小型 AI 軟體股**——資本市場把一年將近 800 億美元的稀缺股權資金集中供給頭部模型廠，反而更加壓縮二線公司再融資或募資的空間。
+  - 佐證來源：https://www.theguardian.com/technology/2026/nov/18/anthropic-sets-share-price-at-83-for-stock-market-debut-above-expected-range （台北時間 2026-11-19）
+
+### NEXT-2｜事件：聯準會 10 月紀要偏鷹＋Waller 喊出 12 月升息 2 碼選項，美元衝上 19 個月新高
+- 推理：
+  - 最先受影響的資產：2 年期美債殖利率、美元指數（DXY）、日圓／新台幣等亞幣匯率，以及黃金與銅期貨。
+  - 傳導路徑與受益／受壓公司：
+    - 美股：**Newmont (NEM)、Southern Copper (SCCO)、Freeport-McMoRan (FCX)** 因美元走強與 CTA 商品平倉承壓；**大型銀行股 (JPM、BAC)** 雖受惠高利率利差，但面臨高收益與商業／消費者信貸違約風險升高；**高槓桿高成長軟體／算力股 (CRWV、ORCL)** 折現率與發債成本上升。
+    - 台股：**台積電 (2330)** 與大型電子權值股首當其衝承受外資匯出提款壓力（11/18 外資賣超台股 765.63 億、台幣破 33）；相反地，具高比重美元資產與外幣利差收益的**大型壽險金控（國泰金 2882、富邦金 2881）**及高美元營收占比的**出口傳產／工具機／製鞋業（豐泰 9910、寶成 9904）**反而在貶值階段獲得匯兌評價緩衝。
+  - 大家還沒注意到的間接受害者：**非投資等級債與高比例依賴進口原料的台灣內需食品／能源／航空業（長榮航 2618、華航 2610）**——在油價仍高於 80 美元且新台幣貶破 33 元的雙重夾擊下，燃油與美元租機成本實質上升。
+  - 佐證來源：https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html （台北時間 2026-11-18）
+
+### NEXT-3｜事件：BIS 發布「超級智慧」遠端算力管制（1,200 萬 TPP 門檻＋東南亞／巴西轉運國納入許可）
+- 推理：
+  - 最先受影響的資產：在新加坡、馬來西亞、泰國、印尼與巴西建置或計畫擴建的資料中心專案估值，以及依賴第三國雲端租算力的中國 AI 訓練需求預期。
+  - 傳導路徑與受益／受壓公司：
+    - 美股：**NVIDIA (NVDA)、AMD (AMD)、Super Micro (SMCI)、Dell (DELL)、Equinix (EQIX)** —— 出口審查與「推定知情（presumption of knowledge）」客戶盡職調查責任大幅提高，拉長東南亞與拉美資料中心交貨與驗收週期；但因新規明確豁免「美國總部企業」並同時廢除繁複的舊版 AI 擴散國別分級，反而減輕了歐日韓盟友與美國雲端巨頭（MSFT、GOOGL、AMZN）在歐洲／日本設廠的合規阻礙。
+    - 台股：**緯穎 (6669)、鴻海 (2317)、廣達 (2382)、技嘉 (2376)、台達電 (2308)** —— 原先在馬來西亞、泰國積極擴建 AI 伺服器組裝與電源／液冷基地以供應東南亞資料中心聚落的廠商，出貨至非美系客戶時將面臨更長的海關與最終用戶審核。
+  - 大家還沒注意到的間接影響：**亞太非轉運風險國（日本、台灣、南韓本土與澳洲）的合規資料中心運營商與電力基建**可能承接原本流向星馬泰的跨國模型訓練需求。
+  - 佐證來源：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology （台北時間 2026-11-17）
+
+---
+
+### RED-1｜針對 `dots_read.json`「黃仁勳離任是因晶片流入中國遭調查而緊急切割」的假設
+- 最強反方證據：輝達在 11 月 17 日向 SEC 提交的 Q3 財報 Form 8-K 與同日財報法說會中，並未揭露任何美國司法部、BIS 或 SEC 的執法調查；董事長 Harvey Jones 公開表明是因「個人行為違規（personal conduct violation）」接受辭呈，且 Q3 財報與 FY28 成長展望完全未受營運或客戶抽單影響（Q3 營收年增 103%、Q4 指引 1,300 億美元）。（https://www.cnbc.com/2026/11/18/nvidia-stock-earnings.html ，台北時間 2026-11-19）
+- 另一種同樣說得通的解釋：黃仁勳離職確實就是單純的個人醜聞或內部治理違規觸發董事會零容忍條款；而 BIS 遠端存取規則在產業界與國會早已醞釀數月，只是在政府換屆或期中政策節點上剛好於 11 月中旬同時落地。至於輝達在財測排除中國資料中心收入與成立國安出口委員會，更像是新任臨時領導團隊在失去創辦人光環後，主動向華府與機構投資人示好、降低監管尾巴風險的「預防性治理措施」，而非已被立案查辦的結果。
+- 判斷分曉的資料與日期：輝達 FY27 Q3 **Form 10-Q 季報（Legal Proceedings 與期後事項章節，預計 11 月下旬至 12 月初提交 SEC）**，以及聯邦公報 11 月 19 日正式刊登的 BIS 規則正文是否出現特定企業點名。
+- 機率估計：Claude 在假設中隱含了「高度相關」的敘事串連，我估計「黃仁勳離職確實直接由中國晶片走私／政府調查引爆」的機率僅約 **30%–35%**，「純屬個人行為治理危機＋新團隊順勢強化出口合規」的機率約 **65%–70%**。
+
+### RED-2｜針對 `forecast.json`「未來一個月偏鷹但沒出事（53%）」與「高收益債利差維持 4% 以下（80%）」
+- 最強反方證據：11 月 18 日聯準會理事 Waller 公開討論「12 月升息 2 碼」的選項，同時歐洲央行同日《金融穩定評估》與 FOMC 10 月紀要兩份央行官方文件都在同一天特別點名「AI 不透明債務與私募信貸／非銀行機構槓桿可能引發股債雙殺與信用傳染」；CoreWeave 無擔保債已達 14%–16% 壓力區，而 CME FedWatch 的 0% 按兵不動機率意味著利率市場已沒有寬鬆緩衝。（https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html ，台北時間 2026-11-18；https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ，台北時間 2026-11-18）
+- 另一種同樣說得通的解釋：目前高收益債整體利差（3.43%）看似平靜，是因為大型指數成分債中能源（受高油價支撐）與傳統大型企業占比較高，而真正的壓力集中在「未納入傳統高收益指數的表外算力租約與私募信貸／BDC」。一旦這塊暗處資金因 12 月升息預期升溫或 11/25 PCE 偏熱而被迫抽資，高收益債利差會用「跳躍式」而非線性方式衝破 4%。
+- 判斷分曉的資料與日期：**2026-11-25 21:30 台北（10 月 PCE 物價）**、**2026-12-04（11 月非農與失業率）**，以及 11/19 Anthropic IPO 後第一週二級市場與 CRWV 債券殖利率走勢。
+- 機率估計：Claude 給「偏鷹但沒出事」53%、「風險升級」32%，並給「高收益債利差 <4%」高達 80%。考慮 Waller 的 50 bp 威脅與兩大央行同時警告 AI 債務，我認為「風險升級」機率應上調至 **40%**、「偏鷹沒出事」降至 **45%**、「壓力緩和」維持 **15%**；高收益債利差維持 4% 以下的機率我只給 **65%**（比 Claude 低 15 個百分點）。
+
+### RED-3｜針對 `forecast.json`「WTI 原油會在 80 到 100 美元之間（70%）」
+- 最強反方證據：儘管美軍於 11 月 17 日空襲伊朗格什姆島且 ADNOC 油輪在荷莫茲海峽遇襲，油價在 11 月 18 日反而下跌（WTI 跌至約 82 美元、接近下緣）；且近期國際能源署（IEA）與高盛報告均指出，中東透過陸上管線繞道與暗船出口使全球原油供需其實已轉為**供給過剩**，加上美國成品油庫存回升，地緣政治已很難把油價長期鎖在 85–100 美元。（https://www.cbsnews.com/news/u-s-launches-limited-strikes-on-iranian-targets-in-strait-of-hormuz-officials-say/ ，台北時間 2026-11-18）
+- 另一種同樣說得通的解釋：美伊衝突進入「低強度消耗常態化」，對供給的實質破壞已被航運繞道與其他產油國增產抵銷；反倒是聯準會維持高利率＋強勢美元＋中國需求疲軟正在壓抑全球工業與運輸用油需求，使 WTI 更有可能向下跌破 80 美元，而不是往上衝破 100 美元。
+- 判斷分曉的資料與日期：**每週三晚間 EIA 美國原油與成品油庫存報告（11/25、12/02）**，以及歐佩克＋後續產量執行率數據。
+- 機率估計：Claude 給 80–100 美元區間 70%，但現價約 82 美元離下緣 80 僅 2.5%（比上緣 100 近得多），在供給過剩與強美元下，跌破 80 美元的機率不低，我對該區間只給 **55%** 機率（比 Claude 低 15 個百分點）。
+
+### RED-4｜針對 `forecast.json`「10 月核心 PCE 年增率會在 2.4% 到 3.0% 之間（60%）」
+- 最強反方證據：BLS 於 11 月 10 日公布 10 月 CPI 時，已明確因「2025 年 10 月美國政府停擺未蒐集物價」而**無法公布 CPI 年增率**（只能公布月增 0.4%，高於預期的 0.3%）；同時 Waller 指出核心物價已連續三個月月增 0.3%（年化約 3.5%）。（https://www.bbc.co.uk/news/articles/cwy8lx3pg4k2o ，台北時間 2026-11-10）
+- 另一種同樣說得通的解釋：若去年 10 月同樣影響到 BEA 的個人消費支出物價基期，10 月核心 PCE 年增率要嘛和 CPI 一樣出現「官方不公布／無法判定」的狀況，要嘛在近期連續 0.3% 月增累積與關稅成本傳導下站上 3.0% 以上邊緣。
+- 判斷分曉的資料與日期：**2026-11-25 21:30 台北（美東 08:30）BEA 公布 10 月個人所得與核心 PCE 報告**。
+- 機率估計：Claude 寫到停擺基期風險並給 60%，我認為若計入「BEA 缺基期不公布或年增率失真」與物價連續月增 0.3% 的上行風險，實際落在 2.4%–3.0% 且有效判定的機率約 **50%**（比 Claude 低 10 個百分點）。
+
+---
+
+### CAL-1｜未來 14 天（2026-11-19 ～ 2026-12-03）關鍵美台市場與總經行事曆
+- 事實（重要市場／IPO／財報／央行／數據，附台北與美東時間）：
+  1. **11/19（四）**：Anthropic（ANT）納斯達克 IPO 掛牌首日（美東 09:30／台北 22:30）；南非央行（SARB）利率決策（台北時間約 21:00）；沃爾瑪（WMT）美東盤前財報（台北約 20:00）；Intuit（INTU）、Ross（ROST）、Gap（GAP）美東盤後財報（台北 11/20 05:00）。
+  2. **11/20（五）**：**台灣經濟部公布 10 月外銷訂單**（台北時間 11/20，前值 9 月創 1,142.1 億美元新高）；SanDisk（SNDK）1 拆 8 股票分割開始交易（美東 09:30／台北 22:30）。
+  3. **11/23（一）**：HPE 美東盤後財報（台北 11/24 05:00）。
+  4. **11/24（二）**：Analog Devices（ADI）美東盤前財報（台北約 20:00）；Dell（DELL）、HPQ、Autodesk（ADSK）、Workday（WDAY）美東盤後財報（台北 11/25 05:00）。
+  5. **11/25（三）**：Deere（DE）美東盤前財報；**美東 08:30（台北 21:30）美國 Q3 GDP 二次修正值、10 月 PCE 物價指數與個人所得支出、10 月耐久財訂單**；**美東 14:00（台北 11/26 03:00）聯準會褐皮書（Beige Book）**。
+  6. **11/26（四）**：**美股感恩節全日休市**（紐約證交所與債市皆休市；台股正常開盤）；**韓國央行（BOK）利率決策**（目前基準利率 3.00%）。
+  7. **11/27（五）**：**美股感恩節隔天提早收盤**（美股美東 13:00 收盤／台北 11/28 02:00；美債美東 14:00 收盤／台北 11/28 03:00）。
+  8. **12/01（二）**：**美東 10:00（台北 23:00）美國 10 月 JOLTS 職位空缺**；**韓國關稅廳公布 11 月全月出口初值**（涵蓋半導體出口，為全球最早晶片需求指標）。
+  9. **12/03（四）**：美國參議院資料中心相關聽證（見本站 `deep.json` 行事曆記錄；待查官方參院議程確認具體時段）。
+- 對照本站「新聞日曆」之核對（依檢視 `wsb/data/econcal.py`、`wsb/data/exchange_cal.py`、`tools/site_econ.py` 原始碼，因本次內建瀏覽器無法開啟線上頁面）：
+  - 本站漏掉／未納入日曆的項目：（1）Nasdaq 日曆封鎖雲端主機時（`tools/site_econ.py` 第 58 行已註明），FRED 備援沒有 **11/25 耐久財訂單**與 **12 月初 ISM PMI**；（2）`wsb/data/econcal.py` 只收錄美國數據，漏掉了 **11/20 台灣 10 月外銷訂單**、**11/26 韓國央行利率決策**、**11/19 南非央行利率決策**與 **11/25 聯準會褐皮書**；（3）感恩節 11/26 休市與 11/27 美東 13:00 半天收盤，`wsb/data/exchange_cal.py` 的計算規則正確，但僅顯示於交易所休市卡，未與總經事件卡混排提醒。
+
+---
+
+### SENT-1｜NVDA（r/wallstreetbets、r/stocks、PTT 股板）— 熱度極高、情緒焦慮分歧
+- 討論內容與情緒：11/18 財報大幅優於預期且財測上調，股價卻收跌 2.89%，引爆散戶困惑與陰謀論；r/wallstreetbets 與 r/stocks 出現多篇熱議黃仁勳遭逼退是否刻意配合封閉模型巨頭或出口管制審查的貼文，PTT 股板則熱議代理執行長「不再無限制投資新創」與謝金河評論對台灣供應鏈的衝擊，整體情緒從狂熱轉向焦慮與分歧（熱度自 11/11 辭職公告起升溫，11/17–18 財報後達高峰；情緒，非事實）。（https://www.cnbc.com/2026/11/18/nvidia-stock-earnings.html 為市場背景，Reddit 搜尋摘要見今日社群統計，無法取得未經轉址之直接長網址）
+
+### SENT-2｜Anthropic（ANT）IPO（r/wallstreetbets、r/stocks）— 高度懷疑與泡沫嘲諷
+- 討論內容與情緒：11/18 定價每股 83 美元、估值約 1.5 兆美元前夕，r/wallstreetbets 湧現大量負面與諷刺討論（例如熱門標題直指「你的 401(k) 就是 Anthropic IPO 的退場流動性」），質疑低流通股比例（low float）、內部人首日賣股條款與高達 9,000 億美元長期算力承諾，也擔心該 Mega-IPO 會抽乾其他 AI 股票資金，情緒偏懷疑與泡沫警覺（熱度自 11/16–18 定價週急升；情緒，非事實）。
+
+### SENT-3｜PANW（r/stocks、X）— 財報優異與 AI 併購推升偏多情緒
+- 討論內容與情緒：11/18 正規盤大漲近 10%、盤後公布 Q1 營收年增 39% 並宣布 45 億美元收購 Applied Compute 後，散戶與社群對資安股在科技股震盪中的防禦性與 AI 轉型抱持偏樂觀看法，並帶動 CRWD、FTNT 討論度上升（熱度自 11/18 盤前升溫；情緒，非事實）。
+
+### SENT-4｜UNH（r/stocks、r/wallstreetbets）— 監管恐慌下偏悲觀觀望
+- 討論內容與情緒：CMS 公布 CRUSH 稽核新規後股價兩天跌逾 10%，散戶高度討論 Medicare Advantage 追溯至 2018 年的潛在罰款是否過重、以及機構是否會轉入其他防禦類股，整體情緒偏悲觀與謹慎（熱度自 11/17 爆發；情緒，非事實）。
+
+### SENT-5｜台股四萬點攻防與台積電外資連賣（PTT Stock 板）— 多空激烈拉鋸
+- 討論內容與情緒：PTT 股板 11/18 熱烈討論當日加權指數盤中高低震盪高達 1,677 點、勉強守住 40,194 點及 4 萬點整數關卡，以及外資單日大賣超 765.63 億、連五日砍台積電逾 4.5 萬張與官股／國安基金撐盤動向，多空雙方在「基本面年增翻倍」與「外資提款＋新台幣破 33」之間激烈論戰，情緒偏緊張防禦（熱度自 11/18 盤中急升；情緒，非事實）。
+
+---
+
+### SITE-1｜`research_feed/deep.json`（更新 2026-11-19 06:12）將 11/18 外資賣超台股誤植為「76.5 億元」，少寫了一個位數（誤差 10 倍）
+- 本站寫了什麼：`research_feed/deep.json` 最新一日（2026-11-18）的 `spill` 欄位寫道：`台股：外資賣超 76.5 億元、期貨空單創 2018 年以來新高`。
+- 正確應該是什麼：根據中央社與台灣證交所 2026 年 11 月 18 日盤後統計，三大法人合計賣超 632.07 億元，其中**外資及陸資單日賣超金額為 765.63 億元**（約 765.6 億元），本站漏了一個位數，僅寫成實際金額的十分之一。建議立即於 `deep.json` 更正並檢查數字擷取／單位換算來源（此為程式檔案讀取核實，註明本次內建瀏覽器無法開啟線上渲染頁面）。
+
+### SITE-2｜`research_feed/forecast.json`（07:03）與 `macro_voice.json`（06:33）顯示「找不到商品齊跌原因」且沿用舊的 FedWatch 機率
+- 本站寫了什麼：`forecast.json` 寫「期貨隱含 12/9 升息 1 碼 90%、2 碼 10%」及「黃金、銅、油價同一天一起跌，主因我沒找到時間對得上的消息」；`macro_voice.json` 早班語音稿亦寫「這個我不知道」。
+- 正確應該是什麼：11/18 聯準會理事 Waller 公開在 CNBC 提到 12 月可能升息 2 碼，推動美元指數創 19 個月新高，Comex 金價跌破 3,800 美元（見 WSJ 11/18 報導）、銅價跌破 6 美元；同時 CME FedWatch 於 11/18 已更新為升息 1 碼約 95%–95.7%、升息 2 碼約 4.3%–5%、不變 0%。（https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html ，台北時間 2026-11-18；https://www.wsj.com/finance/commodities-futures/gold-treads-water-as-fed-dollar-keep-weighing-3f6439e8 ，台北時間 2026-11-18）
+
+### SITE-3｜`research_feed/ai_view.json`（07:10）存在外部搜尋與 CFTC 斷線缺口，敘事停在 11/16–11/17
+- 本站寫了什麼：`ai_view.json` 摘要自述「CFTC 持倉連不上，抓不到；搜尋只找到 2025 年舊文，敘事沿用上一班」，所引用敘事時間停留在 `2026-11-16` 報導與 `2026-11-17` 數據。
+- 正確應該是什麼：過去 24 小時（11/18）市場已新增三大關鍵系統性事件（FOMC 10 月紀要警告 AI 表外債務、ECB 11/18 金融穩定報告點名 AI 估值與股債傳染、Anthropic 每股 83 美元定價），建議 `ai_view` 的自動化抓取腳本修復搜尋年份過濾與 CFTC 連線備援。
+
+---
+
+### BLIND-1｜本站缺少「AI 表外租賃負債與算力採購承諾（Off-Balance-Sheet Commitments）」追蹤
+- 事實：11 月 18 日公布的聯準會 10 月 FOMC 會議紀錄與歐洲央行《金融穩定評估》均特別點名「AI 基礎建設正透過表外租賃承諾與不透明債務結構加速擴張」；而 Anthropic 招股書亦揭露高達約 9,000 億美元的長期算力承諾。（https://www.federalreserve.gov/monetarypolicy/fomcminutes20261028.htm ，台北時間 2026-11-19；https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ，台北時間 2026-11-18）
+- 推理：檢視 `tools/site_layout.py` 分頁與卡片清單，本站目前「AI 資本支出」僅監測巨頭財報上的「資本支出÷營業現金流」，看得到財報內的 Capex，卻看不到雲端業者對新雲端（CRWV、NBIS）簽訂的長期不可取消租賃負債與新雲端本身的高收益公司債殖利率。
+- 免費公開資料源：SEC EDGAR 公司 10-K／10-Q／S-1 附註「Commitments and Contingencies / Leases」與 FINRA TRACE 公司債公開成交殖利率查詢。
+
+### BLIND-2｜缺少「避險基金主權債槓桿與非公開 BDC 限額贖回（Gating）」的監測視角
+- 事實：IMF 2026 秋季《全球金融穩定報告（GFSR）》與聯準會 FEDS Notes（2026-10-14、2026-11-09）指出，半流動性非公開交易 BDC 持有 93.4% 私募信貸、現金僅 0.2%，2026 年初已有數家管理人觸發季贖回 5% 上限而按比例限制提領；且主權債市場槓桿避險基金比例上升，易造成債市突發重定價。（https://www.federalreserve.gov/econres/notes/feds-notes/the-rise-of-semiliquid-funds-for-retail-investors-20261014.html ，台北時間 2026-10-15）
+- 推理：本站已有「私募信貸」與「基差交易」分頁，但對私募信貸主要用公開掛牌 BDC 市價折溢價觀察，較難捕捉未上市／半流動性 BDC 的贖回排隊壓力與非銀行金融機構（NBFI）對銀行融資的回傳風險。
+- 免費公開資料源：美國金融研究辦公室 OFR Hedge Fund Monitor（https://www.financialresearch.gov/hedge-fund-monitor/ ）與 SEC Private Funds Statistics（https://www.sec.gov/divisions/investment/private-funds-statistics ）。
+
+### BLIND-3｜完全沒有追蹤「關鍵科技與金融基礎設施的網路資安（Cyber & Concentration Risk）」
+- 事實：IMF 2026 年秋季 GFSR、歐洲央行 11/18 金融穩定報告以及 BIS 均將「金融機構高度集中依賴少數第三方雲端／AI 供應商與網路攻擊」列為一級系統性營運風險；11/18 美國政府與資安機構對 AI 網攻的警訊亦直接推升資安板塊全面大漲。（https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ，台北時間 2026-11-18）
+- 推理：本站覆蓋金融、債券、能源、航運瓶頸（chokepoints），卻完全沒有科技供應商集中度與重大金融／雲端資安漏洞警報，容易漏掉如 CrowdStrike 當機或核心雲端停擺這類瞬間衝擊市場的營運事件。
+- 免費公開資料源：美國網路安全暨基礎設施安全局（CISA）Known Exploited Vulnerabilities (KEV) Catalog 公開 JSON 源（https://www.cisa.gov/known-exploited-vulnerabilities-catalog ）。
+
+### BLIND-4｜對「主要新興市場財政危機（巴西等）與美國本土監管重擊（醫療／反壟斷）」連結不夠即時
+- 推理：本站「各國危機雷達」與「聯邦公報」有追蹤部分國家風險與美國法規，但缺少對拉美大型經濟體（如巴西債務逾 GDP 82%、參院財政法案過關後仍陷匯債壓力）以及像 CMS CRUSH 這種單一行政提案就能讓道瓊成分股兩天跌逾 10% 的「產業級重磅新規」之即時白話影響標註。
+- 免費公開資料源：IMF Fiscal Monitor 公開資料庫與 Federal Register API（按預估經濟影響金額 ≥1 億美元的 Significant Regulatory Actions 篩選）。
+
+### BLIND-5｜一般投資人最關心但本站尚未直接回答的問題：「Mega-IPO（如 Anthropic）會不會吸乾我手中科技股或 ETF 的資金？」
+- 推理：對新手而言，看到一檔估值 1.5 兆美元的公司掛牌，最直覺的困惑是「這會不會造成我持有的標普／那指科技股被抽血？指數基金何時被動配置進場？」本站目前有 IPO 雷達，但在總覽或新手說明區缺少一張「超大型新股掛牌對指數與現有成分股之資金排擠白話指南」。
+
+---
+
+### CODE-1｜wsb/ai/prompts.py：第 73 行直接要求模型輸出違反本站規範的部位操作詞，與前後文矛盾
+- 檔案位置與行號：`wsb/ai/prompts.py` 第 73 行（以及第 13 行對照第 37、57、79、95、176 行）。
+- 該行在做什麼：`EARNINGS` 提示詞模板第 73 行寫道 `**💼 對使用者部位**：持股 {shares} 股、市值約 ${value}，給出持有/加＊/減＊的具體條件與價位依據`（原文直接出現禁止的部位增減動詞）；第 13 行寫 `要給出具體、可執行的風控選項（部位調整幅度、避險工具、觸發條件）`。
+- 為什麼有問題：屬於「對使用者說錯話／觸犯禁用詞」——同一檔案第 37、57、79、95、176 行皆明文規定不得出現任何交易動作或部位調整比例等操作建議，網站輸出端亦有過濾器，但第 73 行卻明確要求 LLM 針對持股給出部位增減的具體條件與價位依據，會直接產出違規與自相矛盾的文字。
+- 建議怎麼改：將第 73 行改為僅描述風險暴露結構（如「持股比重、財報前選擇權隱含波動對應之單日美元波動幅度、核心指標門檻」），移除所有交易動詞與價位依據要求；第 13 行亦同步調整為中性風險對照描述。
+- 確定度：高。
+
+### CODE-2｜wsb/bot/embeds.py：第 476、480–482、552 行在 Discord 輸出字串包含本站禁用之交易動作字眼
+- 檔案位置與行號：`wsb/bot/embeds.py` 第 476 行、第 480–482 行、第 552 行。
+- 該行在做什麼：第 476 行（`hedge`）輸出「完全對沖買＊ ${...}，半對沖 ${...}」；第 480–482 行輸出「減＊風險最高的持股（目＊降低 25% 大盤曝險）」與「賣＊ **{d['sym']}** 約 ${...}」（原文直接出現禁用字眼）；第 552 行（`ipo_radar_card`）標題寫 `🎯 牽動持股與掛單指引`。
+- 為什麼有問題：屬於「對使用者說錯話（禁用詞）」——雖然這是 Discord 私人指令計算結果，但直接輸出交易動詞與「掛單指引」違反本站「純風險試算、不給下單指令」原則（對照第 114 行頁尾還寫著「非投資建議」）。
+- 建議怎麼改：改為假設情境與試算語氣（例如「情境試算：若要將大盤 Beta 曝險降低 25%，對應風險貢獻最高持股之等值市值約 $X（約 Y 股）」），第 552 行改為「🎯 關聯持股與風險觀察重點」。
+- 確定度：高。
+
+### CODE-3｜wsb/analytics/signals.py：第 83 行 ATR 未含跳空、第 196/516 行把 52 週高點當成固定上檔空間且資料缺時直接放行
+- 檔案位置與行號：`wsb/analytics/signals.py` 第 83 行、第 196–199 行與第 516 行。
+- 該行在做什麼：第 83 行以 `c.diff().abs().rolling(14, min_periods=10).mean()` 計算 `atr`；第 196 行將 `h52`（52 週高點）賦值給 `target` 計算風險報酬比 `rr`；第 516 行 `pick_ok` 回傳 `rr is None or rr >= float(cf["min_rr"])`。
+- 為什麼有問題：屬於「邏輯異常」——（1）只用收盤價差會漏掉財報日大幅跳空波動，使區間寬度與失效線距離系統性偏窄；（2）將 `rr is None`（原本是為了放行「已創 52 週新高」的股票）無條件放行，會連帶讓 `h52` 缺失的短歷史或資料缺漏股一併繞過 `min_rr` 檢查；且內部鍵名使用 `target` 易在未來維護時誤印出違規字眼。
+- 建議怎麼改：在有 OHLC 快取時改用標準 True Range 計算 ATR（或於欄位說明標明「近 14 日收盤價差平均」）；在 `pick_ok` 明確區分 `px >= h52`（創新高免檢）與 `h52 is None`（資料缺應排除）。
+- 確定度：中。
+
+### CODE-4｜wsb/analytics/nowcast.py：第 154–156 行 GDP 修正值不會產生估算，導致日曆「GDP 二次／三次修正」缺 nowcast
+- 檔案位置與行號：`wsb/analytics/nowcast.py` 第 150–156 行。
+- 該行在做什麼：`gdp()` 取得 FRED `GDPNOW` 最新季初日期 `q`（例如 `2026-07-01` 代表 2026Q3），若 `q in act.index`（`A191RL1Q225SBEA` 已有該季數字）就回傳 `None`。
+- 為什麼有問題：屬於「邏輯邊界異常」——當 Q3 GDP 初值已公布後，後續如 11 月 25 日即將公布的「Q3 GDP 二次修正值」仍對應同一個季度鍵 `2026-07-01`，但因 `act.index` 已有初值，導致日曆上的第二次／第三次 GDP 修正事件完全不會產生 nowcast 卡片或提示。
+- 建議怎麼改：在 `gdp()` 或 `describe()` 區分初值與修正值事件，或在初值已出後顯示「Q3 初值已公布（X%），本次為修正值發布」。
+- 確定度：中。
+
+### CODE-5｜wsb/data/korea_exports.py：第 160／180 行下載附件失敗會永久標記已處理、第 203 行日期寫法冗餘
+- 檔案位置與行號：`wsb/data/korea_exports.py` 第 160、180 行與第 203 行。
+- 該行在做什麼：第 180 行寫入 `att=bool(att)`，第 160 行判斷 `if x["key"] not in rel or "att" not in rel[x["key"]]`；第 203 行用 `date(y, m, int(k[8:10])) .fromordinal(date(y, m, int(k[8:10])).toordinal() + 1)` 計算隔天。
+- 為什麼有問題：屬於「邏輯異常」——若當次請求韓國關稅廳主頁成功但下載 `.hwpx` 附件超時或失敗，`att` 字典為空，第 180 行仍將 `"att": False` 寫入快取，導致第 160 行往後永遠跳過該期附件（例如 `chip_share` 半導體占比與各國別數據將永久缺失）；第 203 行則宜改為 `+ timedelta(days=1)` 較簡潔安全。
+- 建議怎麼改：附件下載失敗時不要寫入 `"att": False`（或僅在確實解析成功時設為 `True`，失敗時保留重試資格）。
+- 確定度：中。
+（備註：本次小時批號 `i % 24 == 8` 其餘 7 個檔案 `tools/bankruptcy/panel.py`、`tools/site_deep.py`、`tools/site_intraday.py`、`tools/site_session.py`、`wsb/analytics/energy_chain.py`、`wsb/data/euro_asia.py`、`wsb/data/taifex_live.py` 皆已逐行檢視，未發現明顯硬編碼數據、重大邏輯錯誤或禁用詞問題；僅 `tools/site_intraday.py` 第 236 行週一判斷未考量週一美股休市日曆，屬低風險細節。）
+
+---
 
 其他今天的大事：
-- NVIDIA 在代理執行長 Colette Kress 帶領下公布 2027 會計年度第三季營收達 1,158 億美元（年增 103%），但重申對新雲端夥伴（Neoclouds）的財務支持將採取「嚴守紀律且具選擇性」的態度，引發 AI 硬體與算力租賃股分化。（https://www.trefis.com/stock/nvda/articles/626071/anthropic-ipo-why-are-nvidia-google-and-others-buying-26-billion/2026-11-18）
+- 聯準會 10 月會議紀錄揭示 10 比 2 按兵不動是「驚險拉鋸」，且幾乎所有官員預期未來數月需進一步升息，並點名警告 AI 不透明債務與表外租賃的金融穩定風險。（https://www.federalreserve.gov/monetarypolicy/fomcminutes20261028.htm ，台北時間 2026-11-19 03:00）
+- 美國聯準會理事 Waller 在 11/18 受訪拋出 12 月可能考慮升息 2 碼（50 bp）的鷹派談話，推動美元與避險賣壓，導致黃金跌破 3,800 美元、銅與原油同步走跌。（https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html ，台北時間 2026-11-18）
+- 歐洲央行 11/18 發布半年期《金融穩定評估》，示警 AI 估值偏高、轉向舉債與主權財政失衡交織的修正風險。（https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ，台北時間 2026-11-18）
+- Anthropic 已於美東 11/18 晚間完成 IPO 定價於每股 83 美元（估值約 1.5 兆美元），將於美東 11/19 早盤以代號 ANT 正式在納斯達克掛牌。（https://www.theguardian.com/technology/2026/nov/18/anthropic-sets-share-price-at-83-for-stock-market-debut-above-expected-range ，台北時間 2026-11-19）
+- 美軍於 11/17 空襲伊朗位於荷莫茲海峽的格什姆島飛彈陣地，伊朗隨即以無人機襲擊巴林、科威特與海峽油輪，中東局勢再度升溫。（https://www.cbsnews.com/news/u-s-launches-limited-strikes-on-iranian-targets-in-strait-of-hormuz-officials-say/ ，台北時間 2026-11-18）
+- 外國持有美國公債於最新統計出現 3 月以來最大單月降幅，同時日本央行貨幣正常化下日圓仍逼近 160 警戒線。（https://www.bloomberg.com/news/articles/2026-11-18/foreign-holdings-of-us-treasuries-decline-by-most-since-march ，台北時間 2026-11-18）
