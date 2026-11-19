@@ -108,6 +108,8 @@ def test_seed_merge():
     finally:
         B.SEED = old
     assert d["dt"] == {"2026-11-19": 41.0, "2026-11-12": 40.0} and d["mg"]["2026-11-12"] == 3000.0   # own cache wins
+    B.FILE.write_text(json.dumps({"fm": {"2026-11": [["2026-11-19", 1.0, 2.0]]}, "fm_ts": {"2026-11": 1.79e9}}), encoding="utf-8")
+    assert B.stamp() == (1.79e9, "2026-11-19")                     # no own fetch yet: the seed's fetch time
     assert set(B.seed(d)) == {"fm", "fm_ts", "dt", "mg", "val", "us10"}
 
 

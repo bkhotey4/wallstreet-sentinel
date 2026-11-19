@@ -389,4 +389,5 @@ def view(eng=None) -> Dict:
 def stamp() -> Tuple[Optional[float], Optional[str]]:
     d = load()
     days = trading_days(d)
-    return d.get("ts"), (days[-1] if days else None)
+    ts = d.get("ts") or max((float(v) for v in (d.get("fm_ts") or {}).values()), default=None)   # seed-only cache: newest fetch
+    return ts, (days[-1] if days else None)
