@@ -47,7 +47,7 @@ REG = ("S-1", "F-1")
 HEAD_BYTES = 2_500_000
 FIN_BYTES = 16_000_000          # whole prospectus: the quarterly table sits in MD&A (Anthropic's at ~5.5 MB of 14.8 MB)
 FIN_PER_RUN = 6
-TL_V = 2                        # bump when timeline() learns a new form: every filer's submissions are read once more
+TL_V = 2                    # bump when timeline() learns a new form: every filer's submissions are read once more
 COVER_V = 3                     # bump when parse_cover learns a new pattern: active filers' covers are read once more
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
@@ -246,8 +246,24 @@ def timeline(sub: Dict) -> Dict:
     rw = [x[1] for x in rows if x[0] == "RW" and (not reg or x[1] >= reg[-1][1])]
     out["rw"] = rw[-1] if rw else None
     first = out.get("s1") or out.get("drs")
-    out["prior_public"] = bool(first and any(x[0] in PERIODIC and x[1] < first for x in rows))
+    out["prior_public"] = bool(first and any(x[0] in PERIODIC and x[1] < first for x in rows)) or listed_already(rows)
     return out
+
+
+LISTED_GAP_DAYS = 90            # an exchange registration (8-A12B) this long before the newest S-1/F-1 is an earlier listing
+
+
+def listed_already(rows: List) -> bool:
+    """True when the shares were registered on an exchange long before the newest registration statement and the company
+    has filed a periodic report since: it is already listed, so the new S-1 is a resale or follow-on, not an IPO.
+    2026-11-19: MapLight (IPO 2025-10, 8-A12B 2025-10-24) filed a resale S-1 in 2026-09; SEC declared it effective on
+    11-17 and the card listed it as 「即將定價 11-19」 next to Anthropic."""
+    reg = sorted(x[1] for x in rows if x[0].split("/")[0] in REG)
+    if not reg:
+        return False
+    cut = (date.fromisoformat(reg[-1]) - timedelta(days=LISTED_GAP_DAYS)).isoformat()
+    a12 = sorted(x[1] for x in rows if x[0] in ("8-A12B", "8-A12G") and x[1] < cut)
+    return bool(a12 and any(x[0] in PERIODIC and x[1] > a12[0] for x in rows))
 
 
 SPAC_RX = re.compile(r"\b(acquisition|spac|blank check)\b", re.I)

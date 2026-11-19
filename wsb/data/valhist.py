@@ -146,6 +146,8 @@ async def refresh_tw(budget_s: float = 90, today: Optional[date] = None) -> Dict
             day = end - timedelta(days=back)
             if day.weekday() >= 5 or tried.get(day.isoformat()):
                 continue
+            if key == "latest" and day < today and d.get("latest_full") == day.isoformat():
+                break                                               # today is not out yet and the day before is already complete
             try:
                 rows = await _tw_day(day)
             except Exception as e:  # noqa: BLE001
@@ -159,14 +161,20 @@ async def refresh_tw(budget_s: float = 90, today: Optional[date] = None) -> Dict
                 if key == "latest":
                     d["latest"] = {"date": day.isoformat(), "rows": rows}
                     if not half:                                    # TWSE-only latest → fetched again next run
-                        d["latest_day"] = today.isoformat()
+                        d["latest_full"] = day.isoformat()
+                        # done for today only when today's own table is in, or no table can come today (weekend).
+                        # 2026-11-19 (Gemini code audit): a run before the exchange published today's table (~16:00
+                        # Taipei) saved yesterday's rows, marked today as done, and no later run looked again.
+                        if day == today or today.weekday() >= 5:
+                            d["latest_day"] = today.isoformat()
                 else:
                     snaps[day.isoformat()] = rows
                     if half:
                         partial.add(day.isoformat())
                 got += 1
                 break
-            tried[day.isoformat()] = "empty"
+            if day < today:                                         # today being empty only means "not published yet"
+                tried[day.isoformat()] = "empty"
             if time.time() - t0 > budget_s:
                 break
     cut = (today - timedelta(days=31 * (MONTHS + 2))).isoformat()

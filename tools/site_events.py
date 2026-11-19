@@ -48,6 +48,27 @@ def ai_syms() -> set:
 EARN_TIME = {"after": ((16, 5), "盤後", "after the close"), "pre": ((8, 0), "盤前", "before the open")}
 
 
+def released_today(et_day: str, rel: dict = None) -> set:
+    """Companies whose results filing (8-K item 2.02 / 6-K) is already at the SEC with today's New York date.  The calendar
+    only says 盤前 / 盤後, timed as 08:00 / 16:05; Walmart filed at 07:00 on 2026-11-19 and the countdown, the 72-hour list
+    and upcoming.json went on saying 「21:00 才公布」 for an hour while another card already showed the release."""
+    if rel is None:
+        rel = {}
+        try:                                    # release text for the analysis routines: {sym, date (filed), cal_date}
+            from wsb.data import earn_releases as ERL
+            rel.update(ERL.load().get("rel") or {})
+        except Exception:  # noqa: BLE001
+            pass
+        try:                                    # numbers read from the release (各公司最新財報重點): {sym, date (calendar), filed}
+            from wsb.data import earn_release as ER1
+            rel.update({"n|" + k: {**v, "cal_date": v.get("date"), "date": v.get("filed")} for k, v in ER1.load().items()
+                        if isinstance(v, dict)})
+        except Exception:  # noqa: BLE001
+            pass
+    return {str(v.get("sym") or "").upper() for v in rel.values()
+            if isinstance(v, dict) and v.get("date") == et_day and v.get("cal_date") == et_day}
+
+
 def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_DAYS) -> list:
     """Reports of companies worth ≥ $500B in the next 10 days (2026-11-16: NVIDIA, ~6 % of the S&P 500, moves the index
     like a CPI print, so it belongs on this card).  Time: 'after' → 16:05 New York, 'pre' → 08:00, unknown → 16:05 marked 時間未定.
@@ -69,6 +90,7 @@ def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_
         zh = {}
     out = []
     ai = ai_syms()
+    out_today = released_today(et_now.date().isoformat())
     for day, v in sorted(cal.items()):
         if not (et_now.date().isoformat() <= day <= end):
             continue
@@ -77,12 +99,12 @@ def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_
                 continue
             (hh, mm), tz, ten = EARN_TIME.get(r.get("time") or "", ((16, 5), "時間未定", "time n/a"))
             t = datetime.fromisoformat(day).replace(hour=hh, minute=mm, tzinfo=ET)
-            if t <= et_now:
+            if t <= et_now or r.get("sym") in out_today:
                 continue
             x = sx.get(r["sym"]) or {}
             out.append({"key": "earn", "sym": r["sym"], "zh": f"{zh.get(r['sym'], r.get('name') or r['sym'])}財報（{tz}）",
                         "en": f"{r.get('name') or r['sym']} earnings ({ten})", "next": t.isoformat(), "ts": int(t.timestamp()),
-                        "days": (t.date() - et_now.date()).days, "mcap": float(r["mcap"]), "eps_f": r.get("eps_f"),
+                        "days": (t.date() - et_now.date()).days, "mcap": float(r.get("mcap") or 0), "eps_f": r.get("eps_f"),
                         "mv": x.get("mv"), "reacts": x.get("reacts") or [], "avg": x.get("avg"), "exact": bool(r.get("time")),
                         "ai": r["sym"] in ai})
     return out
@@ -98,6 +120,15 @@ def ipo_events(now: datetime, days: int = 7) -> list:
         v = IP.us_view(I.load(), I.load_px(), None, now.astimezone(ET).date())
     except Exception:  # noqa: BLE001
         return []
+    return ipo_rows(v, now, days)
+
+
+def ipo_rows(v: dict, now: datetime, days: int = 7) -> list:
+    """Pending IPOs with a listing day, plus IPOs whose final prospectus (424B4) carries today's New York date while the
+    market has not opened yet.  The final prospectus is filed on the first trading day or later, never before it, so before
+    09:30 that listing is still ahead.  11-19: Anthropic's 424B4 arrived in the morning, the company moved from 申請中 to
+    已定價, and its listing dropped off the 72-hour list an hour before it started trading."""
+    from datetime import timedelta
     out = []
     for r in v.get("pending") or []:
         d = r.get("listing") or (r.get("near") if r.get("stage") else None)
@@ -108,6 +139,13 @@ def ipo_events(now: datetime, days: int = 7) -> list:
             continue
         out.append({"sym": r.get("symbol") or "", "zh": f"{r['name']} 上市（{'公司時間表' if r.get('listing') else '估計'}）",
                     "next": t.isoformat(), "exact": bool(r.get("listing"))})
+    today = now.astimezone(ET).date().isoformat()
+    for r in v.get("recent") or []:
+        if r.get("priced") != today:
+            continue
+        t = datetime.fromisoformat(today).replace(hour=9, minute=30, tzinfo=ET)
+        if now < t:
+            out.append({"sym": r.get("sym") or "", "zh": f"{r['name']} 上市（已定價，今天開盤掛牌）", "next": t.isoformat(), "exact": True})
     return out
 
 
@@ -176,7 +214,7 @@ def _earn_tile(r: dict) -> str:
             f'<div class="ecc" data-ts="{r["ts"]}">{r["days"]} {T("天", "d")}</div>'
             f'<div class="small muted">{when}</div>'
             + (f'<div class="small">{"；".join(bits)}</div>' if bits else "")
-            + f'<div class="small muted">市值約 {cap_txt(r["mcap"])}，{_why(r)}</div></div>')
+            + f'<div class="small muted">{("市值約 " + cap_txt(r["mcap"]) + "，") if r.get("mcap") else ""}{_why(r)}</div></div>')
 
 
 def sec_event_clock(eng) -> str:

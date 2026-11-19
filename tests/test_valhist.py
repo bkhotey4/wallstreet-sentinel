@@ -27,6 +27,45 @@ def test_parsers():
     assert VH.parse_twse({"stat": "很抱歉，沒有符合條件的資料!"}) == {}
 
 
+def test_latest_retries_until_today_is_published():
+    """Before the exchange publishes today's table, today is not marked as an empty (holiday) day and not marked as done;
+    a later run the same day picks up today's rows."""
+    import asyncio
+    today, yday = date(2026, 11, 19), date(2026, 11, 18)
+    out = {"today": {}}
+    calls = []
+
+    async def fake_day(d):
+        calls.append(d)
+        if d == today:
+            return dict(out["today"])
+        return {"2330": [20.0, 6.0, 1.5]} if d == yday else {}
+
+    async def no_sleep(_s):
+        return None
+
+    old = (VH._tw_day, VH.asyncio.sleep, VH.month_ends)
+    VH._tw_day, VH.asyncio.sleep, VH.month_ends = fake_day, no_sleep, (lambda t, n=0: [])
+    try:
+        VH.save("tw", {})
+        r = asyncio.run(VH.refresh_tw(today=today))
+        d = VH.load("tw")
+        assert r["latest"] == "2026-11-18" and d.get("latest_day") != "2026-11-19"
+        assert "2026-11-19" not in (d.get("tried") or {})
+        calls.clear()
+        asyncio.run(VH.refresh_tw(today=today))                     # still not out: asks for today only, keeps yesterday
+        assert calls == [today] and VH.load("tw")["latest"]["date"] == "2026-11-18"
+        out["today"] = {"2330": [21.0, 6.1, 1.4]}
+        r = asyncio.run(VH.refresh_tw(today=today))
+        d = VH.load("tw")
+        assert r["latest"] == "2026-11-19" and d["latest_day"] == "2026-11-19"
+        calls.clear()
+        asyncio.run(VH.refresh_tw(today=today))
+        assert calls == []                                          # done for the day
+    finally:
+        VH._tw_day, VH.asyncio.sleep, VH.month_ends = old
+
+
 def test_month_ends():
     m = VH.month_ends(date(2026, 3, 10), 3)
     assert m == [date(2026, 2, 28), date(2026, 1, 31), date(2025, 12, 31)]

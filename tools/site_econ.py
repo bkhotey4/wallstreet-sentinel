@@ -489,7 +489,7 @@ def sec_earn_cal(eng) -> str:
             f'<h4>{T("最近 7 天已公布", "Reported in the last 7 days")}</h4><div class="scroll"><table class="mini ecal"><thead><tr><th>{T("日期", "Date")}</th>'
             f'<th>{T("公司", "Company")}</th><th class="r">{T("EPS 實際", "EPS")}</th><th class="r">{T("預期", "Est.")}</th><th class="r">{T("驚喜", "Surprise")}</th>'
             f'<th class="r">{T("前後兩日股價", "2-day move")}</th></tr></thead><tbody>{past}</tbody></table></div>')
-    note = T("資料：Nasdaq 財報日曆（EPS 預期來自 Zacks 彙整）。日期為美東；盤後公布的股價反應出現在隔天。兩日股價＝財報日前一個交易日收盤到之後第一個交易日收盤（只算追蹤池）。" + _sec_note(cal),
+    note = T("資料：Nasdaq 財報日曆（EPS 預期來自 Zacks 彙整）。這個預期通常把員工股票酬勞算成費用，所以軟體與科技公司的數字，常明顯低於公司自己的財測和媒體引用的「非 GAAP」預期；比較時要先確認是同一種算法。日期為美東；盤後公布的股價反應出現在隔天。兩日股價＝財報日前一個交易日收盤到之後第一個交易日收盤（只算追蹤池）。" + _sec_note(cal),
              "Source: Nasdaq earnings calendar (Zacks consensus). US dates.")
     return card("美股財報日曆", "US earnings calendar", body + f'<p class="note">{note}</p>', "wide")
 

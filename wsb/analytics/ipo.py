@@ -102,6 +102,17 @@ def after_listing(s: pd.Series, d: date, offer: Optional[float], bench: Optional
     return out
 
 
+LISTED_GAP_DAYS = 90            # same rule as ipo_data.listed_already, on the saved record
+
+
+def listed_long_ago(f: Dict) -> bool:
+    """Already trading: SEC shows an exchange for the company and its exchange registration (8-A12B) is months older than
+    its newest registration statement, so that S-1 is a resale or follow-on (MapLight, 2026-11-19).  A company still on the
+    way to its IPO has no exchange in the SEC record (Anthropic had none two days before listing)."""
+    a12, last = _d(f.get("a12")), _d(f.get("last"))
+    return bool(f.get("exchanges") and a12 and last and (last - a12).days > LISTED_GAP_DAYS)
+
+
 def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) -> Dict:
     fl = ((d.get("us") or {}).get("filers") or {})
     ipo = [{"cik": c, **f} for c, f in fl.items() if f.get("kind") == "ipo"]
@@ -117,7 +128,7 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
     lo_act = (today - timedelta(days=ACTIVE_DAYS)).isoformat()
     pend, other = [], 0
     for f in ipo:
-        if f.get("priced") or f.get("rw") or not f.get("s1") or f.get("last", "") < lo_act:
+        if f.get("priced") or f.get("rw") or not f.get("s1") or f.get("last", "") < lo_act or listed_long_ago(f):
             continue
         cv = f.get("cover") or {}
         if not cv.get("exchange"):

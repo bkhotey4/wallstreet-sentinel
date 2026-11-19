@@ -188,6 +188,49 @@ def test_company_timetable_wins():
     assert r["listing"] == "2026-11-19" and r["near"] == "2026-11-18" and r["stage"] == "公司公布的時間表", r
 
 
+def test_already_listed_company_is_not_an_ipo():
+    """11-19 (Gemini SITE-1): MapLight listed in 2025-10, filed a resale S-1 in 2026-09 that SEC declared effective on 11-17,
+    and the card showed it as 「即將定價 11-19」.  An exchange registration months before the newest S-1 = already listed."""
+    from datetime import date
+    import pandas as pd
+    from wsb.analytics import ipo as IP
+    from wsb.data import ipo_data as I
+    old = I.timeline(_sub([("DRS", "2024-03-08"), ("S-1", "2025-09-19"), ("8-A12B", "2025-10-24"), ("10-K", "2026-03-20"),
+                           ("S-1", "2026-09-01"), ("S-1/A", "2026-09-18"), ("EFFECT", "2026-11-17")], tickers=["MPLT"]))
+    assert old["prior_public"] and I.kind(old) == "followon"
+    new = I.timeline(_sub([("DRS", "2026-06-01"), ("S-1", "2026-10-26"), ("S-1/A", "2026-11-17"), ("8-A12B", "2026-11-17")]))
+    assert not new["prior_public"] and I.kind(new) == "ipo"
+    # the saved record (read before the rule existed) is also kept out of 申請中
+    rec = {"kind": "ipo", "name": "MapLight Therapeutics, Inc.", "s1": "2025-09-19", "last": "2026-09-18", "a12": "2025-10-24",
+           "eff": "2026-11-17", "exchanges": ["Nasdaq"], "doc": {"acc": "x"}, "cover": {"exchange": "Nasdaq", "symbol": "MPLT"}}
+    ant = {"kind": "ipo", "name": "Anthropic, PBC", "s1": "2026-10-26", "last": "2026-11-17", "a12": "2026-11-17", "exchanges": [],
+           "doc": {"acc": "y"}, "cover": {"exchange": "Nasdaq", "symbol": "ANT", "lo": 70.0, "hi": 78.0}}
+    v = IP.us_view({"us": {"filers": {"1": rec, "2": ant}}}, pd.DataFrame(), None, date(2026, 11, 18))
+    assert [r["symbol"] for r in v["pending"]] == ["ANT"], v["pending"]
+
+
+def test_priced_this_morning_still_lists_today():
+    """11-19: Anthropic's 424B4 arrived before the open; the listing must stay on the 72-hour list until 09:30 New York."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from tools import site_events as E
+    et = ZoneInfo("America/New_York")
+    v = {"pending": [], "recent": [{"name": "Anthropic, PBC", "sym": "ANT", "priced": "2026-11-19"},
+                                   {"name": "Old Co", "sym": "OLD", "priced": "2026-11-16"}]}
+    r = E.ipo_rows(v, datetime(2026, 11, 19, 7, 45, tzinfo=et))
+    assert [x["sym"] for x in r] == ["ANT"] and r[0]["next"].startswith("2026-11-19T09:30") and r[0]["exact"]
+    assert E.ipo_rows(v, datetime(2026, 11, 19, 9, 31, tzinfo=et)) == []
+
+
+def test_released_report_leaves_the_countdown():
+    """11-19 (Gemini SITE-2): Walmart's 8-K was in at 07:00 New York but the countdown still said 21:00 Taipei."""
+    from tools import site_events as E
+    rel = {"WMT|2026-11-19": {"sym": "WMT", "date": "2026-11-19", "cal_date": "2026-11-19"},
+           "HD|2026-11-17": {"sym": "HD", "date": "2026-11-17", "cal_date": "2026-11-17"},
+           "BABA|2026-11-19": {"sym": "BABA", "date": "2026-11-18", "cal_date": "2026-11-19"}}      # an older 6-K: not the results
+    assert E.released_today("2026-11-19", rel) == {"WMT"}
+
+
 if __name__ == "__main__":
     fails = 0
     for n, f in list(globals().items()):
