@@ -17,6 +17,7 @@ import os
 import re
 import time
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from ..config import DATA_DIR
@@ -28,6 +29,9 @@ FILE = DATA_DIR / "econ_etf_flows.json"
 TTL = 4 * 3600
 KEEP = 1000                                              # about four years of trading days per fund
 TNA_TOL = 0.02                                           # shares × NAV must match the issuer's own net assets
+SEED = Path(__file__).resolve().parents[2] / "research_feed" / "etf_flows_seed.json"   # public repo root; written by the PC
+SEED_ROWS = 30                                           # trading days carried in the seed
+SEED_MAX_H = 36                                          # the PC's own fetch must be this fresh to be passed on
 _ISH = "https://www.ishares.com/us/products/{}"
 FUNDS = (
     {"sym": "SPY", "zh": "標普 500", "en": "S&P 500", "group": "equity", "issuer": "State Street", "kind": "ssga",
@@ -143,6 +147,40 @@ def merge(old: List[Row], new: List[Row]) -> List[Row]:
     return [m[k] for k in sorted(m)][-KEEP:]
 
 
+def write_seed(path: Path, now: Optional[float] = None) -> int:
+    """Copy the last SEED_ROWS issuer rows of every fund this machine fetched cleanly within SEED_MAX_H into the public
+    repo.  2026-11-19: Invesco has answered the cloud build with HTTP 406 since 11-17 while the PC still gets the same
+    official JSON, so QQQ froze on the site.  The seed is issuer data fetched elsewhere, never an estimate."""
+    d, now = load(), now or time.time()
+    each, out = d.get("ts_each") or {}, {"ts_each": {}, "funds": {}}
+    for s, fd in (d.get("funds") or {}).items():
+        t = float(each.get(s) or 0)
+        if fd.get("rows") and not fd.get("err") and not fd.get("via") and now - t < SEED_MAX_H * 3600:
+            out["ts_each"][s], out["funds"][s] = t, fd["rows"][-SEED_ROWS:]
+    if out["funds"]:
+        path.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    return len(out["funds"])
+
+
+def _from_seed(s: str, fd: Dict, each: Dict) -> bool:
+    """A fund whose own fetch just failed takes the PC's rows when they are newer than what is stored.  The fetch time
+    becomes the time the PC fetched them (never now), and every row passes the same validation as a direct fetch."""
+    try:
+        j = json.loads(SEED.read_text(encoding="utf-8")) if SEED.exists() else {}
+        t, raw = float((j.get("ts_each") or {}).get(s) or 0), (j.get("funds") or {}).get(s) or []
+        if t <= float(each.get(s) or 0) or t > time.time() + 600:
+            return False
+        rows = [_good(str(r[0]), float(r[1]), float(r[2])) for r in raw]
+    except Exception as e:  # noqa: BLE001
+        log.warning("ETF flows seed for %s unusable: %s", s, e)
+        return False
+    if not rows:
+        return False
+    fd["rows"], fd["via"], each[s] = merge(fd.get("rows") or [], rows), "seed", t
+    fd.pop("err", None)
+    return True
+
+
 async def refresh(force: bool = False) -> Dict:
     d = load()
     funds, each = d.setdefault("funds", {}), d.setdefault("ts_each", {})
@@ -150,20 +188,27 @@ async def refresh(force: bool = False) -> Dict:
     for f in FUNDS:
         s = f["sym"]
         fd = funds.setdefault(s, {"rows": []})
-        if not force and t0 - float(each.get(s, 0)) < TTL and fd.get("rows") and not fd.get("err"):
+        if not force and t0 - float(each.get(s, 0)) < TTL and fd.get("rows") and not fd.get("err") and not fd.get("via"):
             continue
         try:
             rows = await _fetch(f)
             fd["rows"] = merge(fd.get("rows") or [], rows)
             fd.pop("err", None)
+            fd.pop("via", None)
             each[s] = time.time()
             d["ts"] = each[s]
             got += 1
             _save(d)                                     # a timeout on a later fund must not lose this one
         except Exception as e:  # noqa: BLE001   the stored history and the fetch time stay as they were
+            log.warning("ETF flows %s failed: %s", s, e)
+            if _from_seed(s, fd, each):
+                d["ts"] = max(float(d.get("ts") or 0), each[s])
+                _save(d)
+                continue
+            if fd.get("via"):                            # still living on an older seed: its date keeps showing, no new error
+                continue
             fd["err"] = type(e).__name__
             errs.append(f"{s}: {e}")
-            log.warning("ETF flows %s failed: %s", s, e)
     if errs:
         HEALTH.fail("etf_flows", "; ".join(errs)[:300], every=TTL)
     elif got:

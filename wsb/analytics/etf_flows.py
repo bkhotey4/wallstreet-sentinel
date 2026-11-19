@@ -63,7 +63,7 @@ def view(f: Dict, rec: Dict, today: date) -> Optional[Dict]:
     if not rows:
         return None
     fl = flows(rows)
-    v = {**f, "asof": rows[-1][0], "aum": rows[-1][1] * rows[-1][2], "n_days": len(rows), "failed": bool(rec.get("err")),
+    v = {**f, "asof": rows[-1][0], "aum": rows[-1][1] * rows[-1][2], "n_days": len(rows), "failed": bool(rec.get("err")), "via_seed": rec.get("via") == "seed",
          "age": int(np.busday_count(rows[-1][0], today.isoformat()))}
     v["stale"] = v["age"] > STALE_BD
     for key, n in (("d1", 1), ("d5", 5), ("d20", 20)):

@@ -203,7 +203,8 @@ def test_audit_fixes():
     dv = {r["sym"]: r for r in sr["div"]["us"]}
     assert set(dv) == {"AAA", "TSM", "FOR"}, set(dv)                    # OLD stale, MIX currency mismatch, BAD px 100 vs Yahoo 50
     assert abs(dv["AAA"]["net"] - 2.1) < 1e-9 and abs(dv["TSM"]["net"] - 3 * 0.79) < 1e-9 and dv["FOR"]["net"] is None, dv
-    assert "OLD" not in {r["sym"] for r in sr["analyst"]["us"]}
+    an = {r["sym"] for r in sr["analyst"]["us"]}
+    assert "OLD" not in an and "BAD" not in an and "AAA" in an, an        # 11-19 (Gemini CODE-1): a split-mismatched price gave a fake analyst gap
     print("  audit fixes ok")
 
 

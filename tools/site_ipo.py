@@ -160,9 +160,9 @@ def _stab(r: Dict) -> str:
     """Stabilization window (greenshoe, ~30 days): when it ends and whether the stock broke the offer price during / after."""
     if not r.get("stab_end"):
         return "—"
-    from datetime import date as _date
+    from wsb.data.econcal import us_today              # stab_end is a US trading day; the build machine runs on UTC
     end = r["stab_end"]
-    if _date.today().isoformat() <= end:
+    if us_today().isoformat() <= end:
         return f'{T("到", "to")} {_md(end)}<div class="small muted">{T("進行中", "ongoing")}' + ("・曾跌破發行價" if r.get("below_in") else "") + "</div>"
     note = ("期間曾跌破" if r.get("below_in") else "期間守住") + ("、結束後跌破" if r.get("below_after") else "、結束後守住" if r.get("below_after") is False else "")
     return f'{_md(end)} {T("結束", "ended")}<div class="small muted">{note}</div>'

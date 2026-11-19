@@ -114,6 +114,7 @@ def _last(sp, s: str) -> Optional[float]:
 # through a US broker); other non-US issuers show "—".  US-domiciled issuers: 30%.
 ADR_TAX = {"TSM": 21.0, "ASML": 15.0, "NVO": 27.0, "CCJ": 25.0}
 STALE_DAYS = 7
+PX_GAP = 0.3                                           # our close vs Yahoo's price further apart than this = split / unit problem
 
 
 def _net_yield(s: str, d: Dict, y: float, mk: str):
@@ -143,14 +144,15 @@ def stock_rows(info: Dict, u: Dict, sp, today: str, now: Optional[float] = None)
             continue                                           # last successful Yahoo fetch too old: don't show stale numbers
         px = _last(sp, s) or d.get("px")
         base = {"sym": s, "code": s.split(".")[0], "name": zh, "name_en": en, "theme": th, "px": px}
-        if d.get("tm") and px and (d.get("n") or 0) >= 1:
+        split = bool(px and d.get("px") and abs(px / d["px"] - 1) > PX_GAP)   # our price and Yahoo's disagree (split / unit)
+        if d.get("tm") and px and (d.get("n") or 0) >= 1 and not split:
             ana[mk].append({**base, "tm": d["tm"], "th": d.get("th"), "tl": d.get("tl"), "n": d.get("n"), "rm": d.get("rm"),
                             "rk": d.get("rk"), "up": (d["tm"] / px - 1) * 100, "uph": (d["th"] / px - 1) * 100 if d.get("th") else None,
                             "upl": (d["tl"] / px - 1) * 100 if d.get("tl") else None})
         if d.get("div") and px:
             if d.get("fcur") and d.get("cur") and d["fcur"] != d["cur"] and s not in ADR_TAX:
                 continue                                       # dividend may be in the reporting currency, price in the trading one
-            if d.get("px") and abs(px / d["px"] - 1) > 0.3:
+            if split:
                 continue                                       # our price and Yahoo's disagree (split / unit problem)
             y = d["div"] / px * 100
             if y <= 0 or y > 25:

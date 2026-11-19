@@ -37,6 +37,8 @@ def _state(v: Dict) -> str:
 def _row(v: Dict) -> str:
     st = _state(v)
     st = f'<div class="dn">{st}</div>' if st else ""
+    if not st and v.get("via_seed"):                     # honest about the path: same issuer data, fetched by the PC
+        st = '<div class="small muted">' + T("發行商擋下雲端連線，改由本機抓同一份官方資料轉送", "Issuer refused the cloud build; same official data relayed from the PC") + "</div>"
     return (f'<tr><td class="nw"><b>{esc(v["sym"])}</b><div class="small muted">{T(v["zh"], v["en"])}</div></td>'
             f'<td class="small nw">{esc(v["asof"])}{st}</td>' + _cell(v["d1"]) + _cell(v["d5"]) + _cell(v["d20"])
             + f'<td class="r small muted">{v["aum"] / 1e8:,.0f}</td></tr>')

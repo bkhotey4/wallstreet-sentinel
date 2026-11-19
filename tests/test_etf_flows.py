@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import os
 import sys
 import tempfile
@@ -108,6 +109,50 @@ def test_failure_keeps_last_good():
     h = C.sec_etf_flows(None, A.build(d, date.fromisoformat(old[-1][0]).replace(year=2030)))
     assert "官方資料已過期" in h
     assert "流" not in A.build(d, date(2030, 1, 1))["lead"].replace("資金流向", "")     # expired data is not read out
+
+
+def test_seed_from_pc_when_cloud_is_refused():
+    """2026-11-19: Invesco answered the cloud build 406 for two days; the PC's verified rows fill in, with the PC's
+    fetch time (not now), and a bad or older seed changes nothing."""
+    tmp = Path(tempfile.mkdtemp())
+    D.FILE, seed0 = tmp / "pc.json", D.SEED
+    rows, t_pc = _rows(40), time.time() - 3 * 3600
+    D._save({"ts": t_pc, "ts_each": {"QQQ": t_pc, "SPY": t_pc - 50 * 3600, "HYG": t_pc},
+             "funds": {"QQQ": {"rows": rows}, "SPY": {"rows": rows}, "HYG": {"rows": rows, "err": "TimeoutError"}}})
+    D.SEED = tmp / "seed.json"
+    assert D.write_seed(D.SEED) == 1                                                  # stale SPY and failed HYG are not passed on
+    seed = json.loads(D.SEED.read_text(encoding="utf-8"))
+    assert list(seed["funds"]) == ["QQQ"] and len(seed["funds"]["QQQ"]) == D.SEED_ROWS
+
+    D.FILE = tmp / "cloud.json"
+    t_old = time.time() - 55 * 3600
+    D._save({"ts": t_old, "ts_each": {f["sym"]: t_old for f in D.FUNDS}, "funds": {f["sym"]: {"rows": rows[:-3]} for f in D.FUNDS}})
+    orig = D.http.get
+
+    async def refused(url, **kw):
+        raise OSError("406 Not Acceptable")
+    D.http.get = refused
+    try:
+        d = asyncio.run(D.refresh())
+        assert d["funds"]["QQQ"]["rows"][-1] == rows[-1] and d["funds"]["QQQ"]["via"] == "seed" and "err" not in d["funds"]["QQQ"]
+        assert d["ts_each"]["QQQ"] == t_pc and d["ts_each"]["SPY"] == t_old           # the PC's fetch time, never now
+        assert d["funds"]["SPY"]["err"] == "OSError" and d["funds"]["SPY"]["rows"] == rows[:-3]
+        assert "本機抓同一份官方資料轉送" in C.sec_etf_flows(None, A.build(d, date.fromisoformat(rows[-1][0])))
+        d2 = asyncio.run(D.refresh())                                                 # same seed again: nothing moves, no new error
+        assert d2["ts_each"]["QQQ"] == t_pc and "err" not in d2["funds"]["QQQ"]
+        seed["funds"]["QQQ"][-1][2] = -1                                              # a damaged seed never enters the history
+        seed["ts_each"]["QQQ"] = time.time()
+        D.SEED.write_text(json.dumps(seed), encoding="utf-8")
+        assert asyncio.run(D.refresh())["ts_each"]["QQQ"] == t_pc
+
+        async def ok(url, **kw):                                                      # the issuer answers again: the note goes away
+            if "invesco" not in url:
+                raise OSError("down")
+            return {"ticker": "QQQ", "effectiveBusinessDate": date.today().isoformat(), "sharesOutstanding": 1e8, "nav": 100.0}
+        D.http.get = ok
+        assert "via" not in asyncio.run(D.refresh())["funds"]["QQQ"]
+    finally:
+        D.http.get, D.SEED = orig, seed0
 
 
 def test_one_fund_fails_others_move():

@@ -257,6 +257,12 @@ def main() -> Dict:
         rep["stopped"] = explain_stopped(stopped_trading((pd.read_pickle(DATA_DIR / "stock_prices.pkl") or {}).get("close")))
     except Exception:  # noqa: BLE001
         rep["stopped"] = []
+    try:                                                      # issuer data the cloud build is refused (Invesco 406 since 11-17)
+        from wsb.data import etf_flows as EF
+        feed = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
+        rep["etf_seed"] = EF.write_seed(feed / "etf_flows_seed.json") if feed.is_dir() else 0
+    except Exception as e:  # noqa: BLE001
+        rep["etf_seed_error"] = str(e)
     OUT.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     return rep
 
