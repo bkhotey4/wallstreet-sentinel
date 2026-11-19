@@ -226,8 +226,13 @@ def tw_view(d: Dict, px: pd.DataFrame, twii: Optional[pd.Series], today: date) -
     fin = tw.get("fin") or {}
     lg = tw.get("apply_log") or {}
     t = today.isoformat()
-    up, past = [], []
+    up, past, cancelled = [], [], []
     for r in rows.values():
+        if r.get("cancel"):
+            # 取消公開抽籤 (the exchange's own column): 宏偉 and 耐特 were pulled 11/09–11/10 for too few auction bids, yet the
+            # card went on naming them as 「即將掛牌 11-19」 (Gemini SITE-3, 2026-11-20).  Neither upcoming nor a past listing.
+            cancelled.append(dict(r))
+            continue
         rec = dict(r)
         e = esb.get(r["code"]) or {}
         f = {k: v for k, v in (fin.get(r["code"]) or {}).items() if k != "ts"}
@@ -269,7 +274,7 @@ def tw_view(d: Dict, px: pd.DataFrame, twii: Optional[pd.Series], today: date) -
           for k in ("day1", "d20", "x60", "vs_offer")}
     wins = [r["win"] for r in past if r.get("win")]
     waits = _pct([r["wait"] for r in past if r.get("wait") is not None])
-    return {"upcoming": up, "past": past, "applying": applying, "stats": st, "win_med": float(np.median(wins)) if wins else None,
+    return {"upcoming": up, "past": past, "cancelled": cancelled, "applying": applying, "stats": st, "win_med": float(np.median(wins)) if wins else None,
             "wait": waits, "from": min((r["list"] for r in past if r.get("list")), default=None)}
 
 

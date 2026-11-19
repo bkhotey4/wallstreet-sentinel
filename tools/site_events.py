@@ -69,6 +69,29 @@ def released_today(et_day: str, rel: dict = None) -> set:
             if isinstance(v, dict) and v.get("date") == et_day and v.get("cal_date") == et_day}
 
 
+PRE_DONE = (9, 30)      # New York cash open: a 「盤前」 report is out by definition once the market has opened
+
+
+def split_reported(cal: dict, now: datetime, released: set = None) -> dict:
+    """美股財報日曆: move today's (New York date) rows out of 「即將公布」 once the company has reported — its results filing
+    is at the SEC (released_today), or it was a 盤前 report and the market is already open.  2026-11-19: the 11-19 fix only
+    reached the countdown card; at 11:31 New York this table still listed WMT / BABA / PDD / NTES / WSM as upcoming while
+    another card showed Walmart's numbers (Gemini SITE-1).  Foreign filers (6-K) are often not in the release cache, hence
+    the clock rule.  Moved rows keep an empty EPS (the calendar source fills it later) and carry `just`."""
+    et_now = now.astimezone(ET)
+    day = et_now.date().isoformat()
+    if released is None:
+        released = released_today(day)
+    opened = (et_now.hour, et_now.minute) >= PRE_DONE
+    up, moved = [], []
+    for x in cal.get("up") or []:
+        if x.get("date") == day and (str(x.get("sym") or "").upper() in released or (x.get("time") == "pre" and opened)):
+            moved.append({**x, "just": True})
+        else:
+            up.append(x)
+    return {**cal, "up": up, "past": moved + list(cal.get("past") or [])}
+
+
 def earn_events(eng, now: datetime, floor: float = EARN_FLOOR, days: int = EARN_DAYS) -> list:
     """Reports of companies worth ≥ $500B in the next 10 days (2026-11-16: NVIDIA, ~6 % of the S&P 500, moves the index
     like a CPI print, so it belongs on this card).  Time: 'after' → 16:05 New York, 'pre' → 08:00, unknown → 16:05 marked 時間未定.

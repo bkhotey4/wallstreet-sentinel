@@ -126,6 +126,17 @@ async def treasury_auctions(days: int = 30) -> List[Dict]:
             amt_s = ""
         yrs = int(m.group(1))
         reopen = "增額" if str(r.get("reopening", "")).lower() == "yes" else "新發"
+        yes = lambda k: str(r.get(k) or "No").lower() == "yes"  # noqa: E731
+        if yes("floatingRate"):
+            continue
+        if yes("tips") or yes("inflationProtected") or str(r.get("type", "")).upper() == "TIPS":
+            # 2026-11-19: the $19B 10-year TIPS reopening was printed as 「美債 10 年期標售」, as if it were the nominal
+            # 10-year that sets the benchmark yield (Gemini SITE-2; treasury.py already skips TIPS for results)
+            out.append({"date": d.isoformat(), "type": "liquidity", "id": f"auctips{yrs}{d.isoformat()}",
+                        "event": f"美債 {yrs} 年期抗通膨債（TIPS）標售（{reopen}）" + (f" ${amt_s}" if amt_s else ""),
+                        "importance": 2,
+                        "note": "抗通膨債的得標利率是「實質利率」，不是一般 10 年期殖利率；需求弱代表市場要更高的實質報酬"})
+            continue
         out.append({"date": d.isoformat(), "type": "liquidity", "id": f"auc{yrs}{d.isoformat()}",
                     "event": f"美債 {yrs} 年期標售（{reopen}）" + (f" ${amt_s}" if amt_s else ""),
                     "importance": 3 if yrs >= 10 else 2,

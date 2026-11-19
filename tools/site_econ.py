@@ -469,6 +469,12 @@ def sec_earn_cal(eng) -> str:
     cal = (te.get("calendar") or {}) if te else {}
     if not cal.get("up") and not cal.get("past"):
         return ""
+    try:                                        # today's reports that are already out leave 「即將公布」 (site_events.split_reported)
+        from datetime import datetime, timezone
+        from tools.site_events import split_reported
+        cal = split_reported(cal, datetime.now(timezone.utc))
+    except Exception:  # noqa: BLE001
+        pass
     def tm(x):
         return {"pre": T("盤前", "pre-mkt"), "after": T("盤後", "after close")}.get(x, T("未定", "tbd"))
     def nm(x):
@@ -477,7 +483,8 @@ def sec_earn_cal(eng) -> str:
     up = "".join(f'<tr data-k="{"t" if x["tech"] else "c" if x["cur"] else "o"}"><td class="nw">{esc(x["date"][5:])} {_wd(x["date"])}</td><td>{tm(x["time"])}</td>{nm(x)}'
                  f'<td class="r">{num(x["eps_f"], 2)}</td><td class="r muted">{num(x["n_est"], 0)}</td><td class="r muted">{num(x["eps_ly"], 2)}</td>'
                  f'<td class="r {cls(x["g"])}">{num(x["g"], 0, sign=True, pct=True)}</td></tr>' for x in cal.get("up", [])[:120])
-    past = "".join(f'<tr data-k="{"t" if x["tech"] else "c" if x["cur"] else "o"}"><td class="nw">{esc(x["date"][5:])}</td>{nm(x)}'
+    just = f' <span class="muted small">{T("今天已公布，數字待更新", "out today, numbers pending")}</span>'
+    past = "".join(f'<tr data-k="{"t" if x["tech"] else "c" if x["cur"] else "o"}"><td class="nw">{esc(x["date"][5:])}{just if x.get("just") else ""}</td>{nm(x)}'
                    f'<td class="r">{num(x["eps"], 2)}</td><td class="r muted">{num(x["eps_f"], 2)}</td><td class="r {cls(x["surp"])}">{num(x["surp"], 1, sign=True, pct=True)}</td>'
                    f'<td class="r {cls(x.get("react"))}">{num(x.get("react"), 1, sign=True, pct=True)}</td></tr>' for x in cal.get("past", [])[:80])
     sel = (f'<select class="btn ecf"><option value="" data-en="All">全部（追蹤池＋市值 200 億美元以上）</option><option value="tc" data-en="Curated">只看追蹤池</option>'

@@ -31,7 +31,12 @@ def _money(v: Optional[float]) -> str:
     return f"{v / 1e8:,.1f} 億美元" if a >= 1e8 else f"{v / 1e6:,.1f} 百萬美元" if a >= 1e6 else f"{v:,.0f} 美元"
 
 
+CANCEL_SHOW_DAYS = 14    # a cancelled Taiwan offering is named in the lead for two weeks after its planned listing day
+
+
 def _usd(x: float) -> str:
+    if abs(x) < 1e8:                                   # 11-20: a US$7M micro-cap IPO was printed as 「約 0 億美元～0 億美元」
+        return f"{x / 1e6:,.1f} 百萬美元"
     return f"{x / 1e8:,.0f} 億美元" if x < 1e12 else f"{x / 1e12:,.2f} 兆美元"
 
 
@@ -231,6 +236,11 @@ def lead(b: Dict) -> str:
         s += "；即將定價：" + "、".join(f'{r["name"]}' + (f'（{r["symbol"]}）' if r.get("symbol") else "") + (f' {_md(r["listing"])} 掛牌（公司時間表）' if r.get("listing") else f' 約 {_md(r["near"])}') for r in stg)
     up = t.get("upcoming") or []
     s += f"；台股已公告 {len(up)} 家即將掛牌" + ("（" + "、".join(f"{r['name']} {_md(r.get('list'))}" for r in up) + "）" if up else "")   # every one of them (11-17: said 4, named 3)
+    from datetime import date as _date, timedelta as _td
+    since = (_date.today() - _td(days=CANCEL_SHOW_DAYS)).isoformat()
+    off = [r for r in (t.get("cancelled") or []) if (r.get("list") or "") >= since]
+    if off:
+        s += "（" + "、".join(r["name"] for r in off) + " 已取消這次承銷，不列入）"
     s += f"、{len(t.get('applying') or [])} 家已申請上市櫃。"
     su, st = u.get("stats") or {}, t.get("stats") or {}
     big = su.get("big") or {}

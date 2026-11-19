@@ -437,6 +437,12 @@ def save(d: Dict[str, Dict]) -> None:
         log.warning("earnings release cache not saved: %s", e)
 
 
+# Full-year revenue guidance as a multiple of the latest quarter.  One range for both checks: until 2026-11-20 a figure was
+# re-labelled "year" at 2.5–5.5× and then dropped by a 3.0–5.0× test two lines later, so a holiday-quarter retailer
+# (year ≈ 2.8× its fourth quarter) or a fast grower (≈ 5.3×) lost a correct outlook (Gemini CODE-1).
+YEAR_X = (2.5, 5.5)
+
+
 def sanitize(actual: Dict, guide: List[Dict], ref: Optional[float], form: str) -> Tuple[Dict, List[Dict]]:
     """Drop numbers that cannot be right.  `ref` = last known quarterly revenue in US$ billions (SEC XBRL), if any.
     - US revenue far from the reference is a segment or annual figure → dropped.  Without a reference, an 8-K's
@@ -460,11 +466,11 @@ def sanitize(actual: Dict, guide: List[Dict], ref: Optional[float], form: str) -
             if base:
                 r = g["mid"] / base
                 if g["period"] == "next_q" and not (0.75 <= r <= 1.5):
-                    if 2.5 <= r <= 5.5:
+                    if YEAR_X[0] <= r <= YEAR_X[1]:
                         g["period"] = "year"
                     else:
                         continue
-                if g["period"] == "year" and not (3.0 <= r <= 5.0):
+                if g["period"] == "year" and not (YEAR_X[0] <= r <= YEAR_X[1]):
                     continue
             elif g.get("cur") == "USD" and form == "8-K":
                 continue                                   # no way to check it → leave it out

@@ -231,6 +231,70 @@ def test_released_report_leaves_the_countdown():
     assert E.released_today("2026-11-19", rel) == {"WMT"}
 
 
+def test_reported_rows_leave_the_calendar_table():
+    """11-20 (Gemini SITE-1): at 11:31 New York the 美股財報日曆 still listed WMT / BABA / PDD as upcoming."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from tools import site_events as E
+    et = ZoneInfo("America/New_York")
+    row = lambda s, d, t: {"date": d, "sym": s, "time": t, "eps": None}  # noqa: E731
+    cal = {"up": [row("WMT", "2026-11-19", "pre"), row("PDD", "2026-11-19", "pre"), row("INTU", "2026-11-19", "after"),
+                  row("DE", "2026-11-25", "pre")], "past": [row("HD", "2026-11-17", "pre")]}
+    early = E.split_reported(cal, datetime(2026, 11, 19, 7, 30, tzinfo=et), {"WMT"})          # filed, market not open yet
+    assert [x["sym"] for x in early["up"]] == ["PDD", "INTU", "DE"] and early["past"][0]["sym"] == "WMT" and early["past"][0]["just"]
+    late = E.split_reported(cal, datetime(2026, 11, 19, 11, 31, tzinfo=et), {"WMT"})          # open: every 盤前 row is out
+    assert [x["sym"] for x in late["up"]] == ["INTU", "DE"] and [x["sym"] for x in late["past"]] == ["WMT", "PDD", "HD"]
+    assert len(cal["up"]) == 4                                                                # the input is not changed
+    done = E.split_reported(cal, datetime(2026, 11, 19, 17, 0, tzinfo=et), {"WMT", "INTU"})   # after-close filing arrived
+    assert [x["sym"] for x in done["up"]] == ["DE"]
+
+
+def test_cancelled_taiwan_offering_is_not_upcoming():
+    """11-20 (Gemini SITE-3): 宏偉 and 耐特 carried 取消公開抽籤 in the exchange file but stayed under 即將掛牌 11-19."""
+    from tools import site_ipo as S
+    from wsb.analytics import ipo as IP
+    rows = [{"code": "4565", "name": "宏偉", "mk": "初上櫃", "list": "2026-11-19", "price": 90.0, "cancel": True},
+            {"code": "7869", "name": "宏于電機", "mk": "初上櫃", "list": "2026-11-26", "price": 50.0, "cancel": False}]
+    t = IP.tw_view({"tw": {"public": {"2026": {"rows": rows}}}}, pd.DataFrame(), None, date(2026, 11, 18))
+    assert [r["name"] for r in t["upcoming"]] == ["宏于電機"] and [r["name"] for r in t["cancelled"]] == ["宏偉"]
+    assert not t["past"]
+    assert S._usd(7.2e6) == "7.2 百萬美元" and S._usd(8.1e10) == "810 億美元"                  # was 「0 億美元」
+
+
+def test_tips_auction_is_labelled():
+    """11-20 (Gemini SITE-2): a 10-year TIPS reopening was printed as the nominal 10-year auction."""
+    import asyncio
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    from wsb.data import http, liquidity as L
+    d = (datetime.now(ZoneInfo("America/New_York")).date() + timedelta(days=2)).isoformat() + "T00:00:00"
+    base = {"securityType": "Note", "originalSecurityTerm": "10-Year", "auctionDate": d, "reopening": "Yes"}
+    js = [{**base, "offeringAmount": "19000000000", "inflationProtected": "Yes", "type": "TIPS"},
+          {**base, "offeringAmount": "42000000000", "inflationProtected": "No", "type": "Note"},
+          {**base, "offeringAmount": "30000000000", "floatingRate": "Yes"}]
+    async def fake(*a, **k):
+        return js
+    old, http.get = http.get, fake
+    try:
+        ev = asyncio.run(L.treasury_auctions())
+    finally:
+        http.get = old
+    assert len(ev) == 2, ev
+    tips = [e for e in ev if "TIPS" in e["event"]]
+    assert len(tips) == 1 and "$19B" in tips[0]["event"] and tips[0]["importance"] == 2
+    assert any(e["event"].startswith("美債 10 年期標售") and "$42B" in e["event"] for e in ev)
+
+
+def test_year_guidance_range_is_one_range():
+    """11-20 (Gemini CODE-1): re-labelled at 2.5–5.5× then dropped by a 3.0–5.0× test."""
+    from wsb.data import earn_release as ER
+    act = {"revenue": {"USD": {"v": 10.0}}}
+    g = lambda mid, per: {"metric": "revenue", "unit": "B", "cur": "USD", "period": per, "mid": mid}  # noqa: E731
+    keep = lambda mid, per: [x["period"] for x in ER.sanitize(act, [g(mid, per)], 10.0, "8-K")[1]]   # noqa: E731
+    assert keep(28.0, "next_q") == ["year"] and keep(53.0, "next_q") == ["year"] and keep(28.0, "year") == ["year"]
+    assert keep(20.0, "next_q") == [] and keep(60.0, "year") == [] and keep(11.0, "next_q") == ["next_q"]
+
+
 if __name__ == "__main__":
     fails = 0
     for n, f in list(globals().items()):
