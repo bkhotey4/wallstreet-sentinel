@@ -93,6 +93,7 @@ def _score(done: List[Dict]) -> str:
 
 
 def sec_deep(eng) -> str:
+    from tools import flow_guard as FG
     d = load()
     days = [x for x in (d.get("days") or []) if isinstance(x, dict) and x.get("date") and x.get("one")]
     if not days:
@@ -116,5 +117,6 @@ def sec_deep(eng) -> str:
             + (f'<p class="small muted">來源：{_src(top.get("sources"))}</p>' if top.get("sources") else "") + "</details>"
             + f'<p class="note">美股收盤後由雲端 AI 用公開資料整理，是對當天市場的解讀，不是股價預測；判斷都附驗證日，錯了也會留著。'
               f'分析日 {_e(top["date"])}，最後更新 {_e(d.get("updated"))}。不構成投資建議。</p>')
+    body = FG.fix(body, getattr(getattr(eng, "taiwan", None), "flows", None))   # digit slips in 外資 amounts
     return card("每日深度研判：拿掉情緒，只看數據", "Daily deep read: the data under the noise", body, "wide",
                 sub="每個美股交易日收盤後更新")
