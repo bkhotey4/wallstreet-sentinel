@@ -87,6 +87,11 @@ async def _twmacro():
         await TB.refresh()
     except Exception as e:  # noqa: BLE001
         log.warning("TW bank data failed: %s", e)
+    try:                                       # 台股泡沫觀察：證交所成交、當沖、融資、本益比（缺的歷史每次補一點）
+        from .data import tw_bubble as TBB
+        await TBB.refresh()
+    except Exception as e:  # noqa: BLE001
+        log.warning("TW bubble data failed: %s", e)
     try:                                       # 利率壓力鏈：AI 算力公司股價（每天一次）
         from .data import rate_pressure as RPD
         await RPD.refresh()

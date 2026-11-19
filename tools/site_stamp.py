@@ -303,6 +303,16 @@ def _fsr():
     return (_ts(min(ts)) if ts else None), (min(last) if last else None)
 
 
+def _twbubble():
+    """(fetch ts, latest TWSE trading day) of the Taiwan bubble-watch cache."""
+    try:
+        from wsb.data import tw_bubble as TBB
+        ts, last = TBB.stamp()
+    except Exception:  # noqa: BLE001
+        return None, None
+    return _ts(ts), last
+
+
 def _twbank():
     """(oldest fetch ts, oldest data month) over the four Banking Bureau files."""
     try:
@@ -630,6 +640,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: _feed_stamp("site_preview"), 2),
     "sessions": ("美股時段快報（雲端 AI）", "US session notes", lambda e: _feed_stamp("site_sessions"), 2),
     "forecast": ("一個月預判（雲端 AI）", "One-month calls", lambda e: _feed_stamp("site_forecast"), 5),
+    "twforecast": ("台灣總經展望（AI 依官方資料撰寫）", "Taiwan outlook", lambda e: _feed_stamp("site_twforecast"), 14),
     "afterall": ("財報判讀補寫（雲端 AI）", "Earnings reads", lambda e: _feed_stamp("site_after", "load_all"), 3),
     "longhist": ("人類與市場長歷史（AI 整理）", "Long history", lambda e: _feed_stamp("site_longhist"), 0),
     "bondread": ("債市深度判讀（雲端 AI）", "Bond read", lambda e: _feed_stamp("site_bondread"), 3),
@@ -666,6 +677,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
+    "twbubble": ("臺灣證券交易所（成交、當沖、融資、本益比）", "TWSE trading / day-trade / margin / valuation", lambda e: _twbubble(), 12),
     "fsr": ("OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（季資料）", "OFR / NY Fed / FDIC quarterly", lambda e: _fsr(), 200),
     "ecb": ("歐洲央行 CISS＋各國公債（FRED 月資料）", "ECB CISS / FRED", lambda e: (_ts(_ead("ts_check")), _ead_date()), 7),
     "country": ("Yahoo 匯率與國家 ETF、國際貨幣基金、世界銀行、FRED 外匯存底", "Yahoo / IMF / World Bank / FRED", lambda e: _country(), 6),
@@ -698,7 +710,7 @@ CARD: Dict[str, List[str]] = {
     "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_etf_flows": ["etf_flows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
-    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_life": ["twmacro"],
+    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_bubble": ["twbubble"], "sec_tw_regime": ["twbubble", "twmacro"], "sec_tw_forecast": ["twforecast"], "sec_tw_life": ["twmacro"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
