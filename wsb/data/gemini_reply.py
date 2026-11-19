@@ -39,20 +39,52 @@ def specific(url: Optional[str]) -> bool:
     return bool(re.search(r"\d", u.path) or (len(last) >= 12 and last.count("-") >= 2) or re.search(r"(^|&)(id|p|story|article)=", u.query or ""))
 
 
+def check_links(d: Dict, old: Dict, timeout: int = 8) -> List[str]:
+    """Open every cited link once: 11-19 08:25 two key 'facts' (a US strike near Hormuz, Anthropic priced at $83) cited
+    article URLs that return 404 — a made-up link looks just as specific as a real one.  Only 404/410 count as dead;
+    403 / timeouts (paywalls, bot walls) stay as they are.  Results are cached in the state file."""
+    import os
+    import urllib.error
+    import urllib.request
+    from concurrent.futures import ThreadPoolExecutor
+    seen = dict(old.get("link_ok") or {})
+    urls = {x["url"] for i in d.get("items") or [] for x in (i.get("facts") or []) + (i.get("rumors") or []) if x.get("url")}
+    urls |= {x["url"] for x in d.get("extra") or [] if x.get("url")}
+    todo = [u for u in urls if u not in seen][:120]
+    if todo and not os.environ.get("WSB_OFFLINE"):
+        def probe(u):
+            try:
+                req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                with urllib.request.urlopen(req, timeout=timeout):
+                    return u, True
+            except urllib.error.HTTPError as e:
+                return u, e.code not in (404, 410)
+            except Exception:  # noqa: BLE001
+                return u, True                                   # unknown is not dead
+        with ThreadPoolExecutor(8) as ex:
+            seen.update(dict(ex.map(probe, todo)))
+    d["link_ok"] = {u: v for u, v in seen.items() if u in urls}
+    return [u for u in urls if seen.get(u) is False]
+
+
 def sanitize(d: Dict) -> Dict:
-    """Facts whose link is not one article become guesses (with the reason); rumors keep the link only if it is one article."""
+    """Facts whose link is not one article become guesses (with the reason); rumors keep the link only if it is one article.
+    Links that came back 404 (check_links) are treated the same way."""
+    dead = {u for u, ok in (d.get("link_ok") or {}).items() if ok is False}
     for i in d.get("items") or []:
         keep = []
         for x in i.get("facts") or []:
-            if specific(x.get("url")):
+            if x.get("url") in dead:
+                i.setdefault("guess", []).append(f"{x['t']}（附的連結打不開（404），無法查證）")
+            elif specific(x.get("url")):
                 keep.append(x)
             else:
                 i.setdefault("guess", []).append(f"{x['t']}（來源只給網站首頁或分類頁，無法查證）")
         i["facts"] = keep
         for x in (i.get("rumors") or []) + (i.get("missed") or []):
-            if x.get("url") and not specific(x["url"]):
+            if x.get("url") and (not specific(x["url"]) or x["url"] in dead):
                 x["url"] = None
-    d["extra"] = [x for x in d.get("extra") or [] if specific(x.get("url"))]
+    d["extra"] = [x for x in d.get("extra") or [] if specific(x.get("url")) and x.get("url") not in dead]
     return d
 
 
@@ -157,9 +189,10 @@ def refresh(force: bool = False, timeout: int = 15) -> Dict:
         # 11-19 the owner: 「可能要留意一下消耗速度」 — the quota itself is not visible from here, so keep a run log
         # (answer time, size, items, searches implied by links) for the daily task to watch: runs that come late,
         # shrink, or stop mean the model or the cadence should change
+        dead = check_links(d, old)
         runs = [r for r in old.get("runs") or [] if r.get("when") != d["when"]][-71:]
         links = sum(len(i["facts"]) + sum(1 for x in i["rumors"] if x.get("url")) for i in d["items"])
-        runs.append({"when": d["when"], "items": len(d["items"]), "links": links, "chars": sum(len(t) for t in texts),
+        runs.append({"when": d["when"], "items": len(d["items"]), "links": links, "dead": len(dead), "chars": sum(len(t) for t in texts),
                      "seen": int(time.time())})
         out = dict(d, fetched=int(time.time()), ok=True, src="antigravity", runs=runs)
         try:

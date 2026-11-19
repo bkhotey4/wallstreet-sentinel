@@ -34,3 +34,12 @@ assert h["items"][0]["facts"] == [] and "無法查證" in h["items"][0]["guess"]
 assert h["items"][1]["rumors"][0]["url"] is None
 assert G.specific("https://www.reuters.com/markets/us/tjx-raises-forecast-2026-11-18/") and not G.specific("https://seekingalpha.com")
 print("gemini_reply ok")
+
+
+def test_dead_link_demoted():
+    d = {"items": [{"sym": "X", "why": "w", "facts": [{"t": "假新聞", "url": "https://a.com/2026/11/18/some-long-story-name"}],
+                    "rumors": [], "missed": [], "guess": []}], "extra": [],
+         "link_ok": {"https://a.com/2026/11/18/some-long-story-name": False}}
+    out = G.sanitize(d)
+    assert out["items"][0]["facts"] == [] and "404" in out["items"][0]["guess"][0]
+test_dead_link_demoted(); print('dead link ok')
