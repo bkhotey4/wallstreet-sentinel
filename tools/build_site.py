@@ -41,6 +41,8 @@ from tools import site_stability as SST
 from tools import site_events as SEV
 from tools import site_calc as SCA
 from tools import site_live as SLV
+from tools import site_tracker as STK
+from tools import site_event_board as SEB
 from tools import site_stockcheck as SSC
 from tools import site_drop as SDC
 from tools import site_ipo as SIPO
@@ -1354,7 +1356,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
-    tabs = [("overview", "總覽", "Overview", [SFC.sec_macro_voice, SNL.sec_news_live, SLY.sec_today_slot, SSN.sec_sessions, SFC.sec_forecast, SLN.sec_learn, SDP.sec_deep, SLY.sec_more_slot, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
+    tabs = [("overview", "總覽", "Overview", [SFC.sec_macro_voice, SEB.sec_event_board, SNL.sec_news_live, SLY.sec_today_slot, SSN.sec_sessions, SFC.sec_forecast, SLN.sec_learn, SDP.sec_deep, SLY.sec_more_slot, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SSN.sec_sessions, SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
             ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
@@ -1398,12 +1400,12 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),
-            ("news", "新聞日曆", "News & calendar", [SDT.sec_dots, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
+            ("news", "新聞日曆", "News & calendar", [SEB.sec_event_board, SDT.sec_dots, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ldi, SST.sec_st_fsr, SST.sec_st_sloos, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_dollar, STR.sec_tr_yen, SST.sec_st_coverage]),
-            ("tools", "工具", "Tools", [SLV.sec_lookup, SLV.sec_watch, SCA.sec_sizing, S4.sec_fees]),
+            ("tools", "工具", "Tools", [SLV.sec_lookup, STK.sec_tracker, SLV.sec_watch, SCA.sec_sizing, S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),
             ("about", "條款與隱私", "Terms & privacy", [SL_.sec_terms, SL_.sec_privacy])]
     tabs = SLY.order(tabs)                                 # sidebar order: 7 groups (layout only)
@@ -1453,14 +1455,14 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
 <link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="情報站">
-<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{SDU.CSS}{SNL.CSS}{SE.OIL_CSS}{SSN.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{SCF.CSS}{COMPLY_CSS}</style></head><body>
+<style>{CSS}{SA.CSS}{STP.CSS}{SLY.CSS}{SLY.KW_CSS}{SAI.CSS}{SST.CSS}{SEV.CSS}{SCA.CSS}{SW2.CSS}{SBT.CSS}{SCR.CSS}{SRS.CSS}{S2.SECTION_CSS}{S3.CSS}{S4.CSS}{SO.CSS}{SP.CSS}{SLV.CSS}{STK.CSS}{SEB.CSS}{SDU.CSS}{SNL.CSS}{SE.OIL_CSS}{SSN.CSS}{SGL.CSS}{SEN.CSS}{SCD.CSS}{SMK.CSS}{SCF.CSS}{COMPLY_CSS}</style></head><body>
 {comply_bar()}<header class="top"><div class="bar"><div class="brand">WALLSTREET SENTINEL<small>{T("全球金融風險情報站", "Global financial risk intelligence")}</small></div>
 <span id="liveb" data-b="{int(now.timestamp())}" class="live{" stale" if stale else ""}"><i></i>{T("行情資料日", "Market data")} {esc(asof or "—")} · {T("頁面產生", "Built")} {now:%m-%d %H:%M} {T("台北", "Taipei")}</span>
 <div class="tbtns">{SA.bell_html(eng.web_alerts)}<button class="btn omni-btn" id="omniBtn" type="button" aria-label="search" data-en="🔍 Search ⌘K">🔍 搜尋 (Ctrl+K)</button><button class="btn install" id="installBtn" type="button" data-en="Install app">加到主畫面</button><button class="btn" id="reloadBtn" type="button" aria-label="refresh page" title="重新載入最新資料" data-en="↻ Refresh">↻ 更新</button><button class="btn" id="langBtn" type="button" aria-label="language">EN</button><button class="btn" id="kwBtn" type="button" aria-label="highlight key words" data-en="Key">重點</button><button class="btn" id="themeBtn" type="button" aria-label="theme">☀</button><button class="btn tmore" id="tmoreBtn" type="button" aria-label="more buttons" aria-expanded="false">⋯</button><span class="fsg"><button class="btn fsb" id="fsDn" type="button" aria-label="smaller text" title="字體縮小">A−</button><button class="btn fsb" id="fsUp" type="button" aria-label="larger text" title="字體放大">A+</button></span></div></div>
 {SLY.topnav()}{SA.RIBBON_HTML}</header>
 <main class="wrap">{strip}<div class="layout">{SLY.sidebar(names, first, cards)}<div class="lmain">{"".join(panels)}</div></div><footer>{foot} <a class="golink" href="#about" data-p="about">{T("資料來源、使用條款與隱私權政策", "Sources, terms & privacy")}</a></footer></main>
 <div id="tip" role="status"></div>{SA.MODAL_HTML}
-<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{SE.OIL_JS}{SSN.SPLIT_JS}{COMPLY_JS}{TOP_JS}</script></body></html>'''
+<script type="application/json" id="chart-data">{data}</script><script>{JS}{S2.TM_JS}{S2.FM_JS}{S3.JS}{S4.JS}{SP.JS}{SA.JS}{STP.JS}{SLY.js(names)}{SGL.JS}{SLY.KW_JS}{SAI.JS}{SCR.JS}{SEV.JS}{SCA.JS}{SLV.JS}{STK.JS}{SEB.JS}{SID.JS}{STL.JS}{SXG.JS}{SMK.JS}{STE.JS}{SNL.JS}{SE.OIL_JS}{SSN.SPLIT_JS}{COMPLY_JS}{TOP_JS}</script></body></html>'''
 
 
 def snapshot(eng) -> dict:
