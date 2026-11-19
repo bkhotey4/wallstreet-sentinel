@@ -50,7 +50,9 @@ def sec_korea_exports(eng) -> str:
         a, b = same[0]["day_yoy"], same[2]["day_yoy"]
         seg = f"1–{int(same[0]['key'][8:10])} 日"
         trend = (f"同一段（每月 {seg}）比，兩個月前的日均年增率 {_pc(b)}，現在 {_pc(a)}："
-                 + ("成長還在加速。" if a > b + 5 else "已經轉為衰退。" if a < 0 else "成長在放慢，但仍是增加。" if a < b - 5 else "大致持平。"))
+                 + ((("還在衰退，但跌幅在縮小。" if a > b + 5 else "衰退在擴大。" if a < b - 5 else "還在衰退。") if b < 0 else "已經轉為衰退。")
+                    if a < 0 else   # 11-19 Gemini CODE-3: −15% → −5% used to read 「成長還在加速」
+                    "成長還在加速。" if a > b + 5 else "成長在放慢，但仍是增加。" if a < b - 5 else "大致持平。"))
     trs = [
         f'<tr><td class="nw">{esc(period_zh(r["key"]))}</td><td class="r">{r["exp"]:,.0f}</td><td class="r {"up" if (r.get("yoy") or 0) > 0 else "dn"}">{_pc(r.get("yoy"))}</td>'
         f'<td class="r">{_pc(r.get("day_yoy"))}</td><td class="r">{_amt(r.get("chip"))}</td>'
