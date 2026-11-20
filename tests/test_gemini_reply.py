@@ -59,3 +59,13 @@ def test_card_text_passes_deploy_guard():
         assert w not in shown, (w, shown)
     assert "帳面現金流" in shown
 test_card_text_passes_deploy_guard(); print('card guard ok')
+
+
+def test_stale_note():
+    from datetime import datetime
+    from tools import site_gemini as S
+    now = datetime(2026, 11, 20, 22, 30, tzinfo=S.TPE)
+    assert S.stale_note("2026-11-20 21:00", now) == ""
+    n = S.stale_note("2026-11-20 10:38", now)
+    assert "12 小時" in n and "Claude 代班" in n, n
+    assert S.stale_note("", now) == "" and S.stale_note("壞掉", now) == ""

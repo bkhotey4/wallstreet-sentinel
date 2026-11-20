@@ -3,7 +3,8 @@
 這張卡讓使用者不用自己去問 Gemini（使用者 11-18：「為何這些你都沒告訴我...我還要問 genimi」）。"""
 from __future__ import annotations
 
-from typing import Dict, List
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional
 
 from tools.sitekit import T, card, fold_items, guard_safe
 from tools.sitekit import esc as _esc
@@ -40,6 +41,24 @@ def block(i: Dict, zh: Dict[str, str]) -> str:
     return "".join(out) + "</ul>"
 
 
+STALE_H = 8                                                 # hourly automation: 8 h with no answer = paused (quota out, PC off)
+TPE = timezone(timedelta(hours=8))
+
+
+def stale_note(when: str, now: Optional[datetime] = None) -> str:
+    """11-20: Antigravity's weekly Gemini quota hit 0% and answers stopped at 10:38, while the card kept showing the old reply
+    as if current.  Say how old it is and who covers meanwhile (user: 「如果停了，就由你接手就好」)."""
+    try:
+        t = datetime.strptime(str(when).strip()[:16], "%Y-%m-%d %H:%M").replace(tzinfo=TPE)
+    except ValueError:
+        return ""
+    h = ((now or datetime.now(TPE)) - t).total_seconds() / 3600
+    if h <= STALE_H:
+        return ""
+    return (f"⏸ Gemini 已經 {h:.0f} 小時沒有新回答（Antigravity 每週額度用完、或電腦沒開時會這樣）。"
+            "這段期間台股情報由 Claude 代班，寫在「AI 視角看台灣」的《台灣總經展望》；下面是 Gemini 最後一次的回答，內容可能已過時。")
+
+
 def sec_gemini(eng) -> str:
     try:
         from wsb.data import gemini_reply as G
@@ -67,6 +86,7 @@ def sec_gemini(eng) -> str:
     how = ("使用者 Antigravity 裡的 Gemini 自動化每小時讀本站的題目清單（/api/gemini_ask：今天動最多、本站找不到對得上新聞的公司），"
            "用 Google 搜尋回答後寫進 research_feed/gemini_reply.md；本站建置時讀取。來源必須是單篇文章，只給首頁的算「無法查證」。✅＝附了來源網址；💬＝傳聞；❔＝沒附來源，只是推測，不要當事實。Gemini 也會出錯，請點來源自己看。不構成投資建議。")
     when = f"　Gemini 回答時間：台北 {esc(d['when'])}" if d.get("when") else ""
-    body = (f'<p class="rimp big2"><b>{T(guard_safe(lead), "")}</b></p>' + fold_items(blocks, 4, "家") + tail
+    note = stale_note(d.get("when") or "")
+    body = (f'<p class="rimp big2"><b>{T(guard_safe(lead), "")}</b></p>' + (f'<p class="note">{T(note, "")}</p>' if note else "") + fold_items(blocks, 4, "家") + tail
             + f'<details class="sgx"><summary>{T("怎麼產生的", "How it is made")}</summary><p class="note">{T(how, "")}{when}</p></details>')
     return card("Gemini 第二意見：本站找不到原因的大動", "Gemini second opinion", body, "wide")
