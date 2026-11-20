@@ -525,7 +525,7 @@ def update_tw(eng, now: Optional[datetime] = None) -> Dict:
             arc[day] = rec
             changed = True
     if len(arc) < 5:
-        for d in [x for x in (days[-6:-1] if done else days[-6:-1]) if x not in arc]:
+        for d in [x for x in days[-6:-1] if x not in arc]:
             rec = build_day_tw(px, {}, d)
             if rec:
                 rec["backfill"] = True

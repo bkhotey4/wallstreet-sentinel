@@ -298,8 +298,12 @@ def run_horizon(h: pd.DataFrame, ssi: pd.Series, close: pd.Series, days: int, dd
             last = F.ffill(limit=5).iloc[-1].fillna(0.0).values.reshape(1, -1)   # last valid value, not "neutral"
             wb = fit_logit(D[["ssi"]].values, D["_y"].values)
             raw = float(predict(w, last)[0])
+            # the calibrated SSI-only number shown next to p_enh_cal is the published base model's (wb_all + cal_b): without
+            # it the readers fell back to the raw p_base and compared a calibrated probability with an uncalibrated one
+            rawb_all = float(predict(wb_all, base_F.iloc[[-1]].fillna(0.0).values)[0])
             out["now"] = {"p_enh": raw * 100, "p_enh_cal": float(apply_iso(cal, raw) * 100),
                           "p_base": float(predict(wb, base_F.iloc[[-1]].fillna(0.0).values)[0] * 100),
+                          "p_base_cal": float(apply_iso(cal_b, rawb_all) * 100),
                           "drivers": sorted([(c, float(Z[c].iloc[-1]) if pd.notna(Z[c].iloc[-1]) else 0.0, float(w[1 + i + 1]))
                                              for i, c in enumerate(adopted)], key=lambda t: -abs(t[1] * t[2]))}
     else:

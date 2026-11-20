@@ -29,6 +29,11 @@ def main() -> None:
     assert EO.fmt(7227, "M") == "7.227M" and EO.fmt(51.04, "n") == "51.0"
     assert EO.et_utc("2026-11-10", 8, 30) == "2026-11-10T13:30:00Z" and EO.et_utc("2026-07-15", 8, 30) == "2026-07-15T12:30:00Z"
 
+    # the FRED window must still reach the month 13 back when a release comes 100 days after its period starts
+    # (late agency): otherwise the y/y row has an actual but a blank previous value
+    from datetime import timedelta
+    assert date(2026, 10, 1) + timedelta(days=100) - timedelta(days=EO.LOOKBACK_DAYS) <= date(2025, 9, 1)
+
     # merge: Nasdaq pair keeps its consensus, gets the official actual by size (smaller = m/m)
     old = [{"name": "CPI", "utc": "2026-11-10T13:30:00Z", "actual": "", "cons": "0.3%", "prev": "0.6%"},
            {"name": "CPI", "utc": "2026-11-10T13:30:00Z", "actual": "", "cons": "3.0%", "prev": "3.1%"},

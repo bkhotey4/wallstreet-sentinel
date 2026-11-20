@@ -36,6 +36,18 @@ def test_render_static_fallback():
     assert EB.render({}, NOW) == "" and EB.render({"events": []}, NOW) == ""
 
 
+def test_live_ends_by_the_clock():
+    """A hand-typed "live" must not outlast the session: 20 hours later it reads 已結束，結果待補 and sinks below upcoming."""
+    later = datetime(2026, 11, 20, 18, 30, tzinfo=EB.TPE)
+    ev = _d()["events"][3]
+    assert EB.status_of(ev, NOW) == "live" and EB.status_of(ev, later) == "stale"
+    assert [e["name"] for e in EB.pick(_d()["events"], later)] == ["下週", "更晚", "今晚"]
+    h = EB.render(_d(), later)
+    assert "已結束，結果待補" in h and ">進行中<" not in h
+    assert ">進行中<" in EB.render(_d(), NOW)
+    assert EB.status_of({"name": "x", "status": "???"}, NOW) == "upcoming"
+
+
 def test_load_bad_file():
     with tempfile.TemporaryDirectory() as t:
         p = Path(t) / "e.json"
@@ -61,5 +73,5 @@ def test_tracker_js_filled():
 
 
 if __name__ == "__main__":
-    test_pick_order_and_drop(); test_render_static_fallback(); test_load_bad_file(); test_seed_file_and_wording(); test_tracker_js_filled()
+    test_pick_order_and_drop(); test_render_static_fallback(); test_live_ends_by_the_clock(); test_load_bad_file(); test_seed_file_and_wording(); test_tracker_js_filled()
     print("ok")

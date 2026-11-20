@@ -160,12 +160,18 @@ def released_on(obs: List[Dict], day: str) -> Optional[List[Tuple[str, float]]]:
     return now
 
 
+# How far back to ask FRED for one release. A y/y change needs the month 12 back, its previous value the month 13 back,
+# and the release day itself can be ~8 weeks after the period starts (PCE) or later when an agency publishes late
+# (2025 shutdown): 13 months (397 d) + 120 d of publication delay. 470 d left `prev` blank once the delay passed ~73 d.
+LOOKBACK_DAYS = 520
+
+
 async def values(day: str, rid: int, cache: Dict[str, List]) -> List[Dict]:
     """Rows for one release on `day` with actual / prev filled when FRED already carries the new period."""
     hh, mm, spec = SPECS[rid]
     utc = et_utc(day, hh, mm)
     prior = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
-    start = (date.fromisoformat(day) - timedelta(days=470)).isoformat()      # 13 months for a y/y plus one more for its previous value
+    start = (date.fromisoformat(day) - timedelta(days=LOOKBACK_DAYS)).isoformat()
     rows = []
     for name, var, sid, how, f in spec:
         key = f"{sid}|{day}"

@@ -41,6 +41,12 @@ def main():
     # calibration should be roughly honest: predicted ≈ actual in each populated bin
     # raw logistic output is over-confident here → the isotonic calibrator must pull the current estimate toward reality
     assert 0 <= rep["now"]["p_enh_cal"] <= 100
+    # with adopted features the SSI-only number beside it must be calibrated too (readers fell back to the raw one), and
+    # must be the published base model's own calibrated probability
+    bm = rep["base_model"]
+    want = float(L.apply_iso((np.array(bm["cal"][0]), np.array(bm["cal"][1])),
+                             float(L.predict(np.array(bm["w"]), np.array([[(ssi.iloc[-1] - 50) / 20.0]]))[0])) * 100)
+    assert abs(rep["now"]["p_base_cal"] - want) < 1e-6, (rep["now"].get("p_base_cal"), want)
     xs = np.array([0.1, 0.2, 0.3])
     cal = L.isotonic(np.array([0.1] * 100 + [0.2] * 100 + [0.3] * 100), np.array([0] * 90 + [1] * 10 + [0] * 70 + [1] * 30 + [0] * 40 + [1] * 60))
     assert np.allclose(L.apply_iso(cal, xs), [0.1, 0.3, 0.6], atol=1e-6), L.apply_iso(cal, xs)

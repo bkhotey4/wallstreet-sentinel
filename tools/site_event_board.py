@@ -16,7 +16,9 @@ FILE = Path(__file__).resolve().parents[1] / "research_feed" / "event_board.json
 TPE = timezone(timedelta(hours=8))
 KEEP_DONE_DAYS = 3                       # finished events stay this long, then drop off the board
 POLL_S = 45
-STATUS = {"live": ("進行中", "dn"), "upcoming": ("即將發生", ""), "done": ("已結束", "muted")}
+LIVE_MAX_H = 8                           # a US session is 6.5 h, a Taiwan one 4.5 h: after this a "live" event is over
+STATUS = {"live": ("進行中", "dn"), "upcoming": ("即將發生", ""), "done": ("已結束", "muted"),
+          "stale": ("已結束，結果待補", "muted")}
 
 
 def load(path: Optional[Path] = None) -> Dict:
@@ -38,6 +40,17 @@ def _when(ev: Dict) -> Optional[datetime]:
         return None
 
 
+def status_of(ev: Dict, now: datetime) -> str:
+    """The status the page shows. The file's "live" is typed by hand during the event and nobody is awake to change it at
+    the close (11-20: Anthropic's first day still said 進行中 twenty hours later), so the clock ends it: LIVE_MAX_H after
+    the start a "live" event is "stale" = finished, result not written yet."""
+    st = ev.get("status") or "upcoming"
+    w = _when(ev)
+    if st == "live" and w and now - w > timedelta(hours=LIVE_MAX_H):
+        return "stale"
+    return st if st in STATUS else "upcoming"
+
+
 def pick(events: List[Dict], now: datetime) -> List[Dict]:
     """live first, then upcoming by time, then recently finished; drop finished events older than KEEP_DONE_DAYS."""
     out = []
@@ -45,13 +58,12 @@ def pick(events: List[Dict], now: datetime) -> List[Dict]:
         if not isinstance(ev, dict) or not ev.get("name"):
             continue
         w = _when(ev)
-        st = ev.get("status") or "upcoming"
-        if st == "done" and w and now - w > timedelta(days=KEEP_DONE_DAYS):
+        if status_of(ev, now) in ("done", "stale") and w and now - w > timedelta(days=KEEP_DONE_DAYS):
             continue
         out.append(ev)
-    rank = {"live": 0, "upcoming": 1, "done": 2}
+    rank = {"live": 0, "upcoming": 1, "stale": 2, "done": 2}
     far = datetime(2100, 1, 1, tzinfo=TPE)
-    return sorted(out, key=lambda e: (rank.get(e.get("status") or "upcoming", 1), _when(e) or far))
+    return sorted(out, key=lambda e: (rank[status_of(e, now)], _when(e) or far))
 
 
 def _syms(ev: Dict) -> str:
@@ -75,8 +87,9 @@ def _list(title: str, xs) -> str:
     return f'<p class="small"><b>{_e(title)}</b></p><ul class="small">' + "".join(f"<li>{_e(x)}</li>" for x in xs) + "</ul>" if xs else ""
 
 
-def _event(ev: Dict) -> str:
-    st, tone = STATUS.get(ev.get("status") or "upcoming", STATUS["upcoming"])
+def _event(ev: Dict, now: Optional[datetime] = None) -> str:
+    key = status_of(ev, now or datetime.now(TPE))
+    st, tone = STATUS[key]
     b = ev.get("before") or {}
     a = ev.get("after") or {}
     pre = (_list("事前列出的往上力量", b.get("up")) + _list("事前列出的往下力量", b.get("down"))
@@ -94,19 +107,20 @@ def _event(ev: Dict) -> str:
             f'<span class="small muted">台北 {_e(ev.get("when_tpe") or "時間待定")}</span></h3>'
             + (f'<p class="small">{_e(ev["one"])}</p>' if ev.get("one") else "")
             + _syms(ev)
-            + f'<details class="sgx"{" open" if ev.get("status") == "live" else ""}><summary>事前怎麼看 vs 現在發生什麼</summary>{pre}{now}'
+            + f'<details class="sgx"{" open" if key == "live" else ""}><summary>事前怎麼看 vs 現在發生什麼</summary>{pre}{now}'
             + (f'<p class="small muted">來源：{src}</p>' if src else "") + "</details></div>")
 
 
 def render(d: Dict, now: Optional[datetime] = None) -> str:
-    evs = pick(d.get("events") or [], now or datetime.now(TPE))
+    now = now or datetime.now(TPE)
+    evs = pick(d.get("events") or [], now)
     if not evs:
         return ""
     top = evs[0]
     lead = top.get("one") or f'{top["name"]}（台北 {top.get("when_tpe") or "時間待定"}）'
     body = (f'<p class="rimp big2"><b>一句話看懂：{_e(lead)}</b></p>'
-            + "".join(_event(e) for e in evs[:2])
-            + (f'<details class="sgx"><summary>接下來還有 {len(evs) - 2} 件大事</summary>' + "".join(_event(e) for e in evs[2:]) + "</details>" if len(evs) > 2 else "")
+            + "".join(_event(e, now) for e in evs[:2])
+            + (f'<details class="sgx"><summary>接下來還有 {len(evs) - 2} 件大事</summary>' + "".join(_event(e, now) for e in evs[2:]) + "</details>" if len(evs) > 2 else "")
             + f'<p class="note">現價每 {POLL_S} 秒從本站報價服務更新（Yahoo Finance，約有延遲）；「離參考價位」＝現價比參考價位高或低多少。'
               f'事前分析與機率是寫在事件之前的解讀，不是預測保證，對錯都會留著。看板最後更新 {_e(d.get("updated") or "—")}。'
               f'<span class="evstamp"></span>不構成投資建議。</p>')
