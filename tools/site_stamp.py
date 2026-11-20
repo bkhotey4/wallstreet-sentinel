@@ -313,6 +313,17 @@ def _twbubble():
     return _ts(ts), last
 
 
+def _twdesk():
+    """(fetch ts, newest data day) of the Taiwan desk cache (disposal list / ex-dividend table)."""
+    try:
+        from wsb.data import tw_desk as TD
+        d = TD.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    days = [r["from"] for r in d.get("punish") or []]
+    return _ts(d.get("ts")), (max(days) if days else None)
+
+
 def _twbank():
     """(oldest fetch ts, oldest data month) over the four Banking Bureau files."""
     try:
@@ -678,6 +689,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
     "twbubble": ("臺灣證券交易所（成交、當沖、融資、本益比）", "TWSE trading / day-trade / margin / valuation", lambda e: _twbubble(), 12),
+    "twdesk": ("證交所／櫃買 OpenAPI（除權息、處置股）＋ ETF 規模", "TWSE / TPEx OpenAPI desk data", lambda e: _twdesk(), 5),
     "fsr": ("OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（季資料）", "OFR / NY Fed / FDIC quarterly", lambda e: _fsr(), 200),
     "ecb": ("歐洲央行 CISS＋各國公債（FRED 月資料）", "ECB CISS / FRED", lambda e: (_ts(_ead("ts_check")), _ead_date()), 7),
     "country": ("Yahoo 匯率與國家 ETF、國際貨幣基金、世界銀行、FRED 外匯存底", "Yahoo / IMF / World Bank / FRED", lambda e: _country(), 6),
@@ -694,7 +706,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
 }
 
 TAB_DEFAULT: Dict[str, List[str]] = {
-    "overview": ["px", "ssi"], "premarket": ["px"], "tw_ai": ["twmacro"], "tw_bonds": ["twmacro"], "tw_credit": ["twmacro"], "tw_econ": ["twmacro"], "tw_money": ["twmacro", "tw"], "tw_life": ["twmacro"], "tw_etf": ["twetf", "tw"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
+    "overview": ["px", "ssi"], "premarket": ["px"], "tw_ai": ["twmacro"], "tw_desk": ["twdesk"], "tw_bonds": ["twmacro"], "tw_credit": ["twmacro"], "tw_econ": ["twmacro"], "tw_money": ["twmacro", "tw"], "tw_life": ["twmacro"], "tw_etf": ["twetf", "tw"], "outlook": ["ssi", "px"], "portfolio": ["px"], "scores": ["stocks"], "signals": ["stocks"],
     "intel": ["stocks", "sec"], "econ": ["econ"], "tech": ["earnings"], "growth": ["earnings", "stocks"], "themes": ["stocks"],
     "industry": ["sec", "fred"], "mood": ["px"], "risk": ["ssi"], "flows": ["options"], "forced": ["forced"], "gurus": ["gurus"], "bonds": ["fred", "px"],
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
@@ -710,7 +722,7 @@ CARD: Dict[str, List[str]] = {
     "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_etf_flows": ["etf_flows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
-    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_bubble": ["twbubble"], "sec_tw_regime": ["twbubble", "twmacro"], "sec_tw_forecast": ["twforecast"], "sec_tw_life": ["twmacro"],
+    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_bubble": ["twbubble"], "sec_tw_flowcal": ["twdesk", "twetf"], "sec_tw_regime": ["twbubble", "twmacro"], "sec_tw_forecast": ["twforecast"], "sec_tw_life": ["twmacro"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],
