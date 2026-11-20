@@ -1980,6 +1980,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             (out / "upcoming.json").write_text(json.dumps(SEVT.upcoming(eng), ensure_ascii=False), encoding="utf-8")
         except Exception:  # noqa: BLE001
             log.exception("upcoming.json failed")
+        try:                                       # 總經儀表數字（美國、美債、亞洲）給口播引用，2026-11-21
+            from tools import site_macro_dash as SMD
+            (out / "macro_dash.json").write_text(json.dumps(SMD.public(eng), ensure_ascii=False), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            log.exception("macro_dash.json failed")
         try:                                       # 各國危機雷達：燈號、原因與警報清單（給推播程式和口播用）
             from wsb.data import country_risk as CRD
             cv = getattr(eng, "_country_risk", None) or CRD.view(eng)

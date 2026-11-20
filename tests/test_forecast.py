@@ -59,6 +59,22 @@ def test_voice():
         assert F.sec_macro_voice(None) == ""
 
 
+def test_regions_and_reads():
+    """11-21: 台灣・香港・日本・美債 sections and the articles actually read; missing parts are said, not invented."""
+    from tools import site_forecast as F
+    x = {"script": "主線", "regions": [{"name": "台灣", "one": "外資賣超", "text": "第一段\n第二段", "src": [{"name": "證交所", "url": "https://www.twse.com.tw/"}]},
+                                     {"name": "日本", "one": "日圓走強", "text": "央行"}],
+         "bonds": {"one": "長債殖利率上升", "text": "期限溢價"},
+         "reads": [{"src": "BBC", "title": "Nvidia falls", "url": "https://www.bbc.com/news/x", "gist": "內文說是獲利了結", "gap": "標題沒提到出口管制只是傳聞"}]}
+    h = F._regions(x)
+    assert "台灣・香港・日本・美債（3 段）" in h and "<h3>台灣</h3>" in h and "<h3>美債</h3>" in h and "這班沒有寫：香港" in h
+    assert "第二段" in h and 'href="https://www.twse.com.tw/"' in h
+    r = F._reads(x)
+    assert "這班讀過的原文（1 篇）" in r and "內文說是獲利了結" in r and "標題沒提到" in r and "只讀了 1 篇" in r
+    assert "沒有附上讀過的原文" in F._reads({"script": "主線"})
+    assert F._regions({"script": "主線"}) == ""
+
+
 def test_forecast():
     from tools import site_forecast as F
     d = {"updated": "2026-11-07", "one": "偏鷹但沒壞", "paths": [{"name": "偏鷹", "prob": 55, "what": "升息"}],
@@ -100,6 +116,7 @@ def test_stamp():
 
 if __name__ == "__main__":
     test_voice()
+    test_regions_and_reads()
     test_forecast()
     test_stamp()
     print("FORECAST TESTS PASSED")

@@ -86,7 +86,7 @@ def voice_history(x: Dict, keep: int = 24) -> List[Dict]:
     hist = sorted(hist + [h for h in (_json(FILE.with_name("macro_voice_hist.json")).get("items") or []) if h.get("updated") not in seen],
                   key=lambda h: str(h.get("updated") or ""), reverse=True)
     if x.get("updated") and not any(h.get("updated") == x["updated"] for h in hist):
-        hist = ([{k: x.get(k) for k in ("updated", "date", "edition", "one", "script")}] + hist)[:keep]
+        hist = ([{k: x.get(k) for k in ("updated", "date", "edition", "one", "script", "regions", "bonds", "reads")}] + hist)[:keep]
         try:
             tmp = f.with_suffix(".tmp")
             tmp.write_text(json.dumps({"items": hist}, ensure_ascii=False), encoding="utf-8")
@@ -102,6 +102,48 @@ def _paras(x: Dict) -> str:
 
 def _ed_pill(ed: str) -> str:
     return f'<span class="pill{" warn" if ed == "加班" else ""}">{_e("🚨 緊急加班" if ed == "加班" else ed)}</span> ' if ed else ""
+
+
+REGIONS = ("台灣", "香港", "日本")
+
+
+def _part(x: Dict) -> str:
+    """One region / the bond section: a lead sentence, the reasoning, its sources."""
+    if not isinstance(x, dict) or not (x.get("one") or x.get("text")):
+        return ""
+    paras = "".join(f'<p class="small">{_e(p)}</p>' for p in str(x.get("text") or "").split("\n") if p.strip())
+    src = _src(x.get("src"))
+    return (f'<p class="small"><b>{_e(x.get("one"))}</b></p>{paras}'
+            + (f'<p class="small muted">來源：{src}</p>' if src else ""))
+
+
+def _regions(x: Dict) -> str:
+    """亞洲三地與美債 (2026-11-21, user: 「每日總經是不是少了台股／港股跟日股總經的分析…美債也可以分析一下」).
+    Written by the same routine as the script; a missing region is said, never filled in by the build."""
+    rg = {str(r.get("name") or ""): r for r in (x.get("regions") or []) if isinstance(r, dict)}
+    parts = [(n, _part(rg.get(n) or {})) for n in REGIONS] + [("美債", _part(x.get("bonds") or {}))]
+    have = [(n, h) for n, h in parts if h]
+    if not have:
+        return ""
+    miss = [n for n, h in parts if not h]
+    return (f'<details class="sgx"><summary>台灣・香港・日本・美債（{len(have)} 段）</summary>'
+            + "".join(f'<h3>{_e(n)}</h3>{h}' for n, h in have)
+            + (f'<p class="small muted">這班沒有寫：{"、".join(miss)}。</p>' if miss else "") + "</details>")
+
+
+def _reads(x: Dict) -> str:
+    """The full articles this edition actually read (user 11-21: 不要只讀標題…這樣就很像記者).  Fewer than two = said plainly."""
+    rs = [r for r in (x.get("reads") or []) if isinstance(r, dict) and r.get("title") and r.get("gist")]
+    if not rs:
+        return ('<p class="small muted">⚠ 這班沒有附上讀過的原文，裡面說的「原因」只根據標題與行情時間，可信度較低。</p>'
+                if x.get("script") else "")
+    items = "".join(
+        f'<li><b>{_e(r.get("src"))}</b>・' + (f'<a href="{html.escape(str(r["url"]))}" target="_blank" rel="noopener noreferrer">{_e(r["title"])}</a>'
+                                              if str(r.get("url") or "").startswith("https://") else _e(r["title"]))
+        + f'<br>內文重點：{_e(r["gist"])}' + (f'<br><span class="muted">標題沒說的／說過頭的：{_e(r["gap"])}</span>' if r.get("gap") else "") + "</li>"
+        for r in rs)
+    warn = '<p class="small muted">⚠ 只讀了 1 篇原文，原因判斷可信度較低。</p>' if len(rs) < 2 else ""
+    return f'<details class="sgx"><summary>這班讀過的原文（{len(rs)} 篇）</summary><ul class="small">{items}</ul>{warn}</details>'
 
 
 def _dash(eng) -> str:
@@ -127,7 +169,7 @@ def sec_macro_voice(eng) -> str:
                           f'<b>{_e(h.get("one"))}</b></p><details class="sgx"><summary>看文字稿</summary>{_paras(h)}</details></div>' for h in earlier)
                 + '<p class="small muted">語音只有最新一班；前幾班保留文字稿。</p></details>')
     body = (f'<p class="rimp big2">{_ed_pill(str(x.get("edition") or ""))}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
-            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _dash(eng) + prev
+            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _regions(x) + _reads(x) + _dash(eng) + prev
             + f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
             f'市場異常大動時會加班。語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
     return card("每日總經情勢", "Daily macro", body, "wide", sub="用聽的，約兩三分鐘")
