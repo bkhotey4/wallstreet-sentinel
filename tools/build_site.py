@@ -58,6 +58,7 @@ from tools import site_twmacro as STW
 from tools import site_twbank as STB
 from tools import site_twbubble as STBB
 from tools import site_twregime as STRG
+from tools import site_twpaper as STPP
 from tools import site_twpreopen as STPO
 from tools import site_twforecast as STF
 from tools import site_tw_etf as STE
@@ -1394,7 +1395,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, SCN.sec_china, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STF.sec_tw_forecast, STW.sec_tw_note, STW.sec_tw_calendar]),
-            ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
+            ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STPP.sec_tw_paper, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, SKO.sec_korea_exports]),
@@ -1992,6 +1993,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         (out / "breaking.json").write_text(json.dumps(BRK.build(eng), ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("breaking check failed")
+    try:                                           # 台股規則 v1 紙上交易：每筆紙上成交（給推播程式 tools/sec_push.py）
+        from tools import tw_paper as TWP
+        (out / "tw_paper.json").write_text(json.dumps(TWP.public(), ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("tw_paper.json failed")
     try:                                           # 招股書財務（給雲端口播與讀者）：申請中的美股 IPO 與程式讀出的季增／年增
         (out / "ipo_fin.json").write_text(json.dumps(ipo_fin_public(getattr(eng, "ipo", None)), ensure_ascii=False, default=str), encoding="utf-8")
     except Exception:  # noqa: BLE001

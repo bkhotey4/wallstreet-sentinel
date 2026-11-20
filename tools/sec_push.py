@@ -993,6 +993,55 @@ def earnsoon_embed(r: Dict, lines: List[str], pv: Optional[Dict]) -> Dict:
 
 
 BUDGET = 95.0                    # 這支程式每 3 分鐘跑一次、Windows 排程 2 分鐘就會強制結束：超過 95 秒，剩下的留到下一輪
+# ------------------------------------------------------------------ 台股規則 v1 紙上交易（網站每天收盤後算好的 tw_paper.json；tools/tw_paper.py）
+PAPER = "https://wallstreet-sentinel.pages.dev/tw_paper.json"
+PAPER_EVERY = 1800
+PAPER_DAY_CAP = 5                  # 一天最多 5 則（台北日期）
+PAPER_MAX_AGE_D = 3                # 只送 3 天內的成交：快取重建時，舊成交不會整批重送
+PAPER_KIND = {"entry": "進場訊號", "tp": "漲 20% 先出一半", "stop": "停損出場", "trail_ma": "跌破 20 日均線出場",
+              "trail_dd": "從最高回落 8% 出場", "time": "60 天時間到出場", "trail": "移動停利出場"}
+
+
+async def paper_json(sess: aiohttp.ClientSession) -> Dict:
+    try:
+        async with sess.get(PAPER, timeout=aiohttp.ClientTimeout(total=15)) as r:
+            return (await r.json(content_type=None)) or {} if r.status < 300 else {}
+    except Exception as e:  # noqa: BLE001
+        log.info("paper ledger: %s", e)
+        return {}
+
+
+def paper_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
+    """New main-ledger fills, newest last, at most what is left of today's cap (Taipei date)."""
+    tpe = datetime.utcfromtimestamp(now) + timedelta(hours=8)
+    day0 = (tpe.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=8) - datetime(1970, 1, 1)).total_seconds()
+    used = sum(1 for k, v in done.items() if k.startswith("paper:") and float(v) >= day0)
+    fresh = []
+    for e in d.get("events") or []:
+        try:
+            age = (tpe.date() - date.fromisoformat(str(e["date"]))).days
+        except (KeyError, ValueError):
+            continue
+        if e.get("key") and e["key"] not in done and 0 <= age <= PAPER_MAX_AGE_D:
+            fresh.append(e)
+    return fresh[:max(PAPER_DAY_CAP - used, 0)]
+
+
+def paper_embed(e: Dict) -> Dict:
+    nm = f'{str(e["sym"]).replace(".TW", "")} {e.get("name") or ""}'.strip()
+    kind = PAPER_KIND.get(e["kind"], e["kind"])
+    if e["kind"] == "entry":
+        why = (f"前一個交易日收盤突破過去 50 日最高、成交量大於 20 日均量 1.5 倍，規則 v1 在 {e['date']} 開盤紙上成交 {e['px']:,.2f} 元；"
+               f"停損 {e.get('stop', 0):,.2f} 元（−7.5%），占假設本金 {float(e.get('w') or 0) * 100:.0f}%；"
+               f"當時大盤濾網{'開（加權指數在 200 日線上）' if e.get('mkt_ok') else '關（加權指數在 200 日線下，對照帳本不會進場）'}。")
+    else:
+        why = (f"{e['date']} 紙上成交 {e['px']:,.2f} 元：{kind}。"
+               + (f"這筆整體 {float(e['ret']) * 100:+.1f}%（含手續費與證交稅）。" if e.get("ret") is not None else "剩下一半的停損拉到成本。"))
+    return {"title": f"📝 紙上交易｜{kind}：{nm}"[:256], "url": "https://wallstreet-sentinel.pages.dev/#taiwan", "color": 0x6E56CF,
+            "description": ("一句話看懂：" + why + "\n這是規則的紙上記帳（假設本金 100 萬元），不下單；成績單在網站台股頁。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 規則 v1 紙上交易（不下單）"}}
+
+
 # ------------------------------------------------------------------ 各國危機雷達（網站每次建置算好的 country_risk.json；規則在 wsb/data/country_risk.py）
 COUNTRY = "https://wallstreet-sentinel.pages.dev/country_risk.json"
 CR_EVERY = 1800
@@ -1063,7 +1112,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -1077,7 +1126,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1396,6 +1445,22 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
+        try:                                               # 台股規則 v1 紙上交易：每筆紙上成交一則（一天最多 5 則）
+            if now - S["pp_ts"] >= PAPER_EVERY and now > 1.7e9 and left("paper"):
+                S["pp_ts"] = now
+                for e in paper_todo(await paper_json(sess), done, now):
+                    w = await want(e["key"], "paper")
+                    if w != "go":
+                        if w == "known":
+                            done[e["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", paper_embed(e), e["key"]):
+                        done[e["key"]] = now
+                        sent += 1
+        except Exception as e:  # noqa: BLE001
+            log.warning("paper ledger check failed: %s", e)
         try:                                               # 政府撥款到期、債務上限（各階段一次）
             if now - S["fi_ts"] >= FISCAL_EVERY and now > 1.7e9 and left("fiscal"):
                 from wsb.data import us_fiscal as USF
