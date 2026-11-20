@@ -78,6 +78,12 @@ async def _tw_etf():
     await TE.refresh()
 
 
+async def _tw_preopen():
+    """台股開盤前預估＋被迫賣方：ADR 溢價、隔夜、融資、三大法人（own feed so the Taiwan macro budget can't starve it)."""
+    from .data import tw_preopen as TPO
+    await TPO.refresh()
+
+
 async def _twmacro():
     """Taiwan central bank / NDC / TPEx bonds / Taipei housing (台灣 pages)."""
     from .data import twmacro as TM
@@ -219,7 +225,7 @@ class Engine:
                  ("stocks", self.stockprices.refresh()), ("stocknews", self.stocknews.refresh()),
                  ("treasury", self.treasury.refresh()), ("edgar", self.refresh_edgar()), ("econ", self.econ.refresh()),
                  ("fedwatch", self.fedwatch.refresh()), ("finra", self.margin_debt.refresh()),
-                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()), ("etf_flows", _etf_flows()), ("twmacro", _twmacro()), ("tw_etf", _tw_etf()),
+                 ("eia", self.eia.refresh()), ("mof_jgb", self.global_yields.refresh()), ("bondflows", _bondflows()), ("etf_flows", _etf_flows()), ("twmacro", _twmacro()), ("tw_etf", _tw_etf()), ("tw_preopen", _tw_preopen()),
                  ("private_credit", self.refresh_private_credit()), ("spx_long", self.long_history.refresh()), ("distress", self.refresh_distress()))
         if self.site_mode:
             feeds += (("daily_why", _daily_why()),)

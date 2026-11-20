@@ -58,6 +58,7 @@ from tools import site_twmacro as STW
 from tools import site_twbank as STB
 from tools import site_twbubble as STBB
 from tools import site_twregime as STRG
+from tools import site_twpreopen as STPO
 from tools import site_twforecast as STF
 from tools import site_tw_etf as STE
 from tools import site_tw_etf_perf as STEP
@@ -1393,7 +1394,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("valuation", "估值泡沫", "Valuation", [sec_valuation]),
             ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, SCN.sec_china, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STF.sec_tw_forecast, STW.sec_tw_note, STW.sec_tw_calendar]),
-            ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STRG.sec_tw_regime, STBB.sec_tw_bubble, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
+            ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, SKO.sec_korea_exports]),
