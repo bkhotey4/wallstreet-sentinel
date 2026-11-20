@@ -292,6 +292,11 @@ async def refresh(force: bool = False) -> Dict:
     except Exception as e:  # noqa: BLE001
         errs["rel"] = str(e)[:60]
     save(d)
+    try:                                                   # monthly revenue history from MOPS (a few months per run)
+        r = await refresh_rev()
+        d["rev"] = {"got": r.get("got"), "months": len(r.get("months") or {}), "bad": r.get("bad")}
+    except Exception as e:  # noqa: BLE001
+        errs["rev"] = str(e)[:60]
     try:                                                   # each stock's own 5-year valuation history (a few month-ends per run)
         from . import valhist as VH
         d["vh"] = await VH.refresh_tw(VH_BUDGET)
@@ -404,13 +409,298 @@ def val_view(d: Optional[Dict] = None) -> Dict:
     except Exception:  # noqa: BLE001
         val = {}
     try:
-        tw10y = (TM.load().get("cbc") or {}).get("tw10y") or []
+        tm = TM.load()
+        tw10y = (tm.get("cbc") or {}).get("tw10y") or []
+        daily = tm.get("daily") or {}
     except Exception:  # noqa: BLE001
-        tw10y = []
+        tw10y, daily = [], {}
     erp = erp_series(val, tw10y)
     cur = erp[-1] if erp else None
+    if cur and daily:                                      # the monthly CBC series lags; use the latest daily 10-year quote for today
+        last = max(daily)
+        y = ((daily[last] or {}).get("gov") or {}).get("10")
+        if y is not None:
+            cur.update(y10=float(y), erp=round(cur["ey"] - float(y), 2), y10_day=last)
+            if cur.get("tsmc_pe"):
+                cur["tsmc_erp"] = round(100 / cur["tsmc_pe"] - float(y), 2)
     erp_pct = pct_rank([r["erp"] + 50 for r in erp], cur["erp"] + 50) if cur else None   # shift: ERP can be negative
     tsmc_pct = pct_rank([r["tsmc_pe"] for r in erp if r.get("tsmc_pe")], cur.get("tsmc_pe")) if cur else None
     return {"bands": bands, "univ_n": len(u.get("codes") or []), "months": len(vh.get("snaps") or {}),
             "latest": (vh.get("latest") or {}).get("date"), "vh_ts": vh.get("ts"), "erp": erp, "erp_now": cur, "erp_pct": erp_pct,
             "tsmc_pct": tsmc_pct, "rel": d.get("rel"), "rel_ts": d.get("rel_ts")}
+
+
+# ============================================================ 3 monthly revenue → AI supply-chain heat + quarter nowcast
+REV_FILE = DATA_DIR / "econ_twdesk_rev.json"
+REV_MONTHS = 24
+U_MOPS = "https://mopsov.twse.com.tw/nas/t21/{b}/t21sc03_{y}_{m}_0.html"        # MOPS monthly summary (historic copy server)
+REV_BUDGET = 40
+# AI supply-chain layers: well-known listed companies per layer (a classification, shown on the card; codes missing from the
+# revenue data are listed as missing, never guessed).
+LAYERS = [
+    ("晶圓代工", ("2330", "2303", "5347", "6770")),
+    ("先進封裝與設備（CoWoS）", ("3711", "6239", "3374", "3131", "3583", "6187")),
+    ("AI 伺服器組裝（ODM）", ("2317", "2382", "3231", "6669", "2356", "2376", "3706")),
+    ("PCB 與 ABF 載板", ("3037", "8046", "3189", "2383", "6274", "2368", "6213")),
+    ("散熱", ("3017", "3324", "2421", "8996")),
+    ("電源與電力設備", ("2308", "2301", "1519", "1503", "1513")),
+    ("網通與光通訊", ("2345", "4979", "3081", "3363", "6442", "3450")),
+    ("記憶體", ("2408", "2344", "3260", "8299")),
+    ("IC 設計與 ASIC", ("2454", "3661", "3443", "2379")),
+]
+
+
+def rev_load() -> Dict:
+    try:
+        return json.loads(REV_FILE.read_text(encoding="utf-8")) if REV_FILE.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _rev_save(d: Dict) -> None:
+    tmp = REV_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.replace(tmp, REV_FILE)
+
+
+_ROW = re.compile(r"<td align=center>(\d{4})</td><td align=left>([^<]*)</td>((?:\s*<[tT][dD][^>]*>[^<]*</[tT][dD]>){5})")
+
+
+def parse_mops(html: str) -> Dict[str, list]:
+    """MOPS t21sc03 page → {code: [revenue (NT$ thousand), last year's same month, yoy %, name]}."""
+    out = {}
+    for m in _ROW.finditer(html or ""):
+        cells = re.findall(r">([^<]*)</[tT][dD]>", m.group(3))
+        if len(cells) < 5:
+            continue
+        rev, ly, yoy = _num(cells[0]), _num(cells[2]), _num(cells[4])
+        if rev is None:
+            continue
+        out[m.group(1)] = [rev, ly, yoy, m.group(2).strip()]
+    return out
+
+
+def months_back(today: date, n: int) -> List[str]:
+    """The n most recent revenue months that must be out by now (month m is due by the 10th of m+1)."""
+    y, m = today.year, today.month - (1 if today.day > 10 else 2)
+    out = []
+    for _ in range(n):
+        while m <= 0:
+            m += 12
+            y -= 1
+        out.append(f"{y}-{m:02d}")
+        m -= 1
+    return out
+
+
+def _get_big5(url: str) -> Optional[str]:
+    import requests
+    r = requests.get(url, headers=UA, timeout=30)
+    return r.content.decode("big5", "replace") if r.status_code == 200 else None
+
+
+async def refresh_rev(budget_s: float = REV_BUDGET, today: Optional[date] = None) -> Dict:
+    import asyncio
+    today = today or date.today()
+    d = rev_load()
+    months: Dict[str, Dict] = d.get("months") or {}
+    try:                                                   # the newest month from the OpenAPI archive the site already keeps
+        from . import earnings_data as E
+        arc = E._load(E.F_TW)
+        for code, r in (arc.get("latest") or {}).items():
+            if r.get("rev") is not None and r.get("ym"):
+                months.setdefault(r["ym"], {}).setdefault(code, [r["rev"], r.get("ly"), r.get("yoy"), r.get("name") or ""])
+    except Exception as e:  # noqa: BLE001
+        log.info("tw desk rev openapi merge: %s", e)
+    t0, got, bad = time.time(), 0, []
+    done = set(d.get("done") or [])
+    for ym in months_back(today, REV_MONTHS):
+        for b in ("sii", "otc"):
+            key = f"{ym}:{b}"
+            if key in done or time.time() - t0 > budget_s:
+                continue
+            y, m = int(ym[:4]) - 1911, int(ym[5:7])
+            try:
+                html = await asyncio.to_thread(_get_big5, U_MOPS.format(b=b, y=y, m=m))
+            except Exception as e:  # noqa: BLE001
+                bad.append(f"{key} {str(e)[:40]}")
+                html = None
+            rows = parse_mops(html or "")
+            if rows:
+                months.setdefault(ym, {}).update(rows)
+                done.add(key)
+                got += 1
+            await asyncio.sleep(2.0)
+    keep = set(months_back(today, REV_MONTHS + 2))
+    d = {"months": {k: v for k, v in months.items() if k in keep}, "done": sorted(k for k in done if k[:7] in keep),
+         "ts": time.time(), "got": got, "bad": bad[-6:]}
+    _rev_save(d)
+    return d
+
+
+def _avg(xs: List[Optional[float]]) -> Optional[float]:
+    v = [x for x in xs if x is not None]
+    return sum(v) / len(v) if len(v) == len(xs) and v else None
+
+
+def stock_trend(months: Dict[str, Dict], code: str, order: List[str]) -> Optional[Dict]:
+    """order = months newest first. yoy of the latest month, 3-month average yoy, the 3 months before, and acceleration."""
+    ser = [(months.get(ym) or {}).get(code) for ym in order]
+    if not ser or not ser[0]:
+        return None
+    yoy = [s[2] if s else None for s in ser]
+    a3, b3 = _avg(yoy[0:3]), _avg(yoy[3:6])
+    return {"code": code, "name": ser[0][3], "ym": order[0], "rev": ser[0][0], "yoy": yoy[0], "yoy3": a3, "prev3": b3,
+            "accel": (a3 - b3) if a3 is not None and b3 is not None else None}
+
+
+def quarter_nowcast(months: Dict[str, Dict], code: str, latest: str) -> Optional[Dict]:
+    """Quarter to date vs the same months last year; and the months so far scaled to a full quarter vs the previous quarter
+    (a hypothesis: it assumes the remaining month looks like the average so far)."""
+    y, m = int(latest[:4]), int(latest[5:7])
+    q0 = (m - 1) // 3 * 3 + 1
+    cur = [f"{y}-{k:02d}" for k in range(q0, m + 1)]
+    if len(cur) == 3:
+        return None                                        # the quarter is complete: the quarterly report will tell
+    ly = [f"{y - 1}-{k:02d}" for k in range(q0, m + 1)]
+    pq0y, pq0 = (y, q0 - 3) if q0 > 3 else (y - 1, q0 + 9)
+    prevq = [f"{pq0y}-{k:02d}" for k in range(pq0, pq0 + 3)]
+
+    def tot(ms):
+        v = [((months.get(x) or {}).get(code) or [None])[0] for x in ms]
+        return sum(v) if all(x is not None for x in v) else None
+    a, b, p = tot(cur), tot(ly), tot(prevq)
+    est = a * 3 / len(cur) if a is not None else None
+    return {"code": code, "months": len(cur), "qtd_yoy": (a / b - 1) * 100 if a and b else None,
+            "q_vs_prev": (est / p - 1) * 100 if est and p else None}
+
+
+def rev_view(d: Optional[Dict] = None, desk: Optional[Dict] = None) -> Dict:
+    d = rev_load() if d is None else d
+    months = d.get("months") or {}
+    if not months:
+        return {}
+    order = sorted(months, reverse=True)
+    latest = order[0]
+    u = universe(load() if desk is None else desk)
+    codes = u.get("codes") or []
+    trends = [t for t in (stock_trend(months, c, order) for c in codes) if t]
+    acc = [t for t in trends if t["accel"] is not None]
+    layers = []
+    for name, cs in LAYERS:
+        ts = [t for t in (stock_trend(months, c, order) for c in cs) if t]
+        y3 = sorted(t["yoy3"] for t in ts if t["yoy3"] is not None)
+        ac = [t for t in ts if t["accel"] is not None]
+        nc = {t["code"]: quarter_nowcast(months, t["code"], latest) for t in ts}
+        layers.append({"name": name, "n": len(ts), "missing": [c for c in cs if c not in {t["code"] for t in ts}],
+                       "yoy3_med": y3[len(y3) // 2] if y3 else None,
+                       "acc_share": (sum(t["accel"] > 0 for t in ac) / len(ac) * 100) if ac else None,
+                       "rows": sorted(ts, key=lambda t: -(t["yoy3"] if t["yoy3"] is not None else -999)), "now": nc})
+    capex = None
+    try:
+        from ..analytics import capex_link as CL
+        b = CL.build()
+        if b:
+            capex = {"yoy": b.get("capex_yoy"), "q": b.get("capex_q"), "ttm": b.get("capex_ttm")}
+    except Exception:  # noqa: BLE001
+        pass
+    return {"latest": latest, "n_months": len(order), "univ_n": len(codes), "trends": trends,
+            "breadth": (sum(t["accel"] > 0 for t in acc) / len(acc) * 100) if acc else None, "n_acc": len(acc),
+            "yoy_pos": (sum((t["yoy"] or 0) > 0 for t in trends) / len(trends) * 100) if trends else None,
+            "layers": layers, "capex": capex, "ts": d.get("ts")}
+
+
+# ============================================================ 4 calibration: are our stated probabilities honest?
+HIT = {"對": 1, "錯": 0}
+EARN_K = ("上修", "維持", "下修")
+
+
+def _calls(x):
+    if isinstance(x, dict):
+        for k, v in x.items():
+            if k == "calls" and isinstance(v, list):
+                yield from (c for c in v if isinstance(c, dict))
+            else:
+                yield from _calls(v)
+    elif isinstance(x, list):
+        for v in x:
+            yield from _calls(v)
+
+
+def binary_calls(docs: Dict[str, Dict]) -> List[Dict]:
+    """Every dated call with a 對/錯 result across forecast.json / tw_forecast.json / deep.json. prob may be missing (deep.json)."""
+    out = []
+    for topic, d in docs.items():
+        for c in _calls(d or {}):
+            r = str(c.get("result") or "").strip()
+            if r not in HIT:
+                continue
+            p = c.get("prob")
+            try:
+                p = float(p) / 100 if p is not None else None
+            except (TypeError, ValueError):
+                p = None
+            out.append({"topic": topic, "claim": c.get("call") or c.get("claim") or c.get("name") or "", "by": c.get("by"),
+                        "p": p, "hit": HIT[r]})
+    return out
+
+
+def earn_calls(items: List[Dict]) -> List[Dict]:
+    out = []
+    for i in items or []:
+        o, ps = i.get("outcome"), i.get("probs") or {}
+        if o not in EARN_K or not all(k in ps for k in EARN_K):
+            continue
+        tot = sum(float(ps[k]) for k in EARN_K) or 100.0
+        p = {k: float(ps[k]) / tot for k in EARN_K}
+        out.append({"sym": i.get("sym"), "date": i.get("date"), "p": p, "o": o, "top": max(EARN_K, key=lambda k: p[k])})
+    return out
+
+
+def brier_multi(rows: List[Dict]) -> Optional[float]:
+    if not rows:
+        return None
+    return sum(sum((r["p"][k] - (r["o"] == k)) ** 2 for k in EARN_K) for r in rows) / len(rows)
+
+
+def calib(rows: List[Dict]) -> Dict:
+    """Earnings previews: Brier vs a base-rate forecast, top-pick hit rate by confidence, and per-outcome bias."""
+    n = len(rows)
+    if not n:
+        return {}
+    base = {k: sum(r["o"] == k for r in rows) / n for k in EARN_K}
+    b = brier_multi(rows)
+    b_ref = sum(sum((base[k] - (r["o"] == k)) ** 2 for k in EARN_K) for r in rows) / n
+    buckets = []
+    for lo, hi in ((0, .45), (.45, .55), (.55, .65), (.65, 1.01)):
+        rs = [r for r in rows if lo <= r["p"][r["top"]] < hi]
+        if rs:
+            buckets.append({"lo": lo, "hi": min(hi, 1.0), "n": len(rs), "said": sum(r["p"][r["top"]] for r in rs) / len(rs),
+                            "hit": sum(r["top"] == r["o"] for r in rs) / len(rs)})
+    bias = [{"k": k, "said": sum(r["p"][k] for r in rows) / n, "real": base[k]} for k in EARN_K]
+    return {"n": n, "brier": b, "brier_ref": b_ref, "skill": (1 - b / b_ref) if b_ref else None,
+            "top_hit": sum(r["top"] == r["o"] for r in rows) / n, "buckets": buckets, "bias": bias}
+
+
+def calib_view(feed) -> Dict:
+    """feed = research_feed directory (public repo)."""
+    def rd(name):
+        try:
+            return json.loads((feed / name).read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return {}
+    bc = binary_calls({"美國一個月預判": rd("forecast.json"), "台灣總經展望": rd("tw_forecast.json"), "每日深度研判": rd("deep.json")})
+    er = earn_calls((rd("earn_preview.json") or {}).get("items") or [])
+    pend = sum(1 for n in ("forecast.json", "tw_forecast.json", "deep.json") for c in _calls(rd(n))
+               if not str(c.get("result") or "").strip())
+    by_topic = {}
+    for c in bc:
+        t = by_topic.setdefault(c["topic"], {"n": 0, "hit": 0, "np": 0, "said": 0.0, "brier": 0.0})
+        t["n"] += 1
+        t["hit"] += c["hit"]
+        if c["p"] is not None:
+            t["np"] += 1
+            t["said"] += c["p"]
+            t["brier"] += (c["p"] - c["hit"]) ** 2
+    return {"binary": bc, "by_topic": by_topic, "earn": calib(er), "pending": pend,
+            "updated": max([str(rd(n).get("updated") or "") for n in ("forecast.json", "tw_forecast.json", "deep.json", "earn_preview.json")] or [""])}

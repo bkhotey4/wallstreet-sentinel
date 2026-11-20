@@ -722,7 +722,7 @@ CARD: Dict[str, List[str]] = {
     "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_etf_flows": ["etf_flows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
     "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
-    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_bubble": ["twbubble"], "sec_tw_flowcal": ["twdesk", "twetf"], "sec_tw_regime": ["twbubble", "twmacro"], "sec_tw_forecast": ["twforecast"], "sec_tw_life": ["twmacro"],
+    "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_bubble": ["twbubble"], "sec_tw_flowcal": ["twdesk", "twetf"], "sec_tw_valband": ["twdesk", "twbubble"], "sec_tw_revheat": ["twdesk"], "sec_calib": ["twforecast"], "sec_tw_regime": ["twbubble", "twmacro"], "sec_tw_forecast": ["twforecast"], "sec_tw_life": ["twmacro"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],
     "sec_sector_brief": ["px", "fred", "earnings"], "sec_sector_table": ["px", "fred", "earnings"],

@@ -1397,7 +1397,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, SCN.sec_china, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STF.sec_tw_forecast, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STPP.sec_tw_paper, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
-            ("tw_desk", "台股專業判讀", "Taiwan desk", [STD.sec_tw_flowcal]),
+            ("tw_desk", "台股專業判讀", "Taiwan desk", [STD.sec_tw_flowcal, STD.sec_tw_valband, STD.sec_tw_revheat, STD.sec_calib]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, SKO.sec_korea_exports]),

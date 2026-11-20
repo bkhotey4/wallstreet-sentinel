@@ -55,5 +55,76 @@ def test_card():
         assert b not in h, b
 
 
+def test_valuation():
+    assert D.pct_rank([1.0] * 10, 2.0) is None                       # < 24 points
+    hist = list(range(1, 31))
+    assert D.pct_rank(hist, 25.5) == round(25 / 30 * 100, 1)
+    snaps = {f"2024-{i:02d}-28" if i <= 12 else f"2025-{i - 12:02d}-28": {"2330": [10.0 + i, 3.0, 2.0], "1101": [None, 0.5 + i / 100, 3.0]}
+             for i in range(1, 25)}
+    latest = {"date": "2026-11-20", "rows": {"2330": [40.0, 3.0, 2.0], "1101": [None, 0.6, 3.0]}}
+    b = D.stock_bands(snaps, latest, ["2330", "1101", "9999"], {"2330": "台積電"})
+    assert [r["code"] for r in b] == ["2330", "1101"] and b[0]["pct"] == 100.0 and b[1]["metric"] == "股價淨值比"
+    val = {"2026-09-30": {"pe_med": 20.0, "tsmc_pe": 25.0}, "2026-10-30": {"pe_med": 16.0, "tsmc_pe": 20.0}}
+    e = D.erp_series(val, [["2026-09", 2.0]])
+    assert e[0]["erp"] == 3.0 and e[1]["y10"] == 2.0 and e[1]["erp"] == 4.25 and e[1]["tsmc_erp"] == 3.0
+    a = {"d": [(date(2025, 1, 1) + timedelta(days=i)).isoformat() for i in range(300)], "c": [100 + i for i in range(300)]}
+    s2 = {"d": a["d"], "c": [100.0] * 300}
+    r = D.rel_strength(a, s2)
+    assert r["pct"] == round(299 / 300 * 100, 1) and r["sox_1y"] == 0.0
+    v = {"bands": b, "erp": e, "erp_now": e[-1], "erp_pct": 50.0, "tsmc_pct": 40.0, "rel": r, "months": 24, "latest": "2026-11-20", "vh_ts": 1.8e9}
+    h = S.sec_tw_valband(v=v)
+    assert "一句話看懂" in h and "第 50 百分位" in h and "台積電" in h and "還在補" in h
+    for w in BANNED:
+        assert w not in h, w
+
+
+def test_revenue():
+    html = ("<tr align=right><td align=center>2330</td><td align=left>台積電</td><td nowrap> 442,679,969</td><td nowrap> 416,975,163</td>"
+            "<td nowrap> 263,708,978</td><td nowrap> 6.16</td><Td nowrap> 67.86</td><td nowrap> 1</td></tr>")
+    r = D.parse_mops(html)
+    assert r["2330"][0] == 442679969 and r["2330"][2] == 67.86 and r["2330"][3] == "台積電"
+    assert D.months_back(date(2026, 11, 21), 2) == ["2026-10", "2026-09"]
+    assert D.months_back(date(2026, 11, 5), 1) == ["2026-09"]
+    months = {}
+    for i, ym in enumerate(["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"]):
+        months[ym] = {"2330": [100.0 + i, 80.0, 10.0 + i * 5, "台積電"]}
+    months["2025-10"] = {"2330": [50.0, 40.0, 1.0, "台積電"]}
+    order = sorted(months, reverse=True)
+    t = D.stock_trend(months, "2330", order)
+    assert t["yoy3"] == 30.0 and t["prev3"] == 15.0 and t["accel"] == 15.0
+    nc = D.quarter_nowcast(months, "2330", "2026-10")
+    assert nc["months"] == 1 and abs(nc["qtd_yoy"] - (105 / 50 - 1) * 100) < 1e-9
+    assert abs(nc["q_vs_prev"] - (105 * 3 / (102 + 103 + 104) - 1) * 100) < 1e-9
+    v = {"latest": "2026-10", "n_months": 7, "yoy_pos": 86.0, "breadth": 56.0, "trends": [t],
+         "layers": [{"name": "晶圓代工", "n": 1, "missing": ["2303"], "yoy3_med": 30.0, "acc_share": 100.0, "rows": [t], "now": {"2330": nc}}],
+         "capex": {"yoy": 93.4, "q": "2026Q3"}, "ts": 1.8e9}
+    h = S.sec_tw_revheat(v=v)
+    assert "一句話看懂" in h and "晶圓代工" in h and "+93%" in h and "2303" in h and "假設" in h
+    for w in BANNED:
+        assert w not in h, w
+
+
+def test_calibration():
+    docs = {"a": {"calls": [{"call": "x", "prob": 80, "result": "對", "by": "2026-11-01"}, {"call": "y", "prob": 60, "result": "錯"},
+                            {"call": "z", "prob": 70, "result": "無法判定"}, {"call": "w", "prob": 70}]},
+            "b": {"days": [{"calls": [{"claim": "q", "result": "對"}]}]}}
+    bc = D.binary_calls(docs)
+    assert len(bc) == 3 and bc[0]["p"] == 0.8 and bc[2]["p"] is None
+    items = [{"sym": "A", "probs": {"上修": 20, "維持": 60, "下修": 20}, "outcome": "上修"},
+             {"sym": "B", "probs": {"上修": 20, "維持": 60, "下修": 20}, "outcome": "維持"},
+             {"sym": "C", "probs": {"上修": 50, "維持": 30}, "outcome": "上修"},           # incomplete → skipped
+             {"sym": "D", "probs": {"上修": 20, "維持": 60, "下修": 20}, "outcome": None}]
+    er = D.earn_calls(items)
+    assert [r["sym"] for r in er] == ["A", "B"]
+    c = D.calib(er)
+    assert c["n"] == 2 and c["top_hit"] == 0.5 and abs(c["brier"] - ((0.8 ** 2 + 0.6 ** 2 + 0.2 ** 2) + (0.2 ** 2 + 0.4 ** 2 + 0.2 ** 2)) / 2) < 1e-9
+    assert {b["k"]: round(b["real"], 2) for b in c["bias"]} == {"上修": 0.5, "維持": 0.5, "下修": 0.0}
+    v = {"earn": c, "by_topic": {"a": {"n": 2, "hit": 1, "np": 2, "said": 1.4, "brier": 0.04 + 0.36}}, "binary": bc, "pending": 1, "updated": "x"}
+    h = S.sec_calib(v=v)
+    assert "一句話看懂" in h and "2 筆" in h and "太悲觀" in h and "0.200" in h
+    for w in BANNED:
+        assert w not in h, w
+
+
 if __name__ == "__main__":
-    test_roc_and_parsers(); test_rules(); test_card(); print("ok")
+    test_roc_and_parsers(); test_rules(); test_card(); test_valuation(); test_revenue(); test_calibration(); print("ok")
