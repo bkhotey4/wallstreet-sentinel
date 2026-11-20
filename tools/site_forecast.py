@@ -146,6 +146,16 @@ def _reads(x: Dict) -> str:
     return f'<details class="sgx"><summary>這班讀過的原文（{len(rs)} 篇）</summary><ul class="small">{items}</ul>{warn}</details>'
 
 
+def _entry(eng) -> str:
+    """想進場前，可以從哪裡想 (11-21, user: 「每日總經是不是新增如果要入場，可以從哪裡思考？」)."""
+    try:
+        from tools import site_entry_think as ET
+        return ET.block(eng)
+    except Exception:  # noqa: BLE001
+        log.exception("entry block failed")
+        return ""
+
+
 def _dash(eng) -> str:
     """Program-computed numbers and the next 72 hours under the AI script (11-18, user: 「每日總經可以再多補充的吧」)."""
     try:
@@ -169,7 +179,7 @@ def sec_macro_voice(eng) -> str:
                           f'<b>{_e(h.get("one"))}</b></p><details class="sgx"><summary>看文字稿</summary>{_paras(h)}</details></div>' for h in earlier)
                 + '<p class="small muted">語音只有最新一班；前幾班保留文字稿。</p></details>')
     body = (f'<p class="rimp big2">{_ed_pill(str(x.get("edition") or ""))}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
-            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _regions(x) + _reads(x) + _dash(eng) + prev
+            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _regions(x) + _reads(x) + _entry(eng) + _dash(eng) + prev
             + f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
             f'市場異常大動時會加班。語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
     return card("每日總經情勢", "Daily macro", body, "wide", sub="用聽的，約兩三分鐘")
