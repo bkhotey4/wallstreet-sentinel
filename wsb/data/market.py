@@ -78,7 +78,61 @@ def _download(tickers: List[str], **kw) -> pd.DataFrame:
         frames.append(_extract_close(df, chunk))
         time.sleep(0.5)
     frames = [f for f in frames if not f.empty]
-    return pd.concat(frames, axis=1) if frames else pd.DataFrame()
+    out = pd.concat(frames, axis=1) if frames else pd.DataFrame()
+    try:
+        out = fill_meta_close(out)
+    except Exception as e:  # noqa: BLE001
+        log.warning("meta close fill failed: %s", e)
+    return out
+
+
+def _chart_meta(t: str) -> Optional[dict]:
+    import json as _json
+    import urllib.parse
+    import urllib.request
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(t)}?range=5d&interval=1d"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        res = ((_json.load(r).get("chart") or {}).get("result") or [None])[0]
+    return (res or {}).get("meta")
+
+
+_META_TRIED: Dict[tuple, float] = {}       # (ticker, date) → when asked; a holiday NaN is not re-asked every quote cycle
+
+
+def fill_meta_close(df: pd.DataFrame, fetch=None, now: Optional[float] = None, cap: int = 25) -> pd.DataFrame:
+    """2026-11-21: Yahoo's bulk daily download gave NaN for Friday's close of the Nikkei, Hang Seng and TAIEX (its own
+    chart endpoint showed the daily bar empty too) while the chart meta already had the final price.  For a ticker whose
+    newest row is NaN, take meta.regularMarketPrice when its exchange-local date is that row's date and the regular
+    session has ended — a holiday (meta on an earlier date) or a session still open is left alone."""
+    if df.empty:
+        return df
+    last = df.index[-1]
+    now = time.time() if now is None else now
+    if (pd.Timestamp(now, unit="s") - last).days > 5:
+        return df
+    cand = [c for c in df.columns if pd.isna(df[c].iloc[-1]) and df[c].iloc[:-1].notna().any()][:cap]
+    filled = []
+    for t in cand:
+        key = (t, last.strftime("%Y-%m-%d"))
+        if fetch is None and now - _META_TRIED.get(key, 0) < 1800:
+            continue
+        _META_TRIED[key] = now
+        try:
+            m = (fetch or _chart_meta)(t) or {}
+        except Exception:  # noqa: BLE001
+            continue
+        px, rt, off = m.get("regularMarketPrice"), m.get("regularMarketTime"), m.get("gmtoffset") or 0
+        end = ((m.get("currentTradingPeriod") or {}).get("regular") or {}).get("end")
+        if not px or not rt or pd.Timestamp(rt + off, unit="s").normalize() != last:
+            continue
+        if end and now < end:                          # today's session still running: not a close yet
+            continue
+        df.loc[last, t] = float(px)
+        filled.append(t)
+    if filled:
+        log.info("daily close filled from chart meta (bulk download had NaN): %s", ", ".join(filled))
+    return df
 
 
 def stooq_symbol(t: str) -> Optional[str]:
