@@ -72,7 +72,44 @@ def fetch(codes: List[str], start: str) -> Dict[str, pd.DataFrame]:
     first = (pd.Timestamp(start) - pd.Timedelta(days=WARM_DAYS)).strftime("%Y-%m-%d")
     tick = [c + ".TW" for c in codes] + ["^TWII", "0050.TW"]
     df = yf.download(tick, start=first, auto_adjust=False, progress=False, group_by="column", threads=True, timeout=30)
-    return {k: df[k].copy() for k in ("Open", "High", "Low", "Close", "Volume")}
+    px = {k: df[k].copy() for k in ("Open", "High", "Low", "Close", "Volume")}
+    try:
+        from wsb.data import taiwan_quotes
+        px = overlay_official(px, taiwan_quotes.cached().get("quotes") or {})
+    except Exception:  # noqa: BLE001  (official overlay is a patch for Yahoo's late bars, never a reason to fail)
+        pass
+    return px
+
+
+def overlay_official(px: Dict[str, pd.DataFrame], quotes: Dict) -> Dict[str, pd.DataFrame]:
+    """11-21: Yahoo had no 11/20 bar for ^TWII on the crash day, so the 200DMA filter and the equity curve used 11/19.
+    Fill gaps from the TWSE/TPEx official cache: the index's dated bars, and each stock's official close/volume on its
+    quote date when Yahoo's row is missing (open/high/low = close for that one day — approximate)."""
+    px = {k: v.copy() for k, v in px.items()}
+
+    def _row(d):
+        if d not in px["Close"].index:
+            for k in px:
+                px[k].loc[d] = float("nan")
+                px[k] = px[k].sort_index()
+
+    if "^TWII" in px["Close"].columns:
+        for ds, v in ((quotes.get("^TWII") or {}).get("bars") or {}).items():
+            d = pd.Timestamp(ds)
+            _row(d)
+            if pd.isna(px["Close"].at[d, "^TWII"]):
+                px["Close"].at[d, "^TWII"] = float(v)
+    for sym, q in quotes.items():
+        if not (sym in px["Close"].columns and sym != "^TWII" and q.get("asof") and q.get("price")):
+            continue
+        d = pd.Timestamp(q["asof"])
+        _row(d)
+        if pd.isna(px["Close"].at[d, sym]):
+            for k in ("Open", "High", "Low", "Close"):
+                px[k].at[d, sym] = float(q["price"])
+            if q.get("volume"):
+                px["Volume"].at[d, sym] = float(q["volume"])
+    return px
 
 
 def _ds(ts) -> str:

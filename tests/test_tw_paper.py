@@ -121,3 +121,19 @@ if __name__ == "__main__":
     for f in (test_ledger_fills, test_open_and_next, test_due_boundary, test_public_and_relay, test_card, test_engine_unchanged_when_no_log):
         f()
     print("test_tw_paper ok")
+
+
+def test_overlay_official_fills_missing_day():
+    import pandas as pd
+    from tools import tw_paper as P
+    idx = pd.to_datetime(["2026-11-18", "2026-11-19"])
+    cols = ["2330.TW", "^TWII"]
+    base = pd.DataFrame([[1.0, 1.0], [1.0, 1.0]], index=idx, columns=cols)
+    px = {k: base.copy() for k in ("Open", "High", "Low", "Close", "Volume")}
+    q = {"^TWII": {"bars": {"2026-11-19": 99.0, "2026-11-20": 36033.29}},
+         "2330.TW": {"price": 2000.0, "asof": "2026-11-20", "volume": 5.0}}
+    out = P.overlay_official(px, q)
+    d = pd.Timestamp("2026-11-20")
+    assert out["Close"].at[d, "^TWII"] == 36033.29
+    assert out["Close"].at[pd.Timestamp("2026-11-19"), "^TWII"] == 1.0          # Yahoo value kept when present
+    assert out["Close"].at[d, "2330.TW"] == 2000.0 and out["Volume"].at[d, "2330.TW"] == 5.0
