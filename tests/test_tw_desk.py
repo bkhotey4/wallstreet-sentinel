@@ -95,6 +95,8 @@ def test_revenue():
     nc = D.quarter_nowcast(months, "2330", "2026-10")
     assert nc["months"] == 1 and abs(nc["qtd_yoy"] - (105 / 50 - 1) * 100) < 1e-9
     assert abs(nc["q_vs_prev"] - (105 * 3 / (102 + 103 + 104) - 1) * 100) < 1e-9
+    seeded = D.rev_view(d={"months": {"2026-10": months["2026-10"]}}, desk={"univ": {"codes": ["2330"]}}, seed={"months": months, "fetched": "x"})
+    assert seeded["latest"] == "2026-10" and seeded["trends"][0]["accel"] == 15.0 and seeded["seed_at"] == "x"
     v = {"latest": "2026-10", "n_months": 7, "yoy_pos": 86.0, "breadth": 56.0, "trends": [t],
          "layers": [{"name": "晶圓代工", "n": 1, "missing": ["2303"], "yoy3_med": 30.0, "acc_share": 100.0, "rows": [t], "now": {"2330": nc}}],
          "capex": {"yoy": 93.4, "q": "2026Q3"}, "ts": 1.8e9}

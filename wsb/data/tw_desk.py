@@ -18,6 +18,7 @@ import os
 import re
 import time
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from ..config import DATA_DIR
@@ -575,9 +576,29 @@ def quarter_nowcast(months: Dict[str, Dict], code: str, latest: str) -> Optional
             "q_vs_prev": (est / p - 1) * 100 if est and p else None}
 
 
-def rev_view(d: Optional[Dict] = None, desk: Optional[Dict] = None) -> Dict:
+def rev_seed(path, today: Optional[date] = None) -> Dict:
+    """PC → cloud relay (same pattern as the other seeds): the universe + AI-layer companies' last 24 months, written to the
+    public research_feed when the cloud build cannot reach the MOPS archive. Revenue figures are public company data."""
+    d = rev_load()
+    codes = set(universe(load()).get("codes") or []) | {c for _, cs in LAYERS for c in cs}
+    months = {ym: {c: v for c, v in rows.items() if c in codes} for ym, rows in (d.get("months") or {}).items()}
+    out = {"fetched": datetime_now_tpe(), "source": "公開資訊觀測站每月營收彙總表（mopsov.twse.com.tw）", "months": months}
+    Path(path).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    return out
+
+
+def datetime_now_tpe() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
+
+
+def rev_view(d: Optional[Dict] = None, desk: Optional[Dict] = None, seed: Optional[Dict] = None) -> Dict:
     d = rev_load() if d is None else d
-    months = d.get("months") or {}
+    months = {k: dict(v) for k, v in (d.get("months") or {}).items()}
+    for ym, rows in ((seed or {}).get("months") or {}).items():      # fill what this machine's cache lacks
+        tgt = months.setdefault(ym, {})
+        for c, v in rows.items():
+            tgt.setdefault(c, v)
     if not months:
         return {}
     order = sorted(months, reverse=True)
@@ -607,7 +628,7 @@ def rev_view(d: Optional[Dict] = None, desk: Optional[Dict] = None) -> Dict:
     return {"latest": latest, "n_months": len(order), "univ_n": len(codes), "trends": trends,
             "breadth": (sum(t["accel"] > 0 for t in acc) / len(acc) * 100) if acc else None, "n_acc": len(acc),
             "yoy_pos": (sum((t["yoy"] or 0) > 0 for t in trends) / len(trends) * 100) if trends else None,
-            "layers": layers, "capex": capex, "ts": d.get("ts")}
+            "layers": layers, "capex": capex, "ts": d.get("ts"), "seed_at": (seed or {}).get("fetched")}
 
 
 # ============================================================ 4 calibration: are our stated probabilities honest?

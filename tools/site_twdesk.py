@@ -39,6 +39,14 @@ def _ts(t) -> str:
         return "—"
 
 
+def _rev_seed() -> Dict:
+    try:
+        f = FEED / "tw_rev_seed.json"
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def _seed() -> Dict:
     try:
         f = FEED / "tw_flow_seed.json"
@@ -248,7 +256,7 @@ def sec_tw_revheat(eng=None, v: Optional[Dict] = None) -> str:
     if v is None:
         try:
             from wsb.data import tw_desk as D
-            v = D.rev_view()
+            v = D.rev_view(seed=_rev_seed())
         except Exception:  # noqa: BLE001
             return ""
     lead = rev_lead(v or {})
@@ -283,7 +291,8 @@ def sec_tw_revheat(eng=None, v: Optional[Dict] = None) -> str:
         body += (f'<h3>台灣 50＋中型 100：營收加速最多到最少（{len(rows2)} 家）</h3>'
                  + fold_rows(rows2, 10, "<tr><th>公司</th><th>當月年增</th><th>近 3 月年增</th><th>加速（百分點）</th></tr>", "家"))
     body += (f'<p class="small muted">來源：公開資訊觀測站每月營收彙總表（上市、上櫃，共 {v.get("n_months", 0)} 個月）與證交所／櫃買 OpenAPI；'
-             f'美國雲端巨頭資本支出：SEC 財報（微軟、Alphabet、亞馬遜、Meta、甲骨文）。更新 {_ts(v.get("ts"))}。</p>')
+             f'美國雲端巨頭資本支出：SEC 財報（微軟、Alphabet、亞馬遜、Meta、甲骨文）。更新 {_ts(v.get("ts"))}'
+             + (f'；雲端讀不到的月份用本站電腦端 {esc(v["seed_at"])} 抓的同一份資料補上' if v.get("seed_at") else "") + '。</p>')
     return card("月營收：AI 供應鏈哪一層在加速", "Monthly revenue heat map", body, "wide")
 
 

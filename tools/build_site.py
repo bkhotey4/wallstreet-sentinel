@@ -1848,7 +1848,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.warning("bubble data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 台股專業判讀：除權息、處置股（證交所／櫃買 OpenAPI）
         from wsb.data import tw_desk as TWDK
-        await asyncio.wait_for(TWDK.refresh(), 90)
+        log.info("tw desk: %s", {k: v for k, v in (await asyncio.wait_for(TWDK.refresh(), 150)).items() if k in ("errs", "rev", "vh")})
     except Exception as e:  # noqa: BLE001
         log.warning("tw desk refresh failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 華爾街機構觀點（背景）: public titles + CFTC positioning, cached 6 h
