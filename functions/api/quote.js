@@ -196,6 +196,9 @@ export function todayOpen(res) {
   return null;
 }
 
+// Asian indices whose meta previousClose has been seen stale (one extra daily-bar fetch each)
+export const ASIA_IDX = /^\^(TW|HSI|HSCE|N225|KS11|KQ11|STI|AXJO|BSESN|NSEI|JKSE)/;
+
 export async function prevFromDaily(sym, fetchImpl, m) {
   try {
     const r = await fetchImpl(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=5d&interval=1d`, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -244,9 +247,10 @@ export async function one(sym, fetchImpl = fetch, full = false, vol = false) {
     const j = jumpOf(res.timestamp || [], qd.close || [], m.gmtoffset || 0);
     if (j) out.jump = j;
   }
-  if (!full && /^\^TW/.test(sym)) {
-    // Yahoo's meta previousClose for the TAIEX has skipped whole sessions (11-10 showed the 11-06 close): take the last
-    // daily bar from an earlier exchange-local day instead
+  if (!full && ASIA_IDX.test(sym)) {
+    // Yahoo's meta previousClose for the TAIEX has skipped whole sessions (11-10 showed the 11-06 close), and the Hang Seng
+    // did the same on 2026-11-20 (prev = the 11-18 close, so −1.9% showed as −3.8%): take the last daily bar from an
+    // earlier exchange-local day instead
     const d = await prevFromDaily(sym, fetchImpl, m);
     if (d != null) prev = d;
   }
