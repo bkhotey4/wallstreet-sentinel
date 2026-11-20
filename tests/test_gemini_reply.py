@@ -43,3 +43,19 @@ def test_dead_link_demoted():
     out = G.sanitize(d)
     assert out["items"][0]["facts"] == [] and "404" in out["items"][0]["guess"][0]
 test_dead_link_demoted(); print('dead link ok')
+
+
+def test_card_text_passes_deploy_guard():
+    """11-20: Gemini wrote 「未實現現金流」; the card printed it as is, the site test failed on the holdings-guard word
+    (the cloud deploy guard matches 「未實現損益」 and would block every build until the next reply). Outside text is
+    reworded, URLs are not."""
+    from tools import site_gemini as S
+    i = {"sym": "WIDE-1", "why": "市場對未實現現金流的 AI 估值折價", "facts": [{"t": "軟銀被高估？", "url": "https://a.com/x?q=未實現"}],
+         "rumors": [], "missed": [], "guess": ["有人喊買進"]}
+    h = S.block(i, {})
+    shown = h.replace('href="https://a.com/x?q=未實現"', "")
+    assert 'href="https://a.com/x?q=未實現"' in h
+    for w in ("未實現", "高估", "買進", "持倉總值"):
+        assert w not in shown, (w, shown)
+    assert "帳面現金流" in shown
+test_card_text_passes_deploy_guard(); print('card guard ok')

@@ -181,6 +181,8 @@ def us_view(d: Dict, px: pd.DataFrame, spx: Optional[pd.Series], today: date) ->
         rec = {"name": f.get("name"), "sym": sym, "priced": f["priced"], "offer": f.get("offer"), "sicd": f.get("sicd"),
                "lockup": (f.get("cover") or {}).get("lockup") or LOCK,
                "raise": f["offer"] * f["offer_shares"] / 1e6 if f.get("offer") and f.get("offer_shares") else None}
+        if f.get("final") and f.get("offer"):           # the 424B4's own deal numbers, for the folded 承銷結構 under the row
+            rec["final"] = f["final"]
         if sym and sym in px.columns:
             a = after_listing(px[sym], _d(f["priced"]), f.get("offer"), spx, rec["lockup"], today)
             if a:

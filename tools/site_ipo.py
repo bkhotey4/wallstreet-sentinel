@@ -45,13 +45,14 @@ def deal_block(r: Dict) -> str:
     and the 30-day stabilization it allows, a concurrent private placement, non-binding indications of interest, and a
     share class holding fixed voting control — all read from the prospectus text by tools/../ipo_data.parse_cover."""
     lo, hi, base = r.get("lo"), r.get("hi"), r.get("shares")
+    final = bool(r.get("final_price"))                 # priced: lo = hi = the offer price, numbers from the 424B4
     lines = []
     if lo and hi and base:
         sell = r.get("sell_shares") or 0
         gs = r.get("gs_shares") or 0
         tot = base + sell
-        txt = (f"公開發行 {tot / 1e6:,.1f} 百萬股" + (f"（公司新股 {base / 1e6:,.1f}、老股東賣出 {sell / 1e6:,.1f}；老股東賣的錢不進公司）" if sell else "")
-               + f"，以價格區間算約 {_usd(tot * lo)}～{_usd(tot * hi)}")
+        txt = (f"公開發行 {tot / 1e6:,.1f} 百萬股" + (f"（公司新股 {base / 1e6:,.1f}、老股東釋出 {sell / 1e6:,.1f}；老股東拿走的錢不進公司）" if sell else "")
+               + (f"，以發行價 {num(hi, 2)} 美元算約 {_usd(tot * hi)}" if final else f"，以價格區間算約 {_usd(tot * lo)}～{_usd(tot * hi)}"))
         if gs:
             txt += f"；加上超額配售最多再 {gs / 1e6:,.1f} 百萬股（基本量的 {gs / tot * 100:.0f}%），最高約 {_usd((tot + gs) * hi)}"
         lines.append(txt + "。")
@@ -61,10 +62,11 @@ def deal_block(r: Dict) -> str:
     if r.get("pp"):
         names = "、".join(f"{esc(x['name'])} {_usd(x['usd'])}" for x in r["pp"])
         lines.append(f"<b>同步私募</b>：上市同時，以發行價直接賣股票給 {len(r['pp'])} 家公司，共 {_usd(r.get('pp_total') or 0)}（{names}；"
-                     "招股書以價格區間中點估算，實際股數照最終發行價）。這筆錢進公司、不經過承銷商，也不在公開發行的股數裡。"
+                     + ("股數已照最終發行價" if final else "招股書以價格區間中點估算，實際股數照最終發行價")
+                     + "）。這筆錢進公司、不經過承銷商，也不在公開發行的股數裡。"
                      + (f"公開發行加同步私募合計約 {_usd((base + (r.get('sell_shares') or 0)) * hi + (r.get('pp_total') or 0))}"
                         + (f"，含超額配售約 {_usd((base + (r.get('sell_shares') or 0) + (r.get('gs_shares') or 0)) * hi + (r.get('pp_total') or 0))}" if r.get("gs_shares") else "")
-                        + "（以區間上緣）。" if hi and base else ""))
+                        + ("（以發行價）。" if final else "（以區間上緣）。") if hi and base else ""))
     if r.get("ioi_usd"):
         lines.append(f"<b>認購意願</b>：部分董事或現有股東表示有意以發行價買最多 {_usd(r['ioi_usd'])}，但不具約束力，可多可少。")
     if r.get("vote_ctrl"):
@@ -73,7 +75,19 @@ def deal_block(r: Dict) -> str:
         return ""
     return ('<details class="sgx"><summary class="small">' + T("承銷結構：募多少、超額配售、同步私募、控制權", "Deal structure") + "</summary>"
             + "".join(f'<p class="small">{x}</p>' for x in lines)
-            + f'<p class="small muted">{T("全部由程式從招股書原文讀出（不是 AI），金額以價格區間估算，最終以定價後的 424B4 為準。", "")}</p></details>')
+            + '<p class="small muted">'
+            + (T("全部由程式從定價後的最終公開說明書（424B4）原文讀出（不是 AI）。", "") if final
+               else T("全部由程式從招股書原文讀出（不是 AI），金額以價格區間估算，最終以定價後的 424B4 為準。", ""))
+            + "</p></details>")
+
+
+def _final_block(r: Dict) -> str:
+    """The same 承銷結構 fold for a priced IPO, from the 424B4 (11-20: it used to vanish the day the deal priced, just
+    when the greenshoe / stabilization window starts to matter)."""
+    fin = r.get("final") or {}
+    if not (fin and r.get("offer")):
+        return ""
+    return deal_block({**fin, "lo": r["offer"], "hi": r["offer"], "final_price": r["offer"]})
 
 
 def fin_block(fin: Optional[Dict]) -> str:
@@ -176,7 +190,7 @@ def _stab(r: Dict) -> str:
 def _us_done(u: Dict) -> str:
     rows = u.get("recent") or []
     tr = [
-        f'<tr><td><b>{esc(r["name"])}</b> <span class="tk">{esc(r.get("sym") or "")}</span><div class="small muted">{esc(r.get("sicd") or "")}</div></td>'
+        f'<tr><td><b>{esc(r["name"])}</b> <span class="tk">{esc(r.get("sym") or "")}</span><div class="small muted">{esc(r.get("sicd") or "")}</div>{_final_block(r)}</td>'
         f'<td class="nw">{_md(r["priced"])}</td><td class="r">{("$" + num(r["offer"], 2)) if r.get("offer") else "—"}</td>'
         f'<td class="r">{_pc(r.get("day1"))}</td><td class="r">{_pc(r.get("vs_offer"))}</td>'
         f'<td class="nw">{_stab(r)}</td>'

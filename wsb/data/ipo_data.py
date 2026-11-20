@@ -48,7 +48,11 @@ HEAD_BYTES = 2_500_000
 FIN_BYTES = 16_000_000          # whole prospectus: the quarterly table sits in MD&A (Anthropic's at ~5.5 MB of 14.8 MB)
 FIN_PER_RUN = 6
 TL_V = 2                    # bump when timeline() learns a new form: every filer's submissions are read once more
-COVER_V = 3                     # bump when parse_cover learns a new pattern: active filers' covers are read once more
+OFFER_V = 2                     # bump when offer_price / the 424B4 read learns a new pattern: recent pricings are read once more
+OFFER_RETRY_DAYS = 120          # the "recently listed" table's window
+OFFER_PER_RUN = 6               # 424B4 re-reads per build (800 KB each)
+FINAL_KEYS = ("shares", "sell_shares", "gs_shares", "gs_days", "pp", "pp_total", "ioi_usd", "vote_ctrl")
+COVER_V = 3                    # bump when parse_cover learns a new pattern: active filers' covers are read once more
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
 
@@ -144,7 +148,7 @@ def parse_cover(t: str) -> Dict:
         out["gs_days"] = int(dm.group(1)) if dm and 15 <= int(dm.group(1)) <= 60 else 30
     # 同步私募（concurrent private placement）：公司在 IPO 同時，以發行價把股票直接賣給策略夥伴（Anthropic：7 家科技公司 260 億美元）
     pp = []
-    for pm in re.finditer(r"([A-Z][\w.&,\- ]{2,60}?)(?: \(“[^”]{1,20}”\))? would purchase ([\d,]{4,}) shares of our [\w ]{0,30}?stock "
+    for pm in re.finditer(r"([A-Z][\w.&,\- ]{2,60}?)(?: \(“[^”]{1,20}”\))? (?:would|will) purchase ([\d,]{4,}) shares of our [\w ]{0,30}?stock "
                           r"for approximately \$\s?([\d.,]+) (billion|million)", head):
         amt = _num(pm.group(3)) * (1e9 if pm.group(4) == "billion" else 1e6)
         pp.append({"name": pm.group(1).strip(" ,").split(",")[-1].strip() if pm.group(1).count(",") > 1 else pm.group(1).strip(" ,"),
@@ -204,7 +208,10 @@ def excerpt(t: str, cap: int = 22000) -> str:
 
 
 def offer_price(t: str) -> Optional[float]:
-    for pat in (r"initial public offering price (?:of (?:our|the|each) [\w\s]{0,40}?)?(?:of|is|was)\s+(?:US)?\$\s?([\d.,]+)",
+    # 11-20: Anthropic's 424B4 says "The initial public offering price per share is $83.00" and, in the cover table,
+    # "Initial public offering price $ 83.00 $ 81,340,000,000": neither matched, so the biggest IPO showed no offer price
+    for pat in (r"initial public offering price (?:per (?:share|ADS|ordinary share|unit) )?(?:of (?:our|the|each) [\w\s]{0,40}?)?(?:of|is|was)\s+(?:US)?\$\s?([\d.,]+)",
+                r"initial public offering price\s+(?:US)?\$\s?([\d.,]+)\s+(?:US)?\$\s?[\d,]{6,}",
                 r"offering price[^$]{0,40}(?:US)?\$\s?([\d.,]+) per (?:share|ordinary share|ADS|unit)",
                 r"price (?:US)?\$\s?([\d.,]+) per (?:share|ADS|ordinary share)", r"Price to (?:the )?public[^$]{0,30}(?:US)?\$\s?([\d.,]+)"):
         m = re.search(pat, t[:60000], re.I)
@@ -439,7 +446,7 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
     # prospectus heads: newest registration of operating IPOs still in process (and the 424B4 cover for the offer price)
     act = sorted(((int(c), f) for c, f in filers.items() if f.get("kind") == "ipo" and not f.get("rw") and f.get("doc")),
                  key=lambda x: x[1].get("last", ""), reverse=True)
-    fin_n = [0]
+    fin_n, offer_n = [0], [0]
     for cik, f in act:
         if time.time() > deadline - 5:
             break
@@ -482,13 +489,22 @@ async def refresh_us(d: Dict, docs: Dict, deadline: float) -> None:
             except Exception as e:  # noqa: BLE001
                 log.info("ipo financials %s: %s", cik, e)
             await asyncio.sleep(0.15)
-        if f.get("priced") and f.get("p_doc") and not f.get("offer") and f.get("offer_try", 0) < 2:
+        # one more read per parser version (OFFER_V) for a recent pricing whose price or final deal numbers are missing:
+        # the old "two tries, then never" left a parser fix unable to reach filings already tried (11-20)
+        retry = (bool(f.get("priced")) and f.get("offer_v") != OFFER_V and f["priced"] >=(today - timedelta(days=OFFER_RETRY_DAYS)).isoformat()
+                 and (not f.get("offer") or "final" not in f) and offer_n[0] < OFFER_PER_RUN)
+        if f.get("priced") and f.get("p_doc") and time.time() < deadline - 20 and (
+                (not f.get("offer") and f.get("offer_try", 0) < 2) or retry):
             f["offer_try"] = f.get("offer_try", 0) + 1
+            f["offer_v"] = OFFER_V
+            offer_n[0] += 1
             try:
                 raw = await _head(ARCH.format(cik=cik, acc=f["p_doc"]["acc"].replace("-", ""), doc=f["p_doc"]["file"]), 800_000)
                 t = text_of(raw)
-                f["offer"] = offer_price(t)
+                f["offer"] = offer_price(t) or f.get("offer")
                 cv = parse_cover(t)
+                # the final deal as the 424B4 states it (the S-1/A numbers were at the range midpoint); {} = read, none found
+                f["final"] = {k: cv[k] for k in FINAL_KEYS if cv.get(k) is not None}
                 if cv.get("spac"):
                     f["kind"], f["spac_text"] = "spac", True
                 if cv.get("lockup"):

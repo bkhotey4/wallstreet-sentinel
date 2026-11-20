@@ -66,7 +66,10 @@ def ipo_dates(html: str) -> Dict[str, Optional[str]]:
         # two shapes: the estimate '<b>約 MM-DD</b>', and the company's own timetable '<b>MM-DD <span>掛牌</span></b>'
         # (11-18: the timetable shape was added on 11-17 and this read it as 'no date' — a false 卡片互相矛盾)
         d = (re.search(r"<b>(?:<span[^>]*>)?約(?:</span>)?\s*(\d\d-\d\d)</b>", chunk)
-             or re.search(r"<b>(\d\d-\d\d)\s*(?:<span[^>]*>)?(?:掛牌|上市|定價)", chunk))
+             or re.search(r"<b>(\d\d-\d\d)\s*(?:<span[^>]*>)?(?:掛牌|上市|定價)", chunk)
+             # third shape, the 已掛牌 table: the 定價 date cell right before the right-aligned 發行價 cell
+             # (11-20: the day after Anthropic listed, the row moved to that table and this read 'no date' again)
+             or re.search(r'</td><td class="nw">(\d\d-\d\d)</td><td class="r">', chunk.split("</tr>")[0]))
         out.setdefault(short, d.group(1) if d else None)
     return out
 

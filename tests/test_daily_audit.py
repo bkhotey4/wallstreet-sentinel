@@ -51,6 +51,23 @@ def test_stopped_trading():
     assert A.stop_reason(sub) == ["撤銷 SEC 登記（不再是上市公司）", "控制權變更（被收購）"], A.stop_reason(sub)
 
 
+def test_ipo_blank_price():
+    """11-20: rows rendered by the real renderer; a fresh listing without an offer price is flagged, an old one and a
+    priced one are not."""
+    from datetime import date
+    from tools import site_ipo as S
+    rows = [{"name": "Delta, PBC", "sym": "DLT", "priced": "2026-11-19", "offer": None, "lockup": 180},
+            {"name": "Epsilon Ltd", "sym": "EPS", "priced": "2026-11-18", "offer": 21.0, "lockup": 180,
+             "final": {"shares": 2e7, "gs_shares": 3e6, "gs_days": 30}},
+            {"name": "Old Co", "sym": "OLD", "priced": "2026-09-01", "offer": None, "lockup": 180}]
+    html = S._us_done({"recent": rows})
+    assert A.ipo_blank_price(html, date(2026, 11, 20)) == ["Delta, PBC（11-19 定價）"], A.ipo_blank_price(html, date(2026, 11, 20))
+    assert "Delta" in A.summary({"ipo_blank": A.ipo_blank_price(html, date(2026, 11, 20))})
+    assert A.ipo_blank_price("", date(2026, 11, 20)) == []
+
+
 if __name__ == "__main__":
     test_stopped_trading()
     print("ok test_stopped_trading")
+    test_ipo_blank_price()
+    print("ok test_ipo_blank_price")

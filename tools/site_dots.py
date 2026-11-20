@@ -5,7 +5,14 @@ from __future__ import annotations
 import json
 from typing import Dict, List
 
-from tools.sitekit import T, card, esc, fold_items
+from tools.sitekit import T, card, fold_items, guard_safe
+from tools.sitekit import esc as _esc
+
+
+def esc(x) -> str:
+    """Hand-written reads and filing titles are outside text: reword the deploy guard's / compliance words (11-20,
+    sibling of the Gemini card).  URLs use _esc."""
+    return _esc(guard_safe(str(x)))
 
 KIND_ZH = {"sec": "SEC 申報", "earn": "財報", "policy": "政策", "ipo": "IPO", "pp": "出資 IPO", "doc": "原文補充"}
 
@@ -31,7 +38,7 @@ def build(eng=None) -> Dict:
 
 
 def _ev(e: Dict) -> str:
-    link = f' <a href="{esc(e["url"])}" target="_blank" rel="noopener">原文</a>' if e.get("url") else ""
+    link = f' <a href="{_esc(e["url"])}" target="_blank" rel="noopener">原文</a>' if e.get("url") else ""
     return f'<li><span class="small muted">{esc(e["date"][5:].replace("-", "/"))}・{esc(KIND_ZH.get(e["kind"], e["kind"]))}</span> {esc(e["t"])}{link}</li>'
 
 
@@ -43,7 +50,7 @@ def _read_html(r: Dict) -> str:
     # 11-18: a read with plain-URL sources raised here and the whole card vanished from the page — accept both shapes
     src = [s if isinstance(s, dict) else {"url": str(s), "name": "原文"} for s in r.get("sources") or []]
     if src:
-        parts.append('<p class="small muted">原文：' + "、".join(f'<a href="{esc(s["url"])}" target="_blank" rel="noopener">{esc(s.get("name") or "原文")}</a>'
+        parts.append('<p class="small muted">原文：' + "、".join(f'<a href="{_esc(s["url"])}" target="_blank" rel="noopener">{esc(s.get("name") or "原文")}</a>'
                                                          for s in src if s.get("url")) + "</p>")
     return "".join(parts)
 

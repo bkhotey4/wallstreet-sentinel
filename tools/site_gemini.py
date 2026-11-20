@@ -5,7 +5,15 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from tools.sitekit import T, card, esc, fold_items
+from tools.sitekit import T, card, fold_items, guard_safe
+from tools.sitekit import esc as _esc
+
+
+def esc(x) -> str:
+    """Gemini's text is outside text like any AI commentary: reword the phrases the deploy's holdings guard and the
+    compliance rule look for (11-20: 「未實現現金流」 in a reply failed tests.test_site; the cloud guard matches 「未實現損益」, which
+    would have blocked every deploy until the next reply).  URLs go through _esc untouched."""
+    return _esc(guard_safe(str(x)))
 
 
 GROUP = {"D": "💬 和 Claude 的討論", "WIDE": "🌍 外面的世界", "TASK": "🔍 Claude 指定查證", "AN": "📝 分析師", "POL": "🏛 美國政策", "TW": "🏭 亞洲供應鏈", "EARN": "📅 財報預期",
@@ -16,7 +24,7 @@ HIDE = ("CODE-",)                                           # the code audit is 
 
 
 def _a(x: Dict) -> str:
-    return f'{esc(x["t"])}' + (f' <a href="{esc(x["url"])}" target="_blank" rel="noopener">來源</a>' if x.get("url") else "")
+    return f'{esc(x["t"])}' + (f' <a href="{_esc(x["url"])}" target="_blank" rel="noopener">來源</a>' if x.get("url") else "")
 
 
 def block(i: Dict, zh: Dict[str, str]) -> str:
@@ -59,6 +67,6 @@ def sec_gemini(eng) -> str:
     how = ("使用者 Antigravity 裡的 Gemini 自動化每小時讀本站的題目清單（/api/gemini_ask：今天動最多、本站找不到對得上新聞的公司），"
            "用 Google 搜尋回答後寫進 research_feed/gemini_reply.md；本站建置時讀取。來源必須是單篇文章，只給首頁的算「無法查證」。✅＝附了來源網址；💬＝傳聞；❔＝沒附來源，只是推測，不要當事實。Gemini 也會出錯，請點來源自己看。不構成投資建議。")
     when = f"　Gemini 回答時間：台北 {esc(d['when'])}" if d.get("when") else ""
-    body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p>' + fold_items(blocks, 4, "家") + tail
+    body = (f'<p class="rimp big2"><b>{T(guard_safe(lead), "")}</b></p>' + fold_items(blocks, 4, "家") + tail
             + f'<details class="sgx"><summary>{T("怎麼產生的", "How it is made")}</summary><p class="note">{T(how, "")}{when}</p></details>')
     return card("Gemini 第二意見：本站找不到原因的大動", "Gemini second opinion", body, "wide")

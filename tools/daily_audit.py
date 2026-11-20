@@ -225,6 +225,26 @@ def explain_stopped(rows: List[Dict]) -> List[Dict]:
     return rows
 
 
+IPO_BLANK_DAYS = 14          # a listing this recent with no offer price on the page is a parser miss, not old history
+
+
+def ipo_blank_price(html: str, today) -> List[str]:
+    """已掛牌 rows (tools.site_ipo._us_done) whose 發行價 cell is 「—」 and whose pricing date is within IPO_BLANK_DAYS.
+    11-20: Anthropic, the largest IPO ever, sat there with no offer price / day-1 close and nothing flagged it."""
+    from datetime import date as _date
+    out = []
+    for m in re.finditer(r'<tr><td><b>([^<]{2,80})</b>(?:(?!</tr>).)*?</td><td class="nw">(\d\d)-(\d\d)</td><td class="r">—</td>', html, re.S):
+        try:
+            d = _date(today.year, int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            continue
+        if d > today:                                        # a December row read in January
+            d = _date(today.year - 1, d.month, d.day)
+        if (today - d).days <= IPO_BLANK_DAYS:
+            out.append(f"{m.group(1)}（{m.group(2)}-{m.group(3)} 定價）")
+    return out
+
+
 # ------------------------------------------------------------------ run
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
@@ -235,6 +255,8 @@ def main() -> Dict:
         html, rep["stale"] = "", []
         rep["site_error"] = str(e)
     rep["hardcode"] = [c for p, ls in changed_since().items() for c in hardcode_candidates(p, ls)][:60]
+    from wsb.data.econcal import us_today
+    rep["ipo_blank"] = ipo_blank_price(html, us_today()) if html else []
     try:
         import asyncio
         from tools import sys_health as H
@@ -282,6 +304,8 @@ def summary(rep: Dict) -> str:
     for h in (rep.get("hardcode") or [])[:15]:
         lines.append(f"  - {h['file']}:{h['line']} 「{h['text']}」 {h['context']}")
     lines.append(f"自我檢查 {len(rep.get('selfcheck') or [])} 項：" + "；".join(i["text"] for i in rep.get("selfcheck") or []))
+    if rep.get("ipo_blank"):
+        lines.append("⚠ 剛掛牌的 IPO 沒有發行價（424B4 沒讀懂？查 wsb/data/ipo_data.offer_price，修好後把 OFFER_V 加一）：" + "、".join(rep["ipo_blank"]))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))
     lines.append("停止交易的追蹤股票：" + ("、".join(f"{x['sym']}（最後 {x['last']}；SEC：{'、'.join(x.get('why') or []) or '查不到原因'}）"
                                                 for x in rep.get("stopped") or []) or "沒有"))

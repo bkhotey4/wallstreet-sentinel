@@ -295,6 +295,37 @@ def test_year_guidance_range_is_one_range():
     assert keep(20.0, "next_q") == [] and keep(60.0, "year") == [] and keep(11.0, "next_q") == ["next_q"]
 
 
+def test_final_prospectus_price_and_deal():
+    """11-20: Anthropic's 424B4 wording (sentences copied from the filing). The offer price was not read, so the 已掛牌
+    row showed — for 發行價／第一天收盤／至今, and the 承銷結構 fold vanished the day the deal priced."""
+    from wsb.data import ipo_data as I
+    from wsb.analytics import ipo as A
+    from tools import site_ipo as S
+    t = ("We are selling 956,351,354 shares of Class A common stock and the selling stockholders identified in this prospectus "
+         "are selling an additional 23,648,646 shares of Class A common stock. Prior to this offering, there has been no public "
+         "market for our Class A common stock. The initial public offering price per share is $83.00 . We have been approved to "
+         "list our Class A common stock on the Nasdaq Global Select Market under the symbol “ANT.” Per share Total Initial public "
+         "offering price $ 83.00 $ 81,340,000,000 Underwriting discount (1) $ 0.56122 $ 550,000,000 . Based on the initial "
+         "public offering price of $83.00 per share, Google LLC will purchase 120,481,927 shares of our Class N common stock "
+         "for approximately $10.0 billion , NVIDIA Corporation (“NVIDIA”) will purchase 120,481,927 shares of our Class N "
+         "common stock for approximately $10.0 billion .")
+    assert I.offer_price(t) == 83.0
+    assert I.offer_price("Per share Total Initial public offering price $ 21.00 $ 420,000,000 Underwriting discounts") == 21.0
+    assert I.offer_price("initial public offering price per share will be between $ and $ .") is None    # a blank range is not a price
+    pp = I.parse_cover(t).get("pp") or []
+    assert [(p["name"], p["shares"], p["usd"]) for p in pp] == [("Google LLC", 120481927.0, 1e10), ("NVIDIA Corporation", 120481927.0, 1e10)], pp
+    # the row carries the 424B4's numbers and renders the fold at the offer price, with no range wording
+    fin = {"shares": 956351354.0, "sell_shares": 23648646.0, "gs_shares": 147000000.0, "gs_days": 30, "pp": pp, "pp_total": 2.6e10}
+    d = {"us": {"filers": {"1": {"name": "Anthropic, PBC", "kind": "ipo", "s1": "2026-10-26", "last": "2026-11-17", "priced": "2026-11-19",
+                                 "offer": 83.0, "offer_shares": 956351354.0, "tickers": ["ANT"], "final": fin, "doc": {"acc": "a"}}}}}
+    rec = A.us_view(d, pd.DataFrame(), None, date(2026, 11, 20))["recent"][0]
+    assert rec["final"] == fin and rec["offer"] == 83.0, rec
+    html = S._us_done({"recent": [rec]})
+    assert "以發行價 83.00 美元算約 813 億美元" in html and "股數已照最終發行價" in html and "424B4" in html, html[:900]
+    assert "價格區間" not in html and not any(b in html for b in BANNED)
+    assert S._final_block({"offer": 83.0}) == "" and S._final_block({"final": fin}) == ""       # nothing invented without both
+
+
 if __name__ == "__main__":
     fails = 0
     for n, f in list(globals().items()):

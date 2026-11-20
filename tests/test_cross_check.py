@@ -44,6 +44,14 @@ def test_round_trip_with_real_renderer():
     html = f'<section class="card"><h2>{H.IPO_CARD}</h2>{S._us_pending({"pending": rows})}</section>'
     got = X.ipo_dates(html)
     assert got.get("Alpha") == "11-21" and got.get("Beta") == "11-22" and got.get("Gamma") == "11-19", got
+    # 11-20: the 已掛牌 table is a third shape (the row moves there the day after listing), with or without the deal fold
+    done = [{"name": "Delta, PBC", "sym": "DLT", "priced": "2026-11-19", "offer": 83.0, "lockup": 180, "lock": "2027-05-18",
+             "final": {"shares": 9.5e8, "gs_shares": 1.47e8, "gs_days": 30}},
+            {"name": "Epsilon Ltd", "sym": "EPS", "priced": "2026-11-12", "offer": None, "lockup": 180}]
+    html = f'<section class="card"><h2>{H.IPO_CARD}</h2>{S._us_done({"recent": done})}</section>'
+    got = X.ipo_dates(html)
+    assert got.get("Delta") == "11-19" and got.get("Epsilon") == "11-12", got
+    assert X.ipo_issues("Delta 11/19 掛牌", html, date(2026, 11, 20)) == []
 
 
 def test_earn_mismatch_caught():
