@@ -32,6 +32,14 @@ def test_hardcode_candidates():
     assert got == ["8,300 億美元", "約 3.2%"], got
 
 
+def test_summary_routines_and_tw_forecast_listed():
+    import tools.daily_audit as A
+    from tools import site_routines as SR
+    assert "tw_forecast.json" in [e[0] for e in SR.EXPECT]          # 11-21: the daily TW outlook missed a run unflagged
+    s = A.summary({"routines": [{"zh": "台灣總經展望", "st": "late", "age_h": 50.0, "every_h": 24}], "holdings_mismatch": []})
+    assert "排程紅黃燈：台灣總經展望（late" in s and "持股檔" not in s
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

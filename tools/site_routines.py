@@ -33,6 +33,8 @@ EXPECT = (
     ("bonds.json", "債市深度判讀", "Bond deep read", 24, True),        # runs Mon–Fri (US)
     ("feed.json", "學術動態", "Research feed", 168, False),
     ("industry_note.json", "產業筆記", "Industry note", 168, False),
+    ("tw_forecast.json", "台灣總經展望", "Taiwan macro outlook", 24, True),  # Mon–Fri 15:40 (added 11-21: the 11-20 run
+                                                                                 # stopped at a permission prompt and nothing flagged it)
     ("tw_note.json", "台灣每月分析筆記", "Taiwan monthly note", 31 * 24, False),
 )
 LIGHT = {"ok": ("🟢", "準時", "On time"), "late": ("🟡", "晚了", "Late"), "stop": ("🔴", "停了", "Stopped"),

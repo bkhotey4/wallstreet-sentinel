@@ -270,6 +270,22 @@ def main() -> Dict:
     except Exception as e:  # noqa: BLE001
         rep["selfcheck"], rep["overrun"] = [], []
         rep["selfcheck_error"] = str(e)
+    try:                                                      # 3 routines: documented above but never run until 11-21
+        from tools import site_routines as SR
+        feed = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
+        rep["routines"] = [{"file": r["file"], "zh": r["zh"], "st": r["st"],
+                            "age_h": None if r["age"] is None else round(r["age"], 1), "every_h": r["every"]}
+                           for r in SR.rows(feed_dir=feed if feed.is_dir() else SR.FEED_DIR) if r["st"] not in ("ok", "wait")]
+    except Exception as e:  # noqa: BLE001
+        rep["routines"], rep["routines_error"] = [], str(e)
+    try:                                                      # private: holdings files that disagree (symbols only)
+        from tools import holdings_guard as HG
+        g = HG.compare(HG.read_all())
+        rep["holdings_mismatch"] = [d["sym"] for d in g["diff"]] + (["（機器人主檔不見）"] if g["missing_primary"] else [])
+    except ImportError:                                       # the public copy has no holdings_guard
+        rep["holdings_mismatch"] = []
+    except Exception as e:  # noqa: BLE001
+        rep["holdings_mismatch"], rep["holdings_error"] = [], str(e)
     try:
         rep["ahead"] = json.loads(_get(SITE + f"upcoming.json?v={int(time.time())}", 30)).get("items") or []
     except Exception:  # noqa: BLE001
@@ -303,6 +319,10 @@ def summary(rep: Dict) -> str:
     lines.append(f"寫死數字候選 {len(rep.get('hardcode') or [])} 處（最近 26 小時改過的行）：")
     for h in (rep.get("hardcode") or [])[:15]:
         lines.append(f"  - {h['file']}:{h['line']} 「{h['text']}」 {h['context']}")
+    lines.append("排程紅黃燈：" + ("、".join(f"{r['zh']}（{r['st']}，{r['age_h']} 小時／應每 {r['every_h']} 小時）"
+                                             for r in rep.get("routines") or []) or "沒有"))
+    if rep.get("holdings_mismatch"):
+        lines.append("⚠ 持股檔對不起來（只列代號）：" + "、".join(rep["holdings_mismatch"]))
     lines.append(f"自我檢查 {len(rep.get('selfcheck') or [])} 項：" + "；".join(i["text"] for i in rep.get("selfcheck") or []))
     if rep.get("ipo_blank"):
         lines.append("⚠ 剛掛牌的 IPO 沒有發行價（424B4 沒讀懂？查 wsb/data/ipo_data.offer_price，修好後把 OFFER_V 加一）：" + "、".join(rep["ipo_blank"]))

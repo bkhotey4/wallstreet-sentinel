@@ -98,6 +98,55 @@ def parse(rows, source):
     return out
 
 
+MI_INDEX = "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={d}&type=ALLBUT0999&response=json"
+SAME_DAY_AFTER = (14, 30)          # Taipei: TWSE's after-trading report is complete by then
+
+
+def _sign(cell) -> float:
+    s = str(cell)
+    return -1.0 if "-" in s else 0.0 if ("X" in s or not s.strip()) else 1.0
+
+
+def parse_mi_index(doc: dict) -> dict:
+    """TWSE's same-day after-trading report → the openapi row shape parse() reads.
+    11-21: openapi STOCK_DAY_ALL and MI_5MINS_HIST still carried 11-19 at 23:55 on 11-20 (a −6.2 % day), so every .TW quote
+    and ^TWII were a day old while TPEx was current.  The rwd MI_INDEX report has the day's closes after ~14:30."""
+    if not isinstance(doc, dict) or doc.get("stat") != "OK":
+        return {}
+    day = str(doc.get("date") or "")
+    if len(day) != 8:
+        return {}
+    roc = f"{int(day[:4]) - 1911}{day[4:]}"
+    rows, idx = [], []
+    for t in doc.get("tables") or []:
+        title, f, data = str(t.get("title") or ""), t.get("fields") or [], t.get("data") or []
+        if "每日收盤行情" in title and "證券代號" in f:
+            i = {k: f.index(k) for k in ("證券代號", "證券名稱", "成交股數", "收盤價", "漲跌(+/-)", "漲跌價差") if k in f}
+            for r in data:
+                try:
+                    chg = number(r[i["漲跌價差"]])
+                    rows.append({"Date": roc, "Code": str(r[i["證券代號"]]).strip(), "Name": r[i["證券名稱"]],
+                                 "TradeVolume": r[i["成交股數"]], "ClosingPrice": r[i["收盤價"]],
+                                 "Change": None if chg is None else _sign(r[i["漲跌(+/-)"]]) * chg})
+                except (KeyError, IndexError):
+                    continue
+        elif "價格指數(臺灣證券交易所)" in title and "收盤指數" in f:
+            for r in data:
+                if str(r[0]).strip() == "發行量加權股價指數":
+                    px = number(r[f.index("收盤指數")])
+                    pts = number(r[f.index("漲跌點數")]) if "漲跌點數" in f else None
+                    sg = _sign(r[f.index("漲跌(+/-)")]) if "漲跌(+/-)" in f else 1.0
+                    if px:
+                        idx = [px, (px - sg * pts) if pts is not None else None]
+    out = parse(rows, "TWSE") if rows else {}
+    if idx:
+        iso = f"{day[:4]}-{day[4:6]}-{day[6:]}"
+        px, prev = idx
+        out["^TWII"] = dict(price=px, prev=prev, chg_pct=(px / prev - 1) * 100 if prev else None, asof=iso,
+                            name="台灣加權指數", source="TWSE", fetched=time.time())
+    return out
+
+
 def cached():
     try:
         d = json.loads(FILE.read_text(encoding="utf-8"))
@@ -113,7 +162,7 @@ async def refresh(force=False):
 
     async def fetch(source, url):
         try:
-            rows = await http.get(url, timeout=20, retries=1)
+            rows = await http.get(url, timeout=60, retries=2)    # TPEx sends ~5 MB; 20 s timed out most evenings
             quotes = parse(rows, source)
             if not quotes:
                 raise ValueError("No valid dated official quotes")
@@ -129,6 +178,20 @@ async def refresh(force=False):
         for symbol, q in result.items():
             if q["asof"] >= quotes.get(symbol, {}).get("asof", ""):
                 quotes[symbol] = q
+    now = datetime.now(ZoneInfo("Asia/Taipei"))
+    today = now.date().isoformat()
+    if now.weekday() < 5 and (now.hour, now.minute) >= SAME_DAY_AFTER and quotes.get("2330.TW", {}).get("asof", "") < today:
+        try:                                              # openapi lags a day; take the same-day report
+            same = parse_mi_index(await http.get(MI_INDEX.format(d=now.strftime("%Y%m%d")), timeout=40, retries=1))
+            for symbol, q in same.items():
+                if q["asof"] >= quotes.get(symbol, {}).get("asof", ""):
+                    if symbol == "^TWII" and quotes.get(symbol, {}).get("bars"):
+                        q["bars"] = dict(quotes[symbol]["bars"], **{q["asof"]: q["price"]})
+                    quotes[symbol] = q
+            if same:
+                HEALTH.ok("TWSE-same-day_quotes", len(same), every=3600)
+        except Exception as e:  # noqa: BLE001
+            log.warning("TWSE same-day report failed: %s", e)
     try:
         tmp = FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps({"attempt": time.time(), "quotes": quotes}, ensure_ascii=False), encoding="utf-8")

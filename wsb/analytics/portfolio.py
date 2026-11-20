@@ -42,6 +42,8 @@ def load_holdings() -> Dict[str, dict]:
     for key in ("file", "fallback_file"):
         p = (ROOT / cfg.get(key, "")).resolve() if cfg.get(key) else None
         if not p or not p.exists():
+            if key == "file" and p:                       # 11-21: the main file was missing for weeks and the old fallback
+                log.warning("holdings file %s missing — using the fallback; check tools/holdings_guard", p)   # showed sold stocks
             continue
         try:
             data = json.loads(Path(p).read_text(encoding="utf-8"))
