@@ -44,6 +44,25 @@ def test_rows_and_flag():
     assert '<th colspan="6">美債</th>' in h and '<th colspan="6">亞洲</th>' in h and "日本財務省" in h
 
 
+def test_quote_newer_than_history():
+    """11-21: the Nikkei history stopped at Thursday while the quote had Friday → the row uses Friday."""
+    idx = pd.date_range("2026-01-01", periods=230, freq="B")
+    s = pd.Series(np.linspace(50000, 59444.21, 230), index=idx)
+
+    class M:
+        quotes = {"^N225": {"price": 56436.65, "asof": (idx[-1] + pd.Timedelta(days=1)).strftime("%Y-%m-%d")}}
+
+        def series(self, t):
+            return s
+
+    class E:
+        market = M()
+    r = {x["sym"]: x for x in MD.rows(E())}["^N225"]
+    assert abs(r["last"] - 56436.65) < 1e-6 and abs(r["d1"] - (56436.65 / 59444.21 - 1) * 100) < 1e-6
+
+
 if __name__ == "__main__":
+    test_quote_newer_than_history()
+    print("ok test_quote_newer_than_history")
     test_rows_and_flag()
     print("ok test_rows_and_flag")

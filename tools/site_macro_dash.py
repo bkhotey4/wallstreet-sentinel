@@ -67,7 +67,18 @@ def _series(eng, src: str, sid: str):
         return eng.fred.get(sid)
     if src == "jgb":
         return eng.global_yields.get(sid)
-    return eng.market.series(sid)
+    s = eng.market.series(sid)
+    # 11-21: Yahoo's daily history for the Nikkei / Hang Seng lagged a session (Friday's close missing at the Saturday build)
+    # while the quote already had it — add the quote's newer close so the row describes the same day as the others
+    try:
+        import pandas as pd
+        q = (getattr(eng.market, "quotes", {}) or {}).get(sid) or {}
+        d = pd.Timestamp(str(q.get("asof") or "")[:10]) if q.get("asof") else None
+        if d is not None and not s.empty and d > s.index[-1] and float(q.get("price") or 0) > 0:
+            s = pd.concat([s, pd.Series([float(q["price"])], index=[d])])
+    except Exception:  # noqa: BLE001
+        pass
+    return s
 
 
 def rows(eng) -> List[Dict]:

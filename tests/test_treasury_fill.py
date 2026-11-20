@@ -25,6 +25,25 @@ def test_parse_and_fill():
     assert "DGS30" not in src.series                                     # a series FRED never gave is not invented
 
 
+REAL = """<feed><entry><content><m:properties><d:NEW_DATE m:type="Edm.DateTime">2026-11-20T00:00:00</d:NEW_DATE>
+<d:TC_5YEAR m:type="Edm.Double">2.41</d:TC_5YEAR><d:TC_10YEAR m:type="Edm.Double">2.77</d:TC_10YEAR></m:properties></content></entry></feed>"""
+
+
+def test_real_curve_fill():
+    """11-21: the real (TIPS) curve fills DFII10 too, and T10YIE = DGS10 − DFII10 for the same day."""
+    got = F.parse_ust_all(REAL, F.UST_REAL)
+    assert got == {"2026-11-20": {"DFII5": 2.41, "DFII10": 2.77}}, got
+    got.setdefault("2026-11-20", {}).update({"DGS10": 4.92})
+    src = F.FredData.__new__(F.FredData)
+    idx = pd.to_datetime(["2026-11-19"])
+    src.series = {"DGS10": pd.Series([5.04], idx), "DFII10": pd.Series([2.88], idx), "T10YIE": pd.Series([2.16], idx)}
+    filled = src.apply_treasury(got)
+    assert src.series["DFII10"].iloc[-1] == 2.77 and filled["DFII10"] == ["2026-11-20"]
+    assert abs(src.series["T10YIE"].iloc[-1] - 2.15) < 1e-9
+
+
 if __name__ == "__main__":
     test_parse_and_fill()
+    test_real_curve_fill()
+    print("ok test_real_curve_fill")
     print("ok test_parse_and_fill")

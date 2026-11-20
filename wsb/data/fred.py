@@ -8,7 +8,7 @@ import re
 import logging
 import time
 from datetime import date, timedelta
-from typing import Dict
+from typing import Dict, Optional
 
 import pandas as pd
 
@@ -22,10 +22,13 @@ log = logging.getLogger(__name__)
 UST_XML = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"   # Treasury daily par yield curve
 UST_TENOR = {"BC_1MONTH": "DGS1MO", "BC_3MONTH": "DGS3MO", "BC_6MONTH": "DGS6MO", "BC_1YEAR": "DGS1", "BC_2YEAR": "DGS2",
              "BC_3YEAR": "DGS3", "BC_5YEAR": "DGS5", "BC_7YEAR": "DGS7", "BC_10YEAR": "DGS10", "BC_20YEAR": "DGS20", "BC_30YEAR": "DGS30"}
-UST_SPREADS = {"T10Y2Y": ("DGS10", "DGS2"), "T10Y3M": ("DGS10", "DGS3MO")}
+# Treasury daily REAL (TIPS) yield curve: fills FRED's one-day lag for DFII10/DFII5 too (2026-11-21: the 每日總經 card showed
+# Thursday's real yield next to Friday's nominal one).  T10YIE = DGS10 − DFII10, as FRED derives it.
+UST_REAL = {"TC_5YEAR": "DFII5", "TC_10YEAR": "DFII10"}
+UST_SPREADS = {"T10Y2Y": ("DGS10", "DGS2"), "T10Y3M": ("DGS10", "DGS3MO"), "T10YIE": ("DGS10", "DFII10")}
 
 
-def parse_ust_all(xml: str) -> Dict[str, Dict[str, float]]:
+def parse_ust_all(xml: str, tenors: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, float]]:
     """Treasury daily par yield curve XML → {YYYY-MM-DD: {FRED id: yield %}} for every tenor present."""
     out: Dict[str, Dict[str, float]] = {}
     for blk in re.findall(r"<m:properties>(.*?)</m:properties>", xml, re.S):
@@ -33,7 +36,7 @@ def parse_ust_all(xml: str) -> Dict[str, Dict[str, float]]:
         if not d:
             continue
         row = {}
-        for tag, sid in UST_TENOR.items():
+        for tag, sid in (tenors or UST_TENOR).items():
             v = re.search(rf"<d:{tag}[^>]*>([\d.]+)<", blk)
             if v:
                 row[sid] = float(v.group(1))
@@ -185,19 +188,20 @@ class FredData:
             months.add((today.replace(day=1) - pd.Timedelta(days=1)).strftime("%Y%m"))
         got: Dict[str, Dict[str, float]] = {}
         for m in sorted(months):
-            try:
-                xml = await http.get(UST_XML, params={"data": "daily_treasury_yield_curve", "field_tdr_date_value_month": m},
-                                     kind="text", timeout=20, retries=1)
-            except Exception as e:  # noqa: BLE001
-                log.info("Treasury yield XML %s: %s", m, e)
-                continue
-            for d, row in parse_ust_all(xml).items():
-                got.setdefault(d, {}).update(row)
+            for data, tenors in (("daily_treasury_yield_curve", UST_TENOR), ("daily_treasury_real_yield_curve", UST_REAL)):
+                try:
+                    xml = await http.get(UST_XML, params={"data": data, "field_tdr_date_value_month": m},
+                                         kind="text", timeout=20, retries=1)
+                except Exception as e:  # noqa: BLE001
+                    log.info("Treasury %s XML %s: %s", data, m, e)
+                    continue
+                for d, row in parse_ust_all(xml, tenors).items():
+                    got.setdefault(d, {}).update(row)
         return self.apply_treasury(got)
 
     def apply_treasury(self, got: Dict[str, Dict[str, float]]) -> Dict[str, list]:
         filled: Dict[str, list] = {}
-        for sid in list(UST_TENOR.values()):
+        for sid in list(UST_TENOR.values()) + list(UST_REAL.values()):
             s = self.series.get(sid)
             if s is None or s.empty:
                 continue
