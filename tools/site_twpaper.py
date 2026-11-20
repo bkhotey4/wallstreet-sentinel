@@ -29,11 +29,14 @@ def lead(d: Dict) -> str:
     m = d.get("main") or {}
     n_open, closed = len(m.get("open") or []), m.get("closed") or 0
     start = str(d.get("start") or "")
-    base = (f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（假設本金 100 萬元），到 {m.get('data_end')} 共 {_days(d)} 個交易日，"
-            f"主帳本 {_p(m.get('total'))}，同期 0050 {_p(m.get('bench_total'))}；")
+    if _days(d):
+        base = (f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（假設本金 100 萬元），到 {m.get('data_end')} 共 {_days(d)} 個交易日，"
+                f"主帳本 {_p(m.get('total'))}，同期 0050 {_p(m.get('bench_total'))}；")
+    else:
+        base = f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（假設本金 100 萬元），今天是第一天，第一筆紙上成交最快在下一個交易日開盤；"
     if not n_open and not closed:
         mk = d.get("mkt") or {}
-        why = (f"加權指數 {mk.get('twii'):,.0f} 點在 200 日線 {mk.get('ma200'):,.0f} 點之下，創 50 日新高又放量的股票很少"
+        why = (f"加權指數 {mk.get('twii'):,.0f} 點（{mk.get('date', '')}）在 200 日線 {mk.get('ma200'):,.0f} 點之下，創 50 日新高又放量的股票很少"
                if mk.get("ma200") and mk.get("twii") and mk["twii"] < mk["ma200"] else "還沒有股票同時創 50 日新高又放量")
         return base + f"目前還沒有任何進場訊號（{why}）。"
     return base + f"目前紙上持有 {n_open} 檔、已出場 {closed} 筆。"

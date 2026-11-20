@@ -59,9 +59,10 @@ def test_due_boundary():
     fri = datetime(2026, 11, 20, 15, 0, tzinfo=TPE)
     assert TP.boundary(fri) == datetime(2026, 11, 20, 14, 30, tzinfo=TPE)
     assert TP.boundary(datetime(2026, 11, 23, 9, 0, tzinfo=TPE)) == datetime(2026, 11, 20, 14, 30, tzinfo=TPE)   # Monday morning → Friday
-    st = {"computed_at": "2026-11-20T15:10:00+08:00"}
+    st = {"computed_at": "2026-11-20T15:10:00+08:00", "v": TP.V}
     assert not TP.due(st, datetime(2026, 11, 22, 12, 0, tzinfo=TPE))
     assert TP.due(st, datetime(2026, 11, 23, 14, 31, tzinfo=TPE)) and TP.due({}, fri)
+    assert TP.due(dict(st, v=0), datetime(2026, 11, 22, 12, 0, tzinfo=TPE))         # old cached version → recompute
 
 
 def test_public_and_relay():

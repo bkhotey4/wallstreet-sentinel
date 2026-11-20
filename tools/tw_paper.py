@@ -38,6 +38,7 @@ MAIN = TB.Params(signal="B", market_filter=False, stop="pct", stop_pct=0.075, tp
 FILT = replace(MAIN, market_filter=True)
 KIND = {"entry": "進場（隔天開盤紙上成交）", "tp": "漲 20% 先出一半", "stop": "碰到停損出場", "trail_ma": "收盤跌破 20 日均線出場",
         "trail_dd": "從最高回落 8% 出場", "time": "60 個交易日沒漲到 20%，時間到出場", "trail": "移動停利出場"}
+V = 2                                               # 計算方式改了就加 1：快取裡的舊版會立刻重算
 ENOUGH = 30                                         # 已出場筆數到 30 筆前，成績只能當參考
 
 
@@ -57,7 +58,7 @@ def boundary(now: datetime) -> datetime:
 
 
 def due(state: Optional[Dict], now: datetime) -> bool:
-    if not state or not state.get("computed_at"):
+    if not state or not state.get("computed_at") or state.get("v") != V:
         return True
     try:
         last = datetime.fromisoformat(state["computed_at"])
@@ -90,7 +91,7 @@ def ledger(px: Dict[str, pd.DataFrame], p: TB.Params, start: str, names: Dict[st
     """One variant's paper ledger: fills, open positions, equity vs 0050."""
     stocks = [c for c in px["Close"].columns if c not in ("^TWII", "0050.TW")]
     pu = {k: v[stocks] for k, v in px.items()}
-    idx = px["Close"]["^TWII"]
+    idx = px["Close"]["^TWII"].ffill()                # 指數某天缺資料（Yahoo 晚更新）時沿用前一天，不讓濾網誤判成「線下」
     sig = TB.signals(pu, "B")
     ev: List[Dict] = []
     res = TB.backtest(pu, sig, p, start, index_close=idx, events=ev, settle_end=False)
@@ -105,7 +106,7 @@ def ledger(px: Dict[str, pd.DataFrame], p: TB.Params, start: str, names: Dict[st
                "w": round(o["value"] / res["equity"].iloc[-1], 4) if len(res["equity"]) else 0.0} for o in res["open"]]
     closed = [t for t in res["trades"]]
     eq = [float(v) for v in res["equity"].values]
-    b = px["Close"]["0050.TW"].reindex(res["equity"].index).ffill()
+    b = px["Close"]["0050.TW"].ffill().reindex(res["equity"].index).ffill()
     bench = [float(v / b.iloc[0]) for v in b.values] if len(b) and b.iloc[0] == b.iloc[0] else []
     rets = [t["ret"] for t in closed]
     last = dates[-1]
@@ -133,7 +134,7 @@ def compute(px: Dict[str, pd.DataFrame], u: Dict, now: datetime) -> Dict:
     idx = px["Close"]["^TWII"].dropna()
     m200 = idx.rolling(200).mean()
     return {
-        "computed_at": now.astimezone(TPE).isoformat(timespec="seconds"), "start": u["start"], "notional": NOTIONAL,
+        "v": V, "computed_at": now.astimezone(TPE).isoformat(timespec="seconds"), "start": u["start"], "notional": NOTIONAL,
         "universe": {"n": len(u["codes"]), "frozen": u["frozen"], "source": u["source"]},
         "mkt": {"twii": round(float(idx.iloc[-1]), 2), "ma200": round(float(m200.iloc[-1]), 2) if m200.notna().iloc[-1] else None,
                 "date": _ds(idx.index[-1])},
