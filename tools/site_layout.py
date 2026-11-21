@@ -304,7 +304,7 @@ sync();})();
 CSS = """
 .layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:18px}
 .side{position:sticky;top:calc(96px / var(--z,1));align-self:start;max-height:calc((100vh - 110px) / var(--z,1));overflow:auto;padding:4px 0 20px;border-right:1px solid var(--bd);scrollbar-width:thin}
-.sg{margin:0 0 14px}.sgt{font-weight:700;font-size:13.5px;padding:4px 10px;color:var(--tx)}.sgt span{display:block;font-weight:400;font-size:11.5px;color:var(--tx2)}
+.sg{margin:0 0 14px}.sg>.sgt{font-weight:700;font-size:13.5px;padding:4px 10px;color:var(--tx)}.sg>.sgt span{display:block;font-weight:400;font-size:11.5px;color:var(--tx2)}
 .side .ptab{display:block;border-bottom:0;border-left:3px solid transparent;padding:6px 14px;font-size:13px}
 .side .ptab.on{border-left-color:var(--ac);background:var(--wash);border-bottom:0}
 .prow{display:flex;align-items:stretch}.prow .ptab{flex:1;min-width:0}
