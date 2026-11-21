@@ -25,7 +25,7 @@ const FEEDS = [
   { s: "CNBC 科技", o: "cnbc", u: "https://www.cnbc.com/id/19854910/device/rss/rss.html", lang: "en" },
   // added 2026-11-21 (blind-spot review): the Cursor story was a retelling of this committee's own report (11/20 19:25 UTC),
   // and Congress is not in the Federal Register.  Every item kept (official source); Nikkei Asia for Japan / Asia supply chains.
-  { s: "美國眾議院中國委員會", o: "ccp", u: "https://selectcommitteeontheccp.house.gov/rss.xml", lang: "en", off: true, all: true },
+  { s: "美國眾議院中國委員會", o: "ccp", u: "https://chinaselectcommittee.house.gov/rss.xml", lang: "en", off: true, all: true },
   { s: "日經亞洲", o: "nikkei", u: "https://asia.nikkei.com/rss/feed/nar", lang: "en" },
   // added 2026-11-14 so that "three newsrooms report the same thing within 45 minutes" has enough newsrooms to count
   { s: "自由時報財經", o: "ltn", u: "https://news.ltn.com.tw/rss/business.xml", lang: "zh", biz: true },
