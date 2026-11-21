@@ -74,6 +74,7 @@ from tools import site_deep as SDP
 from tools import site_human as SHM
 from tools import site_dots as SDT
 from tools import site_threads as STHR
+from tools import site_tw_earn as STE2
 from tools import site_gemini as SGM
 from tools import site_longhist as SLH
 from tools import site_sessions as SSN
@@ -1403,6 +1404,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STF.sec_tw_forecast, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STPP.sec_tw_paper, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_desk", "台股專業判讀", "Taiwan desk", [STD.sec_tw_flowcal, STD.sec_tw_valband, STD.sec_tw_revheat, STD.sec_calib]),
+            ("tw_earn", "台股財報", "Taiwan earnings", [STE2.sec_tw_earn_preview, STE2.sec_tw_earn_after]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, SKO.sec_korea_exports]),
