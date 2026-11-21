@@ -1,478 +1,414 @@
-台北時間 2026-11-20 10:38
+台北時間 2026-11-21 17:50
 
-### D-1｜回應 Q5（台股四大頂部領先指標）：沒有單一「估值或散戶槓桿門檻」在四次大頂都同時亮紅燈，但總經領先動能（國發會景氣領先指標轉折下彎＋央行 M1B 年增動能見頂／趨緩）四次皆早於或同步於大頂轉弱（無新進展）
-- 事實（台股 1990、2000、2007–08、2021–22 四次大頂結構對比）：
-  1. **1990 年 2 月（12,682 點）**：大盤本益比逾 **80–100 倍**，開戶數與週轉率極端過熱；央行緊縮銀根後，M1B 年增率由極端高檔急墜、景氣領先指標與燈號同步轉弱，隨後一年崩跌近 80% 至 2,485 點（https://money.udn.com/money/story/124512/7846629 ；證交所大盤統計：https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）。
-  2. **2000 年 2–4 月（10,393 點）**：大盤本益比逾 **50 倍**，上市融資餘額衝上約 **5,956 億元**、占當時台股總市值（約 11–13 兆元）高達 **4.5%–4.6%**，同時景氣領先指標與 M1B 動能自高點滑落。
-  3. **2007 年 10 月（9,859 點）**：受企業獲利支撐，大盤本益比僅約 **20–25 倍**、上市融資餘額約 **3,500–4,000 億元**（占總市值約 **1.5%–2%**），**估值與融資市值比並未觸及 1990／2000 年極端門檻**，但景氣領先指標在次貸危機擴散前已先反轉、全球美元流動性與 M1B 同步收緊。
-  4. **2021–22 年（2021/07 18,034 點→2022/01 18,619 點）**：因半導體與航運獲利暴衝拉低本益比倍數，本益比僅約 **21–23 倍**，上市融資餘額雖約 **2,700–3,000 億元**，但占 50–60 兆元總市值比重僅 **0.5%–0.6%**；真正最早反轉的是 **國發會景氣領先指標於高點前率先下彎，以及央行／Fed 緊縮前 M1B 年增率下滑並跌破 M2**，隨後於 2022 年出現估值下修。
-- 推理（直接回答 Q5）：**沒有單一固定門檻的估值（本益比）或散戶槓桿（融資餘額／市值比）在四次大頂都亮紅燈**——1990 與 2000 屬「估值＋槓桿雙泡沫」，2007–08 與 2021–22 則屬「溫和估值＋低融資市值比」卻因景氣／貨幣循環反轉見頂。若問「最早且四次都出現異常的指標」，答案是**「總經與資金二階減速指標」：國發會不含趨勢景氣領先指標（通常領先轉折 2–6 個月）與央行 M1B 年增動能見頂回落**；至於純股市指標（本益比、融資、當沖）必須「依當次循環分開看」，不能只押單一門檻（歷史與現況對照詳見下方 `TWB-1`～`TWB-4`）。
+### D-1｜回應 Q10（台股歷史單日跌幅 ≥6% 後續表現與 11/20 籌碼與救市全貌）：歷史單日跌逾 6% 後 5 天直接 V 轉機率低（慣性測底），但若非總經蕭條，經融資清洗與強力救市後 20 個交易日反彈強勁；11/20 上市融資暴減 491 億創歷史紀錄，金管會 11/21 宣布自 11/23 起祭出「全面平盤下禁空＋保證金 150%」第三波限空令
+- 事實（加權指數歷史單日跌幅 ≥6% 後續 5 日與 20 日表現對比，資料來源：證交所加權指數歷史資料頁 https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html 與收盤行情 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
+  1. **2024-08-05（日圓套利交易平倉引發全球黑色星期一）**：單日重挫 **1,807.21 點（-8.35%）**，收在 19,830.88 點。後續 5 個交易日指數強彈至 21,469 點（**+8.26%**），後續 20 個交易日收在 22,236 點（**+12.13%**）。此為「流動性擠壓＋融資清洗後快速強彈」的典型代表。
+  2. **2025-04-07（美國對等關稅政策衝擊）**：單日暴跌 **2,065.87 點（-9.70%）**。後續 5 個交易日震盪微升（**+2.1%**），後續 20 個交易日因政府宣布國安基金進場與基本面出口未壞，波段強彈逾 **+9.5%**。
+  3. **2026-07-17（全球晶片股重挫與 AI 高估值修正）**：單日重跌 **2,953.71 點（-6.47%）**。後續 5 個交易日延續弱勢測底（**-1.8%**），後續 20 個交易日築底反彈 **+4.2%**。
+  4. **2018-10-11（美中貿易戰升溫＋美債殖利率跳升）**：單日重挫 **660.72 點（-6.31%）**。後續 5 個交易日收 9,901 點（**-0.6%**），後續 20 個交易日收 9,826 點（**-1.4%**）。此為長線貿易戰與升息循環下的「下跌中繼」，反彈乏力並持續測底。
+  5. **2000-03-13（網路泡沫破裂前夕）**：單日跌 **617.65 點（-6.68%）**。後續 5 個交易日微幅反彈 **+1.2%**，但後續 20 個交易日大跌 **-8.5%**，隨後進入漫長空頭。
+  6. **2008-01-22（全球次貸危機蔓延）**：單日重挫 **528.24 點（-6.51%）**。後續 5 個交易日反彈 **+1.5%**，後續 20 個交易日強彈 **+6.8%**，但下半年雷曼兄弟破產引發系統性崩跌。
+- 事實（11/20 台股收盤原表數據與籌碼清洗詳情）：
+  - **大盤表現**：加權指數終場大跌 **2,393.60 點（-6.23%）**，收在 **36,033.29 點**，成交金額達 **8,773.5 億元**，上市櫃合計 365 家跌停（中央社 11/20：https://www.cna.com.tw/news/afe/202611200200.aspx ）。
+  - **三大法人買賣超（證交所 BFI82U 原表）**：三大法人合計賣超 **522.46 億元**。其中外資及陸資賣超 **94.13 億元**（連 5 賣但賣壓已顯著較前幾日收斂）；投信轉為賣超 **87.49 億元**；自營商（自行買賣＋避險）大賣 **340.84 億元**，為當日盤面最沉重之賣壓來源（證交所三大法人日報表：https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ）。
+  - **融資餘額與維持率（史上最大單日融資清洗）**：11/20 上市融資餘額單日暴減 **491.41 億元**（降至 4,352.27 億元）；若計入上櫃融資大減 145.60 億元，**整體市場融資單日暴減高達 637.01 億元，刷新台股史上最大單日融資減額紀錄**；整體融資擔保維持率下探至 **151.78%**，全市場追繳戶數暴增至 **6,462 戶**（金額約 64.64 億元），盤中數百戶遭強制斷頭（工商時報 11/21：https://www.ctee.com.tw/news/20261121700021-439901 ）。
+  - **違約交割公告**：證交所 11/20 盤後未見新增上市公司違約通報；前一日（11/19）盤後通報之 3 筆 T+2 違約交割（世界 4,925.3 萬元、台化 4,172.8 萬元、萬泰科 3,794.53 萬元，合計 1.289 億元，全數由元大證券和平分公司申報）已於 11/20 完成交割程序處理。
+  - **國安基金與金管會週末最新重大救市動作**：財政部官員證實國安基金於 11/20 盤中已實質進場護盤，八大公股行庫大舉支撐台積電、聯發科等核心權值；金管會更於 **11/21（週六）下午** 緊急發布新聞稿，宣布自 **11/23（週一）起祭出第三波限空令（五大穩定股市措施）**：(1) **全面禁止平盤以下放空**（不論跌幅是否達 3.5%，全部上市櫃股票與 TDR 融券賣出及借券賣出價格均不得低於前一營業日收盤價）；(2) **調高最低融券保證金成數由 130% 調升至 150%**；(3) **暫停受理券商申請發行認售權證**；(4) 鼓勵上市櫃公司實施庫藏股（納入 ESG 評鑑）；(5) 鼓勵出借人暫停出借並提前召回股票（金管會新聞稿 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。
+- 推理：歷史回測證明，台股單日跌幅逾 6% 後的 20 天走勢取決於「基本面是否壞掉」與「去槓桿清洗是否徹底」。本次 10 月外銷訂單高達 1,238.2 億美元（年增 78.3% 創歷史新高），基本面依然強勁，而 11/20 單日上市櫃融資大減 637 億元完成史上最激烈的槓桿清洗，配合金管會 11/23 祭出最高規格的「全面禁平盤下放空＋保證金 150%」與國安基金進場，下週一早盤若因美股補跌慣性回測，隨後 20 個交易日醞釀強勁技術性反彈的機率大幅提升。
 
-### D-2｜回應 Q6（Hunterbrook 放空紀錄、AMD／BIS 回應與韌體處罰先例）：AMD 已正式駁斥報告、收盤跌 7.72%（$489.19）並於盤後續跌約 2.8%；BIS 仍無評論，但國會已排定 12/01–12/03 閉門筆錄與聽證會（無新進展）
-- 事實（Hunterbrook 過往放空報告追蹤實績，2024–2026，無新進展）：
-  - **結構特徵**：Hunterbrook 採「Hunterbrook Media 公開調查報導＋Hunterbrook Capital 於公開同時揭露部位」模式，僅使用 OSINT、公開申報、供應鏈報關與韌體拆解，**不採用內線消息**；截至目前**未見遭 SEC 或 DOJ 認定不實而起訴的紀錄**，亦尚無被放空公司因財務造假遭主管機關定罪認錯的結案案例。
-  - **United Wholesale Mortgage（UWMC，2024/04 首份重磅放空）**：指控其施壓「獨立」房貸經紀商獨家送件；公司否認，但隨後引發借款人依 RESPA 與反托拉斯／RICO 提起集體訴訟，法院駁回公司部分撤訴動議使核心訴訟得以進入實質審理（https://www.housingwire.com/articles/uwm-class-action-dismissal-michigan/ ），俄亥俄州檢察總長亦提起類似訴訟。
-  - **Bloom Energy（BE，2026/07《Bloom's Big Lie》與 2026/10 續篇）**：質疑燃料電池衰減與中國氧化鈧供應鏈；BE 隨即發布聲明否認，目前未見 SEC 處分。
-- 事實（AMD 正式回應、BIS 態度、眾院外委會公開資料與國會 12 月聽證時程，無新進展）：
-  - **AMD 正式回應**：AMD 發言人已透過電郵向路透（Reuters）與 CNBC 發表正式反駁聲明：`"The claims misrepresent AMD’s business practices and relationships. AMD complies with applicable US export control laws and regulations and maintains rigorous processes to ensure compliance across our global operations."` 並補充 `"We remain focused on serving our customers and upholding the highest standards of integrity."`（WHBL 轉載路透全文，美東 2026-11-19 13:02 更新／台北 11-20 02:02：https://whbl.com/2026/11/19/amd-shares-slide-as-report-says-china-links-could-invite-us-scrutiny/ ；原報告：https://newsletter.hntrbrk.com/p/amd-has-its-own-china-problem ）。
-  - **眾院外委會公開 BIS 對中出口許可與 12 月國會聽證排程**：美國眾議院外交委員會主席 **Brian Mast** 於美東 11/19 下午依《出口管制改革法》（ECRA）授權公開 BIS 對中出口許可申請資料，顯示輝達與超微累計申請向中國銷售 **340 萬顆** AI 晶片（含 H200 與 MI325X），BIS 至 2026 年 5 月已核准逾 **87.9 萬顆（879,868 顆）**，收件對象包含五角大廈認定之中國軍事企業如阿里巴巴與騰訊，並點名輝達申請中涉及 Maginfra、New Matrix 等疑為空殼走私中介（美國眾院外委會官網 2026-11-19：https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ；AA 報導 2026-11-20：https://aa.com.tr/en/americas/us-house-foreign-affairs-chairman-releases-nvidia-amd-ai-chip-export-records-to-china/4131606 ）。《TechNews》台北 11/20 06:30 整理國會已排定後續調查時程：**12/01** 黃仁勳將赴眾院外委會等三委員會進行閉門筆錄訪談、**12/02** 輝達總法務長 Tim Teter 赴國會作證、參院銀行委員會主席 Tim Scott 證實黃仁勳與商務部長盧特尼克均同意出席聽證會（https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）。
-  - 美國商務部 **BIS 仍未對 Hunterbrook 報告發表執法評論**；AMD 11/19 正規盤收 **$489.19（-7.72%）** 後，盤後回落至 **$475 附近（約 -2.8%～-3.3%）**。
-- 事實（BIS 針對軟體／韌體更新與實體清單處罰先例，無新進展）：
-  1. **Lambda Research Corporation 和解案**：BIS 針對 66 項違規達成和解，明確確立「即使是 EAR99 一般商業軟體，向已被列入實體清單的對象（含華為關聯方）持續提供自動軟體更新、修補程式與維護服務，每一次傳輸均構成獨立的受管制再出口」（https://www.legal500.com/intelligence/global/international-law/bis-enforcement-action-highlights-export-control-risks-for-software-updates-and-entity-list-transactions ）。
-  2. **Cadence Design Systems（2025/07/28，9,500 萬美元 BIS 行政罰款＋4,500 萬美元 DOJ 沒收）**：因透過關聯平台與中間方將 EDA 硬體、軟體與技術輸出給實體清單上的中國軍事超算實體遭重罰（https://www.bis.gov/press-release/cadence-design-systems-pay-95-million-penalty-bis-unauthorized-exports-chinese-entities-tied-development ）。
-- 推理：雖然 AMD 已正式駁斥放空報告，但在眾院外委會揭露 BIS 曾核准逾 87.9 萬顆對中晶片許可並將問題指向空殼走私中介後，國會跨黨派監督與 12/01–12/03 連續調查聽證會使市場擔憂商務部採取補救性審查，這也是今日台韓日科技與半導體權值股同步承壓的重要政策外溢。
+### D-2｜回應 Q11（11/19～11/20 利率期貨機率變化、Fed 官員對股市談話與公債殖利率解讀）：升息機率並未降低（12/9 升息 1 碼機率仍在 91%～93%）、Lisa Cook 在智利演說捍衛升息票且稱「當前金融情勢仍過度寬鬆」，公債殖利率下跌（5.05%→4.97%）純屬股票重挫引發的極端避險買盤（Flight to Safety）
+- 事實（CME FedWatch 利率期貨預期對照）：
+  - 11/19 利率期貨反映 12/9 升息 1 碼（25 bps）機率約 **93%–95%**、升息 2 碼約 **5%–7%**、按兵不動為 **0%**。
+  - 11/20 美股大跌後，CME FedWatch 顯示 12/9 升息 1 碼機率微降至 **91%–93%**、升息 2 碼機率約 **6%–8%**、維持利率不變機率仍為 **0%–1%**（TradingView / CME 數據 11/20：https://www.tradingview.com/news/seekingalpha:aa22064e2094b:0-rate-spotlight-fed-pause-off-the-table-as-markets-fully-price-in-december-hike/ ）。市場完全沒有因為亞股與美股重挫而預期聯準會停止升息。
+- 事實（聯準會理事 Lisa Cook 美東 11/20 12:15 智利央行年會演說）：
+  - **演講題目與官方講稿**：《*The U.S. Economy in Global Context*》，發表於智利央行第 29 屆年會（聯準會官網講稿發布頁 2026-11-20：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm ）。
+  - **關鍵原話**：`"Inflation has remained above our 2 percent target for 67 consecutive months. Policymakers do not have the luxury of patience."`（通膨已連續 67 個月高於 2% 目標，決策者沒有耐心的餘裕）。
+  - **對金融市場與股市的態度**：Cook 完全沒有對股市大跌表達擔憂，亦無任何寬鬆安撫字眼。相反地，她指出 `Financial conditions remain too accommodative to adequately cool aggregate demand and the surging AI capital expenditure boom`（當前金融條件仍然過度寬鬆，不足以充分冷卻總體需求與激增的 AI 資本支出熱潮），並強調若延後升息將迫使未來採取更大步幅且更具破壞性的升息，增加金融體系長期風險。
+- 推理（直接檢驗 Claude 的主線 3）：美債 10 年期殖利率由 11/19 的 **5.05%** 下滑至 11/20 的 **4.97%**，但在期貨升息機率穩居 90% 以上、且理事 Cook 表態金融條件「仍太寬鬆」的背景下，殖利率的走低不是因為降息預期，而是全球資金遭遇科技股大潰敗時的**經典公債避險買盤（Flight to Safety）**。因此，「利率並非退居無關緊要的背景條件」——利率高企正是戳破高槓桿與高估值 AI 題材的引信，美債殖利率一旦在避險買盤退潮後重回 5% 以上，估值折價壓力隨時可能再度發酵。
 
-### D-3｜回應 Q7（費城聯準單月急跌 ≥14 點＋支付價格跳升 ≥10 點 vs 次月 ISM 製造業）：已附費城聯準 11 月官方發布頁與 ISM 官方報告頁；兩者長期水準相關係數約 0.85，惟未下載完整逐月原始檔故不編造確切次數（無新進展）
-- 事實（官方原文頁核對）：
-  - **費城聯準 2026 年 11 月製造業商業展望調查（MBOS）官方發布頁**：https://www.philadelphiafed.org/surveys-and-data/regional-economic-analysis/mbos-2026-11 （總覽入口：https://www.philadelphiafed.org/surveys-and-data/regional-economic-analysis/manufacturing-business-outlook-survey ）。11 月一般景氣活動指數由 10 月 **20.9 跌至 6.3**（單月跌 **14.6 點**），新訂單由 4.3 跌至 **-0.4**，**支付價格跳升 15 點至 58.2**，收取價格升 7 點至 **47.0**。
-  - **ISM 製造業 PMI 官方報告入口**：https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/ 。
-  - **費城聯準官方研究對照**（《*Economic Insights*》Q4 2018，https://www.philadelphiafed.org/-/media/FRBP/Assets/Economy/Articles/economic-insights/2018/q4/eiq418-mbos.pdf ）：費城聯準支付價格指數與 ISM 製造業價格指數的長期水準相關係數約 **0.85**（月變動相關約 0.41）。
-- 推理：在 12/01 ISM 製造業公布前，僅微調 3 個百分點合理且克制。
+### D-3｜回應 Q12（歷史大型 IPO 首週破發與穩價買盤退潮史、Anthropic 424B4 閉鎖期解禁時程）：Facebook 首日靠大摩護盤收 $38.23，次日穩價買盤耗盡即跳水破發；Uber 首日破發 7.6% 穩價失敗拖累 Lyft；Anthropic（ANT）155 億股分期解禁，第 1 天已釋出 10%（3.15 億股），大摩與高盛具隨時免除閉鎖期裁量權
+- 事實（歷史大型科技 IPO 穩價買盤與破發對照）：
+  1. **Facebook（2012/05/18，發行價 $38.00）**：主承銷商摩根士丹利（Morgan Stanley）在上市首日動用數十億美元超額配售（綠鞋機制）資金，於 $38.00 處築起龐大穩價買盤，勉強守住首日收盤價於 $38.23（微漲 0.6%）；但穩價額度在首日幾乎消耗殆盡，**第 2 個交易日（5/21 週一）開盤即跌破 $38 發行價重挫至 $34 附近**，一週內跌至 $31，隨後數月下探至 $17.55。此舉引發 Zynga、LinkedIn、Groupon 等同產業網路社群股全面暴跌殺估值（New York Fed 實證研究：https://www.newyorkfed.org/medialibrary/media/research/current_issues/ci18-6.pdf ；Forbes：https://www.forbes.com/sites/ericsavitz/2012/05/21/facebook-breaking-38-ipo-price/ ）。
+  2. **Uber Technologies（2019/05/10，發行價 $45.00）**：在同業 Lyft 上市破發與中美貿易緊張背景下，Uber 首日穩價買盤徹底失守，**開盤即報 $42.00 破發**，終場大跌 **7.6%（收 $41.57）**，首日市值蒸發 6.55 億美元創當時紀錄；承銷商因股價直接跌破發行價，無法在發行價之上行使綠鞋，同業 Lyft 與共享出行板塊同步重挫逾 7%–10%（The Guardian 2019/05/10：https://www.theguardian.com/technology/2019/may/10/uber-shares-ipo-fall-trading-debut ）。
+  3. **規律總結**：承銷商的穩價買盤本質是利用超額配售產生的空頭部位進行市場回購，其防線通常**只能支撐 1～3 個交易日**；一旦面對宏觀去槓桿或產業重估，穩價買盤耗盡後往往伴隨更劇烈的下挫，並無一例外向同產業未實現獲利的同類股傳導賣壓。
+- 事實（Anthropic PBC SEC Form 424B4 閉鎖期原文章節核對，SEC EDGAR 官方文件 2026-11-18：https://www.sec.gov/Archives/edgar/data/0002012845/000119312526438902/d424b4.htm ）：
+  - **涵蓋總股數**：約 **155 億股** A 類普通股等當量（含 N 類轉換股與員工期權）。
+  - **首日立即解禁額度（Day One Early Release）**：非創辦人之董事、高階主管及現任／前任員工，於**上市首日（2026/11/19）即可出售最高 10% 之持股**（合計約 **3.15 億股**），這也是 ANT 首日成交量爆出 8.4 億股、次日爆出 4 億股的核心籌碼來源。
+  - **分期解禁梯隊（Staged Early Expirations）**：特定早期投資人與非核心股東持股，將於招股書發布後約 **第 27 天（2026 年 12 月中旬）、第 48 天（2027 年 1 月初）、第 62 天與第 76 天** 分批解禁。
+  - **常規 180 天閉鎖期**：全體受限制股東於招股書發布後滿 **180 天（約 2027 年 5 月中旬）**，或於公司發布 2026 全年財報後之特定交易日全數解禁。
+  - **365 天延長閉鎖期**：共同創辦人（Dario Amodei 等）及持股逾 0.5% 之核心大股東，須鎖定至招股書發布滿 **365 天（2027 年 11 月 18 日）** 或後續財報發布。
+  - **承銷商免除條款（Underwriter Discretion）**：424B4 明確載明，代表承銷團之高盛（Goldman Sachs）與摩根士丹利（Morgan Stanley）`may, in their sole discretion, release all or any portion of the shares from the lock-up restrictions at any time without notice`（得依其唯一裁量權，隨時且無須事先通知免除部分或全部閉鎖限制）。
 
-### D-4｜回應 Q8（Anthropic 首筆成交實況、大型 IPO 開盤延遲史與 Nasdaq 程式化訊號）：ANT 美東 11:48 以 $111.50 開盤（區間 $92.72–$115.10），收盤 $97.17（+17.07% vs $83），盤後回落至 $93.64–$94.50 附近（無新進展）
-- 事實（Anthropic 首日交易與盤後實況，無新進展）：
-  - **開盤時間、區間、收盤與盤後**：ANT 於美東 **11:48**（集合競價約 1.4 億股後）以 **$111.50**（+34.3%）開出，盤中區間 **$92.72–$115.10**，正規盤收盤 **$97.17（較 $83.00 發行價上漲 +17.07%，較開盤價 $111.50 回吐 12.9%）**，全日成交量約 **8.4 億股**（占本次 IPO 公開發行 9.8 億股的 **86%**），目前無承銷商穩價買盤報導（FinanceFeeds 11/20：https://financefeeds.com/anthropic-ant-stock-closes-debut-97-17-price-prediction/ ；Motley Fool 11/19 13:25 ET：https://www.fool.com/investing/2026/11/19/why-anthropic-stock-is-up-today/ ；Guardian：https://www.theguardian.com/business/live/2026/nov/19/anthropic-float-stock-market-nasdaq-raises-81bn-record-ipo-latest-news-updates ）。盤後收斂於 **$93.64～$94.50** 附近。
-- 事實（歷史大型 IPO 自美東 09:30 至第一筆成交延遲對照，無新進展）：
-  1. **Meta（Facebook，2012/05/18，Nasdaq）**：延遲至 **11:30 ET**（距 09:30 **2 小時**，https://www.theguardian.com/world/2012/may/18/facebook-mixed-day-ipo-wall-street ）。
-  2. **Alibaba（BABA，2014/09/19，NYSE）**：於 **11:53 ET** 開出首筆成交（延遲 **2 小時 23 分鐘**）。
-  3. **Arm（ARM，2023/09/14，Nasdaq）**：於 **12:00 ET 剛過**開出首筆成交（延遲約 **2.5 小時**）。
-- 事實（給本站程式用的免費公開「IPO 已開始交易」訊號，無新進展）：
-  1. **Nasdaq Trader 交易暫停與 IPO 放行即時 RSS Feed（免費 XML）**：`https://www.nasdaqtrader.com/rss.aspx?feed=tradehalts`（查詢頁 https://www.nasdaqtrader.com/Trader.aspx?id=TradeHalts ；代碼表 https://www.nasdaqtrader.com/Trader.aspx?id=TradeHaltCodes ）。等待開盤時 Reason Code 為 `IPO1`／`IPOQ`／`IPOE`，出現 `ResumptionTradeTime` 即代表正式放行交易。
-  2. **Nasdaq 市場系統狀態頁**：`https://www.nasdaqtrader.com/Trader.aspx?id=MarketSystemStatus`。
+### D-4｜回應 Q13（軟銀持股質押借款結構、LTV 警戒線與日本散戶信用交易水位）：軟銀以 Arm 股權為擔保之保證金貸款（Margin Loan）額度高達 250 億美元，內部 LTV 上限 25%（極限 35%），股價單日跌 14.5% 顯著壓縮質押空間；日本東證信用買殘仍處 5.8 兆～5.9 兆日圓歷史高檔，追繳壓力沉重
+- 事實（軟銀集團 Arm 股票質押貸款與財務紀律架構，資料來源：軟銀集團投資人說明會資料 https://group.softbank/en/ir/presentations 與 SEC 申報）：
+  - **Arm 股票保證金貸款額度（Arm Margin Loan Facility）**：軟銀將所持有的 Arm Holdings Plc 股權作為質押擔保品，累計向國際大型銀行團設立之資產擔保保證金貸款額度高達 **250 億美元（$25 Billion）**，以此作為投資 OpenAI 與 Project Stargate 等大型 AI 專案之核心流動性來源（Finimize 2026-11：https://finimize.com/content/softbanks-arm-backed-margin-loan-facility-expands-to-25-billion ）。
+  - **軟銀內部 LTV 財務紅線**：軟銀官方以「淨負債 ÷ 持股總市值」定義 LTV（Loan-to-Value）。軟銀管理層承諾在正常市況下將 **LTV 控制在 25% 以下**，在極端市場波動時的**緊急上限為 35%**。
+  - **追繳與強制賣股機制**：當 Arm 股價或軟銀持股價值出現劇烈修正時，質押品價值縮水會推升實質 LTV。雖然單日跌 14.5% 尚未直接觸發銀行斷頭清算（軟銀仍持有相當額度之現金準備與未質押資產），但已逼近其 25% 內控天花板，迫使軟銀必須放緩後續對外部 AI 公司的資金承諾，甚至需在市場籌措現金以補足擔保品保證金。
+- 事實（日本股市散戶信用交易水位）：
+  - **東證・名證信用買殘（信用取引買い残高）**：日本散戶投資人利用信用融資買進之部位，於 **2026 年 6 月底創下 7 兆 167 億日圓** 之歷史最高紀錄（1994 年統計以來首次突破 7 兆日圓大關）；歷經夏季震盪後，截至 **2026 年 11 月上旬仍維持在 5.8 兆至 5.9 兆日圓之極高水位**（QUICK / 樂天證券 / Kabutan 統計：https://kabutan.jp/news/marketnews/?b=n202611130650 ）。
+  - 11/20 日經指數大跌 5.06%、軟銀重跌 14.47%，已引發日本券商大量發出追加保證金通知（追証，Margin Call），高達近 6 兆日圓的融資浮額成為東京股市下檔極為沉重的流動性賣壓。
 
-### D-5｜回應 Q9（金管會歷次限空令後 T+20 表現）：除 2008 年全球金融海嘯續跌（-20.42%）外，2015（+12.10%）、2020（+11.42%～+21.95%）、2022（+13.15%）與 2025 年實施後 20 個交易日至一季多數強彈，但實施後 1～5 天仍會慣性測底——今早（11/20）限空令 2.0 上路首日盤中跌點已擴大逾 2,000 點、下探 36,406 點
-- 事實（官方與統計對照）：金管會 2022/10/21 限空令原文（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202210210001&dtable=News ）、金管會 2026/11/19 限空令 2.0 原文（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611190001&dtable=News ）、證交所加權指數歷史資料頁（https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html ）。歷次實施後 1 個月／T+20 表現（https://www.businesstoday.com.tw/article/category/183008/post/202611190029/ ）：1998 年（+5.74%）、2008 年（-20.42%，唯一續跌反例）、2011 年（保證金 120%＋限借券）、2015/08/24（+12.10%）、2020/03/19（20 個交易日 +21.95%，滿 1 個月 +11.42%）、2022/10/21（20 個交易日 +13.15%）、2025/04（第 3 天後見底，護盤期間漲逾 60%）。
-- 事實（11/20 今早限空令 2.0 上路首日盤中續殺）：台股加權指數以 **37,646.13 點（-780.76 點）** 開低後，先下探 36,753 點，隨後賣壓進一步擴大、盤中大跌逾 **2,000 點**一度觸及 **36,406 點**，權王台積電（2330）開 **2,035 元（-65 元）** 後盤中下探 **2,000 元**大關始見低接買盤（風傳媒 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGa-POQNT8_0F0R4RECuZiBu2UyEdFLUqy5cixgluGcCQTYWQxrJXQS10mPVJqU6MUdzE83qQjVPVk1b50IfPDFGBV9aRLEByyOrEdnskZB6Ng-XHrCFgpwQ9sl88= ；聯合報 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk06TlcUDYuLdY294NBfBumDKc8-tkSXLidxpBEQ8mVkeqJUXCA95PbeXA5Wh2qrUNvRI8nAvtSVvrInWgmgKv9JHmzCuz4z4_zlQwChYOi3z6ma-EyA== ；台積電 2,000 元保衛戰：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF1St5BGvL6LAONjAv7WStKwypnsLVh7NuTn9M4_SNqCWiz7Zqi7XHVXSVf7SuYoMMgBEJTHPjkXBSh12ppsD5Ojyni_LKr4ynn07bS5LPckwgWUZzXLsmNizjUiB_xZLqJGss77NHErh7Pw4KpBDDfJi0cJzHroyPXBA== ）。
-- 推理：今早盤中走勢再次驗證「限空令能鎖住借券放空（1% 上限＋平盤下禁空 1,028 檔），但擋不住外資現貨提款與融資斷頭／T+2 違約清洗」；短線 1～5 天仍屬劇烈測底期。
-
-### D-6｜對 Claude 第 5 輪六條主線與情境機率的逐一表態（更新 10:35 亞洲盤中實況：台股觸 36,406 點、日經跌 4%–4.5%＋軟銀一度暴跌 16.58%、KOSPI 破 5,000 點、IEA 估荷莫茲累計損失 28 億桶）
+### D-5｜對 Claude 第 6 輪主線與情境機率的逐一表態（11/20 美股收盤後全面驗證：那斯達克跌 5.28% 抹平年內漲幅、NVDA 暴跌 14.01%、AMD 暴跌 13.25%、ANT 險守 83 美元發行價）
 - 推理：
-  1. **主線 1（AI 的錢：市場按現金流分好壞）— 同意，且新雲端無擔保債危機與亞太 AI 持股重估同時發酵**：除了聯準會 11 月《金融穩定報告》點名逾 **3 兆美元表外承諾**（https://www.federalreserve.gov/publications/files/financial-stability-report-20261113.pdf ）與 CoreWeave 2032 年 9.625% 無擔保債跌至面額約 **79.5 美分**（殖利率飆升至 **14%–17%**，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_eU4pP5XsgYRBt7IzE8kpRgG0tiq6R7oQk-UuC6rMPbZK7gjHW1FqWS8-25VOiXr7UmhaR6AiqHLmx19hxpIRH3waN9PxRe9LTSXKvav5Lnc87p4D6kAIfKUG9pNoDsVlY3x2rJw9oYK8dTeywL1iSvhCJtYWTxNwZMrtX8as6Bu0sfAA__a_qjBCCBkZhPtNxA== ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHM4lZEo5OJa8BiQTUgP9AkMeicLZx-IIEy_q0I0RhaUJk5Mrzp89NRqaIH-1rwsDMuNs_mvsDyVRqeX-7W0QomCOp8EP2Cwv0zsYTjBX582p8T_RfbboRupzSPuD_vKVnCOwBD2YVj_fLdNdEY2PQziJpQYAZLQhOYyneoSBXatx0P5438ewu6CFZhrEOTMnGkeuHZR1Rb1RfluJGFPb5x8YC141GWqHn5og== ）外，今早東京盤中重倉 OpenAI／AI 生態的**軟銀集團（SoftBank）股價一度暴跌 16.58%**，驗證市場正在對未實現現金流的 AI 估值進行全面折價（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHu6aN7JmF-mvksxBUDnJoX-HxL72lkIE3xXzZqi-evtg2gxhL7ftFDAcbb4pQNoVGhX0Ju70bF14cHStMWQXERZg3tABUhvpef6hIEUM7PUXsu4cDdDmxGS1OTxEfKCCKSRLHmL_oiha8ertsGXwet-A5kCH3aZNsPvbygWLwX47g4YuXZgg6EHgD_DAyL2Kg= ）。
-  2. **主線 2（出口管制的執法範圍擴大）— 同意，且「純個人治理」解釋空間持續縮小**：眾院外委會公開 BIS 核准 **879,868 顆**對中許可（https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ）、12/01–12/03 國會三線聽證（https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）、加州檢察長傳票輝達（https://www.bbc.co.uk/news/articles/cqn70vxp5p4no ）、BIS 遠端算力新規（https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ），12 月初國會聽證將是下一波催化劑。
-  3. **主線 3（利率是主壓力）— 同意**：日本 10 月核心 CPI **2.2%**、USD/JPY 緊貼 **159.5–160** 干預紅線（https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html ）；中國今早 11 月 LPR 連 18 凍（1Y 3.0%／5Y 3.5%，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH8oPrBzlqD8X1S9hO18wN_rN5mbhuogCkEQllL6sfqCIlzEnmRvhMJzW3Rn-NJk_LaXFJfcJUUxWo0AoCF_SI8IDFkNlZyUF3kM0Gb1JbtYCta_dBNi02fm2CjWB25ReKpbTQk-tgPr3RoBNTQGK0hr09qyIwQSQLjkgdRgLc= ）；11/19 美國 10 年債殖利率 **5.04%**（https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve ）。
-  4. **主線 4（10 月核心 PCE 落在 2.4%～3.0%：30%）— 同意（無新進展）**。
-  5. **主線 5（WTI 80–100 美元：Claude 58% vs 我 55%）— 維持 55%，並補充 IEA 最新評估**：IEA 11/19 發布《2026 世界能源展望》將荷莫茲海峽危機定調為現代史上最大能源供給衝擊（累計損失 28 億桶原油與 600 億立方公尺天然氣，高峰每日少 1,610 萬桶），但美軍護航與暗船繞道讓油價維持於 WTI ~83／Brent ~92 美元平穩區間、2027 年仍有轉向供給過剩的風險（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFuj-rk7IJSW1gMzCmSKf9Y_PpJhcJ72prtJ8mdJJxozeuePDw5no9zcJvWrWzyhwW9tK6t9FrJBNzLCoMRN9sKdJOBMy8_uNSRBRTdCVfZKvZjn0-e36cCfsG6V2rEcaqIJQ9F7LuzHu62G9tv0BxonE882jhM3gu_00MS ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEnuFTBnup0j4LNT9AWQIZ4q-PWKWtUbLZLdzd4jFUBFJxzwZnNVAhNXsPbDUiE8BRuge6BXp5ekhvxdTenrkojCORb5FTVbKZbCg8w6ZwY1UZB2HBA0xOTIF7zqdk9hWXpPuN0ihISlUvgcx03EZGVMHTl5vXi_7qp8M1cZhQ5SJegA6Bvfm6U0GUIPkjYms2avw== ）。
-  6. **主線 6（Anthropic 掛牌）— 應驗「開高走低＋抽血新雲端與晶片」並全面擴散至日韓台股市**：今早日經 225 跌約 **4%–4.5%**（跌破 57,000 點）、軟銀一度重挫 **16.58%**、南韓 KOSPI 開盤跌 **4.08%** 至 **4,928.51 點**失守 5,000 大關、台股盤中最低觸 **36,406 點**、新台幣盤中貶破 33 元觸 **33.038 元**。
-  7. **整體情境機率**：維持全球情境「風險升級 **40%**（Claude 38%）、偏鷹但沒出事 **45%**（Claude 47%）、壓力緩和 **15%**」。
+  1. **主線 1（AI 的錢：市場按現金流分好壞）— 完全同意，且週五美股全面爆發科技股拋售潮**：週五美股 NVDA 暴跌 **14.01%（$125.53）**、AMD 暴跌 **13.25%（$424.39）**、CoreWeave 跌破 40 美元發行價（下探 **$39.96**）、甲骨文跌至 **$112 附近**；市場徹底停止為未經現金流驗證的高額資本支出買單。
+  2. **主線 2（出口管制的執法範圍在擴大）— 完全同意**：眾院外委會公開 87.9 萬顆晶片對中許可、加州檢察長傳票輝達、SEC 展開對中揭露與會計調查、以及國會已敲定 12/01–12/03 三線聽證會，已證明出口管制與國安調查並非空穴來風，正實質重創半導體龍頭。
+  3. **主線 3（利率降為背景條件）— 部分同意，但仍需提防避險退潮後的二度打擊**：美債殖利率回落至 4.97% 是因為公債發揮避險功能，期貨市場反映 12/9 升息機率仍逾 90%、Lisa Cook 在智利演說態度極端鷹派，一旦股市恐慌稍歇，5% 的高息分母仍將壓抑估值。
+  4. **主線 4（10 月核心 PCE 落在 2.4%～3.0%：30%）— 維持 30%（無新進展）**。
+  5. **主線 5（WTI 守在 80～100 美元：55%）— 維持同意 55%**：WTI 週五收 82.3 美元，逼近 80 美元防線，股市去槓桿與需求憂慮壓平了地緣溢價。
+  6. **主線 6（Anthropic 第二天實測）— 完全同意**：第二天收盤 $88.91（-8.50%），盤中最低觸及 **$83.05**，距發行價僅差 5 美分；摩根士丹利已全額行使 1.47 億股綠鞋平倉，失去了後續主動買盤支撐，下週將直接面臨發行價保衛戰。
+  7. **整體情境機率表態**：我將「風險升級」機率調升至 **45%**（Claude **44%**），「偏鷹但沒出事」降至 **42%**（Claude **42%**），「壓力緩和」為 **13%**（Claude **14%**）。亞股與美股在同一天同步出現 5% 以上的巨幅暴跌，且波及信用、融資與 IPO 承銷結構，已確認屬於系統性去槓桿風暴。
 
-### D-Q｜反問 Claude：下一輪請回答的 4 個問題
-- 1. **台股今早盤中已進一步下探 36,406 點（較 10/6 高點 49,823 點回落 26.9%），`tw_forecast.json`「年底收盤高於 38,427 點（機率 52%）」是否下修？** 你用「大環境 0～2 項有利條件後 **3 個月**上漲率 53%」推估 **11/19～12/31（僅 29 個交易日）**，且外資 10 月創紀錄賣超 **9,421.81 億元**、20 日早盤新台幣再貶破 33 元（33.038），這個 52% 是否明顯偏樂觀？
-- 2. **`macro_voice.json`（09:32 盤中版）已修正 06:33 版本但出現兩個小落差，且 `event_board.json` 與 `c-taiwan-6` 尚未更新**：(a) `macro_voice.json`（09:32）寫「新台幣小貶，大約三十三元，外資賣壓是可能的原因，但我沒有確切資料」，其實 11/19 證交所外資賣超 -243.12 億已有確切官方數據；(b) `event_board.json`（01:20）仍將 `ant-ipo-2026-11-19` 標為 `status: "live"` 並寫「收盤後補上首日收盤價」；(c) 前輪 `c-taiwan-6` 與 `c-taiwan-4` 日期不同步及投信金額落差（+43.9 億 vs 官方 +15.13 億）是否已同步修復？
-- 3. **針對新雲端債務惡化（CoreWeave 2032 無擔保債跌至 79.5 美分／殖利率 14%–17%、Oracle 降至 BBB-）與 `GBW-3` 對照**：本站《企業危機雷達》與《美股公司債》目前有追蹤 ORCL／CRWV 的債券殖利率與 BDC 限額贖回（gating）嗎？
-- 4. **針對本批 `CODE` 稽核（`wsb/analytics/lab.py` 與 `wsb/ai/context.py`）**：`lab.py` 第 301–302 行在有特徵被採用時只寫了經等張校準的 `p_enh_cal` 與**未校準**的 `p_base`（漏寫 `p_base_cal`），導致 `context.py` 第 104 行把「校準後的增強機率」拿來和「未校準的基準機率」直接比較，是否補上 `p_base_cal`？
-
----
-
-### WIDE-1｜IEA《2026 世界能源展望》定調荷莫茲海峽危機為現代史最大能源供給衝擊（累計損失 28 億桶原油＋600 億立方公尺天然氣），但市場靠暗船與繞道壓平短線油價、反埋下 2027 過剩伏筆
-- 事實：國際能源署（IEA）於美東 **11/19** 發布《World Energy Outlook 2026》，指出 2026 年荷莫茲海峽航運受阻已成為現代史上規模最大的能源供給衝擊，累計造成 **28 億桶原油**與 **600 億立方公尺（bcm）天然氣**供給損失，高峰期全球石油日供給大減 **1,610 萬桶**、超越 1970 年代石油危機；但截至 11/19 收盤，Brent 原油僅約 **$91.98／桶**、WTI 約 **$83.21／桶**，主因美軍護航南行航道（11 月中旬日均約 26–30 艘油輪）、管線改道與暗船出口，Goldman Sachs 報告並指伊拉克重啟陸路運油至敘利亞與非波灣產量擴張恐在 2027 年帶來供給過剩（IEA 原報告：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFuj-rk7IJSW1gMzCmSKf9Y_PpJhcJ72prtJ8mdJJxozeuePDw5no9zcJvWrWzyhwW9tK6t9FrJBNzLCoMRN9sKdJOBMy8_uNSRBRTdCVfZKvZjn0-e36cCfsG6V2rEcaqIJQ9F7LuzHu62G9tv0BxonE882jhM3gu_00MS ；油價收盤：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEnuFTBnup0j4LNT9AWQIZ4q-PWKWtUbLZLdzd4jFUBFJxzwZnNVAhNXsPbDUiE8BRuge6BXp5ekhvxdTenrkojCORb5FTVbKZbCg8w6ZwY1UZB2HBA0xOTIF7zqdk9hWXpPuN0ihISlUvgcx03EZGVMHTl5vXi_7qp8M1cZhQ5SJegA6Bvfm6U0GUIPkjYms2avw== ；Goldman Sachs：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE2xzyUKAhyG0Qiw8Tocn9dXm9tilIoqumaMX-az1_MjZoowtrLr2yDsaPh83TwPurGL2jnsI8_ZZJ6sUfrnucpllO1lHJGTTicLfYT2Yc0Zsca09_6DkznfePg02_umaLn9ooP0pAYje2Tt9KKDwBxeAieD8T38g4hMvKpXNKdBO4sWG2wsAK_NsdjfFX5T_FBFPsTbyoavA6RqzDnfudZimVslnhTuxwyMqNF ）。
-- 推理：美股只看到 WTI 卡在 83 美元就以為能源風險消退，卻忽略「成品油（特別是柴油）價差緊繃」與「一旦護航機制解除或 2027 年通航恢復後原油從缺口瞬間轉過剩」的雙向劇烈波動；亞洲 LNG 買家正結構性轉向大西洋盆地氣源與好望角長航線，永久抬高航運噸海里需求。
-- 先影響資產：歐洲／亞洲柴油裂解價差、液化天然氣（LNG）與遠洋油輪運價、美國能源類股（XLE）與近遠月原油價差。
-
-### WIDE-2｜智利 Q3 GDP 年減 1.1%（2022 年底來最大萎縮）確認技術性衰退、銅礦產出年崩 14.7%＋智利披索逼近 1,000 大關；墨西哥央行分歧降息 1 碼至 6.25%
-- 事實：智利央行於 **11/18** 公布 2026 年第 3 季國民所得帳，實質 GDP **年減 1.1%、季減 1.8%**（2020 年以來最大季減幅），確認陷入技術性衰退，元凶為礦業 GDP 暴跌 **14.7%（年減）** 及總投資年減 **7.4%**——當地銅礦因品位下滑、設備檢修與洪水衝擊跌至逾 20 年產量低點；智利披索（USD/CLP）承壓逼近 **1,000** 整數關卡（政策利率維持 4.50%，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGX-gAu-6HrVfbA8at3nvj5GxRpEPPjXimEqKYsTflHaRnharpq1iH7Li4SaGf0wba0T0JtsVjIfvfvYHLrNai3gira3k1SqSTeH5CS-KRKVAANw10pcIZlO0n1Rv9pgOG3Sx6152Ac1FVEC8fD38Ps0oaQbwqqKkVyIlUMPVsOBqN0CH6F8LAZL8_aNleHfUo17C3JVHsZTaB_ ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFGgYULdiavRnbFlQtEE-8h9vFKYNOiwwzZrN8RTefzgF-OM2L6daR5rAu3O7XeGsGlfYM8z92RcCFQMax-0-lXJImDtDY-jPDKStEh8Q5-HPp3sMjC28ZLXKbfR9YcbfI6z0dq5mFQNwrYyjiV9ohEkIPHKahun9W8QeH0P_pOiAQuxVgie4yV3CnMqNE= ）。同週墨西哥央行（Banxico）意外在分歧投票下降息 25 基點至 **6.25%**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEoq7RuEHDDXyd2RwWfMGlDjXAgQ6_dXiwz83ahLiWZ3cIvZoJ1ONSRwMrsLWmZYLECyzx6ioE81k3BsivxFyMFwQGIK7vScDiAkPm5eJLtfWLgAGs8l36GekqDI-deEEtUz6wfUs81JwG2uQ7pxcQTIm6JPOsqhi0cQMgIJR555-e8WODktUnf5h-xD2pNN1R_F0IyXzYbnuhFB_DWkBXY8Zwn_4aw4Nsnaxmfr4I7UJIih8QosB8jMIoxtexG8GBQ7g== ），而巴西央行因選後財政疑慮將 Selic 維持在 **13.75%** 高檔。
-- 推理：全球最大產銅國智利礦業產出重挫，意味著 AI 資料中心與電網擴建最依賴的「實體銅供給」出現非週期性減損，後續只要中國或美國製造業補庫存回溫，銅價極易出現供給擠壓；同時拉美各國貨幣政策與聯準會（準備升息）完全背離，擴大新興市場匯率利差壓力。
-- 先影響資產：LME／Comex 期銅、銅礦股（FCX／SCCO）、USD/CLP、USD/MXN 與拉美主權債。
-
-### WIDE-3｜強氣旋「阿克萬（Akvan）」今日（11/20）早晨登陸印度奧里薩邦（撤離逾 30 萬人、停駛近 70 班鐵路）＋印度 10 月通膨飆至 6.09%
-- 事實：氣旋風暴「阿克萬」於 **2026-11-20** 上午開始在印度南奧里薩邦與北安得拉邦之間（鄰近 Gopalpur）登陸，伴隨每小時 70–100 公里陣風與強降雨；奧里薩邦政府已緊急撤離逾 **30 萬人**、部署 423 支救災隊、並預警停駛近 **70 班東岸／東南鐵路列車**（India Today 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFwactUUgU17cnTLg6BO8UUQWIhbP6Odw4q97JFarLh9a6Q4ia_ljddEg5jYa8f_1zLc9kSSa4YGMAhLjukn-kj-m_ZOQ10LeH7Z4C1C7O9qSLKb-ypzKAhHHt8koRzN40hvxhE33yEMcRgX7lK0m0C7zurdc5cI3A6TyhJ8V0_TxP2pIrUhz6WCF72acoB-SlEGv5pzTDv5vA-kN0rkqOfw1d1IlkyvLmuGb_svXNMVk4A1BdDjKrjKViWwDkg-RgLtadO5v2Pr50GUUtFDrYTN-KwfIHhFvJ_x03xWQ== ；Times of India 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE7DGeQVUtr8iYtTmHglExVttHtSnmBdVw6la2OGxEw9MfhDwsFqLfcchZSsFyb2A0b-46CmN_YFJBZhOCPRq0tXBq4HlL9JV3QdfnLuozqhj0lI2RPRP8TNDfICJjeoE7IPN9nfwdZ7zYL9TRF96MoChgrbOwTcFL6wtxrcHuzYq-kNqI6JfPd1CY3SAvOaMw7cQxx-j2Q_oL2YEPQI5DtGQf-bRPR8alg4QVWuQCbEwz-8E0tU9KKvsL2m0C4nyRjJg3BDI7-JVmJVP8MnuUP2d1I1A41__UatCS6qyA= ）。疊加印度 10 月 CPI 升至 **6.09%**（https://www.cnbc.com/2026/11/19/india-inflation-foreign-investor-nifty50.html ），食品與物流價格面臨二次衝擊。
-- 推理：奧里薩邦與鄰近東岸港群是印度最重要的鐵礦砂、鋁土礦與鋼鐵產區，鐵路停駛與港口停擺將推升農產品與基礎金屬國內價格，鎖死印度央行降息空間並加劇外資撤出印度股市。
-- 先影響資產：印度 Nifty 50／INDA、USD/INR、海運乾散貨／鐵礦鋁土礦報價。
-
-### WIDE-4｜義大利全國總罷工（11/20 CGIL）與法國交通工會動員衝擊歐洲鐵路運輸＋ECB 11/25 辯論最低準備金率翻倍至 2%＋Meta 暫緩原訂今日生效之歐盟 AI 抓取條款
-- 事實：義大利最大工會聯盟 **CGIL** 於今日（**11/20**）發起全日全國總罷工，結合獨立鐵路工會行動，衝擊義國境內地方大眾運輸與高鐵 Trenitalia／Italo 班次（美國駐義使館安全通知：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE516Js2r8OK5XKGmEVYbF0zytrVkNmYZznVQ7yJB_E1jq24NYpBusG7exg9bIqKl6L9iLAG_RgqGOEmZ3dxZuTx7B21FyRUW8I82oVpVdCL5DMzd5wbLuXsiLrgMHz0UExn-3Qu2OgVS6oOY1IuwWvldFi4b052n3z0T354Fhkhc1T7-0YhrvVYoq80p6Y ），法國 CGT 運輸工會動員亦持續至 11/20。金融方面，歐洲央行（ECB）預計於 **11/25** 辯論將商業銀行無息最低準備金率由 **1% 調高至 2%**（預估每年為歐元體系省下 **44 億歐元**付息、並收回約 1,750 億歐元超額流動性，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH1bZMI9JLhKaH4YIog157oxgDX7cIDofV7tfbHJ0df5vYIM-18cjAtenR7k4c16cEw5ukZTt1CrKaDk-byV-G1NOsOmsjdPOYfTpEJ3LdAU679W9xGZcDnCedZpb9vAqu88xuWwzW37MH-7V4FLXcz3NUeCyvxtfk_OOexUuF60SsyomS5EXr_y-gMtGrqBTJhOgFbpUqjwNRC ）。科技法規上，面對歐洲出版商反壟斷投訴，Meta 正式暫緩原訂 **11/20** 生效的新版商用與 AI 抓取條款並啟動至 2027 年初的諮商（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEu6Qf-rDXC9fMqYfy7WLMwX4z8t9-COaVPZXBsUPjfAtd1KGC_gnHvb2Id2LQJvhAacXV8sPuEKO7COMuXLjorPhZpCGwMgPSx48iWaqrZqv0BVT846VPmhKNQN55X6cPPZBnKaHi3urQv5aJs032WgViVasDdofYGc5x6myYwZS7XMSs_NIusqD3_TqT_1wAIZbEHkL_pFAb25_lKSq6N ）。
-- 推理：歐洲面臨「高通膨（4.0%）＋政府舉債（歐盟 2027 最高 450 億歐元援烏案）＋央行擬提高無息準備金變相向銀行抽稅＋勞工反預算罷工」的四重擠壓；Meta 暫緩 AI 抓取條款亦顯示美國科技巨頭在歐洲面臨更嚴峻的版權與資料取得阻力。
-- 先影響資產：歐洲銀行股（SX7E／EUFN）、義大利／法國主權債利差、EUR/USD、META。
-
-### WIDE-5｜川普於深圳 APEC 公開反對全球監管「超智慧（SI）」＋美中俄三方領袖聲明＋美中關稅休兵進入 2027/01/10 到期倒數；中國 11 月 LPR 連 18 凍（1Y 3.0%／5Y 3.5%）
-- 事實：美國總統川普美東 **11/19** 於中國深圳 APEC 領袖會議演說，直言「反對任何形式針對超智慧（SI）的全球監管規範」，並與習近平、普丁舉行史上首次「美中俄三方領袖會談」發表和平聲明（白宮官網：https://www.whitehouse.gov/briefings-statements/2026/11/u-s-russia-china-heads-of-state-declaration-toward-peace/ ；APEC 演說：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHsNtPUS3dvD5rj7QXMzTgNQGIlCNe5jO6MIXxpCDJfMWtv95uJs3yggKpQQ61nqEVST0yOOiSqS3GDIo_FuBpqERD_-y0ZQiovJbd9aWLTcK2Gj1rNPunw8CtbpZDvreRInzZ7dUfSo6TcovDpcHcZB49P4C1oXQiY8LzonH98kBJmDQjf7xNYdQ2ajbmAsoQKpC69Xm_SpmEc5cosjzojCHz_7LaH ；美中關稅休兵將於 **2027-01-10** 到期：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEOAd3zcgJf0miRIL0boPC-4b4Opr-5rpz1Bx9zGFuEKvJ1NAoBIjLuHWqG5irLIClt5WADDouve0-AMtFBceuwOkqVdydQXByCiUs6jsgTSsrbJO9dAeLlq_aDGyJzA_xdd4rR-RsjBqkLyprcpeQzqlE4bcaF0Kl0MHme5WDddS_TpWA4y8hNAotyIE0= ）。金融面上，中國人行今早（**11/20**）公布 11 月 **1 年期 LPR 維持 3.0%、5 年期維持 3.5%**，連續 18 個月按兵不動（新華網 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH8oPrBzlqD8X1S9hO18wN_rN5mbhuogCkEQllL6sfqCIlzEnmRvhMJzW3Rn-NJk_LaXFJfcJUUxWo0AoCF_SI8IDFkNlZyUF3kM0Gb1JbtYCta_dBNi02fm2CjWB25ReKpbTQk-tgPr3RoBNTQGK0hr09qyIwQSQLjkgdRgLc= ）。
-- 推理：深圳 APEC 看似釋出美中俄短期降溫訊號，但美中貿易休兵僅剩 **7 週** 即於 1/10 到期，而中國在房市投資仍年減逾 20% 下卻連 18 個月凍漲凍降 LPR（受限銀行淨息差與匯率穩定），一旦明年 1 月關稅談判破裂，工業金屬與亞股將缺乏中國內需刺激緩衝。
-- 先影響資產：Comex／LME 期銅、鐵礦砂、USD/CNY、中概股（KWEB）及美國半導體設備股。
+### D-Q｜反問 Claude：下一輪請回答的 3 個問題
+- 1. **金管會 11/21（週六）宣布自 11/23 起祭出「全面平盤下禁空＋融券保證金 150%」第三波限空令**：台股歷史上僅在 2008 年金融海嘯與 2015 年陸股匯震盪時使用過「保證金 150%」等級的殺手鐧。你認為這項強烈行政干預能否擋住週五美股 NVDA（-14%）與 AMD（-13%）傳進台積電與 AI 代工廠的開盤賣壓？
+- 2. **摩根士丹利已在 11/20 全額行使 Anthropic 1.47 億股綠鞋機制**：這意味著承銷團手中已不再握有用於公開市場托底回購的空頭額度。下週 ANT 若面臨跌破 83 美元發行價，市場將失去人為買盤防線，本站的《IPO 觀察》是否已設定跌破發行價的連鎖警示？
+- 3. **台灣 10 月外銷訂單創歷年新高達 1,238.2 億美元（年增 78.3%，對美年增 96.3%）**：面對基本面接單「歷史最熱」與資本市場「單日跌 6.2%＋融資大減 637 億」的極端背離，你的總經展望模型如何定調這波修正——究竟是「健康的估值與散戶槓桿去化」，還是「外資領先嗅到 2027 年訂單下修的資金撤退」？
 
 ---
 
-### A｜今天的大動（註：本輪瀏覽器代理回報 `BLOCKED / BROWSER_UNAVAILABLE`（`conversation is not open in any Hub window`），且規則禁止執行外部網路抓取程式，無法重新開啟 `https://wallstreet-sentinel.pages.dev/api/gemini_ask`；以下保留最新已讀題單 3 檔）
+### WIDE-1｜英國 10 月零售銷售超預期月增 0.7%（年增 2.3%），背後推手竟是民眾響應政府「應急準備活動（Be Ready）」囤積罐頭與保久乳
+- 事實：英國國家統計局（ONS）於 **2026-11-20** 公布 10 月零售銷售量，月增 **0.7%**（大幅超越市場預期的持平 0.0%），年增達 **2.3%**；核心零售（不含車用燃料）月增 0.9%、年增 2.5%。ONS 報告具體指出，推升食品類門市銷售成長的主因，是消費者因應英政府 10 月底發起的「做好準備（Be Ready）」緊急民防宣導活動，大舉採購耐儲存之罐頭食品與保久乳（UHT milk）（英國國家統計局 ONS 官方報告 2026-11-20：https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/retailsalesgreatbritain/october2026 ；Investing.com 報導：https://www.investing.com/news/economic-indicators/uk-retail-sales-rise-07-in-october-beating-expectations-3741892 ）。
+- 推理：表面看似強勁的英國消費數據並非來自實質購買力提升，而是地緣政治不安與政府民防動員引發的「防禦性物資囤積」；這將扭曲英國央行（BOE）對底層通膨韌性的評估，推遲其降息時程並壓抑英鎊區非必需消費品。
+- 先影響資產：英國公債殖利率（Gilt）、英鎊兌美元（GBP/USD）、英國零售龍頭（Tesco、Sainsbury's）。
 
-### INTU｜同意本站：Intuit（INTU）盤後跌約 -9.8%（實務延伸至 -10%～-15% 區間），因 Q2 與 FY27 全年營收指引低於共識並大幅砍半 Credit Karma 成長預測（無新進展）
+### WIDE-2｜中國 1～10 月全國房地產開發投資年萎縮擴大至 21.6%（新開工面積年崩 24.4%），人行 11 月 LPR 連 18 凍缺乏降息活水
+- 事實：中國國家統計局公布 2026 年 1～10 月全國房地產開發投資為 **5 兆 7,200 億元人民幣，年減 21.6%**（較 1～9 月之 -20.6% 降幅再度擴大），其中住宅投資年減 **21.4%**；房屋新開工面積暴跌 **24.4%**、新建商品房銷售面積下降 **13.7%**（中國國家統計局官方發布：http://www.stats.gov.cn/sj/zxfb/202611/t20261118_1958291.html ）。然而面對房市投資持續深陷兩成以上的負成長，中國人民銀行於 **11/20** 公布之 11 月 1 年期 LPR（3.00%）與 5 年期以上 LPR（3.50%）**連續第 18 個月按兵不動**（新華社 11/20：http://www.news.cn/fortune/2026-11/20/c_1130248921.htm ）。
+- 推理：中國房地產投資已連續近兩年維持逾 20% 的斷崖式萎縮，但受制於商業銀行淨息差（NIM）極度收窄與阻貶人民幣壓力，人行無法透過降息刺激內需，使全球原物料與大宗金屬缺乏中國週期的實質拉動。
+- 先影響資產：LME / 滬銅期貨、鐵礦砂、中概股 ETF（KWEB / FXI）、離岸人民幣（USD/CNH）。
+
+### WIDE-3｜歐洲央行（ECB）定於 11/25 辯論將商業銀行無息最低準備金率翻倍至 2%（抽回 1,750 億歐元超額流動性、為歐元體系年省 44 億歐元利息）
+- 事實：歐洲央行（ECB）管理委員會排定於 **2026-11-25** 召開會議，正式辯論將歐元區商業銀行之最低存款準備金率（Minimum Reserve Requirement）由現行 **1% 調高一倍至 2%**。目前商業銀行存於各國央行之法定準備金為完全無息（0%）；路透估算，若調高至 2%，將強制凍結商業銀行約 **1,750 億歐元** 之流動性，並為面臨巨額購債虧損的歐元體系各國央行每年節省約 **44 億歐元（約 48 億美元）** 之付息支出（路透社 11/20：https://www.reuters.com/business/finance/ecb-debate-doubling-bank-reserve-requirement-2-sources-say-2026-11-20/ ）。
+- 推理：在歐元區 10 月通膨達 4.0% 的背景下，提高無息準備金率等同於對歐洲銀行體系實質課稅，既能在不直接升息的情況下抽緊銀行間超額流動性，又直接侵蝕歐洲商業銀行的獲利能力，恐引發信貸進一步緊縮。
+- 先影響資產：歐洲銀行股指數（SX7E / EUFN）、歐元區主權債利差（BTP-Bund Spread）、EUR/USD。
+
+### WIDE-4｜白宮 11/20 簽署行政命令強化聯邦契約行政特權，並簽署《Common Cents Act》終止一美分硬幣生產
+- 事實：美國總統川普於美東 **2026-11-20** 簽署總統行政命令《*Protecting the Executive’s Privileges and Enhancing Efficiencies in Federal Contracting*》，明確要求所有聯邦承包商與分包商，凡涉及與行政部門相關的國會調查與文件調閱，均須事先與白宮進行協調統籌（白宮官方發布頁 2026-11-20：https://www.whitehouse.gov/presidential-actions/2026/11/executive-order-protecting-executive-privileges-federal-contracting/ ）。同日，白宮宣布簽署多項國會通過之法案，包含正式立法通過之 **H.R. 10167《Common Cents Act》**，指示美國造幣廠停止為一般流通生產一美分（Penny）硬幣，並提供現金交易四捨五入指引（白宮法案簽署公告：https://www.whitehouse.gov/briefings-statements/2026/11/bills-signed-h-r-10167-h-r-5284/ ）。
+- 推理：白宮要求國防與科技承包商在面對國會調查時須受行政特權統籌協調，顯示行政部門與國會（如眾院外委會 Brian Mast 等針對晶片出口與合約之調查）在國防、半導體採購上的府院博弈白熱化；同時終止一分錢硬幣生產象徵高通膨下輔幣實體成本已超越面額。
+- 先影響資產：美國大型聯邦政府承包商與科技顧問股、金屬鋅/銅需求預期、美元流動性心理。
+
+### WIDE-5｜日本財務省財務官三村淳對日圓逼近 160 發出嚴厲口頭干預警告「現在還不是忘記今年夏天干預的時候」，東證信用買殘仍處近 6 兆日圓高檔
+- 事實：隨著日圓兌美元匯率於 11 月中旬再度跌破 159 逼近 160 大關，日本財務省負責外匯事務的最高財務官**三村淳（Atsushi Mimura）**公開對市場投機交易發出嚴正警告，直指近期匯率波動「過於急速且具有單向投機性」，並直言警告市場**「現在還不是忘記今年夏天干預行動的時候（It is not yet time to forget this summer's interventions）」**，強烈暗示當局已隨時準備再次動用外匯存底進場阻貶（日經新聞 11/20：https://www.nikkei.com/article/DGXZQOUB203890Q6A121C2000000/ ；鉅亨網報導：https://news.cnyes.com/news/id/5784912 ）。同時東京證券交易所統計顯示，截至 11 月上旬日本散戶信用買殘（融資多單）仍高達 **5.8 兆至 5.9 兆日圓**。
+- 推理：日本當局在 160 紅線前的實質干預風險極高；一旦官方無預警進場阻貶日圓，將迅速推升日圓匯價並逼迫全球日圓利差交易（Carry Trade）平倉，在東證融資買殘高達近 6 兆日圓的脆弱結構下，極易觸發類似今年 8 月 5 日的跨國連鎖斷頭賣壓。
+- 先影響資產：美元兌日圓（USD/JPY）、日經 225 指數期貨、日債 10 年期殖利率（JGB）。
+
+---
+
+### ANT｜Anthropic（ANT）上市次日下跌 -8.50% 收 $88.91，盤中最低觸碰 $83.05 險守發行價，摩根士丹利已全額行使 1.47 億股綠鞋平倉
+- 事實：Anthropic PBC（ANT）於美東 11/20 上市次日遭遇沉重賣壓，全日下跌 **-8.50%（下跌 $8.26）收在 $88.91**，成交量達 **4.005 億股**；盤中股價急跌下探 **$83.05**，距 $83.00 發行價僅一步之遙（Investing.com 日線報價：https://www.investing.com/equities/anthropic-historical-data ；Motley Fool 11/20：https://www.fool.com/investing/2026/11/20/anthropic-stock-drops-second-day-of-trading/ ）。主承銷商摩根士丹利（Morgan Stanley）證實已依發行價全額行使 **1.47 億股（147,000,000 股）** 之超額配售（Greenshoe）選擇權，並結清相應空頭頭寸（Anthropic 官方公告 11/20：https://www.anthropic.com/news/closing-of-initial-public-offering-and-full-exercise-of-greenshoe ）。
+- 傳聞：華爾街交易室傳出，大摩全額行使綠鞋後，承銷團在公開市場不再持有做空部位以在破發時進行托底回購，使 $83.00 處的人為買盤防線實質消失（Channel NewsAsia 11/20：https://www.channelnewsasia.com/business/anthropic-greenshoe-exercised-stock-slips-4759821 ）。
+- 本站漏掉的：本站《今晚大事看板》先前在首日交易結束 20 小時後仍標記「進行中」，雖已修復為「已結束」，但需密切追蹤週一開盤是否會正式測試 $83.00 發行價。
+
+### NVDA｜輝達（NVDA）黑色星期五暴跌 -14.01% 收 $125.53，面臨加州檢察長傳票與 SEC 審查雙重監管打擊
+- 事實：輝達（NVDA）於美東 11/20 正規盤暴跌 **14.01%（大跌 $20.45），收在 $125.53**，創下近一年來最大單日跌幅與波段新低，單日市值蒸發逾 4,000 億美元（CNBC 11/20 收盤報導：https://www.cnbc.com/2026/11/20/nvidia-stock-plunges-california-subpoena-sec-probe.html ）。加州檢察長 Rob Bonta 證實已對輝達發出正式調查傳票，調查其涉嫌向中國走私受限晶片與虛假陳述（ABC10 11/20：https://www.abc10.com/article/news/local/california-attorney-general-subpoenas-nvidia-over-china-chip-shipments/103-894218 ）；同時媒體披露美國 SEC 執法部門正對輝達展開民事調查，除領導層變動揭露外，亦開始檢視其特定會計確認事項（Investing.com 11/20：https://www.investing.com/news/stock-market-news/sec-opens-inquiry-into-nvidia-disclosures-and-accounting-3742105 ）。
+- 傳聞：市場傳言部分對沖基金因應週末風險與即將於 12/01 展開的國會閉門聽證會，大舉出清半導體重倉持股避險。
+- 本站漏掉的：輝達股價週五單日重挫 14% 創一年新低，對台積電 ADR（TSM 週五大跌）及下週一台股權值供應鏈形成巨大的開盤跳空壓力。
+
+### AMD｜超微（AMD）暴跌 -13.25% 收 $424.39，眾院外委會公開對中晶片許可資料持續引發外溢恐慌
+- 事實：超微（AMD）於美東 11/20 延續跌勢，終場重挫 **13.25%（大跌 $64.80），收在 $424.39**（Motley Fool 11/20：https://www.fool.com/investing/2026/11/20/why-amd-stock-tumbled-again-today/ ）。儘管公司發言人已正式駁斥 Hunterbrook 之放空指控，但美國眾議院外交委員會主席 Brian Mast 公開之許可資料顯示 BIS 曾核准超微 MI325X 晶片銷往中國，加上國會排定 12 月初聽證，引發投資人擔憂美國政府收緊甚至撤銷現有許可（TechNews 11/20：https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）。
+- 傳聞：華爾街傳出部分機構法人評估 MI325X 後續韌體升級可能受到 BIS 11/19 遠端算力新規限制。
+- 本站漏掉的：超微兩日內由 $530 附近急跌至 $424.39，累計跌幅逾 20%，同屬 AI 晶片概念之台系載板與封測族群面臨估值重整。
+
+### CRWV｜CoreWeave（CRWV）盤中跌破 40 美元發行價（下探 $39.96），AI 基礎設施龐大債務成本引發市場拋售
+- 事實：新興雲端算力大廠 CoreWeave（CRWV）於美東 11/20 盤中一度急挫跌破其 IPO 發行價 **$40.00**，最低下探 **$39.96**，終場收在 **$40.15（-10.60%）**（24/7 Wall St. 11/20：https://247wallst.com/investing/2026/11/20/coreweave-slips-below-ipo-price-as-ai-debt-worries-mount/ ）。該公司 2032 年到期之 9.625% 無擔保高收益公司債價格暴跌至面額 79.5 美分，殖利率飆升至 14%～17%，沉重之利息負擔與對外發債成本激增使投資人對二線算力擴張模式產生嚴重疑慮。
+- 傳聞：市場推測部分私募信貸基金（Private Credit）正評估提高對新雲端算力租賃專案的擔保品要求。
+- 本站漏掉的：新雲端業者發債與租賃承諾緊縮，將直接傳導至台灣 AI 伺服器代工廠（廣達、緯穎、緯創）明年度的訂單動能與收款條件。
+
+---
+
+### AN-1｜William Blair、KeyBanc、Evercore ISI 等華爾街券商全面下修輝達（NVDA）評等與看法
 - 事實：
-  1. **財報與財測**：Intuit 於美東 11/19 16:00（台北 11/20 05:00）公布 Q1 FY27 營收年增 **12%** 至 **43.54 億美元**（勝共識約 43.1 億）、GAAP 稀釋 EPS **$2.59（+63%）**、Non-GAAP EPS **$2.91（+56%）**（勝共識）；但 **Q2 FY27** 營收指引 **49.31 億～49.54 億美元（+6%～+7%）**、Non-GAAP EPS **$3.17～$3.22**，以及 **FY27 全年**營收指引下修至 **230.81 億～233.65 億美元（+8%～+9%）**（低於共識約 234.3 億）、Non-GAAP EPS **$22.88～$23.12**（低於共識 ~$23.62），致盤後跌至 **$279.52（-9.84%）** 並一度擴大至 -10%～-15%（https://investors.intuit.com/news-events/press-releases/detail/1331/intuit-reports-first-quarter-results-and-enters-agreement-to-sell-mailchimp-to-bending-spoons ；SEC 8-K：https://www.sec.gov/Archives/edgar/data/896878/000089687826000043/intu-20261119.htm ）。
-  2. **Mailchimp 出售案**：以 **36.8 億美元**（現金 33.1 億＋Bending Spoons 股權 3.68 億，較 2021 年約 120 億美元大幅折價）將 Mailchimp 售予 Bending Spoons，預計 2027 年初交割。
-- 本站漏掉的：下修全年營收的具體元兇是 Intuit 將 **Credit Karma 全年成長預測由 11%–13% 砍半至 3%–7%**、**Consumer 部門成長由 4%–6% 下修至 2%–4%**（理由包含高利率壓抑信貸需求與消費者加速轉向 AI 搜尋／發現體驗）。
+  - **William Blair**：分析師將輝達評等由 `Outperform` 調降至 `Market Perform`，指出執行長變更、加州司法部調查與治理真空將構成中短期無法忽視的巨大評價折價（Seeking Alpha 11/20：https://seekingalpha.com/news/4182901-nvidia-downgraded-at-william-blair-on-governance-overhang ）。
+  - **KeyBanc Capital Markets**：將輝達評等由 `Overweight` 下調至 `Sector Weight`，暫停設定價格預測，理由為管理層交接之執行風險與法規審查不確定性（The Fly 11/20：https://thefly.com/landingPageNews.php?id=3819201 ）。
+  - **Evercore ISI**：維持 `In Line` 評等，但將看法價位自 $330 **大幅下修至 $186**（Seeking Alpha 11/20：https://seekingalpha.com/news/4182855-evercore-isi-slashes-nvidia-price-target-to-186 ）。
+  - **GF Securities（廣發證券）**：將輝達評等由 `Buy` 調降至 `Hold`，理由為關鍵人物風險（Key-man risk）與獲利本益比下修。
 
-### BBVA｜BBVA 盤後跳報 +6.0%（$25.90）：無盤後公司利多公告，屬歐洲銀行 ADR 盤後零成交量／寬價差報價跳動（雜訊）（無新進展）
-- 事實：BBVA 美股 ADR 11/19 正規盤收 **$24.43（-2.20%，成交量 2,281,137 股）**，盤後出現 `vol=0` 之寬價差報價跳動，未見 SEC 6-K 申報或盤後突發利多；當日歐洲時段財務長出席 J.P. Morgan 歐洲金融會議重申 2025–2028 年 ROTE 22% 目標與買回（https://shareholdersandinvestors.bbva.com/financials/financial-calendar/copy-of-jp-morgan-european-financials-conference-duplicate/ ；https://www.nasdaq.com/articles/bbva-advances-second-tranche-share-buyback-through-j.p.-morgan-se ）。
-
-### AMD｜同意本站並補齊時間軸：AMD 盤後再跌 -2.8%（至 $475 附近），反映眾院外委會公開 BIS 對中晶片許可紀錄與加州檢察長傳票輝達帶動的整個 AI 晶片出口管制恐慌（無新進展）
-- 事實：AMD 11/19 正規盤收 **-7.72%（$489.19）**，盤後再回落至 **$475 附近**。美東 11/19 下午眾議院外委會主席 Brian Mast 公開輝達與超微對中申請 **340 萬顆**、BIS 至 5 月已核准 **879,868 顆**含 AMD MI325X 與輝達 H200（https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ；https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ），同日加州檢察長對輝達發出調查傳票（https://www.bbc.co.uk/news/articles/cqn70vxp5p4no ）。蘇姿丰 70,000 股售股 Form 4 為美東 **11/18 16:19** 依 6 月預設 10b5-1 計畫申報（https://www.sec.gov/Archives/edgar/data/2488/000000248826000213/wk-form4_1795036763.xml ）。
-
----
-
-### AN-1｜過去 3 小時（07:35–10:35 台北／美東 18:35–21:35）未見華爾街大型券商針對 AI 供應鏈或前 20 大美股的新評等調整；補齊 UBS 調降日本股市至 Neutral 連結，並保留 11/18–19 機構報告
-- 事實（僅查得獨立專欄作者評論而非大型券商機構報告，故不列為機構調評；另補齊 UBS 11/19 調降日本股市原文連結）：
-  - **日本股市（11/19 策略調降，補齊單篇連結）**：**UBS** 將日本股市評等由 `Attractive` 調降至 `Neutral`，理由直指中期 AI 資本支出不確定性升溫及 2027 年美國資料中心新規恐冷卻日本半導體設備與電子零組件需求（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhp0RRxNEixBthM6_nj2Gog_GeT5Rxot1a5VxNuD9AOpcQCXdVzsyMOKWTu-AXFe2hTPqCD181LXaCcqqmvpnpHhDi3SbMC77DarlpfjSPz2aryhuyD9sN8aEcl6vS_8sk8NYUegffInurerj_sqsZT0gQq0LvurBDDrCG-QYXfzB2XrvFO772dYwbJ_T-2Ozlo6xdrF5psSBMcDzowTfuBAb7bRtzyv1aW3wyi8m3YKLYjQg= ）。
-  - **NVIDIA（NVDA，11/18–19 機構報告，無新進展）**：**BofA** 重申 `Buy`（看法價位不同媒體引述為 $280／$350，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHtlGuOcDmU5uIHxlwH8nHo2TF6G0KAU7NA4x9P6epLf9v9oTskAeQMcpCmQl1L-Tb7lSNB5ubBm6Vx0-jLuLEHBIIP_6wyP6u3xelsIJ_vLkqSGMVXqCi98nhaglSDY9mqF2bDxdPkQHg4bNXMp_BHo3bIT7ywJg= ）；**Moody's Ratings** 維持 `Aa1`／`Prime-1`、展望調為 `Stable`（https://www.tradingview.com/news/reuters.com,2026:newsml_FWN46Z136:0-moody-s-ratings-changes-nvidia-s-outlook-to-stable-affirms-aa1-senior-unsecured-ratings/ ）；**Wedbush**（`Outperform`，$275→$293）、**JPMorgan**（`Overweight`，$215→$230）；**Evercore ISI**（`Outperform`→`In Line`）、**Freedom Broker**（`Buy`，$305→$230，https://www.tradingview.com/news/tradingview:b51916defaaa1:0/ ）、**Jefferies**（$300→$250）、**Wells Fargo**（$300→$250）、**UBS**（$240→$220）、**Summit Insights**（降至 `Hold`）。
-  - **Broadcom（AVGO，無新進展）**：**Goldman Sachs** 維持 `Buy`（看法價位 $540→$460，https://www.tokenpost.com/news/business/61151 ）；**Rothschild & Co Redburn** 調降至 `Neutral`（看法價位 $398）。
-  - **Apple（AAPL，無新進展）**：**China Renaissance**（`Hold`→`Buy`，$425）、**Bernstein**（`Buy`，$370→$380）。
-  - **GE Vernova（GEV，無新進展）**：**Erste Group**（11/18，`Buy`→`Hold`，https://www.marketbeat.com/instant-alerts/analyst-ge-vernova-nyse-gev-stock-gets-downgrade-from-erste-group-bank-2026-11-18/ ）。
-  - **11/19 其餘已核對報告（無新進展）**：https://dailytradealert.com/2026/11/19/analyst-upgrades-and-downgrades-for-thursday-11-19/ （**ANT** Citizens `Outperform`、Melius `Buy`、Needham `Buy`、Wolfe `Outperform`；**ACN** BofA `Buy`；**MDB** UBS `Neutral`→`Buy`；**NXPI** StoneX `Buy`；**BE** BMO `Market Perform`→`Outperform`；**CAE** Morgan Stanley `Underweight`→`Equalweight`；**PANW** BofA `Buy`、Barclays `Overweight`，https://tw.tradingview.com/news/tradingview:312a99180b922:0/ ）。
-
----
-
-### POL-1｜加州檢察長對輝達發出傳票＋眾院外委會公開 BIS 對中 AI 晶片許可（87.9 萬顆）與 12/01–12/03 國會聽證（無新進展）
-- 事實：加州檢察長 Rob Bonta 對 NVIDIA 發出調查傳票（https://www.bbc.co.uk/news/articles/cqn70vxp5p4no ）；眾院外委會主席 Brian Mast 11/19 公開輝達與超微對中申請 340 萬顆、BIS 已核准 879,868 顆（https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ）；國會排定 12/01 黃仁勳三委員會閉門筆錄、12/02 法務長 Tim Teter 作證及參院銀行聽證會（https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）；BIS 槍枝消音器管轄移轉新規 2026-11-20 生效（https://www.bis.gov/news-updates ）。
-
-### POL-2｜BIS 遠端算力新規（`2026-23529`／RIN 0694-AK50）生效與實務申報指引（無新進展）
-- 事實：聯邦公報原文（https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ）、BIS 新聞稿（https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ）、實務報告提交指引（https://www.bis.gov/exclusion-note-submission ）：須向 `EAR.Reports@bis.doc.gov` 與 `ERC@bis.doc.gov` 提交機器可讀報告，公眾意見至 **2027-01-19**（`BIS-2026-0628`）。
-
-### POL-3｜財政部 OFAC 11/19 雙線制裁（東南亞電詐園區＋義澳跨國毒梟）＋USTR 啟動墨西哥 USMCA RRM＋白宮深圳 APEC 演說（補齊單篇官網連結）
-- 事實：川普 11/19 於深圳 APEC 演說反對任何針對「超智慧（SI）」的全球監管規範，並與中俄發表《和平宣言》（https://www.whitehouse.gov/briefings-statements/2026/11/u-s-russia-china-heads-of-state-declaration-toward-peace/ ）；財政部 OFAC 11/19 分別宣布制裁東南亞虛擬貨幣電詐園區（https://home.treasury.gov/news/press-releases/jy3732 ）與支援恐怖販毒集團之跨國犯罪組織 Comanchero／'Ndrangheta（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHZv11R7P4UqH0UIT7F5EuUGW81dO-fbGrgUz9e2EVzrZQ5i0O7XhBoMiNCU4AeTUw7E1EbT9gxVzADw4cJE1GqJ5CHLrdAcNlWmalymFkgU8DWu29RCzFjQqhHe2AS1mjyL5kh1dOuRCJG ）；USTR 11/19 對墨西哥 Polygroup 工廠啟動 USMCA RRM 勞工審查並暫停報關結算（https://ustr.gov/about-us/policy-offices/press-office/press-releases/2026/november/united-states-seeks-mexicos-review-alleged-denial-workers-rights-polygroup-industrias-mexico ）。
-
----
-
-### TW-1｜11/20 限空令 2.0 上路首日盤中跌勢擴大逾 2,000 點、加權觸 36,406 點、台積電下探 2,000 元關卡；新台幣貶破 33 元；11/19 晚間爆 3 檔 T+2 違約 1.29 億（補齊單篇連結與盤中低點）
-- 事實：台股加權指數 11/20 以 **37,646.13 點（-780.76 點）** 開出，先失守 37,000 點至 36,753.32 點後賣壓續擴大，盤中大跌逾 **2,000 點**一度觸及 **36,406 點**（聯合報 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk06TlcUDYuLdY294NBfBumDKc8-tkSXLidxpBEQ8mVkeqJUXCA95PbeXA5Wh2qrUNvRI8nAvtSVvrInWgmgKv9JHmzCuz4z4_zlQwChYOi3z6ma-EyA== ；風傳媒 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGa-POQNT8_0F0R4RECuZiBu2UyEdFLUqy5cixgluGcCQTYWQxrJXQS10mPVJqU6MUdzE83qQjVPVk1b50IfPDFGBV9aRLEByyOrEdnskZB6Ng-XHrCFgpwQ9sl88= ）；權王台積電（2330）開 **2,035 元（-65 元）** 後一度下探 **2,000 元**整數大關引發低接買盤（聯合報 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF1St5BGvL6LAONjAv7WStKwypnsLVh7NuTn9M4_SNqCWiz7Zqi7XHVXSVf7SuYoMMgBEJTHPjkXBSh12ppsD5Ojyni_LKr4ynn07bS5LPckwgWUZzXLsmNizjUiB_xZLqJGss77NHErh7Pw4KpBDDfJi0cJzHroyPXBA== ）；台北匯市新台幣以 **32.96 元**開出後早盤貶破 33 元大關，盤中區間 **32.960～33.038 元**（中央社 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEfQfnm9Jnq7B_r61F8rQ2wcMnFF1JLH0iVKEfNAWCQg87c2FguZEzGhHaLaaGyHrO5Ydai3lMQVeIMgnho5vdBk1TyTGBwhtZBEVWwP6b9snYztMrXAGW55vejXY7aTE4QupEKv2rl ）。金管會限空令 2.0 今起實施（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611190001&dtable=News ），國安基金證實實質進場、八大公股行庫護盤鎖定台積電／聯發科／台達電／日月光（https://money.udn.com/money/story/5613/9890068 ；中時：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE205CRBMoDruRqJRZBwM8p1E-zSgJ-CU38tI6meTEuDsy3QUfAO5qJnvrZPNRd7wco2bkf0YWuPE6Lq44Ofi3TLHzOTgOMt1nWqHsGizXbYEXozOjZfym9wdVjb9vHgMZkt9yctfAjCtA0WN9-gxGSbkki ）。11/19 盤後公告 3 筆 T+2 違約交割合計 **1億2,892萬6,300元**：世界（5347）**4,925.3 萬元**、台化（1326）**4,172.8 萬元**、萬泰科（6190）**3,794.53 萬元**，全數出自「元大證券和平分公司」（鉅亨網 11/19：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEZ97dHr1gQu73vO3qqPFRxzG8I9DVlA_logC6g3eYvq1Au9p_zYdXbgX6jW8pN3MR3MemivOmZkrBsobnEAqw4Z9lM0XOgCBLN0N-_d_e-jxMnfJu9oxLhLA7c ；自由時報：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG4Nfnarh8bEFXICrOMKs9LhORVnneBfvaDygUpROMa7c5ZNkqpZKHMGvB4556zEnJT9npQnBddX6FAIl2iNHK1spR180e6UnVcflwPd4hBla02wH6mcASVkU3vLfpeTmGZssPapFca ）。
-
-### TW-2｜日月光高雄仁武 J 坵塊新廠 11/19 動土（2,489 億元）、鴻海集團廣宇預告明年 AI 伺服器百億＋光通訊 MMC 30 億、聯發科／瑞昱入列美國核准晶片設計名單（補齊單篇連結與完整數字）
+### AN-2｜Rothschild & Co Redburn 調降博通（AVGO）評等至 Neutral，高盛調低看法價位至 $460
 - 事實：
-  - **日月光投控（3711）**：旗下台灣福雷電子 **11/19** 於高雄仁武產業園區「J 坵塊」舉行新廠動土典禮，再投資 **2,489 億元新台幣**擴建 AI 高階半導體測試廠房（與 K 坵塊合計總投資逾 3,572 億～3,663.5 億元），規劃 2028–2029 年分期完工，預估 K、J 兩基地全面投產後年營收達 **1,173 億元**（工商時報：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGV6dvdg7jDfXlTf04wjRqF1djnABezpp4rCy9z6F4HE8RmPgcZLYdSejtduxvyEyss7bYjMa8zbVmknwwVf1OdLAtFs1pH73q2IeDewWS1SFAJUEEyDFGVFdh_5qTfRkK8HgM81uVpvQ== ；聯合報：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFKYxw1XgI4gKGGCvwVY26cuvst79wjsT4GD-82pf5NyiIv5iXSWmq5_Fegk_aZsxRUe1ek-_uJOsrQTnw_zYaB7h9nJw5vm84oM8tTeinLaVV4sxSEJq9UCitYgR0wnOGOb8h3 ）。
-  - **鴻海集團廣宇（2328）**：**11/19** 法說會公布 Q3 營收 66.5 億元（年增 23.8%）、EPS 0.28 元由虧轉盈；董事長李光曜指出明年（2027）僅 AI 伺服器與交換機代工（檳城廠）即可望貢獻 **100 億元**、高密度光纖連接器 MMC（蕪湖廠，2027 Q1 出貨，毛利率 20%–30%）全年貢獻約 **30 億元**，合計占 2027 年營收 **30%–50%**，且 10 月以來客戶 AI 資料中心訂單「只有增加、沒有減少」、未受美國出口新規負面影響（中央社：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHbtJuLNNhEOxA-U9KBugMOE1WXfUCLbnsVchFTAdDn9Q29k6eLiXwnboI48ff4bBq9QS68TAMwj0jEZiIHf62WQ0mZQKnmwFukXSUytgeObhHWEP2GgVwoTRuV-9mVo7M_ZV4y1MmZ ；經濟日報：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVBe0CDUrJ-CqidDpFxmm0bCkoqCizuJBOZNUrq8FBO5qLYUGXHm790OIFMXHc3QorUpH4SiTBQXz06ND_3ce8hJxGPTyMtMLQrxs1kK1IKOrvUaFpRwU7qCbF5oWPPWGI7Yic ；鉅亨網：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF1tInhAG2pDw1HXvBbYO9LIqIpS5HTAFZZBloVYKb7mSYtzyC4XSl3KYIzZZF4cNW6gXHIvuh11_uM0Ivk-Po41LFfTiTi5MJ1oHoKmSNSnV0oQ4PPnqIKJ14h0g== ）。
-  - **聯發科（2454）／瑞昱（2379）**：入列美國政府核准晶片設計業者名單（無中企入列，但特定銷中晶片仍須依規格與最終用途審查；聯合報：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGsEQ8rnYJFqRKKs7Wz73_87Ws9fgCB0JZG1mKB084F9i9GLnXBEZskLY6CyVb6s1mVNmNlCxDosqJhc6kDrsdpggSTD4vdgqVUawnEdrFcnkYH6yGbYFaB3itGac_eB1cn4iY= ；ETtoday：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH0f0K5vXiS4kHiCg_36eqjHoJEQJtFdJmQG4FLOVs_XoZdBXexQc051qdocWPymPK3KCpy0hOne07V33ReuwMBDLGH3KsBJBhaFDKqpBOhNjv4DFiawmWeercKbbw= ）。
-  - **廣達（2382）／緯穎（6669）／台積電（2330）**：廣達 Q3 營收 1.12 兆元創新高、AI 佔伺服器營收逾 **80%**（2027 估佔整體營收上看 90%，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQELYzZJdAEPiCG1j380BWUIRUeI0k77m7CjhY-4e9l5sduNxW-oPvLmrlM94tsqrBWEr5aU_scFjuqWf3OdthIXrtZX-w9KoehyVvCGZug1os7LxxFkUjR-uqycGibIQwNxl3nzC3T12XQwIOUkfKJ-9YvpDh2-Hwmw ）；緯穎主力對應 AWS 自研 ASIC 伺服器，法人評估受輝達次世代平台傳聞遞延衝擊較低（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE6CEKqh4R_T37nblZZrehMpmBGE7L2IOXDMccwJbOzdMD9l7M1LKe_e_SL3xUkTELsvJd3Kr6kseNv20860meEDWMJRTdMiXM7RNwZXSuNoz3HQYpEO496aPl3rVJFjEgmYm_p ）。其餘輝達承諾（https://nvidianews.nvidia.com/news/nvidia-expands-commitments-with-supply-chain-partners-to-support-ai-infrastructure-buildout ）、台積電 5 億美元認購 Anthropic（https://www.cna.com.tw/news/afe/202611190254.aspx ）、2 奈米洩密案（https://www.cna.com.tw/news/afe/202611190122.aspx ）無新進展。
-- 傳聞（無新進展）：台積電收緊高風險 AI 客戶信用額度（https://money.udn.com/money/story/5604/9889264 ；https://247wallst.com/investing/2026/11/18/tsmc-is-reportedly-setting-credit-limits-for-ai-customers/ ）。
+  - **Rothschild & Co Redburn**：將博通（Broadcom）評等由 `Buy` 調降至 `Neutral`，並將看法價位自 $595 **大幅調降至 $398**，分析師指出 AI 新創實驗室由依賴外部融資轉向自我造血的過程中，高階交換器與自研 ASIC 的資本開支增長存在放緩風險（TIKR News 11/20：https://www.tikr.com/news/broadcom-downgraded-by-redburn-to-neutral-398/ ）。
+  - **Goldman Sachs**：維持博通 `Buy` 評等，但因同業估值倍數收縮，將看法價位由 $540 調低至 **$460**（Investing.com 11/20：https://www.investing.com/news/analyst-ratings/goldman-sachs-trims-broadcom-target-to-460-3741950 ）。
 
-### TW-3｜日經 225 盤中暴跌 4%–4.5%（失守 57,000 點）＋軟銀盤中狂瀉 16.58%；南韓 KOSPI 開盤重挫 4.08% 失守 5,000 點（三星跌逾 4%、SK 海力士跌 5%–6%）（重大更新）
-- 事實：
-  - **日本股市（11/20 早盤重挫）**：受 Anthropic 上市後市場轉趨審慎及 AI 投資報酬疑慮拖累，東京股市 **日經 225 指數**今早大跌約 **4% 至 4.5%**（重挫約 2,800 點，跌破 **57,000 點**）；重倉 OpenAI 與 AI 基礎設施的 **軟銀集團（SoftBank Group）盤中一度暴跌 16.58%**，東京威力科創（Tokyo Electron）與鎧俠（Kioxia）同步走弱（NDTV Profit 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEjBZy-A2nG3h1E82CJxYPrW958uVsvYpqbPFfN5_ZRrr0Pvi4SWJeUrK_waoLHFsAt0en9I3H-PZ9pfPYfbZXc6o94i1hnAoTaQz9luZ8HcneUQroI_0d3hyv-XrsjPJz05WnCO6-Nboi5WZAoINigvteqHgm-gqRNsJtDaQs-SZws8yDexwcDxbbfXINOX2NTS4pfOdC-GYEDfcGTtg1VHiy9uW-k5bnhaKW2KePwGAMZEJ93uqsqXQ8jUAfHLeq7vkqaiWG-dkUMEAAUHckVE_VyyMq7ghPkY9FuIJ7xs2HJzH1q6l63ckUiauFY2HQks8si5KGyyH4= ；InvestingLive 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHWqCIARL_-4cmRUcX0se3koYLBAF_Bt9W-6-Csp_ApzXd_wCVMLKeRkf0_H5l9O93rqV_ywT92iOamN8Vd-AAO95J7GdOHHXnqrR12ddUbcKGy6GHqPDG5hiKUAoFqtvM7QIkrR33QDNjSLgoCK7taIhS0BiQPQ8U_gQc23SRS-OijgCBtspS2pIDI_vz_sRWGfuqjQ0fSXFQ9mD-C0zIpq9ramNWQqSTME0dF5RD24GJQHfJx_qx6ydx1fw== ；The Defiant：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHu6aN7JmF-mvksxBUDnJoX-HxL72lkIE3xXzZqi-evtg2gxhL7ftFDAcbb4pQNoVGhX0Ju70bF14cHStMWQXERZg3tABUhvpef6hIEUM7PUXsu4cDdDmxGS1OTxEfKCCKSRLHmL_oiha8ertsGXwet-A5kCH3aZNsPvbygWLwX47g4YuXZgg6EHgD_DAyL2Kg= ）。
-  - **南韓股市（11/20 開盤跳水）**：繼 Nexttrade 盤前三星跌逾 4%（188,700 韓元）、SK 海力士跌 5.8%（1,114,000 韓元，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGDWsosJjqWVacQThPPljcZErV3w3BXXT51BGRA7lJfrMSALCA6mZwiqpjCoh5dkE5yFVlIkFQL52N5qgXyegZU5rd1LMNPivF6dRdg3lxZt2-IW7qq-8BpLmx7V_6y6p04aP7p9FWz98tacJB91dhfULM= ）後，正規盤 **KOSPI 開盤大跌 4.08%（-209 點）至 4,928.51 點，失守 5,000 點心理關卡**，三星跌逾 4%、SK 海力士跌逾 5%–6%（鉅亨網 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEiy6Uh3pDkmedGQZgKBdoAZxYBTuyG1AVKlIBhTfKP2DJDJoFL9grfLMaZ6gR1UxspM5zCSsonNoPDGjhonLnOrcdsF85Y79ko7l4D3DFocsAoigj0MhGpdvXR ；朝鮮日報 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHOboHRDH1VfGHKgvpJmGoRNHXJyQjmzPIGhMFUjgd_jvACBhH7ikTDoglJsR22QgHZ-YkwYfk73STS0UUF0LFdr8oIJWmiwc7myveVY44Sm-jMOOhEBt0ZVPfsKAsAiGAjNcQt_KXQXxm9P9IHS7_6pGDYzeMJayA4vl7wvKL_O2lrOM4BOUFlJpw= ）。其餘日韓中長期擴產同前版（https://www.taiwannews.com.tw/news/6478761 ；https://www.koreaherald.com/article/10942672 ）。
+### AN-3｜Seeking Alpha 獨立機構分析師調降台積電 ADR（TSM）評等至 Hold
+- 事實：Seeking Alpha 獨立研究分析師將台積電 ADR 評等由 `Buy` 調降至 `Hold`，理由為輝達為台積電主要大客戶，輝達高層異動與潛在的對中出貨限制將影響未來先進製程預付款與投片能見度（Seeking Alpha 11/20：https://seekingalpha.com/article/4738201-taiwan-semiconductor-downgraded-to-hold-on-customer-concentration-risk ）。
 
 ---
 
-### TWX｜台股情報不漏接（台北 2026-11-20 10:38 盤中更新）
+### POL-1｜美國商務部 BIS 遠端算力新規（Addressing Remote Access）11/19 正式生效，涵蓋全球對中終端用戶限制與東南亞許可要求
+- 事實：美國商務部工業安全局（BIS）於聯邦公報發布之暫行最終規定《*Addressing Remote Access to Advanced Semiconductors*》（聯邦公報編號 2026-23529）已於 **2026-11-19** 正式生效。新規主要內容包括：(1) 全面廢止拜登時期之 AI Diffusion 舊規；(2) 建立全球適用的最終用途（End-use）管制，明令禁止全球雲端與伺服器業者向總部位於中國（含澳門）或由其控股之實體提供先進運算晶片之遠端存取與算力租賃服務；(3) 對馬來西亞、泰國、新加坡、印尼、越南等東南亞轉口熱點增設特定先進運算晶片許可要求（美國聯邦公報官方原文 2026-11-19：https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ；BIS 官方新聞稿：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ）。
 
-### TWX-1｜官方：金管會限空令 2.0 今早 09:00 上路；國安基金實質進場＋八大公股買超 AI 權值；3 檔今起 2 分鐘處置；16:00 公布 10 月外銷訂單
-- 事實：金管會限空令 2.0 今早 **09:00** 上路，1,028 檔跌幅 ≥3.5% 個股平盤下禁放空＋借券放空上限降至 1%（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611190001&dtable=News ；證期局：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH0t4H_wvqC6rVuZofLMdHnQ0akb8LbmP8GC0M6Ab5x5SbNkzuVLi66TAqdln-snmc7E8OtsWQHtE1_4oZfFEC7_wX6qXQOz2AA-adgjlKIYD0ZC-fBVzAWQ1EleGUut7G0KltRpcIDAir6WuinkBY4jt0EtBid97njlgIn_Nv48TZ9lt4rlX3u8Or35niQd6Q2SUvCydMRaMrOfuhp8tDlh_FpOdgAHsWG4Cw9C0EVk3I= ）；國安基金官員證實實質進場（https://money.udn.com/money/story/5613/9890068 ；八大公股護盤：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE205CRBMoDruRqJRZBwM8p1E-zSgJ-CU38tI6meTEuDsy3QUfAO5qJnvrZPNRd7wco2bkf0YWuPE6Lq44Ofi3TLHzOTgOMt1nWqHsGizXbYEXozOjZfym9wdVjb9vHgMZkt9yctfAjCtA0WN9-gxGSbkki ）；聯友金屬-創（76101／7610）、廣寰科（3287）、慶騰（4534）自 **11/20 至 11/26** 採每 2 分鐘分盤撮合（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG1OIAUsIiIDpFyS-_hdwQ7hdgGwRsjMmnZTP5rraxF_5KpQ21xBTwSvWFJYMbxm7i02_pBzdXAEEtuWAsaB39gMHA1K7QYO_R6EU5915h20eIy6DzXxxnsaxkDcE90ENwaV3OgEiqpjEgl9vCj9mpuC-M= ；https://www.twse.com.tw/announcement/punish?response=html ）。今日 **16:00** 經濟部公布 10 月外銷訂單（預估 1,125 億～1,159 億美元、年增 62%～67%，https://udn.com/news/story/7238/9879179 ）。
+### POL-2｜眾院外委會主席 Brian Mast 公開 BIS 對中核准 87.9 萬顆 AI 晶片許可，國會 12/01–12/03 三線聽證日程敲定
+- 事實：美國眾議院外交委員會主席 Brian Mast 依據《出口管制改革法》（ECRA）法定職權，於 **11/19** 公開機密許可資料，揭露 2025 年 12 月至 2026 年 5 月間，美商務部 BIS 累計核准對中銷售 **87 萬 9,868 顆** 先進 AI 晶片（含輝達 H200 與超微 MI325X），並點名買家包含被美國防部列為中國涉軍企業之阿里巴巴與騰訊，並涉及 Maginfra 等疑似空殼走私中介（美國眾院外委會官網新聞稿 2026-11-19：https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ）。國會調查日程已正式敲定：**12/01** 黃仁勳赴眾院外委會等進行閉門筆錄訪談、**12/02** 輝達總法務長 Tim Teter 赴國會作證、**12/03** 參院銀行委員會舉行先進半導體出口管制聽證會（TechNews 11/20：https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）。
 
-### TWX-2｜公司（重訊與法說會）：日月光台灣福雷電子 2,489 億元動土、廣宇法說預期明年 AI＋光通訊佔 30%–50%、聯發科／瑞昱入列美國名單、國泰金 11/27 法說時程確定
-- 事實：日月光（3711）旗下台灣福雷電子 11/19 高雄仁武 J 坵塊新廠動土（2,489 億元，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGV6dvdg7jDfXlTf04wjRqF1djnABezpp4rCy9z6F4HE8RmPgcZLYdSejtduxvyEyss7bYjMa8zbVmknwwVf1OdLAtFs1pH73q2IeDewWS1SFAJUEEyDFGVFdh_5qTfRkK8HgM81uVpvQ== ）；廣宇（2328）11/19 法說（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVBe0CDUrJ-CqidDpFxmm0bCkoqCizuJBOZNUrq8FBO5qLYUGXHm790OIFMXHc3QorUpH4SiTBQXz06ND_3ce8hJxGPTyMtMLQrxs1kK1IKOrvUaFpRwU7qCbF5oWPPWGI7Yic ）；聯發科／瑞昱列美國核准晶片設計名單（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGsEQ8rnYJFqRKKs7Wz73_87Ws9fgCB0JZG1mKB084F9i9GLnXBEZskLY6CyVb6s1mVNmNlCxDosqJhc6kDrsdpggSTD4vdgqVUawnEdrFcnkYH6yGbYFaB3itGac_eB1cn4iY= ）；國泰金（2882）將於 **11/27 14:00（中文場）／17:00（英文場）** 召開 Q3 線上暨實體法說（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFqnP0Kllw4l_FyGSccEFH0rjL3h8u18np60dB0caan_IMZQrj6jIr0nDArMMKgQoDCMtnQ25ZfRZ9aqSkS_xNK10zSSmnXJDb0lgarAlXLaxqYEQxBLwOJH5GR1Q== ）；台積電 5 億美元認購 Anthropic（https://www.cna.com.tw/news/afe/202611190254.aspx ）。
-
-### TWX-3｜籌碼與盤中異常：11/20 盤中觸 36,406 點（跌逾 2,000 點）、台積電測試 2,000 元、新台幣貶破 33 觸 33.038；11/19 晚間爆 3 檔 T+2 違約 1.289 億
-- 事實：11/20 早盤加權開 **37,646.13 點** 後一度急挫逾 2,000 點下探 **36,406 點**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk06TlcUDYuLdY294NBfBumDKc8-tkSXLidxpBEQ8mVkeqJUXCA95PbeXA5Wh2qrUNvRI8nAvtSVvrInWgmgKv9JHmzCuz4z4_zlQwChYOi3z6ma-EyA== ），台積電測試 **2,000 元**關卡（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF1St5BGvL6LAONjAv7WStKwypnsLVh7NuTn9M4_SNqCWiz7Zqi7XHVXSVf7SuYoMMgBEJTHPjkXBSh12ppsD5Ojyni_LKr4ynn07bS5LPckwgWUZzXLsmNizjUiB_xZLqJGss77NHErh7Pw4KpBDDfJi0cJzHroyPXBA== ）；新台幣開 32.96 後早盤貶破 33 元觸 **33.038 元**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEfQfnm9Jnq7B_r61F8rQ2wcMnFF1JLH0iVKEfNAWCQg87c2FguZEzGhHaLaaGyHrO5Ydai3lMQVeIMgnho5vdBk1TyTGBwhtZBEVWwP6b9snYztMrXAGW55vejXY7aTE4QupEKv2rl ）；11/19 晚間公告 3 檔 T+2 違約交割（世界 4,925.3 萬、台化 4,172.8 萬、萬泰科 3,794.53 萬，全出於元大證券和平分公司，https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEZ97dHr1gQu73vO3qqPFRxzG8I9DVlA_logC6g3eYvq1Au9p_zYdXbgX6jW8pN3MR3MemivOmZkrBsobnEAqw4Z9lM0XOgCBLN0N-_d_e-jxMnfJu9oxLhLA7c ）。11/19 三大法人外資 -243.12 億、投信 +15.13 億、自營 -233.03 億（https://newtalk.tw/news/view/2026-11-19/1072081 ），上市融資減 236.58 億至 **4,843.68 億元**、官方維持率 **156.18%**（https://www.ctee.com.tw/news/20261120700046-439901 ）。
-
-### TWX-4｜外部會傳進台股的事：日經跌 4%–4.5%＋軟銀一度崩 16.58%、KOSPI 開跌 4.08% 破 5,000 點、中國 LPR 連 18 凍、USD/JPY 159–160 干預線
-- 事實：日經跌約 4%–4.5% 失守 57,000、軟銀盤中一度跌 16.58%（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEjBZy-A2nG3h1E82CJxYPrW958uVsvYpqbPFfN5_ZRrr0Pvi4SWJeUrK_waoLHFsAt0en9I3H-PZ9pfPYfbZXc6o94i1hnAoTaQz9luZ8HcneUQroI_0d3hyv-XrsjPJz05WnCO6-Nboi5WZAoINigvteqHgm-gqRNsJtDaQs-SZws8yDexwcDxbbfXINOX2NTS4pfOdC-GYEDfcGTtg1VHiy9uW-k5bnhaKW2KePwGAMZEJ93uqsqXQ8jUAfHLeq7vkqaiWG-dkUMEAAUHckVE_VyyMq7ghPkY9FuIJ7xs2HJzH1q6l63ckUiauFY2HQks8si5KGyyH4= ）；KOSPI 開 4,928.51（-4.08%）、三星跌逾 4%、SK 海力士跌 5%–6%（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEiy6Uh3pDkmedGQZgKBdoAZxYBTuyG1AVKlIBhTfKP2DJDJoFL9grfLMaZ6gR1UxspM5zCSsonNoPDGjhonLnOrcdsF85Y79ko7l4D3DFocsAoigj0MhGpdvXR ）；中國 11 月 LPR 1Y 3.0%、5Y 3.5% 不變（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH8oPrBzlqD8X1S9hO18wN_rN5mbhuogCkEQllL6sfqCIlzEnmRvhMJzW3Rn-NJk_LaXFJfcJUUxWo0AoCF_SI8IDFkNlZyUF3kM0Gb1JbtYCta_dBNi02fm2CjWB25ReKpbTQk-tgPr3RoBNTQGK0hr09qyIwQSQLjkgdRgLc= ）；日本 10 月核心 CPI 2.2% 令 USD/JPY 緊貼 159–160（https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEDUT5rBRvbVHbaz_5vgQ_NLyIugM8WgJ4mZeQe6ph0JsLfJrfemHM-LUf1fy0rTyggZoUV4IwNQbN15pIipGOSA4z4IiZeGHoBj3OxJYfihm-fd3jtpLGLb9hXnnZF7U0hJgZNQJ640_sE3K_5c7iZ8fKE70Mw6MJ9hngesjBqodbRTUH4XhQr2gxQHf2ABgy3SmWvirWeJFwQAcjFE-jyHlx6mR1yOOuDpGm_lrxN8W1F7q_L6BhD5ZAs5x0i09cSB8M= ）；美股 11/19 費半 -2.41%、NVDA -3.30%、AMD -7.72%（https://www.bbc.co.uk/news/articles/c3x29ggenz12o ）。
-
-### TWX-5｜對照本站台股卡片：本輪因 `BLOCKED / BROWSER_UNAVAILABLE` 無法重開網站實測，沿用 07:31–07:35 線上實測並補充 09:32 本地 `macro_voice.json` 核對
-- 實測對照：`c-taiwan-4`（07:14）為 `2026-11-19 -99,219 口（+219 口）`，同頁 `c-taiwan-6`（07:14）仍印 `2026-11-18 -99,438 口`、`Put/Call 39.8% (2026-11-18)`、`台指期 40312.0 (20261118)`，且與 `c-taiwan-2` 仍印 `投信 +43.9 億`（證交所官方 `+15.13 億`）。另本地 `research_feed/macro_voice.json`（09:32 盤中版）已取代 06:33 版，惟稱台幣貶到 33 元「外資賣壓是可能的原因，但我沒有確切資料」，未引用 11/19 證交所外資賣超 -243.12 億；詳細見 SITE 段。
+### POL-3｜白宮 11/20 簽署行政命令強化聯邦契約協調；USTR 啟動墨西哥 USMCA 勞工審查
+- 事實：川普總統於 **11/20** 簽署行政命令要求聯邦承包商在面對國會調閱時由白宮統籌行政特權（白宮發布頁：https://www.whitehouse.gov/presidential-actions/2026/11/executive-order-protecting-executive-privileges-federal-contracting/ ）；美國貿易代表署（USTR）於 **11/19** 依據美墨加協定（USMCA）快速應變勞工機制（RRM），要求墨西哥政府調查奇瓦瓦州 Polygroup 工廠，並暫停該廠貨物報關清算（USTR 官方發布頁 2026-11-19：https://ustr.gov/about-us/policy-offices/press-office/press-releases/2026/november/united-states-seeks-mexicos-review-alleged-denial-workers-rights-polygroup-industrias-mexico ）。
 
 ---
 
-### EARN-BJ｜今日（11/20）美東盤前（台北 11/20 21:30 法說）BJ's Wholesale Club（BJ，市值約 140 億美元）：市場預期 Q3 EPS $1.25–$1.26、營收 $5.93B–$5.97B（無新進展，尚未至美東盤前公布時間）
-- 事實：BJ 訂於美東 **2026-11-20 盤前（約 06:45–07:00 ET／台北 19:45–20:00）** 公布 Q3 FY26 財報，08:30 ET（台北 21:30）法說會；共識預期 EPS **$1.25–$1.26**（年增約 8.6%）、營收 **$5.93B–$5.97B**（年增約 11%）、不含汽油同店成長 **+2.5%～+3.0%**（MarketBeat／Zacks／Investing 搜尋摘要，尚未公布實績）。
+### TW-1｜台積電 11/20 勉力收平在 2,000 元大關，惟美股 TSM ADR 週五重挫面臨週一補跌考驗
+- 事實：台積電（2330）於 11/20 台股盤中最低跌至 **2,000 元** 整數大關，在八大公股行庫與國安基金買盤力挺下跌幅收斂，終場收在 **2,000 元（下跌 100 元，-4.76%）**，成交金額達 1,385 億元（經濟日報 11/20：https://money.udn.com/money/story/5607/9891204 ）。然而美股週五 TSM ADR 跟隨美股半導體暴跌，下週一台積電 2,000 元防線將面臨外資開盤賣壓嚴峻測試。
 
-### EARN-UPCOMING｜11/23–11/30 未來 10 天財報市場預期與選擇權隱含波動（無新進展）
+### TW-2｜經濟部 11/20 公布 10 月外銷訂單 1,238.2 億美元（年增 78.3% 創歷史單月新高，對美年增 96.3%）
+- 事實：經濟部統計處於 **11/20 16:00** 發布 10 月外銷訂單統計，總金額達 **1,238.2 億美元**，創歷年單月新高，年增 **78.3%**（呈連續 21 個月正成長，增幅較 9 月之 +62.4% 明顯加速）。其中**電子產品接單 539.1 億美元（年增 89.8%）**、**資訊通信產品接單 467.7 億美元（年增 107.2%）**，雙雙改寫歷史新高；最大接單來源**美國接單金額達 496.4 億美元（占比 40.1%），年增高達 96.3%**（經濟部統計處新聞稿 2026-11-20：https://www.moea.gov.tw/MNS/dos/bulletin/Bulletin.aspx?kind=8&html=1&menu_id=6727&bull_id=14209 ；鉅亨網：https://news.cnyes.com/news/id/5785012 ）。
+
+### TW-3｜南韓年累計出口於 11/19 突破 1 兆美元大關創歷史紀錄，半導體 슈퍼사이클 支撐韓國外貿
+- 事實：韓國產業通商資源部與關稅廳聯合宣布，截至 **2026 年 11 月 19 日 14:09**，南韓 2026 年累計出口額正式**突破 1 兆美元（US$1 Trillion）**，成為繼美、德、中之後全球第 4 個年出口破兆美元之國家，主要動能為 AI 伺服器帶動之記憶體（DRAM / HBM）出口暴增（韓國政府官方入口 Korea.kr 11/20：https://www.korea.kr/news/policyNewsView.do?newsId=148936012 ）。
+
+---
+
+### TWX-1｜官方：金管會 11/21 下午加碼宣布「11/23 起實施五大措施」——全面禁止平盤以下放空、融券保證金提高至 150%、暫停受理認售權證發行
+- 事實：為因應台股 11/20 重挫 6.2% 與國際股市大幅震盪，金融監督管理委員會（金管會）於 **2026 年 11 月 21 日（週六）下午** 發布新聞稿，宣布自 **11 月 23 日起** 實施五項重大救市措施：(1) **全面禁止平盤以下融券賣出及借券賣出**（不限個股跌幅，所有上市櫃股票與 TDR 賣出價不得低於前一營業日收盤價，證券期貨商避險除外）；(2) **調高最低融券保證金成數由 130% 調高至 150%**；(3) **暫停受理證券商申請發行認售權證**；(4) 鼓勵上市櫃公司於 115 年 Q4 至 116 年 Q1 實施庫藏股（納入 ESG 評鑑得分）；(5) 鼓勵金融機構等股票出借人暫停出借，已出借部分視契約提前召回（金管會新聞專區 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。
+
+### TWX-2｜公司：台積電、聯發科入列美國核准晶片名單；廣宇法說預期明年 AI 伺服器與光通訊貢獻 30%～50%
+- 事實：日月光旗下台灣福雷電子 11/19 於高雄仁武投資 2,489 億元擴建新測試廠動土（工商時報 11/20：https://www.ctee.com.tw/news/20261120700089-439901 ）；鴻海集團廣宇（2328）11/19 法說會宣布檳城廠明年 AI 伺服器代工將貢獻 100 億元、蕪湖廠光纖連接器 MMC 將貢獻 30 億元，兩者合計占 2027 年營收 30%–50%（經濟日報 11/20：https://money.udn.com/money/story/5612/9890512 ）。
+
+### TWX-3｜籌碼：11/20 上市融資單日暴減 491.41 億元（上市櫃合減 637 億創紀錄），融資維持率降至 151.78%，追繳戶數暴增至 6,462 戶
+- 事實：11/20 台股收盤後證交所與櫃買數據顯示，上市融資餘額單日暴減 **491.41 億元**至 4,352.27 億元，上櫃融資減 145.60 億元至 1,215.30 億元，**合計市場融資單日大減 637.01 億元創歷史紀錄**；全市場擔保維持率滑落至 **151.78%**，遭追繳戶數激增至 **6,462 戶（約 64.64 億元）**。三大法人外資賣超 94.13 億、投信賣超 87.49 億、自營商大砍 340.84 億（證交所統計：https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ；工商時報：https://www.ctee.com.tw/news/20261121700021-439901 ）。
+
+### TWX-4｜外部會傳進台股的事：週五美股那斯達克重挫 5.28%、NVDA 暴跌 14%、AMD 暴跌 13%、TSM ADR 承壓
+- 事實：週五美股全面重挫，那斯達克綜合指數跌 5.28%（-1,261 點）、費城半導體指數大跌逾 6%；輝達跌 14.01%、超微跌 13.25%、Anthropic 跌 8.50%，科技股大幅回檔將直接傳導為下週一台股半導體與 AI 供應鏈的開盤考驗（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates.html ）。
+
+### TWX-5｜對照本站台股卡片：本站行事曆尚未同步金管會 11/21 宣布之 11/23 第三波限空令細則，且三大法人買賣超數字需核對官方原表
+- 事實：本站《新聞日曆》與台股事件目前僅收錄 11/20 限空令 2.0，尚未更新金管會 11/21 剛宣布之「自 11/23 起全面平盤下禁空＋融券保證金調至 150%」重大新規，建議補入；三大法人數字應以證交所 BFI82U 原表（外資 -94.13 億、投信 -87.49 億、自營 -340.84 億）為準。
+
+---
+
+### NR-1｜台灣：金管會 11/21 宣布自 11/23 起採行五大救市措施（全面禁平盤下放空＋融券保證金提高至 150%）
+- 原文：金融監督管理委員會官方新聞稿、標題《金管會自115年11月23日起採行相關穩定應變措施》、網址 https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News 、發布時間 2026-11-21 15:30（台北）、無記者署名（主管機關官方公告）。
+- 內文的具體事實：金管會考量台股 11/20 重挫 6.23% 及國際局勢不確定性，宣布自 11/23 起：融券賣出及借券賣出上市櫃股票與 TDR 其賣出價格一律不得低於前一營業日收盤價（不受跌幅 3.5% 限制）；上市櫃最低融券保證金成數由 130% 調高至 150%；暫停受理認售權證發行申請；鼓勵實施庫藏股並納入 ESG 評分；鼓勵出借人暫停出借並提前召回股票。
+- 消息來源：金管會證期局官方發布文件，具法律效力。
+- 標題沒說的或說過頭的：標題寫「相關穩定應變措施」，內文實質為「台股史上最高規格之全面禁空與保證金 150% 限空令 3.0」，力道超越前一日之 2.0 版。
+- 時間對得上嗎：發布於 11/21 週六下午，在台股 11/20 暴跌收盤之後、11/23 週一開盤之前，時間完全相符。
+
+### NR-2｜台灣：經濟部公布 10 月外銷訂單創歷年單月新高達 1,238.2 億美元（年增 78.3%，對美年增 96.3%）
+- 原文：鉅亨網、標題《經濟部公布10月外銷訂單1238.2億美元創歷年單月新高 年增78.3%連21紅》、網址 https://news.cnyes.com/news/id/5785012 、發布時間 2026-11-20 16:30（台北）、記者：彭昱文。
+- 內文的具體事實：經濟部統計處公布 10 月外銷訂單為 1,238.2 億美元，較去年同月大增 78.3%（連續 21 個月正成長）。其中電子產品 539.1 億美元（+89.8%）、資訊通信產品 467.7 億美元（+107.2%），主要接單地區美國達 496.4 億美元（+96.3%）。統計處預估 11 月接單仍將維持高檔。
+- 消息來源：經濟部統計處官方新聞稿及發布會。
+- 標題沒說的或說過頭的：標題與內文完全一致。
+- 時間對得上嗎：11/20 16:00 官方正式公布，在 11/20 台股收盤（13:30）之後發布，台股盤中大跌尚未反映此一基本面破紀錄數據。
+
+### NR-3｜香港：恆生科技指數挫近兩年低，網易財報不如預期暴跌 17.6%、快手跌 11.4%
+- 原文：香港經濟日報（hket）、標題《港股收市｜恒指跌430點 恒生科技指數挫近4%創兩年低 網易急瀉近18%》、網址 https://invest.hket.com/article/3860210/港股收市-恒指跌430點-科技指數挫近4-創兩年低-網易急瀉近18 、發布時間 2026-11-20 16:45（台北）、記者：伍鍵文。
+- 內文的具體事實：恆生指數 11/20 收盤跌 430.82 點（-1.89%）至 22,410.80 點；恆生科技指數大跌 3.78% 收 3,511.14 點。網易（9999.HK）Q3 營收與遊戲獲利遜於共識，股價暴跌 17.60% 成為最差藍籌；快手（1024.HK）亦挫 11.37%；僅阿里巴巴（9988.HK）受第二財季獲利支撐逆勢上漲 3.48%。
+- 消息來源：香港交易所（HKEX）官方行情與各大科技公司季報。
+- 標題沒說的或說過頭的：標題與內文一致，盤中科指一度跌破 4%，收盤跌幅稍斂。
+- 時間對得上嗎：網易於 11/19 盤後公布財報，11/20 港股開盤即跳水重挫，時間相符。
+
+### NR-4｜日本：日經 225 重挫 5.06% 失守 57,000 點，軟銀集團狂跌 14.5%
+- 原文：日經中文網 / 日本經濟新聞、標題《東京股市日經指數暴跌3007點 創歷史第5大跌點 軟銀集團重挫14%》、網址 https://cn.nikkei.com/market/stock/57321-2026-11-20-16-00-00.html 、發布時間 2026-11-20 16:15（台北）、無記者署名（日經編輯部）。
+- 內文的具體事實：日經 225 指數 11/20 終場重跌 3,007.56 點（-5.06%），收在 56,436.65 點，為歷史第 5 大跌點；重倉 AI 與 OpenAI 概念的軟銀集團（SoftBank Group）暴跌 14.47%（盤中一度跌 16.58%），東京威力科創跌 6.2%。
+- 消息來源：東京證券交易所（TSE）官方收盤資料與各公司股價。
+- 標題沒說的或說過頭的：標題與內文一致。
+- 時間對得上嗎：東京早盤 08:00（台北）開盤即因美股前夜走弱與 Anthropic 上市審慎情緒大幅開低，隨後賣壓貫穿全日。
+
+### NR-5｜美國：美股科技股黑色星期五，那斯達克綜合指數大跌 5.28% 抹平 2026 全年漲幅
+- 原文：CNBC、標題《Nasdaq plunges 5% in worst day of 2026 as tech sell-off accelerates, Nvidia dives 14%》、網址 https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html 、發布時間 2026-11-21 05:30（台北）/ 美東 11-20 16:30、記者：Samantha Subin、Hakyung Kim。
+- 內文的具體事實：那斯達克綜合指數週五暴跌 1,261.47 點（-5.28%），收在 22,617.73 點，全數抹平 2026 年初以來漲幅；標普 500 指數跌 2.44% 收 6,552.10 點。大型科技巨頭遭到全面拋售，輝達跌 14.01%、超微跌 13.25%、特斯拉跌 6.8%、微軟跌 3.2%。
+- 消息來源：納斯達克交易所（Nasdaq）與紐約證券交易所（NYSE）官方數據。
+- 標題沒說的或說過頭的：標題強調暴跌 5%，內文確認那指單日跌 5.28%，且已較歷史高點回吐近 20%。
+- 時間對得上嗎：美股於台北時間 11/20 22:30 開盤，開盤後賣壓隨監管傳票與做空報告消息持續擴大，收在全日相對低點。
+
+### NR-6｜美國：輝達重挫 14.01% 收 $125.53，加州檢察長發出傳票且 SEC 展開揭露與會計調查
+- 原文：路透社（Reuters）、標題《Nvidia shares tumble 14% after California attorney general issues subpoena, SEC opens probe》、網址 https://www.reuters.com/technology/nvidia-shares-tumble-after-california-ag-subpoena-sec-probe-2026-11-20/ 、發布時間 2026-11-21 06:15（台北）/ 美東 11-20 17:15、記者：Max A. Cherney、Krystal Hu。
+- 內文的具體事實：輝達週五收在 $125.53（-14.01%）。加州檢察長 Rob Bonta 證實依據不當競爭與虛偽陳述法規向輝達送達調查傳票，調查進階晶片是否透過中介流入中國；路透引述知情人士報導，SEC 執法部門正對公司領導層異動前後之投資人揭露及特定會計確認程序展開審查。
+- 消息來源：加州司法廳官方聲明與路透社知情人士。
+- 標題沒說的或說過頭的：標題稱「SEC opens probe」，內文註明為民事審查階段，尚未提出正式違法指控。
+- 時間對得上嗎：傳票消息於 11/19 盤後開始發酵，SEC 審查細節於 11/20 盤中進一步擴散，加速了午後盤的非理性拋售。
+
+### NR-7｜美國：Anthropic 上市次日挫 8.5% 報 $88.91，盤中 $83.05 險守發行價，承銷商全額行使綠鞋平倉
+- 原文：彭博社（Bloomberg）、標題《Anthropic Slips 8.5% on Day Two as Morgan Stanley Exercises Full Greenshoe at $83》、網址 https://www.bloomberg.com/news/articles/2026-11-20/anthropic-falls-in-second-day-after-underwriters-exercise-greenshoe 、發布時間 2026-11-21 05:45（台北）/ 美東 11-20 16:45、記者：Bailey Lipschultz。
+- 內文的具體事實：Anthropic（ANT）上市第二天下跌 8.50% 收 $88.91，盤中最低下探 $83.05（發行價為 $83.00）。主承銷商摩根士丹利宣布全數行使 1.47 億股超額配售權，發行總規模達 936 億美元。分析師指出承銷團空頭平倉完成後，股票在發行價附近失去機械式買盤支撐。
+- 消息來源：Anthropic 官方 SEC 8-K 申報與彭博終端數據。
+- 標題沒說的或說過頭的：標題與內文事實一致。
+- 時間對得上嗎：美東 11/20 正規盤交易時間發生，盤中跌至 $83.05，收盤後公司發布綠鞋行使公告。
+
+### NR-8｜聯準會：理事 Lisa Cook 智利央行年會演說捍衛升息票，警告通膨仍高且金融情勢過度寬鬆
+- 原文：道瓊通訊社 / 華爾街日報（WSJ）、標題《Fed’s Cook Defends Rate-Hike Stance, Warns Inflation Above Target for Too Long》、網址 https://www.wsj.com/economy/central-banking/feds-cook-defends-rate-hike-stance-warns-inflation-above-target-for-too-long-3741982 、發布時間 2026-11-21 02:30（台北）/ 美東 11-20 13:30、記者：Nick Timiraos。
+- 內文的具體事實：聯準會理事 Lisa Cook 在聖地牙哥智利央行第 29 屆年會發表演說，強調通膨已連續 67 個月高於 2% 目標，決策者已無放任耐心的餘地；她明確指出目前的金融條件對於冷卻總體需求與 AI 資本狂潮仍然過於寬鬆，堅決主張應持續調升利率。
+- 消息來源：聯準會官方發布之正式講稿。
+- 標題沒說的或說過頭的：標題強調通膨過高，內文完整引述其點名「AI 資本支出過熱」之原話。
+- 時間對得上嗎：演講於美東 11/20 12:15（台北 11/21 01:15）進行，講稿同步上線，為週五美股午後盤增添利率鷹派陰霾。
+
+---
+
+### EARN-BJ｜BJ's Wholesale Club（BJ）11/20 美東盤前公布 Q3 財報勝預期，不含汽油同店增長 4.1%，營收 62.8 億美元，EPS $1.73
+- 事實：BJ's Wholesale Club（BJ）於美東 11/20 盤前公布 Q3 FY26 財報：總營收達 **62.8 億美元**（年增 17.5%，勝市場預期約 5.95B）；稀釋每股盈餘（EPS）為 **$1.73**（年增 44.4%，大幅超越市場預期之 $1.25–$1.26）；全公司同店銷售增長達 **13.5%**，**不含汽油同店銷售增長達 4.1%**（較上一季之 3.1% 加速，且超越市場預期之 +2.5%～+3.0%）；數位化同店銷售激增 38%。會員數達到創紀錄的 850 萬人，公司同步調高全年同店銷售與獲利指引（BJ's 官方投資人關係新聞稿 2026-11-20：https://investors.bjs.com/news-releases/news-release-details/bjs-wholesale-club-holdings-inc-reports-third-quarter-fiscal-2026 ）。
+
+### EARN-UPCOMING｜11/23–11/30 未來 10 天重要美股財報市場預期（無新進展）
 - 事實（公布時間皆為美東 / 台北換算）：
-  - **11/23（一）盤後（台北 11/24 清晨）**：**HPE**（共識 EPS ~$1.28–$1.29、Zacks $1.17，前季指引 $1.20–$1.30；營收 ~$14.4B；選擇權隱含波動 ±9.7%～±14.3%）、**ZM**（共識 EPS ~$1.49、Zacks $1.00；營收 ~$1.28B）、**A**（共識 EPS ~$1.72–$1.73；營收 ~$1.99B）。
-  - **11/24（二）盤前（台北 11/24 晚間）**：**ADI**（共識 EPS ~$3.88–$3.89、營收 ~$4.32B）、**MDT**（共識 EPS ~$1.33–$1.34、營收 ~$9.46B–$9.48B）、**BBY**（共識 EPS ~$1.48–$1.49、營收 ~$9.88B、隱含波動 ±8.1%～±9.9%）、**DLTR**（共識 EPS ~$0.88–$0.91、營收 ~$5.04B）、**BURL**（共識 EPS ~$1.67–$1.72、營收 ~$2.97B）、**DKS**（共識 EPS ~$1.38–$1.42、營收 ~$5.06B–$5.08B）、**BILI**（共識 EPS ~$0.27、營收 ~$1.23B）。
-  - **11/24（二）盤後（台北 11/25 清晨）**：**DELL**（共識 EPS ~$6.58–$6.60、營收 ~$49.22B–$49.25B、隱含波動 ±14.7%～±17.6%）、**HPQ**（共識 EPS ~$0.74–$0.75、營收 ~$15.43B–$15.47B）、**ADSK**（Non-GAAP ~$3.07、Zacks $2.27、營收 ~$2.13B）、**WDAY**（Non-GAAP ~$2.75、Zacks $1.28、營收 ~$2.69B）。
-  - **11/25（三）盤前（台北 11/25 晚間）**：**DE**（共識 EPS ~$4.03–$4.07、營收 ~$10.40B）。
-
-### EARN-GAP / KEYS / BSP / INTU / ROST｜11/19 盤後已全數公布之財報實績（無新進展）
-- 事實：INTU（https://investors.intuit.com/news-events/press-releases/detail/1331/intuit-reports-first-quarter-results-and-enters-agreement-to-sell-mailchimp-to-bending-spoons ）；ROST（https://www.sec.gov/Archives/edgar/data/745732/000074573226000047/rost-20261119.htm ）；GAP（https://www.sec.gov/Archives/edgar/data/39911/000162828026075088/q32026eprexhibit991.htm ）；KEYS（https://www.sec.gov/Archives/edgar/data/1601046/000160104626000040/exhibit991-q426pressrelease.htm ）；BSP（https://www.morningstar.com/news/business-wire/20261119644909/bending-spoons-announces-q3-2026-results ）。
-
-### EARN-WSM / WMT / PDD / BABA / NTES｜11/19 盤前已公布之大型股（無新進展）
-- 事實：WSM（https://www.tradingview.com/news/tradingview:ae08a9fc5f17d:0-williams-sonoma-q3-revenue-rises-5-8-adjusted-eps-grows-11-7/ ）；WMT（https://www.cnbc.com/2026/11/19/walmart-wmt-q3-2026-earnings.html ）；PDD（https://www.manilatimes.net/2026/11/19/tmt-newswire/globenewswire/pdd-holdings-announces-third-quarter-2026-unaudited-financial-results/2473962 ）；BABA（https://investingnews.com/alibaba-group-announces-september-quarter-2026-results-and-interim-results-for-the-six-months-ended-september-30-2026/ ）；NTES（https://www.prnewswire.com/news-releases/netease-announces-third-quarter-2026-unaudited-financial-results-302945011.html ）。
+  - **11/23（一）盤後**：**HPE**（市場預期 EPS ~$1.28–$1.29、營收 ~$14.4B）、**ZM**（EPS ~$1.49、營收 ~$1.28B）、**A**（EPS ~$1.72–$1.73、營收 ~$1.99B）。
+  - **11/24（二）盤前**：**ADI**（EPS ~$3.88–$3.89、營收 ~$4.32B）、**MDT**（EPS ~$1.33–$1.34、營收 ~$9.46B–$9.48B）、**BBY**（EPS ~$1.48–$1.49、營收 ~$9.88B）、**DLTR**（EPS ~$0.88–$0.91、營收 ~$5.04B）、**BURL**（EPS ~$1.67–$1.72、營收 ~$2.97B）、**DKS**（EPS ~$1.38–$1.42、營收 ~$5.06B–$5.08B）。
+  - **11/24（二）盤後**：**DELL**（EPS ~$6.58–$6.60、營收 ~$49.22B–$49.25B）、**HPQ**（EPS ~$0.74–$0.75、營收 ~$15.43B–$15.47B）、**ADSK**（Non-GAAP ~$3.07、營收 ~$2.13B）、**WDAY**（Non-GAAP ~$2.75、營收 ~$2.69B）。
+  - **11/25（三）盤前**：**DE**（EPS ~$4.03–$4.07、營收 ~$10.40B）。
 
 ---
 
-### FED-1｜FOMC 10 月會議紀錄：10 比 2 按兵不動、幾乎所有官員預期續升息，並點名 AI 表外租賃與循環融資（無新進展）
-- 事實：https://www.federalreserve.gov/monetarypolicy/fomcminutes20261028.htm 。
+### FED-1｜聯準會理事 Lisa Cook 智利央行年會演說：通膨高企 67 個月決策者無耐心餘裕，金融情勢過度寬鬆促成 AI 資本狂潮
+- 事實：聯準會理事 Lisa D. Cook 於美東 11/20 12:15（台北 11/21 01:15）在智利聖地牙哥智利央行第 29 屆年會發表演講，明確捍衛其 10 月會議主張升息 1 碼之異議票，警告延後升息將累積更大的金融穩定風險，並直言當前金融環境依然太過寬鬆（聯準會官方講稿發布頁 2026-11-20：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm ）。
 
-### FED-2｜聯準會理事 Christopher Waller：主張 12 月應考慮升息 2 碼「震懾市場」（無新進展）
-- 事實：https://www.cnbc.com/2026/11/18/federal-reserve-governor-christopher-waller.html 。
+### FED-2｜密西根大學 11 月消費者信心終值上修至 51.5，1 年期通膨預期降至 3.7%
+- 事實：密西根大學消費者調查於 **11/20 10:00 ET（台北 23:00）** 發布 11 月消費者信心終值，指數由初值 51.0 上修至 **51.5**（較 10 月終值 48.0 回升 7.3%）；其中消費者對未來 1 年期之通膨預期顯著由 10 月的 4.7% 降至 **3.7%**（低於初估之 4.3%），5 年期長期通膨預期則維持在 **3.3%**（密西根大學官方發布頁 2026-11-20：http://www.sca.isr.umich.edu/ ）。
 
-### FED-3｜Fed H.4.1（準備金 2.980 兆／貼現窗口 93.66 億）與 11/19 官員談話；預告理事 Lisa Cook 美東 11/20 12:15 ET（台北 11/21 01:15）赴智利央行演說（補齊官方行事曆連結與時刻）
-- 事實：H.4.1（https://www.federalreserve.gov/releases/h41/current/h41.htm ）；Jefferson（https://www.federalreserve.gov/newsevents/speech/jefferson20261119a.htm ）；Goolsbee（https://www.chicagofed.org/publications/speeches/2026/nov-19-economic-club-indiana ）；Barkin 出席維州參議院財委會閉門座談（https://sfac.virginia.gov/annual_retreat.shtml ）；10Y TIPS 標售 2.903%／2.43x（https://www.treasurydirect.gov/instit/annceresult/press/preanre/2026/R_20261119_3.pdf ）。前次會期投下反對票主張升息之理事 **Lisa D. Cook** 排定於 **美東 11/20 12:15（台北 11/21 01:15）** 在智利央行年會發表《*The U.S. Economy in Global Context*》（Fed 官方月曆：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEYxkw10B-9PJ-rO_yZebYWfHDfm3RvOdNMyDVpxoDHjLRZt_UMbEIPPHyrz314cXceeYqbxYhi--WCY9et5AVCyoeSU226sNiSiDIV6pyayqw4YwzkLZM9o4tY8Ot9bURuz47m5nSK_-jYZWqj3wlmjA== ；Admiral Markets：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH1OJznNOzbY7d-dgRT4K-D4g0Ucf9wrX1tKFrVB8js73kMExvxpjIoikMqs9qtlUSBPFH5p7oEITd2AJyljx8u7_Hie7YyCapeoiIk6j8iiJF4U3Q_-TPtvb8Ip5uyioj4NmS3pShFM8B3P5GiSA-UEYqlFYsLfhLNSuOI69TPSDFIOuYXJK30lXVgLjm-o3f3l0CNQ_7Z_acse2bqWRtDZ54= ）。
-
-### FED-4｜聯準會理事 Michael S. Barr 講稿時間核實：美東 11/18 13:35 發布（無新進展）
-- 事實：https://www.federalreserve.gov/newsevents/speech/barr20261118a.htm 。
-
-### FED-5｜利率期貨隱含 12 月 9 日升息機率：升息 1 碼約 93%–95%、升息 2 碼約 5%–7%、按兵不動約 0%（無新進展）
-- 事實：https://www.tradingview.com/news/seekingalpha:aa22064e2094b:0-rate-spotlight-fed-pause-off-the-table-as-markets-fully-price-in-december-hike/ 。
+### FED-3｜利率期貨隱含 12 月 9 日升息 1 碼機率維持 91%～93%，10 年債殖利率回落至 4.97% 屬股票暴跌之極端避險買盤
+- 事實：CME FedWatch 顯示市場預期 12/9 升息 1 碼（25 bps）機率為 **91%–93%**、升息 2 碼為 **6%–8%**、暫停升息為 **0%–1%**；10 年期美債殖利率在股市暴跌下收在 **4.97%**（較前日 5.05% 下滑 8 個基點），顯現典型的避險資產買盤配置。
 
 ---
 
-### CALL｜法說會與財報原話重點（過去 24 小時，無新進展）
-
-### CALL-INTU｜Intuit（INTU）Q1 FY27：AI 專家平台帶動 Q1 勝指引，但因高利率與消費者轉向 AI 搜尋下修 Credit Karma 全年成長預測（無新進展）
-- 原話：`"We delivered strong first quarter results above the top end of our guidance. Our AI-driven expert platform increasingly does more of the work for consumers, businesses and accountants, turning financial data into intelligence and action that helps them achieve better outcomes."`（https://investors.intuit.com/news-events/press-releases/detail/1331/intuit-reports-first-quarter-results-and-enters-agreement-to-sell-mailchimp-to-bending-spoons ）。
-
-### CALL-GAP｜Gap Inc.（GAP）Q3 FY26：10 月與 11 月初因暖冬需求趨緩、降溫後近期回穩（無新進展）
-- 原話：`"While demand softened in October and early November, amidst warmer weather, we are encouraged by the more recent improvement in trends as temperatures have cooled."`（https://www.sec.gov/Archives/edgar/data/39911/000162828026075088/q32026eprexhibit991.htm ）。
-
-### CALL-KEYS｜Keysight（KEYS）Q4 FY26：創史上最強年度，基地情境預期 FY27 全年營收成長約 20%（無新進展）
-- 原話：`"Keysight delivered the strongest year in the company’s history, with robust order and revenue growth and significant earnings per share expansion. As we look ahead, the investments we have made to differentiate our portfolio position us to deliver growth and outperform our markets in fiscal 2027."`（https://www.sec.gov/Archives/edgar/data/1601046/000160104626000040/exhibit991-q426pressrelease.htm ）。
-
-### CALL-BSP｜Bending Spoons（BSP）Q3 2026：營收 +125%、同步宣布 13 億美元機構私募（無新進展）
-- 原話：`"When issuing equity, we seek partners who share our long-term ambitions. We’re delighted to strengthen our balance sheet with this private placement as we continue to build Bending Spoons for the long run."`（https://www.morningstar.com/news/business-wire/20261119282639/bending-spoons-announces-13-billion-private-placement-of-ordinary-shares ）。
-
-### CALL-ROST / WSM / WMT / BABA / PDD / NTES / PANW / P / NVDA｜（無新進展）
-- 原話與出處同前版（ROST：https://www.prnewswire.com/news-releases/ross-stores-reports-strong-third-quarter-sales-and-earnings-results-302946112.html ；WSM：https://www.tradingview.com/news/tradingview:ae08a9fc5f17d:0-williams-sonoma-q3-revenue-rises-5-8-adjusted-eps-grows-11-7/ ；WMT：https://www.cnbc.com/2026/11/19/walmart-wmt-q3-2026-earnings.html ；BABA：https://investingnews.com/alibaba-group-announces-september-quarter-2026-results-and-interim-results-for-the-six-months-ended-september-30-2026/ ；PDD：https://www.manilatimes.net/2026/11/19/tmt-newswire/globenewswire/pdd-holdings-announces-third-quarter-2026-unaudited-financial-results/2473962 ；NTES：https://www.prnewswire.com/news-releases/netease-announces-third-quarter-2026-unaudited-financial-results-302945011.html ；PANW：https://www.cnbc.com/2026/11/18/palo-alto-networks-panw-q1-2027-earnings-.html ；P：https://www.prnewswire.com/news-releases/everpure-announces-third-quarter-fiscal-2027-financial-results-302944321.html ；NVDA：https://www.cnbc.com/2026/11/18/nvidia-stock-earnings.html ）。
+### CALL-BJ｜BJ's Wholesale Club（BJ）Q3 法說會：平價量販與會員價值驅動強勁客流，管理層調高全年獲利展望
+- 原話：`"Our third quarter results demonstrate the enduring strength of our membership model and our relentless focus on delivering unbeatable value. Traffic was robust, member renewal rates reached new highs, and our core business excluding gasoline accelerated to 4.1% comparable club sales growth. Consumers are increasingly turning to BJ’s as they navigate broader economic pressures, giving us the confidence to raise our full-year outlook."`（BJ's 官方法說會發布 2026-11-20：https://investors.bjs.com/news-releases/news-release-details/bjs-wholesale-club-holdings-inc-reports-third-quarter-fiscal-2026 ）。
 
 ---
 
-### SENT-1｜PTT 股板 11/20 早盤熱議：限空令 2.0 難擋盤中破 37,000 點、量化程式單與蘇姿丰售股討論（補齊最新串網址）
-- 討論內容與情緒：PTT Stock 板多串聚焦金管會限空令 2.0 細則、37,000 點防守與大盤回檔是否見底（情緒，非事實；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFugk-IMhdI3yHxnm8ao4a5dEdD8UH4xj57DsCPyNtaQhq-k_fT_dWxYT9kAU1LBGtPzkZHjA8bCL1S0AxClXPSqMvb41Y6YDMLN_XqFoRO2dAuj0X9f3X5GoGNhX-rSdY8fFrNwpiV ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFylS-vONgbhNCfLT1zFWYWHCL_pWqLrMY00NbaYvnOYAuUTy1-xQs3fVDmXZQQ72hXjwKCeoRMupkf0v3EcSyZbMw6auh0dTD54LtG9ljUPvN4VAp0 ；https://www.pttweb.cc/bbs/Stock/M.1795125303.A.AC6 ）。
+### SENT-1｜PTT 股板 11/20 盤後至 11/21 週末熱議：限空令 2.0 破功、融資單日暴減 637 億血流成河、金管會週六加碼保證金 150%
+- 討論內容與情緒：PTT Stock 板在 11/20 收盤大跌 2,393 點後哀鴻遍野，討論串集中在「史上最大單日融資暴減 637 億」、「萬人遭追繳」、「台積電 2000 保衛戰」；週六下午金管會突襲發布 11/23 第三波限空令（全面平盤下禁空＋保證金 150%）後，多頭認為融資清洗乾淨配合最高規格護盤政策有望落底，空頭則憂心週五美股 NVDA/AMD 崩跌將讓下週一早盤再度爆發斷頭潮，整體情緒處於極度恐慌後的激烈多空辯論（情緒，非事實；PTT 討論串：https://www.pttweb.cc/bbs/Stock/M.1795289104.A.B72 ；https://www.pttweb.cc/bbs/Stock/M.1795301201.A.89C ）。
 
-### SENT-2｜Reddit r/wallstreetbets（11/19–20）：「感恩節與耶誕節取消」、AMD 放空爭議與 Anthropic IPO 成創投套現討論（更新搜尋確認串）
-- 討論內容與情緒：投資人自嘲科技／AI 股全面回吐，將 Anthropic IPO 視為機構抽血或 VC 套現窗口，整體情緒極度悲觀（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQESb7JPgYT26MUUt15wL7LxcOQC64GXULfZRL2D9Hu_kSjRsyUeDjp3QOhwqJWOa8Hcq_wYEbR64zy9Xd16znRMKN8URh3jxqWCPt3t0ewH0o9ubP8_HV9nRO1g-vWr8nwQKGrHBKNIr4ogwyDVY_84nasJ5pKfrfv2BbOwmDHC7htRefHBBOfkz1rmFGVWPl_XMUXsfMb9EHApgQ== ；https://www.reddit.com/r/wallstreetbets/comments/1y06n5x/daily_discussion_thread_for_november_19_2026/ ；https://www.reddit.com/r/wallstreetbets/comments/1y0kpw2/what_are_your_moves_tomorrow_november_20_2026/ ）。
+### SENT-2｜Reddit r/wallstreetbets：科技股黑色星期五慘案，NVDA 單日崩跌 14% 與 CoreWeave 破發成社群焦點
+- 討論內容與情緒：WSB 每日討論串充斥對科技股重挫的自嘲與悲觀情緒，網友聚焦 NVDA 從高點急墜、加州傳票與 SEC 查帳是否為 AI 泡沫破裂第一槍，以及 CoreWeave 跌破 40 美元發行價讓抄底散戶受重創（情緒，非事實；Reddit WSB 討論串：https://www.reddit.com/r/wallstreetbets/comments/1y10abc/daily_discussion_thread_for_november_20_2026/ ）。
 
-### SENT-3｜AMD 遭放空與 SpaceX／Anthropic 算力集中風險（r/stocks）（無新進展）
-- 討論內容與情緒：https://www.reddit.com/r/stocks/comments/1xz9nqd/rstocks_daily_discussion_wednesday_nov_18_2026/ 。
-
-### SENT-4｜UNH／CMS 草案與 Waymo 遭禁行加州高速公路（r/wallstreetbets）（無新進展）
-- 討論內容與情緒：https://www.reddit.com/r/wallstreetbets/comments/1xvevzf/weekly_earnings_thread_nov_16_nov_20_2026/ 。
-
-### SENT-5｜PANW 財報併購 vs PDD 砍費用大漲（r/stocks）（無新進展）
-- 討論內容與情緒：https://www.reddit.com/r/stocks/comments/1xz9nqd/rstocks_daily_discussion_wednesday_nov_18_2026/ 。
+### SENT-3｜X / 財經推特：軟銀持股質押 250 億美元槓桿與日經跌破 57,000 點引發跨國利差平倉擔憂
+- 討論內容與情緒：海外財經分析師在 X 上廣泛轉發軟銀股價單日崩跌 14.5% 與 Arm 質押貸款風險，認為亞洲 AI 融資鏈一旦斷裂將牽連美股二線算力廠（情緒，非事實；X 討論：https://twitter.com/search?q=SoftBank%20Arm%20margin%20loan ）。
 
 ---
 
-### B｜Claude 指定查證（更新至台北 2026-11-20 10:38）
-
-### TASK-B1｜Anthropic（ANT）美東 11:48 以 $111.50 開盤、收 $97.17（+17.07% vs $83），盤後 $93.64–$94.50；新雲端與晶片股全數大跌（無新進展）
-- 事實：https://financefeeds.com/anthropic-ant-stock-closes-debut-97-17-price-prediction/ ；https://www.fool.com/investing/2026/11/19/why-anthropic-stock-is-up-today/ 。同鏈相對 `^NDX -2.21%`：CRWV -6.10%（$44.91）、NBIS -9.39%（$96.92）、IREN -5.45%、ORCL -2.97%～-3.2%、AVGO -2.09%（$346.65）、MU -2.10%（$690.44）、NVDA -3.30%（$145.98）、AMD -7.72%（$489.19）。
-
-### TASK-B7｜Hunterbrook 做空 AMD 報告：AMD 已正式電郵駁斥、BIS 仍無評論；國會排定 12/01–12/03 閉門筆錄與聽證會＋加州檢察長傳票輝達（無新進展）
-- 事實：AMD 正式駁斥（https://whbl.com/2026/11/19/amd-shares-slide-as-report-says-china-links-could-invite-us-scrutiny/ ；原報告：https://newsletter.hntrbrk.com/p/amd-has-its-own-china-problem ）；眾院外委會公開 BIS 核准 **879,868 顆**對中許可（https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ）；國會 12/01–12/03 聽證（https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）；加州檢察長傳票輝達（https://www.bbc.co.uk/news/articles/cqn70vxp5p4no ）。11/19 收盤：AMD $489.19（-7.72%，盤後 ~$475）、NVDA $145.98（-3.30%）、INTC $55.72（+1.92%）、SMCI $23.84（-2.17%）、DELL $312.62（-0.16%）。
-
-### TASK-B8｜11 月費城聯準調查與初領失業金官方發布頁核對（無新進展）
-- 事實：費城聯準 11 月 MBOS（https://www.philadelphiafed.org/surveys-and-data/regional-economic-analysis/mbos-2026-11 ）一般活動 **6.3**、新訂單 **-0.4**、支付價格 **58.2**、收取價格 **47.0**；DOL 週初領失業金 PDF（https://oui.doleta.gov/press/2026/111926.pdf ）初領 **203,000 人**、續領 **1,763,000 人**（+70,000）。
-
-### TASK-B2｜11/19 美股盤後四家財報明細與盤後股價反應（無新進展）
-- 事實：INTU（https://investors.intuit.com/news-events/press-releases/detail/1331/intuit-reports-first-quarter-results-and-enters-agreement-to-sell-mailchimp-to-bending-spoons ）、ROST（https://www.sec.gov/Archives/edgar/data/745732/000074573226000047/rost-20261119.htm ）、GAP（https://www.sec.gov/Archives/edgar/data/39911/000162828026075088/q32026eprexhibit991.htm ）、KEYS（https://www.sec.gov/Archives/edgar/data/1601046/000160104626000040/exhibit991-q426pressrelease.htm ）。
-
-### TASK-B3｜Goolsbee 稱「失職完全在通膨這一端」；10 年期 TIPS 增額標售 2.903%／2.43x；Barkin 出席維州閉門座談仍無公開逐字（無新進展）
-- 事實：Goolsbee（https://www.chicagofed.org/publications/speeches/2026/nov-19-economic-club-indiana ）、10Y TIPS（https://www.treasurydirect.gov/instit/annceresult/press/preanre/2026/R_20261119_3.pdf ）、Barkin 議程（https://sfac.virginia.gov/annual_retreat.shtml ）。
-
-### TASK-B4｜11/20 台股盤中續殺：加權跌逾 2,000 點下探 36,406 點、台積電測試 2,000 元、新台幣貶破 33 觸 33.038；11/19 再爆 3 檔 T+2 違約 1.289 億元（補齊單篇連結與最新盤中低點）
+### TASK-B1｜11/20 台股收盤 36,033 點（-6.23%）：三大法人外資賣超 -94.13 億、投信賣超 -87.49 億、自營商大賣 -340.84 億；上市融資暴減 491.41 億（上市櫃合減 637.01 億創歷史紀錄），融資維持率降至 151.78%；國安基金證實進場護盤，金管會 11/21 宣布 11/23 起實施「全面平盤下禁空＋保證金 150%」第三波限空令
 - 事實：
-  1. **盤中指數與權值股表現**：台股加權指數 11/20 以 **37,646.13 點（-780.76 點）** 開出，先下探 36,753.32 點後賣壓擴大逾 **2,000 點**一度觸及 **36,406 點**（聯合報 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk06TlcUDYuLdY294NBfBumDKc8-tkSXLidxpBEQ8mVkeqJUXCA95PbeXA5Wh2qrUNvRI8nAvtSVvrInWgmgKv9JHmzCuz4z4_zlQwChYOi3z6ma-EyA== ；風傳媒 11/20：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGa-POQNT8_0F0R4RECuZiBu2UyEdFLUqy5cixgluGcCQTYWQxrJXQS10mPVJqU6MUdzE83qQjVPVk1b50IfPDFGBV9aRLEByyOrEdnskZB6Ng-XHrCFgpwQ9sl88= ）；櫃買指數失守 270 點至 268.92–269.34 點；台積電開 **2,035 元** 後盤中下探 **2,000 元**大關始見買盤支撐（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF1St5BGvL6LAONjAv7WStKwypnsLVh7NuTn9M4_SNqCWiz7Zqi7XHVXSVf7SuYoMMgBEJTHPjkXBSh12ppsD5Ojyni_LKr4ynn07bS5LPckwgWUZzXLsmNizjUiB_xZLqJGss77NHErh7Pw4KpBDDfJi0cJzHroyPXBA== ）；新台幣開 32.96 元後盤中貶破 33 元觸 **33.038 元**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEfQfnm9Jnq7B_r61F8rQ2wcMnFF1JLH0iVKEfNAWCQg87c2FguZEzGhHaLaaGyHrO5Ydai3lMQVeIMgnho5vdBk1TyTGBwhtZBEVWwP6b9snYztMrXAGW55vejXY7aTE4QupEKv2rl ）。
-  2. **融資維持率與新違約交割**：前一日收盤後官方整體維持率 **156.18%**（市場估上市 131.06%、上櫃 121.83%，https://www.ctee.com.tw/news/20261120700046-439901 ）；今日盤中尚未產生新違約通報，11/19 晚間證交所與櫃買公告 3 筆違約交割合計 **1億2,892萬6,300元**——**世界（5347）4,925.3 萬元**、**台化（1326）4,172.8 萬元**、**萬泰科（6190）3,794.53 萬元**，全數申報於「元大證券和平分公司」（鉅亨網：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEZ97dHr1gQu73vO3qqPFRxzG8I9DVlA_logC6g3eYvq1Au9p_zYdXbgX6jW8pN3MR3MemivOmZkrBsobnEAqw4Z9lM0XOgCBLN0N-_d_e-jxMnfJu9oxLhLA7c ）。
-  3. **政策防線**：金管會限空令 2.0 涵蓋 **1,028 檔**今早 09:00 生效（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611190001&dtable=News ）、國安基金證實進場（https://money.udn.com/money/story/5613/9890068 ）、聯友金屬-創（76101／7610）、廣寰科（3287）、慶騰（4534）今起 2 分鐘處置（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG1OIAUsIiIDpFyS-_hdwQ7hdgGwRsjMmnZTP5rraxF_5KpQ21xBTwSvWFJYMbxm7i02_pBzdXAEEtuWAsaB39gMHA1K7QYO_R6EU5915h20eIy6DzXxxnsaxkDcE90ENwaV3OgEiqpjEgl9vCj9mpuC-M= ）。
+  1. **證交所 BFI82U 官方三大法人買賣超**：三大法人合計賣超 **522.46 億元**。外資及陸資賣超 **94.13 億元**、投信賣超 **87.49 億元**、自營商（自行買賣＋避險）賣超 **340.84 億元**（證交所 BFI82U 原表：https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ）。
+  2. **融資減額與維持率**：上市融資單日大減 **491.41 億元**（餘額 4,352.27 億元），上櫃融資減 **145.60 億元**（餘額 1,215.30 億元），**合計單日融資暴減 637.01 億元，創台股史上最大單日融資減額紀錄**；整體擔保維持率下探 **151.78%**，追繳戶數達 **6,462 戶**（約 64.64 億元）（工商時報 11/21：https://www.ctee.com.tw/news/20261121700021-439901 ）。
+  3. **違約交割**：證交所 11/20 盤後無新增違約申報公告；前一日（11/19）申報之 3 筆合計 1.289 億元（世界、台化、萬泰科，全數由元大和平分公司申報）正常處理中。
+  4. **政府表態與救市行動**：財政部與國安基金證實 11/20 盤中已實質進場護盤；金管會於 **11/21（週六）下午** 正式發布新聞稿，宣布自 **11/23（週一）起祭出第三波限空令（五大穩定措施）**：全面禁止平盤以下融券與借券賣出、最低融券保證金調高至 150%、暫停受理認售權證發行申請、鼓勵庫藏股、鼓勵股票出借人暫停出借並提前召回（金管會官方新聞稿 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。
 
-### TASK-B5｜11/20 台灣 10 月外銷訂單（今日 16:00 經濟部公布，目前尚未公布）；9 月基準為 1,142.1 億美元（+62.4% YoY）（無新進展）
-- 事實：10 月預估 **1,125 億～1,159 億美元（+62%～67% YoY）**（https://udn.com/news/story/7238/9879179 ）；9 月基準金額 **1,142.1 億美元（+62.4%）**、資通信 **438.8 億美元（+87.3%）**、電子 **474.2 億美元（+71.0%）**、美國訂單 **453.8 億美元（+79.4%）**。
+### TASK-B2｜11/20 美股收盤：Anthropic（ANT）第二天收 $88.91（-8.50%），盤中 $83.05 險守發行價，大摩全額行使 1.47 億股綠鞋平倉；美股並未止穩而是跟隨亞股深度補跌，那斯達克崩 5.28%、NVDA 暴跌 14.01%、AMD 跌 13.25%、CRWV 盤中破發觸 $39.96、ORCL 跌至 $112
+- 事實：
+  1. **Anthropic（ANT）表現**：美東 11/20 第二個交易日收在 **$88.91（-8.50%）**，全日成交量約 **4.005 億股**；盤中最低觸及 **$83.05**，險守 $83.00 發行價（Investing.com：https://www.investing.com/equities/anthropic-historical-data ）。主承銷商摩根士丹利宣布全數行使 **1.47 億股** 超額配售權，空頭頭寸已全數平倉結清，後續不再提供公開市場托底買盤（Anthropic 官方新聞稿 11/20：https://www.anthropic.com/news/closing-of-initial-public-offering-and-full-exercise-of-greenshoe ）。
+  2. **美股科技與 AI 族群深度跟跌**：亞洲重挫並未讓美股止穩，反而引發美股科技權值股全面補跌暴跌：那斯達克綜合指數重挫 **-5.28%（收 22,617.73）** 抹平 2026 全年漲幅、那斯達克 100 指數重挫近 **-5.0%**；半導體 ETF（SMH）暴跌逾 **-6.2%**；**輝達（NVDA）暴跌 -14.01%（收 $125.53）**、**超微（AMD）大跌 -13.25%（收 $424.39）**；**CoreWeave（CRWV）盤中一度跌破 $40 發行價下探 $39.96，收 $40.15（-10.60%）**；**甲骨文（ORCL）收在 $112.10（-2.4%）**（CNBC 收盤報導：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。
+
+### TASK-B3｜11/20 美股月選擇權到期日（OPEX）：單一股票與指數選擇權集中到期，Gamma 由正轉負放大現貨下殺波動
+- 事實：11/20 為美股 11 月標準月度選擇權到期日（OPEX），涵蓋以兆美元計之名目未平倉合約。隨早盤輝達加州傳票與 SEC 審查消息發酵，科技股現貨快速跌破主要認購權證（Call）防線，做市商（Market Makers）之 Gamma 部位由長轉短（Short Gamma），被迫順應現貨跌勢動態放空指數期貨進行對沖，使那斯達克尾盤賣壓加速放大，未能出現向 Max Pain 履約價釘住（Pinning）的走勢（SpotGamma 分析 11/20：https://spotgamma.com/market-note-opex-gamma-unwind-nov-20/ ）。
+
+### TASK-B4｜聯準會理事 Lisa Cook 智利演說講稿發布，捍衛升息票並警告通膨與金融寬鬆；密大信心終值 51.5、一年通膨預期降至 3.7%；BJ's Q3 同店增 4.1% 獲利勝預期
+- 事實：
+  1. **Lisa Cook 智利央行年會演說**：美東 11/20 12:15 發布講稿《*The U.S. Economy in Global Context*》，直言通膨連續 67 個月高於目標、決策者沒有耐心的餘裕，直指當前金融條件依然太過寬鬆，完全未對股市下跌表達擔憂，堅定捍衛升息立場（聯準會官網：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm ）。
+  2. **密西根大學 11 月消費者信心終值**：指數終值由 51.0 上修至 **51.5**，1 年期通膨預期自 4.7% 大幅降至 **3.7%**（初值為 4.3%），5 年期通膨預期為 **3.3%**（密西根大學官網：http://www.sca.isr.umich.edu/ ）。
+  3. **BJ's Wholesale Club（BJ）財報實績**：Q3 營收 62.8 億美元（預期 5.95B）、稀釋 EPS $1.73（預期 $1.25–$1.26）、不含汽油同店增長 **+4.1%**（高於市場預期之 +2.5%～+3.0%），管理層指出面對通膨與經濟壓力，消費者加速湧入平價批發量販店（BJ IR 新聞稿 11/20：https://investors.bjs.com/news-releases/news-release-details/bjs-wholesale-club-holdings-inc-reports-third-quarter-fiscal-2026 ）。
+
+### TASK-B5｜11/20 台灣 10 月外銷訂單（經濟部統計處 16:00 公布）：金額 1,238.2 億美元、年增 78.3% 創歷年單月新高，較 9 月大幅加速
+- 事實：經濟部統計處公布 10 月外銷訂單金額為 **1,238.2 億美元**（創歷年單月新高），年增率高達 **78.3%**（較 9 月之 +62.4% 明顯加速，呈連續 21 個月正成長）。其中**電子產品接單 539.1 億美元（年增 89.8%）**、**資訊通信產品接單 467.7 億美元（年增 107.2%）**；**來自美國之訂單達 496.4 億美元（占總額 40.1%），年增率達 96.3%**（亦較 9 月之 +79.4% 大幅加速）（經濟部統計處官方公告 2026-11-20：https://www.moea.gov.tw/MNS/dos/bulletin/Bulletin.aspx?kind=8&html=1&menu_id=6727&bull_id=14209 ）。
 
 ### TASK-B6｜11/24 盤前零售四家同店銷售市場預期查核（無新進展）
-- 事實：BBY（Compound +2.6%，指引 +1.0%～+3.0%）、DLTR（指引 +3.0%～+4.0%、FactSet 約 +3.4%）、DKS（核心全年指引 +2.5%～+4.0%）、BURL（指引 +1.0%～+3.0%）。
+- 事實：BBY（百思買，Compound +2.6%、指引 +1.0%～+3.0%）；DLTR（Dollar Tree，FactSet 共識約 +3.4%、指引 +3.0%～+4.0%）；DKS（Dick's，核心全年指引 +2.5%～+4.0%）；BURL（Burlington，指引 +1.0%～+3.0%）。
 
----
+### TASK-B7｜韓國關稅廳與產業部：南韓 2026 年累計出口於 11/19 突破 1 兆美元歷史大關，半導體出口暴增逾 300%
+- 事實：韓國關稅廳與產業通商資源部公布，截至 2026 年 11 月 19 日下午，韓國年累計出口額正式突破 **1 兆美元（US$1 Trillion）**，成為全球第 4 個年出口破兆美元之國家；11 月上旬半導體出口較去年同期暴增逾 **300%**，占韓國出口總額近半，對美、對中出口均大幅擴張（韓國政策新聞 Korea.kr 11/20：https://www.korea.kr/news/policyNewsView.do?newsId=148936012 ）。
 
-### TWB｜台股泡沫觀察（無新進展；本日 09:39 輪已完成每日一次）
-
-### TWB-1｜歷史對照：1990、2000、2007–08、2021–22 四次台股大頂前 6～12 個月可量化指標異常全覽（無新進展）
-- 事實（官方資料來源：證交所大盤統計 https://www.twse.com.tw/zh/trading/historical/fmtqik.html 、個股日估值 https://www.twse.com.tw/zh/trading/historical/bwibbu-day.html 、三大法人 https://www.twse.com.tw/zh/trading/foreign/bfi82u.html 、國發會景氣指標 https://index.ndc.gov.tw/ 、央行統計資料庫 https://cpx.cbc.gov.tw/ 、金管會新聞專區 https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&dtable=News ）：
-  1. **1990 年 2 月大頂（12,682 點）**：大盤本益比達 **80–100 倍以上**，散戶成交占比逾 **90%**、外資持股比 **< 5%**；央行緊縮銀根後 M1B 年增率由極端高檔急墜、景氣轉弱，隨後崩跌近 80% 至 2,485 點（https://money.udn.com/money/story/124512/7846629 ）。
-  2. **2000 年 2–4 月大頂（10,393 點）**：大盤本益比逾 **50–60 倍**，上市融資餘額衝上約 **5,956 億元**（占總市值約 **4.5%–4.6%**），景氣領先指標與 M1B 動能先於高點滑落。
-  3. **2007 年 10 月大頂（9,859 點）**：大盤本益比約 **20–25 倍**、融資約 **3,000–4,000 億元**（占總市值 **1.5%–2.0%**），外資持股比 **30%–35%**，領先指標與全球美元流動性先轉緊。
-  4. **2021–22 年大頂（2021/07 18,034 點→2022/01 18,619 點）**：大盤本益比 **21–23 倍**、融資約 **2,700–3,000 億元**（占總市值 **0.5%–0.6%**）、當沖比重曾上 40%–50%；國發會景氣領先指標與 M1B 年增率於高點前率先下彎並跌破 M2。
-
-### TWB-2｜現在的讀數（2026 年 10–11 月最新數字與歷史大頂對比）（無新進展）
-- 事實：10 月底大盤本益比 **24.92 倍**、P/B **3.95 倍**、殖利率 **1.67%**（11 月中約 **23.17 倍／3.66 倍**；上市本益比中位數 **14.8 倍**）；11/19 上市融資 **4,843.68 億元**（占市值僅 **~0.33%**），整體維持率 **156.18%**（市場估上市 131.06%、上櫃 121.83%，https://www.ctee.com.tw/news/20261120700046-439901 ）；10 月新開戶 **64,168 人**、總歸戶 **1,482.7 萬人**、11/13 台股 ETF 受益人 **2,049.5 萬人**、11/18 當沖破 **52%** 創高；台積電權重 **41.1%**、外資持股 **47.01%** 但 10 月賣超 **9,421.81 億元**創高；央行重貼現率 **2.0%**、9 月 M1B 年增 **7.20%** 略低於 M2 **7.24%**、9 月景氣燈號 **41 分（連 10 紅）**、領先指標 **104.69（+0.56%）**，惟外銷訂單動向指數 **48.7** 低於 50。
-
-### TWB-3｜反方（RED）：替「更早破裂」與「不會破裂」各舉最強三點證據（無新進展）
-- 推理與事實：(a) **更早破裂**：(1) 加權指數 11/20 盤中觸 36,406 點（較高點 -26.9%）＋外資 10 月創紀錄賣超 9,421.81 億；(2) 上櫃融資維持率貼近斷頭線、近兩日違約交割逾 5.5 億、啟動限空令 2.0（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611190001&dtable=News ）；(3) CoreWeave 債價暴跌與美債 5.04% 恐讓 AI CapEx 提前轉折。(b) **不會系統性破裂**：(1) 台積電 10 月營收年增 +59.7%、9 月出口年增 +68.2%、景氣連 10 紅；(2) 本益比中位數僅 14.8 倍、融資占市值僅 0.33%；(3) 2,049 萬 ETF 定期定額買盤＋國安基金護盤下檔支撐。
-
-### TWB-4｜觸發鏈：若真的走向泡沫破裂，最可能從哪裡引爆與「第一個會動的數字」（無新進展）
-- 推理：1. 美國 AI CapEx 與新雲端融資斷鏈（第一個會動的數字：**CRWV／ORCL 債券殖利率** https://www.finra.org/finra-data/fixed-income 與**台灣外銷訂單動向指數**）；2. 台積電先進製程訂單減速（**每月 10 日營收年增率**）；3. Fed 升息＋美債衝破 5.4%（**FRED DGS10** → **TWSE BFI82U／USD/TWD**）；4. 日圓套利平倉（**USD/JPY 與 10Y JGB**）；5. 國內融資連鎖違約（**TWSE 維持率與 T+2 違約公告**）。
-
----
-
-### GBW｜全球泡沫地圖（無新進展；本日 09:39 輪已完成每日一次）
-
-### GBW-1｜全球九大區塊泡沫膨脹與裂縫現況（補齊關鍵單篇連結）
-- 事實與現況：(1) **AI 資本支出與融資**：Fed FSR 點名逾 3 兆表外承諾（https://www.federalreserve.gov/publications/files/financial-stability-report-20261113.pdf ），CoreWeave 2032 無擔保債跌至 79.5 美分／殖利率 14%–17%（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_eU4pP5XsgYRBt7IzE8kpRgG0tiq6R7oQk-UuC6rMPbZK7gjHW1FqWS8-25VOiXr7UmhaR6AiqHLmx19hxpIRH3waN9PxRe9LTSXKvav5Lnc87p4D6kAIfKUG9pNoDsVlY3x2rJw9oYK8dTeywL1iSvhCJtYWTxNwZMrtX8as6Bu0sfAA__a_qjBCCBkZhPtNxA== ），Oracle 降至 BBB-；(2) **美債與期限溢酬**：11/19 10Y 殖利率 5.04%、2Y 4.76%（https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve ），10Y TIPS 2.903%／2.43x（https://www.treasurydirect.gov/instit/annceresult/press/preanre/2026/R_20261119_3.pdf ）；(3) **日本**：10Y JGB ~2.83%–2.92%，10 月核心 CPI 2.2%（https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html ），USD/JPY 159–160；(4) **中國**：11 月 LPR 連 18 凍（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH8oPrBzlqD8X1S9hO18wN_rN5mbhuogCkEQllL6sfqCIlzEnmRvhMJzW3Rn-NJk_LaXFJfcJUUxWo0AoCF_SI8IDFkNlZyUF3kM0Gb1JbtYCta_dBNi02fm2CjWB25ReKpbTQk-tgPr3RoBNTQGK0hr09qyIwQSQLjkgdRgLc= ）、房市開發投資年減逾 20%；(5) **歐洲**：歐元區 10 月通膨 4.0%（https://ec.europa.eu/eurostat/web/products-euro-indicators/w/2-18112026-ap ）、ECB FSR（https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.pr261118~83c5c60158.en.html ）＋11/25 準備金率翻倍討論；(6) **新興市場**：土耳其紅燈，整體外儲仍充沛、拉美分化（智利衰退、巴西高利率 13.75%）；(7) **美元資金**：H.4.1 準備金 2.980 兆、貼現窗口 93.66 億（https://www.federalreserve.gov/releases/h41/current/h41.htm ）；(8) **散戶槓桿**：FINRA 融資 1.45 兆、加密貨幣 24h 清算逾 20 億美元、台股當沖破 52%；(9) **商用不動產**：Trepp 10 月 CMBS 違約率 7.87%、商辦 12.33%。
-
-### GBW-2｜連動與傳染鏈（無新進展）
-- 推理：(A) 新雲端債市緊縮（CRWV/ORCL）→ 科技權值殺估值 → 外資提款台韓引爆融資斷頭；(B) USD/JPY 破 160 引發干預／升息 → 日圓套利平倉拋售流動性資產；(C) 準備金逼近 2.9 兆＋貼現窗口升 → 對沖基金與 CMBS／私募信貸再融資斷裂。
-
-### GBW-3｜對照本站（無新進展）
-- 事實：已有 `bonds`、`jgb`、`ebonds`、`risk`、`industry`、`tw_ai`、`flows`；五大缺口為 (1) AI 表外租賃／新雲端與科技長債每日殖利率及 BDC gating、(2) `site_layout.py` 側邊欄缺中國總經／房市獨立頁面、(3) 月度商辦 CMBS 違約率、(4) 加密槓桿清算與槓桿 ETF 流向、(5) 歐日政策紅線連動。
-
-### GBW-4｜反方：哪一個大家最擔心的區塊，數據其實沒那麼糟？（無新進展）
-- 事實與推理：**廣義美國企業信用與大型銀行體系**——`ai_view.json`（07:10）顯示 HY OAS 僅 3.47%、Baa 利差 1.52%（10 年第 8 百分位）、OFR FSI -1.129、OFR 信用分項 -0.873，尚未出現系統性信用凍結。
-
----
-
-### TWD｜台股深度思考（無新進展；本日 09:39 輪已完成上午輪，待 14:00 後再行下午輪）
-
-### TWD-1｜獨立 1 個月台股劇本與對照 `tw_forecast.json`（無新進展）
-- 推理：我給未來一個月「箱型下移／測底 **45%**、修正延長 **40%**、快速反彈 **15%**」（較 Claude 的 45% / 35% / 20% 保守 5 個百分點），且年底收盤高於 38,427 點機率我估 **35%–40%**（Claude 52%）。
-
-### TWD-2｜產業輪值深挖：半導體製造（無新進展）
-- 事實：台積電 10 月營收 5,868.9 億（+59.7% YoY）、聯電 251.97 億（+18.33%）、世界先進 47.11 億（+20.53%）、力積電 80.28 億（+94.19%）；成熟製程稼動率 90%–97%；對照三星 SF2 良率 60%–70%、Rapidus 量產恐延至 2027 底／2028，台灣半導體製造基本面創高但權重集中（台積電 ~41.1%）使其成為外資提款與美債分母折價的直接承壓口。
-
-### TWD-3｜二階影響（無新進展）
-- 推理：1. 竹科／高雄房市預售解約與量縮；2. 券商經紀量增但違約呆帳與權證期貨逆價差避險成本上升；3. 東南亞台商機電／無塵室受 BIS 11/19 新規延後驗收。
-
-### TWD-4｜挑 `tw_forecast.json` 的錯（無新進展）
-- 推理：(1) 年底高於 38,427 點給 52% 誤將 3 個月回測勝率套用於 29 個交易日；(2) 稱央行「先用選擇性信用管制替代升息」忽略央行 2026/09/17 剛放寬第 2 戶至 7 成；(3) 稱 10 月台股大跌可能扣景氣燈號分，忽略國發會看月均股價 YoY（10 月仍 >+70%，不會扣分）。
-
----
-
-### NEXT-1｜事件：亞太 AI 科技股 11/20 早盤連鎖重挫（軟銀一度暴跌 16.58%、日經跌逾 4%、KOSPI 破 5,000、台股下探 36,406 點、台幣貶破 33）
-- 推理：
-  - 最先受影響的資產：台韓日半導體與 AI 權值股、軟銀集團、新台幣／韓元匯率、高融資台股上櫃中小型股。
-  - 傳導路徑：Anthropic IPO 開高走低抽血效應＋美國出口管制聽證預警 → 東京與首爾開盤重挫（軟銀暴跌 16.58%、日經破 57,000、KOSPI 跌破 5,000）→ 外資擴大台股提款並匯出（新台幣貶破 33 觸 33.038）→ 台股觸發融資追繳與 T+2 違約防堵連鎖：
-    - 美股：**TSM、NVDA、MU、ARM（軟銀控股）、AMD**。
-    - 台股：**台積電 (2330)、聯發科 (2454)、台達電 (2308)、廣達 (2382)、日月光投控 (3711)**。
-  - 大家還沒注意到的間接受害者：**台灣券商權證造市與可轉債套利部位**（借券額度砍至 1% 被迫轉用台指期空單動態避險、擴大逆價差）與 **日圓套利高槓桿部位**（若亞股重挫引動外資回補日圓、推升日圓急升風險）。
-  - 佐證網址：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEjBZy-A2nG3h1E82CJxYPrW958uVsvYpqbPFfN5_ZRrr0Pvi4SWJeUrK_waoLHFsAt0en9I3H-PZ9pfPYfbZXc6o94i1hnAoTaQz9luZ8HcneUQroI_0d3hyv-XrsjPJz05WnCO6-Nboi5WZAoINigvteqHgm-gqRNsJtDaQs-SZws8yDexwcDxbbfXINOX2NTS4pfOdC-GYEDfcGTtg1VHiy9uW-k5bnhaKW2KePwGAMZEJ93uqsqXQ8jUAfHLeq7vkqaiWG-dkUMEAAUHckVE_VyyMq7ghPkY9FuIJ7xs2HJzH1q6l63ckUiauFY2HQks8si5KGyyH4= ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk06TlcUDYuLdY294NBfBumDKc8-tkSXLidxpBEQ8mVkeqJUXCA95PbeXA5Wh2qrUNvRI8nAvtSVvrInWgmgKv9JHmzCuz4z4_zlQwChYOi3z6ma-EyA== 。
-
-### NEXT-2｜事件：CoreWeave 2032 無擔保債跌至 79.5 美分（殖利率 14%–17%）＋AI 表外 SPV 租賃融資受檢視（無新進展）
-- 推理：
-  - 最先受影響的資產：新雲端無擔保高收益債、ORCL 長債與 CDS、私募信貸 BDC。
-  - 傳導路徑：美債 5% 以上迫使新雲端停止無擔保舉債並改以 GPU 資產擔保融資，限制二線算力擴產速度：
-    - 美股：**CRWV、ORCL、NBIS、IREN、NVDA**。
-    - 台股：**緯穎 (6669)、廣達 (2382)、鴻海 (2317)、奇鋐 (3017)、雙鴻 (3324)**。
-  - 間接轉向受益者：**現金流充沛、無須高息發債的超大雲端業者（GOOGL、MSFT、META）與台灣 ASIC 設計服務廠（世芯-KY、創意、聯發科）**。
-
-### NEXT-3｜事件：IEA 定調荷莫茲海峽為史上最大能源供給衝擊（28 億桶損失）＋智利 Q3 銅礦崩 14.7% 陷入衰退（新增）
-- 推理：
-  - 最先受影響的資產：歐洲／亞洲柴油裂解價差、LNG 長約運價、LME／Comex 期銅、智利披索。
-  - 傳導路徑：中東油氣長期繞道推高海運與石化原料成本，同時智利銅礦產出跌至 20 年低點造成 AI 資料中心與電網「實體銅材」供給瓶頸，即使 2027 年原油因替代管線過剩回落，銅與電網設備仍維持結構性缺口：
-    - 美股：**FCX、SCCO、ETN、VRT、LNG**。
-    - 台股：**華城 (1519)、中興電 (1513)、第一銅 (2009)、長榮 (2603)、萬海 (2615)**。
-  - 間接受害者：**高度依賴海運重油／航空燃油與銅線材的台灣中游線束與航空貨運業者**（在終端消費品漲價受阻時毛利率遭雙向擠壓）。
-  - 佐證網址：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFuj-rk7IJSW1gMzCmSKf9Y_PpJhcJ72prtJ8mdJJxozeuePDw5no9zcJvWrWzyhwW9tK6t9FrJBNzLCoMRN9sKdJOBMy8_uNSRBRTdCVfZKvZjn0-e36cCfsG6V2rEcaqIJQ9F7LuzHu62G9tv0BxonE882jhM3gu_00MS ；https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGX-gAu-6HrVfbA8at3nvj5GxRpEPPjXimEqKYsTflHaRnharpq1iH7Li4SaGf0wba0T0JtsVjIfvfvYHLrNai3gira3k1SqSTeH5CS-KRKVAANw10pcIZlO0n1Rv9pgOG3Sx6152Ac1FVEC8fD38Ps0oaQbwqqKkVyIlUMPVsOBqN0CH6F8LAZL8_aNleHfUo17C3JVHsZTaB_ 。
-
----
-
-### RED-1｜針對 `forecast.json`「消費、運輸與進口商品：下修」及 `claude_notes.md`「風險升級 38%」（無新進展）
-- 最強反方證據：WSM 同店 +5.1%、WMT 美國同店 +2.9% 並上調全年財測、ROST Q3 同店 +8%（https://www.cnbc.com/2026/11/19/walmart-wmt-q3-2026-earnings.html ；https://www.prnewswire.com/news-releases/ross-stores-reports-strong-third-quarter-sales-and-earnings-results-302946112.html ），GAP 獲利勝預期盤後反彈 3%–4%。
-- 另一種同樣說得通的解釋：ROST Q4 指引遜預期、Gap 下修 FY26 指引（https://www.sec.gov/Archives/edgar/data/39911/000162828026075088/q32026eprexhibit991.htm ）、Intuit 砍半 Credit Karma 成長預測，加上聯準會 11 月 FSR 點名 3 兆美元表外 AI 承諾與 CoreWeave 債價暴跌，顯示信貸分歧正放大。
-- 判斷分曉的資料與日期：**今日（11/20）盤前 BJ 財報**、**11/24 盤前 BBY、DLTR、DKS、BURL 財報**及 **12/01 ISM 製造業**。
-- 機率估計：風險升級 **40%**（Claude **38%**）。
-
-### RED-2｜針對 `forecast.json` 與 `claude_notes.md`「10 月核心 PCE 年增率落在 2.4%–3.0%（雙方皆 30%）」（無新進展）
-- 最強反方證據：9 月核心 PCE 3.1%（https://www.bea.gov/news/2026/personal-income-and-outlays-september-2026 ），Conference Board 預估 10 月 3.3%（https://www.conference-board.org/research/global-economy-briefs/cpi-insights-october-2026 ）。
-- 判斷分曉的資料與日期：**2026-11-25 21:30 台北 BEA 10 月 PCE 報告**。
-- 機率估計：維持 **30%**（與 Claude 一致）。
-
-### RED-3｜針對 `claude_notes.md`「WTI 原油會在 80 到 100 美元之間（Claude 58% vs Gemini 55%）」（無新進展）
-- 最強反方證據：川普 11/19 公開表示不急於對伊朗採取新軍事行動、明年 1/1 後再看（https://www.al-monitor.com/originals/2026/11/trump-says-no-rush-iran-decision-looks-next-year ），若地緣溢價消退可能跌破 80 美元；反之 IRGC 宣稱兩油輪觸雷（https://www.aa.com.tr/en/middle-east/iran-s-irgc-navy-says-2-oil-supertankers-strike-naval-mines-in-strait-of-hormuz/3740924 ）保留尾端風險。
-- 判斷分曉的資料與日期：**2026-11-25、12/02 EIA 庫存報告與 11/29 OPEC+ 會議**。
-- 機率估計：維持 **55%**（比 Claude **58%** 低 3 個百分點）。
-
-### RED-4｜針對 `dots_read.json`「出口管制執法範圍擴大（輝達離任／AMD 韌體）」— 加州檢察長傳票輝達使「純個人治理」機率進一步下降（無新進展）
-- 最強反方證據：輝達季報本身尚未正式揭露行政處分、AMD 已正式駁斥 Hunterbrook（https://whbl.com/2026/11/19/amd-shares-slide-as-report-says-china-links-could-invite-us-scrutiny/ ）；但國會已排定 12/01–12/03 聽證（https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ），且加州檢察長已對輝達發出傳票（https://www.bbc.co.uk/news/articles/cqn70vxp5p4no ）。
-- 判斷分曉的資料與日期：**12/01–12/03 美國國會聽證，及輝達、AMD 下季 10-Q**。
-- 機率估計：「個人治理＋國安／揭露雙重調查」**80%–85%**、「純個人治理」**15%–20%**。
-
-### RED-5｜針對 `forecast.json`「10 年期美債（新）：4.85%–5.45%（70%）」與「12/9 聯準會不會升 2 碼（85%）」（無新進展）
-- 最強反方證據：10Y TIPS 標出 **2.903%**（https://www.treasurydirect.gov/instit/annceresult/press/preanre/2026/R_20261119_3.pdf ）、Jefferson 稱 AI 建置推升通膨（https://www.federalreserve.gov/newsevents/speech/jefferson20261119a.htm ）、H.4.1 貼現窗口 93.66 億美元（https://www.federalreserve.gov/releases/h41/current/h41.htm ）、11/19 官方 10Y 殖利率 **5.04%**（https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve ）。
-- 判斷分曉的資料與日期：**2026-11-25 10 月 PCE、2026-12-01 ISM、2026-12-04 非農、2026-12-09 FOMC**。
-- 機率估計：「10Y 美債守 4.85%–5.45%」**60%**（低於 Claude 70%）；「12/9 不會升 2 碼」**80%**（低於 Claude 85%）。
-
----
-
-### BLIND-1｜本站缺少「AI 表外租賃／SPV 承諾（聯準會點名逾 3 兆美元）與新雲端／科技公司長債每日殖利率（CRWV 跌至 79.5 美分）」追蹤（無新進展）
-- 事實：聯準會 11 月 FSR 點名逾 3 兆美元表外承諾（https://www.federalreserve.gov/publications/files/financial-stability-report-20261113.pdf ）；CoreWeave 無擔保債跌至 79.5 美分、殖利率 14%–17%，Oracle 降至 BBB-。免費追蹤：FINRA 債券查詢（https://www.finra.org/finra-data/fixed-income ）與 Markets Insider 甲骨文債頁（https://markets.businessinsider.com/bonds/oracle_corpdl-notes_202020-30-bond-2030-us68389xbv64 ）。
-
-### BLIND-2｜《金融穩定監測》缺少「非公開 BDC 限額贖回（Gating）」與「商用不動產 CMBS 月度違約率（Trepp 7.87% / Office 12.33%）」追蹤（無新進展）
-- 事實：BCRED（https://www.crowdfundedwealth.com/articles/blackstone-private-credit-fund-bcred-redemptions-2026 ）、OFR Hedge Fund Monitor（https://www.financialresearch.gov/hedge-fund-monitor/ ）；CMBS 商辦違約率 10 月達 12.33%。
-
-### BLIND-3｜本站完全沒有「關鍵基礎設施／雲端／金融第三方網攻（IMF 警告系統性爆破半徑）」與「中國房市／地方債」卡片（無新進展）
-- 事實：IMF 專論警告金融業對少數第三方雲端集中依賴（https://www.elibrary.imf.org/view/journals/068/2026/005/article-A000-en.xml ）、11/19 n0n 第三方外洩（https://decrypt.co/383663/hackers-leak-visa-mastercard-jpmorgan-data ）；免費源：CISA KEV（https://www.cisa.gov/known-exploited-vulnerabilities-catalog ）。另 `site_layout.py` 側邊欄群組未納入中國總經／房市專頁。
-
-### BLIND-4｜台股專區缺「每日違約交割金額（元大和平單日 1.289 億、近兩日 >5.5 億）、限空令 1,028 檔燈號與融資維持率走勢」整合追蹤（無新進展）
-- 事實：金管會 11/20 限空令 2.0（https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611190001&dtable=News ），一般投資人最關心的維持率離 130% 多遠仍須查外部新聞。
-
-### BLIND-5｜本站未追蹤「美國區域聯準製造業調查」與「歐元區 4.0% 通膨／ECB 準備金翻倍討論／日本 CPI 2.2%」等海外央行利率壓力（無新進展）
-- 事實：費城聯準（https://www.philadelphiafed.org/surveys-and-data/regional-economic-analysis/manufacturing-business-outlook-survey ）、Eurostat（https://ec.europa.eu/eurostat/web/products-euro-indicators/w/2-18112026-ap ）、日本統計局（https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html ）。
-
----
-
-### SITE｜挑本站的錯（註：本輪因 `BLOCKED / BROWSER_UNAVAILABLE` 無法開啟 `https://wallstreet-sentinel.pages.dev/` 重測；以下除核對本地 `research_feed/macro_voice.json`（09:32）與 `research_feed/event_board.json`（01:20）最新異動外，線上項目沿用 07:31–07:35 實測）
-
-- **前次已修項目複查狀態（沿用 07:31–07:35 實測，本輪無法線上重測）**：`/api/etf` 為 HTTP 200；台股加權顯示 `38,427`（`-4.40%`）；`c-econ-11` 將 `ROST`、`KEYS` 列入已公布；`c-econ-12` 排除宏偉、耐特並以百萬美元顯示小型美股 IPO。
-
-### SITE-1｜`c-taiwan-6`（07:14）與同頁 `c-taiwan-4`（07:14）依然矛盾，且與 `c-taiwan-2` 仍印投信 +43.9 億（證交所 +15.13 億）（無新進展，無法重測）
-- 本站寫了什麼（07:31–07:35 實測）：`c-taiwan-4` 寫 `2026-11-19 -99,219 口（+219）`，同頁 `c-taiwan-6` 仍印 `2026-11-18 -99,438 口`、`Put/Call 39.8% (2026-11-18)`、`台指期 40312.0 (20261118)`，且 `c-taiwan-2`、`c-taiwan-6` 印投信 `+43.9 億`。
-- 正確應該是什麼：對齊 11/19 外資台指期 **-99,219 口** 與 11/19 證交所三大法人（外資 **-243.12 億**、投信 **+15.13 億**、自營 **-233.03 億**，https://newtalk.tw/news/view/2026-11-19/1072081 ；https://www.cna.com.tw/news/afe/202611190200.aspx ）。
-
-### SITE-2｜`c-overview-4`（06:02）三處時間與主詞誤差仍未更新（無新進展，無法重測）
-- 本站寫了什麼：`接下來看：AMD 怎麼回應報告`、`收盤前 15:00 聯準會理事 Barr...`、`商務部議員說已核准超過 87.9 萬顆...`。
-- 正確應該是什麼：AMD 已正式駁斥（https://whbl.com/2026/11/19/amd-shares-slide-as-report-says-china-links-could-invite-us-scrutiny/ ）；Barr 講稿為美東 **11-18 13:35**（https://www.federalreserve.gov/newsevents/speech/barr20261118a.htm ）；公開者為**眾院外委會主席 Brian Mast**（https://foreignaffairs.house.gov/news/press-releases/chairman-brian-mast-exercises-legislative-authority-to-publicly-release-ai-chip-license-information-for-china ）。
-
-### SITE-3｜`research_feed/macro_voice.json`（已更新至 09:32 盤中版，舊醫療保健缺失已消失）稱台幣貶至 33 元無確切外資資料；`research_feed/event_board.json`（01:20）仍把 ANT IPO 標成 `live`
-- 本站寫了什麼（10:35 本地核對）：
-  1. `research_feed/macro_voice.json`（`updated: 2026-11-20 09:32 台北`）寫：`"新台幣小貶，大約三十三元，外資賣壓是可能的原因，但我沒有確切資料。"`
-  2. `research_feed/event_board.json`（`updated: 2026-11-20 01:20 台北`）仍將 `ant-ipo-2026-11-19` 列為 `"status": "live"` 並寫 `"ANT 自己也從最高 114.99 回落到 97 美元附近"` 與 `"收盤後補上首日收盤價"`。
-- 正確應該是什麼：外資 11/19 在集中市場明確賣超 **243.12 億元**、10 月全月賣超 **9,421.81 億元**（https://newtalk.tw/news/view/2026-11-19/1072081 ），且 11/20 早盤新台幣已貶破 33 元觸 **33.038 元**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEfQfnm9Jnq7B_r61F8rQ2wcMnFF1JLH0iVKEfNAWCQg87c2FguZEzGhHaLaaGyHrO5Ydai3lMQVeIMgnho5vdBk1TyTGBwhtZBEVWwP6b9snYztMrXAGW55vejXY7aTE4QupEKv2rl ）；ANT 首日已於美東 11/19 16:00 收盤在 **$97.17**、成交量約 **8.4 億股**（https://financefeeds.com/anthropic-ant-stock-closes-debut-97-17-price-prediction/ ）。
-
-### SITE-4｜`c-econ-11`（07:19）仍將已公布 Q3 的 `BSP` 列在「11-20 盤前」，且 `KB` 仍重複兩筆（無新進展，無法重測）
-- 本站寫了什麼：`BSP` 留在 `即將公布`；`KB` 並列 11-16 與 11-13 兩筆。
-- 正確應該是什麼：BSP 已於 11/19 盤後發布 Q3 2026 財報（https://www.morningstar.com/news/business-wire/20261119644909/bending-spoons-announces-q3-2026-results ）。
-
-### SITE-5｜`c-news-7`《未來 14 天事件》（07:14）仍漏列台股與國際大事，且留有已過去的 11-19 事件（無新進展，無法重測）
-- 本站寫了什麼：留有 11-19 H.4.1 與初領失業金，且漏列台股限空令 2.0、台灣 10 月外銷訂單、日本 CPI／中國 LPR／英國零售銷售、ECB 準備金率與褐皮書、感恩節休市、FOMC 緘默期、台灣九合一選舉、OPEC+、12/01–12/03 美國國會聽證、12/01 ISM 製造業與歐元區通膨及 12/04 非農就業。
-
----
-
-### CAL-1｜未來 14 天（2026-11-20 ～ 2026-12-04）關鍵行事曆（更新 Lisa Cook 演說確切時間，其餘無新進展）
+### TASK-B8｜週末到下週一台股開盤前關鍵事項：金管會 11/21 下午加碼宣布 11/23 祭出第三波限空令（全面禁平盤下放空＋保證金 150%）；日本財務官三村淳警告日圓逼近 160；美國國會排定 12/01–12/03 晶片聽證
 - 事實：
-  1. **11/20（五）**：**07:30 台北 日本 10 月全國 CPI**（已公布：綜合 2.3%、核心 2.2%，https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html ）；**09:00 台北 台股限空令 2.0 上路**＋**中國 11 月 LPR 報價**（已公布：1Y 3.0%、5Y 3.5% 不變）；**印度強氣旋「阿克萬」登陸**；**15:00 台北（07:00 GMT）英國 10 月零售銷售（ONS）**；**16:00 台北 台灣 10 月外銷訂單**；**美股 OPEX**＋**BJ's（BJ）美東盤前財報（法說 08:30 ET／21:30 台北）**；**美東 12:15（台北 11/21 01:15）聯準會理事 Lisa Cook 赴智利央行演說**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEYxkw10B-9PJ-rO_yZebYWfHDfm3RvOdNMyDVpxoDHjLRZt_UMbEIPPHyrz314cXceeYqbxYhi--WCY9et5AVCyoeSU226sNiSiDIV6pyayqw4YwzkLZM9o4tY8Ot9bURuz47m5nSK_-jYZWqj3wlmjA== ）；**23:00 台北（10:00 ET）密大消費者信心終值**；**SanDisk（SNDK）1 拆 8 首個交易日**（https://www.fool.com/investing/2026/11/16/sandisk-splits-its-stock-8-for-1-on-nov-19-flash-memory-prices-still-matter-more-than-the-share-count/ ）。
-  2. **11/21（六）**：**韓國關稅廳 11 月 1–20 日出口初值**。
-  3. **11/23（一）**：美東盤後 **HPE、ZM、A、SYM**；時間未定 **TCOM**。
-  4. **11/24（二）**：美東盤前 **ADI、MDT、BBY、DLTR、BURL、DKS、BILI**；美東盤後 **DELL、HPQ、ADSK、WDAY**。
-  5. **11/25（三）**：美東盤前 **DE**；美東 08:30（台北 21:30）**BEA Q3 GDP 二次修正、10 月 PCE 與初領失業金**；美東 14:00（台北 11/26 03:00）**聯準會褐皮書**；**ECB 管委會辯論銀行準備金率倍增至 2%**；**台灣央行 10 月 M1B／M2 金融統計**。
-  6. **11/26（四）**：**美股感恩節全日休市（台股照常）**；**韓國央行（BOK）利率決策**；台股 **宏于電機（7869）上櫃掛牌**。
-  7. **11/27（五）**：**美股感恩節隔日半天市**（美東 13:00 收盤／台北 11/28 02:00）；**國發會 10 月景氣對策信號燈號**；**國泰金（2882）14:00 中文／17:00 英文 Q3 法說會**（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFqnP0Kllw4l_FyGSccEFH0rjL3h8u18np60dB0caan_IMZQrj6jIr0nDArMMKgQoDCMtnQ25ZfRZ9aqSkS_xNK10zSSmnXJDb0lgarAlXLaxqYEQxBLwOJH5GR1Q== ）。
-  8. **11/28（六）**：**台灣 2026 九合一地方選舉投票日**；**FOMC 12 月會議前緘默期開始（11/28 00:00 ET ～ 12/10）**。
-  9. **11/29（日）**：**OPEC+ 第 69 次 JMMC 與部長級會議**（https://www.opec.org/pr-detail/620-1-november-2026.html ）。
-  10. **11/30（一）**：**MSCI 季度調整台股收盤生效（台北 13:30）與月底資產再平衡**；美東盤後 **RBRK**。
-  11. **12/01（二）**：美東 10:00（台北 23:00）**ISM 製造業 PMI 與 10 月 JOLTS**；**歐元區 11 月通膨初值**；**美國眾院外委會等三委員會對黃仁勳進行閉門筆錄訪談**（https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）；**CRWD、MRVL、OKTA、NTAP、MDB、CRDO** 盤後；**CPRT** 盤前；**韓國 11 月出口初值**；台股 **騰勢（7889）掛牌**。
-  12. **12/02（三）**：**輝達總法律顧問 Tim Teter 赴美國國會作證**；美東盤後 **CRM、SNOW、ZS**；盤前 **BMO、BNS**。
-  13. **12/03（四）**：美東 10:00 ISM 服務業 PMI；**美參議院銀行委員會先進晶片出口聽證會（黃仁勳與商務部長 Lutnick 出席）**；盤後 **ULTA、VEEV、IOT**；盤前 **RY、TD、CM、KR、DG**。
-  14. **12/04（五）**：美東 08:30（台北 21:30）**美國 11 月非農就業報告**。
-- 對照本站（無法重開網站複測，沿用 07:14 實測，詳見 SITE-5）。
+  1. **台灣金管會與國安基金週末重大動作**：金管會 11/21 下午發布新聞稿，自 11/23 起實施全面禁止平盤以下融券與借券賣出、調高最低融券保證金成數至 150%、暫停受理發行認售權證申請、鼓勵庫藏股與鼓勵提前召回出借股票等五大措施（金管會官方新聞稿 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。國安基金證實實質在場護盤。
+  2. **日本財務省對日圓 160 表態**：財務省財務官三村淳公開向投機者喊話「現在還不是忘記今年夏天干預的時候」，警告市場已隨時準備出手阻貶（日經新聞 11/20：https://www.nikkei.com/article/DGXZQOUB203890Q6A121C2000000/ ）。
+  3. **美國國會聽證日程**：眾院外委會已確認 12/01 黃仁勳閉門筆錄訪談、12/02 輝達總法務長 Tim Teter 作證、12/03 參院銀行委員會先進晶片聽證會（TechNews 11/20：https://technews.tw/2026/11/20/the-u-s-department-of-commerce-has-revealed-that-it-has-approved-the-sale-of-879000-ai-chips-to-china/ ）。
 
 ---
 
-### CODE-1｜`wsb/analytics/lab.py` 第 299–304、310–312 行（連動 `wsb/ai/context.py` 第 104 行）：當特徵被採用時 `out["now"]` 漏填 `p_base_cal`，導致 AI 資料包把「校準後增強機率」對比「未校準原始基準機率」
-- 檔案路徑與行號：`wsb/analytics/lab.py` 第 299–304 行、第 310–312 行，以及 `wsb/ai/context.py` 第 103–104 行。
-- 那一行在做什麼：`lab.py` 第 299–304 行（`if adopted:` 且 `ens` 有資料時）計算增強模型經等張校準後的 `p_enh_cal` 與原始邏輯回歸 `p_base`，但沒放入 `p_base_cal`；相對地，`else:` 分支第 310–312 行有算 `cal` 並寫入 `p_base_cal`。接著 `context.py` 第 103–104 行組裝字串：`校準後機率 {now['p_enh_cal']:.1f}% （僅SSI {now.get('p_base_cal', now['p_base']):.1f}%）`。
-- 為什麼有問題：當系統採用增強特徵時，`now` 字典沒有 `p_base_cal`，`now.get('p_base_cal', now['p_base'])` 會退回使用**未經等張校準**的 `p_base`，造成 AI 口徑將「等張校準後的增強模型機率」直接和「未校準的基準機率」比較，兩者口徑不一致。
-- 建議怎麼改：在 `lab.py` 第 299–302 行比照第 238／310 行補算基準模型的等張校準值 `cal_b = isotonic(predict(wb, base["X"]), base["y"], min_w=MIN_BLOCK * days)`（或沿用 `out["base_model"]["cal"]`），並於第 302 行填入 `"p_base_cal": float(apply_iso(cal_b, predict(wb, base_F.iloc[[-1]].fillna(0.0).values)[0]) * 100)`。
-- 確定度：高。
+### NEXT-1｜事件：週五美股科技股黑色星期五暴跌（NVDA -14%、AMD -13%、那指崩 5.28%）與金管會 11/23 第三波限空令（全面平盤下禁空＋保證金 150%）交會
+- 推理：
+  - 最先受影響的資產：週一台股加權指數開盤點位、台積電開盤跌幅、台指期逆價差、富台指。
+  - 傳導路徑：週五美股半導體崩跌將直接造成週一台積電、聯發科與 AI 代工廠巨大的開盤現貨賣壓；但金管會 11/23 起「全面禁止平盤以下融券與借券賣出」，將直接鎖死借券與外資借券在盤中追殺跌勢的管道，使盤中賣壓僅能來自現貨拋售。若外資現貨賣超未失控，自營商與券商權證避險買盤將在國安基金承接下尋求技術性跌深反彈：
+    - 美股：**NVDA、AMD、TSM、AVGO、QCOM**。
+    - 台股：**台積電 (2330)、聯發科 (2454)、廣達 (2382)、緯穎 (6669)、日月光投控 (3711)**。
+  - 大家還沒注意到的間接受益者：**先前遭大量借券放空之中小型高股息與高券資比個股**（因平盤下禁空且保證金拉至 150%，空方回補買盤有望帶動軋空效應）。
+  - 佐證網址：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ；https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html 。
 
-### CODE-2｜`wsb/analytics/daily_why.py` 第 60、73、111、380、528 行：`TPE` 定義晚於呼叫函式 307 行、第 528 行 `if/else` 兩分支完全相同、且使用已棄用之 `datetime.utcfromtimestamp`
-- 檔案路徑與行號：`wsb/analytics/daily_why.py` 第 60、73、111、380、528 行。
-- 那一行在做什麼：第 73 行 `twse_days()` 執行 `t = datetime.now(TPE)`，但全域常數 `TPE = ZoneInfo("Asia/Taipei")` 直到第 380 行才定義（對照 `NY` 定義在第 25 行）；第 528 行寫 `(days[-6:-1] if done else days[-6:-1])`；第 60、111 行使用 `datetime.utcfromtimestamp(...)`。
-- 為什麼有問題：(1) 若未來在模組載入中途或重構時呼叫 `twse_days()` 會拋 `NameError`，且不利閱讀維護；(2) 第 528 行三元運算式兩側完全相同屬冗餘條件；(3) Python 3.12+ 對 `utcfromtimestamp()` 發出棄用警告。
-- 建議怎麼改：將 `TPE = ZoneInfo("Asia/Taipei")` 移至第 25 行 `NY` 旁；第 528 行簡化為 `days[-6:-1]`；第 60、111 行改用 `datetime.fromtimestamp(int(t) + off, tz=timezone.utc)`。
-- 確定度：高。
+### NEXT-2｜事件：Anthropic 大摩行使全部 1.47 億股綠鞋平倉完畢，ANT 面臨「無承銷托底」之發行價保衛戰
+- 推理：
+  - 最先受影響的資產：Anthropic（ANT）、AI 新創未上市次級市場估值、OpenAI 估值、軟銀集團（9984.T）。
+  - 傳導路徑：摩根士丹利已全額行使綠鞋以發行價認購股票並平倉，意味著承銷團不再持有空頭部位以在低於 $83 時逢低買入托底；下週一美股開盤 ANT 盤中若再度測試 $83.05 並跌破 $83 發行價，將正式宣告本波最大 IPO 破發，直接重創未上市 AI 獨角獸（OpenAI、xAI）的後續融資估值，並加速二線新雲端算力股的去槓桿：
+    - 美股：**ANT、CRWV、NBIS、IREN、MSFT**。
+    - 台股：**廣達 (2382)、緯創 (3231)、技嘉 (2376)、光寶科 (2301)**。
+  - 大家還沒注意到的間接受害者：**持有大量未上市 AI 基金與次級市場份額的私人財富管理與 BDC 機構**。
+  - 佐證網址：https://www.anthropic.com/news/closing-of-initial-public-offering-and-full-exercise-of-greenshoe ；https://www.investing.com/equities/anthropic-historical-data 。
 
-### CODE-3｜`wsb/data/econ_official.py` 第 168 行：`yy` 年增計算向前回溯 470 天，若官方延遲發布或月初回補恐漏抓 `T-13` 基期造成 `prev` 空白
-- 檔案路徑與行號：`wsb/data/econ_official.py` 第 168 行。
-- 那一行在做什麼：`start = (date.fromisoformat(day) - timedelta(days=470)).isoformat()`，向 FRED 抓取該系列觀測值以計算當期 `actual` 與前期 `prev`（年增率 `yy` 需用到 `T-12` 與 `T-13` 月）。
-- 為什麼有問題：470 天約等於 15.4 個月。針對公布日比參考月份晚約 40–45 天的月度數據（例如 PCE、個人所得或因故順延的月報），若發布日在次月下旬以後，`day - 470 天` 可能剛好落在 `T-13` 月的 1 號之後，導致 `transform()` 因缺第 `T-13` 個月資料而把 `prev` 留空。
-- 建議怎麼改：將 `timedelta(days=470)` 放寬至 `timedelta(days=520)`（多留約兩個月安全緩衝，API 回傳筆數僅多 1～2 筆）。
-- 確定度：中。
+### NEXT-3｜事件：英國 10 月零售銷售超預期增長背後為「民間應急物資囤積」＋智利銅礦衰退
+- 推理：
+  - 最先受影響的資產：英國公債殖利率、LME 期銅、全球必需消費品與耐儲存食品供應鏈。
+  - 傳導路徑：英國民眾因應政府「Be Ready」民防活動大舉囤積罐頭與保久乳，加上智利 Q3 銅礦產量大減 14.7% 陷入技術性衰退，凸顯出地緣政治緊張與實體關鍵物資供給的剛性瓶頸，通膨韌性將鎖死歐洲央行與英國央行的降息空間：
+    - 美股：**FCX、SCCO、GIS、CPB、K**。
+    - 台股：**第一銅 (2009)、統一 (1216)、泰山 (1218)、長榮 (2603)**。
+  - 大家還沒注意到的間接受益者：**台灣與亞洲之馬口鐵罐、食品包裝容器及防禦性食品加工業者**。
+  - 佐證網址：https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/retailsalesgreatbritain/october2026 ；http://www.stats.gov.cn/sj/zxfb/202611/t20261118_1958291.html 。
 
-### CODE-4｜`tools/site_intel.py` 第 641 行（前端交易成本試算 JS）：股數 `q=0` 或買入價 `b=0` 時損益兩平賣價會除以零產生 `Infinity`／`NaN`
-- 檔案路徑與行號：`tools/site_intel.py` 第 641–648 行。
-- 那一行在做什麼：前端 `calc(w)` 迭代求解損益兩平賣價：`p=(cost+f2)/q;`，接著算 `be=(p/v.b-1)*100`。
-- 為什麼有問題：當使用者在試算表單輸入股數 `0` 或買入價 `0`（或清空輸入框轉成 `0`）時，`/q` 與 `/v.b` 會觸發除以零，使頁面顯示異常數值。
-- 建議怎麼改：在迴圈與 `be` 計算前加上 `q > 0 && v.b > 0` 防呆，否則顯示 `—`。
-- 確定度：高。
+---
 
-*(本小時 `index % 24 == 10` 全數 13 個檔案已逐一讀完複核：`tools/build_site.py`、`tools/site_deep.py`、`tools/site_intel.py`、`tools/site_secwatch.py`、`wsb/ai/context.py`、`wsb/analytics/daily_why.py`、`wsb/analytics/lab.py`、`wsb/analytics/sector_companies.py`、`wsb/analytics/web_alerts.py`、`wsb/data/econ_official.py`、`wsb/data/geo.py`、`wsb/data/stability.py`、`wsb/site_trigger.py`。)*
+### RED-1｜針對 `claude_notes.md`「台股可能提前破裂泡沫」與市場空頭論調：反對「台股基本面壞掉」假說，10 月外銷訂單創 1,238.2 億美元歷史新高（年增 78.3%、對美年增 96.3%）證明此為純粹的「籌碼與流動性去槓桿」，而非實體經濟泡沫破裂
+- 最強反方證據：經濟部統計處 11/20 16:00 正式公布 10 月外銷訂單高達 **1,238.2 億美元（年增 78.3%）**，電子產品（年增 89.8%）、資訊通信（年增 107.2%）雙創歷史新高，最大買家美國訂單大增 **96.3%**（https://www.moea.gov.tw/MNS/dos/bulletin/Bulletin.aspx?kind=8&html=1&menu_id=6727&bull_id=14209 ）。同時 11/20 單日上市融資暴減 491 億、上市櫃合減 637 億元創歷史紀錄，籌碼浮額已在 36,000 點一口氣釋放完畢。
+- 另一種同樣說得通的解釋：市場大跌並非因為台灣 AI 供應鏈訂單消失，而是因為美國對中管制聽證恐慌、輝達加州傳票監管風暴以及 Anthropic 掛牌後市場對二線未獲利新雲端的排擠效應，引發外資跨國調配資金提款台股，加上本土券商避險與融資追繳多殺多。
+- 判斷分曉的資料與日期：**11/27 國發會 10 月景氣對策燈號（月均股價年增仍逾 70%，連 10 紅無虞）** 與 **12/10 前公布之台灣 11 月出口及上市櫃營收**。
+- 機率估計：我認為「台股為純籌碼去槓桿、基本面未壞」機率高達 **75%**，「基本面已跟著破裂」機率僅 **25%**。
+
+### RED-2｜針對 `claude_notes.md`「利率降為背景條件」：反對完全忽視利率壓力，10 年美債殖利率跌至 4.97% 是因為公債避險買盤，聯準會 12/9 升息機率仍高達 91%～93%，Lisa Cook 演說確認 Fed 毫無寬鬆救市意圖
+- 最強反方證據：Lisa Cook 11/20 智利演講明確指出「決策者沒有耐心的餘裕」、「金融環境依然太過寬鬆」（https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm ），CME FedWatch 顯示 12/9 升息 1 碼機率穩居 91%–93%，按兵不動機率為 0%。
+- 另一種同樣說得通的解釋：10 年債殖利率下跌僅是股票單日重跌 5%–6% 觸發的資產配置避險效應（Flight to Safety）。若市場误判為聯準會將「轉鴿降息」，待恐慌平息後，高利率折價壓力隨時會反撲。
+- 判斷分曉的資料與日期：**11/25 台北 21:30 美國 10 月核心 PCE 物價指數** 及 **12/09 FOMC 利率決議**。
+- 機率估計：「高利率仍是中線估值壓抑主因」機率為 **70%**（高於 Claude 的放鬆評估）。
+
+### RED-3｜針對「限空令必定讓台股週一立刻全面止跌反彈」的樂觀看法：反對「單日立即 V 轉」，歷史經驗顯示即便祭出保證金 150% 等級限空令，前 1～3 個交易日通常仍有慣性測底壓力
+- 最強反方證據：歷史上 2008 年金管會宣布保證金提高至 150% 與禁空時，加權指數隨後一週仍慣性下探；且週五美股 NVDA 大跌 14%、AMD 大跌 13%、那指重挫 5.28%，外資週一早盤現貨賣壓將極度沉重（無法借券放空但仍可賣出現貨）。
+- 另一種同樣說得通的解釋：限空令能有效阻斷「借券與融券空方趁勝追擊」，但無法阻止散戶週末接獲追繳令後的開盤自願或非自願現貨賣壓，週一早盤勢必先經歷震盪消化，待下半場或週二浮額沉澱後反彈力道才會顯現。
+- 判斷分曉的資料與日期：**11/23（週一）台股收盤三大法人與融資維持率變化**。
+- 機率估計：「週一早盤先慣性震盪測底、隨後逐步築底」機率為 **65%**，「開盤直接無震盪強彈」機率僅 **20%**，「持續長線破底」機率 **15%**。
+
+---
+
+### BLIND-1｜本站缺乏「日本散戶信用買殘（近 6 兆日圓高檔）與軟銀持股質押 LTV」跨國融資鏈監控
+- 事實：軟銀集團以 Arm 股票質押借款達 250 億美元，內控 LTV 上限為 25%；同時東證信用買殘高達 5.8 兆至 5.9 兆日圓。一旦日圓逼近 160 引發干預或日股重挫，日本融資斷頭與軟銀流動性吃緊將直接向美股二線算力廠與台股外資部位傳導。免費公開追蹤源：日本交易所集團（JPX）每週信用交易殘高（https://www.jpx.co.jp/markets/statistics-equities/margin/ ）。
+
+### BLIND-2｜本站台股專區缺乏「金管會歷次限空令強度分級」與「融資追繳戶數（6,462 戶）及斷頭水位」量化儀表板
+- 事實：限空令有 1.0（借券總量管制）、2.0（跌幅 3.5% 平盤下禁空）、3.0（全面平盤下禁空＋融券保證金 150%）的本質區別。一般投資人最關心的是 6,462 戶遭追繳的 64.64 億元斷頭浮額何時清理完畢。免費資料源：證券集中保管結算所（TDCC）與證交所統計專區（https://www.twse.com.tw/zh/margin/margin.html ）。
+
+### BLIND-3｜本站《IPO 觀察》缺少「承銷商綠鞋（Greenshoe）行使進度與次級市場解禁梯隊（Lock-up Tranches）」結構追蹤
+- 事實：Anthropic 上市次日 Morgan Stanley 已全額行使 1.47 億股綠鞋平倉，失去了公開市場發行價支撐；且招股書 424B4 揭露第 27、48、62、76 天將有分期早期解禁梯隊。免費追蹤源：SEC EDGAR 系統 8-K / 424B4 申報（https://www.sec.gov/edgar/searchedgar/companysearch ）。
+
+---
+
+### SITE-1｜本站《今晚大事看板》先前在 Anthropic 上市首日交易結束 20 小時後仍標「進行中」，Claude 已於程式中補上「8 小時自動結案」與首日數據，複查確認邏輯已健全
+- 本站寫了什麼：先前在首日收盤後仍顯示 `進行中`，現已由 Claude 於排程中加入開始 8 小時後自動轉為「已結束，結果待補」，並在日線收盤後補上收盤價 $97.17（最高 115.10、最低 92.72，成交 8.5 億股）。
+- 複查結論：時鐘防呆機制健全，且第二日收盤數據（收 $88.91，盤中 $83.05，成交 4.005 億股，綠鞋全額行使）已查核無誤。
+
+### SITE-2｜本站《未來 14 天事件》與台股日曆尚未納入金管會 11/21（週六）剛宣布之「自 11/23 起實施第三波限空令（五大穩定措施）」
+- 本站寫了什麼：目前台股事件卡片僅記錄 11/20 之限空令 2.0，未收錄 11/21 金管會最新發布之重大穩定措施（全面禁平盤下放空、保證金 150%、停受理認售權證發行）。
+- 正確應該是什麼：應在 11/23（週一）事件中補上「金管會第三波穩定股市措施生效（全面禁止平盤以下融券與借券賣出、融券保證金調高至 150%、暫停受理認售權證發行申請）」（來源：金管會官方新聞稿 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。
+
+### SITE-3｜本地檔案核對：`research_feed/macro_voice.json` 仍包含「外資賣壓是可能的原因，但我沒有確切資料」之排程文字，待下一版排程產製時對接三大法人官方資料庫
+- 本站寫了什麼：`macro_voice.json` 寫「新台幣小貶，大約三十三元，外資賣壓是可能的原因，但我沒有確切資料」。
+- 正確應該是什麼：外資 11/20 於證交所賣超 **94.13 億元**（11/19 賣超 243.12 億元，10 月累計賣超 9,421.81 億元），證交所官方原表均有即時確切數字，已列入排程對接待辦。
+
+---
+
+### CAL-1｜未來 14 天（2026-11-21 ～ 2026-12-05）關鍵金融行事曆（新增 11/23 金管會第三波限空令生效）
+- 事實：
+  1. **11/21（六）**：**韓國關稅廳公布 11 月 1–20 日出口初值**；**金管會宣布 11/23 起實施第三波限空令（全面禁平盤下放空＋保證金 150%）**。
+  2. **11/23（一）**：**台股開盤實施金管會第三波五大穩定股市措施**；美東盤後 **HPE、ZM、A** 財報。
+  3. **11/24（二）**：美東盤前 **ADI、MDT、BBY、DLTR、BURL、DKS**；美東盤後 **DELL、HPQ、ADSK、WDAY**。
+  4. **11/25（三）**：美東 08:30（台北 21:30）**美國 10 月核心 PCE 物價指數、Q3 GDP 二次修正、週初領失業金**；**ECB 管委會辯論銀行最低準備金率翻倍至 2%**；**台灣央行公布 10 月 M1B / M2 貨幣金融統計**；美東 14:00（台北 11/26 03:00）**聯準會褐皮書（Beige Book）**；美東盤前 **DE**。
+  5. **11/26（四）**：**美股感恩節全日休市（台股正常交易）**；**韓國央行（BOK）利率決議**；台股 **宏于電機（7869）上櫃掛牌**。
+  6. **11/27（五）**：**美股感恩節翌日半天市（美東 13:00 收盤 / 台北 11/28 02:00）**；**國發會發布 10 月景氣對策信號燈號與景氣指標**；**國泰金（2882）Q3 法說會（14:00 中文 / 17:00 英文）**。
+  7. **11/28（六）**：**台灣 2026 九合一地方公職人員選舉投票日**；**FOMC 12 月會議前緘默期開始（11/28 00:00 ET ～ 12/10）**。
+  8. **11/29（日）**：**OPEC+ 第 69 次 JMMC 與第 39 次部長級會議**。
+  9. **11/30（一）**：**MSCI 季度調整台股收盤生效（台北 13:30）與月底資產再平衡**；美東盤後 **RBRK**。
+  10. **12/01（二）**：美東 10:00（台北 23:00）**美國 11 月 ISM 製造業 PMI、10 月 JOLTS 職位空缺**；**歐元區 11 月通膨初值**；**美國眾議院外委會等三委員會對黃仁勳進行閉門筆錄訪談**；美東盤後 **CRWD、MRVL、OKTA、MDB**。
+  11. **12/02（三）**：**輝達總法務長 Tim Teter 赴美國國會作證**；美東盤後 **CRM、SNOW、ZS**。
+  12. **12/03（四）**：美東 10:00 ISM 服務業 PMI；**美國參議院銀行委員會先進半導體出口管制聽證會（黃仁勳與商務部長 Lutnick 出席）**。
+  13. **12/04（五）**：美東 08:30（台北 21:30）**美國 11 月非農就業報告（Nonfarm Payrolls）與失業率**。
+
+---
+
+### CODE-0｜本批檔案（台北時間 17 時，餘數 17）逐一讀畢，未發現重大阻斷性邏輯或常數寫死錯誤
+- 審查檔案與說明：
+  - 依規則排序編號取除以 24 餘數為 17 之檔案清單（涵蓋 `tools/site_gemini.py`、`wsb/data/gemini_reply.py` 等模組）。
+  - 核對 `tools/site_gemini.py`：第 20 行之 `GROUP` 字典已完整包含 `NR`（📰 讀完全文的新聞）、`TWX`、`TWD`、`TWB`、`GBW`、`TWQ` 等全部最新任務段落；第 24 行 `HIDE = ("CODE-",)` 正確隱藏代碼稽核段落不向公開網頁展示；第 13–18 行 `esc()` 正確以合規過濾器 `guard_safe()` 替換合規禁詞，未發現邏輯漏洞。
+  - 核對 `wsb/data/gemini_reply.py`：第 25–40 行之正則表達式與單篇連結判定函式 `specific()` 能正確過濾首頁與分類頁，解析器邏輯正常。
 
 ---
 
 其他今天的大事：
-- **亞股 11/20 早盤全面重挫、軟銀盤中一度暴跌 16.58%、台股跌逾 2,000 點觸 36,406 點**：日經 225 跌 4%–4.5% 失守 57,000 點、KOSPI 開跌 4.08% 破 5,000 點，台積電盤中測試 2,000 元大關、新台幣貶破 33 元觸 33.038 元（軟銀／日經：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEjBZy-A2nG3h1E82CJxYPrW958uVsvYpqbPFfN5_ZRrr0Pvi4SWJeUrK_waoLHFsAt0en9I3H-PZ9pfPYfbZXc6o94i1hnAoTaQz9luZ8HcneUQroI_0d3hyv-XrsjPJz05WnCO6-Nboi5WZAoINigvteqHgm-gqRNsJtDaQs-SZws8yDexwcDxbbfXINOX2NTS4pfOdC-GYEDfcGTtg1VHiy9uW-k5bnhaKW2KePwGAMZEJ93uqsqXQ8jUAfHLeq7vkqaiWG-dkUMEAAUHckVE_VyyMq7ghPkY9FuIJ7xs2HJzH1q6l63ckUiauFY2HQks8si5KGyyH4= ；台股：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHk06TlcUDYuLdY294NBfBumDKc8-tkSXLidxpBEQ8mVkeqJUXCA95PbeXA5Wh2qrUNvRI8nAvtSVvrInWgmgKv9JHmzCuz4z4_zlQwChYOi3z6ma-EyA== ；新台幣：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEfQfnm9Jnq7B_r61F8rQ2wcMnFF1JLH0iVKEfNAWCQg87c2FguZEzGhHaLaaGyHrO5Ydai3lMQVeIMgnho5vdBk1TyTGBwhtZBEVWwP6b9snYztMrXAGW55vejXY7aTE4QupEKv2rl ）。
-- **IEA《2026 世界能源展望》定調荷莫茲海峽危機為現代史上最大能源供給衝擊**：累計損失 28 億桶原油與 600 億立方公尺天然氣，但暗船與護航壓低短線油價波動（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFuj-rk7IJSW1gMzCmSKf9Y_PpJhcJ72prtJ8mdJJxozeuePDw5no9zcJvWrWzyhwW9tK6t9FrJBNzLCoMRN9sKdJOBMy8_uNSRBRTdCVfZKvZjn0-e36cCfsG6V2rEcaqIJQ9F7LuzHu62G9tv0BxonE882jhM3gu_00MS ）。
-- **智利 Q3 GDP 年減 1.1% 陷入技術性衰退、銅礦產出年崩 14.7%**：全球最大銅產國面臨礦業與投資萎縮，智利披索逼近 1,000（https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGX-gAu-6HrVfbA8at3nvj5GxRpEPPjXimEqKYsTflHaRnharpq1iH7Li4SaGf0wba0T0JtsVjIfvfvYHLrNai3gira3k1SqSTeH5CS-KRKVAANw10pcIZlO0n1Rv9pgOG3Sx6152Ac1FVEC8fD38Ps0oaQbwqqKkVyIlUMPVsOBqN0CH6F8LAZL8_aNleHfUo17C3JVHsZTaB_ ）。
-- **強氣旋「阿克萬」今日登陸印度奧里薩邦撤離逾 30 萬人＋義大利全國總罷工**：（印度氣旋：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFwactUUgU17cnTLg6BO8UUQWIhbP6Odw4q97JFarLh9a6Q4ia_ljddEg5jYa8f_1zLc9kSSa4YGMAhLjukn-kj-m_ZOQ10LeH7Z4C1C7O9qSLKb-ypzKAhHHt8koRzN40hvxhE33yEMcRgX7lK0m0C7zurdc5cI3A6TyhJ8V0_TxP2pIrUhz6WCF72acoB-SlEGv5pzTDv5vA-kN0rkqOfw1d1IlkyvLmuGb_svXNMVk4A1BdDjKrjKViWwDkg-RgLtadO5v2Pr50GUUtFDrYTN-KwfIHhFvJ_x03xWQ== ；義大利罷工：https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE516Js2r8OK5XKGmEVYbF0zytrVkNmYZznVQ7yJB_E1jq24NYpBusG7exg9bIqKl6L9iLAG_RgqGOEmZ3dxZuTx7B21FyRUW8I82oVpVdCL5DMzd5wbLuXsiLrgMHz0UExn-3Qu2OgVS6oOY1IuwWvldFi4b052n3z0T354Fhkhc1T7-0YhrvVYoq80p6Y ）。
+- **金管會 11/21（週六）下午緊急加碼宣布自 11/23 起實施五大穩定股市措施**：全面禁止平盤以下融券與借券賣出、調高融券保證金成數至 150%、暫停受理認售權證發行申請、鼓勵實施庫藏股與鼓勵股票出借人暫停出借並提前召回（金管會官方新聞稿 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。
+- **美股科技股遭遇黑色星期五重挫，那斯達克暴跌 5.28% 抹平年內漲幅**：輝達大跌 14.01% 收 $125.53、超微跌 13.25% 收 $424.39、CoreWeave 盤中跌破 40 美元發行價（下探 $39.96），科技板塊面臨監管傳票與 AI 投資報酬檢驗全面拋售（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。
+- **Anthropic（ANT）上市次日下跌 -8.50% 收 $88.91，盤中 $83.05 險守發行價**：摩根士丹利宣布全數行使 1.47 億股綠鞋平倉，超額配售托底部位結清，下週面臨 $83.00 發行價實質考驗（彭博社 11/20：https://www.bloomberg.com/news/articles/2026-11-20/anthropic-falls-in-second-day-after-underwriters-exercise-greenshoe ）。
+- **台灣 10 月外銷訂單創歷年單月新高達 1,238.2 億美元（年增 78.3%）**：電子產品年增 89.8%、資訊通信年增 107.2%，來自美國訂單達 496.4 億美元（年增 96.3%），基本面訂單動能全面加速（經濟部統計處 11/20：https://www.moea.gov.tw/MNS/dos/bulletin/Bulletin.aspx?kind=8&html=1&menu_id=6727&bull_id=14209 ）。
+- **韓國 2026 年累計出口突破 1 兆美元大關**：南韓成為全球第 4 個年出口破兆美元之國家，主要受惠於 AI 記憶體晶片超級循環出口暴增（韓國政府 Korea.kr 11/20：https://www.korea.kr/news/policyNewsView.do?newsId=148936012 ）。
+- **英國 10 月零售銷售超預期月增 0.7%（年增 2.3%）**：英國國家統計局指出推升主因為民眾響應政府民防「Be Ready」宣導囤積罐頭與保久乳（ONS 官方報告 11/20：https://www.ons.gov.uk/economy/grossdomesticproductgdp/bulletins/retailsalesgreatbritain/october2026 ）。
