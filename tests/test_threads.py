@@ -18,6 +18,8 @@ def test_match_and_view():
     u = next(t for t in v["threads"] if t["id"] == "uscn_tech")
     assert u["n48"] == 3 and u["state"] == "升溫" and u["official"] == ["https://x/c"] and u["base"] == 0.5
     assert next(t for t in v["threads"] if t["id"] == "japan_yen")["state"] == "安靜"
+    young = T.view(new, now)                                   # 2.5 hours of archive: no baseline → not 升溫, the official one still shows
+    assert next(t for t in young["threads"] if t["id"] == "uscn_tech")["state"] == "官方新文件"
     gone = T.archive([], now + 40 * 86400, old=arch, save=False)
     assert gone == []
 

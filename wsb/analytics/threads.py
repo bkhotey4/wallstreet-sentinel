@@ -21,6 +21,7 @@ from typing import Dict, List, Optional
 
 log = logging.getLogger(__name__)
 KEEP_DAYS = 30
+MIN_DAYS = 5          # 「升溫」要先有 5 天的新聞當「平常」；之前只顯示「有消息」（官方新文件不受影響）
 
 # id, 中文名, 關鍵字（英文整字比對、中文子字串）, 相關行情, 一句話說明
 THREADS = [
@@ -112,17 +113,17 @@ def archive(items: List[Dict], now: Optional[float] = None, old: Optional[List[D
 
 def view(items: List[Dict], now: Optional[float] = None) -> Dict:
     now = time.time() if now is None else now
+    days = (now - min((float(x.get("ts") or now) for x in items), default=now)) / 86400
     out = []
     for tid, zh, _w, assets, why in THREADS:
         hits = [x for x in items if tid in match(x.get("t", ""))]
         n48 = [x for x in hits if now - float(x.get("ts") or 0) < 48 * 3600]
         n14 = [x for x in hits if now - float(x.get("ts") or 0) < 14 * 86400]
         base = max(0.0, (len(n14) - len(n48)) / 6.0)              # per 48 h over the 12 days before the last 48 h
-        hot = len(n48) >= 3 and len(n48) >= 2 * max(1.0, base)
+        hot = len(n48) >= 3 and len(n48) >= 2 * max(1.0, base) and days >= MIN_DAYS   # no baseline yet → no 升溫
         off = [x for x in n48 if x.get("off")]
         state = "升溫" if hot else ("官方新文件" if off else ("有消息" if n48 else "安靜"))
         out.append({"id": tid, "zh": zh, "why": why, "assets": assets, "n48": len(n48), "n14": len(n14), "base": round(base, 1),
                     "state": state, "official": [x["u"] for x in off],
                     "items": [{k: x.get(k) for k in ("t", "u", "s", "ts", "off")} for x in hits[:12]]})
-    days = (now - min((float(x.get("ts") or now) for x in items), default=now)) / 86400
     return {"ts": now, "days": round(days, 1), "threads": out}
