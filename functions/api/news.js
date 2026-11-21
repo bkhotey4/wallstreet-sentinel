@@ -57,7 +57,8 @@ export const TAGS = [
   // 11-21: one week, three stories of the same thread (BIS rule on remote chip use, TSMC curbing Chinese designers, Cursor and
   // Chinese AI models) — US–China tech decoupling gets its own tag
   ["美中科技", ["出口管制", "實體清單", "華為", "中芯", "DeepSeek", "中國 AI", "中國AI", "陸企", "export control", "export controls",
-              "Entity List", "Huawei", "SMIC", "Chinese AI", "Chinese models", "Chinese chip", "Chinese chips", "Beijing", "China"]],
+              "Entity List", "Huawei", "SMIC", "Chinese AI", "Chinese models", "Chinese chip", "Chinese chips", "China AI", "China chip",
+              "China chips", "chip curbs", "chip export", "chip exports", "AI chips to China", "tech war", "decoupling"]],   // not bare "China": too much noise
   ["分析師", ["調降評等", "調升評等", "price target", "downgrade", "downgrades", "downgraded", "upgrade", "upgrades", "upgraded"]],
   ["人事", ["辭職", "辭任", "下台", "接任", "執行長", "resigns", "steps down", "CEO"]],
   ["就業物價", ["通膨", "物價", "CPI", "就業", "非農", "失業", "inflation", "jobs", "payrolls", "unemployment"]],
