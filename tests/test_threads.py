@@ -6,6 +6,9 @@ from wsb.analytics import threads as T
 
 def test_match_and_view():
     assert T.match("Joint Investigation Report: China is Trying to Get U.S. Companies Addicted to Chinese AI Models") == ["uscn_tech"]
+    assert T.match("Could Iran reverse its stated policy of a civil-only nuclear program?") == ["energy_geo"]   # geopolitics, not AI power
+    assert T.match("Here's Why CoreWeave Faces Heavy Short Selling") == ["ai_capex"]
+    assert T.match("金管會宣布全面禁止平盤以下放空") == ["tw_leverage"] and T.match("Amazon signs nuclear power deal for data centers") == ["ai_capex", "ai_power"]
     assert T.match("BIS annual report on bank capital") == [] and T.match("日銀總裁暗示12月升息") == ["japan_yen"]
     now = 1_795_300_000.0
     old = [{"t": f"Huawei chip story {i}", "u": f"https://x/{i}", "s": "A", "ts": now - 86400 * (3 + i)} for i in range(3)]   # ~1.5 per 48 h? no: 3 in 12 days

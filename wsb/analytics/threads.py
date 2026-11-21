@@ -48,7 +48,7 @@ THREADS = [
      "日本升息與日圓急升，可能讓借日圓投資的錢被迫平倉。"),
     ("tw_leverage", "台股槓桿與被迫賣",
      ["融資", "斷頭", "追繳", "限空", "放空", "融券", "借券", "平盤以下", "國安基金", "維持率", "當沖", "權證", "margin call", "margin calls",
-      "short selling", "short-selling", "Taiwan stocks"],
+      "Taiwan stocks"],   # not English "short selling": US short-interest stories are not 台股槓桿
      [("^TWII", "台股加權"), ("TWD=X", "美元兌新台幣")],
      "借錢買股的人被迫賣，常是台股急跌的放大器。"),
     ("china_econ", "中國經濟與政策",
@@ -66,8 +66,8 @@ THREADS = [
      [("^SOX", "費城半導體"), ("HG=F", "銅"), ("CNY=X", "美元兌人民幣")],
      "中國反制美國時常用的手段；半導體、電動車、國防材料會先受影響，台灣與日本的材料供應鏈首當其衝。"),
     ("ai_power", "AI 電力與核能",
-     ["電網", "核能", "核電", "電價", "小型模組化反應爐", "nuclear", "SMR", "small modular reactor", "power grid", "electricity demand",
-      "power demand", "uranium"],
+     ["電網", "核能", "核電", "電價", "小型模組化反應爐", "nuclear power", "nuclear energy", "nuclear plant", "nuclear plants", "nuclear reactor",
+      "nuclear reactors", "SMR", "small modular reactor", "power grid", "electricity demand", "power demand", "uranium"],   # not bare "nuclear": Iran
      [("^TNX", "美債 10 年殖利率"), ("^SOX", "費城半導體")],
      "AI 資料中心要的電越來越多，電網、核能與電力設備是 AI 的第二條供應鏈；也牽動台灣的電價與產業用電。"),
     ("memory", "記憶體循環",

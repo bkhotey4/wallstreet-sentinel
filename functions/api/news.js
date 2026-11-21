@@ -56,7 +56,8 @@ export const TAGS = [
   // 11-21 self-review: topics the user's Taiwan / AI-chain view depends on but no tag kept (a general feed drops untagged headlines)
   ["兩岸", ["台海", "兩岸", "解放軍", "共軍", "軍演", "海警", "Taiwan Strait", "PLA", "cross-strait"]],
   ["礦產", ["稀土", "鎵", "鍺", "銻", "關鍵礦產", "rare earth", "rare earths", "gallium", "germanium", "antimony", "critical minerals"]],
-  ["電力", ["電網", "核能", "核電", "電價", "小型模組化反應爐", "nuclear", "SMR", "power grid", "electricity demand", "power demand", "utilities"]],
+  ["電力", ["電網", "核能", "核電", "電價", "小型模組化反應爐", "nuclear power", "nuclear energy", "nuclear plant", "nuclear reactor", "SMR", "power grid",
+            "electricity demand", "power demand"]],   // not bare "nuclear" (Iran's programme) or "utilities"
   ["記憶體", ["記憶體", "DRAM", "HBM", "NAND", "memory chip", "memory chips", "Micron", "SK Hynix", "Samsung Electronics"]],
   ["利率", ["聯準會", "央行", "利率", "降息", "升息", "公債", "殖利率", "Fed", "Federal Reserve", "interest rate", "interest rates",
             "rate cut", "rate hike", "Treasury", "Treasuries", "yield", "yields", "bond", "bonds", "monetary policy"]],
