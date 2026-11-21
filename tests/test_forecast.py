@@ -84,11 +84,13 @@ def test_outlook():
     x = {"outlook": {"one": "降溫比通膨更值得擔心", "horizons": [{"name": "未來一週", "text": "看 PCE\n看融資"}, {"name": "半年到一年", "text": "泡沫假設"}],
                      "change": "PCE 高於預期", "src": [{"name": "BEA", "url": "https://www.bea.gov/"}],
                      "tw_macro": {"one": "出口強", "horizons": [{"name": "一到三個月", "text": "外銷訂單"}]},
-                     "tw_market": {"one": "先清槓桿", "horizons": [{"name": "未來一週", "text": "追繳"}], "change": "融資止穩"}}}
+                     "tw_market": {"one": "先清槓桿", "horizons": [{"name": "未來一週", "text": "追繳"}], "change": "融資止穩"},
+                     "jp": {"one": "看日圓", "horizons": [{"name": "一到三個月", "text": "日本央行"}]}}}
     with patch.object(F, "FILE", base / "forecast.json"):
         h = F._outlook(x)
-    assert "接下來的總經與台股：我的看法" in h and "<h3>全球與美國總經</h3>" in h and "<b>未來一週</b>：看 PCE<br>看融資" in h and "<b>半年到一年</b>" in h
+    assert "接下來的總經與股市（美國・台灣・香港・日本）：我的看法" in h and "<h3>全球與美國總經</h3>" in h and "<b>未來一週</b>：看 PCE<br>看融資" in h and "<b>半年到一年</b>" in h
     assert "PCE 高於預期" in h and "<h3>台灣總經</h3>" in h and "<b>一到三個月</b>：外銷訂單" in h
+    assert "<h3>日本：總經與日股</h3>" in h and "看日圓" in h and "香港：總經與港股" not in h
     assert "<h3>台股</h3>" in h and "先清槓桿" in h and "融資止穩" in h
     assert "偏鷹但沒出事 <b>53%</b>" in h and "修正延長 <b>50%</b>" in h and "天前的版本" in h
     assert F._outlook({"script": "x"}) == ""
