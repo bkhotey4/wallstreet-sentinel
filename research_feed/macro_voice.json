@@ -57,6 +57,13 @@
       "url": "https://www.bbc.co.uk/news/articles/c6808ym10vzgo",
       "gist": "標普 500 跌 3.7%、道瓊跌 1.9%、那斯達克綜合指數跌 5.3%，三者仍比一年前高。Anthropic 盤中一度跌逾 12%，收跌 8.5%，接近發行價 83 美元。過去一年科技大廠投入超過 1 兆美元；民主黨期中選舉大勝也被投資人視為 AI 發展可能被限制的風險。",
       "gap": "標題把 Anthropic 放在主角，內文說輝達與 SpaceX 的個別問題也是原因；分析師認為新上市股票波動本來就大。"
+    },
+    {
+      "src": "CNBC（Claude 補讀）",
+      "title": "SpaceX's subsidiary Cursor tells lawmakers it's considering phasing out Chinese AI models",
+      "url": "https://www.cnbc.com/2026/11/20/cursor-chinese-ai-models-geopolitical-risk.html",
+      "gist": "記者 Kai Nicol-Schwarz，美東 11/20 上午 9:04。來源是美國眾議院國土安全委員會與中國特別委員會的報告：SpaceX 8 月完成收購的程式工具公司 Cursor，旗下 Composer 2 用月之暗面的 Kimi K2.5 做成；報告說 Cursor 告訴委員會會「研究」逐步停用中國開發的開源權重模型。Airbnb、DoorDash 也被問到。報告建議把 10 月對聯邦機關的 DeepSeek 禁令擴大到所有中國開發的 AI 模型，包括執行聯邦合約時。和本週商務部收緊晶片、台積電收緊中國客戶是同一條美中科技脫鉤的線。",
+      "gap": "網路轉述常寫成「SpaceX 暫停中國 AI」，其實只是「研究」停用，沒有決定、沒有時間表；說法來自國會報告，Cursor 與 SpaceX 都沒有回應；範圍只限中國開發的開源權重模型。"
     }
   ],
   "outlook": {

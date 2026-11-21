@@ -21,6 +21,8 @@ const FEEDS = [
   { s: "CNBC 頭條", o: "cnbc", u: "https://www.cnbc.com/id/100003114/device/rss/rss.html", lang: "en" },
   { s: "CNBC 國際", o: "cnbc", u: "https://www.cnbc.com/id/100727362/device/rss/rss.html", lang: "en" },
   { s: "CNBC 政治", o: "cnbc", u: "https://www.cnbc.com/id/10000113/device/rss/rss.html", lang: "en" },
+  // added 2026-11-21: 「SpaceX 旗下 Cursor 考慮停用中國 AI 模型」(CNBC 11/20) ran only in CNBC's technology section and never reached this page
+  { s: "CNBC 科技", o: "cnbc", u: "https://www.cnbc.com/id/19854910/device/rss/rss.html", lang: "en" },
   // added 2026-11-14 so that "three newsrooms report the same thing within 45 minutes" has enough newsrooms to count
   { s: "自由時報財經", o: "ltn", u: "https://news.ltn.com.tw/rss/business.xml", lang: "zh", biz: true },
   { s: "經濟日報", o: "udn", u: "https://money.udn.com/rssfeed/news/1001/5591?ch=money", lang: "zh", biz: true },
@@ -36,7 +38,7 @@ const FEEDS = [
   // (a 工商時報 report retold by 24/7 Wall St.) and UBS lowering its NVIDIA view.  The desks above carry neither Taiwan supply-chain
   // reports nor analyst notes; these four do.  Yahoo's per-ticker feed covers the AI supply chain and the largest US companies.
   { s: "工商時報", o: "ctee", u: "https://www.ctee.com.tw/rss_web/livenews/ctee", lang: "zh", biz: true },
-  { s: "Yahoo 個股新聞", o: "yahoo", u: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=NVDA,TSM,AVGO,AMD,MU,ASML,KLAC,LRCX,AMAT,MSFT,GOOGL,AMZN,META,AAPL,ORCL,TSLA,CRWV&region=US&lang=en-US", lang: "en", biz: true },
+  { s: "Yahoo 個股新聞", o: "yahoo", u: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=NVDA,TSM,AVGO,AMD,MU,ASML,KLAC,LRCX,AMAT,MSFT,GOOGL,AMZN,META,AAPL,ORCL,TSLA,CRWV,SPCX&region=US&lang=en-US", lang: "en", biz: true },
   { s: "Seeking Alpha 快訊", o: "sa", u: "https://seekingalpha.com/market_currents.xml", lang: "en", biz: true },
   { s: "24/7 Wall St.", o: "247", u: "https://247wallst.com/feed/", lang: "en", only: ["科技", "台股", "分析師"] },   // mostly personal-finance pieces: chips, Taiwan and analyst notes only
 ];
@@ -52,6 +54,10 @@ export const TAGS = [
   ["科技", ["AI", "人工智慧", "輝達", "晶片", "半導體", "Nvidia", "chip", "chips", "semiconductor", "TSMC", "credit limit", "credit limits", "neocloud", "CoreWeave"]],
   ["地緣", ["關稅", "制裁", "戰爭", "飛彈", "台海", "伊朗", "以色列", "中東", "荷姆茲", "烏克蘭", "俄羅斯", "tariff", "tariffs", "sanction",
             "sanctions", "war", "missile", "invasion", "strike", "strikes", "airstrike", "ceasefire", "Iran", "Iranian", "Israel", "Middle East", "Hormuz", "Ukraine", "Russia"]],
+  // 11-21: one week, three stories of the same thread (BIS rule on remote chip use, TSMC curbing Chinese designers, Cursor and
+  // Chinese AI models) — US–China tech decoupling gets its own tag
+  ["美中科技", ["出口管制", "實體清單", "華為", "中芯", "DeepSeek", "中國 AI", "中國AI", "陸企", "export control", "export controls",
+              "Entity List", "Huawei", "SMIC", "Chinese AI", "Chinese models", "Chinese chip", "Chinese chips", "Beijing", "China"]],
   ["分析師", ["調降評等", "調升評等", "price target", "downgrade", "downgrades", "downgraded", "upgrade", "upgrades", "upgraded"]],
   ["人事", ["辭職", "辭任", "下台", "接任", "執行長", "resigns", "steps down", "CEO"]],
   ["就業物價", ["通膨", "物價", "CPI", "就業", "非農", "失業", "inflation", "jobs", "payrolls", "unemployment"]],
