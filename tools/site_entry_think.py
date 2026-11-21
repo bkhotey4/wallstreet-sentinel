@@ -189,6 +189,10 @@ def block(eng, mg: Optional[Dict] = None) -> str:
                 f'意思是：大跌之後長一點看多半回得來，但「跌完還會再跌」很常見，能不能撐過那一段才是關鍵。</p>'
                 + (f'<p class="small muted">還沒滿 60 天的：{"、".join(x["date"] for x in recent)}。</p>' if recent else "")
                 + f'<details class="sgx"><summary>看每一次（{len(ev)} 次）</summary><ul class="small">{lst}</ul></details>')
+    try:
+        hist += wait_block({k: _s(eng, k) for k in ("^TWII", "^VIX", "HYG", "^MOVE", "TWD=X")})
+    except Exception:  # noqa: BLE001
+        log.exception("wait-vs-now failed")
     ask = ('<h3>看燈號之前，先問自己四件事</h3><ul class="small">'
            '<li><b>這筆錢多久用不到？</b>三到五年內要用的錢（婚禮、買房頭期款、學費），不適合放在會一年跌三成的地方。</li>'
            '<li><b>最壞的情況能承受多少？</b>用上面「之後最深再跌」的數字，換算成你的金額，想像帳面少掉那麼多時你會怎麼做。</li>'
@@ -199,3 +203,87 @@ def block(eng, mg: Optional[Dict] = None) -> str:
             f'<p class="small"><b>{e(lead)}</b></p>{tbl}{hist}{ask}'
             '<p class="note">燈號由程式從本站資料算出（融資：證交所；VIX、MOVE、高收益債、新台幣、加權指數：Yahoo 收盤），門檻是常用警戒線，不是回測過的預測模型；'
             '歷史對照用加權指數收盤，不含股息。這裡描述的是「現在的狀況」，不是叫你進場或離場的訊號，也不提供日期或價位。不構成投資建議。</p></details>')
+
+
+# ------------------------------------------------------------------ 等燈號轉綠 vs 大跌當天（歷史，2026-11-21）
+# 使用者 11-21 問「何時可以進場或出場」。本站不給日期與價位；這裡回答一個能用歷史檢驗的問題：
+# 大跌之後，「等五個市場燈號大多轉綠」和「大跌當天」相比，過去差在哪裡（少賺多少、少挨多少跌）。
+# 融資燈號沒有長期歷史，只用另外五個（VIX、創新低、高收益債、MOVE、新台幣），同一套門檻。
+def green_frame(px: Dict) -> "object":
+    import pandas as pd
+    tw, vix, hyg, mv, fx = (px.get(k) for k in ("^TWII", "^VIX", "HYG", "^MOVE", "TWD=X"))
+    idx = tw.index
+    al = lambda s: s.reindex(idx).ffill(limit=3) if s is not None and len(s) else pd.Series(index=idx, dtype=float)  # noqa: E731
+    vix, hyg, mv, fx = al(vix), al(hyg), al(mv), al(fx)
+    g = pd.DataFrame(index=idx)
+    g["vix"] = (vix < 25) & (vix <= vix.rolling(20).max() * 0.8)
+    newlow = tw <= tw.rolling(20).min() + 1e-9
+    g["low"] = ~newlow.rolling(5).max().astype(bool)
+    g["credit"] = (hyg / hyg.shift(20) - 1) * 100 > -1.5
+    g["move"] = (mv <= 110) & ((mv / mv.shift(5) - 1) * 100 < 10)
+    g["twd"] = (fx / fx.shift(20) - 1) * 100 < 1
+    have = pd.DataFrame({"vix": vix.notna(), "low": tw.notna(), "credit": hyg.shift(20).notna(), "move": mv.shift(5).notna(), "twd": fx.shift(20).notna()})
+    return g.where(have), have
+
+
+def wait_vs_now(px: Dict, need: int = 4, look: int = 120) -> List[Dict]:
+    tw = px.get("^TWII")
+    if tw is None or len(tw) < 300:
+        return []
+    g, have = green_frame(px)
+    n_ok = have.sum(axis=1)
+    n_g = (g == True).sum(axis=1)  # noqa: E712  (NaN = no data → not green)
+    out = []
+    for e in drops(tw):
+        i = tw.index.get_loc(e["date"])
+        if n_ok.iloc[i] < 5:                         # only episodes where all five measures existed (2007 onward)
+            continue
+        j = next((k for k in range(i + 1, min(i + look, len(tw))) if n_g.iloc[k] >= need), None)
+        c0 = float(tw.iloc[i])
+        row = {"date": e["date"], "drop": e["drop"], "wait": None, "open": i + look > len(tw),
+               "dd_now": min(0.0, float(tw.iloc[i + 1:i + 61].min()) / c0 - 1) if i + 61 <= len(tw) else None}
+        if j is not None:
+            cj = float(tw.iloc[j])
+            row.update({"wait": j - i, "green": tw.index[j].strftime("%Y-%m-%d"), "move": cj / c0 - 1,
+                        "dd_before": float(tw.iloc[i:j + 1].min()) / c0 - 1,
+                        "f60_now": float(tw.iloc[i + 60]) / c0 - 1 if i + 60 < len(tw) else None,
+                        "f60_wait": float(tw.iloc[j + 60]) / cj - 1 if j + 60 < len(tw) else None,
+                        "dd_after": min(0.0, float(tw.iloc[j + 1:j + 61].min()) / cj - 1) if j + 1 < len(tw) else None})
+        out.append(row)
+    return out
+
+
+def wait_block(px: Dict) -> str:
+    rows = wait_vs_now(px)
+    done = [r for r in rows if r["wait"] is not None and r.get("f60_wait") is not None]
+    if len(done) < 4:
+        return ""
+    mv = [r["move"] for r in done]
+    dd = [r["dd_before"] for r in done]
+    ddw = [r["dd_after"] for r in done if r.get("dd_after") is not None]
+    cheaper = sum(m < 0 for m in mv)
+    lst = "".join(
+        f'<li>{r["date"]}（當天 {r["drop"]:.1f}%）：' + (
+            f'等了 {r["wait"]} 個交易日、{r["green"]} 轉綠；那時指數比大跌當天 {_pc(r["move"])}，'
+            + ("等待期間沒有再跌破大跌當天收盤；" if r["dd_before"] >= 0 else f'等待期間最深 {_pc(r["dd_before"])}；')
+            + (f'轉綠後 60 天 {_pc(r["f60_wait"])}，' if r.get("f60_wait") is not None else "轉綠後還不到 60 天，")
+            + (_dd(r["dd_after"]).replace("之後 60 天內", "轉綠後 60 天內") if r.get("dd_after") is not None else "")
+            if r["wait"] is not None else ("還沒轉綠（進行中）" if r.get("open") else "120 個交易日內都沒有轉綠")) + "</li>" for r in reversed(rows))
+    pend = [r for r in rows if r["wait"] is None or r.get("f60_wait") is None]
+    ddn = [r["dd_now"] for r in done if r.get("dd_now") is not None]
+    m_mv, m_ddw, m_ddn = _med(mv), (_med(ddw) if ddw else None), (_med(ddn) if ddn else None)
+    if cheaper * 2 < len(done) and m_ddw is not None and m_ddn is not None and m_ddw <= m_ddn + 0.01:
+        verdict = ("<b>結論：這套燈號在歷史上不是好的「等待訊號」。</b>轉綠時指數多半已經比大跌當天高，而且轉綠之後一樣會再跌，"
+                   "等待沒有讓人少挨跌。它比較適合用來看「被迫賣壓和恐慌是不是在退」，不適合拿來抓時間點。")
+    elif cheaper * 2 >= len(done):
+        verdict = "<b>結論：等待多半買得比較便宜。</b>但樣本少，不能當成規則。"
+    else:
+        verdict = "<b>結論：等待的代價是轉綠時通常已經比較貴，好處是之後少挨一些跌；兩種都有代價。</b>"
+    return (f'<h3>如果等燈號大多轉綠，歷史上差在哪裡</h3><p class="small">2007 年以來（五個燈號都有資料）台股單日跌 5% 以上、'
+            f'而且之後 120 天內有轉綠（五個裡至少四個 🟢）的 {len(done)} 次：轉綠那天的指數比大跌當天<b>更低的有 {cheaper} 次、更高的有 {len(done) - cheaper} 次</b>，'
+            f'中位數 {_pc(m_mv)}；從大跌當天到轉綠之間，中位數最深再跌 {_pc(_med(dd))}。'
+            + (f'轉綠之後 60 天內，中位數最深再跌 {_pc(m_ddw)}；如果在大跌當天就算，之後 60 天內中位數最深再跌 {_pc(m_ddn)}。' if m_ddw is not None and m_ddn is not None else "")
+            + f'</p><p class="small">{verdict}</p>'
+            + (f'<p class="small muted">還在進行中、或 120 天內沒有轉綠的：{"、".join(r["date"] for r in pend)}。</p>' if pend else "")
+            + f'<details class="sgx"><summary>看每一次（{len(rows)} 次）</summary><ul class="small">{lst}</ul></details>'
+            '<p class="small muted">歷史樣本少（十幾次），不能當成規則；只用收盤價、不含股息與手續費；融資燈號沒有長期資料，沒有算進去。</p>')

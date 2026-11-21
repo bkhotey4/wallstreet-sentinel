@@ -46,7 +46,24 @@ def test_drops_and_block():
     assert not any(b in h for b in BANNED), [b for b in BANNED if b in h]
 
 
+def test_wait_vs_now():
+    """11-21: crash day vs the first day ≥4 of 5 lights are green — the verdict follows the numbers, not a fixed story."""
+    idx = pd.date_range("2008-01-01", periods=700, freq="B")
+    tw = pd.Series(100.0, idx)
+    tw.iloc[400:] = 94.0                                   # −6 % crash day at 400
+    tw.iloc[401:410] = np.linspace(93, 96, 9)
+    tw.iloc[410:] = 97.0
+    vix = pd.Series(18.0, idx)
+    vix.iloc[395:405] = 40.0                               # panic, then calm from 405
+    px = {"^TWII": tw, "^VIX": vix, "HYG": pd.Series(80.0, idx), "^MOVE": pd.Series(90.0, idx), "TWD=X": pd.Series(30.0, idx)}
+    rows = ET.wait_vs_now(px)
+    r = [x for x in rows if x["date"] == idx[400].strftime("%Y-%m-%d")][0]
+    assert r["wait"] is not None and r["wait"] > 0 and r["move"] > 0
+    assert ET.wait_block(px) == ""                         # one episode is too few to show
+
+
 if __name__ == "__main__":
+    test_wait_vs_now()
     test_lights()
     test_drops_and_block()
     print("ok entry think")
