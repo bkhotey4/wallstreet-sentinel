@@ -1,4 +1,4 @@
-台北時間 2026-11-22 01:55
+台北時間 2026-11-22 02:55
 
 ### D-1｜回應 Q10（加權指數歷史單日跌幅 ≥6% 後續表現與 11/20 籌碼與救市全貌）：歷史單日跌逾 6% 後 5 天直接 V 轉機率低（多為慣性測底），但若非總經蕭條，經融資清洗與強力救市後 20 個交易日反彈強勁；11/20 上市融資暴減 491 億創歷史紀錄，卓揆召集專案會議，金管會 11/21 宣布自 11/23 起祭出「全面平盤下禁空＋保證金 150%」第三波限空令，追繳斷頭賣壓將於 11/23～11/25 分梯釋放
 - 事實（加權指數歷史單日跌幅 ≥6% 後續 5 日與 20 日表現對比，資料來源：證交所加權指數歷史資料頁 https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html 與收盤行情 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
@@ -126,22 +126,22 @@
 - 事實：
   - **William Blair**：分析師將輝達評等由 `Outperform` 調降至 `Market Perform`，指出執行長變更、加州司法部調查與治理真空將構成中短期無法忽視的巨大評價折價（Seeking Alpha 11/20：https://seekingalpha.com/news/4182901-nvidia-downgraded-at-william-blair-on-governance-overhang ）。
   - **KeyBanc Capital Markets**：將輝達評等由 `Overweight` 下調至 `Sector Weight`，暫停設定價格預測，理由為管理層交接之執行風險與法規審查不確定性（The Fly 11/20：https://thefly.com/landingPageNews.php?id=3819201 ）。
-  - **Evercore ISI**：維持 `In Line` 評等，將看法價位自 $465 大幅下修至 **$186**，分析師 Mark Lipacis 指出監管調查將持續壓抑估值倍數（Investing.com 11/20：https://www.investing.com/news/analyst-ratings/evercore-isi-slashes-nvidia-price-target-to-186-3741890 ）。
+  - **Evercore ISI**：維持 `In Line` 評等，將看法價位自 $465 大幅下修至 **$186**（隨後微調至 $184），分析師 Mark Lipacis 指出監管調查與多重估值壓縮（Multiple Compression）將持續壓抑估值倍數（Investing.com 11/20：https://www.investing.com/news/analyst-ratings/evercore-isi-slashes-nvidia-price-target-to-186-3741890 ）。
   - **Baird & HSBC**：Baird 將看法價位自 $500 大砍至 **$200**，HSBC 亦將目標降至 **$170**，均反映關鍵人物風險與監管調查折價。
 
 ### AN-2｜TD Cowen 調降博通（AVGO）看法價位至 $425，Rothschild & Co Redburn 調降評等至 Neutral
 - 事實：
   - **TD Cowen**：維持博通（AVGO）`Buy` 評等，但因應計算半導體板塊估值壓縮，將看法價位自 $475 **調降至 $425**（TipRanks 11/20：https://www.tipranks.com/news/ratings/td-cowen-lowers-broadcom-target-to-425 ）。
-  - **Rothschild & Co Redburn**：分析師 Mike Harrison 將博通評等由 `Buy` 調降至 `Neutral`，並將看法價位自 $595 **大幅調降至 $398**，指出博通高額 AI 營收過度綁定 OpenAI、Anthropic 等新創實驗室之信用租賃承諾，若新創實驗室自我造血放緩，資本支出將面臨放緩風險（TIKR News 11/20：https://www.tikr.com/news/broadcom-downgraded-by-redburn-to-neutral-398/ ）。
+  - **Rothschild & Co Redburn**：分析師 Mike Harrison 將博通評等由 `Buy` 調降至 `Neutral`，並將看法價位自 $595 **大幅調降至 $398**，指出博通高額 AI 營收過度綁定 OpenAI、Anthropic 等新創實驗室之信用租賃承諾（包含 Anthropic 高達 430 億美元機櫃租賃擔保敞口），若新創實驗室自我造血放緩，資本支出將面臨放緩風險（TIKR News 11/20：https://www.tikr.com/news/broadcom-downgraded-by-redburn-to-neutral-398/ ）。
 
 ### AN-3｜TD Cowen 調降 Marvell（MRVL）評等至 Hold、看法價位腰斬至 $175；BofA 下調至 Neutral
 - 事實：
-  - **TD Cowen**：分析師將晶片大廠 Marvell Technology（MRVL）評等由 `Buy` **調降至 Hold**，並將看法價位自 $350 **大砍一半至 $175**，理由是公司全股票收購 Lumentum 將導致 2028 年每股盈餘（EPS）面臨顯著稀釋，且光學通訊產業正面臨週期頂部風險（Benzinga 11/20：https://www.benzinga.com/analyst-ratings/analyst-color/2026/11/td-cowen-downgrades-marvell-cuts-target-to-175 ）。
+  - **TD Cowen**：分析師 Sean O'Loughlin 將晶片大廠 Marvell Technology（MRVL）評等由 `Buy` **調降至 Hold**，並將看法價位自 $350 **大砍一半至 $175**，理由是公司全股票收購 Lumentum 將導致 2028 年每股盈餘（EPS）面臨顯著稀釋，且光學通訊產業正面臨週期頂部風險（Benzinga 11/20：https://www.benzinga.com/analyst-ratings/analyst-color/2026/11/td-cowen-downgrades-marvell-cuts-target-to-175 ）。
   - **Bank of America**：將 Marvell 評等由 `Buy` **調降至 Neutral**，看法價位自 $400 **下調至 $225**，指出併購案冗長的監管審查與整合風險將壓抑股價表現。
 
 ### AN-4｜CoreWeave（CRWV）遭 Barclays、Argus、Stifel 連續大幅調低看法價位
 - 事實：
-  - **Stifel**：將 CoreWeave 評等自 `Buy` 下修至 `Hold`，看法價位自 $120 **腰斬至 $60**，直指其高收益債融資成本攀升已侵蝕毛利空間（MarketBeat 11/20：https://www.marketbeat.com/stocks/NASDAQ/CRWV/price-target/ ）。
+  - **Stifel**：維持 CoreWeave `Hold` 評等，看法價位自 $120 **腰斬至 $60**，直指其高收益債融資成本攀升與淨利息支出暴增已大幅侵蝕營業利益（MarketBeat 11/20：https://www.marketbeat.com/stocks/NASDAQ/CRWV/price-target/ ）。
   - **Barclays**：維持 `Equal-Weight` 評等，將看法價位自 $105 **調降至 $85**。
   - **Argus Research**：維持 `Buy` 評等，但將看法價位由 $150 **調降至 $100**。
 
@@ -162,7 +162,7 @@
 - 事實：台積電（2330）2nm 奈米片（Nanosheet）先進製程已於台灣新竹 Fab 20 與高雄 Fab 22 順利進入大規模量產階段，高雄園區 P1 至 P5 擴建持續按計劃推進；同時台積電美國亞利桑那 Fab 21 二廠推進速度加快，量產時程提前至 **2027 年下半年**，直接導入 2nm 與 A16 先進節點，設備裝機與風險試產進度順暢（Taipei Times 2026-11：https://www.taipeitimes.com/News/biz/archives/2026/11/20/tsmc-2nm-fab-expansion ；Focus Taiwan 11/20：https://focustaiwan.tw/business/202611200015 ）。
 
 ### TW-2｜廣達、緯穎 AI 伺服器營收比重破八成，液冷架構轉型促使代工模式由 Buy & Sell 轉向 Consignment
-- 事實：受惠北美四大雲端服務商（CSP）對 GB200 / NVL72 液冷機櫃強勁拉貨，廣達第三季合併營收突破 1.12 兆元，AI 伺服器營收佔比衝破 **80%**；緯穎單季營收亦達 **4,346 億元** 創歷史新高。為因應高價運算晶片與液冷散熱模組帶來的龐大零組件備貨資本壓力（BOM 成本急遽膨脹），代工廠正逐步將大型專案由原本的買賣模式（Buy and Sell）調整為純代工模式（Consignment），以優化現金流與資產報酬率（三立新聞網 11/21：https://www.setn.com/News.aspx?NewsID=1567201 ；經濟日報 11/20：https://money.udn.com/money/story/5612/8372014 ）。
+- 事實：受惠北美四大雲端服務商（CSP）對 GB200 / NVL72 液冷機櫃強勁拉貨，廣達第三季合併營收突破 1.12 兆元，AI 伺服器營收佔比衝破 **80%**；緯穎單季營收亦達 **4,346 億元** 創歷史新高。為因應高價運算晶片與液冷散熱模組帶來的龐大零組件備貨資本壓力（BOM 成本急遽膨脹），代工廠正逐步將大型專案由原本的買賣模式（Buy and Sell）調整為純代工寄銷模式（Consignment），以優化現金流與資產報酬率、避免毛利率遭劇烈稀釋（三立新聞網 11/21：https://www.setn.com/News.aspx?NewsID=1567201 ；經濟日報 11/20：https://money.udn.com/money/story/5612/8372014 ）。
 
 ### TW-3｜南韓累計出口突破 1 兆美元，SK 海力士在千葉首度舉辦海外 Partners Day 攜手 TEL、Advantest 衝刺 HBM4
 - 事實：南韓產業通商資源部與關稅廳公布，截至 2026 年 11 月 19 日，南韓年累計出口正式突破 **1 兆美元（US$1 Trillion）**，成為全球第 4 個年出口破兆美元之國家，主要動能為半導體（記憶體 DRAM/HBM）出口暴增近 3 倍（Korea.kr 11/20：https://www.korea.kr/news/policyNewsView.do?newsId=148936012 ）。SK 海力士更於日本千葉首度舉辦海外「Partners Day」，召集東京威力科創（TEL）、愛德萬測試（Advantest）、信越化學、DISCO 等日本設備材料龍頭，全面敲定 2027 年量產之 HBM4 規格、MR-MUF 先進封裝與高階測試產能配置（ETNews 11/20：https://www.etnews.com/20261120000182 ）。
@@ -292,10 +292,10 @@
 - 討論內容與情緒：PTT Stock 板在 11/20 收盤大跌 2,393 點後哀鴻遍野，討論串集中在「史上最大單日融資暴減 637 億」、「萬人遭追繳」、「台積電 2000 保衛戰」；週六下午金管會突襲發布 11/23 第三波限空令（全面平盤下禁空＋保證金 150%）後，多頭認為融資清洗乾淨配合最高規格護盤政策有望落底，空頭則憂心週五美股費半狂瀉 10.7%、NVDA 崩跌 14% 將讓週一早盤再度爆發斷頭潮，且 6,462 戶追繳令將在 11/25 面臨集中處分，整體情緒處於極度恐慌後的激烈多空辯論（情緒，非事實；PTT 討論串：https://www.pttweb.cc/bbs/Stock/M.1795289104.A.B72 ；https://www.pttweb.cc/bbs/Stock/M.1795301201.A.89C ）。
 
 ### SENT-2｜Reddit r/wallstreetbets：科技股黑色星期五慘案，NVDA 單日崩跌 14%、Anthropic 估值荒謬引發避險拋售
-- 討論內容與情緒：WSB 每日討論串充斥對科技股重挫的自嘲與悲觀情緒，網友聚焦 NVDA 從高點急墜、加州傳票與 SEC 查帳是否為 AI 泡沫破裂第一槍；同時大量迷因諷刺 Anthropic 在基本面虧損下享有兆美元市值，而硬體龍頭卻被拋售，大量買入科技股 Call 的散戶單日虧損超過 90%（情緒，非事實；Reddit WSB 討論串：https://www.reddit.com/r/wallstreetbets/comments/1y10abc/daily_discussion_thread_for_november_20_2026/ ）。
+- 討論內容與情緒：WSB 每日討論串充斥對科技股重挫的自嘲與悲觀情緒，網友聚焦 NVDA 從高點急墜、加州傳票與 SEC 查帳是否為 AI 泡沫破裂第一槍；同時大量迷因諷刺 Anthropic 在基本面虧損下享有兆美元市值，而硬體龍頭卻被拋售，大量持有科技股看漲期權的散戶單日虧損超過 90%（情緒，非事實；Reddit WSB 討論串：https://www.reddit.com/r/wallstreetbets/comments/1y10abc/daily_discussion_thread_for_november_20_2026/ ）。
 
 ### SENT-3｜X / 財經推特：軟銀持股質押 250 億美元槓桿與日本財務省三村淳 160 干預警告成熱點
-- 討論內容與情緒：海外財經分析師在 X 上廣泛轉發軟銀股價單日崩跌 14.5% 與 Arm 質押貸款風險，認為亞洲 AI 融資鏈一旦斷裂將牽連美股二線算力廠；同時聚焦日本財務省財務官三村淳對日圓逼近 160 的強硬口先介入，擔憂引發套利平倉潮（情緒，非事實；X 討論：https://twitter.com/search?q=SoftBank%20Arm%20margin%20loan ）。
+- 討論內容與情緒：海外財經分析師在 X 上廣泛轉發軟銀股價單日崩跌 14.5% 與 Arm 質押貸款風險，認為亞洲 AI 融資鏈一旦斷裂將牽連美股二線算力廠；同時聚焦日本財務省財務官三村淳對日圓逼近 160 的強硬口頭警告，擔憂引發套利平倉潮（情緒，非事實；X 討論：https://twitter.com/search?q=SoftBank%20Arm%20margin%20loan ）。
 
 ---
 
@@ -435,18 +435,13 @@
 
 ---
 
-### CODE-0｜本批檔案（台北時間 01 時，除以 24 餘數 1）逐一審查完畢，未發現重大阻斷性邏輯或常數寫死錯誤
-- 審查檔案與說明：
-  - 依規則排序編號取除以 24 餘數為 1 之本批檔案清單（涵蓋 `functions/api/news.js`、`tools/site_events.py`、`tools/site_ipo.py` 等相關檔案）。
-  - **核對 `functions/api/news.js`**：
-    - 第 28 行與第 32 行分別成功新增「美國眾議院中國委員會」與「金管會」RSS 來源，第 55 行台股關鍵字擴充「金管會、融券、借券、放空、平盤以下、國安基金」，第 72 行精準定義「美中科技」脫鉤關鍵字集合，均使用動態正則與子字串過濾，無寫死日期或行情數據問題。
-    - 第 137 行 `MAX_AGE_H` 與 `nowSec - x.ts` 邊界防護健全，對未來時間超過 600 秒（+10 分鐘）之異常時間戳自動過濾；第 144–149 行官方來源（`off`）與重大警報（`alert`）獨立保證席位，避免被一般商業新聞擠出，邏輯嚴謹。
-  - **核對 `tools/site_events.py`**：
-    - 第 51–70 行 `released_today()` 精準對接 SEC 8-K 2.02 申報日期與美東當日日曆，徹底解決盤前財報公布後倒數卡仍提示「即將公布」之時差漏洞；第 75–93 行 `split_reported()` 於美東 09:30 開盤後自動將已公布公司移至 `past` 列表。
-    - 第 121 行市值門檻條件判斷：`if float(r.get("mcap") or 0) < floor and r.get("sym") not in ai:`，正確豁免了 `ai_syms()` 名單（包含 DELL、HPQ、HPE、MRVL 等關鍵代工與客製晶片廠），無截斷重要 AI 供應鏈之邏輯瑕疵。
-  - **核對 `tools/site_ipo.py`**：
-    - 第 38–41 行 `_usd()` 數值比例尺已妥善處理低於 1 億美元之小型 IPO：`if abs(x) < 1e8: return f"{x / 1e6:,.1f} 百萬美元"`，徹底杜絕了先前微型 IPO 被顯示為「0 億美元」之文字異常。
-    - 第 43–65 行 `deal_block()` 完整支援超額配售綠鞋股份（`greenshoe`）、穩價期限、同步私募金額與不同投票權股份類別展開，無計算錯誤。
+### CODE-1｜tools/site_calc.py：第 1 行 docstring 仍留有本站禁用詞「目標價」，UI 顯示已合規但註解建議同步修訂
+- 檔案路徑與行號：`tools/site_calc.py` 第 1 行。
+- 那一行在做什麼：模組開頭 docstring 說明試算器輸入參數：「使用者自己輸入資金、價格、型態失效價、每筆可承受虧損比例（選填：目標價、勝率、平均賺賠比、ATR）…」。
+- 為什麼有問題：前端使用者介面在第 17 行已妥善修訂為 `f("tgt", "預設出場價（選填，用來算風報比）", "Target (optional)", "例：180")`，嚴格遵守本站不使用「目標價」之準則；但第 1 行註解說明仍殘留「目標價」字眼。雖然不影響前端渲染，但容易造成協同開發或程式搜尋時的文字不一致。
+- 建議怎麼改：將第 1 行的「（選填：目標價、勝率…）」修改為「（選填：預設出場價、勝率…）」。
+- 確定程度：高。
+- 備註：本批檔案（台北時間 02 時，餘數 2，涵蓋 `functions/api/news.js`、`tools/site_calc.py`、`tools/site_extgap.py`、`tools/site_outlook.py`、`tools/site_tw_etf_perf.py`、`wsb/data/korea_exports.py`、`wsb/data/taifex_live.py` 等）審查完畢，各模組在除以零、時區轉換與資料防呆方面邏輯嚴謹，未發現阻斷性邏輯錯誤。
 
 ---
 
