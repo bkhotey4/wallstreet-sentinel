@@ -73,6 +73,7 @@ from tools import site_learn as SLN
 from tools import site_deep as SDP
 from tools import site_human as SHM
 from tools import site_dots as SDT
+from tools import site_threads as STHR
 from tools import site_gemini as SGM
 from tools import site_longhist as SLH
 from tools import site_sessions as SSN
@@ -1408,7 +1409,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),
-            ("news", "新聞日曆", "News & calendar", [SEB.sec_event_board, SDT.sec_dots, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
+            ("news", "新聞日曆", "News & calendar", [SEB.sec_event_board, SDT.sec_dots, STHR.sec_threads, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
@@ -1963,7 +1964,26 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.exception("earnings verdicts failed")
     out.mkdir(parents=True, exist_ok=True)
     SFC.make_audio(out / "market")          # before render: the card only shows a player when the file exists
+    try:                                                   # 主線追蹤（11-21 盲點檢討）：存下即時新聞，串成長期主線
+        from wsb.analytics import threads as THR
+        from tools import site_threads as STH
+        from wsb.data import http as WHTTP
+        try:
+            nj = await asyncio.wait_for(WHTTP.get("https://wallstreet-sentinel.pages.dev/api/news", timeout=30, retries=1), 45)
+        except Exception as e:  # noqa: BLE001
+            log.warning("live news for threads unavailable: %s", e)
+            nj = {}
+        STH.VIEW.clear()
+        STH.VIEW.update(THR.view(THR.archive((nj or {}).get("items") or [])))
+    except Exception:  # noqa: BLE001
+        log.exception("story threads failed")
     page_html = render(eng, ai_text, ai_engine)
+    try:
+        from tools import site_threads as STH
+        if STH.VIEW.get("threads"):
+            (out / "threads.json").write_text(json.dumps(STH.VIEW, ensure_ascii=False), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        log.exception("threads.json failed")
     if BLOCKS.get("reg"):                                  # copy back to tools/blocks.json to make new numbers permanent
         try:
             (out / "blocks.json").write_text(json.dumps({**BLOCKS["reg"], "new": BLOCKS.get("new") or []}, ensure_ascii=False, indent=1), encoding="utf-8")

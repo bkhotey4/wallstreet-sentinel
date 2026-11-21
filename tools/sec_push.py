@@ -996,6 +996,49 @@ def earnsoon_embed(r: Dict, lines: List[str], pv: Optional[Dict]) -> Dict:
 BUDGET = 95.0                    # 這支程式每 3 分鐘跑一次、Windows 排程 2 分鐘就會強制結束：超過 95 秒，剩下的留到下一輪
 # ------------------------------------------------------------------ 台股規則 v1 紙上交易（網站每天收盤後算好的 tw_paper.json；tools/tw_paper.py）
 PAPER = "https://wallstreet-sentinel.pages.dev/tw_paper.json"
+# ------------------------------------------------------------------ 主線追蹤（11-21 盲點檢討；規則 wsb/analytics/threads.py）
+THREADS = "https://wallstreet-sentinel.pages.dev/threads.json"
+TH_EVERY = 1800
+TH_MIN_DAYS = 5          # 「升溫」要先累積幾天新聞才準；官方新文件不用等
+TH_GAP = 24 * 3600       # 每條主線一天最多一則
+
+
+async def threads_json(sess: aiohttp.ClientSession) -> Dict:
+    try:
+        async with sess.get(THREADS, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            return (await r.json(content_type=None)) or {} if r.status < 300 else {}
+    except Exception as e:  # noqa: BLE001
+        log.info("threads: %s", e)
+        return {}
+
+
+def threads_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
+    out = []
+    for t in d.get("threads") or []:
+        ok = t.get("state") == "官方新文件" or (t.get("state") == "升溫" and float(d.get("days") or 0) >= TH_MIN_DAYS)
+        key = "thread:" + str(t.get("id"))
+        if ok and now - float(done.get(key, 0)) >= TH_GAP:
+            out.append({**t, "key": key})
+    return out
+
+
+def thread_embed(t: Dict, lines: List[str]) -> Dict:
+    tpe = lambda ts: time.strftime("%m/%d %H:%M", time.gmtime(float(ts or 0) + 8 * 3600))  # noqa: E731
+    hot = t.get("state") == "升溫"
+    heads = NL.join(f'・{"📄 " if x.get("off") else ""}[{str(x["t"])[:130]}]({x["u"]})（{x["s"]} {tpe(x["ts"])}）' for x in (t.get("items") or [])[:5])
+    lead = (f'「{t["zh"]}」這條主線 48 小時有 {t["n48"]} 則新聞，平常約 {t["base"]} 則。' if hot else
+            f'「{t["zh"]}」這條主線出現官方新文件（📄）。')
+    return {"title": f'🧵 主線{"升溫" if hot else "：官方新文件"}：{t["zh"]}'[:256], "color": 0x7C3AED, "url": "https://wallstreet-sentinel.pages.dev/#news",
+            "description": ("一句話看懂：" + lead + str(t.get("why") or "") + NL + heads
+                            + (NL + "**相關行情**（只是現在的漲跌，不代表就是這些消息造成的）" + NL + NL.join(lines) if lines else "")
+                            + NL + "依標題關鍵字歸類，只代表相關新聞變多，不是讀過內文的判斷；完整清單在網站「新聞日曆」頁的主線追蹤。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 主線追蹤 · 不構成投資建議"}}
+
+
+TH_TAGS = {"uscn_tech": ["美中科技"], "ai_capex": ["科技", "台股"], "fed_path": ["利率", "匯率"], "japan_yen": ["匯率"],
+           "tw_leverage": ["台股"], "china_econ": ["匯率", "美股"], "energy_geo": ["地緣"]}
+
+
 PAPER_EVERY = 1800
 PAPER_DAY_CAP = 5                  # 一天最多 5 則（台北日期）
 PAPER_MAX_AGE_D = 3                # 只送 3 天內的成交：快取重建時，舊成交不會整批重送
@@ -1113,7 +1156,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "th_ts": float(mem.get("th_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -1127,7 +1170,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "th_ts": S["th_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1446,6 +1489,24 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
+        try:                                               # 主線追蹤：升溫或官方新文件（每條主線一天最多一則）
+            if now - S["th_ts"] >= TH_EVERY and now > 1.7e9 and left("threads"):
+                S["th_ts"] = now
+                for th in threads_todo(await threads_json(sess), done, now)[:2]:
+                    w = await want(th["key"], "thread")
+                    if w != "go":
+                        if w == "known":
+                            done[th["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    lines = await market_now(sess, TH_TAGS.get(str(th.get("id")), []), now)
+                    if await post(sess, chan or dm or "", thread_embed(th, lines), th["key"]):
+                        done[th["key"]] = now
+                        sent += 1
+                    await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("threads check failed: %s", e)
         try:                                               # 台股規則 v1 紙上交易：每筆紙上成交一則（一天最多 5 則）
             if now - S["pp_ts"] >= PAPER_EVERY and now > 1.7e9 and left("paper"):
                 S["pp_ts"] = now

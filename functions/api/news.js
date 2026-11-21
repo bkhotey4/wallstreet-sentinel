@@ -23,6 +23,10 @@ const FEEDS = [
   { s: "CNBC 政治", o: "cnbc", u: "https://www.cnbc.com/id/10000113/device/rss/rss.html", lang: "en" },
   // added 2026-11-21: 「SpaceX 旗下 Cursor 考慮停用中國 AI 模型」(CNBC 11/20) ran only in CNBC's technology section and never reached this page
   { s: "CNBC 科技", o: "cnbc", u: "https://www.cnbc.com/id/19854910/device/rss/rss.html", lang: "en" },
+  // added 2026-11-21 (blind-spot review): the Cursor story was a retelling of this committee's own report (11/20 19:25 UTC),
+  // and Congress is not in the Federal Register.  Every item kept (official source); Nikkei Asia for Japan / Asia supply chains.
+  { s: "美國眾議院中國委員會", o: "ccp", u: "https://selectcommitteeontheccp.house.gov/rss.xml", lang: "en", off: true, all: true },
+  { s: "日經亞洲", o: "nikkei", u: "https://asia.nikkei.com/rss/feed/nar", lang: "en" },
   // added 2026-11-14 so that "three newsrooms report the same thing within 45 minutes" has enough newsrooms to count
   { s: "自由時報財經", o: "ltn", u: "https://news.ltn.com.tw/rss/business.xml", lang: "zh", biz: true },
   { s: "經濟日報", o: "udn", u: "https://money.udn.com/rssfeed/news/1001/5591?ch=money", lang: "zh", biz: true },
@@ -58,7 +62,8 @@ export const TAGS = [
   // Chinese AI models) — US–China tech decoupling gets its own tag
   ["美中科技", ["出口管制", "實體清單", "華為", "中芯", "DeepSeek", "中國 AI", "中國AI", "陸企", "export control", "export controls",
               "Entity List", "Huawei", "SMIC", "Chinese AI", "Chinese models", "Chinese chip", "Chinese chips", "China AI", "China chip",
-              "China chips", "chip curbs", "chip export", "chip exports", "AI chips to China", "tech war", "decoupling"]],   // not bare "China": too much noise
+              "China chips", "chip curbs", "chip export", "chip exports", "AI chips to China", "tech war", "decoupling", "CCP", "PRC",
+              "中共", "美中"]],   // not bare "China": too much noise
   ["分析師", ["調降評等", "調升評等", "price target", "downgrade", "downgrades", "downgraded", "upgrade", "upgrades", "upgraded"]],
   ["人事", ["辭職", "辭任", "下台", "接任", "執行長", "resigns", "steps down", "CEO"]],
   ["就業物價", ["通膨", "物價", "CPI", "就業", "非農", "失業", "inflation", "jobs", "payrolls", "unemployment"]],
