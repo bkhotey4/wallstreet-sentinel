@@ -20,6 +20,27 @@ def test_fill_meta_close():
     assert out.loc["2026-11-20", "^GSPC"] == 6910.39
 
 
+def test_weekend_row_does_not_hide_friday():
+    """Saturday build: a crypto ticker adds an 11-21 row; Friday's NaN must still be filled, the weekend row left alone,
+    and a 'current trading period' that already points at Monday must not count as 'session still open'."""
+    idx = pd.to_datetime(["2026-11-19", "2026-11-20", "2026-11-21"])
+    df = pd.DataFrame({"BTC-USD": [61901.8, 60000.0, 58490.6], "^N225": [59444.21, np.nan, np.nan],
+                       "HYG": [76.53, np.nan, np.nan], "^GSPC": [7175.83, 6910.39, np.nan]}, idx)
+    fri = pd.Timestamp("2026-11-20 06:45", tz="UTC").timestamp()
+    us = pd.Timestamp("2026-11-20 21:00", tz="UTC").timestamp()
+    mon = pd.Timestamp("2026-11-23 21:00", tz="UTC").timestamp()
+    asked = []
+    metas = {"^N225": {"regularMarketPrice": 56436.65, "regularMarketTime": fri, "gmtoffset": 32400,
+                       "currentTradingPeriod": {"regular": {"end": fri - 900}}},
+             "HYG": {"regularMarketPrice": 76.33, "regularMarketTime": us, "gmtoffset": -18000,
+                     "currentTradingPeriod": {"regular": {"end": mon}}}}
+    out = MK.fill_meta_close(df.copy(), fetch=lambda t: asked.append(t) or metas.get(t), now=us + 3 * 3600)
+    assert out.loc["2026-11-20", "^N225"] == 56436.65 and out.loc["2026-11-20", "HYG"] == 76.33
+    assert np.isnan(out.loc["2026-11-21", "^N225"]) and np.isnan(out.loc["2026-11-21", "^GSPC"])
+    assert asked == ["^N225", "HYG"], asked            # only Friday's gaps are asked, indices first
+
+
 if __name__ == "__main__":
     test_fill_meta_close()
-    print("ok test_fill_meta_close")
+    test_weekend_row_does_not_hide_friday()
+    print("ok test_meta_close")

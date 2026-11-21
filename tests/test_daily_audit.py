@@ -32,6 +32,15 @@ def test_hardcode_candidates():
     assert got == ["8,300 億美元", "約 3.2%"], got
 
 
+def test_lagging_rows():
+    from datetime import date
+    dash = {"rows": [{"zh": "標普 500", "kind": "pct", "date": "11-20"}, {"zh": "日經 225", "kind": "pct", "date": "11-19"},
+                     {"zh": "日本 10 年期公債殖利率", "kind": "bp", "date": "11-19"}]}
+    assert A.lagging_rows(dash, date(2026, 11, 21)) == ["日經 225（11-19，其他列 11-20）"]
+    assert A.lagging_rows(dash, date(2026, 11, 20)) == []             # the newest day is not over yet
+    assert "日經 225" in A.summary({"lagging_rows": A.lagging_rows(dash, date(2026, 11, 21))})
+
+
 def test_summary_routines_and_tw_forecast_listed():
     import tools.daily_audit as A
     from tools import site_routines as SR

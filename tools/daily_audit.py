@@ -245,6 +245,28 @@ def ipo_blank_price(html: str, today) -> List[str]:
     return out
 
 
+def lagging_rows(dash: Dict, today) -> List[str]:
+    """Price rows of macro_dash.json whose data day is older than the newest row's, once that newest day is over
+    everywhere (it is before today, Taipei).  11-21: the card as a whole was fresh, so nothing flagged that the Nikkei,
+    Hang Seng and HYG rows still showed 11-19 after a −5% Friday.  A local holiday also lands here: check before fixing."""
+    from datetime import date as _date
+
+    def day(md: str):
+        try:
+            d = _date(today.year, int(md[:2]), int(md[3:5]))
+        except (ValueError, TypeError):
+            return None
+        return _date(today.year - 1, d.month, d.day) if d > today else d
+    rs = [(r, day(str(r.get("date") or ""))) for r in dash.get("rows") or [] if r.get("kind") == "pct"]
+    rs = [(r, d) for r, d in rs if d]
+    if not rs:
+        return []
+    newest = max(d for _, d in rs)
+    if newest >= today:
+        return []
+    return [f"{r.get('zh')}（{r.get('date')}，其他列 {newest.strftime('%m-%d')}）" for r, d in rs if d < newest]
+
+
 # ------------------------------------------------------------------ run
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
@@ -291,6 +313,12 @@ def main() -> Dict:
     except Exception:  # noqa: BLE001
         rep["ahead"] = []
     try:
+        from datetime import datetime, timedelta, timezone
+        rep["lagging_rows"] = lagging_rows(json.loads(_get(SITE + f"macro_dash.json?v={int(time.time())}", 30)),
+                                           datetime.now(timezone(timedelta(hours=8))).date())
+    except Exception as e:  # noqa: BLE001
+        rep["lagging_rows"], rep["lagging_rows_error"] = [], str(e)
+    try:
         import pandas as pd
         rep["stopped"] = explain_stopped(stopped_trading((pd.read_pickle(DATA_DIR / "stock_prices.pkl") or {}).get("close")))
     except Exception:  # noqa: BLE001
@@ -316,6 +344,8 @@ def summary(rep: Dict) -> str:
             + ("；⚠ 抓取超過 " + str(t.get("max_hours")) + " 小時" if t.get("why") == "fetch" else "")
             + ("；⚠ 資料日晚 " + str(t.get("data_age_d")) + " 天，容許 " + str(t.get("lag_days")) + " 天" if t.get("why") == "date" else "") + "）"
             for t in c["tips"] if t.get("why")) or ("（標記偏舊，但個別來源都在容許內）" if c["tips"] else ""))
+    if rep.get("lagging_rows"):
+        lines.append("⚠ 每日總經儀表有幾列的資料日落後其他列（當地休市可忽略，否則查 wsb/data/market.fill_meta_close）：" + "、".join(rep["lagging_rows"]))
     lines.append(f"寫死數字候選 {len(rep.get('hardcode') or [])} 處（最近 26 小時改過的行）：")
     for h in (rep.get("hardcode") or [])[:15]:
         lines.append(f"  - {h['file']}:{h['line']} 「{h['text']}」 {h['context']}")

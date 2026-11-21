@@ -25,15 +25,21 @@ def _days(d: Dict) -> int:
     return max(len((d.get("main") or {}).get("equity") or []) - 1, 0)
 
 
+def notional_zh(d: Dict) -> str:
+    """The assumed principal as text, from the ledger's own `notional` (tools/tw_paper.NOTIONAL), not typed here."""
+    n = float(d.get("notional") or 0)
+    return f"假設本金 {n / 1e4:,.0f} 萬元" if n else "假設本金"
+
+
 def lead(d: Dict) -> str:
     m = d.get("main") or {}
     n_open, closed = len(m.get("open") or []), m.get("closed") or 0
     start = str(d.get("start") or "")
     if _days(d):
-        base = (f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（假設本金 100 萬元），到 {m.get('data_end')} 共 {_days(d)} 個交易日，"
+        base = (f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（{notional_zh(d)}），到 {m.get('data_end')} 共 {_days(d)} 個交易日，"
                 f"主帳本 {_p(m.get('total'))}，同期 0050 {_p(m.get('bench_total'))}；")
     else:
-        base = f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（假設本金 100 萬元），今天是第一天，第一筆紙上成交最快在下一個交易日開盤；"
+        base = f"一句話看懂：規則 v1 從 {start} 收盤開始紙上記帳（{notional_zh(d)}），今天是第一天，第一筆紙上成交最快在下一個交易日開盤；"
     if not n_open and not closed:
         mk = d.get("mkt") or {}
         why = (f"加權指數 {mk.get('twii'):,.0f} 點（{mk.get('date', '')}）在 200 日線 {mk.get('ma200'):,.0f} 點之下，創 50 日新高又放量的股票很少"

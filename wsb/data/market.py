@@ -107,17 +107,24 @@ def fill_meta_close(df: pd.DataFrame, fetch=None, now: Optional[float] = None, c
     session has ended — a holiday (meta on an earlier date) or a session still open is left alone."""
     if df.empty:
         return df
-    last = df.index[-1]
     now = time.time() if now is None else now
+    # 2026-11-21 (daily check): the frame's last row was the only one looked at.  On a Saturday build a crypto ticker adds
+    # a weekend row, every other ticker is NaN there, and Friday's NaN for the Nikkei / Hang Seng / HYG was never filled
+    # (the live 每日總經 table stayed on 11-19 through a −5% Nikkei day).  Look at the newest weekday row instead.
+    wk = [d for d in df.index if d.weekday() < 5]
+    if not wk:
+        return df
+    last = wk[-1]
     if (pd.Timestamp(now, unit="s") - last).days > 5:
         return df
-    cand = [c for c in df.columns if pd.isna(df[c].iloc[-1]) and df[c].iloc[:-1].notna().any()][:cap]
+    day = last.strftime("%Y-%m-%d")
+    cand = [c for c in df.columns if pd.isna(df.at[last, c]) and df.loc[df.index < last, c].notna().any()]
+    if fetch is None:                                  # drop the ones asked in the last 30 minutes before the cap, so
+        cand = [c for c in cand if now - _META_TRIED.get((c, day), 0) >= 1800]     # a holiday's NaNs cannot starve the rest
+    cand = sorted(cand, key=lambda c: (not str(c).startswith("^"), str(c)))[:cap]   # indices first
     filled = []
     for t in cand:
-        key = (t, last.strftime("%Y-%m-%d"))
-        if fetch is None and now - _META_TRIED.get(key, 0) < 1800:
-            continue
-        _META_TRIED[key] = now
+        _META_TRIED[(t, day)] = now
         try:
             m = (fetch or _chart_meta)(t) or {}
         except Exception:  # noqa: BLE001
@@ -126,7 +133,8 @@ def fill_meta_close(df: pd.DataFrame, fetch=None, now: Optional[float] = None, c
         end = ((m.get("currentTradingPeriod") or {}).get("regular") or {}).get("end")
         if not px or not rt or pd.Timestamp(rt + off, unit="s").normalize() != last:
             continue
-        if end and now < end:                          # today's session still running: not a close yet
+        # the session of that day still running: not a close yet (a period that belongs to a later day is not this session)
+        if end and now < end and pd.Timestamp(end + off, unit="s").normalize() == last:
             continue
         df.loc[last, t] = float(px)
         filled.append(t)
