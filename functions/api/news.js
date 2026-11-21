@@ -27,6 +27,9 @@ const FEEDS = [
   // and Congress is not in the Federal Register.  Every item kept (official source); Nikkei Asia for Japan / Asia supply chains.
   { s: "美國眾議院中國委員會", o: "ccp", u: "https://chinaselectcommittee.house.gov/rss.xml", lang: "en", off: true, all: true },
   { s: "日經亞洲", o: "nikkei", u: "https://asia.nikkei.com/rss/feed/nar", lang: "en" },
+  // added 2026-11-21 (self-review): 金管會 announced a full ban on short-selling below the previous close on a Saturday and no
+  // source on this page carried it.  Taiwan's regulator is first-hand for the forced flows the 台股 pages track.
+  { s: "金管會", o: "fsc", u: "https://www.fsc.gov.tw/RSS/Messages?serno=201202290009&language=chinese", lang: "zh", off: true, all: true },
   // added 2026-11-14 so that "three newsrooms report the same thing within 45 minutes" has enough newsrooms to count
   { s: "自由時報財經", o: "ltn", u: "https://news.ltn.com.tw/rss/business.xml", lang: "zh", biz: true },
   { s: "經濟日報", o: "udn", u: "https://money.udn.com/rssfeed/news/1001/5591?ch=money", lang: "zh", biz: true },
@@ -49,7 +52,12 @@ const FEEDS = [
 // tag → keywords.  Chinese: substring; English: whole word, any case.  A headline can carry several tags.
 export const TAGS = [
   ["美股", ["美股", "道瓊", "標普", "那斯達克", "華爾街", "Wall Street", "S&P", "Nasdaq", "Dow Jones", "stocks", "shares"]],
-  ["台股", ["台股", "加權指數", "台積電", "櫃買", "TSMC", "Taiwan stocks"]],
+  ["台股", ["台股", "加權指數", "台積電", "櫃買", "金管會", "融券", "借券", "放空", "平盤以下", "國安基金", "TSMC", "Taiwan stocks"]],
+  // 11-21 self-review: topics the user's Taiwan / AI-chain view depends on but no tag kept (a general feed drops untagged headlines)
+  ["兩岸", ["台海", "兩岸", "解放軍", "共軍", "軍演", "海警", "Taiwan Strait", "PLA", "cross-strait"]],
+  ["礦產", ["稀土", "鎵", "鍺", "銻", "關鍵礦產", "rare earth", "rare earths", "gallium", "germanium", "antimony", "critical minerals"]],
+  ["電力", ["電網", "核能", "核電", "電價", "小型模組化反應爐", "nuclear", "SMR", "power grid", "electricity demand", "power demand", "utilities"]],
+  ["記憶體", ["記憶體", "DRAM", "HBM", "NAND", "memory chip", "memory chips", "Micron", "SK Hynix", "Samsung Electronics"]],
   ["利率", ["聯準會", "央行", "利率", "降息", "升息", "公債", "殖利率", "Fed", "Federal Reserve", "interest rate", "interest rates",
             "rate cut", "rate hike", "Treasury", "Treasuries", "yield", "yields", "bond", "bonds", "monetary policy"]],
   ["油價", ["油價", "原油", "石油", "OPEC", "天然氣", "oil", "crude", "natural gas"]],

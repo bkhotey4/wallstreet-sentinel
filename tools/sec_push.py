@@ -517,7 +517,9 @@ BURST_GAP = 12 * 3600            # 同一件事 12 小時內只推一次
 TAG_ASSET = {"美股": [("^GSPC", "標普 500")], "科技": [("^SOX", "費城半導體")], "利率": [("^TNX", "美債 10 年殖利率")], "油價": [("BZ=F", "布蘭特原油")],
              "匯率": [("DX-Y.NYB", "美元指數")], "黃金": [("GC=F", "黃金")], "地緣": [("BZ=F", "布蘭特原油"), ("GC=F", "黃金"), ("^VIX", "VIX")],
              "台股": [("^TWII", "台股加權")],
-             "美中科技": [("^SOX", "費城半導體"), ("TSM", "台積電 ADR"), ("CNY=X", "美元兌人民幣")]}   # 11-21 new /api/news tag
+             "美中科技": [("^SOX", "費城半導體"), ("TSM", "台積電 ADR"), ("CNY=X", "美元兌人民幣")],   # 11-21 new /api/news tag
+             "兩岸": [("^TWII", "台股加權"), ("TWD=X", "美元兌新台幣"), ("TSM", "台積電 ADR")],
+             "礦產": [("^SOX", "費城半導體"), ("HG=F", "銅")], "電力": [("^TNX", "美債 10 年殖利率")], "記憶體": [("MU", "美光"), ("^SOX", "費城半導體")]}
 
 
 async def news_json(sess: aiohttp.ClientSession) -> Dict:
@@ -1036,7 +1038,8 @@ def thread_embed(t: Dict, lines: List[str]) -> Dict:
 
 
 TH_TAGS = {"uscn_tech": ["美中科技"], "ai_capex": ["科技", "台股"], "fed_path": ["利率", "匯率"], "japan_yen": ["匯率"],
-           "tw_leverage": ["台股"], "china_econ": ["匯率", "美股"], "energy_geo": ["地緣"]}
+           "tw_leverage": ["台股"], "china_econ": ["匯率", "美股"], "energy_geo": ["地緣"],
+           "cross_strait": ["兩岸"], "minerals": ["礦產"], "ai_power": ["電力"], "memory": ["記憶體"]}
 
 
 PAPER_EVERY = 1800
