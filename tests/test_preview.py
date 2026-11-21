@@ -103,6 +103,10 @@ def test_after_card_keeps_mega_caps():
     assert "OLD" not in [x["sym"] for x in A.shown(sorted(old, key=lambda x: x["date"], reverse=True), 6)]   # pinned 7 days only
     html = '<section><h2>財報後白話解讀（美股）</h2><p>S0 S1</p></section><section>'
     assert [i["key"] for i in H.after_issues(html, fake, "2026-11-19")] == ["shown_after:NVDA"]
+    # 11-21 false alarm: a later list that only names the card (積木清單) must not be read as the card itself
+    ok = ('<section><h2><span data-en="x">財報後白話解讀（美股）</span> <span class="blk">#12-03</span></h2><p>NVDA S0</p></section>'
+          '<section><h2>積木清單</h2><ul><li>#12-03 財報後白話解讀（美股）</li></ul></section>')
+    assert H.after_issues(ok, fake, "2026-11-19") == []
 
 
 if __name__ == "__main__":

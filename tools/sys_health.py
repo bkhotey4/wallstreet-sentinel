@@ -249,12 +249,26 @@ SHOWN_EVERY = 3600
 PREVIEW_CARD = "財報前瞻：公布前的機率估計與成績單"
 
 
-def card_text(html: str, title: str) -> str:
-    """Text of the card whose heading is `title` on the built page (the last occurrence: earlier ones are the sidebar)."""
+def card_html(html: str, title: str) -> str:
+    """HTML of the <section> whose <h2> heading contains `title` (the last such card), or ""."""
     import re
-    i = html.rfind(title)
-    if i < 0:
+    hits = [m for m in re.finditer(r"<h2>(.*?)</h2>", html, re.S) if title in m.group(1)]
+    if not hits:
         return ""
+    i = hits[-1].start()
+    sec = html.rfind("<section", 0, i)
+    end = html.find("</section>", i)
+    return html[sec if sec >= 0 else i: end if end > 0 else i + 200000]
+
+
+def card_text(html: str, title: str) -> str:
+    """Text of the card whose <h2> heading contains `title` on the built page.  2026-11-21: the old "last occurrence of the
+    title anywhere" found the 積木清單 card (which lists every card title) instead, and Discord got a false 「卡上看不到」."""
+    import re
+    hits = [m.end() for m in re.finditer(r"<h2>(.*?)</h2>", html, re.S) if title in m.group(1)]
+    if not hits:
+        return ""
+    i = hits[-1]
     j = html.find("<section", i)
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html[i: j if j > 0 else i + 200000]))
 
@@ -323,9 +337,7 @@ def cross_issues(html: str, ai_text: str, days: Dict, today) -> List[Dict]:
     """Cards checked against each other (11-17, 「為何每次都是要我說?」): dates in the AI-written cards (learning notes,
     macro voice, deep read) against the IPO card and the earnings calendar — see tools/cross_check.py."""
     from tools import cross_check as X
-    i = html.rfind(IPO_CARD)
-    sec = html.rfind("<section", 0, i) if i >= 0 else -1
-    ipo_html = html[sec:html.find("</section>", i)] if sec >= 0 else ""
+    ipo_html = card_html(html, IPO_CARD)
     try:
         from wsb.data.stocks import universe
         zh = {k: v[0] for k, v in ((universe().get("us") or {}).get("symbols") or {}).items()}
