@@ -40,6 +40,7 @@ US_SECTOR = {"Technology": "科技", "Finance": "金融", "Health Care": "醫療
 
 
 MARKETS = ["us", "tw", "hk", "jp"]
+LIST_V = 2          # bump when a list's rules change (2 = 11-21: 台股 ETF／特別股、日股) so the 7-day cache is refreshed at once
 
 
 def cfg() -> Dict:
@@ -75,6 +76,16 @@ async def _us() -> List[Dict]:
     return out
 
 
+# 11-21 (user: 「台股清單不是完整全部」): ETFs (00xx…, e.g. 0050, 00631L, 00400A) and preferred shares (2881A) too
+TW_CODE = re.compile(r"[1-9]\d{3}[A-Z]?|00\d{2,4}[A-Z]?")
+
+
+def _tw_ind(c: str, ind: Dict[str, str]) -> str:
+    if c.startswith("00"):
+        return "ETF"
+    return ind.get(c) or ind.get(c[:4]) or "其他"
+
+
 async def _tw() -> List[Dict]:
     out: Dict[str, Dict] = {}
     ind: Dict[str, str] = {}
@@ -90,13 +101,13 @@ async def _tw() -> List[Dict]:
         log.info("TPEx industry list failed: %s", e)
     for r in await http.get("https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL", timeout=60, retries=1) or []:
         c = str(r.get("Code", "")).strip()
-        if re.fullmatch(r"[1-9]\d{3}", c):
-            out[c] = {"sym": c + ".TW", "code": c, "name": str(r.get("Name", "")).strip(), "ind": ind.get(c, "其他"), "board": "上市"}
+        if TW_CODE.fullmatch(c):
+            out[c] = {"sym": c + ".TW", "code": c, "name": str(r.get("Name", "")).strip(), "ind": _tw_ind(c, ind), "board": "上市"}
     try:
         for r in await http.get("https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes", timeout=60, retries=1) or []:
             c = str(r.get("SecuritiesCompanyCode", "")).strip()
-            if re.fullmatch(r"[1-9]\d{3}", c) and c not in out:
-                out[c] = {"sym": c + ".TWO", "code": c, "name": str(r.get("CompanyName", "")).strip(), "ind": ind.get(c, "其他"), "board": "上櫃"}
+            if TW_CODE.fullmatch(c) and c not in out:
+                out[c] = {"sym": c + ".TWO", "code": c, "name": str(r.get("CompanyName", "")).strip(), "ind": _tw_ind(c, ind), "board": "上櫃"}
     except Exception as e:  # noqa: BLE001
         log.info("TPEx list failed: %s", e)
     return list(out.values())
@@ -192,7 +203,7 @@ async def lists(force: bool = False) -> Dict[str, List[Dict]]:
     except Exception:  # noqa: BLE001
         old = {}
     want = [k for k in MARKETS if k in (cfg().get("markets") or MARKETS)]
-    complete = all((old.get("markets") or {}).get(k) for k in want)      # a newly added market (日股 11-21) is fetched at once…
+    complete = all((old.get("markets") or {}).get(k) for k in want) and old.get("v") == LIST_V   # new market / new list rule → fetch now…
     if not complete and time.time() - float(old.get("miss_ts", 0)) < float(cfg().get("list_retry_hours", 24)) * 3600:
         complete = True                                                    # …but a market that keeps failing is retried daily, not hourly
     if not force and complete and old.get("ts") and time.time() - float(old["ts"]) < float(cfg().get("list_days", 7)) * 86400:
@@ -221,7 +232,7 @@ async def lists(force: bool = False) -> Dict[str, List[Dict]]:
         log.warning("full-market list refresh exceeded its %ss budget", cfg().get("list_budget_s", 180))
     try:
         if state["ok"]:
-            _write_json(_LISTS, {"ts": time.time(), "markets": mk, "miss_ts": time.time() if not all(mk.get(k) for k in want) else 0})
+            _write_json(_LISTS, {"ts": time.time(), "v": LIST_V, "markets": mk, "miss_ts": time.time() if not all(mk.get(k) for k in want) else 0})
         else:                                           # nothing refreshed: keep the old lists, retry after a day
             _write_json(_LISTS, {**old, "markets": dict(old.get("markets") or {}), "fail_ts": time.time()})
             log.warning("full-market lists not refreshed; next attempt in ~%sh", cfg().get("list_retry_hours", 24))

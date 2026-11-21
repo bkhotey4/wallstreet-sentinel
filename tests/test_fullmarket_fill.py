@@ -73,7 +73,14 @@ def test_parse_jpx():
     assert rows[1]["name"] == "Veritas" and rows[1]["board"] == "東證 Growth" and rows[2]["ind"] == "資訊通信"
 
 
+def test_tw_codes():
+    for c, ok in (("2330", True), ("0050", True), ("00631L", True), ("006208", True), ("2881A", True), ("12345", False), ("0123", False)):
+        assert bool(FM.TW_CODE.fullmatch(c)) == ok, c
+    assert FM._tw_ind("00878", {}) == "ETF" and FM._tw_ind("2881A", {"2881": "金融保險"}) == "金融保險"
+
+
 if __name__ == "__main__":
+    test_tw_codes()
     test_parse_jpx()
     test_partial_bar_refetched()
     test_official_fill()
