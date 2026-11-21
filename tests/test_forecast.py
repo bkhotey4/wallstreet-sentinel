@@ -75,6 +75,22 @@ def test_regions_and_reads():
     assert F._regions({"script": "主線"}) == ""
 
 
+def test_outlook():
+    """11-21: 接下來的總經 — the edition's view by horizon plus the two forecast cards' scenario probabilities."""
+    from tools import site_forecast as F
+    base = Path(tempfile.mkdtemp())
+    dump(base, "forecast.json", {"updated": "2026-11-19 07:03 台北", "paths": [{"name": "偏鷹但沒出事", "prob": 53}, {"name": "風險升級", "prob": 32}]})
+    dump(base, "tw_forecast.json", {"updated": "2026-11-21 07:40 台北", "paths": [{"name": "修正延長", "prob": 50}]})
+    x = {"outlook": {"one": "降溫比通膨更值得擔心", "horizons": [{"name": "未來一週", "text": "看 PCE\n看融資"}, {"name": "半年到一年", "text": "泡沫假設"}],
+                     "change": "PCE 高於預期", "src": [{"name": "BEA", "url": "https://www.bea.gov/"}]}}
+    with patch.object(F, "FILE", base / "forecast.json"):
+        h = F._outlook(x)
+    assert "接下來的總經：我的看法" in h and "<h3>未來一週</h3>" in h and "<p class=\"small\">看融資</p>" in h and "<h3>半年到一年</h3>" in h
+    assert "一到三個月" not in h and "PCE 高於預期" in h
+    assert "偏鷹但沒出事 <b>53%</b>" in h and "修正延長 <b>50%</b>" in h and "天前的版本" in h
+    assert F._outlook({"script": "x"}) == ""
+
+
 def test_forecast():
     from tools import site_forecast as F
     d = {"updated": "2026-11-07", "one": "偏鷹但沒壞", "paths": [{"name": "偏鷹", "prob": 55, "what": "升息"}],
@@ -117,6 +133,7 @@ def test_stamp():
 if __name__ == "__main__":
     test_voice()
     test_regions_and_reads()
+    test_outlook()
     test_forecast()
     test_stamp()
     print("FORECAST TESTS PASSED")

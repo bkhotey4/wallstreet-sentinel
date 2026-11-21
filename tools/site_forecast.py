@@ -86,7 +86,7 @@ def voice_history(x: Dict, keep: int = 24) -> List[Dict]:
     hist = sorted(hist + [h for h in (_json(FILE.with_name("macro_voice_hist.json")).get("items") or []) if h.get("updated") not in seen],
                   key=lambda h: str(h.get("updated") or ""), reverse=True)
     if x.get("updated") and not any(h.get("updated") == x["updated"] for h in hist):
-        hist = ([{k: x.get(k) for k in ("updated", "date", "edition", "one", "script", "regions", "bonds", "reads")}] + hist)[:keep]
+        hist = ([{k: x.get(k) for k in ("updated", "date", "edition", "one", "script", "regions", "bonds", "reads", "outlook")}] + hist)[:keep]
         try:
             tmp = f.with_suffix(".tmp")
             tmp.write_text(json.dumps({"items": hist}, ensure_ascii=False), encoding="utf-8")
@@ -146,6 +146,46 @@ def _reads(x: Dict) -> str:
     return f'<details class="sgx"><summary>這班讀過的原文（{len(rs)} 篇）</summary><ul class="small">{items}</ul>{warn}</details>'
 
 
+HORIZONS = ("未來一週", "一到三個月", "半年到一年")
+
+
+def _paths_line(f: Path, label: str) -> str:
+    """The scenario probabilities the forecast cards currently show, so the outlook text can't drift from them."""
+    d = _json(f)
+    ps = [x for x in d.get("paths") or [] if isinstance(x, dict) and x.get("name")]
+    if not ps:
+        return ""
+    when = str(d.get("updated") or "")[:16]
+    stale = ""
+    try:
+        from datetime import datetime
+        age = (datetime.now() - datetime.strptime(when, "%Y-%m-%d %H:%M")).days
+        if age >= 2:
+            stale = f'<span class="muted">（{age} 天前的版本，之後的行情還沒算進去）</span>'
+    except ValueError:
+        pass
+    return (f'<p class="small"><b>{label}</b>：' + "｜".join(f'{_e(x["name"])} <b>{_e(x.get("prob"))}%</b>' for x in ps)
+            + f' <span class="muted small">{_e(when)}</span>{stale}</p>')
+
+
+def _outlook(x: Dict) -> str:
+    """接下來的總經 (2026-11-21, user: 「在每日總經中，也新增對未來總經的看法吧」): the edition's own view by horizon,
+    what would change it, and the scenario probabilities of the two forecast cards beside it."""
+    o = x.get("outlook") if isinstance(x.get("outlook"), dict) else {}
+    hz = {str(h.get("name") or ""): h for h in (o.get("horizons") or []) if isinstance(h, dict) and h.get("text")}
+    if not (o.get("one") or hz):
+        return ""
+    parts = "".join(f'<h3>{_e(n)}</h3>' + "".join(f'<p class="small">{_e(p)}</p>' for p in str(hz[n]["text"]).split("\n") if p.strip())
+                    for n in HORIZONS if n in hz)
+    chg = f'<p class="small"><b>什麼消息會讓這個看法改變：</b>{_e(o.get("change"))}</p>' if o.get("change") else ""
+    src = _src(o.get("src"))
+    paths = _paths_line(FILE, "美國一個月劇本") + _paths_line(FILE.with_name("tw_forecast.json"), "台股劇本")
+    return (f'<details class="sgx"><summary>接下來的總經：我的看法</summary><p class="small"><b>{_e(o.get("one"))}</b></p>{parts}{chg}'
+            + (f'<div class="rpt">{paths}</div>' if paths else "")
+            + (f'<p class="small muted">來源：{src}</p>' if src else "")
+            + '<p class="note">看法是 AI 根據已公布的資料推論，會隨新數據修正；機率與到期對答案的題目在「一個月後的總經」與「台股總經展望」卡。不是預測保證。</p></details>')
+
+
 def _entry(eng) -> str:
     """想進場前，可以從哪裡想 (11-21, user: 「每日總經是不是新增如果要入場，可以從哪裡思考？」)."""
     try:
@@ -179,7 +219,7 @@ def sec_macro_voice(eng) -> str:
                           f'<b>{_e(h.get("one"))}</b></p><details class="sgx"><summary>看文字稿</summary>{_paras(h)}</details></div>' for h in earlier)
                 + '<p class="small muted">語音只有最新一班；前幾班保留文字稿。</p></details>')
     body = (f'<p class="rimp big2">{_ed_pill(str(x.get("edition") or ""))}<b>一句話看懂：{_e(x.get("one"))}</b></p>{player}'
-            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _regions(x) + _reads(x) + _entry(eng) + _dash(eng) + prev
+            f'<details class="sgx"><summary>看文字稿</summary>{_paras(x)}</details>' + _regions(x) + _outlook(x) + _reads(x) + _entry(eng) + _dash(eng) + prev
             + f'<p class="note">{_e(x.get("updated") or x.get("date"))} 雲端 AI 撰稿。每天兩班：早上 6:30 講前一晚美國（週一含週末），平日晚上 8:00 預告今晚；'
             f'市場異常大動時會加班。語音由電腦合成。是對當下的解讀，不是預測保證。不構成投資建議。</p>')
     return card("每日總經情勢", "Daily macro", body, "wide", sub="用聽的，約兩三分鐘")
