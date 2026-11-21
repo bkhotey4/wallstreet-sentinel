@@ -20,6 +20,8 @@ def test_match_and_view():
     assert next(t for t in v["threads"] if t["id"] == "japan_yen")["state"] == "安靜"
     young = T.view(new, now)                                   # 2.5 hours of archive: no baseline → not 升溫, the official one still shows
     assert next(t for t in young["threads"] if t["id"] == "uscn_tech")["state"] == "官方新文件"
+    fed = T.view([{"t": "Federal Reserve announces College Fed Challenge winners", "u": "https://f", "s": "聯準會", "o": "fed", "ts": now - 60, "off": True}], now)
+    assert next(t for t in fed["threads"] if t["id"] == "fed_path")["state"] == "有消息"     # routine central-bank post ≠ 官方新文件
     gone = T.archive([], now + 40 * 86400, old=arch, save=False)
     assert gone == []
 

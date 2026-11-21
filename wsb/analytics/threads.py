@@ -21,6 +21,7 @@ from typing import Dict, List, Optional
 
 log = logging.getLogger(__name__)
 KEEP_DAYS = 30
+ROUTINE_OFF = ("fed", "ecb", "boj")   # central-bank feeds post daily (speeches, surveys); rate decisions have their own alert (cbSurprise)
 MIN_DAYS = 5          # 「升溫」要先有 5 天的新聞當「平常」；之前只顯示「有消息」（官方新文件不受影響）
 
 # id, 中文名, 關鍵字（英文整字比對、中文子字串）, 相關行情, 一句話說明
@@ -121,7 +122,7 @@ def view(items: List[Dict], now: Optional[float] = None) -> Dict:
         n14 = [x for x in hits if now - float(x.get("ts") or 0) < 14 * 86400]
         base = max(0.0, (len(n14) - len(n48)) / 6.0)              # per 48 h over the 12 days before the last 48 h
         hot = len(n48) >= 3 and len(n48) >= 2 * max(1.0, base) and days >= MIN_DAYS   # no baseline yet → no 升溫
-        off = [x for x in n48 if x.get("off")]
+        off = [x for x in n48 if x.get("off") and x.get("o") not in ROUTINE_OFF]
         state = "升溫" if hot else ("官方新文件" if off else ("有消息" if n48 else "安靜"))
         out.append({"id": tid, "zh": zh, "why": why, "assets": assets, "n48": len(n48), "n14": len(n14), "base": round(base, 1),
                     "state": state, "official": [x["u"] for x in off],
