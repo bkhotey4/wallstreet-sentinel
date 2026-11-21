@@ -172,15 +172,24 @@ def _outlook(x: Dict) -> str:
     """接下來的總經 (2026-11-21, user: 「在每日總經中，也新增對未來總經的看法吧」): the edition's own view by horizon,
     what would change it, and the scenario probabilities of the two forecast cards beside it."""
     o = x.get("outlook") if isinstance(x.get("outlook"), dict) else {}
-    hz = {str(h.get("name") or ""): h for h in (o.get("horizons") or []) if isinstance(h, dict) and h.get("text")}
-    if not (o.get("one") or hz):
+    # 11-21 later (user: 「台股未來看法與總經看法也加進去吧」): besides the global / US view, a 台灣總經 and a 台股 view
+    groups = [("全球與美國總經", o)] + [(n, o.get(k)) for n, k in (("台灣總經", "tw_macro"), ("台股", "tw_market"))]
+    body = ""
+    for name, g in groups:
+        if not isinstance(g, dict):
+            continue
+        hz = {str(h.get("name") or ""): h for h in (g.get("horizons") or []) if isinstance(h, dict) and h.get("text")}
+        if not (g.get("one") or hz):
+            continue
+        txt = "".join(f'<p class="small"><b>{_e(n)}</b>：' + "<br>".join(_e(p) for p in str(hz[n]["text"]).split("\n") if p.strip()) + "</p>"
+                      for n in HORIZONS if n in hz)
+        chg = f'<p class="small"><b>什麼消息會讓這個看法改變：</b>{_e(g.get("change"))}</p>' if g.get("change") else ""
+        body += f'<h3>{_e(name)}</h3><p class="small"><b>{_e(g.get("one"))}</b></p>{txt}{chg}'
+    if not body:
         return ""
-    parts = "".join(f'<h3>{_e(n)}</h3>' + "".join(f'<p class="small">{_e(p)}</p>' for p in str(hz[n]["text"]).split("\n") if p.strip())
-                    for n in HORIZONS if n in hz)
-    chg = f'<p class="small"><b>什麼消息會讓這個看法改變：</b>{_e(o.get("change"))}</p>' if o.get("change") else ""
     src = _src(o.get("src"))
     paths = _paths_line(FILE, "美國一個月劇本") + _paths_line(FILE.with_name("tw_forecast.json"), "台股劇本")
-    return (f'<details class="sgx"><summary>接下來的總經：我的看法</summary><p class="small"><b>{_e(o.get("one"))}</b></p>{parts}{chg}'
+    return (f'<details class="sgx"><summary>接下來的總經與台股：我的看法</summary>{body}'
             + (f'<div class="rpt">{paths}</div>' if paths else "")
             + (f'<p class="small muted">來源：{src}</p>' if src else "")
             + '<p class="note">看法是 AI 根據已公布的資料推論，會隨新數據修正；機率與到期對答案的題目在「一個月後的總經」與「台股總經展望」卡。不是預測保證。</p></details>')
