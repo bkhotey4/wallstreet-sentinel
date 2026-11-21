@@ -1140,6 +1140,7 @@ h2{margin:0 0 8px;font-size:12.5px;font-weight:700;letter-spacing:.06em;color:va
 .sub{color:var(--mu);font-size:12px;margin:-4px 0 10px}.muted{color:var(--mu)}.small{font-size:12px}.note{color:var(--mu);font-size:12px;margin:10px 0 0}
 .hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.big{font-size:64px;font-weight:800;line-height:1;border-left:6px solid var(--lv);padding-left:12px}
 .lvl{font-size:20px;font-weight:700;display:flex;align-items:center;gap:6px}.sw{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
+.blk{font-size:11px;font-weight:400;color:var(--tx2);border:1px solid var(--bd);border-radius:6px;padding:0 5px;margin-left:6px;vertical-align:middle;white-space:nowrap}
 .chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.chip{background:var(--card2);border:1px solid var(--bd);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--tx2)}
 .stage{margin-left:auto;border:1px solid var(--bd);border-left:4px solid var(--sc);border-radius:10px;padding:8px 12px;background:var(--card2)}.sl{font-size:11px;color:var(--mu)}.sv{font-size:18px;font-weight:700}
 .gauge{margin:14px 0 4px}.track{position:relative;display:flex;height:8px;gap:2px}.track i{display:block;border-radius:2px}.track b{position:absolute;top:-4px;width:3px;height:16px;background:var(--tx);border-radius:2px;transform:translateX(-1px)}
@@ -1355,6 +1356,9 @@ COMPLY_JS = r"""
 """
 
 
+BLOCKS: Dict = {}                                          # 積木編號表 of the last render → site/blocks.json
+
+
 def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
@@ -1437,6 +1441,15 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     except Exception:  # noqa: BLE001
         log.exception("index card failed")
     bodies, cards = SLY.card_index(bodies)                 # 左側目錄：每頁的卡片清單（可展開／收合）
+    try:                                                   # 積木編號（11-21）：每張卡片標題旁的 #頁-卡，工具頁有完整清單
+        from tools import site_blocks as SBK
+        reg, new_b = SBK.assign(SBK.load(), [k for k, *_x in tabs], cards, SBK.discord_inventory())
+        bodies = SBK.badge(bodies, cards, reg)
+        if "tools" in bodies:
+            bodies["tools"] += SBK.inventory_card(reg, names, cards)
+        BLOCKS.update(reg=reg, new=new_b)
+    except Exception:  # noqa: BLE001
+        log.exception("block numbers failed")
     first = tabs[0][0]
     panels = [f'<div class="page{" on" if k == first else ""}" id="p-{k}"><div class="grid12">{bodies[k]}</div></div>' for k, *_x in tabs]
     strip = sec_strip(eng)
@@ -1951,6 +1964,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     out.mkdir(parents=True, exist_ok=True)
     SFC.make_audio(out / "market")          # before render: the card only shows a player when the file exists
     page_html = render(eng, ai_text, ai_engine)
+    if BLOCKS.get("reg"):                                  # copy back to tools/blocks.json to make new numbers permanent
+        try:
+            (out / "blocks.json").write_text(json.dumps({**BLOCKS["reg"], "new": BLOCKS.get("new") or []}, ensure_ascii=False, indent=1), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            log.exception("blocks.json failed")
     from tools.sitekit import tidy_zero
     page_html = tidy_zero(page_html)        # no '+0.0%' / '-0.0%' anywhere in the shown text (11-17 full check)
     (out / "index.html").write_text(page_html, encoding="utf-8")
@@ -2040,7 +2058,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         (out / "market" / "tw_inputs.json").write_text(json.dumps(TWMD.public_inputs(us10y=us), ensure_ascii=False), encoding="utf-8")
     except Exception:  # noqa: BLE001
         log.exception("tw_inputs.json failed")
-    for mk in ("us", "tw", "hk"):
+    for mk in ("us", "tw", "hk", "jp"):
         published = FS.published(mk)
         if published:
             (out / "market" / f"{mk}.json").write_text(json.dumps(published, ensure_ascii=False), encoding="utf-8")

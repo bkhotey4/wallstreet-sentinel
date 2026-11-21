@@ -88,7 +88,7 @@ def _fm():
     try:
         import json as _j
         from wsb.config import DATA_DIR
-        fs = [DATA_DIR / f"fullmarket_{m}.json" for m in ("us", "tw", "hk")]
+        fs = [DATA_DIR / f"fullmarket_{m}.json" for m in ("us", "tw", "hk", "jp")]
         fs = [f for f in fs if f.exists()]
         if not fs:
             return None, None

@@ -375,7 +375,18 @@ def sec_signals(eng) -> str:
              f'<p class="small muted">{T(SIG_DEFS[0], SIG_DEFS[1])}</p></details>')
     search = (f'<div class="sbox"><input type="search" id="sigQ" class="btn" placeholder="搜尋代號或名稱（含全市場），例如 NU、台積電" aria-label="search">'
               f'<span class="muted small" id="sigQn"></span><div class="fmres" id="sigQfm"></div></div>')
-    return card("技術型態觀察", "Technical pattern watch", f'<p class="small muted">{warn}</p>' + search + howto + _tabset("sg", items), "wide")
+    # 11-21 (user: 「台股清單不是完整全部」): say plainly that these tabs are the tracked pool and where every stock is
+    scope = ""
+    try:
+        from wsb.analytics import fullscan as FS
+        pool = "、".join(f'{esc(m["label"])} {m.get("n_universe", 0)}' for m in sg["markets"].values())
+        full = "、".join(f'{T(*FM_LABEL[k])} {d["n"]}' for k in ("us", "tw", "hk", "jp") for d in [FS.published(k)] if d)
+        scope = (f'<p class="small"><b>{T("這裡的分頁只列追蹤池", "These tabs list the tracked pool only")}</b>（{pool} {T("檔", "names")}）。'
+                 + (f'{T("每一檔個股（", "Every stock (")}{full} {T("檔）都在下方「全市場個股・支撐／次級支撐參考區」表，按「載入全市場資料」即可看到；搜尋框也會一起查全市場。", "names) is in the full-market table below.")}' if full else "")
+                 + "</p>")
+    except Exception:  # noqa: BLE001
+        pass
+    return card("技術型態觀察", "Technical pattern watch", f'<p class="small muted">{warn}</p>' + scope + search + howto + _tabset("sg", items), "wide")
 
 
 SIG_DEFS = ("型態定義：多頭回檔＝股價在上升的 200 日線之上、50 日線在 200 日線之上，最近 3 天從 10 日高點拉回 3% 以上、回測 20 或 50 日線後收紅；帶量突破＝收盤突破前 20 日最高價、"
@@ -389,7 +400,7 @@ SIG_DEFS = ("型態定義：多頭回檔＝股價在上升的 200 日線之上�
 def _fm_summary() -> str:
     from wsb.analytics import fullscan as FS
     chips = []
-    for mk in ("us", "tw", "hk"):
+    for mk in ("us", "tw", "hk", "jp"):
         d = FS.published(mk)
         if not d:
             continue
@@ -403,8 +414,8 @@ def _fm_summary() -> str:
 
 def sec_fullmarket(eng, mode: str = "score") -> str:
     """Shell for the client-side full-market table (data loaded from market/<mk>.json only when opened)."""
-    title = ("全市場排行（美股市值 10 億美元以上、台股上市＋上櫃、港股主板）", "Full-market ranking") if mode == "score" else \
-        ("全市場個股・支撐／次級支撐參考區（美股全市場、台股、港股）", "Every stock: entry / add-on zones")
+    title = ("全市場排行（美股市值 10 億美元以上、台股上市＋上櫃、港股主板、日股東證 Prime／Standard／Growth）", "Full-market ranking") if mode == "score" else \
+        ("全市場個股・支撐／次級支撐參考區（美股、台股、港股、日股）", "Every stock: entry / add-on zones")
     note = T("全市場資料每天收盤後更新，只算技術面（情報面只有上方追蹤池才有）。分數在同一個市場內排名；族群為交易所／Nasdaq 官方產業分類。"
              "搜尋框輸入任何代號或名稱都會一起查全市場。", "Updated daily, technical only; ranks within each market; official industry groups.")
     if mode != "score":
@@ -412,7 +423,7 @@ def sec_fullmarket(eng, mode: str = "score") -> str:
                  "訊號等拉回 → 快成立 → 其他（同一類再依強度）。想找「現在價位比較合規則」的股票，選「現價在參考區內」。點任一列看完整條件、技術型態與過熱警示。"
                  "全市場資料每天收盤後更新、只算技術面，不是買賣建議。", "Every stock in the market with its entry or add-on zone. Updated daily; technical only; not advice.")
     btns = "".join(f'<button class="tab{" on" if i == 0 else ""}" data-fmk="{k}" type="button">{T(*FM_LABEL[k])}</button>'
-                   for i, k in enumerate(("us", "tw", "hk")))
+                   for i, k in enumerate(("us", "tw", "hk", "jp")))
     return card(*title,
                 _fm_summary() + f'<div class="fm" data-mode="{mode}"><div class="tabs">{btns}</div>'
                 f'<div class="fmctl">' + (f'<select class="btn fmtier"><option value="ALL" data-en="All stocks">全部個股</option>'
@@ -427,7 +438,7 @@ def sec_fullmarket(eng, mode: str = "score") -> str:
                 f'<span class="muted small fmst"></span></div><div class="fmbody"></div></div><p class="note">{note}</p>', "wide")
 
 
-FM_LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong")}
+FM_LABEL = {"us": ("美股", "US"), "tw": ("台股", "Taiwan"), "hk": ("港股", "Hong Kong"), "jp": ("日股", "Japan")}
 
 
 # ----------------------------------------------------------------- themes (族群)

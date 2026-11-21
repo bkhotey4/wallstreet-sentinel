@@ -3,7 +3,8 @@
 Coverage (settings.fullmarket):
     US  every Nasdaq / NYSE / NYSE American common stock with market cap ≥ min_mcap_usd   (Nasdaq screener API)
     TW  every TWSE-listed (.TW) and TPEx-listed (.TWO) common stock                         (TWSE / TPEx open data)
-    HK  every Main Board equity; the scan later keeps names with enough daily turnover     (HKEX list of securities)
+    HK  every Main Board equity (hk_min_turnover 0 since 11-21: all of them, low turnover only flagged)  (HKEX list)
+    JP  every TSE Prime / Standard / Growth stock (11-21, user: 「甚至新增日股」)                (JPX 上場銘柄一覧)
 
 Prices come from Yahoo in batches. Each run works through a queue within a time budget — first the names that have
 no history yet (≈15 months back-fill), then the names whose last bar is older than the market's latest session —
@@ -36,6 +37,9 @@ TW_IND = {"01": "水泥", "02": "食品", "03": "塑膠", "04": "紡織纖維", 
 US_SECTOR = {"Technology": "科技", "Finance": "金融", "Health Care": "醫療保健", "Consumer Discretionary": "非必需消費",
              "Consumer Staples": "必需消費", "Industrials": "工業", "Energy": "能源", "Utilities": "公用事業", "Real Estate": "不動產",
              "Basic Materials": "原物料", "Telecommunications": "電信", "Miscellaneous": "其他"}
+
+
+MARKETS = ["us", "tw", "hk", "jp"]
 
 
 def cfg() -> Dict:
@@ -137,6 +141,39 @@ async def _hk() -> List[Dict]:
     return out
 
 
+JP_IND = {"水産・農林業": "水產農林", "鉱業": "礦業", "建設業": "營建", "食料品": "食品", "繊維製品": "紡織", "パルプ・紙": "造紙",
+          "化学": "化學", "医薬品": "製藥", "石油・石炭製品": "石油煤炭", "ゴム製品": "橡膠", "ガラス・土石製品": "玻璃土石",
+          "鉄鋼": "鋼鐵", "非鉄金属": "非鐵金屬", "金属製品": "金屬製品", "機械": "機械", "電気機器": "電機", "輸送用機器": "運輸設備",
+          "精密機器": "精密儀器", "その他製品": "其他製品", "電気・ガス業": "電力燃氣", "陸運業": "陸運", "海運業": "海運", "空運業": "空運",
+          "倉庫・運輸関連業": "倉儲運輸", "情報・通信業": "資訊通信", "卸売業": "批發", "小売業": "零售", "銀行業": "銀行",
+          "証券、商品先物取引業": "證券期貨", "保険業": "保險", "その他金融業": "其他金融", "不動産業": "不動產", "サービス業": "服務"}
+JP_SEG = {"プライム": "Prime", "スタンダード": "Standard", "グロース": "Growth"}
+JPX_LIST = "https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xlsx"
+
+
+def parse_jpx(xlsx: bytes) -> List[Dict]:
+    """JPX 東証上場銘柄一覧 (monthly) → Prime / Standard / Growth stocks (ETF, REIT, PRO Market and 出資証券 left out)."""
+    import unicodedata
+    df = pd.read_excel(io.BytesIO(xlsx), dtype=str)
+    col = {k: next(c for c in df.columns if k in str(c)) for k in ("コード", "銘柄名", "市場・商品区分", "33業種区分")}
+    out = []
+    for _, r in df.iterrows():
+        seg = str(r[col["市場・商品区分"]])
+        key = next((k for k in JP_SEG if seg.startswith(k)), None)
+        code = str(r[col["コード"]]).strip()
+        if not key or not re.fullmatch(r"[0-9][0-9A-Z]{3}", code):
+            continue
+        name = unicodedata.normalize("NFKC", str(r[col["銘柄名"]])).strip()
+        ind = str(r[col["33業種区分"]]).strip()
+        out.append({"sym": code + ".T", "code": code, "name": name, "ind": JP_IND.get(ind, ind or "其他"),
+                    "board": "東證 " + JP_SEG[key] + ("（外國）" if "外国" in seg else "")})
+    return out
+
+
+async def _jp() -> List[Dict]:
+    return parse_jpx(await http.get(JPX_LIST, kind="bytes", timeout=60, retries=1, headers={"User-Agent": "Mozilla/5.0"}))
+
+
 def _write_json(path, obj) -> None:
     """Atomic write (tmp + os.replace): a run cancelled mid-write can't leave a truncated cache file behind."""
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -154,16 +191,20 @@ async def lists(force: bool = False) -> Dict[str, List[Dict]]:
             old = json.loads(_LISTS.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         old = {}
-    if not force and old.get("ts") and time.time() - float(old["ts"]) < float(cfg().get("list_days", 7)) * 86400:
+    want = [k for k in MARKETS if k in (cfg().get("markets") or MARKETS)]
+    complete = all((old.get("markets") or {}).get(k) for k in want)      # a newly added market (日股 11-21) is fetched at once…
+    if not complete and time.time() - float(old.get("miss_ts", 0)) < float(cfg().get("list_retry_hours", 24)) * 3600:
+        complete = True                                                    # …but a market that keeps failing is retried daily, not hourly
+    if not force and complete and old.get("ts") and time.time() - float(old["ts"]) < float(cfg().get("list_days", 7)) * 86400:
         return old["markets"]
-    if not force and old.get("fail_ts") and time.time() - float(old["fail_ts"]) < float(cfg().get("list_retry_hours", 24)) * 3600:
+    if not force and complete and old.get("fail_ts") and time.time() - float(old["fail_ts"]) < float(cfg().get("list_retry_hours", 24)) * 3600:
         return dict(old.get("markets") or {})
     mk = dict(old.get("markets") or {})
     state = {"ok": 0}
 
     async def _fetch_all() -> None:
-        for key, fn in (("us", _us), ("tw", _tw), ("hk", _hk)):
-            if key not in (cfg().get("markets") or ["us", "tw", "hk"]):
+        for key, fn in (("us", _us), ("tw", _tw), ("hk", _hk), ("jp", _jp)):
+            if key not in (cfg().get("markets") or MARKETS):
                 continue
             try:
                 rows = await fn()
@@ -180,7 +221,7 @@ async def lists(force: bool = False) -> Dict[str, List[Dict]]:
         log.warning("full-market list refresh exceeded its %ss budget", cfg().get("list_budget_s", 180))
     try:
         if state["ok"]:
-            _write_json(_LISTS, {"ts": time.time(), "markets": mk})
+            _write_json(_LISTS, {"ts": time.time(), "markets": mk, "miss_ts": time.time() if not all(mk.get(k) for k in want) else 0})
         else:                                           # nothing refreshed: keep the old lists, retry after a day
             _write_json(_LISTS, {**old, "markets": dict(old.get("markets") or {}), "fail_ts": time.time()})
             log.warning("full-market lists not refreshed; next attempt in ~%sh", cfg().get("list_retry_hours", 24))
@@ -260,6 +301,18 @@ def _splice(old: pd.DataFrame, new: pd.DataFrame, min_overlap: int = 3, tol: flo
     return _merge(old, new), dropped
 
 
+CLOSE_AT = {"us": ("America/New_York", 16, 0), "tw": ("Asia/Taipei", 13, 30), "hk": ("Asia/Hong_Kong", 16, 10), "jp": ("Asia/Tokyo", 15, 30)}
+
+
+def close_epoch(mk: str, day) -> Optional[float]:
+    """Epoch seconds of that market's regular close on `day` (a session date), or None."""
+    if day is None or mk not in CLOSE_AT:
+        return None
+    tz, h, m = CLOSE_AT[mk]
+    d = pd.Timestamp(day)
+    return pd.Timestamp(year=d.year, month=d.month, day=d.day, hour=h, minute=m, tz=tz).timestamp()
+
+
 def _load_json(path) -> Dict:
     try:
         return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
@@ -279,10 +332,18 @@ def refresh_prices(mk: str, syms: List[str], ref_date: Optional[pd.Timestamp], d
     now = time.time()
     retry = now - 7 * 86400                             # names Yahoo has no data for are retried weekly, not every run
     nobar_retry = now - float(cfg().get("nobar_retry_days", 2)) * 86400   # updated, but no new bar (halted / delisted)
+    ufile = DATA_DIR / f"fullmarket_upd_{mk}.json"
+    upd = _load_json(ufile)                             # sym → when its bars were last downloaded
     last = {c: close[c].last_valid_index() for c in close.columns} if not close.empty else {}
     missing = [s for s in syms if last.get(s) is None and float(failed.get(s, 0)) < retry]
     stale = [s for s in syms if last.get(s) is not None and ref_date is not None and last[s] < ref_date
              and float(nobar.get(s, 0)) < nobar_retry]
+    # 2026-11-21: a bar downloaded while the market was still open is an intraday price, and nothing ever replaced it
+    # (the name looked up to date) — 1,380 台股 rows disagreed with the official close.  Re-fetch those once after the close.
+    ce = close_epoch(mk, ref_date)
+    partial = {s for s in syms if ce and now >= ce + 1800 and last.get(s) is not None and last[s] == ref_date
+               and float(upd.get(s, 0)) < ce} if upd else set()
+    stale += [s for s in partial if s not in stale]
     chunk_new, chunk_upd = int(cfg().get("chunk_backfill", 60)), int(cfg().get("chunk_update", 100))
     reserve = max(0.0, deadline - now) * float(cfg().get("update_reserve", 0.4)) if stale else 0.0
     done_new = done_upd = 0
@@ -314,10 +375,13 @@ def refresh_prices(mk: str, syms: List[str], ref_date: Optional[pd.Timestamp], d
                 close, volume = cl, _merge(volume, vo)
                 done_upd += len(part)
                 for s in part:
+                    upd[s] = time.time()
                     if s in dropped:
                         continue
                     nl = close[s].last_valid_index() if s in close.columns else None
-                    if nl is None or (last.get(s) is not None and nl <= last[s]):
+                    if s in partial:                      # same date by design: the bar was re-fetched, not missing
+                        nobar.pop(s, None)
+                    elif nl is None or (last.get(s) is not None and nl <= last[s]):
                         nobar[s] = time.time()            # no new bar → back off instead of re-asking every run
                     else:
                         nobar.pop(s, None)
@@ -325,12 +389,13 @@ def refresh_prices(mk: str, syms: List[str], ref_date: Optional[pd.Timestamp], d
                 close, volume = _merge(close, cl), _merge(volume, vo)
                 done_new += len(part)
                 for s in part:
+                    upd[s] = time.time()
                     if s not in cl.columns or cl[s].dropna().empty:
                         failed[s] = time.time()
             time.sleep(float(cfg().get("pause_s", 1.0)))
     if done_new or done_upd:
         save_prices(mk, close, volume)
-        for path, obj in ((ffile, failed), (nfile, nobar)):
+        for path, obj in ((ffile, failed), (nfile, nobar), (ufile, upd)):
             try:
                 _write_json(path, obj)
             except Exception:  # noqa: BLE001
