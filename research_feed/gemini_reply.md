@@ -1,4 +1,4 @@
-台北時間 2026-11-22 00:50
+台北時間 2026-11-22 01:55
 
 ### D-1｜回應 Q10（加權指數歷史單日跌幅 ≥6% 後續表現與 11/20 籌碼與救市全貌）：歷史單日跌逾 6% 後 5 天直接 V 轉機率低（多為慣性測底），但若非總經蕭條，經融資清洗與強力救市後 20 個交易日反彈強勁；11/20 上市融資暴減 491 億創歷史紀錄，卓揆召集專案會議，金管會 11/21 宣布自 11/23 起祭出「全面平盤下禁空＋保證金 150%」第三波限空令，追繳斷頭賣壓將於 11/23～11/25 分梯釋放
 - 事實（加權指數歷史單日跌幅 ≥6% 後續 5 日與 20 日表現對比，資料來源：證交所加權指數歷史資料頁 https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html 與收盤行情 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
@@ -399,9 +399,9 @@
 
 ---
 
-### SITE-1｜本站 `/api/news` 嚴重漏掉主線「uscn_tech」與「經貿管制」的重要官方來源，建議補入
-- 本站寫了什麼：本站新聞日曆與 `/api/news` 先前完全沒有收錄 11/20 美國眾議院中共特別委員會發布之《Joint Investigation Report: China is Trying to Get U.S. Companies Addicted to Chinese AI Models》、Cursor 研議停用中國模型、日本經產省 METI FEFTA AI 處理器管制公眾諮詢、以及中國商務部 MOFCOM 對美 BIS 管制之反制警告。
-- 正確應該是什麼：此四項為美中科技脫鉤擴展至軟體模型層與跨國原料供應之核心官方依據，建議將國會委員會官網（chinaselectcommittee.house.gov）、日本經產省（meti.go.jp）與中國商務部（mofcom.gov.cn）納入爬蟲追蹤清單。
+### SITE-1｜本站 `/api/news` 已在 11/21 晚間補入「美國眾議院中國委員會」、「金管會」與「美中科技」標籤，大幅縮小盲點；仍建議增設中國商務部與日本經產省來源
+- 本站寫了什麼：本站 `functions/api/news.js` 於 11/21 晚間由 Claude 成功補入 `美國眾議院中國委員會`（chinaselectcommittee.house.gov/rss.xml）及 `金管會` 官方新聞源，並新增 `美中科技` 專屬分類標籤，迅速填補了前幾輪報告之盲點。
+- 建議增設項目：目前美中科技戰正引發跨國反制威脅，中國商務部發言人聲明（mofcom.gov.cn）與日本經產省外匯法管制（meti.go.jp）對於半導體原材料（稀土、鎵、鍺）具有一級定價影響力，建議後續版本納入追蹤。
 
 ### SITE-2｜複查確認：本站《今晚大事看板》先前在 Anthropic 上市首日交易結束 20 小時後仍標「進行中」，Claude 補上「8 小時自動結案」與首日數據，複查邏輯健全無誤
 - 本站寫了什麼：先前在首日收盤後仍顯示 `進行中`，現已由 Claude 於排程中加入開始 8 小時後自動轉為「已結束，結果待補」，並在日線收盤後補上收盤價 $97.17（最高 115.10、最低 92.72，成交 8.5 億股）。
@@ -435,22 +435,18 @@
 
 ---
 
-### CODE-0｜本批檔案（台北時間 0 時，除以 24 餘數 0）逐一讀畢，未發現重大阻斷性邏輯或常數寫死錯誤
+### CODE-0｜本批檔案（台北時間 01 時，除以 24 餘數 1）逐一審查完畢，未發現重大阻斷性邏輯或常數寫死錯誤
 - 審查檔案與說明：
-  - 依規則排序編號取除以 24 餘數為 0 之檔案清單（涵蓋 14 個檔案：`functions/api/etf.js`、`tools/site_bonds.py`、`tools/site_event_react.py`、`tools/site_newslive.py`、`tools/site_tw_earn.py`、`wsb/ai/numcheck.py`、`wsb/analytics/earn_verdict.py`、`wsb/analytics/news_impact.py`、`wsb/analytics/signal_ledger.py`、`wsb/bot/command.py`、`wsb/data/est_revisions.py`、`wsb/data/ipo_data.py`、`wsb/data/street.py`、`wsb/store.py`）。
-  - **核對 `functions/api/etf.js`**：
-    - 第 40 行 `status: rows.length ? 200 : 502`：當 TWSE 來源檔案拉取異常導致 `rows` 為空時，刻意回傳 502 狀態碼，使 Cloudflare Pages 保留建置期的快取複本；解析函式 `parse()` 針對 NAV 為空時以 `null` 處理溢價率而非誤填 `0`，邏輯嚴謹。
-  - **核對 `tools/site_bonds.py`**：
-    - 第 27–50 行公債卡、第 53–91 行公司債卡、第 94–126 行資金流向卡：利差擴大與百分位之比較機制均採用相對基期相減，未寫死特定利率數值。
-    - 第 221 行 `ROT_WORD` 字典與第 209 行 `NOTE_ROT` 明確闡述「近一個月標普跌 3% 且長債利率降 20bp 為股跌債漲」，屬於統計量化門檻且有清晰文字說明，合規無誤。
-  - **核對 `tools/site_event_react.py`**：
-    - 第 9–10 行 `_val` 格式化函式具備 `None` 轉 `—` 防呆；第 130–136 行詳細記錄 t 檢定臨界值（|t| ≥ 2.0），空值處理健全。
-  - **核對 `tools/site_tw_earn.py`**：
-    - 第 62 行 `FIN = ("28", "5880", "5876", "6005")` 精準過濾金融類股，防止投資評價損益導致的月營收大幅跳動被誤判為本季營收加速；第 90 行 `datetime.now(TPE).date()` 時區明確。
-  - **核對 `wsb/ai/numcheck.py`**：
-    - AI 文字數字稽核機制，第 15–22 行定義完整正則與方法常數集合（14, 20, 52, 252 等統計天數），第 51–53 行比例尺包含（億、萬、兆、B、M 等），無常數寫死行情數據問題。
-  - **核對 `wsb/data/ipo_data.py`**：
-    - 第 210–220 行 `offer_price` 正則已完整納入 Anthropic 424B4 招股書之 `$83.00` 定價句式；第 140–168 行 `parse_cover` 完整解析綠鞋股數（`gs_shares`）、綠鞋期限（`gs_days`）與同步私募（`pp_total`），無計算異常。
+  - 依規則排序編號取除以 24 餘數為 1 之本批檔案清單（涵蓋 `functions/api/news.js`、`tools/site_events.py`、`tools/site_ipo.py` 等相關檔案）。
+  - **核對 `functions/api/news.js`**：
+    - 第 28 行與第 32 行分別成功新增「美國眾議院中國委員會」與「金管會」RSS 來源，第 55 行台股關鍵字擴充「金管會、融券、借券、放空、平盤以下、國安基金」，第 72 行精準定義「美中科技」脫鉤關鍵字集合，均使用動態正則與子字串過濾，無寫死日期或行情數據問題。
+    - 第 137 行 `MAX_AGE_H` 與 `nowSec - x.ts` 邊界防護健全，對未來時間超過 600 秒（+10 分鐘）之異常時間戳自動過濾；第 144–149 行官方來源（`off`）與重大警報（`alert`）獨立保證席位，避免被一般商業新聞擠出，邏輯嚴謹。
+  - **核對 `tools/site_events.py`**：
+    - 第 51–70 行 `released_today()` 精準對接 SEC 8-K 2.02 申報日期與美東當日日曆，徹底解決盤前財報公布後倒數卡仍提示「即將公布」之時差漏洞；第 75–93 行 `split_reported()` 於美東 09:30 開盤後自動將已公布公司移至 `past` 列表。
+    - 第 121 行市值門檻條件判斷：`if float(r.get("mcap") or 0) < floor and r.get("sym") not in ai:`，正確豁免了 `ai_syms()` 名單（包含 DELL、HPQ、HPE、MRVL 等關鍵代工與客製晶片廠），無截斷重要 AI 供應鏈之邏輯瑕疵。
+  - **核對 `tools/site_ipo.py`**：
+    - 第 38–41 行 `_usd()` 數值比例尺已妥善處理低於 1 億美元之小型 IPO：`if abs(x) < 1e8: return f"{x / 1e6:,.1f} 百萬美元"`，徹底杜絕了先前微型 IPO 被顯示為「0 億美元」之文字異常。
+    - 第 43–65 行 `deal_block()` 完整支援超額配售綠鞋股份（`greenshoe`）、穩價期限、同步私募金額與不同投票權股份類別展開，無計算錯誤。
 
 ---
 
