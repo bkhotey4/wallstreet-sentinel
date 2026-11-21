@@ -1,4 +1,4 @@
-台北時間 2026-11-21 21:50
+台北時間 2026-11-21 22:50
 
 ### D-1｜回應 Q10（台股歷史單日跌幅 ≥6% 後續表現與 11/20 籌碼與救市全貌）：歷史單日跌逾 6% 後 5 天直接 V 轉機率低（多為慣性測底），但若非總經蕭條，經融資清洗與強力救市後 20 個交易日反彈強勁；11/20 上市融資暴減 491 億創歷史紀錄，金管會 11/21 宣布自 11/23 起祭出「全面平盤下禁空＋保證金 150%」第三波限空令
 - 事實（加權指數歷史單日跌幅 ≥6% 後續 5 日與 20 日表現對比，資料來源：證交所加權指數歷史資料頁 https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html 與收盤行情 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
@@ -127,7 +127,7 @@
   - **Goldman Sachs**：維持博通 `Buy` 評等，但因整體半導體板塊本益比收縮，將看法價位由 $540 調低至 **$460**（Investing.com 11/20：https://www.investing.com/news/analyst-ratings/goldman-sachs-trims-broadcom-target-to-460-3741950 ）。
 
 ### AN-3｜Seeking Alpha 獨立機構分析師調降台積電 ADR（TSM）評等至 Hold
-- 事實：Seeking Alpha 獨立研究分析師將台積電 ADR 評等由 `Buy` 調降至 `Hold`，理由為輝達為台積電主要大客戶，輝達高層異動與潛在的對中出貨限制將影響未來先進製程預付款與投片能見度（Seeking Alpha 11/20：https://seekingalpha.com/article/4738201-taiwan-semiconductor-downgraded-to-hold-on-customer-concentration-risk ）。
+- 事實：Seeking Alpha 獨立研究分析師（James Foord, The Pragmatic Investor）將台積電 ADR 評等由 `Buy` 調降至 `Hold`，理由為輝達為台積電主要大客戶（占營收比重約 19%–20%+），輝達高層異動與潛在的對中出貨限制將影響未來先進製程預付款與投片能見度，且 2026 年資本支出預估高達 600–640 億美元面臨長期產能過剩風險（Seeking Alpha 11/18：https://seekingalpha.com/article/4738201-taiwan-semiconductor-downgraded-to-hold-on-customer-concentration-risk ）。
 
 ---
 
@@ -148,7 +148,7 @@
 ### TW-2｜經濟部 11/20 公布 10 月外銷訂單 1,238.2 億美元（年增 78.3% 創歷史單月新高，對美年增 96.3%）
 - 事實：經濟部統計處於 **11/20 16:00** 發布 10 月外銷訂單統計，總金額達 **1,238.2 億美元**，創歷年單月新高，年增 **78.3%**（呈連續 21 個月正成長，增幅較 9 月之 +62.4% 明顯加速）。其中**電子產品接單 539.1 億美元（年增 89.8%）**、**資訊通信產品接單 467.7 億美元（年增 107.2%）**，雙雙改寫歷史新高；最大接單來源**美國接單金額達 496.4 億美元（占比 40.1%），年增高達 96.3%**（經濟部統計處新聞稿 2026-11-20：https://www.moea.gov.tw/MNS/dos/bulletin/Bulletin.aspx?kind=8&html=1&menu_id=6727&bull_id=14209 ；鉅亨網：https://news.cnyes.com/news/id/5785012 ）。
 
-### TW-3｜南韓年累計出口於 11/19 突破 1 兆美元大關創歷史紀錄，半導體 슈퍼사이클 支撐韓國外貿
+### TW-3｜南韓年累計出口於 11/19 突破 1 兆美元大關創歷史紀錄，半導體超級循環支撐韓國外貿
 - 事實：韓國產業通商資源部與關稅廳聯合宣布，截至 **2026 年 11 月 19 日 14:09:38**，南韓 2026 年累計出口額正式**突破 1 兆美元（US$1 Trillion）**，成為繼美、德、中之後全球第 4 個年出口破兆美元之國家，主要動能為 AI 伺服器帶動之記憶體（DRAM / HBM）與高效能運算出口暴增（韓國政府官方入口 Korea.kr 11/20：https://www.korea.kr/news/policyNewsView.do?newsId=148936012 ）。
 
 ---
@@ -157,7 +157,7 @@
 - 事實：為因應台股 11/20 重挫 6.2% 與國際股市大幅震盪，金融監督管理委員會（金管會）於 **2026 年 11 月 21 日（週六）下午** 發布新聞稿，宣布自 **11 月 23 日起** 實施五項重大救市措施：(1) **全面禁止平盤以下融券賣出及借券賣出**（不限個股跌幅，所有上市櫃股票與 TDR 賣出價不得低於前一營業日收盤價，證券期貨商避險除外）；(2) **調高最低融券保證金成數由 130% 調高至 150%**；(3) **暫停受理證券商申請發行認售權證**；(4) 鼓勵上市櫃公司於 115 年 Q4 至 116 年 Q1 實施庫藏股（納入 ESG 評鑑得分）；(5) 鼓勵金融機構等股票出借人暫停出借，已出借部分視契約提前召回（金管會新聞專區 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ）。
 
 ### TWX-2｜公司：日月光福雷電子高雄仁武加碼 2,489 億元動土；廣宇法說預期明年 AI 伺服器與光通訊大幅放量
-- 事實：日月光旗下台灣福雷電子 11/19 於高雄仁武產業園區 J 坵塊加碼投資 2,489 億元興建先進封測廠動土，結合 K 坵塊合計總投資逾 3,500 億元（Technews 11/20：https://technews.tw/2026/11/20/ase-renwu-investment/ ）；鴻海集團廣宇（2328）11/19 法說會宣布受惠 AI 伺服器代工與高密度光纖連接器 MMC 放量，營收挹注上看百億規模（經濟日報 11/20：https://money.udn.com/money/story/5612/9890512 ）。
+- 事實：日月光旗下台灣福雷電子 11/19 於高雄仁武產業園區 J 坵塊加碼投資 2,489 億元興建先進封測廠動土，結合 K 坵塊合計總投資達 3,572 億元（Technews 11/20：https://technews.tw/2026/11/20/ase-renwu-investment/ ）；鴻海集團廣宇（2328）11/19 法說會宣布受惠馬來西亞 AI 伺服器代工與安徽廠 MMC 高密度光纖連接器放量，2027 年營收貢獻分別上看百億與 30 億元規模，高毛利產品比重顯著拉升（鉅亨網 11/20：https://news.cnyes.com/news/id/5784912 ）。
 
 ### TWX-3｜籌碼：11/20 上市融資單日暴減 491.41 億元（上市櫃合減 637 億創紀錄），融資維持率降至 151.78%，追繳戶數暴增至 6,462 戶
 - 事實：11/20 台股收盤後證交所與櫃買數據顯示，上市融資餘額單日暴減 **491.41 億元**至 4,352.27 億元，上櫃融資減 145.60 億元至 1,215.30 億元，**合計市場融資單日大減 637.01 億元創歷史紀錄**；全市場擔保維持率滑落至 **151.78%**，遭追繳戶數激增至 **6,462 戶（約 64.64 億元）**。三大法人外資賣超 94.13 億、投信賣超 87.49 億、自營商大砍 340.84 億（證交所統計：https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ；工商時報：https://www.ctee.com.tw/news/20261121700021-439901 ）。
@@ -397,13 +397,16 @@
 
 ---
 
-### CODE-0｜本批檔案（台北時間 21 時，餘數 21）逐一讀畢，未發現重大阻斷性邏輯或常數寫死錯誤
+### CODE-0｜本批檔案（台北時間 22 時，餘數 22）逐一讀畢，未發現重大阻斷性邏輯或常數寫死錯誤
 - 審查檔案與說明：
-  - 依規則排序編號取除以 24 餘數為 21 之檔案清單（涵蓋 `tools/site_blocks.py`、`tools/site_euro_asia.py`、`tools/site_macro_dash.py`、`tools/site_transmission.py`、`wsb/ai/numcheck.py`、`wsb/analytics/earn_verdict.py`、`wsb/analytics/news_impact.py`、`wsb/analytics/signal_ledger.py`、`wsb/bot/econ_push.py`、`wsb/data/etf_flows.py`、`wsb/data/ipo_fin.py`、`wsb/data/street_views.py`、`wsb/weekly.py`）。
-  - 核對 `tools/site_blocks.py`：第 45 行 `max([0] + list(reg["pages"].values())) + 1` 及第 54 行 `max([0] + used) + 1` 均配置空串列 `[0]` 預設元素防呆，防止空集合拋出 ValueError；第 103–115 行 `badge` 函式替換 H2 標籤時使用 `html.escape` 與命名捕獲群組，防護穩健。
-  - 核對 `wsb/data/ipo_fin.py`：第 35–47 行 `_num` 函式將破折號（`—`、`–`、`-`）精確轉為 `0.0`，括弧正確解析為負數；第 55–89 行 `_periods` 函式針對常見 3 個會計年度 + 2 個過渡期（sizes = [n - 2, 2]）之招股書排版結構進行精確劃分，無法解析時明確回傳 `None` 放棄，不作臆測。
-  - 核對 `wsb/data/etf_flows.py`：第 66–75 行 `_good` 驗證函式檢查 `shares > 0 and nav > 0` 與 `date.today() + timedelta(days=1)` 未來日期防呆；第 72 行以 `TNA_TOL = 0.02` 檢驗股數 × NAV 與官方淨資產差異，若失真立即拒絕寫入快取，防止錯誤資料污染。
-  - 核對 `wsb/analytics/earn_verdict.py`：第 62–78 行 `_before_report` 嚴格限制財報前之報價時戳判定（盤前須早於財報日、盤後須早於美東 16:00），第 96–99 行自動清除未符合時戳防呆的舊快取；第 36–42 行 `next_session` 與第 45–53 行 `drift` 均設置 `len(px)` 與 `dropna()` 檢查，演算法健全無誤。
+  - 依規則排序編號取除以 24 餘數為 22 之檔案清單（涵蓋 `tools/site_bondread.py`、`tools/site_event_board.py`、`tools/site_marks.py`、`tools/site_tw_etf.py`、`wsb/ai/prompts.py`、`wsb/analytics/energy_chain.py`、`wsb/analytics/nowcast.py`、`wsb/analytics/signals.py`、`wsb/bot/embeds.py`、`wsb/data/euro_asia.py`、`wsb/data/korea_exports.py`、`wsb/data/taifex_live.py`）。
+  - 核對 `tools/site_bondread.py`：第 25–26 行 `_e` 函式封裝 `html.escape(guard_safe(...))` 徹底防禦 XSS，第 41 行 `_rows` 使用 `isinstance(x, dict) and all(x.get(k) for k in keys)` 完整過濾異常字典，第 64 行判空直接回傳空字串防呆完備。
+  - 核對 `tools/site_event_board.py`：第 49 行以時鐘判斷 `now - w > timedelta(hours=LIVE_MAX_H)` 將手寫 `live` 事件自動標註為 `stale`，防呆時間逾期；第 146 行前端 JS 的 `isFinite(ref) && ref > 0` 嚴格確保計算 `(x.price / ref - 1) * 100` 時無除以零風險。
+  - 核對 `tools/site_tw_etf.py`：第 85 行 `if not r.get("available") or not r.get("rows"): return ""` 確保後續 `max(rows)` 不會引發空列表異常；第 187 行 `kind_of` 涵蓋各類型前綴與後綴判別，規模與申贖計算均經由除以 1e8 換算為億元，無單位錯誤。
+  - 核對 `wsb/data/korea_exports.py`：第 127–128 行計算 `chip_yoy` 時檢查 `if r.get("chip_yoy") is None and r.get("chip") and p.get("chip")`，避免分母為 0 造成除以零例外；第 64–77 行對年增率增減方向正負號判定精確。
+  - 核對 `wsb/data/taifex_live.py`：第 31 行 `if not vol or not last or not ref: continue` 嚴格排除了參考價為 0 或空值之合約，避免第 35 行 `(last / ref - 1) * 100` 除以零；第 28 行正則表達成熟過濾現貨與週選擇權。
+  - 核對 `wsb/analytics/nowcast.py`：第 41 行 `if len(df) < 36: return None` 樣本數防呆；第 326 行 `_width` 與第 328 行 `exact` 精確劃分 PCE 與非農門檻，第 341 行浮點數邊界比較均配置 `1e-9` 容差，演算法健全無誤。
+  - 核對 `wsb/analytics/energy_chain.py`：第 102 行 `if len(k) < 12 or float(k.iloc[:, 0].var()) == 0: return None` 完整防禦變異數為零之迴歸計算；第 67 行 3-2-1 crack 公式計算精確。
 
 ---
 
