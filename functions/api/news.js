@@ -133,7 +133,11 @@ export function dedupe(lists, nowSec) {
 export function merge(lists, nowSec) {
   const all = dedupe(lists, nowSec);
   const al = all.filter((x) => x.alert).slice(0, 10);              // SEC alerts are never pushed out by a busy news day
-  return al.concat(all.filter((x) => !x.alert && !x.q).slice(0, 60 - al.length)).sort((a, b) => b.ts - a.ts);
+  // 11-21: official sources (central banks, the House China committee…) likewise — the committee's 11/20 report was cut by the
+  // 60-newest cap, so neither the page nor the story-thread archive saw it
+  const of = all.filter((x) => !x.alert && x.off && !x.q).slice(0, 10);
+  const rest = all.filter((x) => !x.alert && !x.off && !x.q).slice(0, 60 - al.length - of.length);
+  return al.concat(of, rest).sort((a, b) => b.ts - a.ts);
 }
 
 // ---- 多家媒體同時報導（2026-11-14）：45 分鐘內有好幾家不同的新聞編輯室報導同一家公司（2 家以上）或同一件事（3 家以上），
