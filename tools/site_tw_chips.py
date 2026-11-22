@@ -45,6 +45,12 @@ def sec_tw_chips(eng=None) -> str:
     so = d.get("sbl_otc") or {}
     if so.get("total"):
         lead.append(f'上櫃 {so["total"] / 1e8:,.2f} 億股（{(so["total"] - so.get("prev", 0)) / 1e4:+,.0f} 萬股）')
+    mr, dt = d.get("mratio") or {}, d.get("daytrade") or {}
+    if mr.get("ratio"):
+        mp = _prev(d, "mratio", ("ratio",))
+        lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 130% 會被追繳）')
+    if dt.get("value_pct") is not None:
+        lead.append(f'當沖占成交金額 {dt["value_pct"]:.1f}%')
     warn = d.get("warn") or []
     if warn:
         lead.append(f'注意股 {len(warn)} 檔')
@@ -79,7 +85,7 @@ def sec_tw_chips(eng=None) -> str:
                + fold_rows([f'<tr><td><b>{esc(x["name"])}</b> <span class="tk">{esc(x["code"])}</span><div class="small muted">{esc(x["board"])}</div></td>'
                             f'<td class="small">{esc(x["why"][:90])}</td></tr>' for x in warn], 10, "<tr><th>股票</th><th>原因</th></tr>", "檔") if warn else "")
             + (f'<h3>外資持股比率（上市，依產業）</h3>' + fold_rows(q_rows, 12, '<tr><th>產業</th><th class="r">家數</th><th class="r">外資持股</th><th class="r">一天變化（百分點）</th></tr>', "類") if q_rows else "")
-            + f'<p class="note">期交所 OpenAPI（三大法人、大額交易人）、證交所信用額度總量管制餘額表與櫃買 OpenAPI（借券放空）、證交所與櫃買注意股、證交所外資持股比率表；抓取 {esc(d.get("fetched") or "—")}，'
+            + f'<p class="note">期交所 OpenAPI（三大法人、大額交易人）、證交所信用額度總量管制餘額表與櫃買 OpenAPI（借券放空）、證交所與櫃買注意股、證交所外資持股比率表、證交所信用交易統計與收盤價（融資維持率＝融資股票市值÷融資金額，本站估算）、證交所當日沖銷交易統計；抓取 {esc(d.get("fetched") or "—")}，'
               '每天存一份，變化從第二天起顯示。描述資料，不是投資建議。</p>')
     return card("籌碼深度：期貨法人、大額交易人、借券與外資持股", "Positioning depth", body, "wide")
 

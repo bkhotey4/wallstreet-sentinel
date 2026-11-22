@@ -77,6 +77,7 @@ from tools import site_threads as STHR
 from tools import site_tw_earn as STE2
 from tools import site_tw_coverage as STCOV
 from tools import site_tw_chips as STCHP
+from tools import site_tw_macro2 as STM2
 from tools import site_gemini as SGM
 from tools import site_longhist as SLH
 from tools import site_sessions as SSN
@@ -1409,7 +1410,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_earn", "台股財報", "Taiwan earnings", [STE2.sec_tw_earn_preview, STCHP.sec_tw_quarter, STE2.sec_tw_corp, STCHP.sec_tw_pledge, STE2.sec_tw_earn_after]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
-            ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, SKO.sec_korea_exports]),
+            ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, STM2.sec_tw_pulse, SKO.sec_korea_exports]),
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),

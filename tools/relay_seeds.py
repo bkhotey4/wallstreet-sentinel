@@ -39,6 +39,12 @@ def main() -> dict:
         out["chips"] = {"fetched": s.get("fetched"), "large": bool(s.get("large"))}
     except Exception as e:  # noqa: BLE001
         out["chips"] = {"error": str(e)}
+    try:
+        from wsb.data import tw_macro2 as M2
+        s = M2.write_seed(FEED / "tw_macro2_seed.json")
+        out["macro2"] = {"fetched": s.get("fetched"), "pmi": (s.get("pmi") or [{}])[-1].get("ym"), "unemp": (s.get("unemp") or [{}])[-1].get("ym")}
+    except Exception as e:  # noqa: BLE001
+        out["macro2"] = {"error": str(e)}
     try:                                                   # quarterly statements: when stale (> 3 days) or a newer quarter is filed
         import time as _t
         from wsb.data import tw_chips as CH

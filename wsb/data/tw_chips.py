@@ -36,6 +36,9 @@ U_LARGE = "https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersFutures"
 U_PLEDGE = "https://openapi.twse.com.tw/v1/opendata/t187ap11_L"
 U_FCST = "https://openapi.twse.com.tw/v1/opendata/t187ap15_L"
 U_FIN = "https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci"
+U_MARGN = "https://www.twse.com.tw/exchangeReport/MI_MARGN?response=json&selectType=ALL"
+U_CLOSE = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
+U_DAYTRADE = "https://www.twse.com.tw/exchangeReport/TWTB4U?response=json&date={d}"
 U_LARGE_OPT = "https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersOptions"   # 11-22 (fields checked on the live API)
 U_SBL_O = "https://www.tpex.org.tw/openapi/v1/tpex_margin_sbl"                 # 上櫃 (Gemini TWC-4, checked 11-22)
 U_WARN_L = "https://openapi.twse.com.tw/v1/announcement/notice"                # 上市注意股
@@ -123,6 +126,31 @@ def parse_large_opt(rows: List[Dict]) -> Dict:
         out.setdefault(k, {"date": r.get("Date")})[cp] = {"top10_net": (_n(r.get("Top10Buy")) or 0) - (_n(r.get("Top10Sell")) or 0),
                                                          "oi": _n(r.get("OIOfMarket"))}
     return out
+
+
+def margin_ratio(mg: Dict, closes: List[Dict]) -> Optional[Dict]:
+    """上市整體融資維持率（估算）＝ Σ 每檔融資餘額（張）× 1,000 × 收盤價 ÷ 融資金額。和媒體常用的算法相同；個別帳戶低於 130% 會被追繳。"""
+    tabs = (mg or {}).get("tables") or []
+    if len(tabs) < 2:
+        return None
+    loan = next((_n(r[5]) for r in tabs[0].get("data") or [] if "融資金額" in str(r[0])), None)
+    px = {str(r.get("Code")): _n(r.get("ClosingPrice")) for r in closes or []}
+    mv = 0.0
+    for r in tabs[1].get("data") or []:
+        p, bal = px.get(str(r[0])), _n(r[6])
+        if p and bal:
+            mv += bal * 1000 * p
+    if not loan:
+        return None
+    return {"date": mg.get("date"), "ratio": mv / (loan * 1000) * 100, "mv": mv, "loan": loan * 1000}
+
+
+def parse_daytrade(js: Dict) -> Optional[Dict]:
+    for tb in (js or {}).get("tables") or []:
+        if "統計資訊" in str(tb.get("title")) and tb.get("data"):
+            r = tb["data"][0]
+            return {"date": js.get("date"), "share_pct": _n(r[1]), "value_pct": _n(r[3])}
+    return None
 
 
 def parse_pledge(rows: List[Dict], universe: Optional[set] = None) -> List[Dict]:
@@ -218,7 +246,7 @@ def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
             d[name] = sv
             if day is not None:
                 day[name] = sv
-    for name in ("sbl_otc", "warn"):                     # TPEx parts: use the relay when this machine has none
+    for name in ("sbl_otc", "warn", "mratio", "daytrade"):   # use the relay when this machine has none
         if not d.get(name) and seed.get(name):
             d[name] = seed[name]
 
@@ -239,6 +267,9 @@ def refresh(force: bool = False) -> Dict:
                      ("inst", lambda: parse_inst(_get(U_INST))),
                      ("large", lambda: parse_large(_get(U_LARGE, "text"))),
                      ("large_opt", lambda: parse_large_opt(_get(U_LARGE_OPT))),
+                     ("mratio", lambda: margin_ratio(_get(U_MARGN), _get(U_CLOSE))),
+                     ("daytrade", lambda: parse_daytrade(_get(U_DAYTRADE.format(d=(d.get("mratio") or {}).get("date") or
+                                                                                  datetime.now(TPE).strftime("%Y%m%d"))))),
                      ("sbl_otc", lambda: parse_sbl_otc(_get(U_SBL_O))),
                      ("warn", lambda: parse_warn(_get(U_WARN_L), _get(U_WARN_O)))):
         try:
@@ -288,7 +319,8 @@ def write_seed(path=SEED) -> Dict:
     """PC → cloud relay for the parts the cloud cannot fetch (public exchange data)."""
     out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text")),
            "large_opt": parse_large_opt(_get(U_LARGE_OPT)), "sbl_otc": parse_sbl_otc(_get(U_SBL_O)),
-           "warn": parse_warn(_get(U_WARN_L), _get(U_WARN_O))}
+           "warn": parse_warn(_get(U_WARN_L), _get(U_WARN_O)), "mratio": margin_ratio(_get(U_MARGN), _get(U_CLOSE))}
+    out["daytrade"] = parse_daytrade(_get(U_DAYTRADE.format(d=(out["mratio"] or {}).get("date") or datetime.now(TPE).strftime("%Y%m%d"))))
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
 

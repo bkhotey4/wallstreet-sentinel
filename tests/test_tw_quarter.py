@@ -39,7 +39,31 @@ def test_large_opt():
     assert o["inst"]["call"]["top10_net"] == -11738 and o["inst"]["put"]["top10_net"] == -1751 and "all" not in o
 
 
+def test_margin_ratio_and_daytrade():
+    mg = {"date": "20261120", "tables": [{"data": [["融資(交易單位)", "", "", "", "", "8,398,744"], ["融資金額(仟元)", "", "", "", "484,368,360", "1,000"]]},
+                                         {"data": [["2330", "台積電", "", "", "", "", "1", "", "", "", "", "", "", "", "", ""],
+                                                   ["9999", "沒收盤", "", "", "", "", "5", "", "", "", "", "", "", "", "", ""]]}]}
+    r = C.margin_ratio(mg, [{"Code": "2330", "ClosingPrice": "1,500.00"}])
+    assert abs(r["ratio"] - 1 * 1000 * 1500 / (1000 * 1000) * 100) < 1e-9          # 1 lot × 1,500 ÷ 1,000 thousand
+    dt = C.parse_daytrade({"date": "20261120", "tables": [{"title": "115年11月20日 當日沖銷交易統計資訊", "data": [["4,460,672,000", "26.1", "x", "34.48"]]}]})
+    assert dt == {"date": "20261120", "share_pct": 26.1, "value_pct": 34.48}
+
+
+def test_pmi_and_unemp():
+    from wsb.data import tw_macro2 as M
+    csv = "﻿" + "\n".join(["Date,PMI,NMI", "201207,47.1,-", "202610,62.5,55.4"]) + "\n"
+    assert M.parse_pmi(csv) == [{"ym": "2012-07", "pmi": 47.1, "nmi": None},
+                                                                                     {"ym": "2026-10", "pmi": 62.5, "nmi": 55.4}]
+    xml = ("<DataCollection><失業率><年月別_Year_and_month>1978</年月別_Year_and_month><總計_Total_百分比>1.67</總計_Total_百分比></失業率>"
+           "<失業率><年月別_Year_and_month>2026M09</年月別_Year_and_month><總計_Total_百分比>3.36</總計_Total_百分比>"
+           "<age_20-24_百分比>11.85</age_20-24_百分比></失業率></DataCollection>")
+    u = M.parse_unemp(xml)
+    assert len(u) == 1 and u[0]["ym"] == "2026-09" and u[0]["total"] == 3.36 and u[0]["y20_24"] == 11.85   # annual rows skipped
+
+
 if __name__ == "__main__":
+    test_pmi_and_unemp()
+    test_margin_ratio_and_daytrade()
     test_large_opt()
     test_parse_and_single_quarter()
     test_otc_and_warn()

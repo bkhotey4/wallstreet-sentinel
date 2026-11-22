@@ -1128,6 +1128,8 @@ def twal_embed(a: Dict) -> Dict:
                          f'{p.get("adr_mid")} 元（{(p.get("adr_chg_mid") or 0):+.1f}%）。這是算術，不是預測。')
         if mg.get("light") == "🔴":
             lines.append(f'・融資餘額 {str(mg.get("d"))[5:]} 一天 {mg.get("pct")}%（{mg.get("now")} 億元），借錢買股的人還在被迫賣。')
+        if p.get("mratio"):
+            lines.append(f'・上市整體融資維持率約 {p["mratio"]:.0f}%（本站估算；個別帳戶低於 130% 會被追繳）。')
         for c in a.get("due") or []:
             lines.append(f'・{str(c.get("d"))[5:]} 那天被追繳的融資：' + ("今天是補繳期限" if c.get("topup") == time.strftime("%Y-%m-%d", _tpe(time.time())) else "今天起可能被處分（斷頭）"))
         return {"title": "🚦 台股開盤前紅燈", "color": 0xE5484D, "url": url + "#taiwan",

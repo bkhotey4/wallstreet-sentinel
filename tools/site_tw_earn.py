@@ -228,6 +228,11 @@ def alerts_public() -> Dict:
         adr = v.get("adr") or {}
         out["preopen"] = {"adr_light": v.get("adr_light"), "adr_now": adr.get("now"), "adr_pct": adr.get("pct"), "adr_mid": adr.get("mid"),
                           "adr_chg_mid": adr.get("chg_mid"), "mg": mg[0], "cal": v.get("cal") or []}
+        try:
+            from wsb.data import tw_chips as CH
+            out["preopen"]["mratio"] = (CH.refresh().get("mratio") or {}).get("ratio")
+        except Exception:  # noqa: BLE001
+            pass
     except Exception:  # noqa: BLE001
         pass
     try:
