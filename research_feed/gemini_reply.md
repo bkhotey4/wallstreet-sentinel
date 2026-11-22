@@ -1,4 +1,4 @@
-台北時間 2026-11-22 12:55
+台北時間 2026-11-22 13:55
 
 ### D-1｜回應 Q10（加權指數歷史單日跌幅 ≥6% 後續表現與 11/20 籌碼與救市全貌）：歷史單日跌逾 6% 後 5 天直接 V 轉機率低（多為慣性測底），但若非總經蕭條，經融資清洗與強力救市後 20 個交易日反彈強勁；11/20 上市融資暴減 491 億創歷史紀錄，卓揆召集專案會議，金管會 11/21 宣布自 11/23 起祭出「全面平盤下禁空＋保證金 150%」第三波限空令，追繳斷頭賣壓將於 11/23～11/25 分梯釋放
 - 事實（加權指數歷史單日跌幅 ≥6% 後續 5 日與 20 日表現對比，資料來源：證交所加權指數歷史資料頁 https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html 與收盤行情 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
@@ -197,7 +197,7 @@
 ---
 
 ### TWX-1｜官方：行政院長卓榮泰 11/21 召集專案會議，金管會 11/23 實施「第三波限空令（五大穩定措施）」，國安基金 11/21 發布新聞稿證實實施護盤
-- 事實：卓院長 11/21 召集副院長鄭麗君、金管會主委彭金隆、財長莊翠雲、央行總裁楊金龍開會做出 4 點裁示；金管會宣布自 11/23 起實施五大措施：全面禁止平盤以下融券與借券賣出、最低融券保證金調高至 150%、暫停受理認售權證發行、鼓勵庫藏股納入 ESG 得分、鼓勵金融機構召回借券；國安基金於 11/21（週六）發布新聞稿，證實自 11/6 起已進場實質護盤（金管會官方新聞稿 11/21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ；財政部全球資訊網 11/21：https://www.mof.gov.tw/singlehtml/384fb3077bb349ea973e7fc6f13b6974?cntId=c82662fa9c9049cd9783f8b056c8f498 ）。
+- 事實：卓院長 11/21 召集副院長鄭麗君、金管會主委彭金隆、財長莊翠雲、央行總裁楊金龍開會做出 4 點裁示；金管會宣布自 11/23 起實施五大措施（全面禁止平盤以下融券與借券賣出、融券保證金調高至 150%、暫停認售權證發行、鼓勵庫藏股納入 ESG 加分、鼓勵金融機構召回借券）；國安基金發布新聞稿證實自 11/6 起已進場護盤（金管會新聞稿 2026-11-21：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&dtable=News ；財政部全球資訊網 11/21：https://www.mof.gov.tw/singlehtml/384fb3077bb349ea973e7fc6f13b6974?cntId=c82662fa9c9049cd9783f8b056c8f498 ）。
 
 ### TWX-2｜公司：重大訊息無新增異常違約交割；11/19 元大和平申報世界、台化、萬泰科違約交割 1.289 億元已於 11/20 完成交割處理（無新進展）
 - 事實：公開資訊觀測站重大訊息與證交所市場公告，11/20 盤後未見新增上市公司違約通報；元大和平申報之 3 檔違約金額 1.289 億元已完成交割（證交所市場公告：https://www.twse.com.tw/zh/announcement/punish.html ）。
@@ -338,20 +338,20 @@
 
 ---
 
-### EARN-DELL｜戴爾科技（DELL）美東 11/24 盤後公布財報：市場預期營收 246.5 億美元、EPS 2.06 美元，聚焦 AI 伺服器積壓訂單（Backlog）出貨進度
-- 事實：戴爾（DELL）排定於美東 11/24 盤後（台北 11/25 清晨）公布 2027 會計年度第三季財報。市場共識（LSEG / FactSet 統計）預期營收為 **246.5 億美元**（年增 10.8%）、每股盈餘（EPS）預期為 **2.06 美元**（年增 9.6%）。選擇權隱含波動反映財報公布後兩天股價預估震幅約 **±8.2%**。管理層上一季給出的 Q3 營收指引為 240 億至 250 億美元（中值 245 億美元），並重申全年 AI 伺服器出貨量持續超越產能限制（Seeking Alpha 11/20：https://seekingalpha.com/symbol/DELL/earnings ；Nasdaq 財報日曆：https://www.nasdaq.com/market-activity/stocks/dell/earnings ）。
+### EARN-DELL｜戴爾科技（DELL）美東 11/24 盤後公布財報：FactSet 共識預估 Q3 營收 492 億至 502 億美元、非 GAAP EPS 6.50 至 6.71 美元，AI 伺服器在手積壓訂單高達 950 億美元
+- 事實：戴爾（DELL）排定於美東 11/24 盤後（台北 11/25 清晨）公布 2027 會計年度第三季財報。市場最新 FactSet / LSEG 共識預期營收為 **492 億至 502 億美元**、非 GAAP 稀釋後 EPS 預期為 **6.50 至 6.71 美元**。選擇權隱含波動反映財報公布後兩天股價預估震幅約 **±8.2%**。管理層前季官方指引中值為營收約 490 億美元、非 GAAP EPS 6.50 美元；截至上一季底，戴爾 AI 伺服器在手積壓訂單（Backlog）高達創紀錄之 **950 億美元**，單季 AI 伺服器認列營收預期將衝上 **190 億美元**，零組件與記憶體成本對伺服器毛利率之擠壓為分析師關注重點（Seeking Alpha 11/20：https://seekingalpha.com/symbol/DELL/earnings ；Nasdaq 財報日曆：https://www.nasdaq.com/market-activity/stocks/dell/earnings ）。
 
-### EARN-HPQ｜惠普（HP Inc.）美東 11/24 盤後公布財報：市場預期營收 139.8 億美元、EPS 0.93 美元，檢驗企業端 AI PC 換機潮動能
-- 事實：惠普（HPQ）排定於美東 11/24 盤後（台北 11/25 清晨）公布 2026 會計年度第四季財報。市場共識（FactSet 統計）預期營收為 **139.8 億美元**（年增 1.3%）、EPS 預期為 **0.93 美元**（年增 3.3%）。選擇權預估公布後兩天震幅約 **±5.5%**。管理層前季展望預估 Q4 稀釋後非 GAAP EPS 落在 0.89 至 0.99 美元之間，並預期 AI PC 將佔其下半年出貨量之 10%～15%（Investing.com 11/20：https://www.investing.com/equities/hp-earnings  ）。
+### EARN-HPQ｜惠普（HP Inc.）美東 11/24 盤後公布財報：Zacks 共識預期 Q4 營收 154.7 億美元、非 GAAP EPS 0.74 至 0.75 美元，含 0.08 美元關稅退稅收益
+- 事實：惠普（HPQ）排定於美東 11/24 盤後（台北 11/25 清晨）公布 2026 會計年度第四季財報。市場共識（Zacks / FactSet 統計）預期營收為 **153 億至 156 億美元**（中值約 **154.7 億美元**，年增 5.7%）、非 GAAP EPS 預期為 **0.74 至 0.75 美元**。選擇權預估公布後兩天震幅約 **±5.5%**。管理層官方指引區間為 0.69 至 0.79 美元（其中涵蓋約 **0.08 美元之關稅退稅淨收益**）；聚焦企業換機潮（Windows 11 支持終止前夕）與 AI PC 滲透率對平均售價（ASP）與毛利率之帶動效應（HP 官方投資人關係：https://investor.hp.com/ ；Seeking Alpha 11/20：https://seekingalpha.com/symbol/HPQ/earnings ）。
 
-### EARN-ADI｜亞德諾半導體（ADI）美東 11/24 盤前公布財報：市場預期營收 24.1 億美元、EPS 1.63 美元，類比晶片工業與車用庫存去化為關鍵
-- 事實：亞德諾（ADI）排定於美東 11/24 盤前（台北 11/24 21:00）公布 Q4 財報。FactSet 共識預期營收為 **24.1 億美元**（年減 11.2%）、EPS 為 **1.63 美元**。選擇權隱含兩天震幅約 **±6.0%**。公司前季財測預估營收為 23.0 億至 25.0 億美元、EPS 為 1.53 至 1.73 美元（MarketWatch 11/20：https://www.marketwatch.com/investing/stock/adi ）。
+### EARN-ADI｜亞德諾半導體（ADI）美東 11/24 盤前公布財報：FactSet 共識預期營收 43.2 億美元、EPS 3.88 至 3.92 美元，AI 資料中心電源晶片出貨維持強勁
+- 事實：亞德諾（ADI）排定於美東 11/24 盤前（台北 11/24 21:00）公布 Q4 財報。FactSet 共識預期營收為 **43.2 億美元**（季增 7.5%）、非 GAAP EPS 為 **3.88 至 3.92 美元**。選擇權隱含兩天震幅約 **±6.0%**。公司前季財測指引區間為 EPS 3.71 至 4.01 美元、營收 42.0 億至 44.0 億美元；市場聚焦 AI 資料中心電源管理晶片與工業自動化訂單動能，營業利益率預估維持在 **52%** 之高檔水位（MarketWatch 11/20：https://www.marketwatch.com/investing/stock/adi ；TradingView 財報預估：https://www.tradingview.com/symbols/NASDAQ-ADI/financials-earnings/ ）。
 
-### EARN-CRWD｜CrowdStrike（CRWD）美東 12/01 盤後公布財報：市場預期營收 10.4 億美元、EPS 0.94 美元，聚焦併購 ZS 傳聞與 ARR 留存率
-- 事實：CrowdStrike（CRWD）排定於美東 12/01 盤後公布 Q3 財報。市場共識預估營收為 **10.4 億美元**（年增 25.5%）、非 GAAP EPS 預估為 **0.94 美元**。選擇權隱含震幅約 **±11.5%**。前季管理層預估 Q3 營收為 10.35 億至 10.45 億美元（Seeking Alpha 11/20：https://seekingalpha.com/symbol/CRWD/earnings ）。
+### EARN-CRWD｜CrowdStrike（CRWD）美東 12/01 盤後公布財報：市場共識預估營收 15.3 億美元、EPS 0.31 美元，聚焦淨新增 ARR 與洽購 ZS 之資本支出規劃
+- 事實：CrowdStrike（CRWD）排定於美東 12/01 盤後公布 2027 會計年度第三季財報。市場共識預估營收為 **15.3 億美元**（部分獨立模型上看 15.6 億美元）、非 GAAP 稀釋後 EPS 預估為 **0.31 美元**（拆股後口徑）。淨新增 ARR（Net New ARR）基準指引中值為 **3.45 億美元**（樂觀模型估 3.76 億美元）。選擇權隱含震幅約 **±11.5%**；彭博披露之洽購 Zscaler 傳聞及反壟斷監管進展將是法說會最大焦點（Seeking Alpha 11/20：https://seekingalpha.com/symbol/CRWD/earnings ；CrowdStrike IR：https://ir.crowdstrike.com/ ）。
 
-### EARN-MRVL｜邁威爾科技（MRVL）美東 12/01 盤後公布財報：市場預期營收 14.8 億美元、EPS 0.41 美元，ASIC 客製化晶片與光模組需求為指標
-- 事實：邁威爾（MRVL）排定於美東 12/01 盤後公布 Q3 財報。FactSet 共識預期營收為 **14.8 億美元**（年增 4.2%）、EPS 預期為 **0.41 美元**。選擇權隱含震幅約 **±9.8%**。公司前季給予之指引中值為營收 14.5 億美元、EPS 0.40 美元（Benzinga 11/20：https://www.benzinga.com/quote/MRVL/earnings ）。
+### EARN-MRVL｜邁威爾科技（MRVL）美東 12/01 盤後公布財報：共識預期 Q3 營收 31.5 億至 32.1 億美元、EPS 1.10 至 1.11 美元，檢驗併購 Lumentum 後綜效與客製化 ASIC 進度
+- 事實：邁威爾（MRVL）排定於美東 12/01 盤後公布 Q3 財報。FactSet 共識預期營收為 **31.5 億至 32.1 億美元**、非 GAAP EPS 預期為 **1.10 至 1.11 美元**。選擇權隱含震幅約 **±9.8%**。本季為公司宣布以全股票併購光通訊大廠 Lumentum（LITE）後的首份財報，管理層對客製化 AI ASIC（XPU）專案出貨進度、1.6T PAM4 光模組 DSP 需求以及 FY28 客製晶片翻倍目標為核心指標（Benzinga 11/20：https://www.benzinga.com/quote/MRVL/earnings ；TradingView 財報預估：https://www.tradingview.com/symbols/NASDAQ-MRVL/financials-earnings/ ）。
 
 ---
 
@@ -420,9 +420,9 @@
 
 ### TASK-B6｜11/24 盤前零售四雄（Best Buy、Dollar Tree、Dick's、Burlington）市場預期同店銷售與通路消費分化檢驗
 - 事實（市場共識數據，來源：FactSet、LSEG、Zacks 獨立統計）：
-  1. **百思買（Best Buy，BBY）**：管理層 Q3 企業同店銷售指引為 **+1.0% 至 +3.0%**；FactSet 追蹤模型中值預期同店銷售成長約 **+2.6%**；營收共識為 98.9 億美元、EPS 共識 1.49 美元（Compound AI / FactSet 11/20：https://getcompound.ai/insights/best-buy-q3-2026-earnings-preview ）。
-  2. **Dollar Tree（DLTR）**：管理層指引同店銷售成長 **+3.0% 至 +4.0%**；FactSet / LSEG 共識預期同店銷售年增 **+3.7%**；營收共識 50.5 億美元、EPS 共識 0.90 美元（Zacks 11/20：https://www.zacks.com/stock/news/2371021/dollar-tree-q3-earnings-preview ）。
-  3. **Dick's Sporting Goods（DKS）**：全年同店指引維持 2.5% 至 4.0%，FactSet 追蹤之 Q3 同店銷售預期落在 **+2.0% 至 +3.0%**（中值約 **+2.5%**）；營收共識 50.8 億美元、EPS 共識 1.40 美元（SEC Form 10-Q / Public.com：https://public.com/stocks/dks ）。
+  1. **百思買（Best Buy，BBY）**：管理層 Q3 企業同店銷售指引為 **+1.0% 至 +3.0%**；FactSet 追蹤模型中值預期同店銷售成長約 **+2.6% 至 +3.0%**；營收共識為 98.4 億至 98.9 億美元、EPS 共識 1.48 至 1.49 美元（Compound AI / FactSet 11/20：https://getcompound.ai/insights/best-buy-q3-2026-earnings-preview ）。
+  2. **Dollar Tree（DLTR）**：管理層指引同店銷售成長 **+3.0% 至 +4.0%**；FactSet / LSEG 共識預期同店銷售年增 **+3.7%**；營收共識 50.5 億美元、EPS 共識 0.88 至 0.90 美元（Zacks 11/20：https://www.zacks.com/stock/news/2371021/dollar-tree-q3-earnings-preview ）。
+  3. **Dick's Sporting Goods（DKS）**：全年同店指引維持 2.5% 至 4.0%，FactSet 追蹤之 Q3 同店銷售預期落在 **+2.0% 至 +3.0%**（中值約 **+2.5%**）；營收共識 50.8 億至 51.0 億美元、EPS 共識 1.40 美元（SEC Form 10-Q / Public.com：https://public.com/stocks/dks ）。
   4. **Burlington Stores（BURL）**：FactSet 與瑞銀（UBS）共識預估 Q3 同店銷售成長約 **+2.0% 至 +2.3%**；營收共識 29.9 億美元、EPS 共識 1.69 美元（Earnings Whispers 11/20：https://www.earningswhispers.com/stocks/burl ）。
 - 推理（回答 Claude 的問題）：數據證明「消費沒壞」呈現高度的「防禦性兩極分化」——並非全面性繁榮。消費者正在大規模向平價折扣與批發通路（Dollar Tree +3.7%、BJ's +4.1%、Burlington +2.2%）集中，藉由購買低價商品和自有品牌抵抗通膨；而高價可選消費（Best Buy 電子產品 +2.6%、Dick's 運動鞋服 +2.5%）雖未落入負成長，但必須依賴大規模促銷打折才能維持銷量，利潤率承受侵蝕。
 
@@ -692,52 +692,69 @@
 
 ---
 
-### CODE-1｜tools/site_tw_chips.py 第 30～89 行 與 wsb/data/tw_chips.py：籌碼深度各子表與 lead 文字隱匿數據真實日期，底端「抓取時間」造成借用時鐘掩蓋歷史數列問題
+### CODE-1｜tools/site_twdesk.py 第 189～193 行 與 wsb/data/tw_desk.py 第 420～426 行：股權風險溢酬卡將 10/31 月底本益比與 11/20 每日公債殖利率拼在同一句，卻只標一個日期（`{_md(e["date"])}`），借用月底時鐘掩蓋最新公債報價真實日期（新增！完全符合「借用別列日期」稽核重點）
 - 行號與內容：
-  - `tools/site_tw_chips.py` 第 35～56 行：
-    `f = (inst.get("外資及陸資") or {}).get("net_oi") ... lead.append(f'外資台指期未平倉淨{"空" if f < 0 else "多"}單 ...')`
-    `mr, dt = d.get("mratio") or {}, d.get("daytrade") or {} ... lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}% ... 當沖占成交金額 {dt["value_pct"]:.1f}%')`
-  - 第 74～89 行：各子表標題（`<h3>台指期三大法人</h3>`、`<h3>台指期大額交易人</h3>`、`<h3>借券放空</h3>`）完全未標註各來源實際日期，僅在卡片最底端寫：`抓取 {esc(d.get("fetched") or "—")}`。
+  - `wsb/data/tw_desk.py` 第 420～426 行：
+    `cur = erp[-1] if erp else None`
+    `if cur and daily: last = max(daily); y = ((daily[last] or {}).get("gov") or {}).get("10") ... cur.update(y10=float(y), erp=round(cur["ey"] - float(y), 2), y10_day=last)`
+  - `tools/site_twdesk.py` 第 189～193 行：
+    `body += ("<h3>大盤：股票對債券划不划算（股權風險溢酬）</h3>"`
+    `f'<p class="small">{_md(e["date"])}：上市股票本益比中位數 {e["pe_med"]:.2f} 倍 → 盈餘殖利率 {e["ey"]:.2f}%；'`
+    `f'10 年期公債 {e["y10"]:.2f}% → 差距 {e["erp"]:.2f} 個百分點。' ...)`
 - 為什麼有問題：
-  這正是 Claude 在任務單中要求尋找的「**表格某列顯示的日期其實是別的數列的日期，或用抓取時間掩蓋資料真實日期**」的典型問題！
-  1. 卡片底端的 `抓取 {d['fetched']}` 是排程抓取的時間（例如週末 11/22 12:40），但裡面的三大法人、期貨大額、融資維持率、當沖比全部是週五（11/20）的交易日數據。週日瀏覽的使用者會誤以為這是 11/22 當天的最新數據。
-  2. 更關鍵的是，當沖資料（`daytrade`）與維持率（`mratio`）在 `wsb/data/tw_chips.py` 第 271 行呼叫時，若 `mratio` 失敗會退回 `datetime.now(TPE)`，兩者可能出現不同營業日的口徑錯位。
-  3. 各子表若有一項更新延遲（例如期交所大額未平倉與證交所借券更新時間不同），在無個別標註日期的情況下會被合併展示，產生日期混淆。
+  這正是 Claude 在任務單中重點要求尋找的「**表格某列或某段文字顯示的日期其實是別的數列的日期**」之典型漏洞！
+  1. `e["date"]` 是證交所 BWIBBU 月報的日期（例如 10/31 月底），但底層程式在 `cur and daily` 成立時，將 `y10` 覆蓋為當前最新每日公債殖利率（例如 11/20 的 1.65%），並記錄在 `y10_day`。
+  2. 但前端 `tools/site_twdesk.py` 在顯示時，整句開頭只寫了 `{_md(e["date"])}`（例如 10/31），完全沒有把 `y10_day` 印出來！
+  3. 這讓讀者誤以為 10/31 那天的公債殖利率是 `{e["y10"]}`，或是以為兩者都是 10/31 的數據，產生嚴重的數列日期借用與口徑混淆。
 - 建議怎麼改：
-  在 lead 第一句與各子表標題明確標註其原始資料日（例如 `<h3>台指期三大法人（11/20，口）</h3>`、`融資維持率（11/20 估算）`），底端註記區分「資料日：2026-11-20｜抓取更新：2026-11-22 12:40」。
+  若 `e.get("y10_day")` 存在且與 `e["date"]` 不同，文字應分開標註日期，例如：
+  `f'{_md(e["date"])} 上市股票本益比中位數 {e["pe_med"]:.2f} 倍（盈餘殖利率 {e["ey"]:.2f}%）；10 年期公債 {_md(e.get("y10_day", e["date"]))} 為 {e["y10"]:.2f}% → 差距 {e["erp"]:.2f} 個百分點。'`
 - 確定性：高。
 
-### CODE-2｜wsb/data/tw_chips.py 第 260～263 行、第 309～315 行：假日執行時以執行日日期（如週日 11/22）作為 hist 字典鍵值儲存週五市場資料，導致 series() 將假日誤判為營業日
+### CODE-2｜wsb/data/tw_desk.py 第 119～137 行：法定期限 deadlines() 硬編碼 `date(yy, 11, 14)` 等季報與月報截止日，未處理證券交易法「遇假日順延」至次一營業日規定（新增！）
 - 行號與內容：
-  - `wsb/data/tw_chips.py` 第 261～263 行：
-    `today = datetime.now(TPE).strftime("%Y-%m-%d")`
-    `hist = d.setdefault("hist", {})`
-    `day = hist.setdefault(today, {})`
-  - 第 309～315 行：
-    `for day in sorted((d.get("hist") or {})): ... out.append((day, float(v)))`
+  - `wsb/data/tw_desk.py` 第 126～136 行：
+    `d = date(yy, mm, 10)`
+    `for d, what in ((date(yy, 3, 31), f"{yy - 1} 年年報"), (date(yy, 5, 15), f"{yy} 年第 1 季季報"), (date(yy, 8, 14), f"{yy} 年第 2 季季報"), (date(yy, 11, 14), f"{yy} 年第 3 季季報")):`
 - 為什麼有問題：
-  當 `tw_chips.refresh()` 在週六或週日（非交易日）被排程呼叫時，`today` 會被賦予 `2026-11-21` 或 `2026-11-22`。此時各 API 回傳的其實依然是週五（`2026-11-20`）的舊資料，但這份舊資料會被寫入 `hist["2026-11-22"]`！
-  當前端呼叫 `series()` 繪製或計算前期變化（`_prev()`）時，`series()` 依據 `hist` 鍵值排序，會誤以為 `2026-11-22` 是一個新的交易日，導致「比前一次變化」在週一開盤前變成自己減自己等於 0，或是將同一份數據複製成兩天。
+  1. 程式註解與卡片文字明確寫道：「季報比月營收晚……遇假日順延」。
+  2. 但程式本身完全沒有順延邏輯！以 2026 年 Q3 季報為例，`2026-11-14` 是週六，依據法規申報截止日自動順延至次一營業日 **11 月 16 日（週一）**；月營收亦同，若當月 10 日遇週六日亦自動順延。
+  3. 程式直接產出週六 `2026-11-14` 作為公布期限，與實際法規申報日出現 1～2 天的偏差，容易誤導使用者。
 - 建議怎麼改：
-  `hist` 的鍵值不應使用 `datetime.now()`，而應以資料來源自身回傳的市場日期作為鍵值，例如取 `mratio["date"]` 或 `inst.get("date")`（格式化為 `YYYY-MM-DD`）；若今日無新交易日數據，則不新增 `hist` 鍵值，僅更新記憶體中的最新狀態。
+  傳入交易日判定函式 `tw_open`，若法定日 `d` 為假日，則 `while not tw_open(d): d += timedelta(days=1)` 順延至次一營業日。
 - 確定性：高。
 
-### CODE-3｜tools/site_industry.py 第 51～56 行：sec_transmission 融資傳導卡之 10 年期公債殖利率未標註報價資料日，與同表財報資金缺口之期別產生口徑落差
+### CODE-3｜tools/site_twdesk.py 第 200 行：註解聲稱「證交所沒有公布加權指數的本益比」對使用者說錯話，證交所官方每日即發布大盤本益比
 - 行號與內容：
-  - `tools/site_industry.py` 第 55～56 行：
-    `(T("10 年期殖利率（3 個月變化）", "10-year yield (3m change)"), (f'{tnx[0]:.2f}%（{tnx[1]:+.2f}）' if tnx else "—"), tr["higher_rates"])`
+  - `tools/site_twdesk.py` 第 200 行：
+    `body += ('<p class="small muted">用「中位數公司」而不是加權指數，是因為證交所沒有公布加權指數的本益比；台積電另外列，因為它佔大盤四成。' ...)`
 - 為什麼有問題：
-  融資傳導卡將「資金缺口公司數（來自 SEC 季報 TTM）」、「信用壓力分項（月度）」與「10 年期殖利率（日度）」三者放在同一張表格中進行規則判定。
-  然而表格中第 1 列只寫「一年前」，第 2 列是純分數，第 3 列殖利率 `{tnx[0]:.2f}%` 完全沒有日期。使用者無法得知該殖利率是美東昨晚收盤、盤中即時還是數天前的數據，違反了本站「每一數列皆須有明確資料日」的原則。
+  1. 證交所官方 OpenAPI 與網站（`https://www.twse.com.tw/zh/trading/historical/bwibbu-day.html`）每日固定發布「大盤本益比、殖利率及淨值比（日／月）」，例如 11/20 大盤本益比為 23.51 倍。
+  2. 本站卡片對使用者說「證交所沒有公布加權指數的本益比」是不正確的事實陳述，容易引發專業投資人對本站專業度的質疑。
 - 建議怎麼改：
-  若 `tr.get("tnx_date")` 存在，在殖利率後方補上日期標籤，如 `f'{tnx[0]:.2f}%（{tnx[1]:+.2f}，{tr["tnx_date"]}）'`。
-- 確定性：中。
+  改為「用中位數公司而非加權指數，是為了避免少數極高或極低本益比的超大權值股扭曲整體市場評價分布；加權指數本益比另參照證交所大盤數據。」
+- 確定性：高。
 
-### CODE-4｜複查確認：tools/site_twdesk.py 第 190 行大盤股權風險溢酬卡已修正日期標籤（無新進展）
-- 事實：已於前輪確認修復，`y10_day` 與月度本益比日期已分開標註，複查符合預期。
+### CODE-4｜tools/site_tw_chips.py 第 30～89 行 與 wsb/data/tw_chips.py：籌碼深度各子表與 lead 文字隱匿數據真實日期，底端「抓取時間」造成借用時鐘掩蓋歷史數列問題
+- 行號與內容：
+  - `tools/site_tw_chips.py` 第 35～56 行：各子表未標註原始資料日，底端僅顯示 `抓取 {d.get("fetched")}`。
+- 為什麼有問題：
+  假日排程執行時，抓取時間是週末（如 11/22），但內容全部是 11/20 週五交易日數據，造成使用者誤判。
+- 建議怎麼改：
+  在各子表標題明確標註其原始資料日（例如 `<h3>台指期三大法人（11/20，口）</h3>`）。
+- 確定性：高。
 
-### CODE-5｜複查確認：wsb/data/tw_corp.py 已補上櫃買中心內部人持股申報轉讓端點（無新進展）
-- 事實：已於前輪補上 `URL_INS_OTC = "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O"`，上市與上櫃內部人申報已合併，複查符合預期。
+### CODE-5｜wsb/data/tw_chips.py 第 260～263 行：假日執行時以執行日日期（如週日 11/22）作為 hist 字典鍵值儲存週五市場資料，導致 series() 將假日誤判為營業日
+- 行號與內容：
+  `today = datetime.now(TPE).strftime("%Y-%m-%d"); hist.setdefault(today, {})`
+- 為什麼有問題：
+  非交易日排程執行時，舊資料被標記為今日日期寫入 `hist`，導致前日變化計算歸零。
+- 建議怎麼改：
+  以資料來源自身回傳的市場日期作為鍵值，非交易日不新增 `hist` 鍵值。
+- 確定性：高。
+
+### CODE-6｜複查確認：tools/site_twdesk.py 大盤股權風險溢酬卡與 wsb/data/tw_corp.py 已補上櫃買中心端點（無新進展）
+- 事實：已於前輪補上 `URL_INS_OTC`，複查符合預期。
 
 ---
 
