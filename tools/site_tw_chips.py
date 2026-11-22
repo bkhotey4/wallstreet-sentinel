@@ -42,6 +42,12 @@ def sec_tw_chips(eng=None) -> str:
         lead.append(f'前十大特定法人在台指期淨{"多" if li > 0 else "空"} {abs(li):,.0f} 口')
     if sbl.get("total"):
         lead.append(f'上市借券放空餘額 {sbl["total"] / 1e8:,.2f} 億股（比前一天 {(sbl["total"] - sbl.get("prev", 0)) / 1e4:+,.0f} 萬股）')
+    so = d.get("sbl_otc") or {}
+    if so.get("total"):
+        lead.append(f'上櫃 {so["total"] / 1e8:,.2f} 億股（{(so["total"] - so.get("prev", 0)) / 1e4:+,.0f} 萬股）')
+    warn = d.get("warn") or []
+    if warn:
+        lead.append(f'注意股 {len(warn)} 檔')
     rows_inst = "".join(f'<tr><td>{esc(k)}</td><td class="r"><b>{(v.get("net_oi") or 0):+,.0f}</b></td><td class="r">{(v.get("net_trade") or 0):+,.0f}</td></tr>'
                         for k, v in inst.items())
     rows_large = "".join(f'<tr><td>{"全部交易人" if k == "all" else "特定法人"}</td><td class="r">{v["top5_net"]:+,.0f}</td><td class="r">{v["top10_net"]:+,.0f}</td>'
@@ -64,8 +70,11 @@ def sec_tw_chips(eng=None) -> str:
             + (f'<h3>台指期大額交易人（全部月份；買方減賣方，口）</h3><div class="scroll"><table class="mini"><thead><tr><th></th><th class="r">前五大</th>'
                f'<th class="r">前十大</th><th class="r">全市場未平倉</th></tr></thead><tbody>{rows_large}</tbody></table></div>' if rows_large else "")
             + (f'<h3>借券放空：台灣 50＋中型 100 一天變化最大的</h3>' + fold_rows(s_rows, 10, th_s, "家") if s_rows else "")
+            + (f'<h3>注意股（{len(warn)} 檔；連續漲跌或成交異常，再犯可能被處置）</h3>'
+               + fold_rows([f'<tr><td><b>{esc(x["name"])}</b> <span class="tk">{esc(x["code"])}</span><div class="small muted">{esc(x["board"])}</div></td>'
+                            f'<td class="small">{esc(x["why"][:90])}</td></tr>' for x in warn], 10, "<tr><th>股票</th><th>原因</th></tr>", "檔") if warn else "")
             + (f'<h3>外資持股比率（上市，依產業）</h3>' + fold_rows(q_rows, 12, '<tr><th>產業</th><th class="r">家數</th><th class="r">外資持股</th><th class="r">一天變化（百分點）</th></tr>', "類") if q_rows else "")
-            + f'<p class="note">期交所 OpenAPI（三大法人、大額交易人）、證交所信用額度總量管制餘額表（借券放空，僅上市）、證交所外資持股比率表；抓取 {esc(d.get("fetched") or "—")}，'
+            + f'<p class="note">期交所 OpenAPI（三大法人、大額交易人）、證交所信用額度總量管制餘額表與櫃買 OpenAPI（借券放空）、證交所與櫃買注意股、證交所外資持股比率表；抓取 {esc(d.get("fetched") or "—")}，'
               '每天存一份，變化從第二天起顯示。描述資料，不是投資建議。</p>')
     return card("籌碼深度：期貨法人、大額交易人、借券與外資持股", "Positioning depth", body, "wide")
 
@@ -87,3 +96,50 @@ def sec_tw_pledge(eng=None) -> str:
             '但在大跌時要多看一眼。</p>' + fold_rows(rows, 15, th, "家")
             + f'<p class="note">證交所 OpenAPI 董監事持股餘額明細（資料年月 {esc(ym)}，每月更新）；比例＝董監本人持股中的設質股數 ÷ 目前持股。描述資料，不是投資建議。</p>')
     return card("董監質押：大跌時的另一個被迫賣方", "Insider share pledges", body, "wide")
+
+
+def _f(x, fmt: str) -> str:
+    return "—" if x is None else fmt.format(x)
+
+
+def sec_tw_quarter(eng=None) -> str:
+    """單季財報（11-22，台股覆蓋清單補缺）：台灣 50＋中型 100 最新一季的單季營收、毛利率、營益率、EPS，和上一季比。"""
+    import json as _json
+    from wsb.data import tw_chips as C
+    try:
+        seed = _json.loads(C.FIN_SEED.read_text(encoding="utf-8")) if C.FIN_SEED.exists() else {}
+    except (OSError, ValueError):
+        seed = {}
+    snaps = seed.get("snaps") or {}
+    if not snaps:
+        return ""
+    try:
+        from wsb.data import tw_desk as D
+        codes = set(D.universe(D.load()).get("codes") or []) or None
+    except Exception:  # noqa: BLE001
+        codes = None
+    v = C.fin_view(snaps, codes)
+    rows = v.get("rows") or []
+    if not rows:
+        return ""
+    y, q = v["q"].split("Q")
+    up = [r for r in rows if (r.get("rev_qoq") or 0) > 0]
+    gm_up = [r for r in rows if r.get("gm") is not None and r.get("gm_prev") is not None and r["gm"] > r["gm_prev"]]
+    lead = (f'台灣 50＋中型 100 的 {y} 年第 {q} 季（單季）：{len(rows)} 家裡營收比上一季成長的有 {len(up)} 家，'
+            f'毛利率比上一季提高的有 {len(gm_up)} 家。')
+    pts = lambda a, b: "" if a is None or b is None else f'<div class="small muted">{a - b:+.1f}</div>'  # noqa: E731
+    th = ('<tr><th>公司</th><th class="r">單季營收（億元）</th><th class="r">比上季</th><th class="r">毛利率</th><th class="r">營益率</th>'
+          '<th class="r">單季 EPS（元）</th></tr>')
+    body_rows = [f'<tr><td><b>{esc(r["name"])}</b> <span class="tk">{esc(r["code"])}</span></td><td class="r">{r["rev"] / 1e5:,.0f}</td>'
+                 f'<td class="r">{_f(r.get("rev_qoq"), "{:+.0f}%")}</td>'
+                 f'<td class="r">{_f(r.get("gm"), "{:.1f}%")}{pts(r.get("gm"), r.get("gm_prev"))}</td>'
+                 f'<td class="r">{_f(r.get("om"), "{:.1f}%")}</td>'
+                 f'<td class="r"><b>{_f(r.get("eps"), "{:.2f}")}</b>{pts(r.get("eps"), r.get("eps_prev"))}</td></tr>'
+                 for r in rows]
+    body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}</b></p>'
+            '<p class="small">季報公布的是「今年到這季為止的累計數」，這裡用前後兩季的累計相減，算出這一季自己的數字（第 1 季就是本身）。'
+            '毛利率、EPS 下面的小字是比上一季多或少幾個百分點／幾元。金融股沒有毛利率。依營收由大到小排列。</p>'
+            + fold_rows(body_rows, 20, th, "家")
+            + f'<p class="note">公開資訊觀測站綜合損益表彙總表（上市＋上櫃，累計數，千元；電腦端抓取 {esc(seed.get("fetched") or "—")}）。'
+              '單季數字由兩季累計相減，公司若重編前期數字可能有小差異。描述資料，不是投資建議。</p>')
+    return card(f"台股單季財報：{y} 年第 {q} 季", "Taiwan quarterly results", body, "wide")

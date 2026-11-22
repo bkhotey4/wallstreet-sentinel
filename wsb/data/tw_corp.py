@@ -23,6 +23,7 @@ from ..config import DATA_DIR
 log = logging.getLogger(__name__)
 URL_TSB = "https://mopsov.twse.com.tw/mops/web/ajax_t35sc09"
 URL_INS = "https://openapi.twse.com.tw/v1/opendata/t187ap12_L"
+URL_INS_O = "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O"     # 上櫃 (Gemini TWC-4, checked 11-22)
 FILE = DATA_DIR / "econ_tw_corp.json"
 SEED = Path(__file__).resolve().parents[2] / "research_feed" / "tw_corp_seed.json"
 UA = {"User-Agent": "Mozilla/5.0 (WallStreet Sentinel research site)"}
@@ -84,11 +85,12 @@ def fetch_buybacks(today: Optional[date] = None, days: int = 45) -> List[Dict]:
 def parse_insiders(rows: List[Dict]) -> List[Dict]:
     out = []
     for r in rows or []:
-        code = str(r.get("公司代號") or "").strip()
+        code = str(r.get("公司代號") or r.get("SecuritiesCompanyCode") or "").strip()
         if not code:
             continue
-        out.append({"code": code, "name": str(r.get("公司名稱") or "").strip(), "date": roc_iso(str(r.get("出表日期") or "")),
-                    "who": str(r.get("申報人身分") or "").strip(), "how": str(r.get("預定轉讓方式及股數-轉讓方式") or "").strip(),
+        out.append({"code": code, "name": str(r.get("公司名稱") or r.get("CompanyName") or "").strip(),
+                    "date": roc_iso(str(r.get("出表日期") or r.get("Date") or "")),
+                    "who": str(r.get("申報人身分") or r.get("申請人身分") or "").strip(), "how": str(r.get("預定轉讓方式及股數-轉讓方式") or "").strip(),
                     "shares": _n(str(r.get("預定轉讓總股數-自有持股") or "")) or 0.0, "held": _n(str(r.get("目前持有股數-自有持股") or "")),
                     "period": str(r.get("有效轉讓期間") or "").strip()})
     return out
@@ -123,8 +125,10 @@ def refresh(force: bool = False) -> Dict:
         if str(s.get("fetched") or "") > str(d.get("bb_fetched") or ""):
             d["buybacks"], d["bb_fetched"] = s.get("buybacks") or [], s.get("fetched")
     try:
-        r = requests.get(URL_INS, headers=UA, timeout=20)
-        new = parse_insiders(r.json()) if r.ok else []
+        new = []
+        for u in (URL_INS, URL_INS_O):
+            r = requests.get(u, headers=UA, timeout=20)
+            new += parse_insiders(r.json()) if r.ok else []
         have = {(x["code"], x["date"], x["who"], x["shares"]): x for x in d.get("insiders") or []}
         for x in new:
             have.setdefault((x["code"], x["date"], x["who"], x["shares"]), x)

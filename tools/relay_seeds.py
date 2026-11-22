@@ -39,6 +39,19 @@ def main() -> dict:
         out["chips"] = {"fetched": s.get("fetched"), "large": bool(s.get("large"))}
     except Exception as e:  # noqa: BLE001
         out["chips"] = {"error": str(e)}
+    try:                                                   # quarterly statements: when stale (> 3 days) or a newer quarter is filed
+        import time as _t
+        from wsb.data import tw_chips as CH
+        f = FEED / "tw_fin_seed.json"
+        have = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+        want = {f"{y}Q{q}" for y, q in CH.latest_quarters()}
+        if _t.time() - (f.stat().st_mtime if f.exists() else 0) > 3 * 86400 or not want <= set(have.get("snaps") or {}):
+            s = CH.write_fin_seed(f)
+            out["fin"] = {"fetched": s.get("fetched"), "quarters": sorted(s.get("snaps") or {})}
+        else:
+            out["fin"] = {"kept": have.get("fetched")}
+    except Exception as e:  # noqa: BLE001
+        out["fin"] = {"error": str(e)}
     return out
 
 

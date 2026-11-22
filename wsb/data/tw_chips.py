@@ -36,6 +36,9 @@ U_LARGE = "https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersFutures"
 U_PLEDGE = "https://openapi.twse.com.tw/v1/opendata/t187ap11_L"
 U_FCST = "https://openapi.twse.com.tw/v1/opendata/t187ap15_L"
 U_FIN = "https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci"
+U_SBL_O = "https://www.tpex.org.tw/openapi/v1/tpex_margin_sbl"                 # 上櫃 (Gemini TWC-4, checked 11-22)
+U_WARN_L = "https://openapi.twse.com.tw/v1/announcement/notice"                # 上市注意股
+U_WARN_O = "https://www.tpex.org.tw/openapi/v1/tpex_trading_warning_information"  # 上櫃注意股
 TTL = 4 * 3600
 HEAVY_TTL = 24 * 3600
 KEEP = 400
@@ -69,6 +72,23 @@ def parse_sbl(js: Dict, universe: Optional[set] = None) -> Dict:
             moves.append({"code": r[0], "name": r[1].strip(), "bal": today, "chg": today - p})
     moves.sort(key=lambda x: -x["chg"])
     return {"date": (js or {}).get("date"), "total": tot, "prev": prev, "add": moves[:10], "cut": sorted(moves, key=lambda x: x["chg"])[:10]}
+
+
+def parse_sbl_otc(rows: List[Dict]) -> Dict:
+    tot = prev = 0.0
+    for r in rows or []:
+        tot += _n(r.get("SecuritiesBorrowingBalanceOfTheMarketDay")) or 0.0
+        prev += _n(r.get("SecuritiesBorrowingBalancePreviousDay")) or 0.0
+    return {"date": (rows or [{}])[0].get("Date"), "total": tot, "prev": prev}
+
+
+def parse_warn(listed: List[Dict], otc: List[Dict]) -> List[Dict]:
+    out = [{"code": str(r.get("Code") or "").strip(), "name": str(r.get("Name") or "").strip(), "why": str(r.get("TradingInfoForAttention") or "").strip(),
+            "board": "上市", "date": r.get("Date")} for r in listed or [] if str(r.get("Code") or "").strip()]
+    out += [{"code": str(r.get("SecuritiesCompanyCode") or "").strip(), "name": str(r.get("CompanyName") or "").strip(),
+             "why": str(r.get("TradingInformation") or "").strip(), "board": "上櫃", "date": r.get("Date")} for r in otc or []
+            if str(r.get("SecuritiesCompanyCode") or "").strip()]
+    return out
 
 
 def parse_inst(rows: List[Dict]) -> Dict:
@@ -200,12 +220,14 @@ def refresh(force: bool = False) -> Dict:
     for name, fn in (("qfii", lambda: parse_qfii(_get(U_QFII))),
                      ("sbl", lambda: parse_sbl(_get(U_SBL), uni or None)),
                      ("inst", lambda: parse_inst(_get(U_INST))),
-                     ("large", lambda: parse_large(_get(U_LARGE, "text")))):
+                     ("large", lambda: parse_large(_get(U_LARGE, "text"))),
+                     ("sbl_otc", lambda: parse_sbl_otc(_get(U_SBL_O))),
+                     ("warn", lambda: parse_warn(_get(U_WARN_L), _get(U_WARN_O)))):
         try:
             v = fn()
             if v:
                 d[name] = v
-                day[name] = v if name != "sbl" else {"date": v["date"], "total": v["total"]}
+                day[name] = v if name not in ("sbl", "warn") else ({"date": v["date"], "total": v["total"]} if name == "sbl" else len(v))
         except Exception as e:  # noqa: BLE001
             log.info("tw chips %s unavailable: %s", name, e)
     _apply_seed(d, day)
@@ -249,3 +271,110 @@ def write_seed(path=SEED) -> Dict:
     out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text"))}
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
+
+
+# ------------------------------------------------------------------ 單季財報（11-22，Gemini TWC-6 找到的公開資訊觀測站全市場彙總表）
+U_T163 = "https://mopsov.twse.com.tw/mops/web/ajax_t163sb04"
+FIN_SEED = Path(__file__).resolve().parents[2] / "research_feed" / "tw_fin_seed.json"
+_TAB = re.compile(r"<table class='hasBorder'[^>]*>(.*?)</table>", re.S)
+_TR = re.compile(r"<tr class='(?:even|odd)'>(.*?)</tr>", re.S)
+_TH = re.compile(r"<th[^>]*>(.*?)</th>", re.S)
+_TDC = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
+FIELDS = {"rev": ("營業收入", "收益", "淨收益"), "gross": ("營業毛利（毛損）淨額", "營業毛利（毛損）"), "op": ("營業利益（損失）",),
+          "ni": ("淨利（淨損）歸屬於母公司業主", "淨利（損）歸屬於母公司業主"), "eps": ("基本每股盈餘（元）",)}
+
+
+def parse_t163(page: str) -> Dict[str, Dict]:
+    """MOPS 綜合損益表彙總 (one table per industry format) → {code: {name, rev, gross, op, ni, eps}} (cumulative, NT$ thousand)."""
+    out: Dict[str, Dict] = {}
+    for tb in _TAB.findall(page or ""):
+        head = [re.sub(r"<[^>]+>|\s", "", x) for x in _TH.findall(tb)]
+        idx = {}
+        for k, names in FIELDS.items():
+            for nm in names:
+                if nm in head:
+                    idx[k] = head.index(nm)
+                    break
+        for row in _TR.findall(tb):
+            c = [re.sub(r"<[^>]+>", "", x).strip() for x in _TDC.findall(row)]
+            if len(c) < 3 or not re.fullmatch(r"\d{4}[A-Z]?", c[0]):
+                continue
+            out[c[0]] = {"name": c[1], **{k: (_n(c[i]) if i < len(c) else None) for k, i in idx.items()}}
+    return out
+
+
+def fetch_quarter(year_roc: int, season: int) -> Dict[str, Dict]:
+    import requests
+    out: Dict[str, Dict] = {}
+    for typek in ("sii", "otc"):
+        for attempt in range(3):
+            r = requests.post(U_T163, data={"encodeURIComponent": 1, "step": 1, "firstin": 1, "off": 1, "TYPEK": typek,
+                                            "year": year_roc, "season": f"{season:02d}"}, headers=UA, timeout=60)
+            r.encoding = "utf-8"
+            got = parse_t163(r.text) if r.ok else {}
+            if got:
+                out.update(got)
+                break
+            time.sleep(3.0 * (attempt + 1))
+        time.sleep(1.5)
+    return out
+
+
+def latest_quarters(today: Optional[date] = None, n: int = 3) -> List[tuple]:
+    """The last n quarters whose filing deadline has passed (Q1 May 15, Q2 Aug 14, Q3 Nov 14, Q4 with the annual report Mar 31)."""
+    today = today or date.today()
+    out = []
+    y, q = today.year, 4
+    while len(out) < n and y > today.year - 3:
+        dl = {1: date(y, 5, 15), 2: date(y, 8, 14), 3: date(y, 11, 14), 4: date(y + 1, 3, 31)}[q]
+        if dl <= today:
+            out.append((y - 1911, q))
+        y, q = (y, q - 1) if q > 1 else (y - 1, 4)
+    return out
+
+
+def write_fin_seed(path=FIN_SEED) -> Dict:
+    """PC → cloud relay: cumulative statements of the last three filed quarters (public filings), keys like '115Q3'."""
+    snaps = {}
+    for y, q in latest_quarters():
+        got = fetch_quarter(y, q)
+        if got:
+            snaps[f"{y}Q{q}"] = got
+    old = _load(Path(path))
+    if old.get("snaps") and sum(len(v) for v in snaps.values()) < 0.7 * sum(len(v) for v in old["snaps"].values()):
+        return old                                       # a partial fetch must not replace a good copy
+    out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": "公開資訊觀測站綜合損益表彙總表（累計數，千元）", "snaps": snaps}
+    Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    return out
+
+
+def fin_view(snaps: Dict, codes: Optional[set] = None) -> Dict:
+    """Newest single quarter per company (Qn − Qn−1 cumulative; Q1 as is), with gross / operating margin, and the same quarter a
+    year earlier when available — never guessed."""
+    keys = sorted(snaps, key=lambda k: (int(k.split("Q")[0]), int(k.split("Q")[1])), reverse=True)
+    if not keys:
+        return {}
+    k0 = keys[0]
+    y, q = int(k0.split("Q")[0]), int(k0.split("Q")[1])
+    rows = []
+    for code, cur in (snaps.get(k0) or {}).items():
+        if codes is not None and code not in codes:
+            continue
+        sq = single_quarter(snaps, code, str(y), q) if q > 1 else dict(cur)
+        if not sq or not sq.get("rev"):
+            continue
+        rev = sq["rev"]
+        pq = (single_quarter(snaps, code, str(y), q - 1) if q > 2 else (snaps.get(f"{y}Q1") or {}).get(code)) if q > 1 else None
+        m = lambda a, b: (a / b * 100) if a is not None and b else None  # noqa: E731
+        # 11-22: subtracting cumulative EPS breaks when a company restates its share count (stock split / dividend: 緯穎 came out
+        # at −62 元).  Single-quarter EPS = single-quarter net income ÷ the share count implied by that quarter's cumulative figures.
+        def eps_of(single, cum):
+            if not single or not cum or not cum.get("ni") or not cum.get("eps") or single.get("ni") is None:
+                return None
+            return single["ni"] * cum["eps"] / cum["ni"]
+
+        rows.append({"code": code, "name": cur.get("name"), "rev": rev, "eps": eps_of(sq, cur), "ni": sq.get("ni"),
+                     "gm": m(sq.get("gross"), rev), "om": m(sq.get("op"), rev), "eps_ytd": cur.get("eps"),
+                     "rev_qoq": m(rev - pq["rev"], pq["rev"]) if pq and pq.get("rev") else None,
+                     "gm_prev": m(pq.get("gross"), pq.get("rev")) if pq else None, "eps_prev": eps_of(pq, cur)})   # same (current) share basis
+    return {"q": k0, "rows": sorted(rows, key=lambda r: -(r["rev"] or 0))}
