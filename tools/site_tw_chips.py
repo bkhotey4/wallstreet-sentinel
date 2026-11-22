@@ -205,3 +205,35 @@ def sec_tw_forecast(eng=None) -> str:
               '和財測的綜合損益差在匯兌等其他綜合損益；累計實際是證交所檔案的官方數字。'
               f'抓取 {esc(d.get("fetched") or "—")}。描述資料，不是預測，也不是投資建議。</p>')
     return card("財測達成情形：公司自己說的數字做到了沒", "Financial forecast attainment", body, "wide")
+
+
+def sec_tw_squeeze(eng=None) -> str:
+    """借券放空集中度（11-22）：金管會鼓勵出借人召回借券時，哪些股票的「被迫買回」壓力最大。"""
+    from wsb.data import tw_chips as C
+    try:
+        d = C.squeeze()
+    except Exception:  # noqa: BLE001
+        return ""
+    rows = [r for r in d.get("rows") or [] if r.get("dtc") is not None and (r.get("value") or 0) >= 3]
+    if not rows:
+        return ""
+    by_dtc = sorted(rows, key=lambda r: -r["dtc"])
+    cap = [r for r in d["rows"] if r["pct"] >= 9.5]
+    top = by_dtc[0]
+    lead = (f'上市股票裡，借券放空要「好幾天的成交量」才買得回來的有：{top["name"]}（{top["code"]}）約 {top["dtc"]:.0f} 天'
+            + "".join(f'、{r["name"]} {r["dtc"]:.0f} 天' for r in by_dtc[1:3])
+            + f'；另有 {len(cap)} 檔借券放空停在發行股數 10% 附近，像是碰到額度上限、不能再借券放空')
+    th = ('<tr><th>#</th><th>公司</th><th class="r">借券放空餘額（張）</th><th class="r">占發行股數</th><th class="r">回補天數</th>'
+          '<th class="r">市值（億元）</th><th class="r">比前一天（張）</th></tr>')
+    tr = [f'<tr><td>{i}</td><td>{esc(r["name"])}（{esc(r["code"])}）</td><td class="r">{r["bal"] / 1000:,.0f}</td>'
+          f'<td class="r">{r["pct"]:.2f}%{" ⚠️" if r["pct"] >= 9.5 else ""}</td><td class="r"><b>{r["dtc"]:.1f}</b></td>'
+          f'<td class="r">{r["value"]:,.1f}</td><td class="r">{r["chg"] / 1000:+,.0f}</td></tr>' for i, r in enumerate(by_dtc, 1)]
+    body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}。</b></p>'
+            '<p class="small">借券放空是先借別人的股票來賣、之後買回來還。出借的人（多半是壽險、投信、外資）把股票召回時，放空的人就得在市場上買回——'
+            '「回補天數」＝借券放空餘額 ÷ 最近一天的成交量，數字越大，代表要買回時越難不推高價格（軋空）。'
+            '這不是說它一定會漲：召回要照契約分批發生，公司本身的消息與大盤還是比較重要。</p>'
+            + fold_rows(tr, 15, th, "檔")
+            + f'<p class="note">來源：證交所 TWT93U（借券賣出餘額，股）、STOCK_DAY_ALL（成交量與收盤價）、OpenAPI t187ap03_L（已發行普通股數）。'
+              f'資料日 {esc(str(d.get("date") or "—"))}，抓取 {esc(d.get("fetched") or "—")}。只列借券放空市值 3 億元以上；回補天數用最近一天的成交量，'
+              '大量的日子會讓天數變小。⚠️＝占發行股數 9.5% 以上（資料裡很多檔剛好停在 10.0% 左右，看起來是借券賣出的額度上限；確切規定以證交所為準）。描述資料，不是建議。</p>')
+    return card("借券放空集中度：召回時誰的回補壓力最大", "Borrowed-share short concentration", body, "wide")

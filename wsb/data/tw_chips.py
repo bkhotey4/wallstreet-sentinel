@@ -492,3 +492,43 @@ def fin_view(snaps: Dict, codes: Optional[set] = None) -> Dict:
                      "rev_qoq": m(rev - pq["rev"], pq["rev"]) if pq and pq.get("rev") else None,
                      "gm_prev": m(pq.get("gross"), pq.get("rev")) if pq else None, "eps_prev": eps_of(pq, cur)})   # same (current) share basis
     return {"q": k0, "rows": sorted(rows, key=lambda r: -(r["rev"] or 0))}
+
+
+# ------------------------------------------------------------------ 借券放空集中度（11-22：金管會 11/21 鼓勵出借人召回借券的二階影響）
+U_BASIC = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L"      # 已發行普通股數
+SQ_FILE = DATA_DIR / "tw_squeeze.json"
+SQ_TTL = 6 * 3600
+
+
+def squeeze_view(twt93u: Dict, day_all: List[Dict], basic: List[Dict], min_bal: float = 1e6) -> Dict:
+    """Listed stocks ranked by borrowed shares sold short as % of shares outstanding, with days to cover on the latest day's volume.
+    TWT93U columns 8–12 are the 借券賣出 block (前日餘額 … 當日餘額), in shares; STOCK_DAY_ALL TradeVolume is in shares."""
+    vol = {str(r.get("Code")): (_n(r.get("TradeVolume")), _n(r.get("ClosingPrice"))) for r in day_all or []}
+    shares = {str(r.get("公司代號") or "").strip(): _n(r.get("已發行普通股數或TDR原股發行股數")) for r in basic or []}
+    rows = []
+    for r in (twt93u or {}).get("data") or []:
+        if len(r) < 13 or not re.fullmatch(r"\d{4}", str(r[0]).strip()):
+            continue
+        code, bal, prev = str(r[0]).strip(), _n(r[12]) or 0.0, _n(r[8]) or 0.0
+        sh = shares.get(code)
+        if bal < min_bal or not sh:
+            continue
+        v, px = vol.get(code, (None, None))
+        rows.append({"code": code, "name": str(r[1]).strip(), "bal": bal, "chg": bal - prev, "pct": bal / sh * 100,
+                     "dtc": bal / v if v else None, "value": bal * px / 1e8 if px else None})
+    rows.sort(key=lambda x: -x["pct"])
+    return {"date": (twt93u or {}).get("date"), "rows": rows}
+
+
+def squeeze(force: bool = False) -> Dict:
+    d = _load(SQ_FILE)
+    if not force and time.time() - float(d.get("ts") or 0) < SQ_TTL and d.get("rows"):
+        return d
+    try:
+        v = squeeze_view(_get(U_SBL), _get(U_CLOSE), _get(U_BASIC))
+        if v.get("rows"):
+            d = {**v, "ts": time.time(), "fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M")}
+            _save(SQ_FILE, d)
+    except Exception as e:  # noqa: BLE001
+        log.info("tw squeeze unavailable: %s", e)
+    return d

@@ -1408,7 +1408,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("markets", "全球行情", "Markets", [SEA.sec_country, SEA.sec_asia, SCN.sec_china, sec_markets]),
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STF.sec_tw_forecast, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STPP.sec_tw_paper, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
-            ("tw_desk", "台股專業判讀", "Taiwan desk", [STD.sec_tw_flowcal, STD.sec_tw_valband, STD.sec_tw_revheat, STD.sec_calib, STCHP.sec_tw_chips, STNSF.sec_tw_nsf, STMSCI.sec_tw_msci, STCOV.sec_tw_coverage]),
+            ("tw_desk", "台股專業判讀", "Taiwan desk", [STD.sec_tw_flowcal, STD.sec_tw_valband, STD.sec_tw_revheat, STD.sec_calib, STCHP.sec_tw_chips, STCHP.sec_tw_squeeze, STNSF.sec_tw_nsf, STMSCI.sec_tw_msci, STCOV.sec_tw_coverage]),
             ("tw_earn", "台股財報", "Taiwan earnings", [STE2.sec_tw_earn_preview, STCHP.sec_tw_quarter, STCHP.sec_tw_forecast, STE2.sec_tw_corp, STCHP.sec_tw_pledge, STE2.sec_tw_earn_after]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
