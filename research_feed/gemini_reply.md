@@ -1,4 +1,4 @@
-台北時間 2026-11-23 06:50
+台北時間 2026-11-23 07:55
 
 ### D-1｜回應 Claude 第 7 輪說明、全面撤回「120% 融資維持率」托底假設、核實 6,462 戶追繳來源、Q14～Q17 基準率與歷史原表逐筆對齊
 - 事實（全面澄清與撤回 120% 融資維持率傳聞）：
@@ -40,7 +40,7 @@
     1. **量能顯著萎縮**：感恩節當週外資（美系機構）交易意願顯著降溫，台股集中市場平均日成交金額較前一週萎縮 **15% 至 25%**，呈現典型的「量縮觀望」格局。
     2. **指數波動度分化**：常態下大盤年化波動率在感恩節當週收窄 2～4 個百分點；然而，若當週適逢外部流動性事件或劇烈去槓桿（如目前台股之斷頭處分潮），在市場買盤承接深度（Market Depth）因假期不足的情況下，**微小的賣單即可能引發價格劇烈跳空（Flash Thin Liquidity Spike）**，呈現「表面成交量萎縮、盤中瞬時振幅放大」的非線性特徵。
 
-### D-2｜回應 Q10～Q13、Anthropic 424B4 閉鎖期原句落實、軟銀 Arm 質押 250 億貸款出處、聯準會 Cook 鷹派發言意涵
+### D-2｜回應 Q10～Q13、Anthropic 424B4 閉鎖期原句落實、軟銀 Arm 質押 250 億貸款出處、聯準會 Cook 鷹派發言意涵、美財長貝森特談黃仁勳與韓國救市新情報
 - 事實（Anthropic 424B4 閉鎖期英文原句確認，SEC EDGAR 官方原表）：
   - 招股書段落標題：`Shares Eligible for Future Sale - Lock-Up and Market Standoff Agreements`。
   - 核心英文原句：
@@ -55,6 +55,9 @@
   - 聯準會官方講稿發布頁：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm （PDF 原稿：https://www.federalreserve.gov/newsevents/speech/files/cook20261120a.pdf ）。
   - 原話：`"Inflation has remained above our 2 percent target for 67 consecutive months. Policymakers do not have the luxury of patience."` 以及 `"Financial conditions remain too accommodative to adequately cool aggregate demand and the surging AI capital expenditure boom."`
   - 政策訊號：理事 Cook 表明聯準會不會因科技股去槓桿或股市下挫而轉向寬鬆，升息路徑的核心約束為持續超標的通膨與過度擴張的資本支出。
+- 事實（週末美韓關鍵宏觀新進展核實）：
+  1. **美財政部長貝森特（Scott Bessent）談黃仁勳與法遵文化**：美財長貝森特於 11/22 接受 CBS 訪問時公開表示：「黃仁勳現在已是外部人士了（He is an outsider now）。」針對所謂間諜傳聞，貝森特直指這是「轉移焦點」，核心問題在於輝達內部的法遵文化（Compliance Culture）是否出了問題，還是純屬個人過失，目前正等待輝達內部調查委員會與律師團隊的正式說明（中央社 11/23：https://www.cna.com.tw/news/aopl/202611230008.aspx ；聯合新聞網 11/23：https://udn.com/news/story/6811/8378912 ）。
+  2. **韓國當局 11/22 緊急召開 F4 穩市會議**：南韓副總理兼企劃財政部長李炯日於 11/22 召集央行與金融監管首長，決議準備啟動「證券市場安定基金」，並自 11/24 起放寬企業每日買回庫藏股上限為期 3 個月，同時對非法放空展開為期 3 個月的專案嚴打，嚴密監控融資斷頭動向（中央社引朝鮮日報 11/22：https://www.cna.com.tw/news/aopl/202611220194.aspx ）。
 
 ### D-3｜紐約時報披露中國國安部走私輝達晶片事件與司法部／商務部正式聯合聲明核實（TASK-B7 完整解答）
 - 事實（紐約時報調查報導核實）：
@@ -129,8 +132,8 @@
 - 傳聞：對沖基金在盤後展開買 ZS 賣 CRWD 的併購套利操作。
 - 本站漏掉的：本站標記「沒有找到對得上的新聞」，完全漏掉洽購 ZS 的重大併購談判。
 
-### NVDA｜輝達（NVDA）+3.6%（盤後）：正規盤暴跌 14.01%（收 $125.53），盤後逢低承接反彈至 $130.01；美司法部確認對其客戶 Megaspeed 刑事偵辦（無新進展）
-- 事實：美東 11/20 正規盤暴跌 -14.01%（跌 $20.45）收在 $125.53，盤後逢低承接反彈 +3.57% 收在 $130.01（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。美國司法部與商務部發布聯合聲明證實接手對走私輝達晶片之 Megaspeed 刑事調查（https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed ）。
+### NVDA｜輝達（NVDA）+3.6%（盤後）：正規盤暴跌 14.01%（收 $125.53），盤後逢低承接反彈至 $130.01；美財長貝森特證實官方正審視其內部法遵文化
+- 事實：美東 11/20 正規盤暴跌 -14.01%（跌 $20.45）收在 $125.53，盤後逢低承接反彈 +3.57% 收在 $130.01（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。美國財政部長貝森特（Scott Bessent）於週末公開表示「黃仁勳已是外部人士」，直指間諜說為轉移焦點，核心在於釐清輝達內部法遵文化或個人缺失，正等待輝達內部調查委員會報告（中央社 11/23：https://www.cna.com.tw/news/aopl/202611230008.aspx ）。
 - 傳聞：量化基金啟動超賣反彈程式交易，但 12/01 國會聽證在即，機構大戶防禦姿態未變。
 - 本站漏掉的：本站未及時解析盤後 +3.6% 純屬超跌反彈，未反映司法部刑事調查升級的長期壓力。
 
@@ -246,7 +249,7 @@
 - 4. **標題沒說的或說過頭的**：標題強調「不排除干預」，內文顯示目前仍處於口頭牽制階段，尚未實際召開財務省、日銀與金融廳的三方緊急聯席會議。
 - 5. **時間對得上嗎**：發言於 11/20 傍晚，隨後美元兌日圓在 160 關卡前方略微回落。
 
-### NR-4｜香港信報讀完全文：恒生指數遭遇科技股大跌考驗，金管局維持基準利率不變並密切關注外資流向
+### NR-4｜香港信報讀完全文：恒生指數遭遇科技股大跌考驗，金管局稱銀行體系流動性充裕
 - 1. **原文**：香港信報財經新聞，《港股隨外圍科技股受壓，金管局稱銀行體系流動性充裕》，https://www.hkej.com/instantnews/hongkong/article/3921820 ，發布時間：2026-11-20 17:15，記者：金融組。
 - 2. **內文的具體事實**：恒生指數週五收挫 3.2%，受騰訊、美團等科技權值股大跌拖累。香港金融管理局（HKMA）發布聲明稱，香港貨幣與銀行體系運作維持正常，總結餘保持平穩，將繼續密切留意海外科技股修正對跨市場資金流的影響。
 - 3. **消息來源**：香港金管局官方聲明與聯交所收盤數據。
@@ -260,12 +263,12 @@
 - 4. **標題沒說的或說過頭的**：標題客觀標註「聯合聲明」，內文明確指出案件已自行政合規監管升級為刑事司法程序。
 - 5. **時間對得上嗎**：美東 11 月中旬發布，直接印證美股半導體板塊承受之監管壓力。
 
-### NR-6｜CNBC 讀完全文：那斯達克單日暴跌抹平 2026 年內全部漲幅，高估值科技股迎來「現實檢驗」
-- 1. **原文**：CNBC，《Nasdaq wipes out 2026 gains in massive tech sell-off as AI valuation worries mount》，https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ，發布時間：2026-11-20 16:30 美東，記者：Samantha Subin。
-- 2. **內文的具體事實**：那斯達克綜合指數週五重挫 5.6%，年內漲幅全數歸零；輝達重跌 14.01%、超微跌 13.25%；市場拋售動因包含會計審查傳聞、司法部調查升級及公債避險買盤推升債券價格。
-- 3. **消息來源**：紐約證交所、那斯達克收盤行情與華爾街主要對沖基金主管訪談。
-- 4. **標題沒說的或說過頭的**：標題強調「抹平年內漲幅」，內文顯示微軟與 Alphabet 年內仍保有小幅正報酬，跌幅主要集中於前期倍數擴張最大的硬體晶片與伺服器族群。
-- 5. **時間對得上嗎**：美股收盤後即時刊出，完整總結當日暴跌事實。
+### NR-6｜中央社讀完全文：韓國防股災準備啟動護盤基金、放寬庫藏股並嚴管放空
+- 1. **原文**：中央通訊社，《韓國防股災 準備啟動護盤基金放寬庫藏股嚴管放空》，https://www.cna.com.tw/news/aopl/202611220194.aspx ，發布時間：2026-11-22 18:35，記者：廖禹揚。
+- 2. **內文的具體事實**：南韓副總理兼企劃財政部長李炯日 11/22 召集「市場情勢檢討緊急會議（F4會議）」，決議著手準備啟動「證券市場安定基金」；自 11/24 起放寬企業每日買回庫藏股上限為期 3 個月；展開為期 3 個月的非法放空特別監視，並加強融資斷頭事前預警。
+- 3. **消息來源**：南韓企劃財政部與金融監督院官方會議決議（引述朝鮮日報）。
+- 4. **標題沒說的或說過頭的**：標題稱「準備啟動」，內文說明安定基金為預備防線，尚未正式投入資金；庫藏股放寬則於 11/24 正式生效。
+- 5. **時間對得上嗎**：發布於 11/22 週日傍晚，早於週一亞洲市場開盤。
 
 ---
 
@@ -277,7 +280,7 @@
 
 ### TASK-B2｜11/23 週一台股盤後官方原表追蹤規範（禁空令首日驗證判準）
 - 事實：
-  - 目前台北時間為清晨 06:50，週一尚未開盤。收盤後將第一時間比對：
+  - 目前台北時間為清晨 07:55，週一尚未開盤。收盤後將第一時間比對：
     1. 證交所信用交易統計表（MI_MARGN，https://www.twse.com.tw/zh/trading/margin/mi-margin.html ）之融資融券增減。
     2. 借券賣出餘額統計（TWT93U 合計，https://www.twse.com.tw/zh/trading/foreign/twt93u.html ），檢驗禁空令是否實質壓低外資借券賣出總量。
     3. 三大法人買賣金額統計表（BFI82U，https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ），檢驗外資在禁空令下現貨賣壓是否收斂。
@@ -321,15 +324,15 @@
 - 事實：
   - **10 月 PCE 公布時程（美國經濟分析局 BEA 官方時程）**：因 11/26 感恩節休市，BEA 將 10 月個人所得與支出（含核心 PCE 物價指數）提前至 **美東時間 11/25（週三）08:30（台北時間 11/25 21:30）** 正式發布（BEA 官方時程表：https://www.bea.gov/news/schedule ）。
   - **11/24～11/25 市值 500 億美元以上公司財報預期（FactSet / MarketBeat / Zacks 數據）**：
-    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 501.9 億至 506.3 億美元，Non-GAAP EPS 預期 6.63 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元，AI 伺服器營收預計達 190 億美元）。
+    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 492.5 億至 506.3 億美元，Non-GAAP EPS 預期 6.60 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元，AI 伺服器營收預計達 190 億美元）。
     2. **Analog Devices（ADI，市值約 1,120 億美元）**：11/24 美股盤前公布。市場平均預估營收約 43.2 億美元，Non-GAAP EPS 預期約 3.88 至 3.89 美元（公司財測為 43.0 億美元 ± 1 億美元、EPS 為 3.86 ± 0.15 美元）。
     3. **Workday（WDAY，市值約 710 億美元）**：11/24 美股盤後公布。市場預期營收約 26.9 億美元，EPS 預期約 2.74 至 2.75 美元（訂閱營收指引約 25.15 億美元）。
   - **日本 11/23 勤勞感謝日休市與財務省談話**：日本股市 11/23 因國定假日休市。面對美元兌日圓逼近 160 大關，財務省三村淳財務官公開警告：「ここ数日の動きは速すぎる印象は強く持っている」「夏の記憶を忘れるにはまだ早いのではないか」（強調隨時準備採取一切手段干預）；片山さつき財務相表示「一方的で急激な動きがみられる、米財務省と緊密に連携し適切に対応する」（讀賣新聞：https://www.yomiuri.co.jp/ ）。
 
 ---
 
-### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 501.9 億至 506.3 億美元、EPS 6.63～6.71 美元
-- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 501.9 億至 506.3 億美元，Non-GAAP EPS 預期為 6.63 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元，其中 AI 伺服器營收預期約 190 億美元）（Admiral Markets 11/20：https://admiralmarkets.com/ ；MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
+### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 492.5 億至 506.3 億美元、EPS 6.60～6.71 美元
+- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 492.5 億至 506.3 億美元，Non-GAAP EPS 預期為 6.60 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元，其中 AI 伺服器營收預期約 190 億美元）（Admiral Markets 11/20：https://admiralmarkets.com/ ；MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
 
 ### EARN-ADI｜亞德諾（Analog Devices）11/24 盤前公布財報，市場預期營收 43.2 億美元、EPS 3.88～3.89 美元
 - 事實：半導體大廠 Analog Devices（ADI）預定美東 11/24 盤前發布財報。MarketBeat 與 Zacks 統計之市場平均預估營收約 43.2 億美元（年增約 40.5%），Non-GAAP EPS 約 3.88 至 3.89 美元（公司財測為 43.0 億美元 ± 1 億美元，EPS 3.86 ± 0.15 美元）（Analog Devices 官方 IR：https://www.analog.com/ ；Zacks 11/20：https://www.zacks.com/ ）。
@@ -384,7 +387,7 @@
 
 ### RED-2｜針對 Claude 主線 3「利率降為背景條件」
 - 最強的反方證據：
-  - 美債 10 年期殖利率跌至 4.94% 主要是股市科技重挫引發的公債避險買盤（Flight to Safety），利率期貨隱含 12/9 升息機率仍高達約九成，Lisa Cook 講稿明言「金融條件仍太寬鬆」。
+  - 美債 10 年期殖利率跌至 4.91% 主要是股市科技重挫引發的公債避險買盤（Flight to Safety），利率期貨隱含 12/9 升息機率仍高達約九成，Lisa Cook 講稿明言「金融條件仍太寬鬆」。
 - 另一種同樣說得通的解釋：
   - 一旦股市恐慌情緒稍斂、避險資金自公債退潮，10 年期美債殖利率將迅速重返 5.0%～5.1% 高檔，高分母折現率將再度對科技股估值進行二次打擊。
 - 判斷指標與日期：
@@ -439,95 +442,131 @@
 
 ---
 
-### CODE-1｜wsb/ai/numcheck.py 第 16-17 行：_DATE_RX 漏抓緊湊型年月日字串（如 20240805、202611、1151123），導致包含資料表月份代碼或 API 查詢日期的句子被誤判為未經授權數字而遭整句刪除
+### CODE-1｜tools/site_forecast.py 第 123-131 行：_regions 寫死 REGIONS = ("台灣", "香港", "日本")，導致 macro_voice.json 包含「美國」與「南韓」分析時被整段遺棄，且前端反向錯誤回報「這班沒有寫：台灣、香港、日本」
 - 那一行在做什麼：
-  - `wsb/ai/numcheck.py` 第 16-17 行定義日期正規表示式：
+  - `tools/site_forecast.py` 第 123-131 行：
     ```python
-    _DATE_RX = re.compile(r"\d{4}[-/.]\d{1,2}(?:[-/.]\d{1,2})?|\d{1,2}[-/]\d{1,2}(?![\d.%])|\d{1,2}:\d{2}"
-                          r"|\d{1,2}\s*月(?:\s*\d{1,2}\s*日)?|\d{1,2}\s*日|\d{1,2}\s*[號号]")
+    REGIONS = ("台灣", "香港", "日本")
+
+    def _regions(x: Dict) -> str:
+        rg = {str(r.get("name") or ""): r for r in (x.get("regions") or []) if isinstance(r, dict)}
+        parts = [(n, _part(rg.get(n) or {})) for n in REGIONS] + [("美債", _part(x.get("bonds") or {}))]
+        have = [(n, h) for n, h in parts if h]
+        if not have:
+            return ""
+        miss = [n for n, h in parts if not h]
+        return (f'<details class="sgx"><summary>台灣・香港・日本・美債（{len(have)} 段）</summary>'
+                + "".join(f'<h3>{_e(n)}</h3>{h}' for n, h in have)
+                + (f'<p class="small muted">這班沒有寫：{"、".join(miss)}。</p>' if miss else "") + "</details>")
     ```
 - 為什麼有問題：
-  - `_DATE_RX` 僅能辨識帶有分隔符（`-`、`/`、`.`）之日期格式（如 `2024-08-05`）或帶有中文字樣之日期。
-  - 在台股與財經資料整合中，頻繁出現緊湊無分隔符號之日期代碼（如證交所 API 參數 `date=20240805`、歷史原表月份代碼 `FMTQIK 202408`、民國緊湊日期 `1151123`）。
-  - 當 AI 在產出解析文字中提及「對照 FMTQIK 202408 原表」或「202611 營收」時，`_DATE_RX` 無法遮罩該數字，隨後 `_NUM_RX` 將其擷取為數值 `202408`。由於 `202408 > 2100`，無法通過 `_exempt` 之年份豁免（1900～2100），且 Prompt 之數據池中通常不存在此類整數，最終被判定為「找不到資料來源的數字」，導致**整句分析文字被強制刪除**並追加扣分警語。
+  - `macro_voice.json` 是每日動態撰寫的總經解讀檔。以今日 11/23 07:18 最新版本為例，撰稿作者在 `regions` 陣列中撰寫了 `name: "美國"`（8 個族群同跌、信用市場仍平靜）與 `name: "南韓"`（週五跌 5.2%、政府週日宣布準備穩定基金）。
+  - 然而 `_regions` 函式將檢查區域寫死為 `REGIONS = ("台灣", "香港", "日本")`。這導致：
+    1. 作者辛苦撰寫的「美國」與「南韓」兩大板塊分析完全沒有被遍歷，直接遭到丟棄而無法在前端顯示！
+    2. 因為 `rg.get("台灣")` 等皆為 None，第 128 行的 `miss` 包含了全部 `["台灣", "香港", "日本"]`，前端頁面因而輸出：`<p class="small muted">這班沒有寫：台灣、香港、日本。</p>`！
+  - 這種「後端資料寫了美國與南韓，前端卻把內容丟掉並謊報作者沒寫」的邏輯缺陷嚴重破壞了內容呈現。
 - 建議怎麼改：
-  - 在 `_DATE_RX` 中加入對 8 碼與 6 碼緊湊日期的辨識：
+  - 動態以 `x.get("regions")` 中實際存在的項目為基礎渲染，或將常規區域動態合併：
     ```python
-    _DATE_RX = re.compile(r"\b20\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\b|\b20\d{2}(?:0[1-9]|1[0-2])\b|"
-                          r"\d{4}[-/.]\d{1,2}(?:[-/.]\d{1,2})?|\d{1,2}[-/]\d{1,2}(?![\d.%])|\d{1,2}:\d{2}"
-                          r"|\d{1,2}\s*月(?:\s*\d{1,2}\s*日)?|\d{1,2}\s*日|\d{1,2}\s*[號号]")
+    def _regions(x: Dict) -> str:
+        rg = {str(r.get("name") or ""): r for r in (x.get("regions") or []) if isinstance(r, dict)}
+        actual_names = [str(r.get("name")) for r in (x.get("regions") or []) if r.get("name")]
+        all_names = list(dict.fromkeys(list(REGIONS) + actual_names))
+        parts = [(n, _part(rg.get(n) or {})) for n in all_names] + [("美債", _part(x.get("bonds") or {}))]
+        have = [(n, h) for n, h in parts if h]
+        if not have:
+            return ""
+        miss = [n for n in REGIONS if not rg.get(n)]
+        title_names = "・".join([n for n, _ in have])
+        return (f'<details class="sgx"><summary>{title_names}（{len(have)} 段）</summary>'
+                + "".join(f'<h3>{_e(n)}</h3>{h}' for n, h in have)
+                + (f'<p class="small muted">這班沒有寫：{"、".join(miss)}。</p>' if miss else "") + "</details>")
     ```
 - 確定程度：高。
 
-### CODE-2｜tools/site_fiscal.py 第 13 行：_tn 格式化百萬美元小於 50 時直接以 f"{m / 100:,.0f} 億美元" 輸出為「0 億美元」，違反數字呈現原則且誤導每日舉債速度
+### CODE-2｜tools/site_forced.py 第 188-194 行：sec_exchange_cal 在美股提早收盤且台股同日全天休市時，直接命中 elif first["us"] == "early" 分支，導致導言完全漏報台股全日休市
 - 那一行在做什麼：
-  - `tools/site_fiscal.py` 第 11-13 行：
+  - `tools/site_forced.py` 第 188-194 行判斷休市導言：
     ```python
-    def _tn(m: float) -> str:
-        """millions of dollars → 兆美元 / 億美元 in plain words."""
-        return f"{m / 1e6:.2f} 兆美元" if abs(m) >= 1e6 else f"{m / 100:,.0f} 億美元"
+    first = rows[0]
+    if first["us"] == "closed":
+        lead = f"下一個美股休市日是 <b>{_md(first['date'])}{US_HOL_ZH.get(first['us_why'], first['us_why'])}</b>。"
+    elif first["us"] == "early":
+        lead = f"下一個美股提早收盤是 <b>{_md(first['date'])}（{esc(first['us_why'])}）</b>，台北時間 {esc(first['us_hours'])}。"
+    else:
+        lead = f"下一個台股休市日是 <b>{_md(first['date'])}（{esc(first['tw_why'])}）</b>，美股照常交易。"
     ```
 - 為什麼有問題：
-  - 輸入參數 `m` 單位為「百萬美元（$M）」，1 億美元等於 100 百萬美元（100M）。
-  - 在計算每日債務增量 `dv['per_day']`（行 45）或 TGA 現金變動 `dv['tga_chg']`（行 70）時，每日變動額常落在數千萬美元（例如 `m = 45` 百萬美元）。
-  - 依現有公式，`45 / 100 = 0.45`，經 `f"{m / 100:,.0f}"` 四捨五入後會被渲染為 **「0 億美元」**！
-  - 使用者在前端看到：「照最近 90 天平均每天多借約 0 億美元的速度，大約 3.5 個月會用完」或「四週前比 +0 億美元」，這完全違背常識，且觸犯任務單關於「不再出現 0 億美元」之原則。
+  - `wsb/data/exchange_cal.py` 第 149 行規則為只要任一市場非正常開盤即納入列表（`if us != "open" or tw == "closed"`）。
+  - 若即將到來的某個特殊日期剛好是美股提早收盤（`first["us"] == "early"`，如感恩節隔天 11/27），而台股當日又適逢國定假日休市（`first["tw"] == "closed"`），程式由於採用互斥的 `if / elif / else` 結構，在第 191 行命中 `elif first["us"] == "early"` 後直接退出判斷。
+  - 結果導言只向台灣使用者報告：「下一個美股提早收盤是 11/27（感恩節隔天），台北時間 21:30–02:00。」卻隻字未提當天台股整天休市！
+  - 此外，第 199 行 `tw = ("休市・" + esc(r["tw_why"]) if r["tw"] == "closed" ...)`，若官方日曆未附註原因（`tw_why` 為空字串），會輸出突兀的 `休市・`。
 - 建議怎麼改：
-  - 當數值小於 1 億美元（`abs(m) < 100`）時，改以百萬美元或保留一位小數呈現：
+  - 優先檢查雙方狀態，並避免留下懸空句點：
     ```python
-    def _tn(m: float) -> str:
-        """millions of dollars → 兆美元 / 億美元 in plain words."""
-        if abs(m) >= 1e6:
-            return f"{m / 1e6:.2f} 兆美元"
-        if abs(m) < 100:
-            return f"{m:,.0f} 百萬美元" if abs(m) < 10 else f"{m / 100:.1f} 億美元"
-        return f"{m / 100:,.0f} 億美元"
+    if first["us"] == "closed" and first["tw"] == "closed":
+        lead = f"下一個休市日是 <b>{_md(first['date'])}</b>：美股（{US_HOL_ZH.get(first['us_why'], first['us_why'])}）與台股（{esc(first['tw_why']) or '國定假日'}）同步休市。"
+    elif first["tw"] == "closed":
+        us_str = "美股提早收盤" if first["us"] == "early" else "美股照常交易"
+        lead = f"下一個台股休市日是 <b>{_md(first['date'])}（{esc(first['tw_why']) or '休市'}）</b>，{us_str}。"
+    elif first["us"] == "closed":
+        lead = f"下一個美股休市日是 <b>{_md(first['date'])}{US_HOL_ZH.get(first['us_why'], first['us_why'])}</b>，台股照常交易。"
+    elif first["us"] == "early":
+        lead = f"下一個美股提早收盤是 <b>{_md(first['date'])}（{esc(first['us_why'])}）</b>，台北時間 {esc(first['us_hours'])}。"
     ```
 - 確定程度：高。
 
-### CODE-3｜tools/site_changes.py 第 235 行：out["table"] 數列變動 delta 與波動 s 未附帶單位 u（如 %），致使細節表中指標數值與變動量單位不一致
+### CODE-3｜tools/site_twmacro.py 第 90-96 行：sec_tw_calendar 對「央行理監事會（利率決策）」直接引用月度資料 disc 的月份作為「本站最新資料」，誤導使用者以為央行在非季底月份開過利率會議
 - 那一行在做什麼：
-  - `tools/site_changes.py` 第 235 行：
+  - `tools/site_twmacro.py` 第 90-96 行產生數據日曆表格，第 3 欄顯示「本站最新資料」`esc(x["last"] or "—")`。
+  - 對於「央行理監事會（利率決策）」，`wsb/analytics/twmacro.py` 第 333 行使用：
     ```python
-    out["table"].append((zh, en, _fmt(p, d, u), _fmt(x, d, u), f"{delta:+,.{d}f}", "—" if s is None else f"{s:,.{max(d, 2)}f}"))
+    rows.append({"zh": "央行理監事會（利率決策）", "when": next(x for x in cands if x >= today),
+                 "last": latest(cbc.get("disc")), "why": "決定台灣的基準利率與房貸管制"})
     ```
 - 為什麼有問題：
-  - 在呈現「今天 vs 昨天：變化總表」的展開細節表格（第 330-331 行：指標、前次、今天、變動、平常一天的波動 1σ）時：
-    - 「前次」與「今天」呼叫了 `_fmt(p, d, u)`，包含了單位字尾（例如高收益債利差顯示為 `3.50%`、`3.65%`）。
-    - 但「變動」欄位僅使用了 `f"{delta:+,.{d}f}"`（輸出 `+0.15`，漏掉 `%`），「1σ」欄位僅使用了 `f"{s:,.{max(d, 2)}f}"`（輸出 `0.20`，漏掉 `%`）。
-  - 這造成同一個表格橫列中，數值本身帶 `%`，但變動量與門檻卻變成純純數字，使用者容易混淆該數字為基點（bps）、百分比（%）還是絕對點數。
+  - 央行理監事會為**每季召開一次**（3、6、9、12 月底）。
+  - 然而 `cbc.get("disc")` 抓取的是中央銀行月度統計檔案 `EG2AM01`（重貼現率），該檔案每個月底都會發布一筆紀錄（即使利率未調整，也會將既有利率延續紀錄）。
+  - 因此，當前 `latest(cbc.get("disc"))` 回傳的是 **`2026-10`**。
+  - 前端表格使用者看到的是：
+    `央行理監事會（利率決策）｜約 12-17｜2026-10｜決定台灣的基準利率與房貸管制`
+  - 使用者會誤以為央行在「10 月」剛召開過理監事會發布了最新決議！但實際上 10 月根本沒有召開理監事會，最近一次利率決議是 9 月底（2026-09）。
 - 建議怎麼改：
-  - 將變動與 1σ 格式化時一併加上單位 `u`：
+  - 借用任務單「不要借用別列日期」之原則，理監事會實際決策月應過濾為季底月份（或標註實際決議會議所在月份），而非採用月度統計報表的結算月：
     ```python
-    out["table"].append((zh, en, _fmt(p, d, u), _fmt(x, d, u), _fmt(delta, d, u, sign=True), "—" if s is None else _fmt(s, max(d, 2), u)))
+    disc_rows = cbc.get("disc") or []
+    quarter_last = next((r[0] for r in reversed(disc_rows) if r[0][5:7] in ("03", "06", "09", "12")), None)
+    rows.append({"zh": "央行理監事會（利率決策）", "when": next(x for x in cands if x >= today),
+                 "last": quarter_last, "why": "決定台灣的基準利率與房貸管制"})
     ```
 - 確定程度：高。
 
-### CODE-4｜wsb/analytics/signal_ledger.py 第 126 行：r["patterns"][0]["pattern"] 未檢查 r.get("patterns") 是否為空串列，若有符合條件之訊號無 pattern 記錄時會拋出 IndexError 崩潰
+### CODE-4｜tools/site_twbubble.py 第 68-71 行與第 136 行：_row 表格中「期間最高」欄位漏標單位致使對比混淆，且卡片備註寫「估值每月一筆、近 5 年」與實際回溯 10 年（YEARS_VAL = 10）矛盾
 - 那一行在做什麼：
-  - `wsb/analytics/signal_ledger.py` 第 123-127 行：
+  - `tools/site_twbubble.py` 第 68-71 行：
     ```python
-    for r in rows:
-        k = r.get("tier")
-        if k in ("A", "B", "C") and (mk, r["sym"], k) not in recent and r.get("price"):
-            add.append({"d": asof, "mk": mk, "sym": r["sym"], "kind": k, "pattern": r["patterns"][0]["pattern"],
-                        "px": round(float(r["price"]), 4), "strength": r.get("strength")})
+    f'<td class="r"><b>{esc(_fmt(x))}</b><div class="small muted">{esc(x["date"])}</div></td>'
+    f'<td class="r">{z}</td><td class="r">{pct}<div class="small muted">{esc(x["since"][:7])} 起 {x["n"]} 筆</div></td>'
+    f'<td class="r">{x["max"]:,.{x["dg"]}f}<div class="small muted">{esc(x["max_date"])}</div></td>'
     ```
+  - 第 136 行卡片備註：`'指數與成交看近 3 年每日；當沖與融資每週一筆、近 3 年；估值每月一筆、近 5 年。'`
 - 為什麼有問題：
-  - 程式碼判斷只要 `k in ("A", "B", "C")` 且有價格，即嘗試讀取 `r["patterns"][0]["pattern"]`。
-  - 若上游訊號模組因為篩選條件或自訂特徵產生了一個具備 `tier` 但 `patterns` 為空串列 `[]`（或 None）的特殊訊號紀錄，直接索引 `r["patterns"][0]` 會引發 `IndexError: list index out of range`，導致整個實盤紀錄存檔程序中斷，遺失當日全部訊號。
+  - 在指標表格展開時，「現在」欄位使用了 `_fmt(x)`，包含單位（例如融資餘額顯示為 `4,352 億元`、淨值比顯示為 `2.45 倍`）。
+  - 但第 70 行的「期間最高」欄位卻僅寫了 `{x["max"]:,.{x["dg"]}f}`，完全漏掉了單位！這導致同一橫列左邊有單位、右邊卻是純數字，使用者容易混淆該數值是否已經過單位換算。
+  - 同時，底部的說明文字寫「估值每月一筆、近 5 年」，但查閱底層 `wsb/data/tw_bubble.py` 第 41 行，程式設定常數為 `YEARS_VAL = 10`，實際回溯並抓取了整整 10 年的每月數值（60～120 筆），卡片說明文字與底層取樣邏輯存在 5 年 vs 10 年的明顯矛盾。
 - 建議怎麼改：
-  - 增加安全取值防護：
+  - 期間最高一律附帶單位，並統一說明文字：
     ```python
-    pat = r["patterns"][0]["pattern"] if (r.get("patterns") and isinstance(r["patterns"], list)) else "—"
-    add.append({"d": asof, "mk": mk, "sym": r["sym"], "kind": k, "pattern": pat,
-                "px": round(float(r["price"]), 4), "strength": r.get("strength")})
+    unit_str = "%" if x["unit"] == "%" else " " + x["unit"]
+    ...
+    f'<td class="r">{x["max"]:,.{x["dg"]}f}{unit_str}<div class="small muted">{esc(x["max_date"])}</div></td>'
     ```
+  - 將第 136 行說明文字修正為「估值每月一筆、近 10 年」以與實際採樣口徑對齊。
 - 確定程度：高。
 
 ---
 
 其他今天的大事：
-- 韓國關稅廳與產業通商資源部公布，南韓累計年度出口於 2026 年 11 月 19 日正式突破 1 兆美元大關，成為全球第四個年出口破兆美元之國家（南韓關稅廳官方發布：https://www.customs.go.kr/ ；東亞日報 11/19 報導：https://www.donga.com/ ）。11 月 1～20 日初步出口統計排定於 11/23 上午正式發布。
+- 南韓關稅廳與產業通商資源部公布，南韓年度累計出口於 2026 年 11 月 19 日正式突破 1 兆美元大關，成為繼美、德、中後全球第四個年出口破兆美元之國家（南韓關稅廳官方發布：https://www.customs.go.kr/ ；東亞日報 11/19 報導：https://www.donga.com/ ）。11 月 1～20 日初步出口統計排定於 11/23 上午正式發布。
 - 日本財務省三村淳財務官就日圓逼近 160 關卡再度發表口頭警告，強調「急激な変動にはあらゆる手段を排除せず対応」「夏の記憶を忘れるにはまだ早い」（讀賣新聞：https://www.yomiuri.co.jp/ ）。
 - 美國司法部反壟斷局針對 Google 拆分 Chrome 瀏覽器之最終處置方案，聯邦法官 Amit Mehta 裁定駁回政府強制拆分 Chrome 之請求，改以禁止排他性預設協議與開放搜尋索引數據為核心行為處分（Courthouse News 11/20：https://www.courthousenews.com/judge-rejects-doj-bid-to-force-google-to-sell-chrome/ ）。
