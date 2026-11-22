@@ -42,6 +42,12 @@ def _wage(w: List[Dict], cpi: Dict[str, float] = None) -> Dict:
     return {"rows": rows, "lead": lead}
 
 
+def table_months(pmi: List[Dict], un: List[Dict], wage: List[Dict], n: int = 24) -> List[str]:
+    """Newest first, the union of all three series' months: a late or empty PMI file must not hide the unemployment and wage
+    months already published (Gemini CODE-3, 11-22)."""
+    return sorted({x["ym"] for s in (pmi, un, wage) for x in s if x.get("ym")}, reverse=True)[:n]
+
+
 def sec_tw_pulse(eng=None) -> str:
     from wsb.data import tw_macro2 as M
     try:
@@ -75,8 +81,9 @@ def sec_tw_pulse(eng=None) -> str:
     wby = {x["ym"]: x for x in (wg or {}).get("rows") or []}
     pct = lambda v: "—" if v is None else f"{v:+.1f}%"  # noqa: E731
     rows = []
-    for x in reversed(pmi[-24:]):
-        u = by.get(x["ym"]) or {}
+    pby = {x["ym"]: x for x in pmi}
+    for ym in table_months(pmi, un, (wg or {}).get("rows") or []):
+        x, u = pby.get(ym) or {"ym": ym, "pmi": None}, by.get(ym) or {}
         rows.append(f'<tr><td>{esc(x["ym"])}</td><td class="r"><b>{"—" if x["pmi"] is None else format(x["pmi"], ".1f")}</b></td>'
                     f'<td class="r">{"—" if x.get("nmi") is None else format(x["nmi"], ".1f")}</td>'
                     f'<td class="r">{"—" if u.get("total") is None else format(u["total"], ".2f") + "%"}</td>'

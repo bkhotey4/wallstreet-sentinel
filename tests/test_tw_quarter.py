@@ -61,6 +61,15 @@ def test_pmi_and_unemp():
     assert len(u) == 1 and u[0]["ym"] == "2026-09" and u[0]["total"] == 3.36 and u[0]["y20_24"] == 11.85   # annual rows skipped
 
 
+def test_pulse_months_and_stamp():
+    from tools import site_tw_macro2 as S, site_stamp as ST
+    # PMI file late (stops at 2026-09) while unemployment already has 2026-10: the newer month still gets a row
+    m = S.table_months([{"ym": "2026-09"}], [{"ym": "2026-09"}, {"ym": "2026-10"}], [{"ym": "2026-08"}])
+    assert m == ["2026-10", "2026-09", "2026-08"]
+    assert S.table_months([], [], [{"ym": f"2020-{i:02d}"} for i in range(1, 13)], n=3) == ["2020-12", "2020-11", "2020-10"]
+    assert "twpulse" in ST.CARD["sec_tw_pulse"] and "twpulse" in ST.SOURCES
+
+
 def test_wage():
     import html, json
     from wsb.data import tw_macro2 as M
@@ -101,6 +110,7 @@ def test_forecast_view():
 if __name__ == "__main__":
     test_forecast_view()
     test_wage()
+    test_pulse_months_and_stamp()
     test_pmi_and_unemp()
     test_margin_ratio_and_daytrade()
     test_large_opt()

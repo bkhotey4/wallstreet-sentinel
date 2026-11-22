@@ -324,6 +324,21 @@ def _twdesk():
     return _ts(d.get("ts")), (max(days) if days else None)
 
 
+def _twpulse():
+    """景氣溫度 (PMI + unemployment): fetch time and the older of the two newest months, as month end. Wages lag ~2 months by
+    design and are left out so they do not mark the card stale every month (Gemini CODE-1, 11-22: the card had no stamp)."""
+    try:
+        from wsb.data import tw_macro2 as M
+        d = M._with_seed(M._load(M.FILE))
+    except Exception:  # noqa: BLE001
+        return None, None
+    last = [s[-1]["ym"] for s in (d.get("pmi") or [], d.get("unemp") or []) if s and s[-1].get("ym")]
+    if not last:
+        return _ts(d.get("ts")), None
+    import pandas as pd
+    return _ts(d.get("ts")), (pd.Timestamp(min(last) + "-01") + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")
+
+
 def _twbank():
     """(oldest fetch ts, oldest data month) over the four Banking Bureau files."""
     try:
@@ -688,6 +703,8 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "ports": ("IMF PortWatch 航道船隻數", "IMF PortWatch chokepoints", lambda e: _chokepoints(), 14),
     "twfuel": ("中油每週牌價", "CPC weekly pump prices", lambda e: _twfuel(), 10),
     "twbank": ("金管會銀行局（逾放、資產品質、土地放款）", "Taiwan Banking Bureau", lambda e: _twbank(), 150),
+    # PMI posts on the 1st working day of the next month, unemployment ~the 22nd: a month-end data date is at most ~52 days old
+    "twpulse": ("國發會 PMI／主計總處失業率", "NDC PMI / DGBAS unemployment", lambda e: _twpulse(), 60),
     "twbubble": ("臺灣證券交易所（成交、當沖、融資、本益比）", "TWSE trading / day-trade / margin / valuation", lambda e: _twbubble(), 12),
     "twdesk": ("證交所／櫃買 OpenAPI（除權息、處置股）＋ ETF 規模", "TWSE / TPEx OpenAPI desk data", lambda e: _twdesk(), 5),
     "fsr": ("OFR 避險基金、紐約聯準會家庭貸款、FDIC 銀行（季資料）", "OFR / NY Fed / FDIC quarterly", lambda e: _fsr(), 200),
@@ -721,7 +738,7 @@ CARD: Dict[str, List[str]] = {
     "sec_cheap": ["fred", "px"], "sec_phased": ["px"], "sec_marks": ["fullmkt"], "sec_gb_brief": ["fred", "bondflows"], "sec_gb_sovereign": ["fred"],
     "sec_gb_corp": ["fred"], "sec_gb_flows": ["bondflows"], "sec_etf_flows": ["etf_flows"], "sec_gb_rotation": ["fred", "px", "bondflows"], "sec_gb_tic": ["bondflows"], "sec_gb_mof": ["bondflows"],
     "sec_gb_jgb": ["jgb"], "sec_gb_europe": ["fred"], "sec_cb_brief": ["fred"], "sec_cb_us": ["fred"], "sec_cb_eu": ["fred"], "sec_cb_em": ["fred"],
-    "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"],
+    "sec_tw_brief": ["twmacro"], "sec_tw_calendar": ["twmacro"], "sec_tw_gov": ["twmacro", "fred"], "sec_tw_corp": ["twmacro"], "sec_tw_econ": ["twmacro"], "sec_tw_pulse": ["twpulse"],
     "sec_tw_money": ["twmacro", "tw"], "sec_tw_bank": ["twbank"], "sec_tw_bubble": ["twbubble"], "sec_tw_flowcal": ["twdesk", "twetf"], "sec_tw_valband": ["twdesk", "twbubble"], "sec_tw_revheat": ["twdesk"], "sec_calib": ["twforecast"], "sec_tw_regime": ["twbubble", "twmacro"], "sec_tw_forecast": ["twforecast"], "sec_tw_life": ["twmacro"],
     "sec_fomc": ["fedwatch", "econ"], "sec_fomc_drift": ["px", "econ"], "sec_event_react": ["evreact", "px", "tw"], "sec_est_rev": ["estrev"], "sec_econ_week": ["econ"], "sec_nowcast": ["econ", "nowcast"], "sec_rule_sim": ["stocks"], "sec_econ_list": ["econ"],
     "sec_canary": ["canary"], "sec_macro": ["fred"], "sec_quality": ["model"], "sec_regime_split": ["model"], "sec_model_health": ["model"], "sec_analogs": ["fred", "px"],

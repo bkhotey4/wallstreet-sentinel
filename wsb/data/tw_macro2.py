@@ -98,7 +98,7 @@ def _load(f) -> Dict:
 
 def refresh(force: bool = False) -> Dict:
     d = _load(FILE)
-    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("wage"):
+    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("unemp") and d.get("wage"):   # all three, or a failed one waits 12 h (Gemini CODE-4, 11-22)
         return _with_seed(d)
     d["ts"] = time.time()
     for name, fn in (("pmi", lambda: parse_pmi(_get(U_PMI))), ("unemp", lambda: parse_unemp(_get(U_UNEMP))),
