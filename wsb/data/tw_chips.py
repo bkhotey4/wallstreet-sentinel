@@ -218,6 +218,9 @@ def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
             d[name] = sv
             if day is not None:
                 day[name] = sv
+    for name in ("sbl_otc", "warn"):                     # TPEx parts: use the relay when this machine has none
+        if not d.get(name) and seed.get(name):
+            d[name] = seed[name]
 
 
 def refresh(force: bool = False) -> Dict:
@@ -284,7 +287,8 @@ def series(d: Dict, key, sub=None) -> List[tuple]:
 def write_seed(path=SEED) -> Dict:
     """PC → cloud relay for the parts the cloud cannot fetch (public exchange data)."""
     out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text")),
-           "large_opt": parse_large_opt(_get(U_LARGE_OPT))}
+           "large_opt": parse_large_opt(_get(U_LARGE_OPT)), "sbl_otc": parse_sbl_otc(_get(U_SBL_O)),
+           "warn": parse_warn(_get(U_WARN_L), _get(U_WARN_O))}
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
 
