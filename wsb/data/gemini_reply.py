@@ -108,7 +108,10 @@ def parse(text: str) -> Dict:
         if not ln or set(ln) <= set("=-*_ "):
             continue
         m_when = WHEN_RX.search(ln)
-        if m_when and not ln.startswith(("-", "*", "•")) and not HEAD_RX.match(ln):
+        # A batch line starts with its time (「台北時間 2026-11-22 10:55」).  11-22: a numbered line inside an NR item quoted a
+        # publish time (「1. **原文**：…2026-11-20 14:00…」) and was taken for the next batch: every section after it vanished.
+        if (m_when and re.match(r"^[\W_]*(?:台北時間|台北|Taipei time|Taipei)?\s*[:：]?\s*[\W_]*20\d\d", ln)
+                and not ln.startswith(("-", "*", "•")) and not HEAD_RX.match(ln)):
             if seen_block:
                 break                                           # the next (older) batch starts here
             y, mo, d, h, mi = (int(g) for g in m_when.groups())

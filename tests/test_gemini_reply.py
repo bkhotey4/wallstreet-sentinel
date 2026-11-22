@@ -27,6 +27,10 @@ assert unh["rumors"][0]["url"] == "https://example.com/articles/doj-widens-unite
 assert unh["facts"] == [] and unh["guess"] == ["股價下跌主要因為醫療成本上升"]     # a 「fact」 without a link is a guess
 assert d["extra"] == [{"t": "日本央行官員暗示升息", "url": "https://example.com/2026/boj-hint"}]
 assert G.parse("")["items"] == [] and G.parse("no answers yet")["items"] == []
+# 11-22: a numbered line quoting a publish time inside an item is not the start of the next (older) batch
+_nr = T.replace("其他今天的大事：", "### NR-1｜讀完全文\n1. **原文**：委員會報告（https://example.com/r/1 ，2026-11-20 14:00 發布）\n"
+                "報導於 2026-11-20 15:30 更新，標題和內文有落差\n### TWC-1｜覆蓋清單：缺兩項\n- 事實：x https://example.com/twc/1\n其他今天的大事：")
+assert [i["sym"] for i in G.parse(_nr)["items"]] == ["TJX", "UNH", "NR-1", "TWC-1"], [i["sym"] for i in G.parse(_nr)["items"]]
 # 11-19: the first real run cited only home pages — those are not checkable, so they are not "sourced"
 h = G.parse(T.replace("https://example.com/news/2026/11/18/tjx-q3", "https://finviz.com").replace(
     "https://example.com/articles/doj-widens-unitedhealth-probe", "https://www.tjx.com/news/news-releases"))
