@@ -29,8 +29,9 @@ def sec_tw_coverage(eng=None) -> str:
         return ""
     n = {k: sum(x.get("status") == k for x in items) for k in MARK}
     todo = [x for x in items if x.get("status") != "有"]
-    lead = (f'專業台股交易台會看的 {len(items)} 項，本站有 {n["有"]} 項、部分有 {n["部分"]} 項、還缺 {n["缺"]} 項；'
-            f'缺的每天依序補上，下一項是「{todo[0]["zh"]}」。' if todo else f'專業台股交易台會看的 {len(items)} 項，本站都有了。')
+    head = f'專業台股交易台會看的 {len(items)} 項，本站有 {n["有"]} 項、部分有 {n["部分"]} 項' + (f'、還缺 {n["缺"]} 項' if n["缺"] else "")
+    lead = (head + f'；{"缺的" if n["缺"] else "還不完整的"}每天依序補上，下一項是「{todo[0]["zh"]}」。' if todo
+            else f'專業台股交易台會看的 {len(items)} 項，本站都有了。')
     groups = []
     for g in dict.fromkeys(x.get("group", "") for x in items):
         rows = "".join(f'<tr><td>{MARK.get(x.get("status"), "")}</td><td><b>{esc(x["zh"])}</b>'
