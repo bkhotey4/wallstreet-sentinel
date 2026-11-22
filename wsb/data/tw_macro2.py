@@ -3,6 +3,8 @@
 來源都是政府資料開放平臺上的官方檔案（Claude 11-22 逐一下載驗證；Gemini 給的國發會網址被機器人驗證擋、主計總處 API 範例參數錯誤）：
   * PMI／NMI：data.gov.tw 資料集 6100（國家發展委員會；中華經濟研究院編製），CSV 欄位 Date, PMI, NMI，每月第一個工作日更新。
   * 失業率：data.gov.tw 資料集 6637（主計總處人力資源調查），XML，每月更新（含性別、年齡、教育別）。
+  * 薪資：中華民國統計資訊網「工業及服務業每人每月經常性薪資」頁（主計總處受僱員工薪資調查），頁面內嵌 1980 年起每月
+    受僱員工人數、經常性薪資、總薪資、工時（hidChartData JSON；11-22 Claude 自己找到並下載驗證，data.gov.tw 找不到對應資料集）。
 PMI 50 以上＝擴張、以下＝收縮；失業率看方向比看水準重要。"""
 from __future__ import annotations
 
@@ -25,6 +27,9 @@ U_PMI = ("https://ws.ndc.gov.tw/Download.ashx?u=LzAwMS9hZG1pbmlzdHJhdG9yLzEwL3Jl
 U_UNEMP = "https://ws.dgbas.gov.tw/001/Upload/461/relfile/11525/230038/mp0101a07.xml"
 SRC_PMI = "https://data.gov.tw/dataset/6100"
 SRC_UNEMP = "https://data.gov.tw/dataset/6637"
+U_WAGE = "https://www.stat.gov.tw/Point.aspx?sid=t.4&n=3583&sms=11480"
+SRC_WAGE = U_WAGE
+WAGE_KEYS = (("受僱員工人數", "emp"), ("經常性薪資", "reg"), ("總薪資", "total"), ("工時", "hours"))
 UA = {"User-Agent": "Mozilla/5.0 (WallStreet Sentinel research site)"}
 TTL = 12 * 3600
 TPE = timezone(timedelta(hours=8))
@@ -55,6 +60,28 @@ def parse_unemp(xml: str) -> List[Dict]:
     return out
 
 
+def parse_wage(page: str) -> List[Dict]:
+    """stat.gov.tw embeds every month since 1980 as JSON in the hidden input hidChartData; series are told apart by title."""
+    import html as _html
+    m = re.search(r'id="ContentPlaceHolder1_hidChartData" value="([^"]*)"', page or "")
+    if not m:
+        return []
+    try:
+        series = json.loads(_html.unescape(m.group(1)))
+    except ValueError:
+        return []
+    rows: Dict[str, Dict] = {}
+    for sr in series if isinstance(series, list) else []:
+        key = next((k for t, k in WAGE_KEYS if t in str(sr.get("Title") or "")), None)
+        for x in (sr.get("data") or []) if key else []:
+            dm = re.fullmatch(r"(\d{4})/(\d{1,2})/\d{1,2}", str(x.get("Date") or ""))
+            v = str(x.get("Value") or "").replace(",", "")
+            if dm and re.fullmatch(r"-?\d+(\.\d+)?", v):
+                ym = f"{dm.group(1)}-{int(dm.group(2)):02d}"
+                rows.setdefault(ym, {"ym": ym})[key] = float(v)
+    return [rows[k] for k in sorted(rows)]
+
+
 def _get(url: str, kind: str = "text") -> str:
     import requests
     r = requests.get(url, headers=UA, timeout=40)
@@ -71,10 +98,11 @@ def _load(f) -> Dict:
 
 def refresh(force: bool = False) -> Dict:
     d = _load(FILE)
-    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi"):
+    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("wage"):
         return _with_seed(d)
     d["ts"] = time.time()
-    for name, fn in (("pmi", lambda: parse_pmi(_get(U_PMI))), ("unemp", lambda: parse_unemp(_get(U_UNEMP)))):
+    for name, fn in (("pmi", lambda: parse_pmi(_get(U_PMI))), ("unemp", lambda: parse_unemp(_get(U_UNEMP))),
+                     ("wage", lambda: parse_wage(_get(U_WAGE)))):
         try:
             v = fn()
             if v:
@@ -94,7 +122,7 @@ def refresh(force: bool = False) -> Dict:
 def _with_seed(d: Dict) -> Dict:
     """PC relay for a cloud build that cannot reach the government file servers: newer series win."""
     s = _load(SEED)
-    for name in ("pmi", "unemp"):
+    for name in ("pmi", "unemp", "wage"):
         mine, theirs = d.get(name) or [], s.get(name) or []
         if theirs and (not mine or theirs[-1]["ym"] > mine[-1]["ym"]):
             d[name] = theirs
@@ -103,6 +131,7 @@ def _with_seed(d: Dict) -> Dict:
 
 def write_seed(path=SEED) -> Dict:
     d = refresh(force=True)
-    out = {"fetched": d.get("fetched"), "pmi": (d.get("pmi") or [])[-60:], "unemp": (d.get("unemp") or [])[-60:]}
+    out = {"fetched": d.get("fetched"), "pmi": (d.get("pmi") or [])[-60:], "unemp": (d.get("unemp") or [])[-60:],
+           "wage": (d.get("wage") or [])[-60:]}
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out

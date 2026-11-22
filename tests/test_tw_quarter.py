@@ -61,7 +61,24 @@ def test_pmi_and_unemp():
     assert len(u) == 1 and u[0]["ym"] == "2026-09" and u[0]["total"] == 3.36 and u[0]["y20_24"] == 11.85   # annual rows skipped
 
 
+def test_wage():
+    import html, json
+    from wsb.data import tw_macro2 as M
+    from tools import site_tw_macro2 as S
+    series = [{"Title": "工業及服務業每人每月經常性薪資", "data": [{"Date": "2026/9/1", "Value": "49,477"}, {"Date": "2025/9/1", "Value": "48,124"}]},
+              {"Title": "工業及服務業每人每月總薪資", "data": [{"Date": "2026/9/1", "Value": "60,297"}, {"Date": "2025/9/1", "Value": "57,520"}]},
+              {"Title": "別的", "data": [{"Date": "2026/9/1", "Value": "1"}]}]
+    page = f'<input type="hidden" id="ContentPlaceHolder1_hidChartData" value="{html.escape(json.dumps(series, ensure_ascii=False))}" />'
+    w = M.parse_wage(page)
+    assert w == [{"ym": "2025-09", "reg": 48124.0, "total": 57520.0}, {"ym": "2026-09", "reg": 49477.0, "total": 60297.0}]
+    v = S._wage(w, {"2026-09": 2.73})
+    r = v["rows"][-1]
+    assert abs(r["yoy"] - (49477 / 48124 - 1) * 100) < 1e-9 and abs(r["real"] - ((49477 / 48124) / 1.0273 - 1) * 100) < 1e-9
+    assert "幾乎被物價吃掉" in v["lead"] and M.parse_wage("<html></html>") == []
+
+
 if __name__ == "__main__":
+    test_wage()
     test_pmi_and_unemp()
     test_margin_ratio_and_daytrade()
     test_large_opt()
