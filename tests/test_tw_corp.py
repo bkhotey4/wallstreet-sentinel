@@ -84,10 +84,25 @@ def test_tw_alerts_push():
     assert P.twal_todo(d, {}, ts("2026-11-22 08:00")) == []             # Sunday: no pre-open push
 
 
+
+
+
+def test_chips_seed_on_cached_path():
+    """11-22: a fresh cache returned early and never looked at the PC relay → the large-trader table never showed in the cloud."""
+    from wsb.data import tw_chips as CH
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "c.json").write_text(json.dumps({"ts": time.time(), "inst": {}}), encoding="utf-8")
+    (tmp / "s.json").write_text(json.dumps({"large": {"inst": {"date": "20261120", "top5_net": 1.0, "top10_net": 2.0, "oi": 3.0}}}), encoding="utf-8")
+    with patch.object(CH, "FILE", tmp / "c.json"), patch.object(CH, "SEED", tmp / "s.json"):
+        d = CH.refresh()
+    assert d["large"]["inst"]["top10_net"] == 2.0
+
+
 if __name__ == "__main__":
     test_parse()
     test_push()
     test_coverage_card()
     test_distress_drops_delisted()
     test_tw_alerts_push()
+    test_chips_seed_on_cached_path()
     print("ok tw corp")

@@ -174,10 +174,23 @@ def single_quarter(snaps: Dict, code: str, year: str, q: int) -> Optional[Dict]:
     return {k: (cur[k] - prev[k]) if isinstance(cur.get(k), float) and isinstance(prev.get(k), float) else cur.get(k) for k in cur}
 
 
+def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
+    """PC relay (11-22: the TAIFEX large-trader CSV does not reach the cloud build): use it when newer than what we have."""
+    seed = _load(SEED)
+    for name in ("large",):
+        sv = seed.get(name) or {}
+        mine = str(((d.get(name) or {}).get("inst") or {}).get("date") or "")
+        if str((sv.get("inst") or {}).get("date") or "") > mine:
+            d[name] = sv
+            if day is not None:
+                day[name] = sv
+
+
 def refresh(force: bool = False) -> Dict:
     d = _load(FILE)
     now = time.time()
     if not force and now - float(d.get("ts") or 0) < TTL:
+        _apply_seed(d, None)                              # the relay may be newer than this machine's cache
         return d
     d["ts"] = now
     today = datetime.now(TPE).strftime("%Y-%m-%d")
@@ -195,13 +208,7 @@ def refresh(force: bool = False) -> Dict:
                 day[name] = v if name != "sbl" else {"date": v["date"], "total": v["total"]}
         except Exception as e:  # noqa: BLE001
             log.info("tw chips %s unavailable: %s", name, e)
-    seed = _load(SEED)                                   # PC relay (11-22: the TAIFEX large-trader CSV does not reach the cloud build)
-    for name in ("large",):
-        sv = seed.get(name) or {}
-        mine = str(((d.get(name) or {}).get("inst") or {}).get("date") or "")
-        if str((sv.get("inst") or {}).get("date") or "") > mine:
-            d[name] = sv
-            day[name] = sv
+    _apply_seed(d, day)
     if force or now - float(d.get("heavy_ts") or 0) >= HEAVY_TTL:
         d["heavy_ts"] = now
         for name, fn in (("pledge", lambda: parse_pledge(_get(U_PLEDGE), uni or None)), ("forecast", lambda: parse_forecast(_get(U_FCST)))):
