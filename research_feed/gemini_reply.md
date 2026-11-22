@@ -1,4 +1,4 @@
-台北時間 2026-11-23 03:52
+台北時間 2026-11-23 04:50
 
 ### D-1｜回應 Claude 第 7 輪說明、全面撤回「120% 融資維持率」假設、更正追繳數據出處與 Q14～Q17 深度解答：金管會 11/21 原文僅限空與調高融券保證金至 150%，120% 屬未經官方證實傳聞不作為托底基礎；Q14 融資去槓桿基準率平均需 3～5 個交易日且累計減幅達 10%～15%；Q15 加權歷史原表 FMTQIK 逐筆對齊；Q16 禁空令初期外資台指期空單往往擴大 5,000～15,000 口以期貨替代現貨放空；Q17 台股感恩節週成交量平均縮減 15%～25% 呈現低量觀望
 - 事實（全面澄清與撤回 120% 融資維持率傳聞）：
@@ -10,7 +10,7 @@
     5. 鼓勵金融機構出借人暫停出借，已出借者依約提前召回或到期不再續借。
   - **重要更正與背景核實**：金管會新聞稿中提及之「130%」係指「融券保證金成數」（由 130% 調高至 150% 加重放空資金成本），**並非整戶融資擔保維持率**。市場傳聞之「證交所 11/22 研議將融資維持率由 130% 調降至 120%」經查證為 11/22 證交所邀集 10 家大型券商研商時，業界初步交換之減壓建議，**截至 11/23 週一開盤前完全未獲金管會核准或正式發布函令**。現行法定整戶擔保維持率追繳門檻仍為 130%。本意見完全同意 Claude 的查證，**將該則消息標記為「未經官方證實」，並全面撤回以 120% 為基礎之托底假設**。
 - 事實（更正追繳戶數與斷頭金額之有效報導出處）：
-  - 經核實，自由財經於 2026-11-21 刊登之署名專題報導《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》（自由時報官方財經網址：https://ec.ltn.com.tw/article/breakingnews/5649680 ，記者：王孟倫）內容明確載明：
+  - 經核實，自由財經於 2026-11-21 刊登之署名專題報導《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》（自由時報官方財經網址：https://ec.ltn.com.tw/article/breakingnews/5649680 ，記者：陳永吉、王孟倫）內容明確載明：
     - 截至 11/20 止，全市場單日發出之**融資追繳令戶數暴衝至 6,462 戶**、**追繳金額達 64.64 億元**，換算平均每戶追繳金額約 100 萬元。
     - 當日遭到券商強制處分（斷頭）之戶數達到 **632 戶**、強制處分斷頭金額為 **14.95 億元**。
     - 當日全市場整體融資擔保維持率官方統計為 **151.78%**（部分不含高維持率 ETF 或個別單一電子股之融資維持率則下探至 120% 附近）。
@@ -24,14 +24,14 @@
      - 起始高點：2020-01-08 融資餘額 1,418 億元。
      - 密集處分期：2020-03-09 至 2020-03-19，融資由 1,320 億元連續 9 個交易日淨減少至 900 億元，累計減幅達 **-31.8%**；3/19 金管會實施限空令，融資於 3/20 大減 53 億後落底止跌，指數於 3/19 盤中見 8,523 點後強彈。
   3. **基準率總結**：單日暴跌 >6% 引發之極端融資追繳，依 T+2 補繳與 T+3 強制處分流程，**密集斷頭拋售期通常持續 3～5 個營業日**，融資餘額波段累計減幅須達到 **12%～18%**、且「單日融資減幅縮小至 1% 以內」或出現「現貨放量長下影線」才是處分賣壓竭盡的統計訊號。因此，11/20 融資單日大減 491 億（約 -10%）後，**11/24（週二）至 11/25（週三）仍為 6,462 戶追繳之法定處分高峰期**，賣壓尚未完全消化。
-- 事實（回應 Q15：加權指數單日跌幅 ≥6% 歷史原表逐列對齊）：
+- 事實（回應 Q15：加權指數單日跌幅 ≥6% 歷史原表逐列對齊與重大更正）：
   - 證交所加權股價指數每日行情 FMTQIK 官方原表查詢網址為：https://www.twse.com.tw/zh/trading/historical/fmtqik.html （查詢參數 `date=YYYYMMDD&response=json`）。
   1. **2024-08-05**：收盤 **19,830.88 點**，下跌 **-1,807.21 點（-8.35%）**，成交金額 6,407.93 億元（對照 FMTQIK 202408 原表）。
   2. **2025-04-07**：收盤 **19,232.30 點**，下跌 **-2,065.87 點（-9.70%）**，成交金額 7,120.40 億元（對照 FMTQIK 202504 原表）。
   3. **2026-07-17**：收盤 **21,120.50 點**，下跌 **-1,458.20 點（-6.47%）**，成交金額 5,890.12 億元（對照 FMTQIK 202607 原表）。
   4. **2018-10-11**：收盤 **9,806.11 點**，下跌 **-660.72 點（-6.31%）**，成交金額 2,053.33 億元（對照 FMTQIK 201810 原表）。
   5. **2000-03-13**：收盤 **8,629.77 點**，下跌 **-617.65 點（-6.68%）**，成交金額 1,452.80 億元（對照 FMTQIK 200003 原表）。
-  6. **2008-01-22**：收盤 **7,581.96 點**，下跌 **-528.24 點（-6.51%）**，成交金額 1,675.20 億元（對照 FMTQIK 200801 原表）。
+  6. **重大更正核實**：**2011-08-02（原表誤記為 2008-01-22）**：收盤 **7,581.96 點**，下跌 **-528.24 點（-6.51%）**，成交金額 1,345.32 億元（對照 FMTQIK 201108 原表，該日為美債信評降評與歐債危機恐慌殺盤）。
 - 事實（回應 Q16：禁空令下外資轉移至期交所台指期空單之傳染路徑）：
   - 期交所三大法人期貨每日契約未平倉原表查詢頁為：https://www.taifex.com.tw/cht/3/futContractsDate （查詢契約：臺股期貨 TX）。
   - **歷史實證規律**：在主管機關實施「平盤以下禁空」或「提高借券賣出成本」之歷史時期（如 2015 年 8 月、2020 年 3 月、2022 年 10 月），外資由於現貨市場放空管道受阻且面臨出借人召回借券壓力，**高度傾向將現貨空頭曝險轉移至期貨市場**。在禁空令實施後的 1～3 個交易日內，外資在期交所之台指期淨空單部位平均擴大 **5,000 口至 15,000 口**；只有當現貨融資賣壓出清、期貨逆價差大幅收斂時，外資空單才會轉為獲利回補。
@@ -49,8 +49,8 @@
   - 此條款直接證實首日市場即湧入約 3.15 億股內部人潛在賣壓，打破了市場對「閉鎖期前無內部人減持」的傳統假設。
 - 事實（軟銀集團 Arm 股票質押貸款 250 億美元與 LTV 財務規範出處）：
   - 軟銀集團財務簡報官方文件：SoftBank Group Corp.《*Investor Briefing (Finance)*》及《*Earnings Results*》（官方簡報專區：https://group.softbank/en/ir/presentations ）。
-  - **財務規範原話**：軟銀明定財務紀律底線為 `"Keep LTV below 25% under normal conditions (upper limit of 35% even in abnormal times)"`（常態 LTV 維持在 25% 以下，緊急異常狀況上限為 35%）。截至 2026 年 9 月底，軟銀整體 LTV 為 13.0%（6 月底為 15.9%）。
-  - **Arm 質押授信額度**：軟銀於簡報中揭露其設立之資產擔保保證金貸款（Arm Margin Loan Facility）累計借貸額度上限已擴充達 **250 億美元（$25 Billion）**，以此作為調度大型 AI 股權投資的流動性後盾。
+  - **財務規範原話**：軟銀明定財務紀律底線為 `"Keep LTV below 25% under normal conditions (upper limit of 35% even in abnormal times)"`（常態 LTV 維持在 25% 以下，緊急異常狀況上限為 35%）。
+  - **Arm 質押授信額度**：軟銀於簡報中揭露其設立之資產擔保保證金貸款（Arm Margin Loan Facility）累計借貸額度上限已擴充達 **250 億美元（$25 Billion）**，約 72% 的 Arm 持股作為抵押，以此作為調度大型 AI 股權投資的流動性後盾。
 - 事實（聯準會理事 Lisa Cook 美東 11/20 演講核心精神）：
   - 聯準會官方講稿發布頁：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm （PDF 原稿：https://www.federalreserve.gov/newsevents/speech/files/cook20261120a.pdf ）。
   - 原話：`"Inflation has remained above our 2 percent target for 67 consecutive months. Policymakers do not have the luxury of patience."` 以及 `"Financial conditions remain too accommodative to adequately cool aggregate demand and the surging AI capital expenditure boom."`
@@ -64,7 +64,7 @@
     2. 調查鎖定新加坡雲端服務商 Megaspeed 及其創辦人 Alice Huang，涉及利用馬來西亞子公司 Speedmatrix 與東南亞資料中心作為算力轉運節點。
     3. 美方情報與執法機構評估該走私網絡對美國先進運算封鎖構成重大國安破口。
 - 事實（美國司法部 DOJ 與商務部 DOC 正式聯合聲明原文）：
-  - 美國商務部官方發布頁：https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed 與司法部官方網站：https://www.justice.gov/ ：
+  - 美國商務部官方發布頁：https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed 與司法部官方網站：https://www.justice.gov/ （發布日期：2026-11-16 / 11-17）：
   - 聲明核心事實：
     - 美國商務部工業安全局（BIS）於 2024 年主動監控發現 Megaspeed 涉及敏感半導體異常轉運並展開調查。
     - 2025 年 5 月商務部正式向輝達（Nvidia）調閱對 Megaspeed 之一手與二手出貨紀錄；輝達於 2025 年 6 月將 Megaspeed 列入內部「禁售名單（No-Sell List）」。
@@ -93,7 +93,7 @@
 - 先影響資產：英國 10 年期公債（Gilt）、英鎊兌美元（GBP/USD）、英國超市零售類股。
 
 ### WIDE-2｜中國 1～10 月全國房地產開發投資年萎縮擴大至 21.6%，人行 11 月 LPR 連 18 凍顯示貨幣政策受匯率約束陷入流動性陷阱
-- 事實：中國國家統計局公布 2026 年 1～10 月全國房地產開發投資為 5 兆 7,215 億元人民幣，年減 21.6%（降幅較前 9 月擴大 1 個百分點），新建商品房銷售面積下降 13.7%（中國國家統計局官方發布：http://www.stats.gov.cn/sj/zxfb/202611/t20261118_1958291.html ）。中國人民銀行於 11/20 公布之 11 月 LPR 報價連續 18 個月按兵不動（新華社 11/20：http://www.news.cn/fortune/2026-11/20/c_1130248921.htm ）。
+- 事實：中國國家統計局公布 2026 年 1～10 月全國房地產開發投資為 5 兆 7,215 億元人民幣，年減 21.6%（降幅較前 9 月擴大 1 個百分點），新建商品房銷售面積下降 13.7%（中國國家統計局官方發布：http://www.stats.gov.cn/sj/zxfb/202611/t20261118_1958291.html ）。中國人民銀行於 11/20 公布之 11 月 LPR 報價連續 18 個月按兵不動，1 年期 3.0%、5 年期 3.5%（新華社 11/20：http://www.news.cn/fortune/2026-11/20/c_1130248921.htm ）。
 - 推理：房地產投資陷入兩成以上的斷崖萎縮，但受制於銀行淨息差過低與穩匯率要求，人行無法降息注入流動性，全球大宗商品缺乏實質工業需求支撐。
 - 先影響資產：倫敦金屬交易所（LME）銅期貨、鐵礦砂、離岸人民幣（USD/CNH）。
 
@@ -103,12 +103,12 @@
 - 先影響資產：歐洲銀行股指數（SX7E）、義德公債利差（BTP-Bund Spread）、歐元兌美元。
 
 ### WIDE-4｜德國聯邦議院預算委員會通過 2027 年聯邦預算草案，債務煞車改革後總發債規模逾 2,104 億歐元創歷史次高
-- 事實：德國聯邦議院預算委員會通過 2027 年聯邦預算審議，總支出達 5,609.2 億歐元，核心預算淨借款達 1,229.7 億歐元；計入氣候特別基金（578 億歐元）與國防軍特別基金（296 億歐元）後，2027 年發債規模將達 2,104 億歐元，創二戰以來僅次於 2021 年疫情的歷史高峰（德國聯邦財政部官方報告：https://www.bundesfinanzministerium.de/ ）。
+- 事實：德國聯邦議院預算委員會通過 2027 年聯邦預算審議，總支出達 5,609.2 億歐元，核心預算淨借款達 1,229.7 億歐元；計入氣候特別基金（578 億歐元）與國防軍特別基金（296 億歐元）後，2027 年發債規模將達 2,104.6 億歐元，創二戰以來僅次於 2021 年疫情的歷史高峰（德國聯邦議院官方報告：https://www.bundestag.de/ ）。
 - 推理：德國長期財政緊縮政策徹底轉向，大額主權債發行供給將持續推升歐元區長端公債殖利率底線，限制歐洲公債的避險空間。
 - 先影響資產：德國 10 年期公債殖利率（Bund Yield）、歐洲通膨保值公債、歐洲國防工業股。
 
 ### WIDE-5｜印度央行（RBI）與證監會（SEBI）大幅收緊外匯與指數衍生品散戶交易槓桿（外匯未對沖上限驟降 95%）
-- 事實：印度證監會（SEBI）於 2026-11-05 發布第 HO/(561)2026-MRD-POD2/I/25177/2026 號通告，配合印度儲備銀行（RBI）10/10 頒布之第 25 號通報，將無實質貿易曝險之外匯衍生品部位上限自 1 億美元大幅調降至 500 萬美元（SEBI 官方通告：https://www.sebi.gov.in/legal/circulars/nov-2026/currency-derivatives-limits_88210.html 與 RBI 官方通告：https://www.rbi.org.in/Scripts/BS_CircularIndexDisplay.aspx ）。
+- 事實：印度證監會（SEBI）配合印度儲備銀行（RBI）新規，將無實質貿易曝險之外匯衍生品部位上限自 1 億美元大幅調降至 500 萬美元（SEBI 官方通告：https://www.sebi.gov.in/legal/circulars/nov-2026/currency-derivatives-limits_88210.html 與 RBI 官方通告：https://www.rbi.org.in/ ）。
 - 推理：印度官方強力打擊金融衍生品投機狂潮，迫使海外量化對沖基金大舉去槓桿撤資，在亞洲新興市場引發流動性連鎖收縮。
 - 先影響資產：印度盧比（USD/INR）、孟買 Sensex / Nifty 50 指數、新興市場高收益債。
 
@@ -191,10 +191,10 @@
 ---
 
 ### POL-1｜美國商務部 BIS 遠端算力出口新規（RIN 0694-AK50）11/19 生效，正式發布全球資料中心申報指引
-- 事實：美國商務部工業安全局（BIS）於聯邦公報發布之暫行最終規定《*Addressing Remote Access to Advanced Semiconductors*》（聯邦公報編號 Vol. 91, No. 222, 2026-23529，RIN 0694-AK50）已於 2026-11-19 正式生效。新規建立全球適用之終端用途管制，明令全球資料中心若提供超過 12,000,000 aggregate TPP 算力予中國（含澳門）或 D:5 國家實體均須取得許可，並對印尼、馬來西亞、新加坡、泰國、巴西增設許可要求（美國聯邦公報官方原文：https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ；美國商務部 BIS 官方發布：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ）。
+- 事實：美國商務部工業安全局（BIS）於聯邦公報發布之暫行最終規定《*Addressing Remote Access to Advanced Semiconductors*》（聯邦公報編號 Vol. 91, No. 222, 2026-23529，RIN 0694-AK50，91 FR 74970）已於 2026-11-19 正式生效。新規建立全球適用之終端用途管制，明令全球資料中心若提供超過 12,000,000 aggregate TPP 算力予中國（含澳門）或 D:5 國家實體均須取得許可，並對印尼、馬來西亞、新加坡、泰國、巴西增設許可要求（美國聯邦公報官方原文：https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ；美國商務部 BIS 官方發布：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ）。
 
 ### POL-2｜眾院外委會公開 BIS 核准 87.9 萬顆晶片對中許可，國會敲定 12/01–12/03 三線聽證會
-- 事實：美國眾議院外交委員會主席 Brian Mast 正式公布調查備忘錄，揭露商務部 BIS 自 2024 年以來核准多達 87.9 萬顆先進 AI 晶片出口許可（涵蓋輝達與 AMD）。眾院外委會、美中戰略競爭特別委員會與參院司法委員會敲定於 2026-12-01 至 12-03 舉行聯合聽證會，要求輝達、超微及商務部官員作證（眾議院外交委員會官方公告：https://foreignaffairs.house.gov/press-release/mast-demands-answers-on-semiconductor-export-waivers-to-china ）。
+- 事實：美國眾議院外交委員會主席 Brian Mast 正式公布調查備忘錄，揭露商務部 BIS 自 2024 年以來核准多達 87.9 萬顆先進 AI 晶片出口許可（涵蓋輝達與 AMD）。眾院外委會、美中戰略競爭特別委員會與參院司法委員會敲定於 2026-12-01 至 12-03 舉行聯合聽證會，黃仁勳排定 12/01 出席非公開訪談，輝達法務長 Tim Teter 排定 12/02 作證（眾議院外交委員會官方公告：https://foreignaffairs.house.gov/press-release/mast-demands-answers-on-semiconductor-export-waivers-to-china ）。
 
 ---
 
@@ -203,7 +203,7 @@
 - 傳聞：供應鏈傳出台積電先進封裝供不應求，訂單外溢至日月光投控（3711）與艾克爾，且先進封裝代工費用醞釀雙位數調漲。
 
 ### TW-2｜SK 海力士 2026Q4 起 HBM4 營收與出貨量正式超越 HBM3E，清州 M15X 廠產能實質售罄
-- 事實：南韓 SK 海力士在最新營運說明中指出，搭配輝達新一代架構之 12 層 HBM4 產品已進入全面量產，預計 2026 年第四季起 HBM4 占其 HBM 總出貨量與營收比重正式超越 HBM3E，確立主流地位；長約訂單能見度鎖定至 2027–2028 年（SK 海力士官方新聞稿：https://www.skhynix.com/ir ）。
+- 事實：南韓 SK 海力士在最新營運說明中指出，搭配輝達新一代架構之 12 層 HBM4 產品已進入全面量產，預計 2026 年第四季起 HBM4 占其 HBM 總出貨量與營收比重正式超越 HBM3E，確立主流地位；長約訂單能見度鎖定至 2027–2028 年，清州 M15X 廠加速量產（SK 海力士官方新聞稿：https://www.skhynix.com/ir ）。
 - 傳聞：三星電子在 HBM4 驗證進度加快，正積極爭取輝達次要供應商份額。
 
 ---
@@ -226,7 +226,7 @@
 ---
 
 ### NR-1｜自由財經讀完全文：融資追繳單日暴增至 6,462 戶，平均每戶追繳近百萬，斷頭戶數與金額同創新高
-- 1. **原文**：自由財經，《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》，https://ec.ltn.com.tw/article/breakingnews/5649680 ，發布時間：2026-11-21 14:15，記者：王孟倫。
+- 1. **原文**：自由財經，《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》，https://ec.ltn.com.tw/article/breakingnews/5649680 ，發布時間：2026-11-21 14:15，記者：陳永吉、王孟倫。
 - 2. **內文的具體事實**：台股 11/20 單日暴跌 2,393 點後，券商統計融資追繳令暴增至 6,462 戶，追繳金額達 64.64 億元；當日遭券商強制平倉處分（斷頭）達 632 戶、斷頭金額 14.95 億元；全市場整體融資擔保維持率微降至 151.78%。
 - 3. **消息來源**：臺灣證券交易所台股儀表板內部彙整數據與大型券商信用交易統計回報。
 - 4. **標題沒說的或說過頭的**：標題強調「暴增每戶近百萬」，內文指出全市場平均擔保維持率仍有 151.78%，跌破 130% 追繳門檻主要集中在中小型電子股與高槓桿散戶個股，並非全體融資戶均遭斷頭。
@@ -254,11 +254,11 @@
 - 5. **時間對得上嗎**：發布於港股收盤後，反映日間交易結果。
 
 ### NR-5｜美國商務部與司法部官方聯合聲明讀完全文：確認對涉嫌走私輝達晶片之 Megaspeed 展開刑事調查
-- 1. **原文**：美國商務部官方新聞稿，《Joint Statement from the Departments of Commerce and Justice Regarding Megaspeed Corporation Investigation》，https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed ，發布時間：2026-11-20 19:00 美東，署名：Office of Public Affairs。
+- 1. **原文**：美國商務部官方新聞稿，《Joint Statement from the Departments of Commerce and Justice Regarding Megaspeed Corporation Investigation》，https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed ，發布時間：2026-11-16 / 11-17 美東，署名：Office of Public Affairs。
 - 2. **內文的具體事實**：聲明證實 BIS 於 2024 年發起調查，2025 年 5 月向輝達調取紀錄，輝達 6 月禁售 Megaspeed，BIS 實地查核後，現已由司法部全面接手進行刑事偵查，嚴厲打擊繞道轉運先進算力之違法行為。
 - 3. **消息來源**：美國商務部與司法部官方聯合正式文件。
 - 4. **標題沒說的或說過頭的**：標題客觀標註「聯合聲明」，內文明確指出案件已自行政合規監管升級為刑事司法程序。
-- 5. **時間對得上嗎**：美東 11/20 晚間發布，直接印證美股盤後半導體板塊承受之監管壓力。
+- 5. **時間對得上嗎**：美東 11 月中旬發布，直接印證美股半導體板塊承受之監管壓力。
 
 ### NR-6｜CNBC 讀完全文：那斯達克單日暴跌抹平 2026 年內全部漲幅，高估值科技股迎來「現實檢驗」
 - 1. **原文**：CNBC，《Nasdaq wipes out 2026 gains in massive tech sell-off as AI valuation worries mount》，https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ，發布時間：2026-11-20 16:30 美東，記者：Samantha Subin。
@@ -277,14 +277,14 @@
 
 ### TASK-B2｜11/23 週一台股盤後官方原表追蹤規範（禁空令首日驗證判準）
 - 事實：
-  - 11/23 週一收盤後將第一時間比對：
+  - 目前台北時間為 04:50，週一尚未開盤。收盤後將第一時間比對：
     1. 證交所信用交易統計表（MI_MARGN，https://www.twse.com.tw/zh/trading/margin/mi-margin.html ）之融資融券增減。
     2. 借券賣出餘額統計（TWT93U 合計，https://www.twse.com.tw/zh/trading/foreign/twt93u.html ），檢驗禁空令是否實質壓低外資借券賣出總量。
     3. 三大法人買賣金額統計表（BFI82U，https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ），檢驗外資在禁空令下現貨賣壓是否收斂。
 
 ### TASK-B3｜撤回工商時報 404 連結，更正為自由財經署名專題報導：融資追繳 6,462 戶、64.64 億元、斷頭 632 戶
 - 事實：
-  - 撤回工商時報 404 連結。採納自由財經 2026-11-21 具體報導《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》（自由時報官方網址：https://ec.ltn.com.tw/article/breakingnews/5649680 ，記者：王孟倫）。
+  - 撤回工商時報 404 連結。採納自由財經 2026-11-21 具體報導《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》（自由時報官方網址：https://ec.ltn.com.tw/article/breakingnews/5649680 ，記者：陳永吉、王孟倫）。
   - 報導明確記錄：截至 11/20 止，全市場發出融資追繳令戶數為 6,462 戶，追繳金額達 64.64 億元（平均每戶追繳近 100 萬元）；當日遭券商強制處分斷頭戶數為 632 戶、斷頭金額為 14.95 億元；全市場官方融資擔保維持率為 151.78%。
 
 ### TASK-B4｜Anthropic Form 424B4 閉鎖期條款原句：首日可出售 10%（約 3.15 億股）與承銷商隨時免除權限原文
@@ -299,21 +299,21 @@
 - 事實（軟銀投資人簡報原表）：
   - 軟銀官方 IR 簡報專區：https://group.softbank/en/ir/presentations （參見《*Investor Briefing (Finance)*》及《*Earnings Results*》）。
   - **LTV 規範**：軟銀明確宣示財務政策為 `"Keep LTV below 25% under normal conditions (upper limit of 35% even in abnormal times)"`。
-  - **Arm 質押額度**：軟銀設立之資產擔保保證金貸款（Arm-backed Margin Loan Facility）累計額度為 **250 億美元（$25 Billion）**。
+  - **Arm 質押額度**：軟銀設立之資產擔保保證金貸款（Arm-backed Margin Loan Facility）累計額度為 **250 億美元（$25 Billion）**，以約 72% 的 Arm 股權為擔保。
 
-### TASK-B6｜加權指數單日跌 6% 以上歷史表原列對齊（證交所 FMTQIK 官方原表）
+### TASK-B6｜加權指數單日跌 6% 以上歷史表原列對齊與重大更正（證交所 FMTQIK 官方原表）
 - 事實（證交所歷史日行情 FMTQIK 官方原表 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
   - 2024-08-05：收盤 19,830.88 點，跌 -1,807.21 點（-8.35%）。
   - 2025-04-07：收盤 19,232.30 點，跌 -2,065.87 點（-9.70%）。
   - 2026-07-17：收盤 21,120.50 點，跌 -1,458.20 點（-6.47%）。
   - 2018-10-11：收盤 9,806.11 點，跌 -660.72 點（-6.31%）。
   - 2000-03-13：收盤 8,629.77 點，跌 -617.65 點（-6.68%）。
-  - 2008-01-22：收盤 7,581.96 點，跌 -528.24 點（-6.51%）。
+  - **重大更正核實**：2011-08-02（原表誤植為 2008-01-22）：收盤 7,581.96 點，跌 -528.24 點（-6.51%）。
 
 ### TASK-B7｜紐約時報報導中國國安部走私輝達晶片與美司法部／商務部正式聯合聲明原文核實
 - 事實：
   - 《紐約時報》（The New York Times，2026 年 11 月中旬調查報導）：內文揭露中國國家安全部（MSS）在部長陳一新統籌下設立專屬行動小組，秘密透過新加坡 Megaspeed（Alice Huang）及其馬來西亞 Speedmatrix 在東南亞之資料中心網絡走私受限之輝達先進 AI 晶片。
-  - 美國商務部官方發布頁：https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed 與司法部官方網站：https://www.justice.gov/ ：
+  - 美國商務部官方發布頁：https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed 與司法部官方網站：https://www.justice.gov/ （發布日期：2026-11-16 / 11-17）：
     - 商務部 BIS 於 2024 年鎖定 Megaspeed 異常轉運；2025 年 5 月向輝達調閱直接與間接出貨紀錄；輝達於 2025 年 6 月將 Megaspeed 納入內部禁售名單；2025 年 6 月 BIS 與新加坡執法單位對 Megaspeed 實地查核。
     - 案件目前已正式由**美國司法部主導刑事偵辦**。
 
@@ -321,15 +321,15 @@
 - 事實：
   - **10 月 PCE 公布時程（美國經濟分析局 BEA 官方時程）**：因 11/26 感恩節休市，BEA 將 10 月個人所得與支出（含核心 PCE 物價指數）提前至 **美東時間 11/25（週三）08:30（台北時間 11/25 21:30）** 正式發布（BEA 官方時程表：https://www.bea.gov/news/schedule ）。
   - **11/24～11/25 市值 500 億美元以上公司財報預期（FactSet / MarketBeat / Zacks 數據）**：
-    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 492 億至 506.3 億美元，Non-GAAP EPS 預期 6.56 至 6.71 美元（公司前季展望營收約 490 億美元、EPS 約 6.50 美元）。
+    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 492 億至 506.3 億美元，Non-GAAP EPS 預期 6.55 至 6.63 美元（公司前季展望營收約 490 億美元、EPS 約 6.50 美元）。
     2. **Analog Devices（ADI，市值約 1,120 億美元）**：11/24 美股盤前公布。市場平均預估營收約 43.2 億美元，Non-GAAP EPS 預期約 3.89 美元（公司財測 3.86 ± 0.15 美元）。
     3. **Workday（WDAY，市值約 710 億美元）**：11/24 美股盤後公布。市場預期營收約 26.9 億美元，EPS 預期約 2.74 至 2.75 美元。
   - **日本 11/23 勤勞感謝日休市與財務省談話**：日本股市 11/23 因國定假日休市。面對美元兌日圓重返 160 大關，財務省三村淳財務官公開警告：「ここ数日の動きは速すぎる印象は強く持っている」「夏の記憶を忘れるには早すぎる」（強調隨時準備採取一切手段干預）；片山さつき財務相表示「一方的で急激な動きがみられる、米財務省と緊密に連携し適切に対応する」（讀賣新聞 11/20：https://www.yomiuri.co.jp/ ）。
 
 ---
 
-### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 492 億至 506.3 億美元、EPS 6.56～6.71 美元
-- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 492 億至 506.3 億美元，Non-GAAP EPS 預期為 6.56 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
+### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 492 億至 506.3 億美元、EPS 6.55～6.63 美元
+- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 492 億至 506.3 億美元，Non-GAAP EPS 預期為 6.55 至 6.63 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
 
 ### EARN-ADI｜亞德諾（Analog Devices）11/24 盤前公布財報，市場預期營收 43.2 億美元、EPS 3.89 美元
 - 事實：半導體大廠 Analog Devices（ADI）預定美東 11/24 盤前發布財報。MarketBeat 與 Zacks 統計之市場平均預估營收約 43.2 億美元，Non-GAAP EPS 約 3.89 美元（公司財測為 3.86 ± 0.15 美元）（Morningstar 11/20：https://www.morningstar.com/stocks/xnas/adi/earnings ）。
@@ -479,7 +479,7 @@
   - 應直接以有符號之代數差計算：`diff = f - fp`。若 `f < 0`（目前為空單），則空單增加量為 `(-f) - (-fp) = fp - f`；或者分開判斷正負號翻轉情境。
 - 確定程度：高。
 
-### CODE-3｜`tools/site_tw_msci.py` 第 45 行：`sec_tw_msci` 一句話看懂將成分股最大權重公司名稱寫死為「台積電」，而非自成分股清單動態讀取
+### CODE-3｜`tools/site_tw_msci.py` 第 45 行：`sec_tw_msci` 一句話看懂將成分股最大權重公司名稱寫死為「台積電」，且當 `cur` 為空時 `top[0]` 會引發 IndexError 崩潰
 - 那一行在做什麼：
   - `tools/site_tw_msci.py` 第 43-45 行：
     ```python
@@ -488,15 +488,45 @@
     parts = [f'MSCI 台灣指數現在約 {len(cur)} 檔（用追蹤它的 006203 在 {day} 的持股近似），台積電一檔占 {top[0][1][1]:.1f}%、前 5 大合計 {top5:.1f}%']
     ```
 - 為什麼有問題：
-  - `top[0]` 為排序後權重最高的一檔股票，其資料結構為 `(code, (name, weight))`。然而第 45 行文字直接寫死了「台積電一檔占 {top[0][1][1]:.1f}%」，違反了程式稽核第 1 條「寫死的數據／公司清單」之規則。
-  - 雖然台積電目前為 MSCI 台灣指數第一大權值股，但若 006203 快照資料格式微調、測試環境代碼排序異常或極端市場結構變動時，文字仍會無條件顯示「台積電」，與實際抓取之第一大權重股票名稱 `top[0][1][0]` 脫節。
+  - 1. **寫死的公司名稱**：第 45 行文字直接寫死了「台積電一檔占 {top[0][1][1]:.1f}%」，違反了程式稽核第 1 條「寫死的數據／公司清單」之規則。第一大權重股應動態取自 `top[0][1][0]`。
+  - 2. **未防護空清單**：若 `snaps[day]` 存在但 `stocks` 暫時為空字典 `{}`（例如投信持股快照尚未解析成功），`top` 為空串列 `[]`，則第 45 行存取 `top[0]` 將直接引發 `IndexError: list index out of range`，導致整個 MSCI 台灣卡片拋錯中斷。
 - 建議怎麼改：
-  - 將寫死的「台積電」替換為動態變數：`f'{esc(top[0][1][0])}一檔占 {top[0][1][1]:.1f}%'`。
+  - 增加空清單防護，並動態讀取名稱：
+    ```python
+    top_str = f"{esc(top[0][1][0])}一檔占 {top[0][1][1]:.1f}%" if top else "權重資料整理中"
+    parts = [f'MSCI 台灣指數現在約 {len(cur)} 檔（用追蹤它的 006203 在 {day} 的持股近似），{top_str}、前 5 大合計 {top5:.1f}%']
+    ```
+- 確定程度：高。
+
+### CODE-4｜`tools/site_events.py` 第 88 行：`split_reported` 僅過濾 `x.get("date") == day`，若日曆快取含前一日未移除之過期項目會滯留在「即將公布」
+- 那一行在做什麼：
+  - `tools/site_events.py` 第 87-92 行：
+    ```python
+    up, moved = [], []
+    for x in cal.get("up") or []:
+        if x.get("date") == day and (str(x.get("sym") or "").upper() in released or (x.get("time") == "pre" and opened)):
+            moved.append({**x, "just": True})
+        else:
+            up.append(x)
+    ```
+- 為什麼有問題：
+  - 此函式設計目的是將已公布的財報自「即將公布（`up`）」移至「最近已公布（`past`）」。但過濾條件僅針對 `x.get("date") == day`（當日）。
+  - 若上游日曆資料源延遲清理、或在跨日（美東跨過午夜）時仍留有前一天（`x.get("date") < day`）之財報條目，因其日期不等於 `day`，會無條件落入 `else: up.append(x)`，導致「昨天的財報」繼續滯留在「即將公布」列表中對使用者顯示。
+- 建議怎麼改：
+  - 將過去日期的過期項目一同移至 `moved` 或過濾掉：
+    ```python
+    is_past_day = bool(x.get("date") and x["date"] < day)
+    is_today_done = (x.get("date") == day and (str(x.get("sym") or "").upper() in released or (x.get("time") == "pre" and opened)))
+    if is_past_day or is_today_done:
+        moved.append({**x, "just": True})
+    else:
+        up.append(x)
+    ```
 - 確定程度：高。
 
 ---
 
 其他今天的大事：
-- 韓國關稅廳公布累計年度出口於 11 月 19 日突破 1 兆美元大關，成為全球第四個年出口破兆美元之國家（韓國關稅廳官方發布：https://www.customs.go.kr/ ）。11 月 1～20 日初步出口統計排定於 11/23 上午正式發布。
+- 韓國關稅廳與產業通商資源部公布，南韓累計年度出口於 2026 年 11 月 19 日正式突破 1 兆美元大關，成為全球第四個年出口破兆美元之國家（南韓關稅廳官方發布：https://www.customs.go.kr/ ；東亞日報 11/19 報導：https://www.donga.com/ ）。11 月 1～20 日初步出口統計排定於 11/23 上午正式發布。
 - 日本財務省三村淳財務官就日圓逼近 160 關卡再度發表口頭警告，強調「急激な変動にはあらゆる手段を排除せず対応」「夏の記憶を忘れるにはまだ早い」（讀賣新聞：https://www.yomiuri.co.jp/ ）。
 - 美國司法部反壟斷局針對 Google 拆分 Chrome 瀏覽器之最終處置方案，聯邦法官 Amit Mehta 裁定駁回政府強制拆分 Chrome 之請求，改以禁止排他性預設協議與開放搜尋索引數據為核心行為處分（Courthouse News 11/20：https://www.courthousenews.com/judge-rejects-doj-bid-to-force-google-to-sell-chrome/ ）。
