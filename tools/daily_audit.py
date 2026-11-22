@@ -267,6 +267,15 @@ def lagging_rows(dash: Dict, today) -> List[str]:
     return [f"{r.get('zh')}（{r.get('date')}，其他列 {newest.strftime('%m-%d')}）" for r, d in rs if d < newest]
 
 
+def gemini_unknown_groups(reply: str) -> List[str]:
+    """Section codes in gemini_reply.md (### XYZ-n) that tools.site_gemini.GROUP / HIDE does not know.  11-22: the new TWC
+    section fell back to the per-company layout because GROUP lacked it; Gemini found it, nothing automatic did."""
+    from tools import site_gemini as G
+    known = set(G.GROUP) | {h.rstrip("-") for h in G.HIDE}
+    codes = set(re.findall(r"^### ([A-Z]{1,6})-", reply, re.M))
+    return sorted(c for c in codes if c not in known)
+
+
 # ------------------------------------------------------------------ run
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
@@ -329,6 +338,11 @@ def main() -> Dict:
         rep["etf_seed"] = EF.write_seed(feed / "etf_flows_seed.json") if feed.is_dir() else 0
     except Exception as e:  # noqa: BLE001
         rep["etf_seed_error"] = str(e)
+    try:
+        gr = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed" / "gemini_reply.md"
+        rep["gemini_groups"] = gemini_unknown_groups(gr.read_text(encoding="utf-8")) if gr.exists() else []
+    except Exception as e:  # noqa: BLE001
+        rep["gemini_groups"], rep["gemini_groups_error"] = [], str(e)
     OUT.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     return rep
 
@@ -356,6 +370,8 @@ def summary(rep: Dict) -> str:
     lines.append(f"自我檢查 {len(rep.get('selfcheck') or [])} 項：" + "；".join(i["text"] for i in rep.get("selfcheck") or []))
     if rep.get("ipo_blank"):
         lines.append("⚠ 剛掛牌的 IPO 沒有發行價（424B4 沒讀懂？查 wsb/data/ipo_data.offer_price，修好後把 OFFER_V 加一）：" + "、".join(rep["ipo_blank"]))
+    if rep.get("gemini_groups"):
+        lines.append("⚠ Gemini 回答有網站不認得的段落代碼（加到 tools/site_gemini.py GROUP 和 order）：" + "、".join(rep["gemini_groups"]))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))
     lines.append("停止交易的追蹤股票：" + ("、".join(f"{x['sym']}（最後 {x['last']}；SEC：{'、'.join(x.get('why') or []) or '查不到原因'}）"
                                                 for x in rep.get("stopped") or []) or "沒有"))

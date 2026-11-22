@@ -279,6 +279,7 @@ CSS = (".ecg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr
        ".ecn{font-weight:700;font-size:13.5px}.ecc{font-size:22px;font-weight:800;line-height:1.2}")
 JS = r"""
 (function(){function tick(){var now=Date.now()/1000;document.querySelectorAll('.ecc[data-ts]').forEach(function(e){var s=+e.dataset.ts-now,en=document.documentElement.lang==='en';
+ if(s<-43200){e.textContent=en?'passed (page not rebuilt yet)':'已過（頁面尚未重建）';return;}
  if(s<=0){e.textContent=en?'now / just out':'進行中／剛公布';return;}var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
  e.textContent=en?(d+'d '+h+'h '+m+'m'):(d+' 天 '+h+' 小時 '+m+' 分');});}tick();setInterval(tick,60000);})();
 """

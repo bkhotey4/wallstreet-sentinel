@@ -83,7 +83,17 @@ def test_ipo_blank_price():
     assert A.ipo_blank_price("", date(2026, 11, 20)) == []
 
 
+def test_gemini_unknown_groups():
+    reply = "### TWC-1｜x\n### D-1｜y\n### CODE-2｜z\n### ZZZ-1｜new\n"
+    assert A.gemini_unknown_groups(reply) == ["ZZZ"], A.gemini_unknown_groups(reply)
+    assert "ZZZ" in A.summary({"gemini_groups": ["ZZZ"]})
+
+
 if __name__ == "__main__":
+    test_gemini_unknown_groups()
+    print("ok test_gemini_unknown_groups")
+    test_lagging_rows()
+    print("ok test_lagging_rows")
     test_stopped_trading()
     print("ok test_stopped_trading")
     test_ipo_blank_price()

@@ -209,6 +209,7 @@ def econ(d: Dict) -> Optional[Dict]:
             "exports_yoy": _yoy(ex), "ex_m": _ym(ex.index[-1]) if len(ex) else None, "ip_yoy": _yoy(ip), "ip_m": _ym(ip.index[-1]) if len(ip) else None,
             "chip3": chip3, "chip_m": _ym(chip.index[-1]) if len(chip) else None,
             "orders": float(oi.iloc[-1]) if len(oi) else None, "orders_m": _ym(oi.index[-1]) if len(oi) else None,
+            "coin_m": _ym(coin.index[-1]) if len(coin) else None, "unemp_m": _ym(un.index[-1]) if len(un) else None,   # each row its own month
             "unemp": float(un.iloc[-1]) if len(un) else None, "unemp_chg": None if _ago(un, 12) is None else float(un.iloc[-1]) - _ago(un, 12),
             "cpi": float(cpi.iloc[-1]) if len(cpi) else None, "cpi_m": _ym(cpi.index[-1]) if len(cpi) else None,
             "score_pct": _pct(sc.iloc[:-1], float(sc.iloc[-1])), "since": sc.index[0].strftime("%Y")}

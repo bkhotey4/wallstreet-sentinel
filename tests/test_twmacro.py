@@ -89,6 +89,10 @@ def test_views():
     assert A.corp(_data(months=24))["filling"] and A.corp(_data(months=24))["rows"][0]["pct"] is None
     e = A.econ(d)
     assert e["light"] == "紅" and e["run"] == 4 and abs(e["exports_yoy"] - 50) < 1e-9 and abs(e["chip3"] - 100) < 1e-9
+    d2 = _data()
+    d2["ndc"]["unemp"] = d2["ndc"]["unemp"][:-1]                # unemployment one month behind the leading index
+    e2 = A.econ(d2)
+    assert e2["unemp_m"] != e2["lead_m"] and e2["unemp_m"] == d2["ndc"]["unemp"][-1][0]   # each row shows its own month
     m = A.money(d)
     assert m["test"]["n_up"] + m["test"]["n_dn"] > 400 and m["m1b"] > 0
     ih = A.insure_house(d)

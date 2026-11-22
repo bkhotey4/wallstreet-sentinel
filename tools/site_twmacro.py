@@ -185,9 +185,9 @@ def sec_tw_econ(eng) -> str:
              ("工業生產（年增）", e.get("ip_yoy"), "%", e.get("ip_m"), "工廠實際生產多少"),
              ("半導體設備進口（3 個月，年增）", e.get("chip3"), "%", e.get("chip_m"), "晶片廠擴產的速度，領先產能"),
              ("領先指標（6 個月變化）", e.get("lead6"), "%", e.get("lead_m"), "預告未來半年景氣方向"),
-             ("同時指標（6 個月變化）", e.get("coin6"), "%", e.get("lead_m"), "現在景氣的溫度"),
+             ("同時指標（6 個月變化）", e.get("coin6"), "%", e.get("coin_m"), "現在景氣的溫度"),
              ("外銷訂單動向指數", e.get("orders"), "", e.get("orders_m"), "高於 50＝接單增加的廠商較多"),
-             ("失業率", e.get("unemp"), "%", e.get("lead_m"), "就業市場"),
+             ("失業率", e.get("unemp"), "%", e.get("unemp_m"), "就業市場（國發會指標表的失業率，比主計總處新聞稿晚約一個月）"),
              ("物價（CPI 年增）", e.get("cpi"), "%", e.get("cpi_m"), "央行通膨目標約 2%")]
     rows = "".join(f'<tr><td>{T(n, "")}</td><td class="r"><b>{num(v, 1, sign=(u == "%" and "年增" in n or "變化" in n))}{u if v is not None else ""}</b></td>'
                    f'<td class="small muted">{esc(m or "—")}</td><td class="small">{T(w, "")}</td></tr>' for n, v, u, m, w in items)
