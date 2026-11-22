@@ -35,6 +35,7 @@ U_INST = "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTraders
 U_LARGE = "https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersFutures"
 U_PLEDGE = "https://openapi.twse.com.tw/v1/opendata/t187ap11_L"
 U_FCST = "https://openapi.twse.com.tw/v1/opendata/t187ap15_L"
+U_FCST2 = "https://openapi.twse.com.tw/v1/opendata/t187ap16_L"     # 當季 and 截至當季 side by side, same basis
 U_FIN = "https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci"
 U_MARGN = "https://www.twse.com.tw/exchangeReport/MI_MARGN?response=json&selectType=ALL"
 U_CLOSE = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
@@ -179,6 +180,61 @@ def parse_forecast(rows: List[Dict]) -> List[Dict]:
     return [x for x in out if x["code"]]
 
 
+def _range(v) -> Optional[tuple]:
+    """'9455288~10182350' → (9455288.0, 10182350.0); '-72844' → (-72844.0, -72844.0)."""
+    m = re.fullmatch(r"\s*(-?[\d,]+(?:\.\d+)?)\s*(?:~\s*(-?[\d,]+(?:\.\d+)?))?\s*", str(v or ""))
+    if not m:
+        return None
+    lo = float(m.group(1).replace(",", ""))
+    hi = float(m.group(2).replace(",", "")) if m.group(2) else lo
+    return (min(lo, hi), max(lo, hi))
+
+
+def _latest_rev(rows: List[Dict]) -> Dict[str, Dict]:
+    """Several 財測序號 per company = revised forecasts; keep the highest."""
+    out: Dict[str, Dict] = {}
+    for r in rows or []:
+        c = str(r.get("公司代號") or "").strip()
+        if c and (c not in out or int(r.get("財測序號") or 0) >= int(out[c].get("財測序號") or 0)):
+            out[c] = r
+    return out
+
+
+def forecast_view(ap15: List[Dict], ap16: List[Dict], snaps: Dict[str, Dict]) -> List[Dict]:
+    """財測達成（11-22）. Both TWSE files are in 千元 and on 綜合損益 (Gemini TWC-5; 中華電 32,139,221 = its year-to-date comprehensive
+    income). t187ap15's 「截至該季綜合損益預測數」 is in fact the single-quarter forecast (it equals t187ap16's 「當季」 column for 中華電), so:
+      * company in t187ap16 → this quarter vs this quarter's forecast, year to date vs year to date (exact, official);
+      * only in t187ap15   → this quarter's forecast vs single-quarter net income attributable to the parent from the MOPS cumulative
+                             statements (Q3 − Q2), marked approximate (forecast is comprehensive income; OCI such as FX differs)."""
+    a16, a15 = _latest_rev(ap16), _latest_rev(ap15)
+    out = []
+    for c, r in {**a15, **a16}.items():
+        y, q = str(r.get("年度") or ""), int(r.get("季別") or 0)
+        row = {"code": c, "name": str(r.get("公司名稱") or "").strip(), "q": f"{y}Q{q}", "cover": r.get("涵蓋期間"), "rev": r.get("財測序號")}
+        if c in a16:
+            row.update(exact=True, q_act=_n(r.get("當季經會計師查核或核閱數")), q_fc=_range(r.get("當季稅前(綜合)損益預測數")),
+                       ytd_act=_n(r.get("截至當季經會計師查核或核閱數")), ytd_fc=_range(r.get("截至當季稅前(綜合)損益預測數")))
+        else:
+            cur, prev = (snaps.get(f"{y}Q{q}") or {}).get(c), (snaps.get(f"{y}Q{q - 1}") or {}).get(c) if q > 1 else None
+            qa = None
+            if cur and cur.get("ni") is not None:
+                qa = cur["ni"] - prev["ni"] if q > 1 and prev and prev.get("ni") is not None else (cur["ni"] if q == 1 else None)
+            row.update(exact=False, q_act=qa, q_fc=_range(r.get("截至該季綜合損益預測數")), ytd_act=_n(r.get("截至該季經會計師查核或核閱數")), ytd_fc=None)
+        for k in ("q", "ytd"):
+            act, fc = row.get(f"{k}_act"), row.get(f"{k}_fc")
+            if act is None or not fc:
+                row[f"{k}_where"] = None
+                continue
+            lo, hi = fc
+            row[f"{k}_where"] = "above" if act > hi else "below" if act < lo else "in"
+            edge = hi if act > hi else lo if act < lo else None
+            row[f"{k}_close"] = bool(not row["exact"] and edge is not None and abs(act - edge) <= 0.02 * max(abs(edge), 1.0))   # inside approx error
+            mid = (lo + hi) / 2
+            row[f"{k}_pct"] = act / mid * 100 if mid > 0 else None
+        out.append(row)
+    return sorted(out, key=lambda x: x["code"])
+
+
 def _get(url: str, kind: str = "json"):
     import requests
     r = requests.get(url, headers=UA, timeout=40)
@@ -282,7 +338,8 @@ def refresh(force: bool = False) -> Dict:
     _apply_seed(d, day)
     if force or now - float(d.get("heavy_ts") or 0) >= HEAVY_TTL:
         d["heavy_ts"] = now
-        for name, fn in (("pledge", lambda: parse_pledge(_get(U_PLEDGE), uni or None)), ("forecast", lambda: parse_forecast(_get(U_FCST)))):
+        for name, fn in (("pledge", lambda: parse_pledge(_get(U_PLEDGE), uni or None)), ("forecast", lambda: parse_forecast(_get(U_FCST))),
+                         ("fc15", lambda: _get(U_FCST)), ("fc16", lambda: _get(U_FCST2))):
             try:
                 v = fn()
                 if v:

@@ -154,3 +154,54 @@ def sec_tw_quarter(eng=None) -> str:
             + f'<p class="note">公開資訊觀測站綜合損益表彙總表（上市＋上櫃，累計數，千元；電腦端抓取 {esc(seed.get("fetched") or "—")}）。'
               '單季數字由兩季累計相減，公司若重編前期數字可能有小差異。描述資料，不是投資建議。</p>')
     return card(f"台股單季財報：{y} 年第 {q} 季", "Taiwan quarterly results", body, "wide")
+
+
+WHERE = {"above": "高於財測上緣", "in": "在財測區間內", "below": "低於財測下緣"}
+
+
+def _yi(x: Optional[float]) -> str:
+    return "—" if x is None else f"{x / 1e5:,.1f}"
+
+
+def _fc(r: Optional[tuple]) -> str:
+    if not r:
+        return "—"
+    return _yi(r[0]) if r[0] == r[1] else f"{_yi(r[0])}～{_yi(r[1])}"
+
+
+def sec_tw_forecast(eng=None) -> str:
+    """財測達成情形（11-22，台股覆蓋清單最後一項部分）：有公開財測的上市公司，實際數和自己的財測比。"""
+    import json as _json
+    from wsb.data import tw_chips as C
+    d = _d()
+    try:
+        seed = _json.loads(C.FIN_SEED.read_text(encoding="utf-8")) if C.FIN_SEED.exists() else {}
+    except (OSError, ValueError):
+        seed = {}
+    rows = C.forecast_view(d.get("fc15") or [], d.get("fc16") or [], seed.get("snaps") or {})
+    rows = [r for r in rows if r.get("q_where") or r.get("ytd_where")]
+    if not rows:
+        return ""
+    n = {k: sum(r.get("q_where") == k and not r.get("q_close") for r in rows) for k in WHERE}
+    close = sum(bool(r.get("q_close")) for r in rows)
+    q = rows[0]["q"]
+    lead = (f'{q[:3]} 年第 {q[-1]} 季有公開財測的 {len(rows)} 家上市公司，單季獲利 {n["above"]} 家高於自己財測的上緣、'
+            f'{n["in"]} 家在區間內、{n["below"]} 家低於下緣' + (f'，{close} 家貼著邊界（近似值，分不出來）' if close else ""))
+    tr = []
+    for r in rows:
+        qw, yw = r.get("q_where"), r.get("ytd_where")
+        tr.append(f'<tr><td>{esc(r["name"])}（{esc(r["code"])}）</td><td class="small">{esc(str(r.get("cover") or ""))}</td>'
+                  f'<td class="r"><b>{_yi(r.get("q_act"))}</b>{"" if r["exact"] else "<sup>≈</sup>"}</td><td class="r">{_fc(r.get("q_fc"))}</td>'
+                  f'<td>{esc(WHERE.get(qw, "—"))}{"<div class=small muted>差距在近似誤差內</div>" if r.get("q_close") else ""}</td>'
+                  f'<td class="r">{_yi(r.get("ytd_act"))}</td><td class="r">{_fc(r.get("ytd_fc"))}</td><td>{esc(WHERE.get(yw, "—") if yw else "—")}</td></tr>')
+    th = ('<tr><th>公司</th><th>財測涵蓋季別</th><th class="r">本季實際</th><th class="r">本季財測</th><th>本季</th>'
+          '<th class="r">累計實際</th><th class="r">累計財測</th><th>累計</th></tr>')
+    body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}。</b></p>'
+            '<p class="small">財測是公司自己公開說「這段期間大概賺多少」。實際數高於上緣，代表公司自己都低估了；低於下緣，代表事情比公司預期差。'
+            '台灣只有少數公司公開財測（多數只在法說會口頭說），所以這張表很短。單位：億元，綜合損益（含匯兌等其他綜合損益）。</p>'
+            + fold_rows(tr, 10, th, "家")
+            + f'<p class="note">來源：證交所 OpenAPI t187ap16_L（當季與累計並列，口徑一致）、t187ap15_L（只有單季財測）。'
+              '標 ≈ 的公司只在 t187ap15_L：本季實際用公開資訊觀測站累計損益表相減得到的「歸屬母公司淨利」近似，'
+              '和財測的綜合損益差在匯兌等其他綜合損益；累計實際是證交所檔案的官方數字。'
+              f'抓取 {esc(d.get("fetched") or "—")}。描述資料，不是預測，也不是投資建議。</p>')
+    return card("財測達成情形：公司自己說的數字做到了沒", "Financial forecast attainment", body, "wide")

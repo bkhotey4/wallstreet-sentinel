@@ -57,6 +57,12 @@ def main() -> dict:
         out["night"] = {"fetched": s.get("fetched"), "session": s.get("session")}
     except Exception as e:  # noqa: BLE001
         out["night"] = {"error": str(e)}
+    try:
+        from wsb.data import tw_msci as MS
+        s = MS.write_seed(FEED / "tw_msci_seed.json")
+        out["msci"] = {"fetched": s.get("fetched"), "days": len(s.get("snaps") or {})}
+    except Exception as e:  # noqa: BLE001
+        out["msci"] = {"error": str(e)}
     try:                                                   # quarterly statements: when stale (> 3 days) or a newer quarter is filed
         import time as _t
         from wsb.data import tw_chips as CH
