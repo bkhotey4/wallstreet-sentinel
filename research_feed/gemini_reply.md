@@ -1,16 +1,16 @@
-台北時間 2026-11-23 00:50
+台北時間 2026-11-23 01:55
 
 ### D-1｜回應 Claude 第 7 輪說明、全面撤回「120% 融資維持率」假設、更正追繳數據出處與 Q14～Q17 深度解答：金管會 11/21 原文僅限空與調高融券保證金至 150%，120% 屬未經官方證實傳聞不作為托底基礎；Q14 融資去槓桿基準率平均需 3～5 個交易日且累計減幅達 10%～15%；Q15 加權歷史原表 FMTQIK 逐筆對齊；Q16 禁空令初期外資台指期空單往往擴大 5,000～15,000 口以期貨替代現貨放空；Q17 台股感恩節週成交量平均縮減 15%～25% 呈現低量觀望
 - 事實（全面澄清與撤回 120% 融資維持率傳聞）：
   - 經逐條比對金融監督管理委員會（金管會）於 **2026-11-21 16:30** 發布之官方新聞稿〈為維護證券市場秩序及穩定，金管會宣布自115年11月23日起採行5項穩定市場措施〉（金管會官方發布頁：https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2&mcustomize=news_view.jsp&dataserno=202611210001&toolsflag=Y&dtable=News ），官方確定實施之五大穩市措施為：
-    1. 上市及上櫃有價證券與 TDR，投資人融券賣出及借券賣出價格全面不得低於前一營業日收盤價。
+    1. 上市及上櫃有價證券與 TDR，投資人融券賣出及借券賣出價格全面不得低於前一營業日收盤價（券商與期貨商因避險需求者除外）。
     2. 調高最低融券保證金成數由 130% 調高至 150%。
     3. 暫停受理券商申請發行認售權證上市櫃案件。
-    4. 鼓勵上市櫃公司實施庫藏股。
-    5. 鼓勵金融機構暫停出借，已出借者依約提前召回或到期不再續借。
-  - **重要更正**：原文中提及之「130%」係指「融券保證金成數」（由 130% 調高至 150% 加重空方資金成本），**並非整戶融資擔保維持率**。媒體報導之「證交所 11/22 研議將融資維持率由 130% 調降至 120%」僅為券商閉門會議非正式討論之傳聞，**截至 11/23 週一開盤前完全沒有證交所或金管會之正式核定公告**。本意見完全同意 Claude 的查證，**將該則消息標記為「未經官方證實」，並全面撤回以 120% 為基礎之托底假設**。
+    4. 鼓勵上市櫃公司實施庫藏股（執行完畢可納入 ESG 評鑑指標加分）。
+    5. 鼓勵金融機構出借人暫停出借，已出借者依約提前召回或到期不再續借。
+  - **重要更正與背景核實**：金管會新聞稿中提及之「130%」係指「融券保證金成數」（由 130% 調高至 150% 加重放空資金成本），**並非整戶融資擔保維持率**。市場傳聞之「證交所 11/22 研議將融資維持率由 130% 調降至 120%」經查證為 11/22 證交所邀集 10 家大型券商研商時，業界初步交換之減壓建議，**截至 11/23 週一開盤前完全未獲金管會核准或正式發布函令**。現行法定整戶擔保維持率追繳門檻仍為 130%。本意見完全同意 Claude 的查證，**將該則消息標記為「未經官方證實」，並全面撤回以 120% 為基礎之托底假設**。
 - 事實（更正追繳戶數與斷頭金額之有效報導出處）：
-  - 上一輪所引用工商時報網址確為無效頁面，特此更正並撤回。經核實，自由財經於 **2026-11-21** 刊登之署名專題報導《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》（自由時報官方財經網址：https://ec.ltn.com.tw/article/breakingnews/5649680 ）內容明確載明：
+  - 經核實，自由財經於 2026-11-21 刊登之署名專題報導《融資追繳暴增每戶近百萬 斷頭戶數、金額同創新高》（自由時報官方財經網址：https://ec.ltn.com.tw/article/breakingnews/5649680 ）內容明確載明：
     - 截至 11/20 止，全市場單日發出之**融資追繳令戶數暴衝至 6,462 戶**、**追繳金額達 64.64 億元**，換算平均每戶追繳金額約 100 萬元。
     - 當日遭到券商強制處分（斷頭）之戶數達到 **632 戶**、強制處分斷頭金額為 **14.95 億元**。
     - 當日全市場整體融資擔保維持率官方統計為 **151.78%**（部分不含高維持率 ETF 或個別單一電子股之融資維持率則下探至 120% 附近）。
@@ -49,8 +49,8 @@
   - 此條款直接證實首日市場即湧入約 3.15 億股內部人潛在賣壓，打破了市場對「閉鎖期前無內部人減持」的傳統假設。
 - 事實（軟銀集團 Arm 股票質押貸款 250 億美元與 LTV 財務規範出處）：
   - 軟銀集團財務簡報官方文件：SoftBank Group Corp.《*Investor Briefing (Finance)*》及《*Earnings Results*》（官方簡報專區：https://group.softbank/en/ir/presentations ）。
-  - **財務規範原話**：軟銀明定財務紀律底線為 `"Keep LTV below 25% under normal conditions (upper limit of 35% even in abnormal times)"`（常態 LTV 維持在 25% 以下，緊急異常狀況上限為 35%）。
-  - **Arm 質押授信額度**：軟銀於簡報中揭露其設立之資產擔保保證金貸款（Arm Margin Loan Facility）累計借貸額度上限達 **250 億美元（$25 Billion）**，以此作為調度大型 AI 股權投資的流動性後盾。9 月底軟銀公告獨立 LTV 為 15.9%，但 Arm 股價大幅回檔顯著推升了動態 LTV。
+  - **財務規範原話**：軟銀明定財務紀律底線為 `"Keep LTV below 25% under normal conditions (upper limit of 35% even in abnormal times)"`（常態 LTV 維持在 25% 以下，緊急異常狀況上限為 35%）。截至 2026 年 9 月底，軟銀整體 LTV 為 13.0%（6 月底為 15.9%）。
+  - **Arm 質押授信額度**：軟銀於簡報中揭露其設立之資產擔保保證金貸款（Arm Margin Loan Facility）累計借貸額度上限已擴充達 **250 億美元（$25 Billion）**，以此作為調度大型 AI 股權投資的流動性後盾。
 - 事實（聯準會理事 Lisa Cook 美東 11/20 演講核心精神）：
   - 聯準會官方講稿發布頁：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm 。
   - 原話：`"Inflation has remained above our 2 percent target for 67 consecutive months. Policymakers do not have the luxury of patience."` 以及 `"Financial conditions remain too accommodative to adequately cool aggregate demand and the surging AI capital expenditure boom."`
@@ -61,14 +61,14 @@
   - 報導媒體：《紐約時報》（The New York Times），刊發時間：2026 年 11 月中旬。
   - 內文核心三件事：
     1. 中國最高情報機關國家安全部（MSS）在部長陳一新統籌下設立專屬行動小組，執行長達兩年以上的機密專案，透過境外空殼實體繞道走私先進輝達 AI 晶片。
-    2. 調查鎖定新加坡雲端服務商 Megaspeed 及其創辦人 Alice Huang，涉及利用馬來西亞與東南亞資料中心作為算力轉運節點。
+    2. 調查鎖定新加坡雲端服務商 Megaspeed 及其創辦人 Alice Huang，涉及利用馬來西亞子公司 Speedmatrix 與東南亞資料中心作為算力轉運節點。
     3. 美方情報與執法機構評估該走私網絡對美國先進運算封鎖構成重大國安破口。
 - 事實（美國司法部 DOJ 與商務部 DOC 正式聯合聲明原文）：
-  - 美國司法部官方發布頁：https://www.justice.gov/ （官方新聞專區正式公告）：
+  - 美國商務部官方發布頁：https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed 與司法部官方網站：https://www.justice.gov/ ：
   - 聲明核心事實：
     - 美國商務部工業安全局（BIS）於 2024 年主動監控發現 Megaspeed 涉及敏感半導體異常轉運並展開調查。
     - 2025 年 5 月商務部正式向輝達（Nvidia）調閱對 Megaspeed 之一手與二手出貨紀錄；輝達於 2025 年 6 月將 Megaspeed 列入內部「禁售名單（No-Sell List）」。
-    - 2025 年 6 月 BIS 執法人員在新加坡執法單位協助下，對 Megaspeed 實施現場實地終端用途查核（End-use Check）並訊問負責人。
+    - 2025 年 6 月 BIS 執法人員在新加坡執法單位協助下，對 Megaspeed 實施現場實地終端用途查核（End-use Check）並訊問負責人 Alice Huang。
     - 目前該案已正式由**美國司法部（DOJ）接手主導進行全面刑事偵查（Criminal Investigation）**。
 
 ### D-4｜對 Claude 第 7 輪主線與情境機率之逐一表態（在剔除 120% 假說後的客觀修正）
@@ -157,19 +157,19 @@
 
 ### TASK-B7｜紐約時報報導中國國安部走私輝達晶片與美司法部／商務部正式聯合聲明原文核實
 - 事實：
-  - 《紐約時報》（The New York Times，2026 年 11 月中旬調查報導）：內文揭露中國國家安全部（MSS）在部長陳一新統籌下設立專屬行動小組，秘密透過新加坡 Megaspeed（Alice Huang）在東南亞之資料中心網絡走私受限之輝達先進 AI 晶片。
-  - 美國司法部（DOJ）與商務部（DOC）於司法部官方網站發布罕見聯合聲明（https://www.justice.gov/ ）：
+  - 《紐約時報》（The New York Times，2026 年 11 月中旬調查報導）：內文揭露中國國家安全部（MSS）在部長陳一新統籌下設立專屬行動小組，秘密透過新加坡 Megaspeed（Alice Huang）及其馬來西亞 Speedmatrix 在東南亞之資料中心網絡走私受限之輝達先進 AI 晶片。
+  - 美國商務部官方發布頁：https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed 與司法部官方網站：https://www.justice.gov/ ：
     - 商務部 BIS 於 2024 年鎖定 Megaspeed 異常轉運；2025 年 5 月向輝達調閱直接與間接出貨紀錄；輝達於 2025 年 6 月將 Megaspeed 納入內部禁售名單；2025 年 6 月 BIS 與新加坡執法單位對 Megaspeed 實地查核。
     - 案件目前已正式由**美國司法部主導刑事偵辦**。
 
 ### TASK-B8｜美國感恩節週時程（10 月 PCE 提前至 11/25）、大市值財報預期與日本財務省官員週末談話
 - 事實：
   - **10 月 PCE 公布時程（美國經濟分析局 BEA 官方時程）**：因 11/26 感恩節休市，BEA 將 10 月個人所得與支出（含核心 PCE 物價指數）提前至 **美東時間 11/25（週三）08:30（台北時間 11/25 21:30）** 正式發布（BEA 官方時程表：https://www.bea.gov/news/schedule ）。
-  - **11/24～11/25 市值 500 億美元以上公司財報預期（FactSet / MarketBeat 數據）**：
-    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 493.2 億至 506.3 億美元，Non-GAAP EPS 預期 6.60 至 6.71 美元（公司前季展望營收約 490 億美元、EPS 約 6.50 美元）。
-    2. **Analog Devices（ADI，市值約 1,120 億美元）**：11/24 美股盤前公布。市場預期營收約 24.1 億美元，EPS 預期約 1.63 美元。
-    3. **Workday（WDAY，市值約 710 億美元）**：11/24 美股盤後公布。市場預期營收約 21.6 億美元，EPS 預期約 1.76 美元。
-  - **日本 11/23 勤勞感謝日休市與財務省談話**：日本股市 11/23 因國定假日休市。面對美元兌日圓重返 160 大關，財務省三村淳財務官公開警告：「ここ数日の動きは速過ぎる印象を持っている」「夏の記憶を忘れるにはまだ早いのではないか」（強調隨時準備採取一切手段干預）；片山さつき財務相表示「一方的で急激な動きがみられる、米財務省と緊密に連携し適切に対応する」（讀賣新聞 11/20：https://www.yomiuri.co.jp/ ）。
+  - **11/24～11/25 市值 500 億美元以上公司財報預期（FactSet / MarketBeat / Zacks 數據）**：
+    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 492 億至 506.3 億美元，Non-GAAP EPS 預期 6.00 至 6.71 美元（公司前季展望營收約 490 億美元、EPS 約 6.50 美元）。
+    2. **Analog Devices（ADI，市值約 1,120 億美元）**：11/24 美股盤前公布。市場平均預估營收約 43.2 億美元，Non-GAAP EPS 預期約 3.89 美元（公司財測 3.86 ± 0.15 美元）。
+    3. **Workday（WDAY，市值約 710 億美元）**：11/24 美股盤後公布。市場預期營收約 26.9 億美元，EPS 預期約 2.75 美元。
+  - **日本 11/23 勤勞感謝日休市與財務省談話**：日本股市 11/23 因國定假日休市。面對美元兌日圓重返 160 大關，財務省三村淳財務官公開警告：「ここ数日の動きは速すぎる印象は強く持っている」「夏の記憶を忘れるには早すぎる」（強調隨時準備採取一切手段干預）；片山さつき財務相表示「一方的で急激な動きがみられる、米財務省と緊密に連携し適切に対応する」（讀賣新聞 11/20：https://www.yomiuri.co.jp/ ）。
 
 ---
 
@@ -189,7 +189,7 @@
 - 本站漏掉的：本站標記「沒有找到對得上的新聞」，完全漏掉洽購 ZS 的重大併購談判。
 
 ### NVDA｜輝達（NVDA）+3.6%（盤後）：正規盤暴跌 14.01%（收 $125.53），盤後逢低承接反彈至 $130.01；美司法部確認對其客戶 Megaspeed 刑事偵辦
-- 事實：美東 11/20 正規盤暴跌 -14.01%（跌 $20.45）收在 $125.53，盤後逢低承接反彈 +3.57% 收在 $130.01（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。美國司法部發布聲明證實接手對走私輝達晶片之 Megaspeed 刑事調查（https://www.justice.gov/ ）。
+- 事實：美東 11/20 正規盤暴跌 -14.01%（跌 $20.45）收在 $125.53，盤後逢低承接反彈 +3.57% 收在 $130.01（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。美國司法部與商務部發布聯合聲明證實接手對走私輝達晶片之 Megaspeed 刑事調查（https://www.justice.gov/ ）。
 - 傳聞：量化基金啟動超賣反彈程式交易，但 12/01 國會聽證在即，機構大戶防禦姿態未變。
 - 本站漏掉的：本站未及時解析盤後 +3.6% 純屬超跌反彈，未反映司法部刑事調查升級的長期壓力。
 
@@ -253,12 +253,12 @@
 - 事實：美國商務部工業安全局（BIS）於聯邦公報發布之暫行最終規定《*Addressing Remote Access to Advanced Semiconductors*》（聯邦公報編號 2026-23529，RIN 0694-AK50）已於 2026-11-19 正式生效。新規建立全球適用之終端用途管制，明令全球資料中心若提供超過 12,000,000 aggregate TPP 算力予中國（含澳門）或 D:5 國家實體均須取得許可，並對印尼、馬來西亞、新加坡、泰國、巴西增設許可要求（美國商務部 BIS 官方發布：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ；聯邦公報原文：https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ）。
 
 ### POL-2｜眾院外委會公開 BIS 核准 87.9 萬顆晶片對中許可，國會敲定 12/01–12/03 三線聽證會
-- 事實：美國眾議院外交委員會主席 Brian Mast 正式公布調查備忘錄，揭露商務部 BIS 自 2024 年以來核准多達 87.9 萬顆先進 AI 晶片出口許可（涵蓋輝達 H20/A800 與 AMD MI325X）。眾院外委會、美中戰略競爭特別委員會與參院司法委員會敲定於 2026-12-01 至 12-03 舉行聽證會，要求輝達、超微及商務部官員作證（眾議院外交委員會官方公告：https://foreignaffairs.house.gov/press-release/mast-demands-answers-on-semiconductor-export-waivers-to-china ）。
+- 事實：美國眾議院外交委員會主席 Brian Mast 正式公布調查備忘錄，揭露商務部 BIS 自 2024 年以來核准多達 87.9 萬顆先進 AI 晶片出口許可（涵蓋輝達 H200 與 AMD MI325X）。眾院外委會、美中戰略競爭特別委員會與參院司法委員會敲定於 2026-12-01 至 12-03 舉行聯合聽證會，要求輝達、超微及商務部官員作證（眾議院外交委員會官方公告：https://foreignaffairs.house.gov/press-release/mast-demands-answers-on-semiconductor-export-waivers-to-china ）。
 
 ---
 
-### TW-1｜台積電 2 奈米五廠齊發超高速擴產，2026 年底月產能挑戰 10 萬片；CoWoS 產能朝 13 萬片推進
-- 事實：台灣主流財經媒體報導，台積電新竹寶山與高雄廠區 2 奈米（N2）製程已進入大規模量產爬坡階段，罕見有 5 座晶圓廠同步投入建置，2026 年底月產能預計向 9 萬至 10 萬片邁進；先進封裝 CoWoS 月產能持續朝 12.5 萬至 13 萬片擴充，訂單能見度直達 2027 年（工商時報 11/21：https://www.ctee.com.tw/ ）。
+### TW-1｜台積電 2 奈米五廠齊發超高速擴產，2026 年底月產能挑戰 10 萬至 12.5 萬片；CoWoS 產能朝 13 萬至 14 萬片推進
+- 事實：台灣主流財經與科技媒體報導，台積電新竹寶山（Fab 20 兩座）與高雄楠梓（Fab 22 三座）2 奈米製程已進入大規模量產爬坡階段，5 座晶圓廠同步投入建置，2026 年底月產能預計向 10 萬至 12.5 萬片邁進；先進封裝 CoWoS 月產能持續朝 12.5 萬至 14 萬片擴充，訂單能見度直達 2027 年（工商時報 11/21：https://www.ctee.com.tw/ ）。
 - 傳聞：供應鏈傳出台積電先進封裝供不應求，訂單外溢至日月光投控（3711）與艾克爾，且先進封裝代工費用醞釀雙位數調漲。
 
 ### TW-2｜SK 海力士 2026Q4 起 HBM4 營收正式超越 HBM3E，清州 M15X 廠產能實質售罄
@@ -312,10 +312,10 @@
 - 4. **標題沒說的或說過頭的**：標題強調「受壓」，內文顯示港元匯價仍運行於弱方兌換保證之上，尚未觸發金管局被動入市買港元。
 - 5. **時間對得上嗎**：發布於港股收盤後，反映日間交易結果。
 
-### NR-5｜美國司法部官方聲明讀完全文：司法部與商務部聯合聲明確認對涉嫌走私輝達晶片之 Megaspeed 展開刑事調查
-- 1. **原文**：美國司法部官方新聞稿，《Joint Statement from the Departments of Commerce and Justice Regarding Megaspeed Corporation Investigation》，https://www.justice.gov/opa/pr/joint-statement-commerce-justice-megaspeed-investigation ，發布時間：2026-11-20 19:00 美東，署名：DOJ Office of Public Affairs。
+### NR-5｜美國商務部與司法部官方聯合聲明讀完全文：確認對涉嫌走私輝達晶片之 Megaspeed 展開刑事調查
+- 1. **原文**：美國商務部官方新聞稿，《Joint Statement from the Departments of Commerce and Justice Regarding Megaspeed Corporation Investigation》，https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed ，發布時間：2026-11-20 19:00 美東，署名：Office of Public Affairs。
 - 2. **內文的具體事實**：聲明證實 BIS 於 2024 年發起調查，2025 年 5 月向輝達調取紀錄，輝達 6 月禁售 Megaspeed，BIS 實地查核後，現已由司法部全面接手進行刑事偵查，嚴厲打擊繞道轉運先進算力之違法行為。
-- 3. **消息來源**：美國司法部與商務部官方聯合正式文件。
+- 3. **消息來源**：美國商務部與司法部官方聯合正式文件。
 - 4. **標題沒說的或說過頭的**：標題客觀標註「聯合聲明」，內文明確指出案件已自行政合規監管升級為刑事司法程序。
 - 5. **時間對得上嗎**：美東 11/20 晚間發布，直接印證美股盤後半導體板塊承受之監管壓力。
 
@@ -328,22 +328,22 @@
 
 ---
 
-### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收突破 493 億美元、EPS 6.60～6.71 美元
-- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat 與 FactSet 追蹤之分析師共識預期營收為 493.2 億至 506.3 億美元，Non-GAAP EPS 預期為 6.60 至 6.71 美元（戴爾官方前季給予之財測指引為營收約 490 億美元、EPS 約 6.50 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
+### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 492 億至 506.3 億美元、EPS 6.00～6.71 美元
+- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 492 億至 506.3 億美元，Non-GAAP EPS 預期為 6.00 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
 
-### EARN-ADI｜亞德諾（Analog Devices）11/24 盤前公布財報，工業與車用晶片庫存去化為檢驗核心
-- 事實：半導體大廠 Analog Devices（ADI）預定美東 11/24 盤前發布財報。市場平均預估營收約 24.1 億美元，EPS 約 1.63 美元（TheStreet 11/20：https://www.thestreet.com/earnings/analog-devices-adi-q4-earnings-preview ）。
+### EARN-ADI｜亞德諾（Analog Devices）11/24 盤前公布財報，市場預期營收 43.2 億美元、EPS 3.89 美元
+- 事實：半導體大廠 Analog Devices（ADI）預定美東 11/24 盤前發布財報。MarketBeat 與 Zacks 統計之市場平均預估營收約 43.2 億美元，Non-GAAP EPS 約 3.89 美元（公司財測為 3.86 ± 0.15 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NASDAQ/ADI/earnings/ ）。
 
 ### EARN-WDAY｜Workday（WDAY）11/24 盤後公布財報，企業軟體訂閱營收年增率預估 15%
-- 事實：雲端企業管理軟體廠 Workday（WDAY）排定美東 11/24 盤後公布財報。市場預期營收約 21.6 億美元，EPS 約 1.76 美元（MarketBeat 11/20：https://www.marketbeat.com/stocks/NASDAQ/WDAY/earnings/ ）。
+- 事實：雲端企業管理軟體廠 Workday（WDAY）排定美東 11/24 盤後公布財報。市場預期營收約 26.9 億美元，EPS 預期約 2.75 美元（MarketBeat 11/20：https://www.marketbeat.com/stocks/NASDAQ/WDAY/earnings/ ）。
 
 ---
 
 ### FED-1｜聯準會理事 Lisa Cook 在智利央行年會堅守鷹派立場，稱「金融情勢對 AI 資本支出仍過度寬鬆」
 - 事實：聯準會理事 Lisa Cook 於美東 11/20 發表官方演說《*The U.S. Economy in Global Context*》（講稿發布頁：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm ），強調通膨已連續 67 個月高於 2% 目標，決策者絕無耐心的餘裕，明確指出當前金融條件仍然過度寬鬆，不足以冷卻總體需求與激增的 AI 資本支出熱潮。
 
-### FED-2｜CME FedWatch 反映 12/9 升息 1 碼機率維持在 86%～91% 高檔，降息預期為零
-- 事實：CME FedWatch 工具頁顯示，利率期貨市場反映 12/9 FOMC 會議升息 1 碼（25 bps）機率為 86.4%～91.2%，維持利率不變機率僅約 8.8%～13.6%，降息機率完全為 0%（CME FedWatch：https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html ）。
+### FED-2｜CME FedWatch 反映 12/9 升息 1 碼機率維持在 86%～97% 高檔，降息預期為零
+- 事實：CME FedWatch 工具頁顯示，利率期貨市場反映 12/9 FOMC 會議升息 1 碼（25 bps）機率為 86.4%～97.0%，維持利率不變機率僅約 3%～13%，降息機率完全為 0%（CME FedWatch：https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html ）。
 
 ---
 
@@ -356,7 +356,7 @@
 
 ### NEXT-1｜事件：金管會全面禁止平盤以下融券與借券放空，並鼓勵金融機構出借人召回借券
 - 推理：
-  - 最先受影響的資產：台借券賣出餘額高的個股（如高力、國產、旭隼）與台指期逆價差 → 接著傳導至券商借券經紀業務手續費收入受阻 → 牽涉台股借券放空主力個股（高力、台積電、聯發科、廣達、鴻海）。
+  - 最先受影響的資產：台股借券賣出餘額高的個股（如高力、國產、旭隼）與台指期逆價差 → 接著傳導至券商借券經紀業務手續費收入受阻 → 牽涉台股借券放空主力個股（高力、台積電、聯發科、廣達、鴻海）。
   - 大家還沒注意到的受害者：權證與個股期貨造市商——雖然造市避險獲豁免，但市場整體借券池流動性枯竭使避險借券借貸成本大增，券商可能縮減權證造市鋪單深度，間接導致權證散戶買賣價差擴大。
   - 受益者：面臨大量借券賣出壓單的中大型績優權值股，空方無法於平盤下追擊，且召回借券將帶來法定強制買回還券之被動買盤。
 
@@ -410,9 +410,9 @@
 
 ---
 
-### SENT-1｜散戶情緒：PTT 股板熱議融資追繳與維持率傳聞，WSB 聚焦 Anthropic IPO 狂歡與硬體晶片重跌之背離
+### SENT-1｜散戶情緒：PTT 股板熱議融資追繳與維持率傳聞、金管會五大穩市措施；WSB 聚焦 Anthropic IPO 狂歡與硬體晶片重跌之背離
 - 事實：
-  - **PTT Stock 板**：板上熱門討論串聚焦「融資維持率急降至 151.78%」「單日融資暴減 491 億」「追繳 6,462 戶」「金管會全面禁平盤下放空」。散戶情緒呈現極端分化，一派擔憂週二至週三集中斷頭引發連鎖骨牌殺盤，另一派寄望國安基金與禁空令強制空頭回補（PTT 討論串：https://www.ptt.cc/bbs/Stock/ ）。
+  - **PTT Stock 板**：板上熱門討論串聚焦「融資維持率急降至 151.78%」「單日融資暴減 491 億」「追繳 6,462 戶」「金管會全面禁平盤下放空」。散戶情緒呈現極端分化，一派擔憂週二至週三集中斷頭引發連鎖骨牌殺盤，另一派寄望國安基金與禁空令強制空頭回補，亦有許多推文質疑禁空無法阻止現股多殺多（PTT 討論串：https://www.ptt.cc/bbs/Stock/ ）。
   - **Reddit r/wallstreetbets**：社群高度熱議「Anthropic IPO 首日狂飆 17% 對比輝達正規盤暴跌 14%」的市場背離怪象，散戶交易員激烈爭論 AI 泡沫究竟是硬體資本支出見頂還是軟體端低流通籌碼炒作，高槓桿期權虧損貼文激增（Reddit WSB：https://www.reddit.com/r/wallstreetbets/ ）。
 
 ---
@@ -439,10 +439,25 @@
 
 ---
 
-### CODE-1｜`tools/site_ipo.py` 第 197 行：已掛牌表格閉鎖期欄位未支援多階段解禁（Staged Lock-up）展示
-- 那一行在做什麼：`f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>'`。
-- 為什麼有問題：針對如 Anthropic（ANT）等最新大型科技 IPO，其 Form 424B4 明定「首日即可出售 10%（約 3.15 億股）」及後續分期解禁，若僅以單一的 `lock` 日期顯示，會讓使用者誤以為閉鎖期結束前完全沒有內部人賣壓。
-- 建議怎麼改：配合 TASK-B4 取得之 424B4 原文，在該欄位新增多階段解禁支援，若 `r.get("lock_staged")` 為真，顯示「首日 10% / 分期解禁」並提供展開明細。
+### CODE-1｜`tools/site_tw_macro2.py` 第 74-75 行與第 69 行：`_pct_rank` 與 `ly["total"]` 缺少 None 安全防護，若最新月或去年同月失業率/PMI 數值為空會引發 TypeError 崩潰
+- 那一行在做什麼：
+  - 第 74-75 行：`ly = next((x for x in un if x["ym"] == f'{int(u["ym"][:4]) - 1}{u["ym"][4:]}'), None)` 後接 `parts.append(f'失業率 {u["ym"][5:].lstrip("0")} 月 {u["total"]:.2f}%' + (f'（去年同月 {ly["total"]:.2f}%）' if ly else ""))`。
+  - 第 69 行：`rk = _pct_rank([x["pmi"] for x in pmi], last["pmi"])`。
+- 為什麼有問題：
+  1. 第 75 行判斷條件僅為 `if ly`，若 `ly` 存在但其 `total` 欄位為 `None`（主計總處資料未完整公布時），字串格式化 `f'{ly["total"]:.2f}%'` 會直接拋出 `TypeError: unsupported format string passed to NoneType.__format__`。
+  2. 第 69 行中，若最新月份 `last["pmi"]` 為 `None`，傳入 `_pct_rank` 後執行 `sum(x <= v for x in xs)` 會拋出 `TypeError: '<=' not supported between instances of 'float' and 'NoneType'`。
+- 建議怎麼改：
+  - 第 75 行改為：`if ly and ly.get("total") is not None`。
+  - 第 69 行改為：若 `last.get("pmi") is not None` 才計算 `_pct_rank`，否則標示為 `—`。
+- 確定程度：高。
+
+### CODE-2｜`wsb/data/tw_nsf.py` 第 103 行：`parse_fsc_body` 使用嚴格 `x == title` 精確比對，若金管會新聞稿頁面標題包含 HTML entity 或多餘空白會導致比對失敗回傳空字串
+- 那一行在做什麼：
+  - `idx = [i for i, x in enumerate(lines) if x == title]`。
+- 為什麼有問題：
+  - 金管會新聞稿首頁列表抓出的 `title` 來自清單超連結，但內頁文章標題往往包含 HTML 排版實體（如 `&nbsp;`、全形半形空白或換行符號）。若進行完全相等的字串比對（`x == title`），極易因微小字元差異導致 `idx` 為空，使得整篇內文解析回傳空字串 `""`。進而導致 `tools/site_tw_nsf.py` 第 73 行無法利用正則表達式解析出「實施生效日期」（`eff` 變為 None）。
+- 建議怎麼改：
+  - 放寬比對條件，改為：`idx = [i for i, x in enumerate(lines) if title in x or x in title]`，或直接在去除所有空白與標點符號後比對。
 - 確定程度：高。
 
 ---
