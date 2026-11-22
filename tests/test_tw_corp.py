@@ -43,8 +43,26 @@ def test_coverage_card():
     assert "有 1 項" in h and "還缺 1 項" in h and "下一項是「單季財報」" in h and "還要做：存快照" in h
 
 
+
+
+
+def test_distress_drops_delisted():
+    """11-22: a ticker SEC no longer maps (acquired / deregistered) leaves the auto distress list at once."""
+    from datetime import date
+    from wsb.data import distress_data as D
+    f = Path(tempfile.mkdtemp()) / "auto.json"
+    f.write_text(json.dumps({"CCO": {"added": "2026-10-16", "zh": "CC", "kind": "auto", "why": "x", "src": "screen", "last_hit": "2026-11-21"},
+                             "KHC": {"added": "2026-10-16", "zh": "KHC", "kind": "auto", "why": "x", "src": "screen", "last_hit": "2026-11-21"}}), encoding="utf-8")
+    tmap = {f"T{i}": {"cik": i} for i in range(6000)}
+    tmap["KHC"] = {"cik": 1637459}
+    with patch.object(D, "F_AUTO", f):
+        out = D.update_auto({}, {}, tmap, set(), date(2026, 11, 22))
+    assert "CCO" not in out and "KHC" in out
+
+
 if __name__ == "__main__":
     test_parse()
     test_push()
     test_coverage_card()
+    test_distress_drops_delisted()
     print("ok tw corp")

@@ -590,7 +590,10 @@ def update_auto(scn: Dict, scr: Dict, tmap: Dict[str, Dict], fixed: set, today: 
         _lv, txt = RED_ITEMS.get(h["code"]) or LATE_FORMS.get(h["code"]) or ("watch", h["code"])
         hit(nm[0], nm[1], "auto", f"{h['date']} {txt}", "filing")
     keep = int(cfg().get("auto_keep_days", 30))
-    for s in [s for s, r in auto.items() if s in fixed or (today - date.fromisoformat(r["last_hit"])).days > keep]:
+    # 11-22: CCO / RAMP were acquired and deregistered but stayed on the list for weeks (old filings kept "qualifying").
+    # A ticker SEC's current company map no longer has is not a listed company any more → drop it at once.
+    gone = {s for s in auto if len(tmap) > 5000 and s not in tmap}
+    for s in [s for s, r in auto.items() if s in fixed or s in gone or (today - date.fromisoformat(r["last_hit"])).days > keep]:
         auto.pop(s)
     _jsave(F_AUTO, auto)
     return auto
