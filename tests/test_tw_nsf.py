@@ -43,7 +43,25 @@ def test_alert_window():
     assert P.twal_todo(d, {}, calendar.timegm((2026, 11, 22, 2, 0, 0))) == []   # 16 days old: not news any more
 
 
+def test_fsc():
+    page = ('<li role="row"><span class="date" role="cell">2026-11-21</span>\n<span class="unit" role="cell">證券期貨局</span>\n'
+            '<span class="title" role="cell">\n<a href="home.jsp?id=96&amp;dataserno=202611210001&dtable=News" title="金管會宣布「全面禁止平盤以下放空」等5項措施">金管會宣布「全面禁止平盤以下放......</a></span></li>'
+            '<li role="row"><span class="date" role="cell">2026-11-20</span><span class="unit" role="cell">證券期貨局</span>'
+            '<span class="title" role="cell"><a href="home.jsp?id=96&dataserno=202611200003&dtable=News" title="證券期貨局每日新聞（115年11月20日）">x</a></span></li>')
+    f = N.parse_fsc(page)
+    assert [r["date"] for r in f] == ["2026-11-21"] and f[0]["url"].startswith("https://www.fsc.gov.tw/ch/home.jsp?id=96&dataserno=")
+    assert "全面禁止平盤以下放空" in f[0]["title"]           # whole title from the attribute, not the cut link text
+    body = N.parse_fsc_body("<p>金管會宣布「全面禁止平盤以下放空」等5項措施</p><p>2026-11-21</p><p>自115年11月23日起採行：</p><p>聯絡單位：x</p>", f[0]["title"])
+    assert body == "自115年11月23日起採行："
+    from tools import sec_push as P
+    import calendar
+    now = calendar.timegm((2026, 11, 22, 4, 0, 0))   # Sunday 12:00 Taipei
+    a = P.twal_todo({"fsc": {"date": "2026-11-21", "url": "f1", "title": "t", "body": "b"}}, {}, now)
+    assert [x["key"] for x in a] == ["twfsc:f1"] and "金管會" in P.twal_embed(a[0])["title"]
+
+
 if __name__ == "__main__":
+    test_fsc()
     test_parse_status_episodes()
     test_body_and_reports()
     test_alert_window()

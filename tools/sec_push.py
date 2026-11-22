@@ -1123,6 +1123,14 @@ def twal_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
         fresh = False
     if fresh and 420 <= hm <= 1410 and f'twnsf:{f.get("url")}' not in done:      # a new 國安基金 release, 07:00–23:30, once
         out.append({"kind": "nsf", "key": f'twnsf:{f.get("url")}', "f": f})
+    g = d.get("fsc") or {}
+    try:
+        from datetime import date as _d
+        gfresh = 0 <= (_d.fromisoformat(day) - _d.fromisoformat(str(g.get("date")))).days <= 3
+    except ValueError:
+        gfresh = False
+    if gfresh and 420 <= hm <= 1410 and f'twfsc:{g.get("url")}' not in done:      # a new 金管會 market measure, 07:00–23:30, once
+        out.append({"kind": "fsc", "key": f'twfsc:{g.get("url")}', "g": g})
     return out
 
 
@@ -1156,6 +1164,12 @@ def twal_embed(a: Dict) -> Dict:
                                 + "**加速最多**" + NL + f(r.get("acc") or []) + NL + "**放緩最多**" + NL + f(r.get("slow") or []) + NL
                                 + "營收是過去式；加速代表訂單在進來，放緩不一定是壞事（可能是去年基期太高）。完整的月營收熱度在網站「台股專業判讀」。")[:4000],
                 "footer": {"text": "WallStreet Sentinel · 台股月營收 · 公開資訊觀測站 · 不構成投資建議"}}
+    if a["kind"] == "fsc":
+        g = a["g"]
+        return {"title": f'⚖️ 金管會：{g.get("title")}'[:250], "color": 0xF59E0B, "url": g.get("url") or url + "#tw_desk",
+                "description": (f'一句話看懂：金管會 {g.get("date")} 公布新的股市規定（原文如下）。這些規定改變的是誰能放空、誰被迫買回；'
+                                '每一項的白話說明在網站「台股專業判讀」頁的「政府穩市場」卡。' + NL + NL + (g.get("body") or "")[:900])[:4000],
+                "footer": {"text": "WallStreet Sentinel · 金管會原文 · 不構成投資建議"}}
     if a["kind"] == "nsf":
         f, st = a["f"], (a["f"].get("status") or {})
         what = {"on": "國安基金目前在執行護盤", "off": "國安基金目前沒有在執行護盤"}.get(st.get("state"), "國安基金有新的官方新聞稿")

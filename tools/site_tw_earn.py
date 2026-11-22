@@ -267,6 +267,9 @@ def alerts_public() -> Dict:
         if nd.get("news"):
             top = nd["news"][0]
             out["nsf"] = {**top, "status": nd.get("status") or {}, "body": ((nd.get("bodies") or {}).get(top["url"]) or "")[:700]}
+        if nd.get("fsc"):
+            ft = nd["fsc"][0]
+            out["fsc"] = {**ft, "body": ((nd.get("fsc_bodies") or {}).get(ft["url"]) or "")[:900]}
     except Exception:  # noqa: BLE001
         pass
     return out

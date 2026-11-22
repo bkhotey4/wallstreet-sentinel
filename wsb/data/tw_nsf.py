@@ -4,6 +4,8 @@
   * 新聞稿列表 https://www.mof.gov.tw/multiplehtml/383 ：每則有標題、發布日期、內文連結（singlehtml/383?cntId=…）。
   * 每季收支及資產負債表 https://www.mof.gov.tw/multiplehtml/384 ：每季例會後公布（PDF／XLS），是唯一官方的「花了多少錢」。
 Gemini v24 給的 singlehtml/384fb… 網址會被轉回首頁（不存在），它說的 11/21 新聞稿在官方列表上也沒有。
+另收 金管會新聞稿列表 https://www.fsc.gov.tw/ch/home.jsp?id=96&parentpath=0,2 裡「市場穩定措施」類（放空、融券、借券、平盤、市場秩序等），
+因為限空、融券保證金、借券召回這些規定改變的是「誰被迫買、誰不能賣」（11-22：11/21 宣布 11/23 起全面平盤以下禁空等 5 項，本站原本只有 11/19 那一項）。
 國安基金不即時公布每天買多少；官方只有「啟動／繼續／停止」的委員會決議與每季報表。本站照實寫，不把媒體說的「進場護盤」當成官方金額。"""
 from __future__ import annotations
 
@@ -78,6 +80,38 @@ def parse_reports(page: str) -> List[Dict]:
     return out
 
 
+FSC_BASE = "https://www.fsc.gov.tw/ch/"
+U_FSC = FSC_BASE + "home.jsp?id=96&parentpath=0,2"
+FSC_MEASURE = re.compile(r"放空|融券|借券|平盤|穩定措施|市場交易秩序|當日沖銷|漲跌幅|穩定市場|資本市場穩定|股市")
+FSC_SKIP = re.compile(r"每日新聞|表揚|交流活動|講座|研討會")
+
+
+def parse_fsc(page: str) -> List[Dict]:
+    """金管會 news rows (date, unit, title, url) that are market-stability measures."""
+    out = []
+    for m in re.finditer(r'<span class="date"[^>]*>(\d{4}-\d{2}-\d{2})</span>\s*<span class="unit"[^>]*>([^<]*)</span>\s*<span class="title"[^>]*>\s*'
+                         r'<a href="([^"]*dataserno=\d+[^"]*)"(?:[^>]*title="([^"]*)")?[^>]*>(.*?)</a>', page or "", re.S):
+        title = _text(m.group(4) or m.group(5))       # the link text is cut with "......"; the title attribute is whole
+        if FSC_MEASURE.search(title) and not FSC_SKIP.search(title):
+            out.append({"date": m.group(1), "unit": m.group(2).strip(), "title": title, "url": FSC_BASE + _html.unescape(m.group(3))})
+    return out
+
+
+def parse_fsc_body(page: str, title: str) -> str:
+    t = re.sub(r"<script.*?</script>|<style.*?</style>", "", page or "", flags=re.S)
+    lines = [x.strip() for x in _html.unescape(re.sub(r"<[^>]+>", "\n", t)).splitlines() if x.strip()]
+    idx = [i for i, x in enumerate(lines) if x == title]
+    if not idx:
+        return ""
+    body = []
+    for x in lines[idx[-1] + 1:]:
+        if x.startswith(("聯絡單位", "聯絡電話", "瀏覽人次")):
+            break
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", x):
+            body.append(x)
+    return "\n".join(body)
+
+
 def status(news: List[Dict]) -> Dict:
     """Latest committee decision: on (啟動／繼續) or off (停止), and since when."""
     for r in news:
@@ -122,6 +156,22 @@ def refresh(force: bool = False) -> Dict:
     except Exception as e:  # noqa: BLE001
         log.info("nsf news unavailable: %s", e)
     try:
+        fsc = parse_fsc(_get(U_FSC))
+        if fsc:
+            fb = d.get("fsc_bodies") or {}
+            for r in fsc[:3]:
+                if r["url"] not in fb:
+                    try:
+                        fb[r["url"]] = parse_fsc_body(_get(r["url"]), r["title"])[:2500]
+                    except Exception as e:  # noqa: BLE001
+                        log.info("fsc body unavailable: %s", e)
+            old = {r["url"]: r for r in d.get("fsc") or []}
+            merged = {**old, **{r["url"]: r for r in fsc}}            # the list page only shows the newest ~15 releases
+            d["fsc"] = sorted(merged.values(), key=lambda r: r["date"], reverse=True)[:30]
+            d["fsc_bodies"] = {u: b for u, b in fb.items() if u in merged}
+    except Exception as e:  # noqa: BLE001
+        log.info("fsc news unavailable: %s", e)
+    try:
         rep = parse_reports(_get(U_REPORT))
         if rep:
             d["reports"] = rep
@@ -144,13 +194,16 @@ def _with_seed(d: Dict) -> Dict:
         d.update({k: s.get(k) for k in ("news", "bodies", "fetched") if s.get(k)})
     if s.get("reports") and not d.get("reports"):
         d["reports"] = s["reports"]
+    mine, theirs = d.get("fsc") or [], s.get("fsc") or []
+    if theirs and (not mine or theirs[0]["date"] > mine[0]["date"]):
+        d["fsc"], d["fsc_bodies"] = theirs, {**(d.get("fsc_bodies") or {}), **(s.get("fsc_bodies") or {})}
     d["status"] = status(d.get("news") or [])
     return d
 
 
 def write_seed(path=SEED) -> Dict:
     d = refresh(force=True)
-    out = {k: d.get(k) for k in ("fetched", "news", "bodies", "reports")}
+    out = {k: d.get(k) for k in ("fetched", "news", "bodies", "reports", "fsc", "fsc_bodies")}
     if out.get("news"):
         Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
