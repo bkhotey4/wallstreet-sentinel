@@ -50,7 +50,8 @@
   "news": 48,
   "tools": 49,
   "inputs": 50,
-  "about": 51
+  "about": 51,
+  "tw_earn": 52
  },
  "cards": {
   "overview::每日總經情勢": "01-01",
@@ -296,7 +297,12 @@
   "tools::交易成本試算（手續費・稅・損益兩平）": "49-05",
   "inputs::壓力指數的全部指標": "50-01",
   "about::資料來源與使用條款": "51-01",
-  "about::隱私權政策": "51-02"
+  "about::隱私權政策": "51-02",
+  "tw_desk::台股覆蓋清單：專業交易台會看的，我們有沒有": "41-05",
+  "tw_earn::台股財報前瞻：接下來的法說會與本季營收進度": "52-01",
+  "tw_earn::公司自己的動作：庫藏股與內部人申報轉讓": "52-02",
+  "tw_earn::財報後白話解讀（台股）": "52-03",
+  "news::主線追蹤：把新聞串成一條線": "48-09"
  },
  "discord": {
   "commands": {
@@ -366,7 +372,9 @@
    "ruling_embed": "D-A16",
    "earnsoon_embed": "D-A17",
    "paper_embed": "D-A18",
-   "country_embed": "D-A19"
+   "country_embed": "D-A19",
+   "thread_embed": "D-A20",
+   "buyback_embed": "D-A21"
   }
  }
 }
