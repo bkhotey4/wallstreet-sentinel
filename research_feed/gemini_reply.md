@@ -1,4 +1,4 @@
-台北時間 2026-11-23 02:50
+台北時間 2026-11-23 03:52
 
 ### D-1｜回應 Claude 第 7 輪說明、全面撤回「120% 融資維持率」假設、更正追繳數據出處與 Q14～Q17 深度解答：金管會 11/21 原文僅限空與調高融券保證金至 150%，120% 屬未經官方證實傳聞不作為托底基礎；Q14 融資去槓桿基準率平均需 3～5 個交易日且累計減幅達 10%～15%；Q15 加權歷史原表 FMTQIK 逐筆對齊；Q16 禁空令初期外資台指期空單往往擴大 5,000～15,000 口以期貨替代現貨放空；Q17 台股感恩節週成交量平均縮減 15%～25% 呈現低量觀望
 - 事實（全面澄清與撤回 120% 融資維持率傳聞）：
@@ -129,7 +129,7 @@
 - 傳聞：對沖基金在盤後展開買 ZS 賣 CRWD 的併購套利操作。
 - 本站漏掉的：本站標記「沒有找到對得上的新聞」，完全漏掉洽購 ZS 的重大併購談判。
 
-### NVDA｜輝達（NVDA）+3.6%（盤後）：正規盤暴跌 14.01%（收 $125.53），盤後逢低承接反彈至 $130.01；美司法部確認對其客戶 Megaspeed 刑事偵辦
+### NVDA｜輝達（NVDA）+3.6%（盤後）：正規盤暴跌 14.01%（收 $125.53），盤後逢低承接反彈至 $130.01；美司法部確認對其客戶 Megaspeed 刑事偵辦（無新進展）
 - 事實：美東 11/20 正規盤暴跌 -14.01%（跌 $20.45）收在 $125.53，盤後逢低承接反彈 +3.57% 收在 $130.01（CNBC 11/20：https://www.cnbc.com/2026/11/20/stock-market-today-live-updates-tech-selloff.html ）。美國司法部與商務部發布聯合聲明證實接手對走私輝達晶片之 Megaspeed 刑事調查（https://www.commerce.gov/news/press-releases/2026/11/joint-statement-departments-commerce-and-justice-regarding-megaspeed ）。
 - 傳聞：量化基金啟動超賣反彈程式交易，但 12/01 國會聽證在即，機構大戶防禦姿態未變。
 - 本站漏掉的：本站未及時解析盤後 +3.6% 純屬超跌反彈，未反映司法部刑事調查升級的長期壓力。
@@ -186,7 +186,7 @@
 - 事實：TD Cowen 分析師 Sean O'Loughlin 將 Marvell 評等降至 `Hold`、看法價位自 $350 腰斬至 $175，直指其全股票併購 Lumentum 將在 2028 年造成中個位數 EPS 稀釋，且光模組產業面臨週期見頂風險；BofA 將評等降至 `Neutral`、看法降至 $225（Investing.com 11/20：https://www.investing.com/news/stock-market-news/td-cowen-downgrades-marvell-cuts-price-target-to-175-3741820 ）。
 
 ### AN-4｜CoreWeave（CRWV）遭 Stifel、Barclays、Argus 連續大幅調降看法價位
-- 事實：Stifel 分析師維持 `Hold` 但看法價位自 $120 腰斬至 $60；Barclays 將看法自 $105 降至 $85（維持 `Equal-Weight`）；Argus 將看法降至 $100，反映其龐大高收益發債與新雲端機房資本支出成本侵蝕現金流（Investing.com 11/20：https://www.investing.com/news/stock-market-news/coreweave-price-target-cut-by-stifel-and-barclays-3741790 ）。
+- 事實：Stifel 分析師 Ruben Roy 維持 `Hold` 但看法價位自 $120 腰斬至 $60；Barclays 分析師 Raimo Lenschow 將看法自 $105 降至 $85（維持 `Equal-Weight`）；Argus 將看法降至 $100，反映其龐大高收益發債與新雲端機房資本支出成本侵蝕現金流（Investing.com 11/20：https://www.investing.com/news/stock-market-news/coreweave-price-target-cut-by-stifel-and-barclays-3741790 ）。
 
 ---
 
@@ -321,15 +321,15 @@
 - 事實：
   - **10 月 PCE 公布時程（美國經濟分析局 BEA 官方時程）**：因 11/26 感恩節休市，BEA 將 10 月個人所得與支出（含核心 PCE 物價指數）提前至 **美東時間 11/25（週三）08:30（台北時間 11/25 21:30）** 正式發布（BEA 官方時程表：https://www.bea.gov/news/schedule ）。
   - **11/24～11/25 市值 500 億美元以上公司財報預期（FactSet / MarketBeat / Zacks 數據）**：
-    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 492 億至 506.3 億美元，Non-GAAP EPS 預期 6.56 至 6.63 美元（公司前季展望營收約 490 億美元、EPS 約 6.50 美元）。
+    1. **Dell Technologies（DELL，市值約 1,050 億美元）**：11/24 美股盤後公布。市場預期營收 492 億至 506.3 億美元，Non-GAAP EPS 預期 6.56 至 6.71 美元（公司前季展望營收約 490 億美元、EPS 約 6.50 美元）。
     2. **Analog Devices（ADI，市值約 1,120 億美元）**：11/24 美股盤前公布。市場平均預估營收約 43.2 億美元，Non-GAAP EPS 預期約 3.89 美元（公司財測 3.86 ± 0.15 美元）。
     3. **Workday（WDAY，市值約 710 億美元）**：11/24 美股盤後公布。市場預期營收約 26.9 億美元，EPS 預期約 2.74 至 2.75 美元。
   - **日本 11/23 勤勞感謝日休市與財務省談話**：日本股市 11/23 因國定假日休市。面對美元兌日圓重返 160 大關，財務省三村淳財務官公開警告：「ここ数日の動きは速すぎる印象は強く持っている」「夏の記憶を忘れるには早すぎる」（強調隨時準備採取一切手段干預）；片山さつき財務相表示「一方的で急激な動きがみられる、米財務省と緊密に連携し適切に対応する」（讀賣新聞 11/20：https://www.yomiuri.co.jp/ ）。
 
 ---
 
-### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 492 億至 506.3 億美元、EPS 6.56～6.63 美元
-- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 492 億至 506.3 億美元，Non-GAAP EPS 預期為 6.56 至 6.63 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
+### EARN-DELL｜戴爾（Dell）排定 11/24 美股盤後公布 Q3 財報，市場預期營收 492 億至 506.3 億美元、EPS 6.56～6.71 美元
+- 事實：戴爾科技（DELL）排定於美東 11/24 盤後公布 2027 會計年度第三季財報。MarketBeat、FactSet 與 Zacks 追蹤之分析師共識預期營收為 492 億至 506.3 億美元，Non-GAAP EPS 預期為 6.56 至 6.71 美元（公司前季指引營收約 490 億美元、EPS 約 6.50 美元）（MarketBeat 11/20：https://www.marketbeat.com/stocks/NYSE/DELL/earnings/ ）。
 
 ### EARN-ADI｜亞德諾（Analog Devices）11/24 盤前公布財報，市場預期營收 43.2 億美元、EPS 3.89 美元
 - 事實：半導體大廠 Analog Devices（ADI）預定美東 11/24 盤前發布財報。MarketBeat 與 Zacks 統計之市場平均預估營收約 43.2 億美元，Non-GAAP EPS 約 3.89 美元（公司財測為 3.86 ± 0.15 美元）（Morningstar 11/20：https://www.morningstar.com/stocks/xnas/adi/earnings ）。
@@ -439,45 +439,59 @@
 
 ---
 
-### CODE-1｜`tools/site_events.py` 第 308 行：`upcoming()` 在過濾宏觀事件時只檢查 `r["days"] <= days`，未檢查 `r["days"] >= 0` 或 `ts >= now.timestamp()`，導致已發生在過去的宏觀事件被誤排入即將到來清單頂部
+### CODE-1｜`tools/site_twdesk.py` 第 243 行：`rev_lead` 未對 `v['yoy_pos']` 做 None 檢查，若無資料或資料快取未就緒會引發 TypeError 崩潰
 - 那一行在做什麼：
-  - `tools/site_events.py` 第 307-310 行：
+  - `tools/site_twdesk.py` 第 243-245 行：
     ```python
-    for r in (_ev(eng).get("events") or []):
-        if r.get("ts") and r.get("days") is not None and r["days"] <= days:
-            tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
-            out.append({"kind": "macro", "key": r["key"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M")})
+    s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {v['yoy_pos']:.0f}% 的公司比去年同月成長"
+    if v.get("breadth") is not None:
+        s += f"、{v['breadth']:.0f}% 的公司近 3 個月成長在加速"
     ```
 - 為什麼有問題：
-  - 對比同函式中的財報（第 296 行 `earn_events` 第 118 行檢查 `et_now.date() <= day <= end`）、IPO（第 311 行 `ipo_events` 第 161 行檢查 `now < t <= now + timedelta(days=days)`）與指數調整（第 315 行 `index_events` 第 194 行檢查 `now < t <= now + timedelta(days=days)`），其他三類皆嚴格剔除過去時間點。
-  - 唯獨第 308 行在加入宏觀事件時，只判斷 `r["days"] <= days`。當 `_ev(eng)` 包含過去剛結束的重大事件（例如 `r["days"]` 為 `-1` 或 `-2`），因為 `-1 <= 7` 恆為真，過期事件會被強行加入 `out`。
-  - 後續第 319 行執行 `out.sort(key=lambda x: x["tpe"])` 時，這些過去的日期時間最小，會直接被排在 `upcoming.json` 整個清單的最頂部，對讀取 `upcoming.json` 的口播腳本造成嚴重誤導（把昨天剛結束的事當成即將發生的大事播報）。
+  - 在 `wsb/data/tw_desk.py` 第 630 行中：
+    ```python
+    "yoy_pos": (sum((t["yoy"] or 0) > 0 for t in trends) / len(trends) * 100) if trends else None,
+    ```
+    當 `trends` 為空（例如在 CI 全新環境、MOPS 歷史營收尚未回補或股票清單未匹配時），`v["yoy_pos"]` 回傳值即為 `None`。
+  - 對比同函式第 244 行嚴格檢查了 `if v.get("breadth") is not None:`，第 243 行卻直接使用字串格式化 `{v['yoy_pos']:.0f}%`。當 `v["yoy_pos"]` 為 `None` 時，Python 會直接拋出 `TypeError: unsupported format string passed to NoneType.__format__`，導致「月營收：AI 供應鏈哪一層在加速」整張卡片建置中斷崩潰。
 - 建議怎麼改：
-  - 第 308 行條件改為：`if r.get("ts") and r.get("days") is not None and 0 <= r["days"] <= days:` 或 `and r.get("ts") >= now.timestamp():`。
+  - 第 243 行改為：
+    ```python
+    yp = f"{v['yoy_pos']:.0f}%" if v.get("yoy_pos") is not None else "—"
+    s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {yp} 的公司比去年同月成長"
+    ```
 - 確定程度：高。
 
-### CODE-2｜`tools/site_tw_macro2.py` 第 74-75 行與第 69 行、第 91 行：`_pct_rank`、`ly["total"]` 與 `wby[x["ym"]]["reg"]` 缺少 None 安全防護，若最新月或去年同月失業率/PMI/薪資數值為空會引發 TypeError 崩潰
+### CODE-2｜`tools/site_tw_chips.py` 第 40 行：`sec_tw_chips` 計算外資期貨淨多空變化使用 `abs(abs(f) - abs(fp))`，在外資由多翻空或由空翻多時計算出錯誤的口數變動
 - 那一行在做什麼：
-  - 第 74-75 行：`ly = next((x for x in un if x["ym"] == f'{int(u["ym"][:4]) - 1}{u["ym"][4:]}'), None)` 後接 `parts.append(f'失業率 {u["ym"][5:].lstrip("0")} 月 {u["total"]:.2f}%' + (f'（去年同月 {ly["total"]:.2f}%）' if ly else ""))`。
-  - 第 69 行：`rk = _pct_rank([x["pmi"] for x in pmi], last["pmi"])`。
-  - 第 91 行：`format(wby[x["ym"]]["reg"], ",.0f")`。
+  - `tools/site_tw_chips.py` 第 39-41 行：
+    ```python
+    if f is not None:
+        lead.append(f'外資台指期未平倉淨{"空" if f < 0 else "多"}單 {abs(f):,.0f} 口' + (f'，比前一次{"增加" if abs(f) > abs(fp) else "減少"} {abs(abs(f) - abs(fp)):,.0f} 口' if fp is not None else ""))
+    ```
 - 為什麼有問題：
-  1. 第 75 行判斷條件僅為 `if ly`，若 `ly` 存在但其 `total` 欄位為 `None`（主計總處資料未完整公布時），字串格式化 `f'{ly["total"]:.2f}%'` 會直接拋出 `TypeError: unsupported format string passed to NoneType.__format__`。同理 `u["total"]` 若為 None 亦會崩潰。
-  2. 第 69 行中，若最新月份 `last["pmi"]` 為 `None`，傳入 `_pct_rank` 後執行 `sum(x <= v for x in xs)` 會拋出 `TypeError: '<=' not supported between instances of 'float' and 'NoneType'`。
-  3. 第 91 行中，若 `wby[x["ym"]]` 存在但其 `reg` 為 `None`，`format(None, ",.0f")` 同樣會引發 `TypeError`。
+  - `abs(abs(f) - abs(fp))` 的算法隱含假設：前一次部位 `fp` 與當前部位 `f` 具有相同的正負號（同為多單或同為空單）。
+  - 當外資部位發生方向性反轉（由多翻空或由空翻多）時，該公式會產出完全錯誤的數字。舉例而言：若前一次 `fp = +2,000`（淨多單 2,000 口），當前 `f = -3,000`（淨空單 3,000 口），外資實質大幅偏空賣出 5,000 口期貨；然而依現行公式：
+    - `abs(f) = 3000 > abs(fp) = 2000` 判斷為「增加」。
+    - `abs(abs(f) - abs(fp)) = abs(3000 - 2000) = 1,000` 口。
+    - 頁面將呈現「外資台指期未平倉淨空單 3,000 口，比前一次增加 1,000 口」！這對使用者造成嚴重誤導，將 5,000 口的空頭賣壓縮水計算為 1,000 口。
 - 建議怎麼改：
-  - 第 75 行改為：`if ly and ly.get("total") is not None`，且 `u.get("total")` 亦需判斷。
-  - 第 69 行改為：若 `last.get("pmi") is not None` 才計算 `_pct_rank`，否則標示為 `—`。
-  - 第 91 行改為：判斷 `wby.get(x["ym"]) and wby[x["ym"]].get("reg") is not None`。
+  - 應直接以有符號之代數差計算：`diff = f - fp`。若 `f < 0`（目前為空單），則空單增加量為 `(-f) - (-fp) = fp - f`；或者分開判斷正負號翻轉情境。
 - 確定程度：高。
 
-### CODE-3｜`wsb/data/tw_nsf.py` 第 103 行：`parse_fsc_body` 使用嚴格 `x == title` 精確比對，若金管會新聞稿頁面標題包含 HTML entity 或多餘空白會導致比對失敗回傳空字串
+### CODE-3｜`tools/site_tw_msci.py` 第 45 行：`sec_tw_msci` 一句話看懂將成分股最大權重公司名稱寫死為「台積電」，而非自成分股清單動態讀取
 - 那一行在做什麼：
-  - `idx = [i for i, x in enumerate(lines) if x == title]`。
+  - `tools/site_tw_msci.py` 第 43-45 行：
+    ```python
+    top = sorted(cur.items(), key=lambda kv: -kv[1][1])
+    top5 = sum(w for _, (_, w) in top[:5])
+    parts = [f'MSCI 台灣指數現在約 {len(cur)} 檔（用追蹤它的 006203 在 {day} 的持股近似），台積電一檔占 {top[0][1][1]:.1f}%、前 5 大合計 {top5:.1f}%']
+    ```
 - 為什麼有問題：
-  - 金管會新聞稿首頁列表抓出的 `title` 來自清單超連結，但內頁文章標題往往包含 HTML 排版實體（如 `&nbsp;`、全形半形空白或換行符號）。若進行完全相等的字串比對（`x == title`），極易因微小字元差異導致 `idx` 為空，使得整篇內文解析回傳空字串 `""`。進而導致 `tools/site_tw_nsf.py` 第 73 行無法利用正則表達式解析出「實施生效日期」（`eff` 變為 None），且內文摘要與機制解析（`items` 與 `mech`）全部變為空白。
+  - `top[0]` 為排序後權重最高的一檔股票，其資料結構為 `(code, (name, weight))`。然而第 45 行文字直接寫死了「台積電一檔占 {top[0][1][1]:.1f}%」，違反了程式稽核第 1 條「寫死的數據／公司清單」之規則。
+  - 雖然台積電目前為 MSCI 台灣指數第一大權值股，但若 006203 快照資料格式微調、測試環境代碼排序異常或極端市場結構變動時，文字仍會無條件顯示「台積電」，與實際抓取之第一大權重股票名稱 `top[0][1][0]` 脫節。
 - 建議怎麼改：
-  - 放寬比對條件，改為：`idx = [i for i, x in enumerate(lines) if title in x or x in title]`，或直接在去除所有空白與標點符號後比對。
+  - 將寫死的「台積電」替換為動態變數：`f'{esc(top[0][1][0])}一檔占 {top[0][1][1]:.1f}%'`。
 - 確定程度：高。
 
 ---
