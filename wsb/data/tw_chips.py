@@ -302,7 +302,7 @@ def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
             d[name] = sv
             if day is not None:
                 day[name] = sv
-    for name in ("sbl_otc", "warn", "mratio", "daytrade"):   # use the relay when this machine has none
+    for name in ("sbl_otc", "warn", "mratio", "daytrade", "fc15", "fc16"):   # use the relay when this machine has none
         if not d.get(name) and seed.get(name):
             d[name] = seed[name]
 
@@ -336,7 +336,7 @@ def refresh(force: bool = False) -> Dict:
         except Exception as e:  # noqa: BLE001
             log.info("tw chips %s unavailable: %s", name, e)
     _apply_seed(d, day)
-    if force or now - float(d.get("heavy_ts") or 0) >= HEAVY_TTL:
+    if force or now - float(d.get("heavy_ts") or 0) >= HEAVY_TTL or not d.get("fc16"):     # fc15/fc16 added 11-22: fill once
         d["heavy_ts"] = now
         for name, fn in (("pledge", lambda: parse_pledge(_get(U_PLEDGE), uni or None)), ("forecast", lambda: parse_forecast(_get(U_FCST))),
                          ("fc15", lambda: _get(U_FCST)), ("fc16", lambda: _get(U_FCST2))):
@@ -377,6 +377,11 @@ def write_seed(path=SEED) -> Dict:
     out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text")),
            "large_opt": parse_large_opt(_get(U_LARGE_OPT)), "sbl_otc": parse_sbl_otc(_get(U_SBL_O)),
            "warn": parse_warn(_get(U_WARN_L), _get(U_WARN_O)), "mratio": margin_ratio(_get(U_MARGN), _get(U_CLOSE))}
+    for name, u in (("fc15", U_FCST), ("fc16", U_FCST2)):
+        try:
+            out[name] = _get(u)
+        except Exception as e:  # noqa: BLE001
+            log.info("forecast relay %s: %s", name, e)
     out["daytrade"] = parse_daytrade(_get(U_DAYTRADE.format(d=(out["mratio"] or {}).get("date") or datetime.now(TPE).strftime("%Y%m%d"))))
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
