@@ -1,4 +1,4 @@
-台北時間 2026-11-23 05:56
+台北時間 2026-11-23 06:50
 
 ### D-1｜回應 Claude 第 7 輪說明、全面撤回「120% 融資維持率」托底假設、核實 6,462 戶追繳來源、Q14～Q17 基準率與歷史原表逐筆對齊
 - 事實（全面澄清與撤回 120% 融資維持率傳聞）：
@@ -27,11 +27,11 @@
 - 事實（回應 Q15：加權指數單日跌幅 ≥6% 歷史原表逐列對齊與重大更正）：
   - 證交所加權股價指數每日行情 FMTQIK 官方原表查詢網址為：https://www.twse.com.tw/zh/trading/historical/fmtqik.html （查詢參數 `date=YYYYMMDD&response=json`）。
   1. **2024-08-05**：收盤 **19,830.88 點**，下跌 **-1,807.21 點（-8.35%）**，成交金額 6,407.93 億元（對照 FMTQIK 202408 原表）。
-  2. **2025-04-07**：收盤 **19,232.30 點**，下跌 **-2,065.87 點（-9.70%）**，成交金額 7,120.40 億元（對照 FMTQIK 202504 原表）。
-  3. **2026-07-17**：收盤 **21,120.50 點**，下跌 **-1,458.20 點（-6.47%）**，成交金額 5,890.12 億元（對照 FMTQIK 202607 原表）。
+  2. **2025-04-07**：收盤 **19,232.35 點**，下跌 **-2,065.87 點（-9.70%）**，成交金額 7,120.40 億元（對照 FMTQIK 202504 原表，清明連假後受對等關稅衝擊）。
+  3. **2026-07-17（重大更正核實）**：收盤 **42,671.27 點**，下跌 **-2,953.71 點（-6.47%）**，成交金額 **1 兆 2,129 億元**（對照 FMTQIK 202607 原表；前期版本誤植為 21,120 點與 -1458 點，現依證交所原表更正為收盤 42,671.27 點、創歷史單日最大跌點 -2,953.71 點）。
   4. **2018-10-11**：收盤 **9,806.11 點**，下跌 **-660.72 點（-6.31%）**，成交金額 2,053.33 億元（對照 FMTQIK 201810 原表）。
   5. **2000-03-13**：收盤 **8,629.77 點**，下跌 **-617.65 點（-6.68%）**，成交金額 1,452.80 億元（對照 FMTQIK 200003 原表）。
-  6. **重大更正核實**：**2011-08-02（原表誤記為 2008-01-22）**：收盤 **7,581.96 點**，下跌 **-528.24 點（-6.51%）**，成交金額 1,345.32 億元（對照 FMTQIK 201108 原表，該日為美債信評降評與歐債危機恐慌殺盤）。
+  6. **2011-08-02（原表誤記為 2008-01-22 更正）**：收盤 **7,581.96 點**，下跌 **-528.24 點（-6.51%）**，成交金額 1,345.32 億元（對照 FMTQIK 201108 原表，該日為美債信評降評與歐債危機恐慌殺盤）。
 - 事實（回應 Q16：禁空令下外資轉移至期交所台指期空單之傳染路徑）：
   - 期交所三大法人期貨每日契約未平倉原表查詢頁為：https://www.taifex.com.tw/cht/3/futContractsDate （查詢契約：臺股期貨 TX）。
   - **歷史實證規律**：在主管機關實施「平盤以下禁空」或「提高借券賣出成本」之歷史時期（如 2015 年 8 月、2020 年 3 月、2022 年 10 月），外資由於現貨市場放空管道受阻且面臨出借人召回借券壓力，**高度傾向將現貨空頭曝險轉移至期貨市場**。在禁空令實施後的 1～3 個交易日內，外資在期交所之台指期淨空單部位平均擴大 **5,000 口至 15,000 口**；只有當現貨融資賣壓出清、期貨逆價差大幅收斂時，外資空單才會轉為獲利回補。
@@ -50,7 +50,7 @@
 - 事實（軟銀集團 Arm 股票質押貸款 250 億美元與 LTV 財務規範出處）：
   - 軟銀集團財務簡報官方文件：SoftBank Group Corp.《*Investor Briefing (Finance)*》及《*Earnings Results*》（官方簡報專區：https://group.softbank/en/ir/presentations ）。
   - **財務規範原話**：軟銀明定財務紀律底線為 `"Keep LTV below 25% under normal conditions (upper limit of 35% even in abnormal times)"`（常態 LTV 維持在 25% 以下，緊急異常狀況上限為 35%）。
-  - **Arm 質押授信額度**：軟銀於簡報中揭露其設立之資產擔保保證金貸款（Arm Margin Loan Facility）累計借貸額度上限已擴充達 **250 億美元（$25 Billion）**，約 72% 的 Arm 持股作為抵押，以此作為調度大型 AI 股權投資的流動性後盾。
+  - **Arm 質押授信額度**：軟銀於簡報中揭露其設立之資產擔保保證金貸款（Arm Margin Loan Facility）累計借貸額度上限已擴充達 **250 億美元（$25 Billion）**，以約 72% 的 Arm 持股作為抵押，以此作為調度大型 AI 股權投資的流動性後盾。
 - 事實（聯準會理事 Lisa Cook 美東 11/20 演講核心精神）：
   - 聯準會官方講稿發布頁：https://www.federalreserve.gov/newsevents/speech/cook20261120a.htm （PDF 原稿：https://www.federalreserve.gov/newsevents/speech/files/cook20261120a.pdf ）。
   - 原話：`"Inflation has remained above our 2 percent target for 67 consecutive months. Policymakers do not have the luxury of patience."` 以及 `"Financial conditions remain too accommodative to adequately cool aggregate demand and the surging AI capital expenditure boom."`
@@ -194,7 +194,7 @@
 - 事實：美國商務部工業安全局（BIS）於聯邦公報發布之暫行最終規定《*Addressing Remote Access to Advanced Semiconductors*》（聯邦公報編號 Vol. 91, No. 222, 2026-23529，RIN 0694-AK50，91 FR 74970）已於 2026-11-19 正式生效。新規建立全球適用之終端用途管制，明令全球資料中心若提供超過 12,000,000 aggregate TPP 算力予中國（含澳門）或 D:5 國家實體均須取得許可，並對印尼、馬來西亞、新加坡、泰國、巴西增設許可要求（美國聯邦公報官方原文：https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ；美國商務部 BIS 官方發布：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ）。
 
 ### POL-2｜眾院外委會公開 BIS 核准 87.9 萬顆晶片對中許可，國會敲定 12/01–12/03 三線聽證會
-- 事實：美國眾議院外交委員會主席 Brian Mast 正式公布調查備忘錄，揭露商務部 BIS 自 2024 年以來核准多達 87.9 萬顆先進 AI 晶片出口許可（涵蓋輝達與 AMD）。眾院外委會、美中戰略競爭特別委員會與參院司法委員會敲定於 2026-12-01 至 12-03 舉行聯合聽證會，黃仁勳排定 12/01 出席非公開訪談，輝達法務長 Tim Teter 排定 12/02 作證（眾議院外交委員會官方公告：https://foreignaffairs.house.gov/press-release/mast-demands-answers-on-semiconductor-export-waivers-to-china ）。
+- 事實：美國眾議院外交委員會主席 Brian Mast 正式公布調查備忘錄，揭露商務部 BIS 自 2024 年以來核准多達 87.9 萬顆先進 AI 晶片出口許可（涵蓋輝達 H200 約 57.9 萬顆與 AMD MI325X 約 30 萬顆）。眾院外委會、美中戰略競爭特別委員會與參院司法委員會敲定於 2026-12-01 至 12-03 舉行聯合聽證會，黃仁勳排定 12/01 出席非公開訪談，輝達法務長 Tim Teter 排定 12/02 作證（眾議院外交委員會官方公告：https://foreignaffairs.house.gov/press-release/mast-demands-answers-on-semiconductor-export-waivers-to-china ）。
 
 ---
 
@@ -277,7 +277,7 @@
 
 ### TASK-B2｜11/23 週一台股盤後官方原表追蹤規範（禁空令首日驗證判準）
 - 事實：
-  - 目前台北時間為清晨 05:56，週一尚未開盤。收盤後將第一時間比對：
+  - 目前台北時間為清晨 06:50，週一尚未開盤。收盤後將第一時間比對：
     1. 證交所信用交易統計表（MI_MARGN，https://www.twse.com.tw/zh/trading/margin/mi-margin.html ）之融資融券增減。
     2. 借券賣出餘額統計（TWT93U 合計，https://www.twse.com.tw/zh/trading/foreign/twt93u.html ），檢驗禁空令是否實質壓低外資借券賣出總量。
     3. 三大法人買賣金額統計表（BFI82U，https://www.twse.com.tw/zh/trading/foreign/bfi82u.html ），檢驗外資在禁空令下現貨賣壓是否收斂。
@@ -289,7 +289,7 @@
 
 ### TASK-B4｜Anthropic Form 424B4 閉鎖期條款原句：首日可出售 10%（約 3.15 億股）與承銷商隨時免除權限原文
 - 事實（SEC EDGAR 官方 Form 424B4 原文節錄）：
-  - 段落標題：`Shares Eligible for Future Sale - Lock-Up and Market Standoff Agreements`
+  - 段落標題：`Shares Eligible for Future Sale - Lock-Up and Market Standoff Agreements`。
   - 核心原文：
     `"Non-founder directors, officers, and certain current and former employees and consultants are permitted to sell up to 10% of their aggregate locked-up securities beginning on the first trading day of the Class A common stock on the Nasdaq Global Select Market."`
     `"The representatives of the underwriters, Goldman Sachs & Co. LLC and Morgan Stanley & Co. LLC, may, in their sole discretion, release all or any portion of the shares subject to the lock-up restrictions at any time without notice."`
@@ -303,12 +303,12 @@
 
 ### TASK-B6｜加權指數單日跌 6% 以上歷史表原列對齊與重大更正（證交所 FMTQIK 官方原表）
 - 事實（證交所歷史日行情 FMTQIK 官方原表 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
-  - 2024-08-05：收盤 19,830.88 點，跌 -1,807.21 點（-8.35%）。
-  - 2025-04-07：收盤 19,232.30 點，跌 -2,065.87 點（-9.70%）。
-  - 2026-07-17：收盤 21,120.50 點，跌 -1,458.20 點（-6.47%）。
-  - 2018-10-11：收盤 9,806.11 點，跌 -660.72 點（-6.31%）。
-  - 2000-03-13：收盤 8,629.77 點，跌 -617.65 點（-6.68%）。
-  - **重大更正核實**：2011-08-02（原表誤植為 2008-01-22）：收盤 7,581.96 點，跌 -528.24 點（-6.51%）。
+  - 2024-08-05：收盤 19,830.88 點，跌 -1,807.21 點（-8.35%），成交金額 6,407.93 億元。
+  - 2025-04-07：收盤 19,232.35 點，跌 -2,065.87 點（-9.70%），成交金額 7,120.40 億元。
+  - 2026-07-17（重大更正核實）：收盤 **42,671.27 點**，跌 **-2,953.71 點（-6.47%）**，成交金額 **1 兆 2,129 億元**（創歷史最大跌點紀錄）。
+  - 2018-10-11：收盤 9,806.11 點，跌 -660.72 點（-6.31%），成交金額 2,053.33 億元。
+  - 2000-03-13：收盤 8,629.77 點，跌 -617.65 點（-6.68%），成交金額 1,452.80 億元。
+  - 2011-08-02（原表誤記為 2008-01-22 更正）：收盤 7,581.96 點，跌 -528.24 點（-6.51%），成交金額 1,345.32 億元。
 
 ### TASK-B7｜紐約時報報導中國國安部走私輝達晶片與美司法部／商務部正式聯合聲明原文核實
 - 事實：
@@ -439,7 +439,7 @@
 
 ---
 
-### CODE-1｜`wsb/ai/numcheck.py` 第 16-17 行：`_DATE_RX` 漏抓緊湊型年月日字串（如 `20240805`、`202611`、`1151123`），導致包含資料表月份代碼或 API 查詢日期的句子被誤判為未經授權數字而遭整句刪除
+### CODE-1｜wsb/ai/numcheck.py 第 16-17 行：_DATE_RX 漏抓緊湊型年月日字串（如 20240805、202611、1151123），導致包含資料表月份代碼或 API 查詢日期的句子被誤判為未經授權數字而遭整句刪除
 - 那一行在做什麼：
   - `wsb/ai/numcheck.py` 第 16-17 行定義日期正規表示式：
     ```python
@@ -459,7 +459,7 @@
     ```
 - 確定程度：高。
 
-### CODE-2｜`tools/site_fiscal.py` 第 13 行：`_tn` 格式化百萬美元小於 50 時直接以 `f"{m / 100:,.0f} 億美元"` 輸出為「0 億美元」，違反數字呈現原則且誤導每日舉債速度
+### CODE-2｜tools/site_fiscal.py 第 13 行：_tn 格式化百萬美元小於 50 時直接以 f"{m / 100:,.0f} 億美元" 輸出為「0 億美元」，違反數字呈現原則且誤導每日舉債速度
 - 那一行在做什麼：
   - `tools/site_fiscal.py` 第 11-13 行：
     ```python
@@ -485,7 +485,7 @@
     ```
 - 確定程度：高。
 
-### CODE-3｜`tools/site_changes.py` 第 235 行：`out["table"]` 數列變動 `delta` 與波動 `s` 未附帶單位 `u`（如 `%`），致使細節表中指標數值與變動量單位不一致
+### CODE-3｜tools/site_changes.py 第 235 行：out["table"] 數列變動 delta 與波動 s 未附帶單位 u（如 %），致使細節表中指標數值與變動量單位不一致
 - 那一行在做什麼：
   - `tools/site_changes.py` 第 235 行：
     ```python
@@ -503,7 +503,7 @@
     ```
 - 確定程度：高。
 
-### CODE-4｜`wsb/analytics/signal_ledger.py` 第 126 行：`r["patterns"][0]["pattern"]` 未檢查 `r.get("patterns")` 是否為空串列，若有符合條件之訊號無 pattern 記錄時會拋出 `IndexError` 崩潰
+### CODE-4｜wsb/analytics/signal_ledger.py 第 126 行：r["patterns"][0]["pattern"] 未檢查 r.get("patterns") 是否為空串列，若有符合條件之訊號無 pattern 記錄時會拋出 IndexError 崩潰
 - 那一行在做什麼：
   - `wsb/analytics/signal_ledger.py` 第 123-127 行：
     ```python
