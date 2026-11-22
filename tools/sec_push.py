@@ -1042,6 +1042,43 @@ TH_TAGS = {"uscn_tech": ["美中科技"], "ai_capex": ["科技", "台股"], "fed
            "cross_strait": ["兩岸"], "minerals": ["礦產"], "ai_power": ["電力"], "memory": ["記憶體"]}
 
 
+# ------------------------------------------------------------------ 台股大型公司宣布庫藏股（11-22；資料 site/tw_corp.json）
+TWCORP = "https://wallstreet-sentinel.pages.dev/tw_corp.json"
+TB_EVERY = 1800
+TB_FRESH_D = 3           # only boards that decided within 3 days (no flood of old ones on the first run)
+TB_DAY_CAP = 3
+
+
+async def twcorp_json(sess: aiohttp.ClientSession) -> Dict:
+    try:
+        async with sess.get(TWCORP, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            return (await r.json(content_type=None)) or {} if r.status < 300 else {}
+    except Exception as e:  # noqa: BLE001
+        log.info("tw_corp: %s", e)
+        return {}
+
+
+def buyback_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
+    cut = time.strftime("%Y-%m-%d", time.gmtime(now + 8 * 3600 - TB_FRESH_D * 86400))
+    out = []
+    for x in d.get("buybacks") or []:
+        key = f'tsb:{x.get("code")}:{x.get("date")}'
+        if x.get("big") and str(x.get("date") or "") >= cut and key not in done:
+            out.append({**x, "key": key})
+    return out
+
+
+def buyback_embed(x: Dict) -> Dict:
+    sh = float(x.get("shares") or 0) / 1000
+    return {"title": f'🏢 庫藏股：{x.get("name")}（{x.get("code")}）'[:256], "color": 0x0EA5E9, "url": "https://wallstreet-sentinel.pages.dev/#tw_earn",
+            "description": (f'一句話看懂：{x.get("name")} 董事會 {str(x.get("date") or "")[5:].replace("-", "/")} 決議買回自家股票，'
+                            f'目的「{x.get("purpose")}」，預定最多 {sh:,.0f} 張，價格區間 {x.get("lo")}～{x.get("hi")} 元，'
+                            f'期間 {str(x.get("start") or "")[5:]}～{str(x.get("end") or "")[5:]}。' + NL +
+                            '公司拿自己的錢買回股票，代表董事會覺得股價偏低或想穩住股價；「預定」是上限，不代表一定會買完。'
+                            '完整清單與內部人申報轉讓在網站「台股財報」頁。')[:4000],
+            "footer": {"text": "WallStreet Sentinel · 台股庫藏股 · 公開資訊觀測站 · 不構成投資建議"}}
+
+
 PAPER_EVERY = 1800
 PAPER_DAY_CAP = 5                  # 一天最多 5 則（台北日期）
 PAPER_MAX_AGE_D = 3                # 只送 3 天內的成交：快取重建時，舊成交不會整批重送
@@ -1159,7 +1196,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "th_ts": float(mem.get("th_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "th_ts": float(mem.get("th_ts") or 0), "tb_ts": float(mem.get("tb_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -1173,7 +1210,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "th_ts": S["th_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "th_ts": S["th_ts"], "tb_ts": S["tb_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1492,6 +1529,23 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
+        try:                                               # 台股大型公司宣布庫藏股（一天最多 3 則）
+            if now - S["tb_ts"] >= TB_EVERY and now > 1.7e9 and left("buyback"):
+                S["tb_ts"] = now
+                for x in buyback_todo(await twcorp_json(sess), done, now)[:TB_DAY_CAP]:
+                    w = await want(x["key"], "buyback")
+                    if w != "go":
+                        if w == "known":
+                            done[x["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", buyback_embed(x), x["key"]):
+                        done[x["key"]] = now
+                        sent += 1
+                    await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("buyback check failed: %s", e)
         try:                                               # 主線追蹤：升溫或官方新文件（每條主線一天最多一則）
             if now - S["th_ts"] >= TH_EVERY and now > 1.7e9 and left("threads"):
                 S["th_ts"] = now

@@ -164,3 +164,54 @@ def sec_tw_earn_after(eng=None) -> str:
         return SAF._card(items, "財報後白話解讀（台股）", "After the report: Taiwan", 8) if items else ""
     except Exception:  # noqa: BLE001
         return ""
+
+
+# ------------------------------------------------------------------ 公司自己的動作：庫藏股與內部人申報轉讓（11-22 台股覆蓋檢討）
+def sec_tw_corp(eng=None) -> str:
+    from wsb.data import tw_corp as C
+    try:
+        d = C.refresh()
+    except Exception:  # noqa: BLE001
+        return ""
+    bb, ins = d.get("buybacks") or [], d.get("insiders") or []
+    if not bb and not ins:
+        return ""
+    today = datetime.now(TPE).date()
+    wk = (today - timedelta(days=7)).isoformat()
+    u = _universe()
+    big = set(u.get("codes") or [])
+    new7 = [x for x in bb if (x.get("date") or "") >= wk]
+    prot = [x for x in bb if x.get("purpose_id") == "3"]
+    lead = (f'最近 45 天有 {len(bb)} 家公司董事會決議買回自家股票（庫藏股），其中「維護公司信用及股東權益」{len(prot)} 家；最近 7 天新增 {len(new7)} 家'
+            + (f'（{"、".join(x["name"] for x in new7[:5])}）' if new7 else "") + "。")
+    th = "<tr><th>決議日</th><th>公司</th><th>目的</th><th class=\"r\">預定買回股數</th><th class=\"r\">價格區間</th><th>期間</th></tr>"
+    rows = [f'<tr><td>{esc((x.get("date") or "")[5:].replace("-", "/"))}</td><td><b>{"⭐ " if x["code"] in big else ""}{esc(x["name"])}</b> '
+            f'<span class="tk">{esc(x["code"])}</span><div class="small muted">{esc(x["board"])}</div></td><td class="small">{esc(x["purpose"])}</td>'
+            f'<td class="r">{(x.get("shares") or 0) / 1000:,.0f} 張</td><td class="r small">{x.get("lo") or "—"}～{x.get("hi") or "—"}</td>'
+            f'<td class="small">{esc((x.get("start") or "")[5:])}～{esc((x.get("end") or "")[5:])}{"（已完成）" if x.get("done") else ""}</td></tr>'
+            for x in sorted(bb, key=lambda x: x.get("date") or "", reverse=True)]                  # newest first
+    rows.sort(key=lambda r: "⭐" not in r)
+    ith = "<tr><th>申報日</th><th>公司</th><th>誰</th><th>方式</th><th class=\"r\">預定轉讓</th><th class=\"r\">占持股</th></tr>"
+    irows = [f'<tr><td>{esc((x.get("date") or "")[5:].replace("-", "/"))}</td><td><b>{"⭐ " if x["code"] in big else ""}{esc(x["name"])}</b> '
+             f'<span class="tk">{esc(x["code"])}</span></td><td class="small">{esc(x["who"])}</td><td class="small">{esc(x["how"])}</td>'
+             f'<td class="r">{x["shares"] / 1000:,.0f} 張</td><td class="r small">'
+             + (f'{x["shares"] / x["held"] * 100:.0f}%' if x.get("held") else "—") + "</td></tr>" for x in ins]
+    sold = [x for x in ins if "一般交易" in x.get("how", "") or "盤中" in x.get("how", "")]
+    body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}</b></p>'
+            '<p class="small">公司拿自己的錢買回股票，代表董事會覺得股價偏低或想穩住股價；內部人（董事、經理人、大股東）要轉讓股票必須事前申報。'
+            '股價大跌時，一邊看公司有沒有出手、一邊看內部人是不是還在申報賣出。金管會 11/21 宣布鼓勵上市櫃公司實施庫藏股。⭐＝台灣 50 或中型 100。</p>'
+            + fold_rows(rows, 15, th, "家")
+            + (f'<h3>內部人申報轉讓（累積 {len({x["date"] for x in ins})} 個申報日、{len(ins)} 筆；在市場上賣的 {len(sold)} 筆）</h3>'
+               + fold_rows(irows, 10, ith, "筆") if ins else "")
+            + f'<p class="note">庫藏股：公開資訊觀測站買回自己公司股份彙總統計表（抓取 {esc(d.get("bb_fetched") or "—")}）；內部人：證交所 OpenAPI 每日內部人持股轉讓事前申報表'
+              f'（只有上市，本站從 {esc(min((x.get("date") or "") for x in ins) if ins else "—")} 起逐日累積，抓取 {esc(d.get("ins_fetched") or "—")}）。'
+              '「預定」是申報的上限，不代表一定會買或賣完。描述資料，不是投資建議。</p>')
+    return card("公司自己的動作：庫藏股與內部人申報轉讓", "Buybacks and insider filings", body, "wide")
+
+
+def corp_public() -> Dict:
+    """site/tw_corp.json for the Discord push (sec_push reads it from the site, on the PC and in the cloud backup)."""
+    from wsb.data import tw_corp as C
+    d = C.refresh()
+    big = set(_universe().get("codes") or [])
+    return {"fetched": d.get("bb_fetched"), "buybacks": [{**x, "big": x["code"] in big} for x in d.get("buybacks") or []]}

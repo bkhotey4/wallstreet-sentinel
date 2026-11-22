@@ -1,5 +1,5 @@
 """PC → cloud relay of public Taiwan data the cloud build often cannot fetch (公開資訊觀測站 blocks datacenter addresses).
-Writes research_feed/tw_rev_seed.json (monthly revenue, 24 months) and research_feed/tw_irs_seed.json (法說會 calendar) in
+Writes research_feed/tw_rev_seed.json (monthly revenue, 24 months), tw_irs_seed.json (法說會 calendar) and tw_corp_seed.json (庫藏股) in
 wallstreet-sentinel, each with its own fetch time.  Run daily by the wss-daily-maintain-expand and wss-tw-forecast-daily routines
 (added 2026-11-22: the revenue seed had been written once by hand and would have stayed at October forever).
 Run: python -m tools.relay_seeds"""
@@ -27,6 +27,12 @@ def main() -> dict:
         out["irs"] = {"fetched": s.get("fetched"), "rows": len(s.get("rows") or [])}
     except Exception as e:  # noqa: BLE001
         out["irs"] = {"error": str(e)}
+    try:
+        from wsb.data import tw_corp as C
+        s = C.write_seed(FEED / "tw_corp_seed.json")
+        out["corp"] = {"fetched": s.get("fetched"), "buybacks": len(s.get("buybacks") or [])}
+    except Exception as e:  # noqa: BLE001
+        out["corp"] = {"error": str(e)}
     return out
 
 

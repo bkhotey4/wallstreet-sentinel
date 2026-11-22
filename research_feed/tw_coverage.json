@@ -1,0 +1,366 @@
+{
+ "updated": "2026-11-22 09:35 台北（Claude）",
+ "note": "專業台股交易台會看的項目，本站有沒有。缺的由每日排程依序補上；Gemini 每週一核對有沒有漏列、找官方來源。",
+ "items": [
+  {
+   "group": "交易與籌碼",
+   "zh": "加權、櫃買即時行情",
+   "status": "有",
+   "where": "台股",
+   "source": "證交所、櫃買、Yahoo",
+   "next": ""
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "開盤前預估（台積電 ADR 價差、美股期貨、日韓）",
+   "status": "部分",
+   "where": "台股・開盤前",
+   "source": "Yahoo、證交所",
+   "next": "缺台指期夜盤：期交所夜盤資料要找官方可用來源"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "三大法人現貨買賣超",
+   "status": "有",
+   "where": "台股",
+   "source": "證交所 BFI82U",
+   "next": ""
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "外資台指期淨部位、期貨三大法人",
+   "status": "部分",
+   "where": "台股總經展望",
+   "source": "期交所 OpenAPI MarketDataOfMajorInstitutionalTraders…",
+   "next": "做成每日卡片與 20 日變化"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "台指選擇權 Put/Call 比",
+   "status": "有",
+   "where": "台股",
+   "source": "期交所 OpenAPI PutCallRatio",
+   "next": ""
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "期貨／選擇權大額交易人未沖銷部位",
+   "status": "缺",
+   "where": "",
+   "source": "期交所 OpenAPI OpenInterestOfLargeTradersFutures／Options",
+   "next": "抓取與歷史百分位"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "融資融券餘額與追繳日曆",
+   "status": "有",
+   "where": "台股・開盤前",
+   "source": "證交所 MI_MARGN",
+   "next": ""
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "整體融資維持率",
+   "status": "部分",
+   "where": "台股總經展望",
+   "source": "目前用媒體報導的估算",
+   "next": "找證交所官方數字或自己估算並標明"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "借券放空餘額與召回",
+   "status": "缺",
+   "where": "",
+   "source": "證交所借券系統（TWT93U 等）",
+   "next": "金管會 11/21 鼓勵召回借券後尤其重要"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "當沖比重",
+   "status": "部分",
+   "where": "台股總經展望",
+   "source": "證交所",
+   "next": "做成每日數字"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "注意股、處置股",
+   "status": "部分",
+   "where": "台股專業判讀",
+   "source": "證交所 announcement/notice、punish；櫃買",
+   "next": "處置股已有，注意股還沒有"
+  },
+  {
+   "group": "交易與籌碼",
+   "zh": "外資持股比率（類股、前 20 大）",
+   "status": "缺",
+   "where": "",
+   "source": "證交所 MI_QFIIS_cat、MI_QFIIS_sort_20",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "月營收（年增、加速／放緩、AI 供應鏈分層）",
+   "status": "有",
+   "where": "台股專業判讀、台股財報",
+   "source": "公開資訊觀測站（電腦端轉送）",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "法說會行事曆與本季營收進度",
+   "status": "有",
+   "where": "台股財報 #52-01",
+   "source": "公開資訊觀測站法人說明會一覽表",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "單季財報（EPS、毛利率、營益率）",
+   "status": "缺",
+   "where": "",
+   "source": "證交所 OpenAPI t187ap06_L_ci（累計數，要存每季快照相減）",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "財測達成情形",
+   "status": "缺",
+   "where": "",
+   "source": "證交所 OpenAPI t187ap15_L、t187ap16_L",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "財報後白話解讀",
+   "status": "有",
+   "where": "台股財報 #52-02",
+   "source": "每日排程",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "庫藏股",
+   "status": "有",
+   "where": "台股財報",
+   "source": "公開資訊觀測站買回自己公司股份彙總統計表",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "內部人申報轉讓",
+   "status": "有",
+   "where": "台股財報",
+   "source": "證交所 OpenAPI t187ap12_L（上市）",
+   "next": "上櫃的來源還沒找"
+  },
+  {
+   "group": "公司",
+   "zh": "董監持股質押",
+   "status": "缺",
+   "where": "",
+   "source": "公開資訊觀測站",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "除權息日曆",
+   "status": "有",
+   "where": "台股專業判讀",
+   "source": "證交所 TWT48U_ALL",
+   "next": ""
+  },
+  {
+   "group": "公司",
+   "zh": "重大訊息即時通知",
+   "status": "有",
+   "where": "Discord",
+   "source": "公開資訊觀測站 RSS",
+   "next": ""
+  },
+  {
+   "group": "資金與指數",
+   "zh": "ETF 規模、流向",
+   "status": "有",
+   "where": "台灣 ETF",
+   "source": "投信每日公告",
+   "next": ""
+  },
+  {
+   "group": "資金與指數",
+   "zh": "指數調整（台灣 50、高股息、MSCI）",
+   "status": "部分",
+   "where": "台股專業判讀",
+   "source": "指數公司規則；MSCI 由 Gemini 每週核對",
+   "next": "MSCI 官網有機器人驗證"
+  },
+  {
+   "group": "資金與指數",
+   "zh": "壽險資金與避險",
+   "status": "有",
+   "where": "壽險・房市・外資",
+   "source": "金管會、壽險公會",
+   "next": ""
+  },
+  {
+   "group": "資金與指數",
+   "zh": "國安基金進出",
+   "status": "部分",
+   "where": "新聞",
+   "source": "財政部新聞稿",
+   "next": "財政部沒有可用的 RSS，要找官方公告頁"
+  },
+  {
+   "group": "總經與政策",
+   "zh": "景氣燈號、領先指標",
+   "status": "有",
+   "where": "台灣經濟",
+   "source": "國發會",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "出口、外銷訂單",
+   "status": "有",
+   "where": "台灣經濟",
+   "source": "財政部、經濟部",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "央行利率、M1B／M2",
+   "status": "有",
+   "where": "央行與資金",
+   "source": "中央銀行",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "物價",
+   "status": "有",
+   "where": "台灣經濟",
+   "source": "主計總處",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "製造業 PMI",
+   "status": "缺",
+   "where": "",
+   "source": "中華經濟研究院",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "失業率、薪資",
+   "status": "缺",
+   "where": "",
+   "source": "主計總處",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "金管會措施",
+   "status": "有",
+   "where": "即時新聞、主線追蹤",
+   "source": "金管會新聞稿 RSS",
+   "next": ""
+  },
+  {
+   "group": "總經與政策",
+   "zh": "兩岸與台海風險",
+   "status": "有",
+   "where": "主線追蹤",
+   "source": "新聞分類與主線",
+   "next": ""
+  },
+  {
+   "group": "估值與風險",
+   "zh": "估值區間（自己的歷史）",
+   "status": "有",
+   "where": "台股專業判讀",
+   "source": "證交所 BWIBBU",
+   "next": ""
+  },
+  {
+   "group": "估值與風險",
+   "zh": "泡沫訊號清單",
+   "status": "有",
+   "where": "台股",
+   "source": "國發會、央行",
+   "next": ""
+  },
+  {
+   "group": "估值與風險",
+   "zh": "新台幣與台美利差",
+   "status": "有",
+   "where": "台灣債市、央行與資金",
+   "source": "央行、櫃買",
+   "next": ""
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "重大訊息（公開資訊觀測站）",
+   "status": "有",
+   "where": "Discord",
+   "source": "公開資訊觀測站 RSS",
+   "next": ""
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "個股急漲急跌（台股）",
+   "status": "有",
+   "where": "Discord",
+   "source": "本站行情，3 倍平常波動且 ≥6%",
+   "next": ""
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "台指期夜盤急跌",
+   "status": "有",
+   "where": "Discord",
+   "source": "期交所",
+   "next": ""
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "金管會、央行等官方新措施",
+   "status": "有",
+   "where": "Discord（主線追蹤）",
+   "source": "官方 RSS",
+   "next": ""
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "月營收公布後明顯加速或放緩（台灣 50＋中型 100）",
+   "status": "缺",
+   "where": "",
+   "source": "公開資訊觀測站（電腦端轉送）",
+   "next": "每月 10 日前後推播加速最多與放緩最多的公司"
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "開盤前燈號（ADR 價差極端、融資追繳高峰）",
+   "status": "缺",
+   "where": "",
+   "source": "本站開盤前預估卡",
+   "next": "每天 08:30 前一則，有紅燈才推"
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "大型公司宣布庫藏股",
+   "status": "有",
+   "where": "Discord",
+   "source": "公開資訊觀測站",
+   "next": ""
+  },
+  {
+   "group": "Discord 通知",
+   "zh": "自辦法說前一天提醒",
+   "status": "缺",
+   "where": "",
+   "source": "公開資訊觀測站法說會一覽表",
+   "next": "前一天晚上推當天的自辦法說與本季營收進度"
+  }
+ ]
+}

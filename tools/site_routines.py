@@ -26,9 +26,9 @@ EXPECT = (
     ("macro_voice.json", "每日總經情勢（口播）", "Daily macro voice", 12, False),
     ("deep.json", "每日深度研判", "Daily deep read", 24, True),        # runs Mon–Fri (US): weekends do not count
     ("learn.json", "每日學習筆記", "Daily learning notes", 24, False),
-    ("ai_view.json", "獨立 AI 觀察員", "AI observer", 12, False),
+    ("ai_view.json", "獨立 AI 觀察員", "AI observer", 12, True),        # trading days 07:00/21:00 (11-22: weekends were flagged late)
     ("earn_preview.json", "財報前瞻", "Earnings previews", 24, False),
-    ("earn_after.json", "財報後解讀", "Post-earnings reads", 12, False),
+    ("earn_after.json", "財報後解讀", "Post-earnings reads", 12, True),  # no reports on weekends, nothing to write (11-22)
     ("forecast.json", "一個月預判", "One-month calls", 96, False),
     ("bonds.json", "債市深度判讀", "Bond deep read", 24, True),        # runs Mon–Fri (US)
     ("feed.json", "學術動態", "Research feed", 168, False),

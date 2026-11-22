@@ -414,7 +414,9 @@ def _fm_summary() -> str:
 
 def sec_fullmarket(eng, mode: str = "score") -> str:
     """Shell for the client-side full-market table (data loaded from market/<mk>.json only when opened)."""
-    title = ("全市場排行（美股市值 10 億美元以上、台股上市＋上櫃、港股主板、日股東證 Prime／Standard／Growth）", "Full-market ranking") if mode == "score" else \
+    from wsb.data import fullmarket as FMK
+    mcap = float(FMK.cfg().get("min_mcap_usd", 1e9)) / 1e8              # settings.fullmarket.min_mcap_usd (11-22: was typed in the title)
+    title = (f"全市場排行（美股市值 {mcap:,.0f} 億美元以上、台股上市＋上櫃、港股主板、日股東證 Prime／Standard／Growth）", "Full-market ranking") if mode == "score" else \
         ("全市場個股・支撐／次級支撐參考區（美股、台股、港股、日股）", "Every stock: entry / add-on zones")
     note = T("全市場資料每天收盤後更新，只算技術面（情報面只有上方追蹤池才有）。分數在同一個市場內排名；族群為交易所／Nasdaq 官方產業分類。"
              "搜尋框輸入任何代號或名稱都會一起查全市場。", "Updated daily, technical only; ranks within each market; official industry groups.")
