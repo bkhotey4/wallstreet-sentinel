@@ -33,6 +33,12 @@ def main() -> dict:
         out["corp"] = {"fetched": s.get("fetched"), "buybacks": len(s.get("buybacks") or [])}
     except Exception as e:  # noqa: BLE001
         out["corp"] = {"error": str(e)}
+    try:
+        from wsb.data import tw_chips as CH
+        s = CH.write_seed(FEED / "tw_chips_seed.json")
+        out["chips"] = {"fetched": s.get("fetched"), "large": bool(s.get("large"))}
+    except Exception as e:  # noqa: BLE001
+        out["chips"] = {"error": str(e)}
     return out
 
 

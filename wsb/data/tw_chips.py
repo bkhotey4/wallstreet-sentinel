@@ -19,6 +19,7 @@ import os
 import re
 import time
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from ..config import DATA_DIR
@@ -26,6 +27,7 @@ from ..config import DATA_DIR
 log = logging.getLogger(__name__)
 FILE = DATA_DIR / "econ_tw_chips.json"
 SNAP = DATA_DIR / "econ_tw_fin_snap.json"
+SEED = Path(__file__).resolve().parents[2] / "research_feed" / "tw_chips_seed.json"
 UA = {"User-Agent": "Mozilla/5.0 (WallStreet Sentinel research site)"}
 U_QFII = "https://openapi.twse.com.tw/v1/fund/MI_QFIIS_cat"
 U_SBL = "https://www.twse.com.tw/exchangeReport/TWT93U?response=json"
@@ -193,6 +195,13 @@ def refresh(force: bool = False) -> Dict:
                 day[name] = v if name != "sbl" else {"date": v["date"], "total": v["total"]}
         except Exception as e:  # noqa: BLE001
             log.info("tw chips %s unavailable: %s", name, e)
+    seed = _load(SEED)                                   # PC relay (11-22: the TAIFEX large-trader CSV does not reach the cloud build)
+    for name in ("large",):
+        sv = seed.get(name) or {}
+        mine = str(((d.get(name) or {}).get("inst") or {}).get("date") or "")
+        if str((sv.get("inst") or {}).get("date") or "") > mine:
+            d[name] = sv
+            day[name] = sv
     if force or now - float(d.get("heavy_ts") or 0) >= HEAVY_TTL:
         d["heavy_ts"] = now
         for name, fn in (("pledge", lambda: parse_pledge(_get(U_PLEDGE), uni or None)), ("forecast", lambda: parse_forecast(_get(U_FCST)))):
@@ -225,4 +234,11 @@ def series(d: Dict, key, sub=None) -> List[tuple]:
             v = (v or {}).get(s) if isinstance(v, dict) else None
         if isinstance(v, (int, float)):
             out.append((day, float(v)))
+    return out
+
+
+def write_seed(path=SEED) -> Dict:
+    """PC → cloud relay for the parts the cloud cannot fetch (public exchange data)."""
+    out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text"))}
+    Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out

@@ -77,11 +77,17 @@ def fetch(today: Optional[date] = None, timeout: float = 20.0) -> List[Dict]:
     rows: List[Dict] = []
     for typek, board in (("sii", "上市"), ("otc", "上櫃")):
         for y, m in months_ahead(today):
-            r = requests.post(URL, data={"encodeURIComponent": 1, "step": 1, "firstin": 1, "off": 1, "TYPEK": typek,
-                                         "year": y, "month": f"{m:02d}", "co_id": ""}, headers=UA, timeout=timeout)
-            r.encoding = "utf-8"
-            rows += parse(r.text, board) if r.ok else []
-            time.sleep(1.0)
+            got: List[Dict] = []
+            for attempt in range(3):                       # 11-22: one of the four replies came back empty → 127 rows instead of 228
+                r = requests.post(URL, data={"encodeURIComponent": 1, "step": 1, "firstin": 1, "off": 1, "TYPEK": typek,
+                                             "year": y, "month": f"{m:02d}", "co_id": ""}, headers=UA, timeout=timeout)
+                r.encoding = "utf-8"
+                got = parse(r.text, board) if r.ok else []
+                if got or (r.ok and "查無" in r.text):
+                    break
+                time.sleep(3.0 * (attempt + 1))
+            rows += got
+            time.sleep(1.5)
     if not rows:
         raise RuntimeError("MOPS 法說會 list empty (blocked or changed)")
     seen, out = set(), []
@@ -121,6 +127,10 @@ def refresh(force: bool = False) -> Dict:
 def write_seed(path: Path = SEED) -> Dict:
     """PC → cloud relay: the same list, written to the public research_feed (public company announcements)."""
     d = refresh(force=True)
+    old = _load(Path(path))
+    if old.get("rows") and len(d.get("rows") or []) < 0.7 * len(old["rows"]):      # a partial fetch must not replace a good copy
+        log.warning("法說會 list shrank %d → %d; seed kept", len(old["rows"]), len(d.get("rows") or []))
+        return old
     if d.get("rows"):
         out = {"fetched": d.get("fetched"), "source": d.get("source"), "rows": d["rows"]}
         Path(path).write_text(json.dumps(out, ensure_ascii=False, indent=0), encoding="utf-8")
