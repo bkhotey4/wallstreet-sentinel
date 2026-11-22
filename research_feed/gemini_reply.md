@@ -1,4 +1,4 @@
-台北時間 2026-11-22 16:55
+台北時間 2026-11-22 17:55
 
 ### D-1｜回應 Q10 與 TWC-5、金管會限空官方公告原文核實：歷史單日跌逾 6% 後 5 天多為慣性測底，20 天表現取決於基本面；金管會 11/21 正式發布新聞稿（已核實官方新聞稿）自 11/23 起祭出五大限空措施；TWC-5 財測 3.2 倍落差根因為「第三季單季預測數」對「前三季累計查核數」
 - 事實（金管會官方新聞稿原文點開核實）：
@@ -183,7 +183,7 @@
 
 ---
 
-### POL-1｜美國商務部 BIS 遠端算力新規（RIN 0694-AK50）11/19 生效，11/21 正式發布合規申報專屬郵箱機制
+### POL-1｜美國商務部 BIS 遠端算力新規（RIN 0694-AK50）11/19 生效，11/21 正式發布合規申報專屬郵箱機制（無新進展）
 - 事實：美國商務部工業安全局（BIS）於聯邦公報發布之暫行最終規定《*Addressing Remote Access to Advanced Semiconductors*》（聯邦公報編號 2026-23529，RIN 0694-AK50）已於 **2026-11-19** 正式生效。新規建立全球適用的最終用途（End-use）管制，明令全球資料中心若提供超過 **12,000,000 aggregate TPP** 算力予中國（含澳門）或 D:5 國家實體，均須取得 BIS 許可；並對印尼、馬來西亞、新加坡、泰國、巴西增設許可要求。BIS 於 **11/21** 正式發布產業合規申報作業指引，指定透過 `EAR.Reports@bis.doc.gov` 與 `ERC@bis.doc.gov` 受理全球資料中心之排除清單申請與算力使用申報（美國商務部 BIS 官方網站 2026-11-21：https://www.bis.gov/press-release/bis-issues-rule-addressing-remote-access-american-super-intelligence-technology ；聯邦公報原文：https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ）。
 
 ### POL-2｜眾院外委會主席 Brian Mast 公開 BIS 對中核准 87.9 萬顆 AI 晶片許可，國會 12/01–12/03 三線聽證日程敲定（無新進展）
@@ -665,69 +665,69 @@
 
 ---
 
-### CODE-1｜tools/site_econ.py 第 708～709 行 與 675～685 行：成長股估值篩選卡小標題只標「營收月份 YYYY-MM」，但表格內「本益比、淨值比、技術面狀態」實為每日最新報價，借用月營收月份掩蓋最新估值真實日期（完全符合「借用別列日期」稽核重點）
+### CODE-1｜tools/site_layout.py 第 87 行：總覽大表正則表達式硬編碼「2007 年以來」，但底層歷史起點為動態計算，起點變動將導致正則匹配失敗默默丟失指標
 - 行號與內容：
-  - `tools/site_econ.py` 第 708～709 行：
-    `if tw and tw.get("available"):`
-    `    parts.append(f'<h4>{T("台股：成長價值排名前段", "Taiwan: top of the growth-value ranking")}<span class="muted small">　{T("營收月份", "Revenue month")} {esc(tw.get("ym", ""))}・'`
-    `f'{T("合格", "ranked")} {tw.get("ranked", 0)} / {tw["n"]}</span></h4>' + _top_tw(tw) + _jt("gtw", only=True))`
-  - `tools/site_econ.py` 第 675～685 行：
-    `def _top_tw(d: Dict, n: int = 12) -> str:`
-    `    ... tr = "".join(f'<tr>...<td class="r">{num(r["pe"], 1)}</td><td class="r"><b>{num(r["peg"], 2)}</b></td><td class="r">{num(r["pb"], 1)}</td><td class="small">{esc(r.get("st") or "—")}</td></tr>' ...)`
+  - `tools/site_layout.py` 第 87 行：
+    `("energy", r"柴油裂解價差 ([\d.]+) 美元／桶，在 2007 年以來第 (\d+) 百分位", lambda m: f"柴油裂解價差第 {m[2]} 百分位"),`
 - 為什麼有問題：
-  這正是 Claude 在任務單中要求重點尋找的「**表格某列顯示的日期其實是別的數列的日期**」之典型範例：
-  1. 小標題整行只標註了 `{T("營收月份", "Revenue month")} {esc(tw.get("ym", ""))}`（例如 2026-10）。
-  2. 但表格 `_top_tw` 顯示的欄位中，「今年累計營收年增」與「單月年增」確實是該營收月份（10 月）的數據；而「本益比（P/E）」、「股價淨值比（P/B）」、「PEG」與「技術面狀態（st）」其實是底層抓取證交所每日最新收盤價與估值（例如 11/20 盤後數值）。
-  3. 小標題只標一個「營收月份 2026-10」，會讓讀者誤以為該表整行（包含本益比與淨值比）都是 10 月底的歷史數字，造成數列日期嚴重借用與口徑混淆。
+  1. 正則表達式寫死硬編碼年份 `2007 年以來`。
+  2. 但在 `tools/site_energy.py` 第 59 行，卡片文字為：
+     `"zh": f"柴油裂解價差 {d['now']:.1f} 美元／桶，在 {d['since']} 年以來第 {d['pct']:.0f} 百分位：..."`
+     其中 `{d['since']}` 是在 `wsb/analytics/energy_chain.py` 第 60 行由熱燃油期貨（HO=F）與布蘭特期貨（BZ=F）的共同起點動態格式化得出：`s.index[0].strftime("%Y")`。
+  3. 一旦資料源歷史變更或不同步（例如起點變為 2008 年或更早），正則表達式 `2007 年以來` 將完全無法匹配，導致《今日總覽》大表中的能源指標默默消失，顯示為空白。
 - 建議怎麼改：
-  小標題改為同時標註營收月份與最新估值日：
-  `f'<span class="muted small">　營收月份 {esc(tw.get("ym", ""))}｜估值基準 {esc(tw.get("asof", "最新交易日"))}・合格 {tw.get("ranked", 0)} / {tw["n"]}</span>'`
+  將正則表達式中的硬編碼年份改為通用 4 位數年份匹配：
+  `("energy", r"柴油裂解價差 ([\d.]+) 美元／桶，在 \d{4} 年以來第 (\d+) 百分位", lambda m: f"柴油裂解價差第 {m[2]} 百分位"),`
 - 確定性：高。
 
-### CODE-2｜tools/relay_seeds.py 第 12 行：FEED 路徑硬編碼特定上層資料夾名稱 "wallstreet-sentinel"，若專案目錄名稱變更或於非預設名稱之 CI 環境執行將直接找不到路徑報錯中斷
+### CODE-2｜wsb/analytics/capex_link.py 第 159～163 行 與 172～180 行：買方資本支出以「交集季度 common」限制，任一買方財報晚出導致全體買方封閉在上一季，連帶使供應商最新一季營收遭強迫截斷並借用舊季度列示（符合「借用別列日期」稽核重點）
 - 行號與內容：
-  - `tools/relay_seeds.py` 第 12 行：
-    `FEED = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"`
+  - `wsb/analytics/capex_link.py` 第 159～163 行：
+    `common = None`
+    `for q in cap.values():`
+    `    ks = set(q)`
+    `    common = ks if common is None else common & ks`
+  - 第 172～180 行：
+    `j = pd.concat({"r": ry, "c": cy}, axis=1).dropna()`
+    `... now_r, now_c = float(j["r"].iloc[-1]), float(j["c"].iloc[-1])`
+    `rows.append({"sym": sym, ... "rev_yoy": now_r, "if_flat": now_r - slope * now_c, "q": str(j.index[-1])})`
 - 為什麼有問題：
-  1. `__file__` 為 `.../tools/relay_seeds.py`，其 `parents[0]` 為 `tools`，`parents[1]` 即為本專案根目錄。
-  2. 程式卻寫了 `parents[2] / "wallstreet-sentinel" / "research_feed"`。這強制假設專案目錄的資料夾名稱必須剛好是 `"wallstreet-sentinel"`。
-  3. 若使用者或 CI 伺服器將資料夾命名為 `wallstreet-sentinel-main`、`workspace`、或在其他目錄結構下執行，`parents[2] / "wallstreet-sentinel"` 將指向不存在的路徑，導致後續 `tw_rev_seed.json`、`tw_nsf_seed.json` 等寫入失敗報錯中斷。
+  1. 五大雲端買方（BUYERS：MSFT、GOOGL、AMZN、META、ORCL）中，若有一家因會計年度不同或公告延遲尚未送出最新季度（如 Q3），`common` 的交集操作會直接將所有買方的資本支出總額截斷在舊季度（如 Q2）。
+  2. 後續計算供應商營收與買方資本支出連動時，`pd.concat` 的 `dropna()` 會將供應商已公布的最新 Q3 營收硬生生削掉，只取到 `cy.index[-1]`（Q2）。
+  3. 這導致卡片表格中的「最新季營收年增率（rev_yoy）」顯示的其實是供應商上一季（Q2）的數據，並在表格欄位標記 `q: str(j.index[-1])`，形成借用買方滯後季度掩蓋供應商最新財報營收的異常。
 - 建議怎麼改：
-  改用相對於自身的標準父路徑：
-  `FEED = Path(__file__).resolve().parents[1] / "research_feed"`
+  買方資本支出若遇單一買方尚未公布最新季時，應允許依前季比重插補或估算，或在表格中分別獨立展示「供應商最新已公布單季營收年增」與「迴歸計算採用之對齊季度」。
 - 確定性：高。
 
-### CODE-3｜tools/site_twregime.py 第 116～119 行：台股進場環境卡資金條件（money）依賴 m1b 與 m2 兩數列，但迴圈僅取 m1b 最新月份做判定，若 m2 公布延遲將使條件返回 None 誤判為無資料
+### CODE-3｜wsb/data/fsr_watch.py 第 256 行：家庭貸款模組直接硬取 flow:AUTO 序列尾端，若車貸資料格式變更將拋出 IndexError 導致整卡崩潰
 - 行號與內容：
-  - `tools/site_twregime.py` 第 116～119 行：
-    `for k, key in (("trend", "taiex"), ("lead", "lead"), ("exports", "exports"), ("tw10y", "tw10y"), ("us10y", "us10"), ("money", "m1b")):`
-    `    s = S.get(key) or {}`
-    `    mx = max(s) if s else None`
-    `    each[k] = {"ok": conditions(mx, S).get(k) if mx else None, "month": mx}`
+  - `wsb/data/fsr_watch.py` 第 256 行：
+    `f0 = _ser(hh.get("flow:AUTO"))`
+    `return {"date": f0.index[-1].strftime("%Y-%m-%d"), ...}`
 - 為什麼有問題：
-  1. 在 `conditions(ym, S)` 函式中，`out["money"]` 定義為：
-     `out["money"] = None if ym not in m1 or ym not in m2 else m1[ym] >= m2[ym]`
-  2. 但在 `current()` 中，`for` 迴圈為 `"money"` 指定的 `key` 是 `"m1b"`。程式取 `mx = max(S["m1b"])`，然後呼叫 `conditions(mx, S).get("money")`。
-  3. 若某個月中央銀行先更新了 M1B，但 M2 尚未同步寫入 `S["m2"]` 時，`mx not in m2` 成立，`conditions(mx, S)["money"]` 就會直接變成 `None`。前端就會將該條件顯示為「⚪ 無資料」，即使前一個月兩者皆有值。
+  1. `household()` 函式在解析紐約聯準會 Excel 表時，若某一期工作表名稱或欄位命名變動導致 `"flow:AUTO"` 未能成功解析，`f0` 將為空序列（`empty Series`）。
+  2. 程式直接呼叫 `f0.index[-1]`，在空序列上會立即拋出 `IndexError: index -1 is out of bounds for axis 0 with size 0`。
+  3. 此未捕獲的例外將直接中斷 `_fsr_view` 的建置，導致《金融穩定監測》整張大卡顯示為空白。
 - 建議怎麼改：
-  對於 `"money"` 條件，其有效最新月份應取 M1B 與 M2 兩者的交集最大月份：
-  `mx = max(set(S.get("m1b", {})) & set(S.get("m2", {}))) if (S.get("m1b") and S.get("m2")) else None`
+  增加空序列防護或取所有已解析貸款類別的最大日期：
+  `valid = [r for r in rows if r.get("flow") is not None]`
+  `latest_d = rows[0]["date"] if valid else date.today().strftime("%Y-%m-%d")`
 - 確定性：高。
 
-### CODE-4｜tools/site_slow.py 第 68～70 行：選擇權隱含大跌機率卡說明文字直接寫死「最新 {l6[0]}」（取自 6 個月期數列日期），若 12 個月期數列更新日期不同步時，說明文字借用 6 個月期日期代表全表
+### CODE-4｜tools/site_stability.py 第 96、179～182 行：標售規模卡摘要磚將發債聲明立場與短債占比拼在一起，但兩者分別來自季度聲明與每月 MSPD，口徑日期存在落差（符合「借用別列日期」稽核重點）
 - 行號與內容：
-  - `tools/site_slow.py` 第 68～70 行：
-    `note = T(f"資料：明尼亞波利斯聯準銀行 Market-Based Probabilities，用 S&P 500 選擇權價格推算出的報酬分布，每週更新（最新 {l6[0]}）。" ...)`
+  - `tools/site_stability.py` 第 95～96 行：
+    `sub = "未來幾季維持中長債標售規模" if rf["state"] == "維持" else rf["read"][:40]`
+    `b = rf.get("bills") or {}`
+    `tiles.append(("st-refund", f"{rf['emoji']} 財政部發債", rf["state"], sub + (f"・短期國債占 {b['share']:.1f}%" if b else ""), ""))`
+  - 第 179～182 行：
+    `b["month"]`（MSPD 短債資料月）與 `dfc["month"]`（MTS 滾動赤字月）
 - 為什麼有問題：
-  1. 表格同時展示了「6 個月內（sp6m）」與「12 個月內（sp12m）」兩條獨立數列。
-  2. 說明文字直接寫死 `最新 {l6[0]}`，只反映 `s6` 的最新日期。若聯準銀行更新時 12 個月期數列發生時間差或兩者版本不同，說明文字借用 `s6` 的日期代表整張卡片，屬於微小的日期口徑借用。
+  1. 摘要磁磚將「標售規模聲明立場（每季一次，例如 11/06 聲明）」與「短期國債占可交易國債比重（每月一次，如 9 月底 MSPD）」拼接在同一行摘要。
+  2. 讀者一眼看去會誤以為「短期國債占 X%」是該季標售規模聲明發布當日的數字，而實際上短債比重每月都在變動，借用了季度聲明的時間標籤。
 - 建議怎麼改：
-  取兩數列最大日期或若兩者不同時分開標示：
-  `latest_d = max(s6[-1][0] if s6 else "", s12[-1][0] if s12 else "")`
+  磁磚小字清楚補上月份標籤：`sub + (f"・{b['month']} 短債占 {b['share']:.1f}%" if b else "")`。
 - 確定性：中。
-
-### CODE-5｜複查確認：tools/site_twdesk.py 大盤股權風險溢酬卡、_yi() 兆級負數判斷、tw_desk.py 季報順延與 tw_chips.py 假日鍵值問題已列入待辦修復（無新進展）
-- 事實：前輪稽核之 5 項問題（大盤股權風險溢酬卡借用日期、`_yi()` 兆級負數輸出為萬億、MOPS 加權指數本益比說明修正、季報假日順延、假日執行 hist 鍵值覆蓋）已確認列入待辦，複查記錄維持有效。
 
 ---
 
