@@ -45,6 +45,18 @@ def main() -> dict:
         out["macro2"] = {"fetched": s.get("fetched"), "pmi": (s.get("pmi") or [{}])[-1].get("ym"), "unemp": (s.get("unemp") or [{}])[-1].get("ym"), "wage": (s.get("wage") or [{}])[-1].get("ym")}
     except Exception as e:  # noqa: BLE001
         out["macro2"] = {"error": str(e)}
+    try:
+        from wsb.data import tw_nsf as NS
+        s = NS.write_seed(FEED / "tw_nsf_seed.json")
+        out["nsf"] = {"fetched": s.get("fetched"), "latest": (s.get("news") or [{}])[0].get("date")}
+    except Exception as e:  # noqa: BLE001
+        out["nsf"] = {"error": str(e)}
+    try:
+        from wsb.data import tw_night as TN
+        s = TN.write_seed(FEED / "tw_night_seed.json")
+        out["night"] = {"fetched": s.get("fetched"), "session": s.get("session")}
+    except Exception as e:  # noqa: BLE001
+        out["night"] = {"error": str(e)}
     try:                                                   # quarterly statements: when stale (> 3 days) or a newer quarter is filed
         import time as _t
         from wsb.data import tw_chips as CH

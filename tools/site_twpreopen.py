@@ -40,6 +40,10 @@ def lead(v: Dict) -> str:
         parts.append(f"台積電 ADR 換算後{side} {abs(a['now']):.1f}%，{rel}（近一年第 {a['pct']} 百分位，中位數 {a['med_1y']:.1f}%）；"
                      f"如果溢價回到近 20 天的常態，換算 2330 約 {a['lo']:,.0f}～{a['hi']:,.0f} 元（中間值 {a['mid']:,.0f}，"
                      f"比 {_md(a['tw'][0])} 收盤 {_s(a['chg_mid'])}%）")
+    tx = v.get("txn")
+    if tx:
+        parts.append(f"台指期夜盤（{_md(tx['session'])} 晚上到隔天清晨）近月收 {tx['near']['last']:,.0f}，比日盤結算 {_s(tx['near']['pct'], 2)}% {tx['light']}"
+                     + (f"，若加權指數開盤跟著動同樣幅度約 {tx['implied']:,.0f} 點" if tx.get("implied") else ""))
     if m:
         parts.append(f"融資 {_md(m['d'])} 一天{'減少' if m['diff'] < 0 else '增加'} {abs(m['diff']):,.0f} 億元（{_s(m['pct'])}% {m['light']}）")
     cal = [c for c in v.get("cal") or [] if c["dispose"] >= _cut()]
@@ -64,6 +68,19 @@ def body(v: Dict) -> str:
             f'{a["q25"]:.2f}% → {a["hi"]:,.1f} 元。溢價不一定回到常態，台股開盤還受融資斷頭、國安基金與當天消息影響，這只是換算，不是預測。</p>'
             '<p class="note">燈號（自訂）：溢價在自己近一年的第 5 百分位以下或 95 以上為 🔴，15 以下或 85 以上為 🟡。'
             '溢價偏低代表美國這邊跌得比台股多（台股還沒反映），偏高代表台股跌得比美國多。</p>')
+    tx = v.get("txn")
+    if tx:
+        rows = [f'<tr><td>{esc(r["month"])}</td><td class="r">{r["open"]:,.0f}</td><td class="r">{r["high"]:,.0f}</td><td class="r">{r["low"]:,.0f}</td>'
+                f'<td class="r"><b>{r["last"]:,.0f}</b></td><td class="r {"up" if (r["pct"] or 0) > 0 else "dn" if (r["pct"] or 0) < 0 else ""}">{_s(r["pct"], 2)}%</td>'
+                f'<td class="r">{"—" if r["vol"] is None else format(r["vol"], ",.0f")}</td></tr>' for r in tx["rows"] if r.get("last") is not None]
+        out.append(f'<h3>{tx["light"]} 台指期夜盤（{_md(tx["session"])} 15:00～隔天 05:00）</h3>'
+                   f'<p class="small">夜盤是台股收盤後、美股開著的時候還能交易的台指期；它的收盤最接近「美股跑完之後，台股大概會在哪裡開」。'
+                   f'近月 {esc(tx["near"]["month"])} 收 {tx["near"]["last"]:,.0f}，比前一個日盤結算 {_s(tx["near"]["pct"], 2)}%'
+                   + (f'；加權指數 {_md(tx["twii"][0])} 收 {tx["twii"][1]:,.0f}，套同樣幅度 ≈ {tx["implied"]:,.0f} 點（算術，期貨和現貨之間平常就有價差）' if tx.get("implied") else "")
+                   + '。</p>'
+                   + fold_rows(rows, 3, "<tr><th>月份</th><th class='r'>開</th><th class='r'>高</th><th class='r'>低</th><th class='r'>收</th><th class='r'>漲跌</th><th class='r'>成交量（口）</th></tr>", "個月份")
+                   + f'<p class="note">來源：<a href="{esc(SRC_TXN)}" target="_blank" rel="noopener">期交所期貨每日交易行情（盤後交易時段）</a>，抓取 {esc(tx.get("fetched") or "—")}。'
+                   '燈號（自訂）：台指期一天的波動標準差約 1.3%，夜盤漲跌 ±3% 以上 🔴、±1.5% 以上 🟡。</p>')
     night = v.get("night") or []
     if night:
         rows = [f'<tr><td>{esc(n["n"])}</td><td class="r">{n["p"]:,.2f}</td><td class="r {"up" if n["chg"] > 0 else "dn" if n["chg"] < 0 else ""}">{_s(n["chg"], 2)}%</td>'
@@ -108,12 +125,28 @@ SRC_MG = "https://www.twse.com.tw/zh/trading/margin/mi-margn.html"
 SRC_BFI = "https://www.twse.com.tw/zh/trading/foreign/bfi82u.html"
 SRC_ETF = "https://mis.twse.com.tw/stock/data/all_etf.txt"
 SRC_RULE = "https://money.udn.com/money/story/5607/9658938"
+SRC_TXN = "https://www.taifex.com.tw/cht/3/futDailyMarketReport"
+
+
+def tx_night(px: Dict) -> Dict:
+    """The latest night session, only if it ran after the latest TAIEX close (otherwise it is yesterday's news)."""
+    try:
+        from wsb.data import tw_night as TN
+        n = TN.refresh()
+    except Exception:  # noqa: BLE001
+        return {}
+    c = ((px or {}).get("^TWII") or {}).get("c") or []
+    if not n.get("near") or not c or str(n.get("session")) < str(c[-1][0]):
+        return {}
+    pct = n["near"].get("pct")
+    return {**n, "light": TN.light(pct), "twii": c[-1], "implied": c[-1][1] * (1 + pct / 100) if pct is not None and c[-1][1] else None}
 
 
 def sec_tw_preopen(eng=None) -> str:
     try:
         from wsb.data import tw_preopen as P
         v = P.view()
+        v["txn"] = tx_night(P.load().get("px") or {})
     except Exception:  # noqa: BLE001
         return ""
     if not (v.get("adr") or v.get("mg")):

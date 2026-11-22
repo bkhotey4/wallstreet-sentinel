@@ -1105,7 +1105,7 @@ def twal_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
     out = []
     p = d.get("preopen") or {}
     due = [c for c in p.get("cal") or [] if day in (c.get("topup"), c.get("dispose"))]
-    red = p.get("adr_light") == "🔴" or (p.get("mg") or {}).get("light") == "🔴" or due
+    red = p.get("adr_light") == "🔴" or (p.get("mg") or {}).get("light") == "🔴" or (p.get("night") or {}).get("light") == "🔴" or due
     if t.tm_wday < 5 and 450 <= hm <= 545 and red and f"twpre:{day}" not in done:
         out.append({"kind": "pre", "key": f"twpre:{day}", "p": p, "due": due})
     r = d.get("rev") or {}
@@ -1115,6 +1115,14 @@ def twal_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
     n = d.get("irs_next") or {}
     if n.get("rows") and 1140 <= hm <= 1410 and f'twirs:{n.get("date")}' not in done:
         out.append({"kind": "irs", "key": f'twirs:{n.get("date")}', "n": n})
+    f = d.get("nsf") or {}
+    try:
+        from datetime import date as _d
+        fresh = 0 <= (_d.fromisoformat(day) - _d.fromisoformat(str(f.get("date")))).days <= 3
+    except ValueError:
+        fresh = False
+    if fresh and 420 <= hm <= 1410 and f'twnsf:{f.get("url")}' not in done:      # a new 國安基金 release, 07:00–23:30, once
+        out.append({"kind": "nsf", "key": f'twnsf:{f.get("url")}', "f": f})
     return out
 
 
@@ -1126,6 +1134,10 @@ def twal_embed(a: Dict) -> Dict:
         if p.get("adr_light") == "🔴":
             lines.append(f'・台積電 ADR 價差 {p.get("adr_now")}%，在一年裡的第 {p.get("adr_pct")} 百分位（極端）；價差回到最近 20 天中位數時，台積電約對應 '
                          f'{p.get("adr_mid")} 元（{(p.get("adr_chg_mid") or 0):+.1f}%）。這是算術，不是預測。')
+        nt = p.get("night") or {}
+        if nt.get("light") == "🔴":
+            lines.append(f'・台指期夜盤近月收 {nt.get("last"):,.0f}，比日盤結算 {nt.get("pct"):+.2f}%'
+                         + (f'；加權指數套同樣幅度約 {nt["implied"]:,.0f} 點（算術）' if nt.get("implied") else "") + '。')
         if mg.get("light") == "🔴":
             lines.append(f'・融資餘額 {str(mg.get("d"))[5:]} 一天 {mg.get("pct")}%（{mg.get("now")} 億元），借錢買股的人還在被迫賣。')
         if p.get("mratio"):
@@ -1144,6 +1156,13 @@ def twal_embed(a: Dict) -> Dict:
                                 + "**加速最多**" + NL + f(r.get("acc") or []) + NL + "**放緩最多**" + NL + f(r.get("slow") or []) + NL
                                 + "營收是過去式；加速代表訂單在進來，放緩不一定是壞事（可能是去年基期太高）。完整的月營收熱度在網站「台股專業判讀」。")[:4000],
                 "footer": {"text": "WallStreet Sentinel · 台股月營收 · 公開資訊觀測站 · 不構成投資建議"}}
+    if a["kind"] == "nsf":
+        f, st = a["f"], (a["f"].get("status") or {})
+        what = {"on": "國安基金目前在執行護盤", "off": "國安基金目前沒有在執行護盤"}.get(st.get("state"), "國安基金有新的官方新聞稿")
+        return {"title": f'🏛️ 國安基金：{f.get("title")}', "color": 0x0EA5E9, "url": f.get("url") or url + "#tw_desk",
+                "description": (f'一句話看懂：{what}（財政部 {f.get("date")} 新聞稿）。官方不公布每天買多少，金額要等每季報表。' + NL + NL
+                                + (f.get("body") or "")[:600] + NL + NL + "整理與歷次執行期間在網站「台股專業判讀」頁。")[:4000],
+                "footer": {"text": "WallStreet Sentinel · 國安基金 · 財政部原文 · 不構成投資建議"}}
     n = a["n"]
     rows = []
     for x in n.get("rows") or []:

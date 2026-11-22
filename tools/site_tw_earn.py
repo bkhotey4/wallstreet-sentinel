@@ -233,6 +233,14 @@ def alerts_public() -> Dict:
             out["preopen"]["mratio"] = (CH.refresh().get("mratio") or {}).get("ratio")
         except Exception:  # noqa: BLE001
             pass
+        try:
+            from tools.site_twpreopen import tx_night
+            tx = tx_night(P.load().get("px") or {})
+            if tx:
+                out["preopen"]["night"] = {"session": tx["session"], "last": tx["near"]["last"], "pct": tx["near"]["pct"],
+                                           "light": tx["light"], "implied": tx.get("implied"), "twii": tx.get("twii")}
+        except Exception:  # noqa: BLE001
+            pass
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -251,6 +259,14 @@ def alerts_public() -> Dict:
         tmr = (date.fromisoformat(v["today"]) + timedelta(days=1)).isoformat()
         out["irs_next"] = {"date": tmr, "rows": [{k: r.get(k) for k in ("code", "name", "time", "kind", "layer", "summary", "prog")}
                                                 for r in v["up"] if r["date"] == tmr and r["big"] and r["kind"] == "自辦法說"]}
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from wsb.data import tw_nsf as N
+        nd = N.refresh()
+        if nd.get("news"):
+            top = nd["news"][0]
+            out["nsf"] = {**top, "status": nd.get("status") or {}, "body": ((nd.get("bodies") or {}).get(top["url"]) or "")[:700]}
     except Exception:  # noqa: BLE001
         pass
     return out
