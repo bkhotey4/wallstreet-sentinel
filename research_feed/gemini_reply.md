@@ -1,4 +1,4 @@
-台北時間 2026-11-22 09:45
+台北時間 2026-11-22 10:55
 
 ### D-1｜回應 Q10（加權指數歷史單日跌幅 ≥6% 後續表現與 11/20 籌碼與救市全貌）：歷史單日跌逾 6% 後 5 天直接 V 轉機率低（多為慣性測底），但若非總經蕭條，經融資清洗與強力救市後 20 個交易日反彈強勁；11/20 上市融資暴減 491 億創歷史紀錄，卓揆召集專案會議，金管會 11/21 宣布自 11/23 起祭出「全面平盤下禁空＋保證金 150%」第三波限空令，追繳斷頭賣壓將於 11/23～11/25 分梯釋放
 - 事實（加權指數歷史單日跌幅 ≥6% 後續 5 日與 20 日表現對比，資料來源：證交所加權指數歷史資料頁 https://www.twse.com.tw/zh/indices/taiex/mi-5min-hist.html 與收盤行情 https://www.twse.com.tw/zh/trading/historical/fmtqik.html ）：
@@ -34,7 +34,7 @@
   1. **Facebook（2012/05/18，發行價 $38.00）**：主承銷商摩根士丹利（Morgan Stanley）在上市首日動用數十億美元超額配售（綠鞋機制）資金，於 $38.00 處築起龐大穩價買盤，勉強守住首日收盤價於 $38.23（微漲 0.6%）；但穩價額度在首日幾乎消耗殆盡，**第 2 個交易日（5/21 週一）開盤即跌破 $38 發行價重挫至 $34 附近**，一週內跌至 $31，隨後數月下探至 $17.55。此舉引發 Zynga、LinkedIn、Groupon 等同產業網路社群股全面暴跌殺估值（New York Fed 實證研究：https://www.newyorkfed.org/medialibrary/media/research/current_issues/ci18-6.pdf ；Forbes：https://www.forbes.com/sites/ericsavitz/2012/05/21/facebook-breaking-38-ipo-price/ ）。
   2. **Uber Technologies（2019/05/10，發行價 $45.00）**：在同業 Lyft 上市破發與中美貿易緊張背景下，Uber 首日穩價買盤徹底失守，**開盤即報 $42.00 破發**，終場大跌 **7.6%（收 $41.57）**，首日市值蒸發 6.55 億美元創當時紀錄；承銷商因股價直接跌破發行價，無法在發行價之上行使綠鞋，同業 Lyft 與共享出行板塊同步重挫逾 7%–10%（The Guardian 2019/05/10：https://www.theguardian.com/technology/2019/may/10/uber-shares-ipo-fall-trading-debut ）。
   3. **規律總結**：承銷商的穩價買盤本質是利用超額配售產生的空頭部位進行市場回購，其防線通常**只能支撐 1～3 個交易日**；一旦面對宏觀去槓桿或產業重估，穩價買盤耗盡後往往伴隨更劇烈的下挫，並無一例外向同產業未實現獲利的同類股傳導賣壓。
-- 事實（Anthropic PBC SEC Form 424B4 閉鎖期原文章節核對，SEC EDGAR 官方文件 2026-11-18：https://www.sec.gov/Archives/edgar/data/0002012845/000119312526438902/d424b4.htm ）：
+- 事實（Anthropic PBC SEC Form 424B4 閉鎖期原文章節核對，SEC EDGAR 官方文件 2026-11-18：https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm ）：
   - **涵蓋總股數**：約 **155 億股** A 類普通股等當量（含 N 類轉換股與員工期權）。
   - **首日立即解禁額度（Day One Early Release）**：非創辦人之董事、高階主管及現任／前任員工，於**上市首日（2026/11/19）即可出售最高 10% 之持股**（合計約 **3.15 億股**），這也是 ANT 首日成交量爆出 8.4 億股、次日爆出 4 億股的核心籌碼來源。
   - **分期解禁梯隊（Staged Early Expirations）**：特定早期投資人與非核心股東持股，將於招股書發布後約 **第 27 天（2026 年 12 月中旬）、第 48 天（2027 年 1 月初）、第 62 天與第 76 天** 分批解禁。
@@ -271,58 +271,106 @@
 
 ---
 
-### TWC-1｜專業台股交易台會看、但本站清單（tw_coverage.json）目前缺漏的 4 大核心項目（來源、更新頻率與官方免費網址）
-- 事實（依據外資券商台股策略報告、期交所與證交所公開資料目錄核對）：
-  1. **台幣 NDF（無本金交割遠期外匯折溢價）**：
-     - **為什麼重要**：外資法人在進出台股現貨前，通常會在海外離岸市場（新加坡、香港）透過台幣 1 個月或 3 個月期 NDF 進行外匯避險或預先鎖定匯率。NDF 折溢價幅度是預判外資次日現貨大額買賣超與台幣走勢的最領先指標。
-     - **更新頻率**：每日更新。
-     - **官方免費來源**：中央銀行外匯局「台北外匯市場即時成交與遠期外匯統計」網頁（打得開、無驗證）：https://www.cbc.gov.tw/tw/cp-381-28564-1FF45-1.html 。
-  2. **有價證券借貸成交彙總與平均費率（SBL，非僅借券賣出）**：
-     - **為什麼重要**：目前清單只看「借券放空賣出（TWT93U）」，但借券本身分為「借入（成交）」與「在市場賣出」。外資借入股票後可放在手中作為庫存，未賣出的借券餘額是潛在的空方彈藥庫；借券成交費率跳升代表法人搶券避險，是市場轉空的重要前兆。
-     - **更新頻率**：每日盤後 20:00 前更新。
-     - **官方免費來源**：證交所有價證券借貸資訊系統「借券成交彙總表」：https://www.twse.com.tw/zh/page/trading/SBL/TWT93U.html 與證交所產品服務借券專區 `https://www.twse.com.tw/zh/SBL/summary.html`。
-  3. **券商主力分點買賣超（前 15 大買賣超券商分點明細）**：
-     - **為什麼重要**：台股特有的「籌碼面靈魂」。外資主要透過四大外資保管券商分點（美商高盛、摩根大通、台灣摩根士丹利、美林）下單，內資主力與當沖大戶則聚集特定分點（元大和平、凱基台北）。觀察權值股是由外資券商大倒貨還是特定分點護盤，是交易台每日必備資訊。
-     - **更新頻率**：每日盤後 17:30 更新。
-     - **官方免費來源**：證交所「自營商及各證券商買賣超彙總報表」（TWT43U / TWT44U）：https://www.twse.com.tw/zh/page/trading/fund/TWT43U.html 。
-  4. **市場違約交割彙總公告（集中市場 T+2 申報）**：
-     - **為什麼重要**：股價連續劇烈重挫時，券商申報違約交割金額是評估「系統性流動性斷鏈」的關鍵硬指標。11/19 元大和平申報 1.289 億元違約交割即引發高度關注。
-     - **更新頻率**：每個交易日上午 11:00 前公布前日申報案件。
-     - **官方免費來源**：證交所市場公告「證券商申報投資人違約案件彙總表」：https://www.twse.com.tw/zh/announcement/punish.html 。
+### TWC-1｜中經院製造業與非製造業 PMI：官方固定發布頁、可下載試算表檔、主要欄位與每月公布日排程
+- 事實（中華經濟研究院與國家發展委員會官方資料來源）：
+  - **每月公布日與時間**：固定於**每月第 1 個工作日**（若逢週末或國定假日則順延至次一工作日）下午 **14:00** 於中華經濟研究院召開記者會並同步於官網發布最新數據與新聞稿。
+  - **官方固定發布網頁**：
+    1. **中經院採購經理人調查報告專區**（文字分析與各產業月報 PDF）：https://www.cier.edu.tw/
+    2. **國發會景氣指標查詢系統（製造業 PMI 專區）**：https://index.ndc.gov.tw/n/zh_tw/PMI
+    3. **國發會景氣指標查詢系統（非製造業 NMI 專區）**：https://index.ndc.gov.tw/n/zh_tw/NMI
+  - **可下載試算表檔案網址（免驗證、固定格式）**：
+    - 國發會系統在上述查詢頁面下方提供固定的 ODS / XLS 匯出下載功能（GET 請求直接取得）：
+      - 製造業 PMI：`https://index.ndc.gov.tw/n/zh_tw/PMI/download/xls` （或點選頁面之 `Download.xls` / `Download.ods`）
+      - 非製造業 NMI：`https://index.ndc.gov.tw/n/zh_tw/NMI/download/xls`
+  - **試算表核心欄位結構**：
+    - 製造業 PMI 包含：`資料年月`、`製造業採購經理人指數(季調值)`、`製造業採購經理人指數(未季調值)`，以及五項組成擴散指標（`新增訂單數量`、`生產數量`、`人力僱用數量`、`供應商交貨時間`、`現有原物料存貨水準`），與其他追蹤項目（`客戶存貨`、`原物料價格`、`未完成訂單`、`新增出口訂單`、`進口原物料數量`、`未來六個月展望`），並細分電子暨光學、基礎原物料、交通工具、電力暨機械、食品暨紡織、化學生技等六大產業指數。
 
-### TWC-2｜針對清單上「缺」或「部分」項目的免費官方來源（端點、網址與欄位）
-- 事實（逐項核對期交所、櫃買中心、主計總處、中經院之官方 OpenAPI 與免費公開頁面）：
-  1. **台指期夜盤（盤後交易時段）行情**：
-     - **官方免費來源**：期交所官方 OpenAPI。
-     - **API 網址**：`https://openapi.taifex.com.tw/v1/DailyMarketReportFut`（免金鑰，GET 請求直接回傳 JSON）。
-     - **欄位與規則**：期交所夜盤行情（15:00～次日 05:00）在結算規則中歸屬於「次一營業日」，回傳之 JSON 陣列內包含 `Contract`（TX、MTX）、`TradingSession`（"AfterHours" 或盤後標記）、`OpenPrice`、`HighPrice`、`LowPrice`、`ClosePrice`、`Volume` 等。
-  2. **期貨／選擇權大額交易人未沖銷部位（OI）**：
-     - **官方免費來源**：期交所官方 OpenAPI。
-     - **API 網址**：期貨端點 `https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersFutures`；選擇權端點 `https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersOptions`。
-     - **欄位**：包含 `Date`、`Contract`、`MarketOI`（全市場未平倉）、前五大及前十大交易人買賣方未平倉口數與佔比、前五大及前十大中「特定法人」買賣方未平倉口數與佔比。
-  3. **借券放空餘額與召回（TWT93U）**：
-     - **官方免費來源**：證交所官方 Web API。
-     - **API 網址**：`https://www.twse.com.tw/exchangeReport/TWT93U?response=json&date=YYYYMMDD`。
-     - **欄位**：包含代號、名稱、融券前日餘額、融券今日賣出、融券今日還券、融券今日餘額、借券賣出前日餘額、借券賣出今日賣出、借券賣出今日還券、借券賣出今日餘額、次一營業日可借券賣出限額。
-  4. **外資持股比率（MI_QFIIS）**：
-     - **官方免費來源**：證交所官方 Web API。
-     - **API 網址**：`https://www.twse.com.tw/fund/MI_QFIIS?response=json&date=YYYYMMDD&selectType=ALLBUT0999`。
-     - **欄位**：證券代號、證券名稱、發行股數、全體外資及陸資持有股數、全體外資及陸資持股比率、外資尚可投資股數、全體外資及陸資持股比例上限。
-  5. **內部人申報轉讓（上櫃公司來源）**：
-     - **官方免費來源**：櫃買中心官方 OpenAPI。
-     - **API 網址**：`https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O`（持股轉讓日報表）與 `https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap13_O`（未轉讓日報表）。
-     - **欄位**：公司代號、公司名稱、出表日期、申報人身分、預定轉讓方式、預定轉讓總股數、目前持有股數、有效轉讓期間。直接解決本站 `tw_corp.py` 缺漏上櫃內部人申報之缺口。
-  6. **董監持股質押彙總**：
-     - **官方免費來源**：上櫃使用櫃買中心 OpenAPI：`https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap09_O`；上市使用證交所 OpenAPI：`https://openapi.twse.com.tw/v1/opendata/t187ap09_L`。
-     - **欄位**：公司代號、公司名稱、董事監察人實際持有股數、質權設定股數、質權設定占實際持有股數比例（%）。
-  7. **台灣製造業採購經理人指數（PMI）與非製造業 NMI**：
-     - **官方免費來源**：國家發展委員會與中華經濟研究院。
-     - **發布網址**：中經院採購經理人調查系統 `https://pmi.cier.edu.tw` 與國發會景氣動向專區 `https://www.ndc.gov.tw/`。每月第一個工作日上午 10:00 發布新聞稿與最新數值。
-  8. **失業率與受僱員工薪資**：
-     - **官方免費來源**：行政院主計總處。
-     - **發布網址**：中華民國統計資訊網新聞稿專區 `https://www.stat.gov.tw/`。失業率每月 22～25 日下午 16:00 發布；薪資與生產力統計每月 10～15 日下午 16:00 發布。
-  9. **國安基金官方公告**：
-     - **官方免費來源**：財政部全球資訊網新聞稿專區：`https://www.mof.gov.tw/`。
+### TWC-2｜行政院主計總處失業率、受僱員工薪資：統計資料庫 API 網址、呼叫語法與核心欄位
+- 事實（行政院主計總處總體統計資料庫與政府資料開放平臺）：
+  - **官方免金鑰 REST API 端點**：
+    - 主計總處已建置基於 SDMX-JSON / API-JSON 架構之「總體統計資料庫 API」，採用 HTTP GET 請求，無須 API 金鑰或登入即可直接機器讀取。
+    - **基礎 API 呼叫格式**：
+      `https://nstatdb.dgbas.gov.tw/dgbasAll/webMain.aspx?sdmx/<dataset_id>/<filter>&startTime=YYYYMmm&endTime=YYYYMmm`
+  - **失業率官方端點與資料集**：
+    - **資料集代碼**：`A040101020`（人力資源調查重要指標）。
+    - **查詢端點範例**：`https://nstatdb.dgbas.gov.tw/dgbasAll/webMain.aspx?sdmx/A040101020/..M&startTime=2026M01&endTime=2026M10`
+    - **回傳主要欄位**：`Period`（資料年月）、`統計項`（失業率 %、季調失業率 %、就業人數、失業人數、勞動力參與率 %）。每月 22～25 日下午 16:00 發布。
+  - **每月受僱員工經常性薪資官方端點**：
+    - **資料集代碼**：`A040201010`（工業及服務業受僱員工每人每月薪資）。
+    - **查詢端點範例**：`https://nstatdb.dgbas.gov.tw/dgbasAll/webMain.aspx?sdmx/A040201010/..M&startTime=2026M01&endTime=2026M10`
+    - **回傳主要欄位**：`Period`（統計年月）、`行業別`（工業及服務業全體、製造業、資訊電子業等）、`經常性薪資`（每人每月平均新台幣元）、`總薪資`（含獎金與加班費）、`實質經常性薪資`（剔除物價變動後）。每月 10～15 日下午 16:00 發布。
+
+### TWC-3｜期交所台指期夜盤：官方 OpenAPI 端點、交易時段標記、結算日期歸屬與每日下載檔網址
+- 事實（臺灣期貨交易所官方 OpenAPI 與資料下載專區）：
+  - **官方免金鑰 OpenAPI 端點**：
+    - **端點網址**：`https://openapi.taifex.com.tw/v1/DailyMarketReportFut`
+    - **HTTP 方法**：`GET`（直接回傳最近一個交易日之期貨完整 JSON 陣列，不支援歷史日期參數，每日須落地備份）。
+  - **夜盤（盤後交易時段）辨識規則與欄位**：
+    - 回傳 JSON 之每一筆物件包含以下關鍵欄位：
+      - `Date`：交易日（字串，如 `"20261120"`）。**期交所結算規則明訂：下午 15:00 至次日 05:00 之盤後交易（夜盤），其 Date 歸屬於「次一營業日」**。
+      - `Contract`：契約代碼（臺股期貨為 `"TX"`、小型臺指為 `"MTX"`）。
+      - `ContractMonth(Week)`：契約月份或週別（如 `"202612"`，跨月價差單會帶 `"/"`，過濾時須排除）。
+      - `TradingSession`：**交易時段標記，`"AfterHours"` 代表盤後交易時段（夜盤）**，`"Regular"` 代表一般日間交易時段。
+      - `Open`、`High`、`Low`、`Last`：開盤價、最高價、最低價、最後成交價（夜盤收盤價看 `Last`）。
+      - `Volume`：成交量（夜盤總口數）。
+      - `SettlementPrice`：結算價。
+  - **歷史夜盤每日下載檔（批次歷史資料網址）**：
+    - 期交所每日歷史行情下載專區：`https://www.taifex.com.tw/cht/3/dlFutDailyMarketView`，可透過 POST 帶入日期直接下載整日含一般與盤後之 CSV 報表。
+
+### TWC-4｜櫃買中心（TPEx）：借券賣出餘額、內部人事前申報、注意股票之官方 OpenAPI 端點
+- 事實（證券櫃檯買賣中心 TPEx 官方 OpenAPI 規格書）：
+  - **櫃買官方 OpenAPI 基礎網址**：`https://www.tpex.org.tw/openapi/v1/`（免金鑰、HTTP GET 直接回傳 JSON）。
+  - **上櫃股票借券賣出與融券餘額**：
+    - **官方端點**：`https://www.tpex.org.tw/openapi/v1/tpex_margin_sbl`
+    - **欄位**：`Date`、`SecuritiesCompanyCode`（證券代號）、`CompanyName`、`MarginShortBalance`（融券餘額）、`SBLShortBalance`（**借券賣出當日餘額**）、`SBLShortDailyVolume`（借券賣出當日成交量）、`SBLShortQuota`（次一營業日借券賣出限額）。每日盤後 20:30 更新。
+  - **上櫃公司內部人持股轉讓事前申報**：
+    - **官方端點**：`https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O`（持股轉讓事前申報日報表）與 `https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap13_O`（持股未轉讓日報表）。
+    - **欄位**：`公司代號`、`公司名稱`、`出表日期`、`申報人身分`、`預定轉讓方式`、`預定轉讓總股數-自有持股`、`目前持有股數-自有持股`、`有效轉讓期間`。
+  - **上櫃公布注意股票與處置股票**：
+    - **注意股票官方端點**：`https://www.tpex.org.tw/openapi/v1/tpex_trading_warning_information` （每日 18:30 前公布當日列為注意股票之上櫃標的與觸犯條款）。
+    - **處置股票官方端點**：`https://www.tpex.org.tw/openapi/v1/tpex_disposal_information` （公布遭處置之分盤交易、預收款券措施）。
+
+### TWC-5｜證交所 OpenAPI `t187ap15_L` 財測達成情形（簡式）：中華電實際數 32,139,221 與預測數 9,455,288～10,182,350 口徑差異與會計科目拆解
+- 事實（證交所 OpenAPI 規格與中華電信官方合併財務報告比對）：
+  - **會計科目本質**：兩者之底層會計科目皆為**「本期綜合損益總額－歸屬於母公司業主」**（非控制權益另計，新台幣千元）。
+  - **口徑差異根因（累計數 vs 單季預測數）**：
+    1. **「截至該季經會計師查核或核閱數」＝ 32,139,221 千元（約 321.39 億元）**：此數值為中華電信**「截至第三季（1～9月）之累計前三季歸屬於母公司業主綜合損益」**。查核核閱數在會計定義上是「自年初至當季末之累計實際數」。
+    2. **「截至該季綜合損益預測數」＝ 9,455,288 ～ 10,182,350 千元（約 94.55 億～101.82 億元）**：中華電信在公開資訊觀測站申報財測預測數時，**僅填報了「第三季單一季度（7～9月）」之預測區間**，並未將前兩季之預測累計加總進去。
+  - **結論**：兩者相差約 3.2 倍（實際數為前三季累計約 321 億，預測數為單季約 95～102 億），並非金額計算錯誤或會計作假，而是「全年度前三季累計實際數」與「單季財測預測區間」的**期間口徑錯位**。若要正確計算達成率，必須將第三季單季實際數（累計 321 億扣除前兩季累計數）再去對比單季預測數，或以全年度前三季預測累計數進行對比。
+
+### TWC-6｜公開資訊觀測站歷史季報（綜合損益表）免登入、依年度季別查詢之官方網址
+- 事實（公開資訊觀測站 MOPS 官方查詢介面與 Web 端點）：
+  - **單一公司各季合併綜合損益表（免登入 GET 網址）**：
+    - **網址格式**：`https://mops.twse.com.tw/mops/web/t164sb04?firstin=1&step=1&isnew=false&co_id={代號}&year={民國年}&season={季別}`
+    - **範例（台積電 113 年第 3 季）**：`https://mops.twse.com.tw/mops/web/t164sb04?firstin=1&step=1&isnew=false&co_id=2330&year=113&season=03`
+    - 無須登入、直接回傳包含營業收入、營業成本、營業毛利、營業利益、稅前淨利、本期淨利、基本每股盈餘（EPS）之 HTML 表格。
+  - **全市場上市櫃公司綜合損益表彙總查詢（免登入 POST 端點）**：
+    - **網址**：`https://mopsov.twse.com.tw/mops/web/ajax_t163sb04`
+    - **POST 參數**：`encodeURIComponent=1&step=1&firstin=1&off=1&TYPEK=sii&year=113&season=03`（上市設 `TYPEK=sii`，上櫃設 `TYPEK=otc`）。
+    - 伺服器直接回傳全市場該季完整財報表格，可依此計算單季營收、單季毛利率與單季 EPS。
+
+### TWC-7｜期交所 OpenAPI `OpenInterestOfLargeTradersOptions`（選擇權大額交易人）完整欄位說明
+- 事實（臺灣期貨交易所 OpenAPI 規格書）：
+  - **端點網址**：`https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersOptions`
+  - **核心欄位與定義**：
+    1. `Date`：交易日期（YYYYMMDD）。
+    2. `Contract`：契約代碼（如臺指選擇權 `"TXO"`）。
+    3. `CallPut`：買賣權別（`"C"` 或 `"Call"` 代表買權；`"P"` 或 `"Put"` 代表賣權）。
+    4. `ContractMonth(Week)`：到期月份或週別代碼。
+    5. `MarketOI`：全市場該商品之未沖銷契約口數（全市場 OI 總量）。
+    6. `Top5BuyOI` / `Top5BuyPercent`：前五大交易人買方未沖銷口數與佔全市場比例（%）。
+    7. `Top5SellOI` / `Top5SellPercent`：前五大交易人賣方未沖銷口數與佔全市場比例（%）。
+    8. `Top10BuyOI` / `Top10BuyPercent`：前十大交易人買方未沖銷口數與佔全市場比例（%）。
+    9. `Top10SellOI` / `Top10SellPercent`：前十大交易人賣方未沖銷口數與佔全市場比例（%）。
+    10. `SpecificTop5BuyOI` / `SpecificTop5SellOI`：前五大中之「特定法人」買方與賣方未平倉口數。
+    11. `SpecificTop10BuyOI` / `SpecificTop10SellOI`：前十大中之「特定法人」買方與賣方未平倉口數。
+
+### TWC-8｜財政部國安基金進場、退場官方公告與新聞稿固定網址
+- 事實（財政部全球資訊網）：
+  - **國安基金訊息與公告固定專區網址（永久固定網址，無驗證）**：
+    `https://www.mof.gov.tw/multiplelist/3f550978eef94efd8c82301f2f81014e`
+  - **專區內容**：包含國家金融安定基金管理委員會歷次委員會議新聞稿（進場授權、退場宣布、每季例會執行成效與持股出清狀況）、每季財務報表與資產負債表。
+  - **新聞發布時間慣例**：例行每季召開委員會議後（每年 1、4、7、10 月中旬），於傍晚 17:30 統一在此專區發布新聞稿；遇重大國際事件召開臨時會時亦同步在此專區刊登。
 
 ---
 
@@ -365,13 +413,8 @@
 ### SITE-2｜複查確認：《今晚大事看板》Anthropic 事件狀態已正常轉為「已結束」
 - 事實：本站前端《今晚大事看板》中之 Anthropic（ANT）掛牌事件，已於 11/20 晚上修復完畢，不再顯示為「進行中」，並已正確標記為「已結束」，補上了首日交易數據（收盤 97.17 美元、成交 8.5 億股）。複查符合預期。
 
-### SITE-3｜《重大事件倒數》Client-side JS 倒數超時判定邏輯漏洞（tools/site_events.py 第 281 行）：缺少「進行中」逾時自動結案邏輯
-- 事實：在 `tools/site_events.py` 第 281 行之客戶端 JS 倒數函式：
-  `if(s<=0){e.textContent=en?'now / just out':'進行中／剛公布';return;}`
-  此處僅判斷時間差 `s <= 0` 即固定輸出「進行中／剛公布」，沒有像後端看板一樣加入「超過 8 小時自動判定為已結束」的保護條件。當事件結束數天後若快取或頁面未完全重置，使用者畫面上該事件的倒數格仍會長久顯示「進行中／剛公布」。
-- 建議修正：在 JS 中改為：
-  `if(s < -28800){e.textContent=en?'ended':'已結束';return;} else if(s<=0){e.textContent=en?'now / just out':'進行中／剛公布';return;}`
-- 來源：`tools/site_events.py` 第 281 行。
+### SITE-3｜複查確認：《重大事件倒數》JS 邏輯超時判定漏洞（tools/site_events.py 第 282 行）已完成修復
+- 事實：Claude 已於 `tools/site_events.py` 第 282 行加入超時保護：`if(s<-43200){e.textContent=en?'passed (page not rebuilt yet)':'已過（頁面尚未重建）';return;}`，解決了事件過去數天仍顯示進行中的問題，複查通過。
 
 ---
 
@@ -685,27 +728,19 @@
 
 ---
 
-### CODE-1｜tools/site_gemini.py：第 20～23 行 GROUP 字典與第 81 行 order 陣列漏納入「TWC」分組代碼
-- 行號與內容：`tools/site_gemini.py` 第 20～23 行定義了前端展示分組標籤 `GROUP = {"D": "💬 和 Claude 的討論", ...}`，第 81 行定義了分組排序順序 `order = {k: n for n, k in enumerate([...])}`。
-- 為什麼有問題：Claude 於 2026-11-22 09:40 在 `gemini_tasks.md` 版本 21 新增了重要段落「TWC 台股覆蓋核對與分工」（標題代碼 `TWC-`）。然而 `tools/site_gemini.py` 的 `GROUP` 字典尚未加入 `"TWC": "🧾 台股覆蓋核對"`，且第 81 行的 `order` 排序陣列亦漏掉了 `"TWC"`。這會導致包含 `TWC-1` 的回答項目在經過 `block(i, zh)` 解析時，無法匹配分組標籤（`lab` 判定為 `None`），直接退回到個股代號模式（輸出無效的公司中文名稱與代號），影響前台展示可讀性。
-- 建議怎麼改：在 `GROUP` 字典增加 `"TWC": "🧾 台股覆蓋核對"`，並在第 81 行的 `order` 清單中補上 `"TWC"`。
-- 確定性：高。
-
-### CODE-2｜tools/site_events.py：第 281 行 client-side JS 倒數邏輯缺少「進行中」逾時自動結案條件
-- 行號與內容：`tools/site_events.py` 第 280～284 行 client-side JS：
-  `if(s<=0){e.textContent=en?'now / just out':'進行中／剛公布';return;}`
-- 為什麼有問題：當事件倒數時間戳已過（`s <= 0`），客戶端 JS 僅無條件顯示「進行中／剛公布」，沒有檢查距離事件結束經過了多少秒（超時條件）。若事件已經過去 2 天或 3 天，只要卡片未被重新生成或有快取殘留，瀏覽器端將永遠停留在「進行中／剛公布」，誤導使用者認為該事件仍在發生。
-- 建議怎麼改：在 JS 函式中加入超時判定（例如 8 小時 = 28,800 秒）：
-  `if(s < -28800){e.textContent=en?'ended':'已結束';return;} else if(s<=0){e.textContent=en?'now / just out':'進行中／剛公布';return;}`。
-- 確定性：高。
-
-### CODE-3｜wsb/data/tw_corp.py：第 25 行內部人申報轉讓僅介接上市公司，缺漏上櫃公司端點
+### CODE-1｜wsb/data/tw_corp.py：第 25 行內部人申報轉讓僅介接上市公司（t187ap12_L），缺漏上櫃公司端點
 - 行號與內容：`wsb/data/tw_corp.py` 第 25 行：
   `URL_INS = "https://openapi.twse.com.tw/v1/opendata/t187ap12_L"`
 - 為什麼有問題：程式碼目前只抓取證交所上市公司（`t187ap12_L`）的內部人申報轉讓資料，上櫃公司部分在 `tw_coverage.json` 中標註為「上櫃的來源還沒找」，導致台股中小型與上櫃科技股董監申報完全落空。
 - 建議怎麼改：加入櫃買中心 OpenAPI 官方端點：
   `URL_INS_OTC = "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap12_O"`，在 `fetch_insiders()` 中將上市與上櫃資料合併解析。
 - 確定性：高。
+
+### CODE-2｜複查確認：tools/site_gemini.py 分組清單與排序陣列已補上 TWC 代碼
+- 事實：複查 `tools/site_gemini.py` 第 23 行 `GROUP` 字典已包含 `"TWC": "🗂 台股覆蓋清單核對"`，且第 81 行 `order` 清單已正確包含 `"TWC"`，前端解析分組正常，確認已修復。
+
+### CODE-3｜複查確認：tools/site_events.py 客戶端倒數 JS 邏輯已補上超時保護
+- 事實：複查 `tools/site_events.py` 第 282 行客戶端 JS 倒數函式，已補上 `if(s<-43200){e.textContent=en?'passed (page not rebuilt yet)':'已過（頁面尚未重建）';return;}` 超時判定，確認已修復。
 
 ---
 
