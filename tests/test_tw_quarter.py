@@ -31,7 +31,16 @@ def test_otc_and_warn():
     assert C.latest_quarters(date(2027, 4, 1)) == [(115, 4), (115, 3), (115, 2)]
 
 
+def test_large_opt():
+    rows = [{"Contract": "TXO", "CallPut": "買權", "SettlementMonth": "999912", "TypeOfTraders": "1", "Top10Buy": "29116", "Top10Sell": "40854", "OIOfMarket": "95013", "Date": "20261120"},
+            {"Contract": "TXO", "CallPut": "賣權", "SettlementMonth": "999912", "TypeOfTraders": "1", "Top10Buy": "7122", "Top10Sell": "8873", "OIOfMarket": "28549", "Date": "20261120"},
+            {"Contract": "CA", "CallPut": "買權", "SettlementMonth": "999912", "TypeOfTraders": "1", "Top10Buy": "1", "Top10Sell": "0"}]
+    o = C.parse_large_opt(rows)
+    assert o["inst"]["call"]["top10_net"] == -11738 and o["inst"]["put"]["top10_net"] == -1751 and "all" not in o
+
+
 if __name__ == "__main__":
+    test_large_opt()
     test_parse_and_single_quarter()
     test_otc_and_warn()
     print("ok tw quarter")

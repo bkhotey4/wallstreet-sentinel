@@ -36,6 +36,7 @@ U_LARGE = "https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersFutures"
 U_PLEDGE = "https://openapi.twse.com.tw/v1/opendata/t187ap11_L"
 U_FCST = "https://openapi.twse.com.tw/v1/opendata/t187ap15_L"
 U_FIN = "https://openapi.twse.com.tw/v1/opendata/t187ap06_L_ci"
+U_LARGE_OPT = "https://openapi.taifex.com.tw/v1/OpenInterestOfLargeTradersOptions"   # 11-22 (fields checked on the live API)
 U_SBL_O = "https://www.tpex.org.tw/openapi/v1/tpex_margin_sbl"                 # 上櫃 (Gemini TWC-4, checked 11-22)
 U_WARN_L = "https://openapi.twse.com.tw/v1/announcement/notice"                # 上市注意股
 U_WARN_O = "https://www.tpex.org.tw/openapi/v1/tpex_trading_warning_information"  # 上櫃注意股
@@ -108,6 +109,19 @@ def parse_large(text: str) -> Dict:
             k = "all" if r[4].strip() == "0" else "inst"
             b5, s5, b10, s10, oi = (_n(x) or 0.0 for x in r[5:10])
             out[k] = {"date": r[0], "top5_net": b5 - s5, "top10_net": b10 - s10, "oi": oi}
+    return out
+
+
+def parse_large_opt(rows: List[Dict]) -> Dict:
+    """臺指選擇權 all months (999912): top-10 traders' long minus short for calls and puts, all traders (all) / specific institutions (inst)."""
+    out: Dict = {}
+    for r in rows or []:
+        if r.get("Contract") != "TXO" or r.get("SettlementMonth") != "999912":
+            continue
+        k = "all" if str(r.get("TypeOfTraders")) == "0" else "inst"
+        cp = "call" if r.get("CallPut") == "買權" else "put"
+        out.setdefault(k, {"date": r.get("Date")})[cp] = {"top10_net": (_n(r.get("Top10Buy")) or 0) - (_n(r.get("Top10Sell")) or 0),
+                                                         "oi": _n(r.get("OIOfMarket"))}
     return out
 
 
@@ -197,7 +211,7 @@ def single_quarter(snaps: Dict, code: str, year: str, q: int) -> Optional[Dict]:
 def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
     """PC relay (11-22: the TAIFEX large-trader CSV does not reach the cloud build): use it when newer than what we have."""
     seed = _load(SEED)
-    for name in ("large",):
+    for name in ("large", "large_opt"):
         sv = seed.get(name) or {}
         mine = str(((d.get(name) or {}).get("inst") or {}).get("date") or "")
         if str((sv.get("inst") or {}).get("date") or "") > mine:
@@ -221,6 +235,7 @@ def refresh(force: bool = False) -> Dict:
                      ("sbl", lambda: parse_sbl(_get(U_SBL), uni or None)),
                      ("inst", lambda: parse_inst(_get(U_INST))),
                      ("large", lambda: parse_large(_get(U_LARGE, "text"))),
+                     ("large_opt", lambda: parse_large_opt(_get(U_LARGE_OPT))),
                      ("sbl_otc", lambda: parse_sbl_otc(_get(U_SBL_O))),
                      ("warn", lambda: parse_warn(_get(U_WARN_L), _get(U_WARN_O)))):
         try:
@@ -268,7 +283,8 @@ def series(d: Dict, key, sub=None) -> List[tuple]:
 
 def write_seed(path=SEED) -> Dict:
     """PC → cloud relay for the parts the cloud cannot fetch (public exchange data)."""
-    out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text"))}
+    out = {"fetched": datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "large": parse_large(_get(U_LARGE, "text")),
+           "large_opt": parse_large_opt(_get(U_LARGE_OPT))}
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
 

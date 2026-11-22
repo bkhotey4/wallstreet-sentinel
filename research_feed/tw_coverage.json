@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-22 11:30 台北（Claude）",
+ "updated": "2026-11-22 11:40 台北（Claude）",
  "note": "專業台股交易台會看的項目，本站有沒有。缺的由每日排程依序補上；Gemini 每週一核對有沒有漏列、找官方來源。",
  "items": [
   {
@@ -45,10 +45,10 @@
   {
    "group": "交易與籌碼",
    "zh": "期貨／選擇權大額交易人未沖銷部位",
-   "status": "部分",
+   "status": "有",
    "where": "台股專業判讀・籌碼深度",
    "source": "期交所 OpenAPI OpenInterestOfLargeTradersFutures／Options",
-   "next": "期貨已有；選擇權大額交易人還沒做"
+   "next": ""
   },
   {
    "group": "交易與籌碼",

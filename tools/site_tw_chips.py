@@ -52,6 +52,9 @@ def sec_tw_chips(eng=None) -> str:
                         for k, v in inst.items())
     rows_large = "".join(f'<tr><td>{"全部交易人" if k == "all" else "特定法人"}</td><td class="r">{v["top5_net"]:+,.0f}</td><td class="r">{v["top10_net"]:+,.0f}</td>'
                          f'<td class="r">{v["oi"]:,.0f}</td></tr>' for k, v in large.items())
+    lo = d.get("large_opt") or {}
+    rows_opt = "".join(f'<tr><td>{"全部交易人" if k == "all" else "特定法人"}</td><td class="r">{(v.get("call") or {}).get("top10_net", 0):+,.0f}</td>'
+                       f'<td class="r">{(v.get("put") or {}).get("top10_net", 0):+,.0f}</td></tr>' for k, v in lo.items() if isinstance(v, dict))
     th_s = "<tr><th>公司</th><th class=\"r\">借券放空餘額（張）</th><th class=\"r\">一天變化（張）</th></tr>"
     s_rows = [f'<tr><td><b>{esc(x["name"])}</b> <span class="tk">{esc(x["code"])}</span></td><td class="r">{x["bal"] / 1000:,.0f}</td>'
               f'<td class="r">{x["chg"] / 1000:+,.0f}</td></tr>' for x in (sbl.get("add") or []) + (sbl.get("cut") or [])]
@@ -69,6 +72,8 @@ def sec_tw_chips(eng=None) -> str:
                f'<th class="r">當天淨買賣</th></tr></thead><tbody>{rows_inst}</tbody></table></div>' if rows_inst else "")
             + (f'<h3>台指期大額交易人（全部月份；買方減賣方，口）</h3><div class="scroll"><table class="mini"><thead><tr><th></th><th class="r">前五大</th>'
                f'<th class="r">前十大</th><th class="r">全市場未平倉</th></tr></thead><tbody>{rows_large}</tbody></table></div>' if rows_large else "")
+            + (f'<h3>臺指選擇權大額交易人（前十大，買方減賣方，口）</h3><p class="small muted">買權淨賣出多＝大戶在收權利金、押注不會大漲；賣權淨買進多＝大戶在買跌的保險。</p>'
+               f'<div class="scroll"><table class="mini"><thead><tr><th></th><th class="r">買權</th><th class="r">賣權</th></tr></thead><tbody>{rows_opt}</tbody></table></div>' if rows_opt else "")
             + (f'<h3>借券放空：台灣 50＋中型 100 一天變化最大的</h3>' + fold_rows(s_rows, 10, th_s, "家") if s_rows else "")
             + (f'<h3>注意股（{len(warn)} 檔；連續漲跌或成交異常，再犯可能被處置）</h3>'
                + fold_rows([f'<tr><td><b>{esc(x["name"])}</b> <span class="tk">{esc(x["code"])}</span><div class="small muted">{esc(x["board"])}</div></td>'
