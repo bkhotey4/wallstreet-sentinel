@@ -1079,6 +1079,81 @@ def buyback_embed(x: Dict) -> Dict:
             "footer": {"text": "WallStreet Sentinel · 台股庫藏股 · 公開資訊觀測站 · 不構成投資建議"}}
 
 
+# ------------------------------------------------------------------ 台股三種通知（11-22 台股覆蓋清單；資料 site/tw_alerts.json）
+TWAL = "https://wallstreet-sentinel.pages.dev/tw_alerts.json"
+TWAL_EVERY = 900
+
+
+async def twal_json(sess: aiohttp.ClientSession) -> Dict:
+    try:
+        async with sess.get(TWAL, timeout=aiohttp.ClientTimeout(total=20)) as r:
+            return (await r.json(content_type=None)) or {} if r.status < 300 else {}
+    except Exception as e:  # noqa: BLE001
+        log.info("tw_alerts: %s", e)
+        return {}
+
+
+def _tpe(now: float):
+    return time.gmtime(now + 8 * 3600)
+
+
+def twal_todo(d: Dict, done: Dict[str, float], now: float) -> List[Dict]:
+    """Pre-open lights (weekdays 07:30–09:05 Taipei, red only), a new month of revenue (once), tomorrow's 法說會 (19:00–23:30)."""
+    t = _tpe(now)
+    day = time.strftime("%Y-%m-%d", t)
+    hm = t.tm_hour * 60 + t.tm_min
+    out = []
+    p = d.get("preopen") or {}
+    due = [c for c in p.get("cal") or [] if day in (c.get("topup"), c.get("dispose"))]
+    red = p.get("adr_light") == "🔴" or (p.get("mg") or {}).get("light") == "🔴" or due
+    if t.tm_wday < 5 and 450 <= hm <= 545 and red and f"twpre:{day}" not in done:
+        out.append({"kind": "pre", "key": f"twpre:{day}", "p": p, "due": due})
+    r = d.get("rev") or {}
+    pm = time.strftime("%Y-%m", time.gmtime(now + 8 * 3600 - t.tm_mday * 86400))          # the previous calendar month
+    if r.get("latest") == pm and t.tm_mday <= 15 and r.get("acc") and f'twrev:{r["latest"]}' not in done:   # fresh only
+        out.append({"kind": "rev", "key": f'twrev:{r["latest"]}', "r": r})
+    n = d.get("irs_next") or {}
+    if n.get("rows") and 1140 <= hm <= 1410 and f'twirs:{n.get("date")}' not in done:
+        out.append({"kind": "irs", "key": f'twirs:{n.get("date")}', "n": n})
+    return out
+
+
+def twal_embed(a: Dict) -> Dict:
+    url = "https://wallstreet-sentinel.pages.dev/"
+    if a["kind"] == "pre":
+        p, mg = a["p"], (a["p"].get("mg") or {})
+        lines = []
+        if p.get("adr_light") == "🔴":
+            lines.append(f'・台積電 ADR 價差 {p.get("adr_now")}%，在一年裡的第 {p.get("adr_pct")} 百分位（極端）；價差回到最近 20 天中位數時，台積電約對應 '
+                         f'{p.get("adr_mid")} 元（{(p.get("adr_chg_mid") or 0):+.1f}%）。這是算術，不是預測。')
+        if mg.get("light") == "🔴":
+            lines.append(f'・融資餘額 {str(mg.get("d"))[5:]} 一天 {mg.get("pct")}%（{mg.get("now")} 億元），借錢買股的人還在被迫賣。')
+        for c in a.get("due") or []:
+            lines.append(f'・{str(c.get("d"))[5:]} 那天被追繳的融資：' + ("今天是補繳期限" if c.get("topup") == time.strftime("%Y-%m-%d", _tpe(time.time())) else "今天起可能被處分（斷頭）"))
+        return {"title": "🚦 台股開盤前紅燈", "color": 0xE5484D, "url": url + "#taiwan",
+                "description": ("一句話看懂：開盤前有被迫賣壓或價差極端的訊號。" + NL + NL.join(lines) + NL
+                                + "完整的開盤前預估卡在網站「台股」頁。這是現況描述，不是預測或建議。")[:4000],
+                "footer": {"text": "WallStreet Sentinel · 台股開盤前 · 不構成投資建議"}}
+    if a["kind"] == "rev":
+        r = a["r"]
+        f = lambda xs: NL.join(f'・{x["name"]}（{x["code"]}）年增 {x["yoy"]:+.0f}%，近 3 個月比前 3 個月 {x["accel"]:+.0f} 個百分點' for x in xs)  # noqa: E731
+        return {"title": f'📈 台股 {str(r["latest"])[5:].lstrip("0")} 月營收：加速與放緩最多的公司', "color": 0x2FBF71, "url": url + "#tw_desk",
+                "description": (f'一句話看懂：台灣 50＋中型 100 裡，{(r.get("breadth") or 0):.0f}% 的公司近 3 個月營收成長在加速。' + NL
+                                + "**加速最多**" + NL + f(r.get("acc") or []) + NL + "**放緩最多**" + NL + f(r.get("slow") or []) + NL
+                                + "營收是過去式；加速代表訂單在進來，放緩不一定是壞事（可能是去年基期太高）。完整的月營收熱度在網站「台股專業判讀」。")[:4000],
+                "footer": {"text": "WallStreet Sentinel · 台股月營收 · 公開資訊觀測站 · 不構成投資建議"}}
+    n = a["n"]
+    rows = []
+    for x in n.get("rows") or []:
+        pr = x.get("prog") or {}
+        q = f'本季已公布 {pr.get("months")} 個月，比去年同期 {pr.get("qtd_yoy"):+.0f}%' if pr.get("qtd_yoy") is not None else "沒有本季營收資料"
+        rows.append(f'・{x.get("time")} {x.get("name")}（{x.get("code")}）' + (f'・{x.get("layer")}' if x.get("layer") else "") + f'：{q}')
+    return {"title": f'🎤 明天（{str(n.get("date"))[5:].replace("-", "/")}）的公司自辦法說', "color": 0x7C3AED, "url": url + "#tw_earn",
+            "description": ("一句話看懂：明天有這些台灣 50、中型 100 或 AI 供應鏈公司自己開法說會。" + NL + NL.join(rows) + NL
+                            + "前瞻重點與完整清單在網站「台股財報」頁。")[:4000],
+            "footer": {"text": "WallStreet Sentinel · 台股法說會 · 不構成投資建議"}}
+
+
 PAPER_EVERY = 1800
 PAPER_DAY_CAP = 5                  # 一天最多 5 則（台北日期）
 PAPER_MAX_AGE_D = 3                # 只送 3 天內的成交：快取重建時，舊成交不會整批重送
@@ -1196,7 +1271,7 @@ async def run_once(now: Optional[float] = None) -> int:
     hsent: Dict[str, float] = dict(health.get("sent") or {})
     site_seen: Dict[str, float] = {k: v for k, v in (mem.get("site") or {}).items() if now - float(v) < 30 * 86400}
     S = {"cr_ts": float(mem.get("cr_ts") or 0), "st_ts": float(mem.get("st_ts") or 0), "site_ts": float(mem.get("site_ts") or 0),
-         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "th_ts": float(mem.get("th_ts") or 0), "tb_ts": float(mem.get("tb_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
+         "fi_ts": float(mem.get("fi_ts") or 0), "pp_ts": float(mem.get("pp_ts") or 0), "th_ts": float(mem.get("th_ts") or 0), "tb_ts": float(mem.get("tb_ts") or 0), "ta_ts": float(mem.get("ta_ts") or 0), "ff_ts": float(mem.get("ff_ts") or 0), "ko_ts": float(mem.get("ko_ts") or 0), "ru_ts": float(mem.get("ru_ts") or 0), "bi_ts": float(mem.get("bi_ts") or 0), "es_ts": float(mem.get("es_ts") or 0),
          "ts": int(now), "skipped": [], "hold": [h for h in mem.get("hold") or [] if now - float(h.get("first") or 0) < 6 * 3600]}
     pend: Dict[str, float] = {k: v for k, v in (mem.get("pend") or {}).items() if now - float(v) < 86400}
     quiet: Dict = dict(mem.get("quiet") or {})
@@ -1210,7 +1285,7 @@ async def run_once(now: Optional[float] = None) -> int:
         health["sent"] = hsent
         tmp = PUSHED.with_suffix(".tmp")
         tmp.write_text(json.dumps({"acc": done, "burst": bsent, "health": health, "site": site_seen, "cr_ts": S["cr_ts"],
-                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "th_ts": S["th_ts"], "tb_ts": S["tb_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
+                                   "st_ts": S["st_ts"], "site_ts": S["site_ts"], "fi_ts": S["fi_ts"], "ff_ts": S["ff_ts"], "ko_ts": S["ko_ts"], "ru_ts": S["ru_ts"], "bi_ts": S["bi_ts"], "es_ts": S["es_ts"], "pp_ts": S["pp_ts"], "th_ts": S["th_ts"], "tb_ts": S["tb_ts"], "ta_ts": S["ta_ts"], "ts": S["ts"], "pend": pend, "hold": S["hold"],
                                    "quiet": quiet}), encoding="utf-8")
         tmp.replace(PUSHED)
 
@@ -1529,6 +1604,23 @@ async def run_once(now: Optional[float] = None) -> int:
                         sent += 1
         except Exception as e:  # noqa: BLE001
             log.warning("country risk check failed: %s", e)
+        try:                                               # 台股：開盤前紅燈、新一個月營收、明天的自辦法說
+            if now - S["ta_ts"] >= TWAL_EVERY and now > 1.7e9 and left("twal"):
+                S["ta_ts"] = now
+                for a in twal_todo(await twal_json(sess), done, now):
+                    w = await want(a["key"], "twal")
+                    if w != "go":
+                        if w == "known":
+                            done[a["key"]] = now
+                        continue
+                    if not chan:
+                        dm = dm or await dm_channel(sess)
+                    if await post(sess, chan or dm or "", twal_embed(a), a["key"]):
+                        done[a["key"]] = now
+                        sent += 1
+                    await asyncio.sleep(1)
+        except Exception as e:  # noqa: BLE001
+            log.warning("tw alerts check failed: %s", e)
         try:                                               # 台股大型公司宣布庫藏股（一天最多 3 則）
             if now - S["tb_ts"] >= TB_EVERY and now > 1.7e9 and left("buyback"):
                 S["tb_ts"] = now

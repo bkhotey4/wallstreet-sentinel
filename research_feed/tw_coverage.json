@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-22 09:35 台北（Claude）",
+ "updated": "2026-11-22 10:20 台北（Claude）",
  "note": "專業台股交易台會看的項目，本站有沒有。缺的由每日排程依序補上；Gemini 每週一核對有沒有漏列、找官方來源。",
  "items": [
   {
@@ -29,10 +29,10 @@
   {
    "group": "交易與籌碼",
    "zh": "外資台指期淨部位、期貨三大法人",
-   "status": "部分",
-   "where": "台股總經展望",
+   "status": "有",
+   "where": "台股專業判讀・籌碼深度",
    "source": "期交所 OpenAPI MarketDataOfMajorInstitutionalTraders…",
-   "next": "做成每日卡片與 20 日變化"
+   "next": ""
   },
   {
    "group": "交易與籌碼",
@@ -45,10 +45,10 @@
   {
    "group": "交易與籌碼",
    "zh": "期貨／選擇權大額交易人未沖銷部位",
-   "status": "缺",
-   "where": "",
+   "status": "部分",
+   "where": "台股專業判讀・籌碼深度",
    "source": "期交所 OpenAPI OpenInterestOfLargeTradersFutures／Options",
-   "next": "抓取與歷史百分位"
+   "next": "期貨已有；選擇權大額交易人還沒做"
   },
   {
    "group": "交易與籌碼",
@@ -69,10 +69,10 @@
   {
    "group": "交易與籌碼",
    "zh": "借券放空餘額與召回",
-   "status": "缺",
-   "where": "",
+   "status": "部分",
+   "where": "台股專業判讀・籌碼深度",
    "source": "證交所借券系統（TWT93U 等）",
-   "next": "金管會 11/21 鼓勵召回借券後尤其重要"
+   "next": "上市已有；上櫃來源 Gemini 查找中"
   },
   {
    "group": "交易與籌碼",
@@ -93,8 +93,8 @@
   {
    "group": "交易與籌碼",
    "zh": "外資持股比率（類股、前 20 大）",
-   "status": "缺",
-   "where": "",
+   "status": "有",
+   "where": "台股專業判讀・籌碼深度",
    "source": "證交所 MI_QFIIS_cat、MI_QFIIS_sort_20",
    "next": ""
   },
@@ -117,18 +117,18 @@
   {
    "group": "公司",
    "zh": "單季財報（EPS、毛利率、營益率）",
-   "status": "缺",
+   "status": "部分",
    "where": "",
    "source": "證交所 OpenAPI t187ap06_L_ci（累計數，要存每季快照相減）",
-   "next": ""
+   "next": "115 年第 3 季起每季存累計數快照；116 年 3 月年報出來後可算出第 4 季單季。要更早的單季，Gemini 找公開資訊觀測站歷史季報的可用查詢"
   },
   {
    "group": "公司",
    "zh": "財測達成情形",
-   "status": "缺",
+   "status": "部分",
    "where": "",
    "source": "證交所 OpenAPI t187ap15_L、t187ap16_L",
-   "next": ""
+   "next": "證交所財測表的實際數與預測數口徑看起來不同（差約 10 倍），先不顯示；Gemini 查清楚欄位意義"
   },
   {
    "group": "公司",
@@ -157,8 +157,8 @@
   {
    "group": "公司",
    "zh": "董監持股質押",
-   "status": "缺",
-   "where": "",
+   "status": "有",
+   "where": "台股財報・董監質押",
    "source": "公開資訊觀測站",
    "next": ""
   },
@@ -333,18 +333,18 @@
   {
    "group": "Discord 通知",
    "zh": "月營收公布後明顯加速或放緩（台灣 50＋中型 100）",
-   "status": "缺",
-   "where": "",
+   "status": "有",
+   "where": "Discord",
    "source": "公開資訊觀測站（電腦端轉送）",
-   "next": "每月 10 日前後推播加速最多與放緩最多的公司"
+   "next": ""
   },
   {
    "group": "Discord 通知",
    "zh": "開盤前燈號（ADR 價差極端、融資追繳高峰）",
-   "status": "缺",
-   "where": "",
+   "status": "有",
+   "where": "Discord",
    "source": "本站開盤前預估卡",
-   "next": "每天 08:30 前一則，有紅燈才推"
+   "next": ""
   },
   {
    "group": "Discord 通知",
@@ -357,10 +357,10 @@
   {
    "group": "Discord 通知",
    "zh": "自辦法說前一天提醒",
-   "status": "缺",
-   "where": "",
+   "status": "有",
+   "where": "Discord",
    "source": "公開資訊觀測站法說會一覽表",
-   "next": "前一天晚上推當天的自辦法說與本季營收進度"
+   "next": ""
   }
  ]
 }

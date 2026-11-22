@@ -1,6 +1,7 @@
 """庫藏股／內部人／台股覆蓋清單（11-22）。Run: python -m tests.test_tw_corp"""
 import json
 import tempfile
+import time
 from pathlib import Path
 from unittest.mock import patch
 
@@ -60,9 +61,33 @@ def test_distress_drops_delisted():
     assert "CCO" not in out and "KHC" in out
 
 
+
+
+
+def test_tw_alerts_push():
+    import calendar
+    import tools.sec_push as P
+    ts = lambda s: calendar.timegm(time.strptime(s, "%Y-%m-%d %H:%M")) - 8 * 3600      # Taipei → epoch
+    d = {"preopen": {"adr_light": "🔴", "adr_now": 8.4, "adr_pct": 2, "adr_mid": 1906.1, "adr_chg_mid": -4.7,
+                     "mg": {"d": "2026-11-20", "pct": -10.15, "now": 4352.27, "light": "🔴"},
+                     "cal": [{"d": "2026-11-20", "topup": "2026-11-24", "dispose": "2026-11-25"}]},
+         "rev": {"latest": "2026-11", "breadth": 56, "acc": [{"code": "3231", "name": "緯創", "yoy": 117.6, "accel": 72.5}], "slow": []},
+         "irs_next": {"date": "2026-11-24", "rows": [{"code": "2301", "name": "光寶科", "time": "09:00", "kind": "自辦法說", "layer": "電源",
+                                                   "prog": {"months": 1, "qtd_yoy": 32.0}}]}}
+    mon = P.twal_todo(d, {}, ts("2026-11-23 08:00"))
+    assert [a["kind"] for a in mon] == ["pre"]                           # Monday pre-open; Nov revenue not out yet; 法說 window is evening
+    assert "台積電約對應 1906.1 元" in P.twal_embed(mon[0])["description"]
+    dec = P.twal_todo(d, {}, ts("2026-12-08 21:00"))
+    assert [a["kind"] for a in dec] == ["rev", "irs"]
+    assert "緯創" in P.twal_embed(dec[0])["description"] and "光寶科" in P.twal_embed(dec[1])["description"]
+    assert P.twal_todo(d, {"twpre:2026-11-23": 1}, ts("2026-11-23 08:30")) == []
+    assert P.twal_todo(d, {}, ts("2026-11-22 08:00")) == []             # Sunday: no pre-open push
+
+
 if __name__ == "__main__":
     test_parse()
     test_push()
     test_coverage_card()
     test_distress_drops_delisted()
+    test_tw_alerts_push()
     print("ok tw corp")

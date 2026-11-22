@@ -215,3 +215,37 @@ def corp_public() -> Dict:
     d = C.refresh()
     big = set(_universe().get("codes") or [])
     return {"fetched": d.get("bb_fetched"), "buybacks": [{**x, "big": x["code"] in big} for x in d.get("buybacks") or []]}
+
+
+def alerts_public() -> Dict:
+    """site/tw_alerts.json for three Taiwan Discord pushes (11-22, 台股覆蓋清單「Discord 通知」): the pre-open lights, the newest
+    monthly revenue's biggest accelerations / slowdowns, and tomorrow's company-run 法說會."""
+    out: Dict = {"made": datetime.now(TPE).strftime("%Y-%m-%d %H:%M")}
+    try:
+        from wsb.data import tw_preopen as P
+        v = P.view()
+        mg = (v.get("mg") or [])[-1:] or [{}]
+        adr = v.get("adr") or {}
+        out["preopen"] = {"adr_light": v.get("adr_light"), "adr_now": adr.get("now"), "adr_pct": adr.get("pct"), "adr_mid": adr.get("mid"),
+                          "adr_chg_mid": adr.get("chg_mid"), "mg": mg[0], "cal": v.get("cal") or []}
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from wsb.data import tw_desk as D
+        ms = months()
+        rv = D.rev_view({"months": ms}, D.load(), None) if ms else {}
+        tr = [t for t in rv.get("trends") or [] if t.get("accel") is not None and not str(t["code"]).startswith(FIN)
+              and abs(t["accel"]) <= 200]                  # project-based revenue (builders) swings by hundreds of points
+        out["rev"] = {"latest": rv.get("latest"), "breadth": rv.get("breadth"),
+                      "acc": [{k: t[k] for k in ("code", "name", "yoy", "accel")} for t in sorted(tr, key=lambda t: -t["accel"])[:5]],
+                      "slow": [{k: t[k] for k in ("code", "name", "yoy", "accel")} for t in sorted(tr, key=lambda t: t["accel"])[:5]]}
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        v = view()
+        tmr = (date.fromisoformat(v["today"]) + timedelta(days=1)).isoformat()
+        out["irs_next"] = {"date": tmr, "rows": [{k: r.get(k) for k in ("code", "name", "time", "kind", "layer", "summary", "prog")}
+                                                for r in v["up"] if r["date"] == tmr and r["big"] and r["kind"] == "自辦法說"]}
+    except Exception:  # noqa: BLE001
+        pass
+    return out
