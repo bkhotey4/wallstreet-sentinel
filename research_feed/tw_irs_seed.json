@@ -1,5 +1,5 @@
 {
-"fetched": "2026-11-22 16:04",
+"fetched": "2026-11-23 10:41",
 "source": "公開資訊觀測站法人說明會一覽表",
 "rows": [
 {
@@ -890,17 +890,6 @@
 "place": "永豐餘信誼大樓B1 (台北市重慶南路二段51號)",
 "summary": "本公司舉辦法人說明會，說明2026年第三季營運結果",
 "kind": "自辦法說",
-"board": "上市",
-"slides": true
-},
-{
-"code": "2337",
-"name": "旺宏",
-"date": "2026-11-16",
-"time": "14:00",
-"place": "台北",
-"summary": "本公司受邀參加麥格理證券舉辦之「Macquarie Taiwan Conference 2026」，會中就本公司已公開資訊做說明。",
-"kind": "券商論壇",
 "board": "上市",
 "slides": true
 },
@@ -1939,6 +1928,17 @@
 "slides": true
 },
 {
+"code": "1504",
+"name": "東元",
+"date": "2026-11-24",
+"time": "10:00",
+"place": "W Hotel",
+"summary": "本公司受邀參加Citi舉辦之 Taiwan Corporate Day，並就本公司營運狀況做一說明。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": true
+},
+{
 "code": "3529",
 "name": "力旺",
 "date": "2026-11-24",
@@ -1948,6 +1948,17 @@
 "kind": "券商論壇",
 "board": "上櫃",
 "slides": true
+},
+{
+"code": "2020",
+"name": "美亞",
+"date": "2026-11-24",
+"time": "14:00",
+"place": "線上法說會：https://youtube.com/live/OICAHUbNqog?feature=share",
+"summary": "本公司115年第4次財務業務相關資訊報告",
+"kind": "自辦法說",
+"board": "上市",
+"slides": false
 },
 {
 "code": "2327",
@@ -2035,7 +2046,7 @@
 "summary": "本公司受邀參加元大證券舉辦之線上法說會，報告本公司 營運狀況。",
 "kind": "券商論壇",
 "board": "上市",
-"slides": false
+"slides": true
 },
 {
 "code": "1611",
@@ -2214,17 +2225,6 @@
 "slides": true
 },
 {
-"code": "2331",
-"name": "精英",
-"date": "2026-11-26",
-"time": "15:25",
-"place": "台北市信義路4段236號7樓703會議室",
-"summary": "本公司受邀參加宏遠證券舉辦之大同集團聯合法人說明會",
-"kind": "券商論壇",
-"board": "上市",
-"slides": false
-},
-{
 "code": "1444",
 "name": "力麗",
 "date": "2026-11-27",
@@ -2363,6 +2363,17 @@
 "time": "15:00",
 "place": "台北晶華酒店4樓(台北市中山北路二段39巷3號4樓)",
 "summary": "本公司受邀參加元大證券舉辦之「2026年元大證券第四季投資論壇」，說明本公司第三季業務與財務概況。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": true
+},
+{
+"code": "1504",
+"name": "東元",
+"date": "2026-12-03",
+"time": "09:00",
+"place": "新加坡",
+"summary": "本公司受邀參加富邦證券舉辦之 Fubon & TWSE Joint Taiwan Corporate Day，並就本公司營運狀況做一說明。",
 "kind": "券商論壇",
 "board": "上市",
 "slides": true

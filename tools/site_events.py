@@ -285,6 +285,34 @@ JS = r"""
 """
 
 
+ECON_MIN_IMP = 2      # ★★ and up from the econ calendar (本週重要經濟數據): PCE, GDP, PPI, retail, ISM, JOLTS, FOMC minutes …
+
+
+def econ_items(eng, now: datetime, days: int, have: set) -> list:
+    """11-23: upcoming.json carried only the countdown's FOMC/CPI/NFP/witching, so in Thanksgiving week it showed no macro event
+    while 總經 already had PCE and GDP (11-25 21:30 Taipei) with previews — the voice routines read this file.  Add the econ
+    calendar's unreleased ★★+ releases inside the window, skipping ones the countdown already gave."""
+    ev = getattr(eng, "econ_view", None) or {}
+    if not ev.get("available"):
+        return []
+    lo, hi = now.astimezone(TPE), now.astimezone(TPE) + timedelta(days=days)
+    out = []
+    for e in ev.get("events") or []:
+        if e.get("released") or (e.get("imp") or 0) < ECON_MIN_IMP or not e.get("utc"):
+            continue
+        try:
+            t = datetime.fromisoformat(str(e["utc"]).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        et = t.astimezone(ET)
+        if not (lo <= t <= hi) or (e.get("key"), et.strftime("%Y-%m-%d")) in have:
+            continue
+        have.add((e.get("key"), et.strftime("%Y-%m-%d")))
+        out.append({"kind": "macro", "key": e.get("key"), "zh": e.get("zh"), "et": et.strftime("%Y-%m-%dT%H:%M"),
+                    "tpe": t.astimezone(TPE).strftime("%Y-%m-%d %H:%M"), "imp": e.get("imp")})
+    return out
+
+
 def upcoming(eng, now=None, days: int = 7) -> dict:
     """upcoming.json (2026-11-16): one shared list of what is coming in the next `days` days — every report of a company worth
     ≥ $100B (with the 財報前瞻 call when there is one) and the macro events of the countdown card — with New York and Taipei
@@ -308,6 +336,7 @@ def upcoming(eng, now=None, days: int = 7) -> dict:
         if r.get("ts") and r.get("days") is not None and r["days"] <= days:
             tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
             out.append({"kind": "macro", "key": r["key"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M")})
+    out += econ_items(eng, now, days, {(x["key"], x["et"][:10]) for x in out if x["kind"] == "macro"})
     for r in ipo_events(now, days):
         tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
         out.append({"kind": "ipo", "sym": r["sym"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
