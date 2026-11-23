@@ -1,6 +1,42 @@
 {
-  "updated": "2026-11-16",
+  "updated": "2026-11-23",
   "items": [
+    {
+      "title": "When productivity booms, do interest rates rise?",
+      "authors": "Antoine Lepetit, David Miller",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-11-20",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/when-productivity-booms-do-interest-rates-rise-20261120.html",
+      "added": "2026-11-23",
+      "summary": "檢驗「預期生產力變快，利率就會上升」是否成立。用 1990–2019 年季資料的貝氏 VAR 模型，辨識「生產力好消息衝擊」。發現這類衝擊反而讓 10 年期美債殖利率下降，主因是實質期限溢酬持續下滑，抵銷了短暫上升的利率預期。模型也顯示，AI 帶來的生產力樂觀預期，無法解釋 2022 年以來長期殖利率的上升（2022Q3 到 2026Q2 實質殖利率約升 90 個基點）。",
+      "implication": "長期殖利率上升，不能簡單說成「經濟會變好」。近年殖利率走高，比較可能來自其他因素，例如期限溢酬與財政、通膨風險。看殖利率時要分清楚是預期變了，還是要求的風險補償變了。",
+      "site_relevance": "與本站「美債」與「AI 視角看債券」頁有關，可在說明中補充：期限溢酬變化比生產力樂觀更能解釋近年殖利率。",
+      "topic": "債券"
+    },
+    {
+      "title": "Gold Reserve Relocations: Are They Always Bad News for U.S. Dollar Reserves?",
+      "authors": "Colin Weiss",
+      "source": "Federal Reserve Board, FEDS Notes",
+      "published": "2026-11-09",
+      "url": "https://www.federalreserve.gov/econres/notes/feds-notes/gold-reserve-relocations-are-they-always-bad-news-for-u-s-dollar-reserves-20261109.html",
+      "added": "2026-11-23",
+      "summary": "檢視德國、荷蘭、法國央行把存在美國的黃金搬回國內或移到倫敦後，美元在外匯存底的比重有沒有跟著下降。資料來自央行年報與 IMF 的 IRFCL 資料庫。德國美元比重維持在 80% 以上；法國維持約 60%；荷蘭 2026 年搬金後美元比重降約 10 個百分點，但仍占多數。作者認為看不出明顯的去美元化。",
+      "implication": "各國央行搬黃金，不必然代表拋售美元資產。官方持有美債的需求目前看來仍穩，但這類新聞仍值得持續觀察。",
+      "site_relevance": "與本站「美債」與「各國債券」頁有關，可考慮加入外國官方持有美債與美元比重的追蹤說明。",
+      "topic": "債券"
+    },
+    {
+      "title": "Does the Stock Market Stigmatize Banks that Borrow from the Fed?",
+      "authors": "Natalia Fischl-Lanzoni, Martin Hiti, Asani Sarkar",
+      "source": "Federal Reserve Bank of New York, Liberty Street Economics",
+      "published": "2026-11-17",
+      "url": "https://libertystreeteconomics.newyorkfed.org/2026/11/does-the-stock-market-stigmatize-banks-that-borrow-from-the-fed/",
+      "added": "2026-11-23",
+      "summary": "研究 2023 年 3 月銀行擠兌時，首次向聯準會借款的上市銀行，股市是否因此對它們更警戒。比較貼現窗口（33 家首次借款）與 BTFP（34 家首次借款），對照 207 家未借款銀行。貼現窗口借款後，投資人對未保險存款與資本的敏感度明顯上升；BTFP 借款則看不到明顯變化。作者提醒樣本小、期間短，結論不算定論。",
+      "implication": "在恐慌期，向央行借款的方式會影響市場怎麼解讀一家銀行。工具設計得好，可以減少「借款等於有問題」的污名，降低擠兌擴大的風險。",
+      "site_relevance": "與本站壓力指數 SSI 的銀行體系成分及「危機預警成績單」有關，可考慮加入貼現窗口與緊急借款使用量的觀察。",
+      "topic": "風險預警"
+    },
     {
       "title": "Banking System Vulnerability: 2026 Update",
       "authors": "Matteo Crosignani, Thomas M. Eisenbach, Fulvia Fringuellotti",
