@@ -1,6 +1,6 @@
-台北時間 2026-11-24 06:49
+台北時間 2026-11-24 07:49
 
-# Gemini 第二意見（第 35 版）
+# Gemini 第二意見（第 36 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -154,7 +154,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### TSM｜台積電 ADR 狂飆 14.08% 收 363.60 美元創 2008 年以來最大單日漲幅
 - **事實**：台積電 ADR（TSM）於美股 11/23 週一收盤大漲 **14.08%** 收在 363.60 美元，成交量爆量放大，創下金融海嘯以來最大單日漲幅（Yahoo Finance 報價 `https://finance.yahoo.com/quote/TSM/`，2026-11-23 16:00 EST）。
 - **傳聞**：供應鏈傳出輝達最新 Rubin 架構訂單全面追加 2 奈米與 A16 先進製程投片。
-- **本站漏掉的**：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至逾 20% 之套利窗口。
+- **本站漏掉的**：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至逾 18%～19% 之套利窗口。
 
 ### CRWV｜CoreWeave 隨 AI 算力回補狂飆 22.3%
 - **事實**：CoreWeave（CRWV）隨 AI 算力族群全面大回補，單日大漲 **22.32%** 收在 48.33 美元，投資人對其與輝達算力合作協議之擔憂迅速消散。
@@ -220,7 +220,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### POL-2｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
 - **事實**：美國眾議院外交事務委員會主席 Brian Mast 依據《出口管制改革法案》（ECRA）法定權限，公開商務部 BIS 內部機密許可證統計（眾院外委會官方新聞稿：`https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/`，發布時間：2026-11-19）。
 - **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **87.9 萬顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆）。
-- **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignaffairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
+- **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
 
 ---
 
@@ -593,110 +593,78 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 06 時對應檔案（`tools/bankruptcy/__init__.py`、`tools/site_china.py`、`tools/site_forced.py`、`tools/site_quant.py`、`tools/site_tw_msci.py`、`wsb/ai/prompts.py`、`wsb/analytics/energy_chain.py`、`wsb/analytics/nowcast.py`、`wsb/analytics/signals.py`、`wsb/bot/econ_push.py`、`wsb/data/etf_flows.py`、`wsb/data/ipo_fin.py`、`wsb/data/street_views.py`、`wsb/engine.py`）：
+本批稽核依照規範審查專案中台北時間 07 時對應檔案（`wsb/analytics/daily_why.py`、`wsb/data/forced_flows.py`、`tools/site_events.py`、`wsb/data/tw_desk.py`、`wsb/data/tw_bubble.py`、`wsb/data/tw_macro2.py`、`tools/site_gemini.py`）：
 
-### CODE-1｜tools/site_tw_msci.py：第 45 行 top[0][1][1] 在 cur 為空字典時拋出 IndexError: list index out of range
-- **檔案路徑與行號**：[tools/site_tw_msci.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_msci.py#L38-L46)
+### CODE-1｜wsb/analytics/daily_why.py：第 73 行 twse_days() 引用未定義常數 TPE 拋出 NameError: name 'TPE' is not defined
+- **檔案路徑與行號**：[wsb/analytics/daily_why.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/analytics/daily_why.py#L68-L74)
 - **程式碼片段**：
   ```python
-  day = max(snaps)
-  cur = snaps[day].get("stocks") or {}
-  rv = reviews(today)
-  nx, ls = rv.get("next"), rv.get("last")
-  ch = M.changes(snaps, around=ls["tw_date"]) if ls else {}
-  top = sorted(cur.items(), key=lambda kv: -kv[1][1])
-  top5 = sum(w for _, (_, w) in top[:5])
-  parts = [f'MSCI 台灣指數現在約 {len(cur)} 檔（用追蹤它的 006203 在 {day} 的持股近似），台積電一檔占 {top[0][1][1]:.1f}%、前 5 大合計 {top5:.1f}%']
+  async def twse_days() -> Dict[str, float]:
+      """Official TAIEX closes of this and last month (TWSE): which days Taiwan actually traded, and the index on each."""
+      from ..data import http
+      out: Dict[str, float] = {}
+      t = datetime.now(TPE)
   ```
 - **為什麼有問題**：
-  在 `wsb/data/tw_msci.py` 中，如果爬取元大 006203 網站失敗或 NUXT 解析結果為空字典時，快照中的 `"stocks"` 可能會存入空字典 `{}`。
-  在 `tools/site_tw_msci.py` 第 36 行只防禦了 `if not snaps: return ""`，但未防禦 `cur` 是否為空字典。
-  當 `cur` 為空字典時，`top = sorted(cur.items(), key=...)` 返回空串列 `[]`。
-  程式隨後在第 45 行執行 `top[0][1][1]`，將立即拋出致命的 `IndexError: list index out of range`，導致整個「台股專業判讀」分頁中的 MSCI 台灣指數卡片崩潰無法渲染。
+  在 `wsb/analytics/daily_why.py` 模組開頭（第 16-25 行），程式僅導入了 `ZoneInfo` 並定義了 `NY = ZoneInfo("America/New_York")`，但**完全未導入或定義 `TPE` 常數**。
+  當每日盤勢解讀排程呼叫 `twse_days()` 嘗試自證交所 FMTQIK 抓取官方加權指數收盤數據時，執行到第 73 行 `datetime.now(TPE)` 將立即拋出致命的 `NameError: name 'TPE' is not defined`，導致台股交易日校正與 Yahoo 假期資料剔除流程全數中斷崩潰。
 - **建議怎麼改**：
-  在第 40 行前增加空值防禦：
+  在模組開頭第 25 行 `NY = ZoneInfo("America/New_York")` 下方補上台北時區常數定義：
   ```python
-  cur = snaps[day].get("stocks") or {}
-  if not cur:
-      return ""
+  TPE = ZoneInfo("Asia/Taipei")
   ```
 - **確定程度**：高。
 
-### CODE-2｜tools/site_quant.py：第 142 行 a['rules'] 在項目缺少 'rules' 鍵時拋出 KeyError: 'rules'
-- **檔案路徑與行號**：[tools/site_quant.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_quant.py#L140-L146)
+### CODE-2｜wsb/data/forced_flows.py：第 147 行防禦長度不足導致第 154 行 c[-n-2] 拋出 IndexError: list index out of range
+- **檔案路徑與行號**：[wsb/data/forced_flows.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/forced_flows.py#L144-L156)
 - **程式碼片段**：
   ```python
-  for _, a in alls:
-      h, st = a["rules"].get("hold20"), a["rules"].get("stop")
-      if h and st:
-          n += 1
-          lower += st["avg"] <= h["avg"]
-          smaller += st["worst5"] > h["worst5"]
+  def trend_view(c: List[float]) -> Dict:
+      """score −1..+1 (average sign of the 1/3/12-month moves) and each lookback's flip price."""
+      if len(c) < max(LOOKS) + 1:
+          return {}
+      sig, flips = [], {}
+      for n in LOOKS:
+          base = c[-n - 1]
+          sig.append(1 if c[-1] > base else -1)
+          flips[n] = {"price": c[-n], "dist": c[-n] / c[-1] - 1, "up": c[-1] > base}
+      score = sum(sig) / len(sig)
+      prev = [1 if c[-2] > c[-n - 2] else -1 for n in LOOKS]
   ```
 - **為什麼有問題**：
-  函式 `_rs_summary(alls)` 接收來自各市場模擬結果字典的 `alls` 串列。
-  在第 142 行中，程式碼使用字典直接索引 `a["rules"]`。如果其中某個市場（例如新上線或歷史回放尚未完成計算的市場）的字典 `a` 缺少 `"rules"` 鍵，直接取值會引發 `KeyError: 'rules'`，導致規則歷史成績單總結摘要崩潰。而在後續呼叫中程式是謹慎使用 `.get()`。
+  常數 `LOOKS = (21, 63, 252)`，其最大值 `max(LOOKS)` 為 252。
+  第 147 行的長度防禦條件為 `if len(c) < max(LOOKS) + 1:`，即當列表長度 `len(c) == 253` 時，條件不成立，程式繼續往下執行。
+  在第 154 行中，程式碼計算前一日趨勢：`prev = [1 if c[-2] > c[-n - 2] else -1 for n in LOOKS]`。
+  當遍歷至 `n = 252` 時，索引值為 `-252 - 2 = -254`。
+  然而，對於長度僅為 253 的列表 `c`，合法負索引範圍僅為 `-1` 至 `-253`。取值 `c[-254]` 將立即拋出 `IndexError: list index out of range`，導致整個「被迫進出的錢」趨勢跟隨模型（CTA）計算中斷崩潰。
 - **建議怎麼改**：
-  將直接索引改為安全取值：
+  將第 147 行的長度防禦門檻從 `+ 1` 修正為 `+ 2`：
   ```python
-  for _, a in alls:
-      rules = a.get("rules") or {}
-      h, st = rules.get("hold20"), rules.get("stop")
-      if h and st:
-          n += 1
+  if len(c) < max(LOOKS) + 2:
+      return {}
   ```
 - **確定程度**：高。
 
-### CODE-3｜wsb/bot/econ_push.py：第 63 行 m['rate_after'] 為 None 時拋出 TypeError: unsupported format string for NoneType
-- **檔案路徑與行號**：[wsb/bot/econ_push.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/bot/econ_push.py#L57-L64)
+### CODE-3｜tools/site_events.py：第 129 行 earn_events 與第 198 行 index_events 倒數天數時區計算口徑矛盾
+- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L125-L132) 與 [#L194-L199](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L194-L199)
 - **程式碼片段**：
   ```python
-  def _fw_txt(m: Optional[Dict]) -> str:
-      """'維持不變 70%、升息 1 碼 30%' from a FedWatch meeting row."""
-      if not m:
-          return ""
-      from ..data.fedwatch import outcome_label
-      items = sorted(((int(k), v) for k, v in m["probs"].items()), key=lambda kv: -kv[1])
-      return "、".join(f"{outcome_label(k)[0]} {v * 100:.0f}%" for k, v in items) + f"（會後隱含利率 {m['rate_after']:.2f}%）"
-  ```
-- **為什麼有問題**：
-  在 `m` 字典中，`m.get("rate_after")` 是期貨倒推之隱含利率。在 CME 資料源或特定會議欄位中，如果該鍵值為 `None` 或尚未計算，格式化字串 `f"（會後隱含利率 {m['rate_after']:.2f}%）"` 會在 Python 3 中拋出 `TypeError: unsupported format string for NoneType`，導致經濟數據推送提醒訊息在送出前崩潰。
-- **建議怎麼改**：
-  增加對 `rate_after` 的存在性與 None 檢查：
-  ```python
-  def _fw_txt(m: Optional[Dict]) -> str:
-      if not m:
-          return ""
-      from ..data.fedwatch import outcome_label
-      items = sorted(((int(k), v) for k, v in m.get("probs", {}).items()), key=lambda kv: -kv[1])
-      txt = "、".join(f"{outcome_label(k)[0]} {v * 100:.0f}%" for k, v in items)
-      if m.get("rate_after") is not None:
-          txt += f"（會後隱含利率 {m['rate_after']:.2f}%）"
-      return txt
-  ```
-- **確定程度**：高。
-
-### CODE-4｜tools/site_forced.py：第 87 行 drop 跌幅計算與比重呈現文意易引發百分比與百分點之混淆
-- **檔案路徑與行號**：[tools/site_forced.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_forced.py#L86-L92)
-- **程式碼片段**：
-  ```python
-  drop = (vc["after"] / vc["now"] - 1) if vc.get("after") and vc.get("now") else None
-  parts.append(f"「波動控制」基金推估的股票比重現在約 <b>{vc['now'] * 100:.0f}%</b>"
-               + (f"（一週前 {vc['week'] * 100:.0f}%）" if vc.get("week") else "")
-               + (f"，在過去兩年排第 {vc['pct'] * 100:.0f} 百分位" if vc.get("pct") is not None else "")
-               + (f"；如果標普明天再跌 3%，比重會再降約 {abs(drop) * 100:.0f}%，等於還要再減一些股票" if drop is not None and drop < 0 else "")
-               + "。")
-  ```
-- **為什麼有問題**：
-  `vc["now"]` 與 `vc["after"]` 代表基金持有股票的比重（例如當前 60%、跌後 50%）。
-  算式 `drop = vc["after"] / vc["now"] - 1` 計算的是**相對減幅**（例如 `50/60 - 1 = -16.7%`）。
-  然而在文案中寫著：`比重現在約 60%... 比重會再降約 17%`。讀者極易誤解為股票比重將自 60% 降至 43%（減了 17 個百分點），而非實際的相對減幅（持股規模減少 17%）。
-- **建議怎麼改**：
-  明確區分「部位減碼幅度」或改用「百分點」表達：
-  ```python
-  pts_drop = (vc["now"] - vc["after"]) * 100
+  # earn_events:
+  et_now = now.astimezone(ET)
   ...
-  + (f"；如果標普明天再跌 3%，股票比重會再降約 {pts_drop:.0f} 個百分點（持股減少約 {abs(drop) * 100:.0f}%）" if drop is not None and drop < 0 else "")
+  "days": (t.date() - et_now.date()).days
+
+  # index_events:
+  "days": (t.astimezone(TPE).date() - now.astimezone(TPE).date()).days
+  ```
+- **為什麼有問題**：
+  本站目標讀者為台灣投資人。在 `index_events` 中，剩餘天數統一口徑使用台北時間之日期差 `(t.astimezone(TPE).date() - now.astimezone(TPE).date()).days`。
+  但在 `earn_events` 中，剩餘天數卻採用美東日期差 `(t.date() - et_now.date()).days`。
+  美股財報多數於美東盤後發布（16:05 ET，對應台北時間隔日清晨 05:05）。當台北時間已進入 11-25 清晨時，美東仍為 11-24，導致財報倒數磚顯示「0 天」，但同為該時段生效的指數調整事件卻顯示「1 天」，同一張卡片內兩個磚塊的剩餘天數出現時區矛盾。
+- **建議怎麼改**：
+  統一前端顯示的天數計算基準為台北時間（TPE），避免跨時區日期計算造成天數顯示跳躍與錯置：
+  ```python
+  "days": (t.astimezone(TPE).date() - now.astimezone(TPE).date()).days
   ```
 - **確定程度**：中。
 
