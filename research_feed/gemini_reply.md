@@ -1,8 +1,8 @@
-台北時間 2026-11-23 16:55
+台北時間 2026-11-23 17:55
 
-# Gemini 第二意見（第 31 版）
+# Gemini 第二意見（第 32 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇累計完成 32 次實質搜尋並逐一確認官方原文與真實網址，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 36 次深度搜尋並逐一確認官方原文與真實網址，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -237,7 +237,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ## TWX 台股情報不漏接
 
 ### TWX-1｜證交所 11/23 正式公告信用交易擔保維持率調降至 120% 暨大赦條款（官方生效）
-- 事實：臺灣證券交易所於 **2026-11-23 正式公告**：為減輕投資人籌措資金壓力並防堵斷頭連鎖賣壓，自 **2026-11-24 起**，信用交易整戶擔保維持率最低標準調降至 **120%**。更關鍵的是，**11/24 以前因低於 130% 而被發出追繳通知者，一律取消追繳紀錄且不處分擔保品**；11/23 當日原應通知補繳者原則上毋須再通知（官方公告：`https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001`）。
+- 事實：臺灣證券交易所於 **2026-11-23 正式公告**：為減輕投資人籌措資金壓力並防堵斷頭連鎖賣壓，自 **2026-11-24 起**，信用交易整戶擔保維持率最低標準調降至 **120%**。更關鍵的是，**11/24 以前因低於 130% 而已被通知補繳者，一律取消追繳紀錄且不處分擔保品**；11/23 當日原應通知補繳者原則上毋須再通知（官方公告：`https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001`）。
 
 ### TWX-2｜11/23 週一台股收盤重大事實更新：終場暴漲 778.60 點、收 36,811.89 點
 - 事實：11/23 台股早盤受美股重挫影響一度大跌逾 590 點（下探 35,442.41 點），隨後在金管會限空令全面禁空、國安基金護盤表態與強大低接買盤湧入下演出驚天大逆轉。終場加權指數**暴漲 778.60 點（+2.16%），以 36,811.89 點作收**，高低點震盪高達 **1,665 點**！成交金額突破 1 兆元（達 10,791.65 億元）。聯電（2303）、聯發科（2454）、台達電（2308）亮燈攻上漲停板，台積電翻紅守穩 2,000 元大關收在 2,030 元（證交所盤後統計 `https://www.twse.com.tw/zh/page/trading/exchange/FMTQIK.html?date=20261123`）。
@@ -542,6 +542,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
   - 台灣國發會發布 10 月景氣對策信號與景氣指標（官方預告網址：`https://www.ndc.gov.tw/News.aspx?n=114&sms=9064`）。
 - **2026-11-30（一）**：
   - 歐元區發布 11 月通膨初值（HICP）。
+  - MSCI 季度調整生效（台股盤後生效）。
 - **2026-12-01（二）~ 12-02（三）**：
   - 美國眾議院外交事務委員會、美中戰略競爭特別委員會與情報委員會召開晶片出口管制與國安調查閉門聽證會（黃仁勳 12/1、Tim Teter 12/2 出席作證）。
   - 美國 11 月 ISM 製造業 PMI 發布。
@@ -562,94 +563,85 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中小時數對應檔案（`tools/site_events.py`、`tools/site_twdesk.py`、`wsb/analytics/twmacro.py`、`tools/site_ipo.py`）：
+本批稽核依照規範審查專案中第 17 小時對應檔案（`tools/site_stability.py`、`tools/site_watch2.py`、`tools/site_layout.py`、`wsb/data/pension_ldi.py`、`wsb/data/forced_flows.py`）：
 
-### CODE-1｜tools/site_events.py：第 346 行 "et": r["next"][:16] 直接切片台北時間，MSCI/台指50收盤調整在 upcoming.json 標錯美東時間 13 小時
-- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L344-L347)
+### CODE-1｜tools/site_stability.py：第 269 行在 r['p3'] 為 None 時拋出 TypeError 異常崩潰
+- **檔案路徑與行號**：[tools/site_stability.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_stability.py#L266-L271)
 - **程式碼片段**：
   ```python
-  for r in index_events(now, days):
-      tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
-      out.append({"kind": "index", "key": r["kind"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
-                  "volume_x": r.get("med")})
+  def ldi_lead(rows: List[Dict]) -> str:
+      hot = [r for r in rows if r["emoji"] != "🟢"]
+      if not hot:
+          return f"{len(rows)} 個市場的長天期公債最近 3 天都沒有急升，退休金被迫賣債的風險現在不高。"
+      return "；".join(f"{r['zh']} {r['tenor']}公債 3 天 {r['c3']:+.0f}bp（{r['since']} 年以來第 {r['p3']:.0f} 百分位），{r['state']}" for r in hot) + \
+          "。長債升得太快時，用槓桿避險的退休金要補保證金，可能被迫賣債。"
   ```
 - **為什麼有問題**：
-  在 `index_events()` 函式中（第 191 行）：
-  ```python
-  if e["kind"] in ("msci", "tw50"):
-      d = e.get("tw_date") or e["date"]
-      t = datetime.fromisoformat(d).replace(hour=13, minute=30, tzinfo=TPE)
-  ```
-  對於 MSCI 季度審查與台灣 50 調整，`t` 的時區設定為 `tzinfo=TPE`（台北時間 13:30），因此其 `r["next"]` 是 `2026-11-30T13:30:00+08:00`。
-  然而在 `upcoming()` 匯整時，程式直接取字串切片 `"et": r["next"][:16]`，輸出為 `"2026-11-30T13:30"`！
-  這把**台北時間 13:30 直接填進了代表美東時間的 `et` 欄位**（實際對應的美東時間應為當日清晨 `00:30`）。這會導致依賴 `upcoming.json` 的語音廣播與日曆模組向使用者播報「MSCI 調整將於美東時間下午 13:30 進行」，時差相差整整 13 個小時！
+  在 `wsb/data/pension_ldi.py` 的 `_pct()` 函式中（第 120 行）：`if len(hist) > 250` 才計算百分位，否則回傳 `None`；且在 `market()` 中若單日急升超過 `RED_BP`（100bp）即標註紅燈。此時 `r['emoji']` 為 `🔴`，但 `r['p3']` 可能是 `None`。
+  當 `r['p3']` 為 `None` 時，執行格式化字串 `{r['p3']:.0f}` 會直接拋出 `TypeError: unsupported format string passed to NoneType.__format__`，導致整個「金融穩定監測」卡片的導言生成中斷！對比第 281 行表格嚴謹使用了 `num(r["p3"], 0)`，此處導言存在未防護之 NoneType 漏洞。
 - **建議怎麼改**：
-  不要直接切片 `r["next"]`，應轉為 ET 時區後再格式化：
+  改用安全格式化或 `num()`：
   ```python
-  nxt_dt = datetime.fromisoformat(r["next"])
-  et_str = nxt_dt.astimezone(ET).strftime("%Y-%m-%dT%H:%M")
-  out.append({"kind": "index", "key": r["kind"], "zh": r["zh"], "et": et_str, "tpe": tp.strftime("%Y-%m-%d %H:%M"),
-              "volume_x": r.get("med")})
+  p_txt = f"第 {r['p3']:.0f} 百分位" if r.get("p3") is not None else "歷史極值"
+  return "；".join(f"{r['zh']} {r['tenor']}公債 3 天 {r['c3']:+.0f}bp（{r['since']} 年以來{p_txt}），{r['state']}" for r in hot) + ...
   ```
 - **確定程度**：高。
 
-### CODE-2｜tools/site_twdesk.py：第 314-315 行在 skill > 0 時仍輸出「比每次都照平均猜還差」，文字與數值方向相反
-- **檔案路徑與行號**：[tools/site_twdesk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twdesk.py#L314-L315)
+### CODE-2｜tools/site_watch2.py：第 84 行 bars.abs().max() 在空序列時觸發 ValueError: cannot convert float NaN to integer
+- **檔案路徑與行號**：[tools/site_watch2.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_watch2.py#L83-L86)
 - **程式碼片段**：
   ```python
-  parts.append(f"財報預覽已有 {e['n']} 筆對得出答案：我們押的最可能結果只對了 {_pc0(e['top_hit'])}，"
-               f"整體分數比「每次都照過去的平均比例猜」還差（技巧分數 {e['skill']:+.2f}，0 代表一樣、負的代表比較差）")
+  bars = _ser(v["hist"])
+  mx = max(1, int(bars.abs().max()))
+  svg = "".join(f'<rect x="{i * 4}" y="{40 - max(0, x) / mx * 38:.1f}" width="3" height="{abs(x) / mx * 38:.1f}" class="{"nhp" if x >= 0 else "nhn"}"/>'
+                for i, x in enumerate(bars.values))
   ```
 - **為什麼有問題**：
-  無論計算出來的技巧分數 `e['skill']` 是正數還是負數，敘述文字硬編碼寫死為「整體分數比『每次都照過去的平均比例猜』**還差**」。若未來模型校準表現優異、技巧分數為正值（例如 +0.15），顯示文字卻會出現矛盾的「整體分數比每次都照過去的平均比例猜還差（技巧分數 +0.15）」，屬於典型的「對使用者說錯話」。
+  當 `v["hist"]` 為空串列（例如初期冷啟動、資料庫維護或網路擷取異常）時，`_ser(v["hist"])` 回傳長度為 0 的空 pandas Series。空 Series 執行 `bars.abs().max()` 會回傳 `float("nan")`。
+  Python 對 NaN 執行 `int(nan)` 會拋出致命異常 `ValueError: cannot convert float NaN to integer`，導致整個「52 週新高−新低」卡片渲染失敗！
 - **建議怎麼改**：
-  依據 `skill` 的正負動態生成評價文字：
+  加入 NaN 與長度保護：
   ```python
-  comp = "還好" if (e.get("skill") or 0) > 0.01 else "還差" if (e.get("skill") or 0) < -0.01 else "差不多"
-  parts.append(f"財報預覽已有 {e['n']} 筆對得出答案：我們押的最可能結果只對了 {_pc0(e['top_hit'])}，"
-               f"整體分數比「每次都照過去的平均比例猜」{comp}（技巧分數 {sk}，0 代表一樣、負的代表比較差）")
+  bars = _ser(v.get("hist") or [])
+  val_max = bars.abs().max() if len(bars) else None
+  mx = max(1, int(val_max)) if val_max is not None and pd.notna(val_max) else 1
   ```
 - **確定程度**：高。
 
-### CODE-3｜tools/site_twdesk.py：第 315 行 e['skill']:+.2f 在 skill 為 None 時拋出致命 TypeError
-- **檔案路徑與行號**：[tools/site_twdesk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twdesk.py#L314-L315)
-- **為什麼有問題**：
-  在 `wsb/data/tw_desk.py` 的 `calib()` 函式中（第 702 行）：`"skill": (1 - b / b_ref) if b_ref else None`。當基準分數 `b_ref` 為 0（例如樣本中所有財報結果均為同一類別「上修」，使得基準預測無離散度）或樣本極少時，`e['skill']` 回傳值為 `None`。對 `None` 執行格式化字串 `{None:+.2f}` 會直接拋出 `TypeError: unsupported format string passed to NoneType.__format__`，導致整個「台股專業判讀」頁面的校準模組（`sec_calib`）渲染中斷崩潰！
-- **建議怎麼改**：
-  加入安全格式化：
+### CODE-3｜tools/site_layout.py：第 87 行 PICKS 正則表達式寫死 "2007 年"，動態年份變更時總覽大表將靜默遺漏裂解價差數據
+- **檔案路徑與行號**：[tools/site_layout.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_layout.py#L87-L88)
+- **程式碼片段**：
   ```python
-  sk = f"{e['skill']:+.2f}" if e.get("skill") is not None else "—"
+  ("energy", r"柴油裂解價差 ([\d.]+) 美元／桶，在 2007 年以來第 (\d+) 百分位", lambda m: f"柴油裂解價差第 {m[2]} 百分位"),
+  ```
+- **為什麼有問題**：
+  在 `tools/site_energy.py` 第 59 行中，卡片輸出的文字為：
+  `f"柴油裂解價差 {d['now']:.1f} 美元／桶，在 {d['since']} 年以來第 {d['pct']:.0f} 百分位：..."`
+  這裡的 `{d['since']}` 是由資料時間起點動態決定的（例如從期貨數據第一筆有效年份生成）。然而 `site_layout.py` 的抓取正則寫死了硬編碼 `2007 年`！一旦數據來源回溯調整或因快取變更使得 `d['since']` 變成 2006 或 2008 年，正則表達式將無法匹配，使得總覽大表的「總經與利率」區塊無聲無息地遺漏柴油裂解價差指標。
+- **建議怎麼改**：
+  將年份改為動態 4 位數字匹配：
+  ```python
+  ("energy", r"柴油裂解價差 ([\d.]+) 美元／桶，在 \d{4} 年以來第 (\d+) 百分位", lambda m: f"柴油裂解價差第 {m[2]} 百分位"),
   ```
 - **確定程度**：高。
 
-### CODE-4｜wsb/analytics/twmacro.py：第 289-293 行房市貸款年增率（loans）存在跨數列借用月份日期之缺陷
-- **檔案路徑與行號**：[wsb/analytics/twmacro.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/analytics/twmacro.py#L289-L293)
+### CODE-4｜wsb/data/pension_ldi.py：第 196 行 alerts 函式在 p3 為 None 時拋出格式化 TypeError 阻斷警告派發
+- **檔案路徑與行號**：[wsb/data/pension_ldi.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/pension_ldi.py#L195-L197)
 - **程式碼片段**：
   ```python
-  my, cy = _tw(d, "mortgage_yoy"), _tw(d, "construct_yoy")
-  if len(my):
-      out["loans"] = {"month": _ym(my.index[-1]), "mortgage_yoy": float(my.iloc[-1]), "mortgage_yoy_1y": _ago(my, 12),
-                      "construct_yoy": float(cy.iloc[-1]) if len(cy) else None}
+  out.append((f"ldi:{r['key']}:{r['date']}", "⚠️ WARNING",
+              f"{r['zh']} {r['tenor']}公債 3 天升 {r['c3']:+.0f}bp（{r['since']} 年以來第 {r['p3']:.1f} 百分位）",
+              f"現在 {r['level']:.2f}%。歷史最大 3 天升幅 {r['max3']:.0f}bp（{r['max3_date']}）。" ...))
   ```
 - **為什麼有問題**：
-  `out["loans"]["month"]` 僅採用 `my`（購屋貸款年增率）的最新日期。但在獲取 `construct_yoy`（建築貸款年增率）時直接取 `cy.iloc[-1]`，完全沒有比對 `cy.index[-1]` 是否等於 `my.index[-1]`。若央行統計資料庫中建築貸款更新落後一個月，前端顯示時建築貸款數值將被錯誤標示在購屋貸款的月份下，此即典型的「跨數列日期借用（Date Borrowing）」缺陷。
+  在觸發紅燈條件時（第 143 行：`if now3 >= RED_BP or p3 >= RED_PCT:`），只要 3 天升幅超過 100bp 就會亮紅燈，即使歷史序列過短導致 `r['p3']` 為 `None` 亦同。當 `r['p3']` 為 `None` 時，字串格式化 `{r['p3']:.1f}` 會拋出 `TypeError: unsupported format string passed to NoneType.__format__`，導致排程執行 `alerts()` 時整體崩潰，後續所有系統告警均無法送達 Discord！
 - **建議怎麼改**：
-  將兩者時間索引進行對齊（如以最新共同月份為準），或在結構中分別保留 `mortgage_month` 與 `construct_month`。
-- **確定程度**：高。
-
-### CODE-5｜tools/site_ipo.py：第 37-41 行與第 63 行 _usd(x) 函式缺乏 None 檢查導致可能觸發 TypeError
-- **檔案路徑與行號**：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L37-L41) 與 [第 63 行](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L63)
-- **程式碼片段**：
+  安全處理 None：
   ```python
-  def _usd(x: float) -> str:
-      if abs(x) < 1e8:
-          return f"{x / 1e6:,.1f} 百萬美元"
-      return f"{x / 1e8:,.0f} 億美元" if x < 1e12 else f"{x / 1e12:,.2f} 兆美元"
+  p_str = f"第 {r['p3']:.1f} 百分位" if r.get("p3") is not None else "歷史極值"
+  out.append((f"ldi:{r['key']}:{r['date']}", "⚠️ WARNING",
+              f"{r['zh']} {r['tenor']}公債 3 天升 {r['c3']:+.0f}bp（{r['since']} 年以來{p_str}）", ...))
   ```
-- **為什麼有問題**：
-  在 `_money(v)` 中程式碼嚴謹檢查了 `if v is None: return "—"`，但在 `_usd(x)` 中直接執行 `abs(x)`。若同步私募名單中某一筆資料之 `x['usd']` 為 `None`，呼叫 `abs(None)` 將拋出 `TypeError: bad operand type for abs(): 'NoneType'`，導致整張 IPO 承銷結構區塊卡死。
-- **建議怎麼改**：
-  在 `_usd(x)` 第一行增加 `if x is None: return "—"`。
 - **確定程度**：高。
 
 ---
