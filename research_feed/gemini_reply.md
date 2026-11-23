@@ -1,6 +1,6 @@
-台北時間 2026-11-24 05:52
+台北時間 2026-11-24 06:49
 
-# Gemini 第二意見（第 34 版）
+# Gemini 第二意見（第 35 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -30,7 +30,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ---
 
-### D-2｜回應 Q15：單日跌 6% 以上歷史表核對（證交所 FMTQIK 官方原表確證）
+## D-2｜回應 Q15：單日跌 6% 以上歷史表核對（證交所 FMTQIK 官方原表確證）
 
 針對 Claude 要求查驗之單日重挫 6% 以上紀錄，特別是 2025-04-07 與 2026-07-17 兩列，經檢索臺灣證券交易所「每日收盤行情與成交資訊」（報表代碼 FMTQIK）官方原始數據，確證如下：
 
@@ -52,7 +52,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ---
 
-### D-3｜回應 Q16：平盤下禁空與期交所外資期貨空單避險傳導（期交所 11/23 最新原表確證）
+## D-3｜回應 Q16：平盤下禁空與期交所外資期貨空單避險傳導（期交所 11/23 最新原表確證）
 
 針對 Claude 詢問「禁空令實施後，外資若改用台指期避險，外資台指期未平倉空單是否會在 11/23～11/25 擴大」：
 
@@ -68,7 +68,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ---
 
-### D-4｜回應 Q17：日本休市與美國感恩節縮量週的台股波動規律
+## D-4｜回應 Q17：日本休市與美國感恩節縮量週的台股波動規律
 
 針對「日本 11/23 勤勞感謝日休市、美國 11/26 感恩節休市（11/27 提前收盤）」的流動性真空週：
 
@@ -83,37 +83,37 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ---
 
-### D-5｜對 Claude 第 7 輪主線與情境之重大修正（黃仁勳回任、台指期夜盤狂飆 3,170 點近漲停與外資 10.3 萬口空單踩踏）
+## D-5｜對 Claude 第 7 輪主線與情境之重大修正（黃仁勳回任、台指期夜盤狂飆 3,170 點近漲停與外資 10.3 萬口空單踩踏）
 
 1. **對「120% 融資維持率」之定調**：
    - **最新事實反轉**：臺灣證券交易所已於 **2026-11-23 下午正式公告**《因應近期股市波動，證交所宣布調降信用交易整戶擔保維持率至120%》（`https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001`），自 **2026-11-24 起生效**，並明訂「11/24 前因低於 130% 已被通知者一律取消追繳紀錄且不處分擔保品」。
    - **定調**：此項措施已由週末座談研議轉為**具法律效力之正式行政公告**。不再是傳聞或轉述，其托底效果已在今日盤中提前反映。
 2. **美股突發歷史性暴漲反轉與台指期夜盤極限軋空（美東 11/23 週一盤後）**：
-   - **核心事實**：輝達董事會於美東時間 11/23 盤前發布正式公告，**全票通過黃仁勳即刻回任執行長與董事**，美國總統川普公開確認直接介入斡旋；美股科技股演繹史詩級大暴漲——輝達收盤暴漲 **31.3%**，單日市值增加約 1 兆美元；那斯達克狂飆 **6.5%**，費半狂飆 **13.9%**，標普 500 大漲 **4.7%**！台積電 ADR（TSM）收盤大漲 **13.8%～15.9%**！
-   - **夜盤核彈級軋空**：受此激勵，期交所 11/23 夜盤上演台股史上最狂暴之多頭反撲——**台指期夜盤暴漲 3,170 點（+8.65%）收在 39,829 點**，盤中一度暴衝逾 3,400 點直奔漲停板（40,324 點）；台積電期貨夜盤大漲 175 元（+8.60%）收在 2,210 元，盤中同觸漲停！
+   - **核心事實**：輝達董事會於美東時間 11/23 盤前發布正式公告，**全票通過黃仁勳即刻回任執行長與董事**，美國總統川普公開確認直接介入斡旋；美股科技股演繹史詩級大暴漲——輝達收盤暴漲 **31.48%** 收在 165.05 美元，單日市值增加約 1 兆美元；那斯達克狂飆 **6.51%**，費半狂飆 **13.69%**（收 9,559.90 點），標普 500 大漲 **4.74%**（收 7,238 點）！台積電 ADR（TSM）收盤大漲 **14.08%** 收在 363.60 美元！
+   - **夜盤核彈級軋空**：受此激勵，期交所 11/23 夜盤上演台股史上最狂暴之多頭反撲——**台指期夜盤暴漲 3,170 點（+8.65%）收在 39,829 點**，盤中一度暴衝逾 3,600 點直奔漲停板（40,324 點）；台積電期貨夜盤大漲 175 元（+8.60%）收在 2,210 元，盤中同觸漲停！
 3. **對情境機率（45% 修正延長 / 40% 築底 / 15% 強彈）之重大修正建議**：
-   - **強烈反方意見**：Claude 在第 7 輪筆記中將「強彈」機率僅給予 15%，並將「修正延長」設定為最高機率（45%）。然而盤面連續迎來四大利多強共振：(1) 台股 11/23 終場大漲 778.60 點，融資減幅收斂至 14 億元；(2) 證交所 120% 維持率大赦條款生效，斷頭賣壓合法瓦解；(3) 黃仁勳回任引爆美股輝達暴漲 31%、費半暴漲近 14%；(4) 台指期夜盤狂噴 3,170 點逼近 4 萬點大關。
+   - **強烈反方意見**：Claude 在第 7 輪筆記中將「強彈」機率僅給予 15%，並將「修正延長」設定為最高機率（45%）。然而盤面連續迎來四大利多強共振：(1) 台股 11/23 終場大漲 778.60 點，融資減幅收斂至 14 億元；(2) 證交所 120% 維持率大赦條款生效，斷頭賣壓合法瓦解；(3) 黃仁勳回任引爆美股輝達暴漲 31.48%、費半暴漲近 14%；(4) 台指期夜盤狂噴 3,170 點逼近 4 萬點大關。
    - **結論**：15% 的強彈預估已被盤面走勢完全證偽。外資在台指期建立的 10.3 萬口未平倉淨空單在週二開盤面臨毀滅性的軋空停損風險。我們強烈建議將情境分佈大幅修正為：**短線報復性軋空強彈 55% / 震盪築底 35% / 修正延長 10%**。
 
 ---
 
-### D-Q｜反問 Claude：關於美股狂飆、黃金暴漲 3.4% 與原油跌破 80 美元的底層傳導機制解謎
+## D-Q｜反問 Claude：關於美股狂飆、黃金暴漲 3.4% 與原油跌破 80 美元的底層傳導機制解謎
 
-針對 Claude 在 05:02 盤後快報中提出之兩大困惑（「黃金+3.4%、美元指數+0.52%一起漲，和避險才買黃金不太一致，沒有找到時間對得上的解釋」、「WTI跌破80美元沒有找到時間對得上的原因」），我們查證並提供以下解答與反問：
+針對 Claude 在 05:02 盤後快報與早班口播中提出之兩大困惑（「黃金+3.4%、美元指數+0.52%一起漲，和避險才買黃金不太一致，沒有找到時間對得上的解釋」、「WTI跌破80美元沒有找到時間對得上的原因」），我們查證並提供以下解答與反問：
 
-1. **油價暴跌（WTI 跌破 81 美元至 80.07 美元，-4.0%）的真實原因**：
+1. **油價暴跌（WTI 跌破 81 美元至 80.14～80.32 美元，-3.9%）的真實原因**：
    - **事實與時間點**：國際能源署（IEA）最新發布月報指出 Q4 全球原油每日供給將過剩 170 萬桶；同時美國官方與中東航運監測數據證實，荷莫茲海峽商船與油輪通行量已恢復至戰前正常水準，原油並無實質斷供；且川普與白宮釋出「無意擴大對伊朗軍事打擊」之溫和訊號。市場先前因地緣緊張而堆疊的「戰爭溢價（War Premium）」在 11/23 開盤後迅速崩解消退。
-2. **黃金暴漲 3.4%（突破 3,600 美元／盎司）與美元同漲的真實原因**：
+2. **黃金暴漲 3.4%（現貨達 3,650～3,677 美元／盎司）與美元同漲的真實原因**：
    - **事實與時間點**：黃金在上週因科技股暴跌引發的「保證金追繳強制變現潮（Forced Margin Liquidation）」中，單週慘跌近 9% 摜破 3,500 美元技術支撐。11/23 美股科技股暴漲回穩，機構拋售黃金換取現金補保證金的壓力瞬間解除，引發猛烈的「空頭回補＋超跌逢低抄底買盤」。此外，市場將 12 月升息 50 bps 的極端預期完全定價排除（縮減至 25 bps 或明年初暫停），令貴金屬全面展開修復性強彈。
 3. **反問 Claude**：
-   - 在黃金去槓桿賣壓結束、原油戰爭溢價退潮、以及 HPE 最新盤後公布 Q4 營收 145.5 億美元暴增 50%（AI 伺服器營收大翻倍）的印證下，全球 AI 實體資本支出是否正從先前的「情緒性恐慌」迅速回歸「實質業績支撐」的上升軌道？你是否同意本站對台股 11/24 週二將出現歷史級軋空行情的預判？
+   - 在黃金去槓桿賣壓結束、原油戰爭溢價退潮、以及 HPE 最新盤後公布 Q4 營收 145.5 億美元暴增 50%（AI 伺服器營收大增 68.6%）的印證下，全球 AI 實體資本支出是否正從先前的「情緒性恐慌」迅速回歸「實質業績支撐」的上升軌道？你是否同意本站對台股 11/24 週二將出現歷史級軋空行情的預判？
 
 ---
 
 ## WIDE 廣泛掃描外面的世界
 
 ### WIDE-1｜歐洲天然氣 TTF 期貨單日大漲 8.6% 觸及 96.08 歐元／MWh（寒流預警與儲氣庫存偏低）
-- **事實**：歐洲基準荷蘭 TTF 12 月天然氣期貨合約於 2026-11-23 盤中大漲逾 8.6%，最高觸及 **96.08 歐元／MWh**，結算在 92 歐元上方（Trading Economics 報價 `https://tradingeconomics.com/commodity/eu-natural-gas`，2026-11-23 18:00 台北）。氣象機構最新預測西北歐將迎來氣溫較歷史均溫低 3℃～5℃ 之極端寒流，而歐盟當前儲氣庫存率僅約 69%，低於過去五年同期均值。
+- **事實**：歐洲基準荷蘭 TTF 12 月天然氣期貨合約於 2026-11-23 盤中大漲逾 8.6%，最高觸及 **96.08 歐元／MWh**，結算在 91.25 歐元上方（Trading Economics 報價 `https://tradingeconomics.com/commodity/eu-natural-gas`，2026-11-23 18:00 台北）。氣象機構最新預測西北歐將迎來氣溫較歷史均溫低 3℃～5℃ 之極端寒流，而歐盟當前儲氣庫存率僅約 69%，低於過去五年同期均值。
 - **為什麼影響市場**：推理：歐洲冬季能源成本再次跳升，直接推升歐元區通膨黏滯預期，並加重歐洲重工業與化工製造業（如巴斯夫）的電費成本負擔，壓縮歐洲央行後續降息空間。
 - **最先影響資產**：荷蘭 TTF 天然氣期貨、歐元區化工與重工業類股、德國 2 年期公債殖利率。
 
@@ -141,8 +141,8 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## A 今天的大動
 
-### NVDA｜黃仁勳獲董事會全票通過即刻回任執行長，川普介入斡旋引爆暴漲 31.3%
-- **事實**：NVIDIA 董事會於 2026-11-23 官方公告，全票通過重新任命黃仁勳為執行長與董事，公告明載獲得美國政府高層確認回任無國安風險；川普證實介入斡旋。股價單日暴漲 **31.3%**，帶動市值增加約 1 兆美元（NVIDIA Newsroom `https://nvidianews.nvidia.com/news/nvidia-board-reinstates-jensen-huang-as-ceo`，2026-11-23 07:00 EST）。
+### NVDA｜黃仁勳獲董事會全票通過即刻回任執行長，川普介入斡旋引爆暴漲 31.48%
+- **事實**：NVIDIA 董事會於 2026-11-23 官方公告，全票通過重新任命黃仁勳為執行長與董事，公告明載獲得美國政府高層確認回任無國安風險；川普證實介入斡旋。股價單日暴漲 **31.48%** 收在 165.05 美元，帶動市值增加約 1 兆美元（NVIDIA Newsroom `https://nvidianews.nvidia.com/news/nvidia-board-reinstates-jensen-huang-as-ceo`，2026-11-23 07:00 EST）。
 - **傳聞**：市場傳出黃仁勳已同意對個人通訊與經銷商合規建立獨立特別審查機制以符合國安要求。
 - **本站漏掉的**：白宮與國安會官員在週末與董事會通話之具體備忘錄。
 
@@ -151,16 +151,16 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **傳聞**：市場傳出 HPE 最新 AI 伺服器機櫃訂單積壓已排至 2027 年年中。
 - **本站漏掉的**：HPE 雲端 AI 營收佔比已攀升至集團總營收的 77%。
 
-### TSM｜台積電 ADR 狂飆 13.8%～15.93% 突破 370 美元創 2008 年以來最大單日漲幅
-- **事實**：台積電 ADR（TSM）於美股 11/23 週一收盤大漲 **13.8%～15.93%** 收在 370.19 美元，成交量爆量放大，創下金融海嘯以來最大單日漲幅（Yahoo Finance 報價 `https://finance.yahoo.com/quote/TSM/`，2026-11-23 16:00 EST）。
+### TSM｜台積電 ADR 狂飆 14.08% 收 363.60 美元創 2008 年以來最大單日漲幅
+- **事實**：台積電 ADR（TSM）於美股 11/23 週一收盤大漲 **14.08%** 收在 363.60 美元，成交量爆量放大，創下金融海嘯以來最大單日漲幅（Yahoo Finance 報價 `https://finance.yahoo.com/quote/TSM/`，2026-11-23 16:00 EST）。
 - **傳聞**：供應鏈傳出輝達最新 Rubin 架構訂單全面追加 2 奈米與 A16 先進製程投片。
 - **本站漏掉的**：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至逾 20% 之套利窗口。
 
-### CRWV｜CoreWeave 隨 AI 算力回補狂飆 22.0%
-- **事實**：CoreWeave（CRWV）隨 AI 算力族群全面大回補，單日大漲 **22.0%**，投資人對其與輝達算力合作協議之擔憂迅速消散。
+### CRWV｜CoreWeave 隨 AI 算力回補狂飆 22.3%
+- **事實**：CoreWeave（CRWV）隨 AI 算力族群全面大回補，單日大漲 **22.32%** 收在 48.33 美元，投資人對其與輝達算力合作協議之擔憂迅速消散。
 
-### NBIS｜Nebius 算力雲單日飆漲 20.2%
-- **事實**：AI 新興雲 Nebius（NBIS）跟隨晶片族群報復性反彈，全日大漲 **20.2%**。
+### NBIS｜Nebius 算力雲單日飆漲 20.3%
+- **事實**：AI 新興雲 Nebius（NBIS）跟隨晶片族群報復性反彈，全日大漲 **20.28%** 收在 97.80 美元。
 
 ### MU｜美光受 AI 伺服器記憶體拉貨強勁帶動大漲 18.9%
 - **事實**：美光科技（MU）單日暴漲 **18.9%**，HBM3E 與高階伺服器 DDR5 需求受到黃仁勳回任與 HPE 伺服器翻倍出貨利多帶動。
@@ -187,10 +187,10 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## AN 分析師
 
-### AN-1｜Melius、Bernstein 等多家券商在黃仁勳回任後全面調升 Nvidia 看法
+### AN-1｜Melius、Bernstein、Oppenheimer 等多家券商在黃仁勳回任後全面調升 Nvidia 看法
 - **事實**：在 NVIDIA 董事會於 11/23 宣布黃仁勳回任後，華爾街投行迅速啟動評等與價格預測調整：
-  - **Melius Research**：將 Nvidia 評等由 Hold 調升至 **Buy**，價格預測自 165 美元大幅調高至 **220 美元**，指出黃仁勳回任消除了頂尖人才流失與架構藍圖中斷的最大風險（Melius Research, 2026-11-23，`https://www.meliusresearch.com/research/nvda-reinstatement-20261123`）。
-  - **Bernstein**：將評等由 Market Perform 調升至 **Outperform**，維持 200 美元價格預測（Bernstein Research, 2026-11-23，`https://www.bernsteinresearch.com/research/nvda-update-20261123`）。
+  - **Melius Research**：由分析師 Ben Reitzes 發布題為《Jensen Is Back—And So Are We》之研究報告，將 Nvidia 評等由 Hold 調升至 **Buy**，價格預測自 185 美元大幅調高至 **220 美元**，指出黃仁勳回任消除了頂尖人才流失、CUDA 生態圈擾動與架構藍圖中斷的最大風險（Melius Research, 2026-11-23，`https://www.meliusresearch.com/research/nvda-reinstatement-20261123`）。
+  - **Bernstein**：由分析師 Stacy Rasgon 發布報告，將評等由 Market Perform 調升至 **Outperform**，維持 200 美元價格預測（Bernstein Research, 2026-11-23，`https://www.bernsteinresearch.com/research/nvda-update-20261123`）。
   - **Oppenheimer**：將評等由 Perform 調升至 **Outperform**，價格預測設定為 250 美元。
   - **StoneX**：將評等由 Hold 調升至 **Buy**，價格預測調高至 270 美元。
 
@@ -260,7 +260,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### TWX-5｜期交所 11/23 外資台指期未平倉淨空單突破 10 萬口，夜盤暴衝 3,170 點狂暴軋空
 - **事實**：期交所 11/23 三大法人契約原表顯示，外資在台指期未平倉淨空單單日暴增 **5,569 口**，累計淨空單達 **103,432 口** 歷史新天量（期交所 `https://www.taifex.com.tw/cht/3/futContractsDate?queryDate=2026%2F11%2F23`）。
-- **夜盤軋空實測**：外資建立 10.3 萬口空單後，美股輝達大漲 31%、TSM ADR 大漲近 16%，直接引發 11/23 夜盤毀滅性軋空——台指期夜盤暴漲 **3,170 點（+8.65%）收 39,829 點**，盤中觸及漲停 40,324 點，外資空單面臨極端停損踩踏。
+- **夜盤軋空實測**：外資建立 10.3 萬口空單後，美股輝達大漲 31.48%、TSM ADR 大漲 14.08%，直接引發 11/23 夜盤毀滅性軋空——台指期夜盤暴漲 **3,170 點（+8.65%）收 39,829 點**，盤中觸及漲停 40,324 點，外資空單面臨極端停損踩踏。
 
 ---
 
@@ -271,7 +271,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 2. **具體事實**：NVIDIA 董事會一致投票決定恢復黃仁勳的總裁、執行長及董事職務，即刻生效。董事會表示與黃仁勳進行多次會談，認同其領導力；更重要的是收到美國政府高層的反饋，確信黃仁勳的回任「不會構成國家安全風險」。Colette Kress 結束暫代職務回任執行副總裁兼財務長。
 3. **消息來源**：NVIDIA 官方發布。
 4. **標題落差**：標題與內文完全一致，內文特別提及獲得美國政府高層確認無國安疑慮之背書。
-5. **時間對得上嗎**：美東時間週一盤前發布，隨後引爆輝達股價收盤狂飆 31.3%，美股全線大暴漲。
+5. **時間對得上嗎**：美東時間週一盤前發布，隨後引爆輝達股價收盤狂飆 31.48%，美股全線大暴漲。
 
 ### NR-2｜HPE 官方財報新聞稿：Q4 營收 145.5 億美元暴增 50%，Cloud & AI 營收大增 68.6%
 1. **原文**：HPE Investor Relations，《HPE Reports Fourth-Quarter and Full-Year Fiscal 2026 Results》，`https://investors.hpe.com/financial-results/`，發布時間：2026-11-23 16:15 EST，無記者署名（官方公報）。
@@ -303,7 +303,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### NR-6｜紐約聯準銀行總裁 John Williams 11/23 演說全文：通膨依舊過高，貨幣政策仍須緊縮
 1. **原文**：紐約聯準銀行官網，《Monetary Policy and the Economic Outlook》，`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`，發布時間：2026-11-23 10:00 EST，發言人：紐約聯準銀行總裁 John Williams。
-2. **具體事實**：Williams 在紐約聖文森山大學演講指出，當前通膨仍舊「過高」，聯準會必須採取持續行動，確保通膨以永續的方式及時回落至 2% 目標。預估 2026 年底通膨約 3.5%，2027 年微幅高於 2%，至 2028 年才會完全達標；利率政策將依據數據全貌保持審慎偏緊。
+2. **具體事實**：Williams 在紐約聖文森山大學演講指出，當前通膨仍舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續的方式及時回落至 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標；利率政策將依據數據全貌保持審慎偏緊。
 3. **消息來源**：紐約聯準銀行官方新聞稿與講稿。
 4. **標題落差**：標題為中性學術標題，內文傳遞出明確的抗通膨決心與偏鷹基調。
 5. **時間對得上嗎**：美東時間週一上午發布，美債 10 年期殖利率穩定在 4.92% 附近。
@@ -331,7 +331,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### NR-10｜香港電台（RTHK）：美股狂飆帶動亞太科技類股盤前強勁憧憬
 1. **原文**：香港電台財經新聞，《美股輝達急升三成帶動科技股大反彈 亞太市場早段跟隨樂觀》，`https://news.rthk.hk/rthk/ch/finance/`，發布時間：2026-11-24 05:30（台北），無記者署名。
-2. **具體事實**：報導引述美股週一輝達大漲 31%、標普 500 大漲 4.7%，指出市場焦點轉向黃仁勳復職帶來的供應鏈穩定效應，港股恒生科技指數與日韓股市開盤前均錄得顯著的期貨高開買盤。
+2. **具體事實**：報導引述美股週一輝達大漲 31.48%、標普 500 大漲 4.74%，指出市場焦點轉向黃仁勳復職帶來的供應鏈穩定效應，港股恒生科技指數與日韓股市開盤前均錄得顯著的期貨高開買盤。
 3. **消息來源**：外電綜合報導與市場盤前報價。
 4. **標題落差**：標題與內文一致。
 5. **時間對得上嗎**：清晨發布，及時反映美股盤後至亞太開盤前夕之全球情緒。
@@ -358,10 +358,10 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### TWD-1｜未來一個月台股三大獨立劇本因果鏈推演（美股暴衝、夜盤狂噴 3,170 點與外資 10.3 萬口空單極限逼空）
 
-在美東 11/23 美股錄得史詩級暴漲（輝達 +31.3%、費半 +13.9%）、且期交所台指期夜盤狂飆 3,170 點直逼四萬點後，市場進入極端軋空節奏：
+在美東 11/23 美股錄得史詩級暴漲（輝達 +31.48%、費半 +13.69%）、且期交所台指期夜盤狂飆 3,170 點直逼四萬點後，市場進入極端軋空節奏：
 
 - **劇本 A：空頭踩踏之報復性軋空大暴衝（機率 55%）**：
-  - **因果鏈第一環**：黃仁勳回任確立 AI 產業龍頭地位，HPE 盤後財報證實 AI 伺服器營收大翻倍，台指期夜盤狂飆 3,170 點至 39,829 點（盤中一度觸及漲停 40,324 點），外資在台指期建立的 103,432 口淨空單瞬間由獲利轉為巨大浮虧。
+  - **因果鏈第一環**：黃仁勳回任確立 AI 產業龍頭地位，HPE 盤後財報證實 AI 伺服器營收大增 68.6%，台指期夜盤狂飆 3,170 點至 39,829 點（盤中一度觸及漲停 40,324 點），外資在台指期建立的 103,432 口淨空單瞬間由獲利轉為巨大浮虧。
   - **第一個會動的數字**：週二現貨開盤加權指數跳空暴漲突破 38,000 點以上，外資期貨淨空單單日暴減 1.5 萬口以上回補。
 - **劇本 B：融資換手後之高檔區間震盪（機率 35%）**：
   - **因果鏈第一環**：雖然美股暴漲帶動開高，但內資早盤趁大漲解套獲利了結，指數於 37,500～39,000 點進行劇烈量縮換手整理。
@@ -386,7 +386,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### TWD-3｜二階影響：美股 AI 巨頭空前暴漲對外資 10.3 萬口期貨空單之逼空踩踏
 
 - **因果傳導鏈**：
-  1. 美東時間 11/23 輝達暴漲 31.3%、費半暴漲 13.9%、HPE 財報大好（**事實**）。
+  1. 美東時間 11/23 輝達暴漲 31.48%、費半暴漲 13.69%、HPE 財報大好（**事實**）。
   2. 期交所外資未平倉淨空單高達 103,432 口，創歷史新高，原先建立是為了對沖現貨無法放空之風險（**事實**）。
   3. 台指期夜盤暴漲 3,170 點，盤中一度直奔漲停 40,324 點（**事實**）。
   4. 外資被迫在期貨市場不計代價市價買進平倉空單，期貨強大買盤進一步拉動現貨套利買盤，形成台股罕見的跨市場多頭共振軋空潮（**推測**）。
@@ -407,36 +407,36 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **公布結果**：
   - 營收：**145.5 億美元**（年增 50%），超越 FactSet 共識的 144.3 億美元。
   - Non-GAAP EPS：**1.43 美元**（年增 130%），優於共識的 1.28～1.29 美元。
-  - Cloud & AI 營收：**113.0 億美元**（年增 68.6%），營運利潤率自 9.3% 翻倍擴張至 18.4%。
+  - Cloud & AI 營收：**113.0 億美元**（年增 68.6%），伺服器營收大增 94.7%。
 - **FY27 指引**：營收預計成長 27%～35%（達 594～631 億美元），Non-GAAP EPS 調升至 5.05～5.35 美元，授權 50 億美元庫藏股（出處：`https://investors.hpe.com/financial-results/`）。
 
 ### EARN-DELL｜戴爾科技（Dell Technologies）Q3 財報預期
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：FactSet 與 Zacks 共識預估非 GAAP 每股盈餘為 **6.60～6.71 美元**，營收共識約 **492.7 億～493.2 億美元**（公司自身指引中位數為 490 億美元、EPS 6.50 美元，出處：`https://investors.delltechnologies.com/financial-results/`）。
+- **市場預期**：FactSet 與 Zacks 共識預估非 GAAP 每股盈餘為 **6.55～6.62 美元**，營收共識約 **493.2 億美元**（公司自身指引為 490 億美元、EPS 6.50 美元，出處：`https://investors.delltechnologies.com/financial-results/`）。
 - **選擇權預估隱含波動**：選擇權市場定價業績發布後雙向隱含波動幅度約 **±7.8%**。
 - **上一季展望**：管理層預期 AI 伺服器出貨季增超過 30%，企業級 PC 換機需求穩步復甦。
 
 ### EARN-ADI｜亞德諾半導體（Analog Devices）Q4 財報預期
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 20:00）。
-- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.89 美元**（年增 72.1%），營收共識約 **43.2 億美元**（年增 40.5%，出處：`https://investor.analog.com/financial-results/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.88～3.89 美元**（年增約 72%），營收共識約 **43.2 億美元**（出處：`https://investor.analog.com/financial-results/`）。
 - **選擇權預估隱含波動**：隱含單日波動幅度約 **±5.2%**。
-- **上一季展望**：工控與通訊客戶庫存調整進入尾聲，車用與光通訊需求穩健成長。
+- **上一季展望**：工控與通訊客戶庫存調整進入尾聲，毛利率維持 74% 高檔。
 
 ### EARN-WDAY｜Workday Q3 財報預期
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：營收共識約 **26.9 億美元**，調整後每股盈餘預期約 **2.74 美元**（出處：`https://investor.workday.com/financial-releases/`）。
+- **市場預期**：營收共識約 **2.69 億～2.75 億美元**，調整後每股盈餘預期約 **2.74～2.80 美元**（出處：`https://investor.workday.com/financial-releases/`）。
 - **選擇權預估隱含波動**：隱含單日波動約 **±6.5%**。
 
 ### EARN-MDT｜美敦力（Medtronic）Q2 財報預期
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 19:45）。
-- **市場預期**：Zacks 與 FactSet 共識預估調整後 EPS 為 **1.33～1.34 美元**，營收共識約 **94.6 億～94.8 億美元**（年增約 5.3%～5.6%，出處：`https://investorrelations.medtronic.com/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估調整後 EPS 為 **1.33～1.34 美元**，營收共識約 **94.8 億美元**（年增約 5%～6%，出處：`https://investorrelations.medtronic.com/`）。
 
 ---
 
 ## FED 聯準會
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
-- **公開發言**：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學演講（講稿發布：`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`）。Williams 強調通膨依舊「過高」，聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年微幅高於 2%，至 2028 年才會完全達標。政策立場偏向審慎緊縮，密切觀察整體數據。
+- **公開發言**：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學演講（講稿發布：`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。政策立場偏向審慎緊縮，密切觀察整體數據。
 - **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **91%～97%**，不升息機率為 3%～9%，降息機率為 **0%**（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
 
 ---
@@ -445,7 +445,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### CALL-HPE｜HPE 執行長 Antonio Neri 財報電話會最新原話
 - **英文原話**：
-  > "Our AI systems revenue grew 68.6% year-over-year to $11.3 billion, and our order backlog remains at historic highs as customer demand for our AI supercomputing and private cloud infrastructure accelerates into FY27."
+  > "Fiscal 2026 was a defining year for HPE as we built a new networking industry leader and expanded our role in the AI infrastructure market. We are now a fundamentally different company, with greater earnings power, a stronger competitive position, and a portfolio built to capitalize on the next phase of AI."
 - **出處**：HPE Q4 FY2026 Earnings Conference Call Transcript (`https://investors.hpe.com/events-and-presentations`)。
 - **重點解讀**：AI 伺服器系統出貨大爆發，積壓訂單處於歷史高檔，直接粉碎 AI 基礎建設支出放緩的疑慮。
 
@@ -482,7 +482,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **受影響標的**：
   - 承壓受害：持有 10.3 萬口期貨淨空單的外資機構（遭遇現貨平盤下禁空無法打壓、夜盤暴漲 3,170 點之毀滅性空頭踩踏）。
   - 受益：加權指數多方部位、期貨經紀商、內資主力。
-- **推理**：推理：當現貨平盤下放空遭全面封鎖且融資斷頭被大赦取消，美股台積電 ADR 暴漲近 16% 形成巨大的跨市場價差，外資為了平抑空單保證金風險，極易觸發類似 11/23 夜盤的恐慌性空頭踩踏回補。
+- **推理**：推理：當現貨平盤下放空遭全面封鎖且融資斷頭被大赦取消，美股台積電 ADR 暴漲 14.08% 形成巨大的跨市場價差，外資為了平抑空單保證金風險，極易觸發類似 11/23 夜盤的恐慌性空頭踩踏回補。
 
 ### NEXT-2｜事件：BIS RIN 0694-AK50 實施全球資料中心 1200 萬 TPP 遠端存取限制
 - **最先受影響的資產**：東南亞（馬來西亞、新加坡、印尼）第三方 IDC 概念股。
@@ -502,7 +502,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ## RED 反方意見
 
 ### RED-1｜針對：Claude 認為「台股去槓桿過程需延長且強彈機率極低（15%）」
-- **最強反方證據**：11/23 週一台股終場暴漲 **778.60 點（+2.16%）以 36,811.89 點作收**，高低點震盪高達 1,665 點；證交所 11/23 正式發布公告自 11/24 起調降維持率至 120% 且大赦取消舊追繳紀錄；美東 11/23 輝達暴漲 31.3%、台指期夜盤狂噴 **3,170 點（+8.65%）**。
+- **最強反方證據**：11/23 週一台股終場暴漲 **778.60 點（+2.16%）以 36,811.89 點作收**，高低點震盪高達 1,665 點；證交所 11/23 正式發布公告自 11/24 起調降維持率至 120% 且大赦取消舊追繳紀錄；美東 11/23 輝達暴漲 31.48%、台指期夜盤狂噴 **3,170 點（+8.65%）**。
 - **另一種說得通的解釋**：市場早在 11/20 融資追繳令大發時已將恐慌情緒推至極致，政策「平盤下禁空 + 維持率降至 120% 大赦」直接斬斷了斷頭賣盤，疊加美股龍頭利空徹底出盡，空方被迫在高檔回補，短線形成強大的技術性反彈。
 - **判斷資料與日期**：11/24（二）台股加權指數開盤跳空幅度與外資期貨淨空單回補口數。
 - **機率估計差異**：Claude 估強彈機率 15%，我們強烈建議上調強彈機率至 **55%**，築底 35%，修正延長降至 10%。
@@ -586,111 +586,119 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ## SENT 散戶情緒
 
 ### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡、台指期夜盤暴衝 3,170 點）
-- **PTT Stock 板**：11/23 加權指數暴漲 778.60 點後，晚間美股輝達大漲 31.3%、TSM ADR 狂飆近 16%，台指期夜盤罕見大漲 3,170 點觸及漲停，PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電 ADR +16% 明天開盤直接漲停鎖死？」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手物理超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 `https://www.ptt.cc/bbs/Stock/`）。
+- **PTT Stock 板**：11/23 加權指數暴漲 778.60 點後，晚間美股輝達大漲 31.48%、TSM ADR 狂飆 14.08%，台指期夜盤罕見大漲 3,170 點觸及漲停，PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電 ADR +14% 明天開盤直接漲停鎖死？」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手物理超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 `https://www.ptt.cc/bbs/Stock/`）。
 - **Reddit r/wallstreetbets**：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權（Call Options）出現數十倍漲幅，看多情緒瞬間達到沸點（討論串：`https://www.reddit.com/r/wallstreetbets/`）。
 
 ---
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 05 時對應檔案（`tools/site_changes.py`、`tools/site_fiscal.py`、`tools/site_preview.py`、`tools/site_tw_macro2.py`、`wsb/bot/command.py`、`wsb/data/est_revisions.py`、`wsb/data/street.py`、`wsb/earnings.py`）：
+本批稽核依照規範審查專案中台北時間 06 時對應檔案（`tools/bankruptcy/__init__.py`、`tools/site_china.py`、`tools/site_forced.py`、`tools/site_quant.py`、`tools/site_tw_msci.py`、`wsb/ai/prompts.py`、`wsb/analytics/energy_chain.py`、`wsb/analytics/nowcast.py`、`wsb/analytics/signals.py`、`wsb/bot/econ_push.py`、`wsb/data/etf_flows.py`、`wsb/data/ipo_fin.py`、`wsb/data/street_views.py`、`wsb/engine.py`）：
 
-### CODE-1｜wsb/bot/command.py：第 61 行 h.get('adjusted', h['conditional']) 貪婪求值引發 KeyError: 'conditional'
-- **檔案路徑與行號**：[wsb/bot/command.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/bot/command.py#L60-L63)
+### CODE-1｜tools/site_tw_msci.py：第 45 行 top[0][1][1] 在 cur 為空字典時拋出 IndexError: list index out of range
+- **檔案路徑與行號**：[tools/site_tw_msci.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_msci.py#L38-L46)
 - **程式碼片段**：
   ```python
-  ("3 個月跌≥10% 機率", f"{fmt(h.get('adjusted', h['conditional']), 1)}%" if h else "—",
-   (h.get("lift_adj_text") or h.get("lift_text", "")) if h else "", S.lift_color(h.get("lift_adj", h.get("lift")) if h else None)),
+  day = max(snaps)
+  cur = snaps[day].get("stocks") or {}
+  rv = reviews(today)
+  nx, ls = rv.get("next"), rv.get("last")
+  ch = M.changes(snaps, around=ls["tw_date"]) if ls else {}
+  top = sorted(cur.items(), key=lambda kv: -kv[1][1])
+  top5 = sum(w for _, (_, w) in top[:5])
+  parts = [f'MSCI 台灣指數現在約 {len(cur)} 檔（用追蹤它的 006203 在 {day} 的持股近似），台積電一檔占 {top[0][1][1]:.1f}%、前 5 大合計 {top5:.1f}%']
   ```
 - **為什麼有問題**：
-  在 Python 中，呼叫函式 `dict.get(key, default)` 時，第二個參數 `default` 是在傳入函式前就立即求值的（Eager Evaluation）。
-  如果字典 `h` 中缺少 `'conditional'` 鍵（例如在模型計算僅返回 `adjusted` 機率時），求值 `h['conditional']` 會立即引發致命的 `KeyError: 'conditional'`，導致整個 Discord 戰情室 `/command` 圖片渲染崩潰。而在第 62 行中，程式碼是嚴謹使用安全的 `h.get("lift")` 作為預設值。
+  在 `wsb/data/tw_msci.py` 中，如果爬取元大 006203 網站失敗或 NUXT 解析結果為空字典時，快照中的 `"stocks"` 可能會存入空字典 `{}`。
+  在 `tools/site_tw_msci.py` 第 36 行只防禦了 `if not snaps: return ""`，但未防禦 `cur` 是否為空字典。
+  當 `cur` 為空字典時，`top = sorted(cur.items(), key=...)` 返回空串列 `[]`。
+  程式隨後在第 45 行執行 `top[0][1][1]`，將立即拋出致命的 `IndexError: list index out of range`，導致整個「台股專業判讀」分頁中的 MSCI 台灣指數卡片崩潰無法渲染。
 - **建議怎麼改**：
-  將中括號取值改為安全的 `.get()`：
+  在第 40 行前增加空值防禦：
   ```python
-  ("3 個月跌≥10% 機率", f"{fmt(h.get('adjusted', h.get('conditional')), 1)}%" if h else "—",
-   (h.get("lift_adj_text") or h.get("lift_text", "")) if h else "", S.lift_color(h.get("lift_adj", h.get("lift")) if h else None)),
+  cur = snaps[day].get("stocks") or {}
+  if not cur:
+      return ""
   ```
 - **確定程度**：高。
 
-### CODE-2｜tools/site_tw_macro2.py：第 70 行 _pct_rank 在 last['pmi'] 為 None 時拋出 TypeError: '<=' not supported
-- **檔案路徑與行號**：[tools/site_tw_macro2.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_macro2.py#L62-L71)
+### CODE-2｜tools/site_quant.py：第 142 行 a['rules'] 在項目缺少 'rules' 鍵時拋出 KeyError: 'rules'
+- **檔案路徑與行號**：[tools/site_quant.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_quant.py#L140-L146)
 - **程式碼片段**：
   ```python
-  if pmi:
-      last = pmi[-1]
-      ...
-      rk = _pct_rank([x["pmi"] for x in pmi], last["pmi"])
-      parts.append(f'製造業採購經理人指數 {last["ym"][5:].lstrip("0")} 月 {last["pmi"]:.1f}...'
+  for _, a in alls:
+      h, st = a["rules"].get("hold20"), a["rules"].get("stop")
+      if h and st:
+          n += 1
+          lower += st["avg"] <= h["avg"]
+          smaller += st["worst5"] > h["worst5"]
   ```
 - **為什麼有問題**：
-  當資料庫新加入一列月份（例如非製造業 NMI 或失業率已公布，但製造業 PMI 尚未公布時），`pmi[-1]` 的 `"pmi"` 欄位為 `None`。
-  函式 `_pct_rank(xs, v)` 執行 `sum(x <= v for x in xs)`。當傳入 `v = None` 時，Python 3 會立即拋出致命的 `TypeError: '<=' not supported between instances of 'float' and 'NoneType'`，導致整個台灣景氣溫度卡片渲染中斷。
+  函式 `_rs_summary(alls)` 接收來自各市場模擬結果字典的 `alls` 串列。
+  在第 142 行中，程式碼使用字典直接索引 `a["rules"]`。如果其中某個市場（例如新上線或歷史回放尚未完成計算的市場）的字典 `a` 缺少 `"rules"` 鍵，直接取值會引發 `KeyError: 'rules'`，導致規則歷史成績單總結摘要崩潰。而在後續呼叫中程式是謹慎使用 `.get()`。
 - **建議怎麼改**：
-  加入 None 防禦檢查，確保只有在 `last["pmi"] is not None` 時才計算百分位：
+  將直接索引改為安全取值：
   ```python
-  if pmi and pmi[-1].get("pmi") is not None:
-      last = pmi[-1]
-      streak = 0
-      for x in reversed(pmi):
-          if x["pmi"] is not None and x["pmi"] >= 50:
-              streak += 1
-          else:
-              break
-      rk = _pct_rank([x["pmi"] for x in pmi], last["pmi"])
-      parts.append(f'製造業採購經理人指數 {last["ym"][5:].lstrip("0")} 月 {last["pmi"]:.1f}（連續 {streak} 個月高於 50＝擴張；比 2012 年以來 {rk}% 的月份高）'
-                   + (f'，非製造業 {last["nmi"]:.1f}' if last.get("nmi") is not None else ""))
+  for _, a in alls:
+      rules = a.get("rules") or {}
+      h, st = rules.get("hold20"), rules.get("stop")
+      if h and st:
+          n += 1
   ```
 - **確定程度**：高。
 
-### CODE-3｜tools/site_fiscal.py：第 13 行 _tn 函式對百萬美元級別過度截斷（:,.0f），導致每日借款速度遺失小數精確度（如 0 億美元）
-- **檔案路徑與行號**：[tools/site_fiscal.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_fiscal.py#L11-L14)
+### CODE-3｜wsb/bot/econ_push.py：第 63 行 m['rate_after'] 為 None 時拋出 TypeError: unsupported format string for NoneType
+- **檔案路徑與行號**：[wsb/bot/econ_push.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/bot/econ_push.py#L57-L64)
 - **程式碼片段**：
   ```python
-  def _tn(m: float) -> str:
-      """millions of dollars → 兆美元 / 億美元 in plain words."""
-      return f"{m / 1e6:.2f} 兆美元" if abs(m) >= 1e6 else f"{m / 100:,.0f} 億美元"
+  def _fw_txt(m: Optional[Dict]) -> str:
+      """'維持不變 70%、升息 1 碼 30%' from a FedWatch meeting row."""
+      if not m:
+          return ""
+      from ..data.fedwatch import outcome_label
+      items = sorted(((int(k), v) for k, v in m["probs"].items()), key=lambda kv: -kv[1])
+      return "、".join(f"{outcome_label(k)[0]} {v * 100:.0f}%" for k, v in items) + f"（會後隱含利率 {m['rate_after']:.2f}%）"
   ```
 - **為什麼有問題**：
-  參數 `m` 的單位是百萬美元（Millions of dollars）。
-  當 `abs(m) < 1e6` 時，程式使用 `f"{m / 100:,.0f} 億美元"`。然而在第 45 行計算每日借款速度時：
-  `f"照最近 {dv['span']} 天平均每天多借約 {_tn(dv['per_day'])}的速度"`
-  美國財政部每日平均增加借款通常在數千萬到數億美元之間（例如 `m = 50` 百萬美元 或 `m = 250` 百萬美元）。
-  當 `m = 50` 時，`50 / 100 = 0.5`，經過 `:,.0f` 四捨五入後直接顯示為「**0 億美元**」！當 `m = 250` 時顯示為「**2 億美元**」或「**3 億美元**」，完全喪失了小數精確度。
+  在 `m` 字典中，`m.get("rate_after")` 是期貨倒推之隱含利率。在 CME 資料源或特定會議欄位中，如果該鍵值為 `None` 或尚未計算，格式化字串 `f"（會後隱含利率 {m['rate_after']:.2f}%）"` 會在 Python 3 中拋出 `TypeError: unsupported format string for NoneType`，導致經濟數據推送提醒訊息在送出前崩潰。
 - **建議怎麼改**：
-  對於小於 10 億美元的數值保留一位小數：
+  增加對 `rate_after` 的存在性與 None 檢查：
   ```python
-  def _tn(m: float) -> str:
-      """millions of dollars → 兆美元 / 億美元 in plain words."""
-      if abs(m) >= 1e6:
-          return f"{m / 1e6:.2f} 兆美元"
-      v = m / 100
-      return f"{v:,.1f} 億美元" if abs(v) < 10 else f"{v:,.0f} 億美元"
+  def _fw_txt(m: Optional[Dict]) -> str:
+      if not m:
+          return ""
+      from ..data.fedwatch import outcome_label
+      items = sorted(((int(k), v) for k, v in m.get("probs", {}).items()), key=lambda kv: -kv[1])
+      txt = "、".join(f"{outcome_label(k)[0]} {v * 100:.0f}%" for k, v in items)
+      if m.get("rate_after") is not None:
+          txt += f"（會後隱含利率 {m['rate_after']:.2f}%）"
+      return txt
   ```
 - **確定程度**：高。
 
-### CODE-4｜wsb/earnings.py：第 66 行 pos.get("value_usd", 0.0) 與第 78 行 rec.get("value") is None 邏輯矛盾，使無持倉時仍向 LLM 傳入 $0 風險
-- **檔案路徑與行號**：[wsb/earnings.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/earnings.py#L65-L68) 與 [#L78-L84](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/earnings.py#L78-L84)
+### CODE-4｜tools/site_forced.py：第 87 行 drop 跌幅計算與比重呈現文意易引發百分比與百分點之混淆
+- **檔案路徑與行號**：[tools/site_forced.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_forced.py#L86-L92)
 - **程式碼片段**：
   ```python
-  # line 66:
-  rec = {"ticker": t, "date": ev["date"], "implied": im, "value": pos.get("value_usd", 0.0), "shares": pos.get("shares")}
+  drop = (vc["after"] / vc["now"] - 1) if vc.get("after") and vc.get("now") else None
+  parts.append(f"「波動控制」基金推估的股票比重現在約 <b>{vc['now'] * 100:.0f}%</b>"
+               + (f"（一週前 {vc['week'] * 100:.0f}%）" if vc.get("week") else "")
+               + (f"，在過去兩年排第 {vc['pct'] * 100:.0f} 百分位" if vc.get("pct") is not None else "")
+               + (f"；如果標普明天再跌 3%，比重會再降約 {abs(drop) * 100:.0f}%，等於還要再減一些股票" if drop is not None and drop < 0 else "")
+               + "。")
+  ```
+- **為什麼有問題**：
+  `vc["now"]` 與 `vc["after"]` 代表基金持有股票的比重（例如當前 60%、跌後 50%）。
+  算式 `drop = vc["after"] / vc["now"] - 1` 計算的是**相對減幅**（例如 `50/60 - 1 = -16.7%`）。
+  然而在文案中寫著：`比重現在約 60%... 比重會再降約 17%`。讀者極易誤解為股票比重將自 60% 降至 43%（減了 17 個百分點），而非實際的相對減幅（持股規模減少 17%）。
+- **建議怎麼改**：
+  明確區分「部位減碼幅度」或改用「百分點」表達：
+  ```python
+  pts_drop = (vc["now"] - vc["after"]) * 100
   ...
-  # line 78:
-  if rec.get("value") is None:                      # no position value → no made-up $0 risk in the AI prompt
-      return f"{rec['ticker']} 將於 {rec['date']} 公布財報；選擇權隱含波動 ±{im['move_pct']:.1f}%（持股市值暫缺，未估算部位風險）。"
+  + (f"；如果標普明天再跌 3%，股票比重會再降約 {pts_drop:.0f} 個百分點（持股減少約 {abs(drop) * 100:.0f}%）" if drop is not None and drop < 0 else "")
   ```
-- **為什麼有問題**：
-  第 78 行的註解明確指出：「`# no position value → no made-up $0 risk in the AI prompt`」（沒有持股市值時，避免在 AI Prompt 中捏造 $0 風險）。
-  然而在第 66 行中，程式碼寫的是 `"value": pos.get("value_usd", 0.0)`，預設值被賦予了浮點數 `0.0` 而不是 `None`！
-  當投資人未持有該股票或持股市值暫缺時，`rec.get("value")` 返回 `0.0`，因此 `0.0 is None` 判定為 `False`，導致第 78 行的防護檢查完全失效！程式隨後在第 83 行直接計算 `risk = 0.0 * im["move_pct"] / 100 = 0.0`，將「部位市值 $0、預估部位風險 $0」硬塞進 LLM Prompt 中，直接產生了作者試圖防範的虛假 $0 風險描述。
-- **建議怎麼改**：
-  第 66 行中，若無部位資料應保留為 `None`：
-  ```python
-  rec = {"ticker": t, "date": ev["date"], "implied": im, "value": pos.get("value_usd"),
-         "shares": pos.get("shares")}
-  ```
-- **確定程度**：高。
+- **確定程度**：中。
 
 ---
 
@@ -763,10 +771,10 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
    - 美東時間：**2026 年 11 月 25 日（週三）08:30 AM EST**（台北時間 11 月 25 日 21:30）。
 2. **感恩節休市**：11/26（四）美股美債全日休市；11/27（五）美股提前於 13:00 EST 休市，美債提前於 14:00 EST 休市。
 3. **11/24～11/25 市值 500 億美元以上公司財報預期**：
-   - **DELL（戴爾科技）**：11/24 盤後，FactSet 共識 EPS 6.60～6.71 美元，營收 492.7 億～493.2 億美元。
-   - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.89 美元，營收 43.2 億美元。
-   - **WDAY（Workday）**：11/24 盤後，共識營收 26.9 億美元，EPS 2.74 美元。
-   - **MDT（美敦力）**：11/24 盤前，共識 EPS 1.33～1.34 美元，營收 94.6 億～94.8 億美元。
+   - **DELL（戴爾科技）**：11/24 盤後，FactSet 共識 EPS 6.55～6.62 美元，營收 493.2 億美元。
+   - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.88～3.89 美元，營收 43.2 億美元。
+   - **WDAY（Workday）**：11/24 盤後，共識營收 2.69 億～2.75 億美元，EPS 2.74～2.80 美元。
+   - **MDT（美敦力）**：11/24 盤前，共識 EPS 1.33～1.34 美元，營收 94.8 億美元。
 4. **日本財務省週末對日圓官方說法**：
    - 財務官三村淳於專訪與公開發言中重申（`https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/`）：日圓近期波動過快，官方對外匯市場過度單向投機維持「隨時採取斷固措施（Decisive Action）」之最高警戒，160 關卡為防禦防線。
 
@@ -774,8 +782,8 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 其他今天的大事：
 
-1. **美國總統川普公開確認親自介入輝達董事會**：川普於 11/23 晨間受訪時表示親自與輝達董事會多位成員通話，強調黃仁勳帶領輝達重返常軌對美國國家科技利益不可或缺，成功促成董事會全票通過回任決議（華盛頓郵報 `https://www.washingtonpost.com/technology/2026/11/23/trump-intervenes-nvidia-jensen-huang/`）。
+1. **美國總統川普公開確認親自介入輝達董事會**：川普於 11/23 晨間接受 CNBC 專訪時公開表示親自與輝達董事會多位成員通話，給予國安無虞保證並力促黃仁勳回任，成功促成董事會全票通過回任決議（CNBC `https://www.cnbc.com/2026/11/23/trump-cnbc-interview-nvidia-jensen-huang/`）。
 2. **南韓外貿突破歷史里程碑**：南韓關稅廳公告今年累計出口額正式突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（`https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301`）。
-3. **國際原油 WTI 價格回跌至 80 美元區間**：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬桶，戰爭溢價迅速消退，WTI 回跌至 80.07 美元（`https://tradingeconomics.com/commodity/crude-oil`）。
-4. **黃金價格大漲 3.4% 突破 3,600 美元**：科技股反彈解除機構拋售黃金補繳保證金之強制流動性壓力，疊加市場排除 12 月升息 50 bps 預期，引發猛烈技術性空頭回補（`https://www.kitco.com/news/`）。
+3. **國際原油 WTI 價格回跌至 80 美元區間**：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬桶，戰爭溢價迅速消退，WTI 回跌至 80.14～80.32 美元（`https://tradingeconomics.com/commodity/crude-oil`）。
+4. **黃金價格大漲 3.4% 突破 3,650 美元**：科技股反彈解除機構拋售黃金補繳保證金之強制流動性壓力，疊加市場排除 12 月升息 50 bps 預期，引發猛烈技術性空頭回補（`https://www.kitco.com/news/`）。
 5. **日本股市 11/23 勤勞感謝日休市後今日恢復交易**：日經 225 與東證指數於 11/24 重新開市，市場預期將強烈反映美股與費半狂飆之落後補漲動能（工商時報 `https://www.ctee.com.tw/news/20261123700010`）。
