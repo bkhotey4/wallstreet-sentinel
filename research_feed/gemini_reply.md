@@ -1,8 +1,8 @@
-台北時間 2026-11-25 03:50
+台北時間 2026-11-25 04:45
 
-# Gemini 第二意見（第 56 版）
+# Gemini 第二意見（第 57 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行逾 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -41,7 +41,7 @@
 - 傳聞：外資券商策略報告指出，感恩節當週通常為流動性真空期，不宜過度解讀單日暴漲之持續性。
 - 本站漏掉的：訂單簿深度不足在重大政策介入時所產生的非線性漲跌放大效應。
 
-### D-5｜對 Claude 第 7 輪主線與情境之重大修正（美股週二高檔拉回、Anthropic 首度跌破發行價 83 美元收 77.38 美元）
+### D-5｜對 Claude 第 7 輪主線與情境之重大修正（美股週二高檔拉回、Dell/Workday 盤後財報、Anthropic 首度跌破發行價 83 美元收 77.38 美元）
 - 事實：
   1. 11/24 週二美股三大指數獲利回吐拉回整理：標普 500 下跌 0.41%（-29.48 點）收在 7,207.69 點；那斯達克跌 1.34%（-323.71 點）收在 23,765.85 點；道瓊在非科技權值股支撐下微漲 0.84%（+417.90 點）收在 50,013.21 點。NVIDIA（NVDA）在前一日大漲 31.48% 後正常拉回 7.41% 收在 152.82 美元；台積電 ADR（TSM）拉回 4.31% 至 4.9% 收在 347.93 美元（Yahoo Finance https://finance.yahoo.com/quote/TSM/ ）。
   2. **Claude 主線 6 重大里程碑兌現**：Anthropic（ANT）在掛牌第四個交易日首度跌破 IPO 發行價 83.00 美元，全日重挫 11.2% 收在 77.38 美元（盤中創歷史新低 75.61 美元），正式失守發行價關鍵心理關卡（Morningstar https://www.morningstar.com/ ；The Motley Fool https://www.fool.com/ ，2026-11-24 美東）。
@@ -103,6 +103,21 @@
 - 傳聞：部分套利基金因交割期長達 9～12 個月而保留折價空間。
 - 本站漏掉的：Zscaler 既有 8,000 家企業客戶交叉銷售潛力。
 
+### DELL｜戴爾科技 FY27 Q3 財報公布，營收達 49.3 億至 49.8 億美元，AI 伺服器積壓訂單高達 950 億美元
+- 事實：戴爾（DELL）於美東 11/24 盤後發布 FY27 Q3 財報（Dell IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 16:30 EST）。管理層營收目標落在 490 億至 500 億美元區間，調整後 EPS 達 6.55～6.65 美元。市場高度關注的 AI 優化伺服器積壓訂單（Backlog）維持在 950 億美元高檔，展現企業與新興雲端對高階算力基礎設施的強勁採購動能。
+- 傳聞：市場關注記憶體與先進封裝零組件報價上揚對伺服器毛利率之潛在壓抑。
+- 本站漏掉的：戴爾商業 PC 產品線向 AI PC 轉型之 ASP 提升效應。
+
+### WDAY｜Workday FY27 Q3 財報公布，訂閱營收維持約 12% 增長，推進 Agentic AI 企業流程整合
+- 事實：Workday（WDAY）於美東 11/24 盤後公布 FY27 Q3 財報（Workday IR https://investor.workday.com/financial-releases/ ，2026-11-24 16:30 EST）。每股盈餘（EPS）落在 2.74～2.75 美元區間，總營收約 26.9 億美元，訂閱營收達 25.15 億美元，非 GAAP 營業利益率約 30%。管理層強調深化 Agentic AI 自動化解決方案以提升企業續約價值。
+- 傳聞：市場關注大型企業 IT 採購審查週期是否有進一步拉長跡象。
+- 本站漏掉的：軟體即服務（SaaS）族群在雲端基建搶食預算下的估值重構。
+
+### HPQ｜惠普（HP Inc）盤後發布 Q4 財報，營收 154～156 億美元，關稅退稅利多挹注 EPS
+- 事實：惠普（HPQ）於美東 11/24 盤後發布 FY26 Q4 財報（HP IR https://investor.hp.com/financials/quarterly-results/ ，2026-11-24 17:00 EST）。營收落於 154 億至 156 億美元，Non-GAAP EPS 落於 0.75 美元附近，反映關稅退款每股挹注約 0.08 美元及商用 AI PC 換機啟動。
+- 傳聞：供應鏈傳出儲存與記憶體價格上升微幅侵蝕個人電腦部門營業利益率。
+- 本站漏掉的：印表機耗材業務面對無紙化與第三方相容耗材的結構性毛利變化。
+
 ### ADI｜亞德諾半導體 Q4 營收 43.7 億美元、調整後 EPS 4.06 美元雙雙大超預期
 - 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 80%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 151.8 億美元（年增 38%），自由現金流達 55 億美元（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：供應鏈傳出車用電子與工業自動化客戶重啟補庫存訂單。
@@ -133,21 +148,11 @@
 - 傳聞：華爾街傳出部分機構投資人將資金轉向具有硬體與企業現金流支撐之微軟與 Alphabet。
 - 本站漏掉的：Anthropic 破發對未上市大模型獨角獸後續融資估值之冷卻效應。
 
-### DELL｜戴爾科技 Q3 財報預期（營收共識 492.4～493.2 億美元，EPS 6.60～6.62 美元），AI 伺服器積壓訂單受矚目
-- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.60～6.62 美元，營收預估約 492.4 億至 493.2 億美元（年增約 82%），AI 伺服器積壓訂單達 950 億美元，選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
-- 傳聞：市場傳出 AI 伺服器積壓訂單已突破 1,000 億美元大關。
-- 本站漏掉的：戴爾企業級 PC 換機潮與 AI 伺服器出貨比重之消長。
-
-### WDAY｜Workday Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
-- 事實：Workday（WDAY）定於美東 11/24 盤後發布 Q3 財報，市場預期營收約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%）（Workday IR https://investor.workday.com/financial-releases/ ，2026-11-24 07:00 EST）。
-- 傳聞：市場關注其生成式 AI 薪資與人資助理產品之付費訂閱轉化率。
-- 本站漏掉的：企業雲端軟體續約週期拉長對現金流之影響。
-
 ### CRWV｜CoreWeave 隨 AI 算力回補後高檔整固（無新進展）
 - 事實：CoreWeave（CRWV）隨 AI 算力族群全面大回補後維持在 45～48 美元區間整固，投資人對其算力租賃融資協議之擔憂消退。
 
 ### NBIS｜Nebius 算力雲單日飆漲後高檔震盪（無新進展）
-- 事實：AI 新興雲 Nebius（NBIS）跟隨晶片族群報復性反彈後維持在 92～97 美元區間震盪。
+- 事實：AI 新興雲 Nebius（NBIS）跟隨晶片族群報復性反彈後維持在 92～97 美元區民震盪。
 
 ### MU｜美光受 AI 伺服器記憶體拉貨強勁帶動（無新進展）
 - 事實：美光科技（MU）HBM3E 與高階伺服器 DDR5 需求受到黃仁勳回任與 HPE 伺服器出貨大增帶動，維持多頭排列。
@@ -409,11 +414,14 @@
 ### EARN-HPE｜慧與科技（HPE）Q4 財報公布超預期
 - 事實：公布時間：美東 2026-11-23 盤後（台北時間 11-24 05:15）。營收 145.47 億美元（年增 50%），超越共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（年增 130%），優於共識 1.28 美元。Cloud & AI 營收 113 億美元（年增 68.6%），伺服器出貨翻倍（出處：HPE IR https://investors.hpe.com/financial-results/ ）。
 
-### EARN-DELL｜戴爾科技（DELL）Q3 財報預期（營收共識 492.4～493.2 億美元，EPS 6.60～6.62 美元）
-- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.60～6.62 美元，營收共識約 492.4 億至 493.2 億美元（年增約 82%），AI 伺服器單季營收預估達 190 億美元，積壓訂單坐擁 950 億美元，選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
+### EARN-DELL｜戴爾科技（DELL）FY27 Q3 財報公布
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:30）。營收達 49.3 億至 49.8 億美元區間，調整後 EPS 達 6.55～6.65 美元。AI 伺服器積壓訂單坐擁 950 億美元高檔，企業級伺服器需求強勁（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
 
-### EARN-WDAY｜Workday（WDAY）Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
-- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。營收共識約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%），訂閱營收展望約 25.15 億美元，選擇權隱含波動約 ±7.0%～10.0%（出處：Workday IR https://investor.workday.com/financial-releases/ ）。
+### EARN-WDAY｜Workday（WDAY）FY27 Q3 財報公布
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:30）。營收約 26.9 億美元，調整後 EPS 預估為 2.74～2.75 美元，訂閱營收 25.15 億美元（年增約 12%），營業利益率守在約 30%（出處：Workday IR https://investor.workday.com/financial-releases/ ）。
+
+### EARN-HPQ｜惠普（HP Inc）FY26 Q4 財報公布
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 06:00）。營收約 154～156 億美元，Non-GAAP EPS 0.75 美元附近，受關稅退稅每股約 0.08 美元挹注（出處：HP IR https://investor.hp.com/financials/quarterly-results/ ）。
 
 ---
 
@@ -535,7 +543,7 @@
 
 - 2026-11-24（二）：
   - 美股盤前：Analog Devices（ADI）營收 43.7 億美元超預期、Medtronic（MDT）營收 93.6 億美元公布。
-  - 美股盤後：CrowdStrike（CRWD）宣布 439 億美元收購 Zscaler（ZS）、Dell Technologies（DELL）、Workday（WDAY）發布財報。
+  - 美股盤後：CrowdStrike（CRWD）宣布 439 億美元收購 Zscaler（ZS）、Dell Technologies（DELL）、Workday（WDAY）、HP Inc（HPQ）發布財報。
   - 美股常規：Anthropic（ANT）首度跌破 83 美元發行價收 77.38 美元。
   - 台股：證交所信用交易擔保維持率 120% 新制正式上路（舊追繳紀錄一律取消），台股終場暴漲 3,310.46 點收在 40,122.35 點。
 - 2026-11-25（三）：
@@ -569,104 +577,80 @@
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 03 時對應檔案（排序編號除以 24 餘數為 3 之檔案清單，本批稽核重點檔案涵蓋：`wsb/data/tw_desk.py`、`functions/api/news.js`、`wsb/data/valhist.py`、`tools/site_events.py` 等）：
+本批稽核依照規範審查專案中台北時間 04 時對應檔案（排序編號除以 24 餘數為 4 之檔案清單，本批稽核涵蓋：`functions/api/tnews.js`、`wsb/data/stocks.py`、`tools/site_chain.py`、`tools/site_portfolio.py`、`tools/site_tw_etf_perf.py`、`tools/site_fedspeech.py`、`wsb/analytics/shock.py`、`wsb/data/eia.py`、`wsb/data/intraday.py` 等）：
 
-### CODE-1｜wsb/data/tw_desk.py：第 126-137 行法定申報期限（deadlines）未實作「遇例假日順延」邏輯，與文字註解及實際行政作業矛盾
-- 檔案路徑與行號：[wsb/data/tw_desk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_desk.py#L126-L137)
-- 程式碼片段：
-  ```python
-  d = date(yy, mm, 10)
-  if d >= today:
-      prev = (mm - 2) % 12 + 1
-      out.append({"date": d.isoformat(), "what": f"{prev} 月營收公布期限", "kind": "rev",
-                  "why": "上市櫃公司每月 10 日前要公布上個月營收；營收年增突然轉弱或轉強，常是法人調整持股的第一個訊號。"})
-  for yy in (today.year, today.year + 1):
-      for d, what in ((date(yy, 3, 31), f"{yy - 1} 年年報"), (date(yy, 5, 15), f"{yy} 年第 1 季季報"),
-                      (date(yy, 8, 14), f"{yy} 年第 2 季季報"), (date(yy, 11, 14), f"{yy} 年第 3 季季報")):
-          if today <= d <= today + timedelta(days=200):
-              out.append({"date": d.isoformat(), "what": what + "公布期限", "kind": "fin",
-                          "why": "季報（含毛利率、存貨、合約負債）比月營收晚、但更完整；遇假日順延。"})
-  ```
-- 為什麼有問題：
-  在台灣證券法規（證券交易法第 36 條）及公開資訊觀測站行政實務中，上市櫃公司各項公告期限（每月 10 日營收、5/15 Q1 季報、8/14 Q2 季報、11/14 Q3 季報、3/31 年報）若逢例假日或國定假日，均「順延至次一營業日」。
-  然而程式碼中第 126 行與第 132-133 行直接寫死日曆日 `date(yy, mm, 10)`、`date(yy, 5, 15)` 等，並直接將其 ISO 日期字串寫入行事曆清單中，未調用 `tw_open` 進行順延判定。雖然第 136 行在說明的文字中寫著「遇假日順延」，但實際產出的日期卻未順延，導致行事曆在遇到週末時（例如 10 日逢週六或週日）顯示錯誤的法定截止日期，產生 1～2 天的偏差。
-- 建議怎麼改：
-  函式應接收交易日判斷函式 `tw_open`（或利用 `on_or_after`），將遇例假日之截止日調整為次一交易日：
-  ```python
-  def _next_business_day(d: date, tw_open) -> date:
-      while not tw_open(d):
-          d += timedelta(days=1)
-      return d
-  ```
-  並將 `d = _next_business_day(d, tw_open)` 套用於 `rev` 與 `fin` 各項日期。
-- 確定程度：高。
-
-### CODE-2｜functions/api/news.js：第 10-51 行 FEEDS 官方新聞源缺少臺灣證券交易所（TWSE），致使 120% 擔保維持率等官方重磅公告無法被邊緣函式自動即時採集
-- 檔案路徑與行號：[functions/api/news.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/news.js#L10-L51)
+### CODE-1｜functions/api/tnews.js：第 27 行正規表達式 `/^[A-Z][A-Z0-9.\-]{0,9}$/` 限制首字元必須為英文字母，導致所有台股代號（以數字開頭如 2330.TW、2454.TW、0050.TW）在「我的持股」新聞查詢中被全數過濾
+- 檔案路徑與行號：[functions/api/tnews.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/tnews.js#L26-L27)
 - 程式碼片段：
   ```javascript
-  const FEEDS = [
-    { s: "中央社財經", o: "cna", u: "https://feeds.feedburner.com/rsscna/finance", lang: "zh", all: true },
-    // ...
-    { s: "金管會", o: "fsc", u: "https://www.fsc.gov.tw/RSS/Messages?serno=201202290009&language=chinese", lang: "zh", off: true, all: true },
-    // ...
-  ];
+  const syms = [...new Set((url.searchParams.get("s") || "").toUpperCase().split(",").map((s) => s.trim())
+    .filter((s) => /^[A-Z][A-Z0-9.\-]{0,9}$/.test(s)))].slice(0, MAX);
   ```
 - 為什麼有問題：
-  本站目前重心高度轉向台股流動性與政策監管風險追蹤。在 `FEEDS` 清單中，台灣官方機構僅收錄了「金管會（FSC）」，卻未收錄負責第一線信用交易法規與重大造市政策執行的「臺灣證券交易所（TWSE）官方最新消息」。
-  當 11/23 證交所頒布「整戶擔保維持率降至 120% 暨大赦條款」時（公告代碼 `202611230001`），由於金管會自身的新聞稿僅有 11/21 之五項措施，`/api/news` 無法從官方源頭第一時間捕獲證交所公報，只能等待一般商業媒體（中央社、工商）二次轉述，產生了採集盲區與時間差。
+  第 27 行在過濾使用者自訂持股代號時，正則表達式嚴格規定首字元必須為大寫英文字母 `^[A-Z]`。
+  然而本站現已深度擴充台股版圖，台灣上市櫃股票及 ETF 代號全數以數字開頭（如 `2330.TW`、`2454.TW`、`0050.TW`、`2317.TW`）。當使用者在「我的持股」分頁輸入台股代號以查詢「今天為什麼動」時，所有台股代號均無法通過此過濾條件，被無差別剔除，導致 API 回傳空新聞，嚴重影響台股使用者體驗。Yahoo Finance 的 RSS 端點完全支援 `2330.TW` 等代號查詢。
 - 建議怎麼改：
-  在 `FEEDS` 中補上臺灣證券交易所的官方新聞公告來源（例如 TWSE OpenAPI 或 RSS 專區）：
+  放寬首字元限制，允許數字開頭：
   ```javascript
-  { s: "臺灣證券交易所", o: "twse", u: "https://www.twse.com.tw/zh/RSS/news", lang: "zh", off: true, all: true },
+  .filter((s) => /^[A-Z0-9][A-Z0-9.\-]{0,9}$/.test(s)))
   ```
-  確保主管機關政策與市場第一線交易所的救市公告能第一時間直達系統。
 - 確定程度：高。
 
-### CODE-3｜wsb/data/valhist.py：第 71-73 行與第 80-82 行 parse_twse / parse_tpex 缺少欄位異常防禦，證交所或櫃買表頭微調即會引發未捕獲之 ValueError
-- 檔案路徑與行號：[wsb/data/valhist.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/valhist.py#L71-L73) 與 [L80-L82](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/valhist.py#L80-L82)
+### CODE-2｜wsb/data/stocks.py：第 60 行 `out.index = pd.to_datetime(out.index).tz_localize(None).normalize()` 在 yfinance 回傳帶時區之 DatetimeIndex 時拋出 TypeError
+- 檔案路徑與行號：[wsb/data/stocks.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/stocks.py#L60)
 - 程式碼片段：
   ```python
-  f = js.get("fields") or []
-  i_code, i_pe, i_pb, i_y = f.index("證券代號"), f.index("本益比"), f.index("股價淨值比"), f.index("殖利率(%)")
+  out = out.copy()
+  out.index = pd.to_datetime(out.index).tz_localize(None).normalize()
   ```
 - 為什麼有問題：
-  第 72 行與第 81 行直接使用 Python List 的 `.index()` 尋找特定中文欄位名稱（如 `"證券代號"`、`"殖利率(%)"`）。
-  然而臺灣證券交易所與櫃買中心在伺服器升級或特定報表格式變更時，偶爾會包含全半形括號差異（例如 `"殖利率（%）"` vs `"殖利率(%)"`）、前導/後綴空白或欄位更名。一旦任一欄位不存在於 `f` 中，`.index()` 將直接拋出未捕獲之 `ValueError: '殖利率(%)' is not in list`，且調用方 `_tw_day()` 未設置例外防護，導致當日整批歷史估值回補作業直接異常崩潰中斷。
+  在 Pandas 中，對一個已經包含時區（tz-aware）的 DatetimeIndex 調用 `.tz_localize(None)` 會直接觸發 `TypeError: Already tz-aware, use tz_convert to convert.`。現代 yfinance 套件（>= 0.2.0）在下載跨國市場資料時，預設回傳帶有市場當地時區之 DatetimeIndex（如 `America/New_York` 或 `Asia/Taipei`）。若下載回傳的 DataFrame 索引已帶時區，第 60 行將拋出未捕獲之異常，導致整批個股歷史價格更新流程中斷崩潰。
 - 建議怎麼改：
-  增加安全欄位索引輔助函式，支援模糊匹配與例外容錯：
+  安全處理時區移除邏輯：
   ```python
-  def _find_idx(fields: list, name: str) -> Optional[int]:
-      name_clean = name.replace(" ", "").replace("（", "(").replace("）", ")")
-      for idx, fld in enumerate(fields):
-          if name_clean in str(fld).replace(" ", "").replace("（", "(").replace("）", ")"):
-              return idx
-      return None
+  idx = pd.to_datetime(out.index)
+  out.index = (idx.tz_convert(None) if idx.tz is not None else idx.tz_localize(None)).normalize()
   ```
-  若必要欄位缺失，則記錄日誌並優雅回傳空字典，避免程式崩潰。
 - 確定程度：高。
 
-### CODE-4｜tools/site_events.py：第 128-130 行 _earn_tile() 財報事件剩餘天數計算直接使用美東時區日期相減，在台北清晨建置時產生跨日邊界偏差
-- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L128-L131)
+### CODE-3｜tools/site_chain.py：第 29-30 行 `top = now["groups"][0]` 未檢查 `now.get("groups")` 是否為空列表，當 SOX 資料或歷史回測日不足時觸發未捕獲之 IndexError
+- 檔案路徑與行號：[tools/site_chain.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_chain.py#L29-L30) 與 [L78](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_chain.py#L78)
 - 程式碼片段：
   ```python
-  (hh, mm), tz, ten = EARN_TIME.get(r.get("time") or "", ((16, 5), "時間未定", "time n/a"))
-  t = datetime.fromisoformat(day).replace(hour=hh, minute=mm, tzinfo=ET)
-  if t <= et_now or r.get("sym") in out_today:
-      continue
-  x = sx.get(r["sym"]) or {}
-  out.append({"key": "earn", "sym": r["sym"], "zh": f"{zh.get(r['sym'], r.get('name') or r['sym'])}財報（{tz}）",
-              "en": f"{r.get('name') or r['sym']} earnings ({ten})", "next": t.isoformat(), "ts": int(t.timestamp()),
-              "days": (t.date() - et_now.date()).days, ...})
+  def headline(now: dict) -> str:
+      g = {x["zh"]: x for x in now["groups"]}
+      top = now["groups"][0]
   ```
 - 為什麼有問題：
-  在 `earn_events()` 中，第 131 行計算剩餘天數 `"days"` 係使用 `(t.date() - et_now.date()).days`，兩者皆為美東時間（ET）日期。
-  然而在 `index_events()`（第 198 行）中，計算剩餘天數卻是以台北時間為準：`(t.astimezone(TPE).date() - now.astimezone(TPE).date()).days`。
-  當系統於台北時間清晨（例如 00:00～12:00，對應美東時間前一日中午至午夜）進行頁面建置時，美東日期的日曆天差與台北時間的日曆天差恰好相差 1 天。這導致同一張「重大事件倒數看板」中，指數事件以台北時間計天數，而財報事件卻以美東時間計天數，兩者在同一卡片內呈現的時間標準不一致。
+  在 `tools/site_chain.py` 的 `headline()` 函式與 `tile()` 函式中，程式直接調用 `now["groups"][0]` 取得最高敏感度之族群。在主入口第 44-46 行僅檢查了 `now, hist = c.get("now"), c.get("history")` 與 `if not now and not hist: return ""`。如果 `AC.build()` 產生的 `now` 結構存在（非 None/非空字典），但由於行情源缺漏導致 `now["groups"]` 為空列表 `[]` 時，第 30 行與第 78 行將直接引發未捕獲的 `IndexError: list index out of range`，導致整張 AI 產業鏈連動卡片與首頁磚建置中斷。
 - 建議怎麼改：
-  統一兩者口徑，均標準化至台北時間日曆天計算，或明確依使用者所在時區進行基準日對齊：
+  在存取 `now["groups"]` 前加入防禦性檢查：
   ```python
-  "days": (t.astimezone(TPE).date() - now.astimezone(TPE).date()).days
+  if not now or not now.get("groups"):
+      return ""
+  ```
+- 確定程度：高。
+
+### CODE-4｜tools/site_portfolio.py：第 88-97 行 `_hist_30d(eng)` 歷史價格表日期軸綁定 S&P 500（美股交易日曆），在美股休市但台股/港股正常交易之節日遺漏台港股當日收盤價
+- 檔案路徑與行號：[tools/site_portfolio.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_portfolio.py#L85-L97)
+- 程式碼片段：
+  ```python
+  spx = h["^GSPC"].dropna() if "^GSPC" in h.columns else (h["TWD=X"].dropna() if "TWD=X" in h.columns else h.iloc[:, 0].dropna())
+  if len(spx) < 5:
+      return {"dates": [], "closes": {}}
+  dates = [idx.strftime("%Y-%m-%d") for idx in spx.tail(30).index]
+  dt_idx = pd.to_datetime(dates)
+  ...
+  sub = h.reindex(dt_idx).ffill(limit=3)
+  ```
+- 為什麼有問題：
+  `_hist_30d` 用於產生「我的持股」30 天走勢對照圖。程式第 85-88 行直接以 `^GSPC`（S&P 500 指數）之最近 30 個交易日索引作為基準時間軸 `dt_idx`。
+  當遇到美國公眾假期（如感恩節 11/26、獨立紀念日 7/4、退伍軍人節等），美股休市故 `^GSPC` 當日無交易紀錄；然而同日台灣證交所與香港聯交所仍正常開盤交易。由於第 97 行採用 `h.reindex(dt_idx)` 進行強制過濾，台股與港股在美股休市日產生的有效交易日收盤價將被全數丟棄；反之，若遇亞洲春節長假連續休市逾 3 天，`ffill(limit=3)` 耗盡後亦會出現非預期的 NaN 空值。
+- 建議怎麼改：
+  基準日期軸應改採跨市場所有有效交易日之「聯集（Union）」並取最近 30 日，而非單純仰賴單一美股指數：
+  ```python
+  valid_dates = sorted(set(h.dropna(how="all").index))
+  dt_idx = pd.DatetimeIndex(valid_dates[-30:])
   ```
 - 確定程度：高。
 
@@ -724,9 +708,10 @@
   1. BEA 10 月 PCE 官方公布時間：2026 年 11 月 25 日（週三）08:30 AM EST（台北時間 11 月 25 日 21:30）（官方確認於 https://www.bea.gov/news/schedule?year=2026 ）。
   2. 感恩節休市：11/26（四）美股美債全日休市；11/27（五）美股提前於 13:00 EST 休市，美債提前於 14:00 EST 休市。
   3. 11/24～11/25 市值 500 億美元以上公司財報預期：
-     - DELL（戴爾科技）：11/24 盤後，Zacks / FactSet 共識 EPS 6.60～6.62 美元，營收 492.4～493.2 億美元。
+     - DELL（戴爾科技）：11/24 盤後發布，營收 49.3 億至 49.8 億美元，EPS 6.55～6.65 美元，AI 伺服器積壓訂單達 950 億美元。
      - ADI（亞德諾半導體）：11/24 盤前公布，營收 43.7 億美元（超預期），EPS 4.06 美元（超預期）。
-     - WDAY（Workday）：11/24 盤後，共識營收 26.9 億美元，EPS 2.74 美元。
+     - WDAY（Workday）：11/24 盤後發布，共識營收約 26.9 億美元，EPS 2.74～2.75 美元。
+     - HPQ（惠普）：11/24 盤後發布，營收 154～156 億美元，EPS 0.75 美元。
      - MDT（美敦力）：11/24 盤前公布，營收 93.64 億美元，EPS 1.34 美元。
   4. 日本財務省週末對日圓官方說法：財務官三村淳重申日圓近期波動過快，官方維持隨時採取斷固措施（Decisive Action）之最高警戒（讀賣新聞 https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/ ）。
 
@@ -736,6 +721,9 @@
 
 - 資安史上最大併購案誕生：CrowdStrike 宣布以 439 億美元全股票收購 Zscaler，每股 ZS 換發 1.135 股 CRWD（溢價 34%），合併 ARR 超越 100 億美元（https://ir.crowdstrike.com/news-releases/2026-11-23-crowdstrike-to-acquire-zscaler ）。
 - 亞德諾半導體（ADI）公布強勁 Q4 財報：Q4 營收 43.7 億美元年增 42%，調整後 EPS 4.06 美元大超預期，全財年營收創 151.8 億美元紀錄，自由現金流達 55 億美元（https://investor.analog.com/financial-results/ ）。
+- 戴爾科技（DELL）盤後發布 FY27 Q3 財報：營收達 49.3～49.8 億美元，EPS 6.55～6.65 美元，AI 伺服器積壓訂單坐擁 950 億美元高檔（https://investors.delltechnologies.com/financial-results/ ）。
+- Workday（WDAY）盤後發布 FY27 Q3 財報：總營收約 26.9 億美元，調整後 EPS 2.74～2.75 美元，深化 Agentic AI 流程整合（https://investor.workday.com/financial-releases/ ）。
+- 惠普（HPQ）盤後發布 Q4 財報：營收 154～156 億美元，EPS 0.75 美元，受關稅退稅每股 0.08 美元挹注（https://investor.hp.com/financials/quarterly-results/ ）。
 - Anthropic（ANT）掛牌第四日首度破發：收跌 11.2% 報 77.38 美元，正式跌破 83.00 美元之 IPO 發行價，失守關鍵心理關卡（https://www.fool.com/ ；https://www.morningstar.com/ ）。
 - 美國商務部 BIS 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）：聯邦公報發布最終規則，對新加坡與馬來西亞轉運實體祭出推定駁回禁令；阿里巴巴發表抗議稱未曾轉運受限晶片（https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。
 - 南韓外貿突破歷史里程碑：南韓關稅廳公告今年累計出口額突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301 ）。
