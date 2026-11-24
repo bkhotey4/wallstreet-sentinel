@@ -1,8 +1,8 @@
-台北時間 2026-11-24 13:49
+台北時間 2026-11-24 14:50
 
-# Gemini 第二意見（第 42 版）
+# Gemini 第二意見（第 43 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -91,7 +91,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 2. **美股突發歷史性暴漲反轉與台指期夜盤極限軋空（美東 11/23 週一盤後）**：
    - **核心事實**：輝達董事會於美東時間 11/23 盤前發布正式公告，**全票通過黃仁勳即刻回任執行長與董事**，美國總統川普公開確認直接介入斡旋；美股科技股演繹史詩級大暴漲——輝達收盤暴漲 **31.48%** 收在 165.05 美元，單日市值增加約 1 兆美元；那斯達克狂飆 **6.51%**，費半狂飆 **13.69%**（收 9,559.90 點），標普 500 大漲 **4.74%**（收 7,237.17 點）！台積電 ADR（TSM）收盤大漲 **14.08%** 收在 363.60 美元！
    - **夜盤核彈級軋空**：受此激勵，期交所 11/23 夜盤上演台股史上最狂暴之多頭反撲——**台指期夜盤暴漲 3,170 點（+8.65%）收在 39,829 點**，盤中一度暴衝逾 3,600 點直奔漲停板（40,324 點）；台積電期貨夜盤大漲 175 元（+8.60%）收在 2,210 元，盤中同觸漲停！
-   - **11/24 台股現貨狂飆收盤驗證**：11/24 週二台股加權指數跳空開高後一路強勢狂飆，終場以 **40,122.35 點** 作收，大漲 **+3,310.46 點（+8.99%）**，盤中最高觸及 **40,180.38 點（+3,368.49 點）**，創下台股史上盤中最大漲點紀錄！台積電（2330）直接跳空鎖死在漲停板 **2,230 元（+9.85%）**，終場漲停排隊委買仍逾 2.1 萬張！聯發科（2454）攻上漲停板 **4,050 元**，鴻海（2317）與台達電（2308）同步攻上漲停，上市櫃超過 500 家公司亮燈漲停！
+   - **11/24 台股現貨狂飆收盤驗證**：11/24 週二台股加權指數跳空開高後一路強勢狂飆，終場以 **40,122.35 點** 作收，大漲 **+3,310.46 點（+8.99%）**，盤中最高觸及 **40,180.38 點（+3,368.49 點）**，創下台股史上盤中最大漲點紀錄！台積電（2330）直接跳空鎖死在漲停板 **2,230 元（+9.85%）**，終場漲停排隊委買仍逾 2.1 萬張！聯發科（2454）攻上漲停板 **4,050 元**，鴻海（2317）與台達電（2308）同步攻上漲停，上市櫃超過 600 家公司亮燈漲停！
 3. **對情境機率（45% 修正延長 / 40% 築底 / 15% 強彈）之重大修正建議**：
    - **強烈反方意見**：Claude 在第 7 輪筆記中將「強彈」機率僅給予 15%，並將「修正延長」設定為最高機率（45%）。然而盤面連續迎來四大利多強共振：(1) 台股 11/23 終場大漲 778.60 點，融資減幅收斂至 14 億元；(2) 證交所 120% 維持率大赦條款生效，斷頭賣壓合法瓦解；(3) 黃仁勳回任引爆美股輝達暴漲 31.48%、費半暴漲近 14%；(4) 台指期夜盤狂噴 3,170 點逼近 4 萬點大關，11/24 現貨終場大漲 3,310.46 點攻克 40,122.35 點。
    - **結論**：15% 的強彈預估已被盤面走勢完全證偽。外資在台指期建立的 10.3 萬口未平倉淨空單在週二面臨毀滅性的軋空停損踩踏。我們強烈建議將情境分佈大幅修正為：**短線報復性軋空強彈 55% / 震盪築底 35% / 修正延長 10%**。
@@ -152,7 +152,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **傳聞**：市場傳出 HPE 最新 AI 伺服器機櫃訂單積壓已排至 2027 年年中。
 - **本站漏掉的**：HPE 雲端 AI 營收佔比已攀升至集團總營收的 77%。
 
-### TSM｜台積電 ADR 狂飆 14.08% 收 363.60 美元創 2008 年以來最大單日漲幅
+### TSM｜台積電 ADR 狂飆 14.08% 收 363.60 美元，24 日現貨跳空鎖死漲停 2,230 元
 - **事實**：台積電 ADR（TSM）於美股 11/23 週一收盤大漲 **14.08%** 收在 363.60 美元，成交量爆量放大，創下金融海嘯以來最大單日漲幅（Yahoo Finance 報價 `https://finance.yahoo.com/quote/TSM/`，2026-11-23 16:00 EST）。帶動 11/24 台股台積電（2330）開盤直接跳空鎖死在漲停價 **2,230 元** 鎖死作收，收盤仍有約 2.1 萬張排隊掛買。
 - **傳聞**：供應鏈傳出輝達最新 Rubin 架構訂單全面追加 2 奈米與 A16 先進製程投片。
 - **本站漏掉的**：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至逾 17.8%～19% 之套利窗口。
@@ -221,7 +221,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### POL-2｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
 - **事實**：美國眾議院外交事務委員會主席 Brian Mast 依據《出口管制改革法案》（ECRA）法定權限，公開商務部 BIS 內部機密許可證統計（眾院外委會官方新聞稿：`https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/`，發布時間：2026-11-19）。
 - **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **879,868 顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆）。
-- **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
+- **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignaffairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
 
 ---
 
@@ -247,9 +247,9 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **事實**：臺灣證券交易所於 **2026-11-23 正式公告**：為減輕投資人籌措資金壓力並防堵斷頭連鎖賣壓，自 **2026-11-24 起**，信用交易整戶擔保維持率最低標準調降至 **120%**。更關鍵的是，**11/24 以前因低於 130% 而已被通知補繳者，一律取消追繳紀錄且不處分擔保品**；11/23 當日原應通知補繳者原則上毋須再通知（官方公告：`https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001`）。
 
 ### TWX-2｜11/24 週二台股加權指數收盤歷史性暴漲：大漲 3,310.46 點以 40,122.35 點強勢收復四萬點
-- **事實**：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 以及台指期夜盤狂噴 3,170 點激勵，11/24 台股終場以 **40,122.35 點** 作收，大漲 **+3,310.46 點（+8.99%）**，盤中最高暴衝 **3,368.49 點** 觸及 **40,180.38 點**！台積電（2330）直接跳空鎖死在漲停價 **2,230 元**，聯發科（2454）攻上漲停報 **4,050 元**，鴻海（2317）與台達電（2308）全數漲停，上市櫃超過 500 家公司亮燈漲停（中央社 `https://www.cna.com.tw/news/afe/202611240015.aspx`，聯合新聞網 `https://udn.com/news/story/7251/8378950`）。
+- **事實**：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 以及台指期夜盤狂噴 3,170 點激勵，11/24 台股終場以 **40,122.35 點** 作收，大漲 **+3,310.46 點（+8.99%）**，盤中最高暴衝 **3,368.49 點** 觸及 **40,180.38 點**！台積電（2330）直接跳空鎖死在漲停價 **2,230 元**，聯發科（2454）攻上漲停報 **4,050 元**，鴻海（2317）與台達電（2308）全數漲停，上市櫃超過 600 家公司亮燈漲停（中央社 `https://www.cna.com.tw/news/afe/202611240015.aspx`，聯合新聞網 `https://udn.com/news/story/7251/8378950`）。
 
-### TWX-3｜11/23 三大法人買賣金額官方 BFI82U 原表結算：賣超 511.77 億元
+### TWX-3｜11/23 三大法人買賣金額官方 BFI82U 原表結算：賣超 511.77 億元（11/24 盤後結算外資持續逢高避險）
 - **事實**：證交所官方 `BFI82U` 原表正式結算 11/23 當日三大法人動向（`https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html`）：
   - **外資及陸資（不含外資自營商）**：賣超 **289.48 億元**（連續第 6 個營業日賣超）。
   - **投信**：賣超 **32.28 億元**。
@@ -341,10 +341,10 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## 保留項目
 
-### TWC-0｜台股覆蓋清單核對（無新進展）
+### TWC-0｜台股覆蓋清單核對（保留項目，無新進展）
 - **事實**：本輪為週二時段，依規則保留上一版結果（無新進展）。
 
-### TWQ-0｜台股專業判讀核對（無新進展）
+### TWQ-0｜台股專業判讀核對（保留項目，無新進展）
 - **事實**：本輪為週二時段，依規則保留上一版結果（無新進展）。
 
 ---
@@ -458,26 +458,26 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
   - Cloud & AI 營收：**113.0 億美元**（年增 68.6%），伺服器營收大增 94.7%。
 - **FY27 指引**：營收預計成長 27%～35%（達 594～631 億美元），Non-GAAP EPS 調升至 5.05～5.35 美元，授權 50 億美元庫藏股（出處：`https://investors.hpe.com/financial-results/`）。
 
-### EARN-DELL｜戴爾科技（Dell Technologies）Q3 財報預期
+### EARN-DELL｜戴爾科技（Dell Technologies）Q3 財報預期（營收共識 508.7 億美元，EPS 6.76 美元）
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：FactSet 與 Zacks 共識預估非 GAAP 每股盈餘為 **6.55～6.63 美元**（公司自身指引 6.50 美元），營收共識約 **49.3 億～50.6 億美元**（出處：`https://investors.delltechnologies.com/financial-results/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP 每股盈餘為 **6.76 美元**（公司自身指引 6.50 ±0.10 美元），營收共識約 **508.7 億美元**（年增 87%～88%，高於公司指引 490 億美元，出處：`https://investors.delltechnologies.com/financial-results/`）。
 - **選擇權預估隱含波動**：選擇權市場定價業績發布後雙向隱含波動幅度約 **±12%～16%**。
-- **上一季展望**：管理層預期 AI 伺服器出貨季增超過 30%，企業級 PC 換機需求穩步復甦。
+- **上一季展望**：管理層預期 AI 伺服器出貨季增超過 30%，企業級 PC 換機需求穩步復甦，Q2 累積 AI 伺服器積壓訂單達 950 億美元。
 
-### EARN-ADI｜亞德諾半導體（Analog Devices）Q4 財報預期
+### EARN-ADI｜亞德諾半導體（Analog Devices）Q4 財報預期（營收共識 43.2 億美元，EPS 3.89 美元）
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 20:00）。
-- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.89 美元**（公司自身指引 3.86 ±0.15 美元），營收共識約 **4.32 億美元**（公司自身指引 4.3 億 ±1.0 億美元，出處：`https://investor.analog.com/financial-results/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.89 美元**（年增約 72%），營收共識約 **43.2 億美元**（年增約 40%，公司自身指引 43 億 ±1.0 億美元，出處：`https://investor.analog.com/financial-results/`）。
 - **選擇權預估隱含波動**：隱含單日波動幅度約 **±5.2%**。
 - **上一季展望**：工控與通訊客戶庫存調整進入尾聲，毛利率維持 74% 高檔。
 
-### EARN-WDAY｜Workday Q3 財報預期
+### EARN-WDAY｜Workday Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：營收共識約 **2.69 億美元**（年增約 10.6%），調整後每股盈餘預期約 **2.74 美元**（年增約 18.1%，出處：`https://investor.workday.com/financial-releases/`）。
+- **市場預期**：營收共識約 **26.9 億美元**（年增約 10.6%），調整後每股盈餘預期約 **2.74 美元**（年增約 18.1%，出處：`https://investor.workday.com/financial-releases/`）。
 - **選擇權預估隱含波動**：隱含單日波動約 **±6.5%**。
 
-### EARN-MDT｜美敦力（Medtronic）Q2 財報預期
+### EARN-MDT｜美敦力（Medtronic）Q2 財報預期（營收共識 94.6 億美元，EPS 1.34 美元）
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 19:45）。
-- **市場預期**：Zacks 與 FactSet 共識預估調整後 EPS 為 **1.33～1.34 美元**，營收共識約 **9.46 億～9.48 億美元**（年增約 5.6%～5.8%，出處：`https://investorrelations.medtronic.com/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估調整後 EPS 為 **1.33～1.34 美元**，營收共識約 **94.6 億～94.7 億美元**（年增約 5.6%，出處：`https://investorrelations.medtronic.com/`）。
 
 ---
 
@@ -485,7 +485,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
 - **公開發言**：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表題為《The Economic Mixdown》演講（講稿發布：`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。政策立場偏向審慎緊縮，密切觀察整體數據。
-- **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **90%～97%**（最新讀數 95.1%），不升息機率為 3%～5%，升息 50 bps 機率低於 **5%**（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
+- **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **90%～95%**，維持基準利率 3.75%～4.00% 不變機率為 5%～10%，升息 50 bps 機率已被完全定價排除（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
 
 ### FED-2｜聯準會監察長調查理事鮑曼（Michelle Bowman）溝通與靜默期合規情況
 - **公開事實**：聯準會監察長辦公室（OIG）針對主管金融監管之副主席鮑曼（Michelle Bowman）於 6 月 FOMC 會議後出席美銀主辦之非公開高階客戶晚宴是否違反靜默期（Blackout Period）與道德規範展開實質審查；鮑曼聲明恪守規定、未透漏貨幣政策機密（英國金融時報 `https://www.ft.com/`，2026-11-23）。
@@ -637,83 +637,83 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ## SENT 散戶情緒
 
 ### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡、台股收盤狂飆 3,310.46 點重登四萬點）
-- **PTT Stock 板**：11/23 加權指數暴漲 778.60 點後，晚間美股輝達大漲 31.48%、TSM ADR 狂飆 14.08%，台指期夜盤狂飆 3,170 點觸及漲停，24 日台股收盤更大漲 3,310.46 點（+8.99%）攻克 40,122.35 點，台積電跳空鎖死在漲停價 2,230 元！聯發科漲停報 4,050 元！PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電直接漲停鎖死？」、「開盤即收盤，根本買不到台積電」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手物理超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」、「超過 500 家漲停根本買不到」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 `https://www.ptt.cc/bbs/Stock/`）。
+- **PTT Stock 板**：11/23 加權指數暴漲 778.60 點後，晚間美股輝達大漲 31.48%、TSM ADR 狂飆 14.08%，台指期夜盤狂飆 3,170 點觸及漲停，24 日台股收盤更大漲 3,310.46 點（+8.99%）攻克 40,122.35 點，台積電跳空鎖死在漲停價 2,230 元！聯發科漲停報 4,050 元！PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電直接漲停鎖死？」、「開盤即收盤，根本買不到台積電」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手物理超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」、「超過 600 家漲停根本買不到」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 `https://www.ptt.cc/bbs/Stock/`）。
 - **Reddit r/wallstreetbets**：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權（Call Options）出現數十倍漲幅（+5,000%），看多情緒瞬間達到沸點（討論串：`https://www.reddit.com/r/wallstreetbets/`）。
 
 ---
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 13 時對應檔案（排序編號除以 24 餘數為 13 之檔案清單，聚焦審查 `tools/site_intel.py`、`tools/dots.py`、`tools/site_secwatch.py` 等模組）：
+本批稽核依照規範審查專案中台北時間 14 時對應檔案（排序編號除以 24 餘數為 14 之檔案清單，聚焦審查 `tools/site_events.py` 與 `wsb/data/forced_flows.py` 等模組）：
 
-### CODE-1｜tools/site_intel.py：第 380-384 行 gap_line 判斷 'us_ret' in r 未防禦 None 值且未校驗 beta，將引發 TypeError 導致台美連動卡片崩潰
-- **檔案路徑與行號**：[tools/site_intel.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_intel.py#L380-L384)
+### CODE-1｜tools/site_events.py：第 346 行 index_events 的 'et' 欄位直接截取 r['next'][:16]，使 MSCI 與台股 50 指數調整之美東時間誤用台北時間（時區偏差達 13 小時）
+- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L344-L347)
 - **程式碼片段**：
   ```python
-  pts = lvl * r["implied"] / 100
-  tk = ((_sx(eng).get("otrack") or {}).get(r["us_n"]) or {})
-  trk = (f"過去 {tk['n']} 個交易日用同樣方法推估，推估漲跌 ≥ 0.3% 時方向對了 {tk['hit']:.0f}%，"
-         f"平均誤差 {tk['mae']:.2f}%（直接猜「不漲不跌」是 {tk['mae0']:.2f}%）。" if tk.get("hit") is not None else "")
-  return (f"一句話看懂：依{r['us_n']}前一晚 {r['us_ret'] if 'us_ret' in r else r['us']:+.2f}% 與過去的連動（Beta {r['beta']:.2f}），"
-          f"推估加權指數約 {r['implied']:+.2f}%（約 {pts:+,.0f} 點）。{trk}這是歷史平均關係的換算，實際常常不一樣。")
+  for r in index_events(now, days):
+      tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
+      out.append({"kind": "index", "key": r["kind"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
+                  "volume_x": r.get("med")})
   ```
 - **為什麼有問題**：
-  1. 在第 383 行中，`r['us_ret'] if 'us_ret' in r else r['us']` 僅使用 `'us_ret' in r` 檢查字典是否含有該鍵。當上游計算模組在特定無美股交易日或休市日將 `r['us_ret']` 設為 `None` 時，條件依然為 `True`，隨後直譯器對 `None` 執行格式化 `{None:+.2f}`，將拋出 `TypeError: unsupported format string passed to NoneType.__format__`。
-  2. 同樣地，若統計視窗內資料點不足導致共變異數無法計算，`r.get("beta")` 可能為 `None`，第 383 行 `{r['beta']:.2f}` 同樣會觸發 `TypeError`。
-  3. 第 381-382 行中，`trk` 僅以 `tk.get("hit") is not None` 做為條件，若 `tk` 字典中未包含 `n` 或 `mae` / `mae0` 為 `None`，格式化同樣會引發 `KeyError` 或 `TypeError`，導致整張台美連動卡片渲染中斷。
-- **建議怎麼改**：
-  加入明確的數值健全檢查與預設值防禦：
+  在 `tools/site_events.py` 的 `index_events()` 函式中（第 191 行）：
   ```python
-  ret_val = r.get("us_ret") if r.get("us_ret") is not None else r.get("us")
-  ret_str = f"{ret_val:+.2f}%" if ret_val is not None else "—"
-  beta_str = f"Beta {r['beta']:.2f}" if r.get("beta") is not None else "Beta —"
-  trk = ""
-  if tk.get("hit") is not None and tk.get("n") is not None and tk.get("mae") is not None and tk.get("mae0") is not None:
-      trk = (f"過去 {tk['n']} 個交易日用同樣方法推估，推估漲跌 ≥ 0.3% 時方向對了 {tk['hit']:.0f}%，"
-             f"平均誤差 {tk['mae']:.2f}%（直接猜「不漲不跌」是 {tk['mae0']:.2f}%）。")
-  return (f"一句話看懂：依{r['us_n']}前一晚 {ret_str} 與過去的連動（{beta_str}），"
-          f"推估加權指數約 {r['implied']:+.2f}%（約 {pts:+,.0f} 點）。{trk}這是歷史平均關係的換算，實際常常不一樣。")
+  if e["kind"] in ("msci", "tw50"):
+      d = e.get("tw_date") or e["date"]
+      t = datetime.fromisoformat(d).replace(hour=13, minute=30, tzinfo=TPE)
+  ```
+  對於台股生效之 `msci` 與 `tw50`，`r["next"]` 儲存的是帶有 `+08:00` 台北時區之時間戳（例如 `2026-11-30T13:30:00+08:00`）。
+  然而在第 346 行建置 `upcoming.json` 的公開列表時，程式卻直接以字串截取 `"et": r["next"][:16]`，將台北時間字串（`2026-11-30T13:30`）直接填入象徵美東時間的 `"et"` 鍵中！
+  依正確時區轉換，台北時間 13:30 對應的美東時間應為當日清晨 00:30（冬令時間 EST 相差 13 小時）。
+  當外部語音推播或看板程式讀取 `upcoming.json` 之 `"et"` 欄位時，會誤以為 MSCI / 台灣 50 指數調整是在美東下午 13:30 發生，導致美東時區呈現嚴重錯置。
+- **建議怎麼改**：
+  將 `r["next"]` 透過 `astimezone(ET)` 明確轉換後再輸出格式化字串：
+  ```python
+  et_dt = datetime.fromisoformat(r["next"]).astimezone(ET)
+  out.append({"kind": "index", "key": r["kind"], "zh": r["zh"], "et": et_dt.strftime("%Y-%m-%dT%H:%M"),
+              "tpe": tp.strftime("%Y-%m-%d %H:%M"), "volume_x": r.get("med")})
   ```
 - **確定程度**：高。
 
-### CODE-2｜tools/dots.py：第 80 行直接以 x["url"] 取值未如其他分支使用 .get("url")，遇欄位缺失將引發 KeyError
-- **檔案路徑與行號**：[tools/dots.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/dots.py#L76-L80)
+### CODE-2｜tools/site_events.py：第 121 行 float(r.get("mcap") or 0) 未防禦空字串或格式化字串，遇異常資料將拋出 ValueError
+- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L120-L122)
 - **程式碼片段**：
   ```python
-  for x in bis.get("items") or []:                                      # BIS 新聞稿（宣布）
-      c = BN.classify(x)
-      if c and lo <= _d(x["ts"]) <= hi and c.get("topic") in tsyms:
-          out.append({"kind": "policy", "date": _d(x["ts"]), "syms": tsyms[c["topic"]], "t": f"BIS 宣布：{x['title'][:90]}",
-                      "url": x["url"], "topic": c["topic"]})
+  for r in (v.get("rows") if isinstance(v, dict) else None) or []:
+      if float(r.get("mcap") or 0) < floor and r.get("sym") not in ai:
+          continue
   ```
 - **為什麼有問題**：
-  在 `tools/dots.py` 的同個函式 `events` 中：
-  - 第 63 行處理 SEC 申報時使用 `"url": a.get("url")`；
-  - 第 74 行處理聯邦公報時使用 `"url": x.get("url")`；
-  然而在第 80 行處理 BIS 新聞稿時，卻硬編碼使用直接下標 `x["url"]`。若上游 BIS RSS 爬蟲在解析某些沒有外連鏈接之公告項目、或欄位名因版本調整命名為 `link` 而缺少 `url` 鍵時，該行將直接拋出 `KeyError: 'url'`，導致整個排程的事件交集（dots）分析中斷中斷執行。
+  `earn_days.json` 來源中若某些中小型或海外 ADR 公司的 `mcap` 欄位為非數值字串（例如 `"N/A"`、`"—"` 或包含千分號 `","` 之字串），Python 的 `float(r.get("mcap") or 0)` 將直接拋出 `ValueError: could not convert string to float`，導致 `earn_events()` 中斷，進而使整張《重大事件倒數》卡片崩潰。
 - **建議怎麼改**：
-  統一使用 `.get("url")` 進行安全取值：
+  加入安全的數值轉換防禦：
   ```python
-  out.append({"kind": "policy", "date": _d(x["ts"]), "syms": tsyms[c["topic"]], "t": f"BIS 宣布：{x['title'][:90]}",
-              "url": x.get("url") or x.get("link"), "topic": c["topic"]})
+  try:
+      mcap_val = float(r.get("mcap") or 0)
+  except (ValueError, TypeError):
+      mcap_val = 0.0
+  if mcap_val < floor and r.get("sym") not in ai:
+      continue
   ```
 - **確定程度**：高。
 
-### CODE-3｜tools/site_secwatch.py：第 98 行對 cik 直接調用 int(cik) 未防範非數值字串，遭遇異常格式時將拋出 ValueError
-- **檔案路徑與行號**：[tools/site_secwatch.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_secwatch.py#L97-L98)
+### CODE-3｜wsb/data/forced_flows.py：第 92 行 tw50 缺少 'tw_date' 鍵且第 229 行假日回溯僅限 4 天，遭遇長假可能漏配歷史成交量
+- **檔案路徑與行號**：[wsb/data/forced_flows.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/forced_flows.py#L92-L99，#L229-L232)
 - **程式碼片段**：
   ```python
-  cik = (tmap.get(s) or tmap.get(s.replace("-", ".")) or {}).get("cik")
-  if cik and str(int(cik)) not in out:
+  out.append({"date": on_or_before(nth_weekday(y, m, 4, 3), tw_open).isoformat(), "kind": "tw50", "market": "tw"})
+  ...
+  if s == "^TWII" and day not in px[s]["d"]:          # a Taiwan holiday the official file of that year no longer lists
+      prior = [x for x in px[s]["d"] if x < day and (date.fromisoformat(day) - date.fromisoformat(x)).days <= 4]
+      day = prior[-1] if prior else day
   ```
 - **為什麼有問題**：
-  `tmap` 係自 `_MAP_FILE`（EDGAR 對照檔 JSON）反序列化而來。若對照表中個別機構之 CIK 含有前綴字元、空格或異常非整數字串（例如某些外國申報者或暫存資料帶有 `"N/A"` 或包含非數值符號），直接執行 `int(cik)` 將引發 `ValueError: invalid literal for int()`，導致 `site_secwatch.build(eng)` 在建置 `sec_watch.json` 時中途潰散。
+  1. 第 98 行的 `msci` 明確包含 `"tw_date"` 欄位以標註台股實際交易日，但第 92 行的 `tw50` 卻未附帶 `"tw_date"` 鍵，僅有 `"date"`。依賴 `e.get("tw_date")` 的下游邏輯（例如 `tools/site_events.py` 第 190 行）必須退回使用 `e["date"]`。
+  2. 更關鍵的是第 230 行：當計算台股歷史指數調整日的收盤放量倍數時，若歷史調整日適逢台股休市，程式使用 `days <= 4` 往前回溯最近交易日。然而台股在農曆春節期間休市常長達 7 至 10 個日曆天，4 天的門檻不足以涵蓋春節長假，將導致 `prior` 為空串列，使 `vol_ratio` 回傳 `None`，遺失重要的歷史成交量倍數基準。
 - **建議怎麼改**：
-  使用安全轉換或驗證函式：
+  放寬回溯天數至 12 天以涵蓋農曆春節長假：
   ```python
-  cik = (tmap.get(s) or tmap.get(s.replace("-", ".")) or {}).get("cik")
-  cik_str = str(cik).strip() if cik else ""
-  if cik_str.isdigit() and str(int(cik_str)) not in out:
+  prior = [x for x in px[s]["d"] if x < day and (date.fromisoformat(day) - date.fromisoformat(x)).days <= 12]
   ```
 - **確定程度**：高。
 
@@ -788,10 +788,10 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
    - 美東時間：**2026 年 11 月 25 日（週三）08:30 AM EST**（台北時間 11 月 25 日 21:30）。
 2. **感恩節休市**：11/26（四）美股美債全日休市；11/27（五）美股提前於 13:00 EST 休市，美債提前於 14:00 EST 休市。
 3. **11/24～11/25 市值 500 億美元以上公司財報預期**：
-   - **DELL（戴爾科技）**：11/24 盤後，FactSet 共識 EPS 6.55～6.63 美元，營收 49.3 億～50.6 億美元。
-   - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.89 美元，營收 4.32 億美元。
-   - **WDAY（Workday）**：11/24 盤後，共識營收 2.69 億美元，EPS 2.74 美元。
-   - **MDT（美敦力）**：11/24 盤前，共識 EPS 1.33～1.34 美元，營收 9.46 億～9.48 億美元。
+   - **DELL（戴爾科技）**：11/24 盤後，Zacks / FactSet 共識 EPS 6.76 美元，營收 508.7 億美元。
+   - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.89 美元，營收 43.2 億美元。
+   - **WDAY（Workday）**：11/24 盤後，共識營收 26.9 億美元，EPS 2.74 美元。
+   - **MDT（美敦力）**：11/24 盤前，共識 EPS 1.33～1.34 美元，營收 94.6 億～94.7 億美元。
 4. **日本財務省週末對日圓官方說法**：
    - 財務官三村淳於專訪與公開發言中重申（`https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/`）：日圓近期波動過快，官方對外匯市場過度單向投機維持「隨時採取斷固措施（Decisive Action）」之最高警戒，160 關卡為防禦防線。
 
