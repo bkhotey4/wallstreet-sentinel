@@ -1,6 +1,6 @@
-台北時間 2026-11-25 06:48
+台北時間 2026-11-25 07:48
 
-# Gemini 第二意見（第 59 版）
+# Gemini 第二意見（第 60 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行逾 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -596,100 +596,77 @@
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 06 時對應檔案（排序編號除以 24 餘數為 6 之檔案清單，本批稽核重點檢閱：`tools/site_tw_msci.py`、`tools/site_forced.py`、`wsb/data/street_views.py`、`wsb/data/ipo_fin.py` 等）：
+本批稽核依照規範審查專案中台北時間 07 時對應檔案（排序編號除以 24 餘數為 7 之檔案清單，本批稽核重點檢閱：`tools/site_events.py`、`wsb/data/earn_release.py` 等）：
 
-### CODE-1｜tools/site_tw_msci.py：第 45 行 `top[0]` 在快照無成分股時引發 `IndexError: list index out of range`，導致整個 MSCI 台灣卡片崩潰
-- 檔案路徑與行號：[tools/site_tw_msci.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_msci.py#L38-L46)
+### CODE-1｜tools/site_events.py：第 206 行與第 237 行在倒數天數等於 0 時直接渲染「0 天」，在 SSR 靜態階段未比照「今天」處理
+- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L205-L208)
 - 程式碼片段：
   ```python
-  day = max(snaps)
-  cur = snaps[day].get("stocks") or {}
-  rv = reviews(today)
-  nx, ls = rv.get("next"), rv.get("last")
-  ch = M.changes(snaps, around=ls["tw_date"]) if ls else {}
-  top = sorted(cur.items(), key=lambda kv: -kv[1][1])
-  top5 = sum(w for _, (_, w) in top[:5])
-  parts = [f'MSCI 台灣指數現在約 {len(cur)} 檔（用追蹤它的 006203 在 {day} 的持股近似），台積電一檔占 {top[0][1][1]:.1f}%、前 5 大合計 {top5:.1f}%']
+  f'<div class="ecc" data-ts="{r["ts"]}">{r["days"]} {T("天", "d")}</div>'
   ```
 - 為什麼有問題：
-  在 `tools/site_tw_msci.py` 中，程式雖然在第 35 行檢查了 `if not snaps: return ""`，但在第 39 行取得 `cur = snaps[day].get("stocks") or {}` 時，若當天抓取失敗、元大網站改版或資料格式變更導致 `stocks` 為空字典 `{}` 時，`cur` 為空，`top` 為空串列 `[]`。
-  此時第 45 行直接無防護存取 `top[0][1][1]`，必然拋出 `IndexError: list index out of range`，導致整個 `sec_tw_msci()` 執行中斷拋出異常，卡片完全無法產出。
+  在 `tools/site_events.py` 中，指數事件（`index_events`）與財報事件（`earn_events`）計算 `days`：
+  當事件發生日與當前日期同一天（如當天美東 16:05 財報公布或台股 13:30 指數調整），`days` 值為 `0`。
+  此時後端 Python 渲染出 `0 天`。雖然前端 JS `tick()` 會在客戶端載入後替換為剩餘小時與分鐘，但在伺服器端渲染（SSR）、爬蟲抓取或使用者載入頁面的瞬間，畫面會呈現極其生硬的「0 天」。先前在 `site_forced.py` 與 `site_tw_msci.py` 均已將 0 天優化為「今天」或「今天收盤生效」，此處應保持全站一致。
 - 建議怎麼改：
-  在取得 `cur` 後增加空值防護：
   ```python
-  if not cur:
-      return ""
+  day_disp = T("今天", "today") if r["days"] == 0 else f"{r['days']} {T('天', 'd')}"
+  f'<div class="ecc" data-ts="{r["ts"]}">{day_disp}</div>'
   ```
 - 確定程度：高。
 
-### CODE-2｜tools/site_tw_msci.py：第 47 行倒數天數 `days_to` 當天等於 0 時顯示「還有 0 天」，對使用者語意生硬且不符專業排版
-- 檔案路徑與行號：[tools/site_tw_msci.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_msci.py#L46-L49)
+### CODE-2｜wsb/data/earn_release.py：第 321 行 `chg` 百分比計算未防護 `a["v"] == 0`，若遇零營收新創將引發 `ZeroDivisionError` 崩潰
+- 檔案路徑與行號：[wsb/data/earn_release.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_release.py#L319-L323)
 - 程式碼片段：
   ```python
-  if nx:
-      days_to = (date.fromisoformat(nx["tw_date"]) - today).days
-      parts.append(f'下一次季度審查 {nx["tw_date"]} 台股收盤生效（還有 {days_to} 天），全球追蹤 MSCI 的基金會在那天收盤一起調整')
+  if not a:
+      continue
+  chg = (g["mid"] / a["v"] - 1) * 100 if g["unit"] == "B" else g["mid"] - a["v"]
   ```
 - 為什麼有問題：
-  在 `reviews()` 函式中，`nxt = [e for e in ev if e["tw_date"] >= today.isoformat()]` 包含當日（`>=`）。當今天恰好是 MSCI 季度審查生效日當天時，`days_to` 數值為 `0`。
-  程式會產生：「下一次季度審查 2026-11-25 台股收盤生效（還有 0 天）」。在專業中文介面中，「還有 0 天」語意極不通順，應明確標示「今天收盤生效」或「本日生效」。
+  函式 `outlook_vs_now(actual: Dict, guide: List[Dict])` 用於計算下季展望中位數相較於本季實際值的變動幅度。
+  在第 319 行，程式僅檢查了 `if not a: continue`。若實際財報資料被解析為營收數值為 0（例如某些生技、研發型雲端新創或特定早期空殼公司，`a = {"v": 0.0, ...}` 為非空字典），`a["v"]` 數值為 `0.0`。
+  此時執行 `g["mid"] / a["v"]` 將必然觸發 `ZeroDivisionError: float division by zero`，導致整批財報比較處理全面崩潰中斷。
 - 建議怎麼改：
+  加入 `a["v"]` 非零檢查：
   ```python
-  day_str = "今天收盤生效" if days_to == 0 else f"還有 {days_to} 天"
-  parts.append(f'下一次季度審查 {nx["tw_date"]} 台股收盤生效（{day_str}），全球追蹤 MSCI 的基金會在那天收盤一起調整')
+  chg = ((g["mid"] / a["v"] - 1) * 100 if a["v"] else 0.0) if g["unit"] == "B" else g["mid"] - a["v"]
   ```
 - 確定程度：高。
 
-### CODE-3｜tools/site_forced.py：第 49 行倒數天數在過期事件未即時清除時會顯示「還有 -1 天」之負數異常文字
-- 檔案路徑與行號：[tools/site_forced.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_forced.py#L47-L51)
+### CODE-3｜wsb/data/earn_release.py：第 301 行 `g["mid"]` 為負數時 `tol` 計算結果為負值，破壞了「高於/低於/區間內」的邏輯判斷
+- 檔案路徑與行號：[wsb/data/earn_release.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_release.py#L301-L305)
 - 程式碼片段：
   ```python
-  days = (date.fromisoformat(nxt["date"]) - today).days
-  zh = FF.KIND[nxt["kind"]][0]
-  lead = (f"下一個是 <b>{_md(nxt['date'])}{zh}</b>（{'今天' if days == 0 else f'還有 {days} 天'}）"
+  tol = (0.25 if g["unit"] == "%" else g["mid"] * 0.01) if g.get("single") else 1e-9
+  tol = max(tol, a.get("step", 0) / 2)
+  pos = "above" if v > g["hi"] + tol else "below" if v < g["lo"] - tol else "within"
   ```
 - 為什麼有問題：
-  在指數調整日曆卡片中，若快取資料尚未更新或 `events` 清單包含剛過去的昨天事件時，`days` 可能小於 0（例如 `-1`）。
-  三元表達式僅判斷 `if days == 0`，若 `days < 0` 則會直接格式化為 `還有 -1 天`，向讀者呈現荒謬的負數倒數文字。
+  在 `compare()` 函式中，當指標為單一數值預測（`single` 為 True）且單位不是 `%` 時（如淨損益預測），若展望預估為虧損（`g["mid"] < 0`），計算出的 `tol` 將會是負數（例如 `g["mid"] = -2.0`，`tol = -0.02`）。
+  雖然第 302 行有 `max(tol, a.get("step", 0) / 2)`，但若 `step` 預設為 0，則 `tol` 仍為負數。
+  這會導致第 303 行的門檻值反轉：`g["hi"] + tol` 實際上反而變小，`g["lo"] - tol` 反而變大，使得區間判定發生邏輯錯亂。
 - 建議怎麼改：
+  取絕對值確保容許誤差為非負數：
   ```python
-  day_str = "今天" if days == 0 else "已過" if days < 0 else f"還有 {days} 天"
-  lead = f"下一個是 <b>{_md(nxt['date'])}{zh}</b>（{day_str}）"
+  tol = (0.25 if g["unit"] == "%" else abs(g["mid"]) * 0.01) if g.get("single") else 1e-9
   ```
 - 確定程度：高。
 
-### CODE-4｜wsb/data/street_views.py：第 49 行 `date[:16]` 固定長度截斷導致非標準 RSS 發布時間被腰斬
-- 檔案路徑與行號：[wsb/data/street_views.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/street_views.py#L47-L50)
+### CODE-4｜tools/site_events.py：第 339 行總經事件排重集合 `have` 之鍵值口徑與 `econ_items` 存在微小不一致風險
+- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L308-L312)
 - 程式碼片段：
   ```python
-  title, date, link = tag("title"), tag("pubDate"), tag("link")
-  if title:
-      out.append({"title": title[:160], "date": date[:16], "link": link if link.startswith("http") else ""})
+  have.add((e.get("key"), et.strftime("%Y-%m-%d")))
+  ...
+  out += econ_items(eng, now, days, {(x["key"], x["et"][:10]) for x in out if x["kind"] == "macro"})
   ```
 - 為什麼有問題：
-  `parse_feed` 處理投行 Podcast 與文章 RSS 的 `pubDate`。標準 RFC 822 格式（如 `Wed, 25 Nov 2026 12:00:00 GMT`）若遇無逗號格式（如 `25 Nov 2026 12:00:00`）或單日數字（如 `Mon, 5 Nov 2026`），直接硬截斷 `date[:16]` 會將字串切成如 `"25 Nov 2026 12:0"`，遺留半截時間數字於網頁看板，造成破版或顯示殘缺。
+  在 `upcoming()` 函式中，傳入 `econ_items` 的 `have` 集合生成式為 `(x["key"], x["et"][:10])`。
+  但先前在第 338 行加入 `out` 的倒數卡事件中，`_ev(eng)` 回傳的事件其 `et` 欄位格式為 `r["next"][:16]`（包含時區轉換與 ISO 字串）。如果某個總經事件跨越換日線（例如在美東時間晚上但台北時間次日），若兩者在提取日期時未統一時區轉換口徑（一者為美東日期，一者為 UTC 或台北日期），將可能導致同一總經數據在 `upcoming.json` 中被重複列出。
 - 建議怎麼改：
-  使用正規表達式擷取完整日期（年/月/日）或透過 `email.utils.parsedate_to_datetime` 解析出乾淨的 ISO 日期字串。
-- 確定程度：高。
-
-### CODE-5｜wsb/data/ipo_fin.py：第 40 行正規表達式 `\)?` 選用括號將註腳 `(1)` 誤判為負數導致財報整列被拋棄
-- 檔案路徑與行號：[wsb/data/ipo_fin.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/ipo_fin.py#L38-L47)
-- 程式碼片段：
-  ```python
-  for m in re.finditer(r"\(\s*([\d,]+(?:\.\d+)?)\s*\)?|(?<![\w.])([\d,]+(?:\.\d+)?)(?![\w.])|(?:^|\s)([—–-])(?=\s|$)", s):
-      if m.group(1):
-          out.append(-float(m.group(1).replace(",", "")))
-      elif m.group(2):
-          out.append(float(m.group(2).replace(",", "")))
-      else:
-          out.append(0.0)
-  ```
-- 為什麼有問題：
-  第 40 行為了匹配如 `(9,317)` 這種負數，在群組 1 後方寫了 `\)?`（右括號為可選）。
-  這會導致如果 SEC 招股書表格儲存格中帶有註腳編號如 `(1)` 或 `(2)`，程式會將其視為負數 `-1.0` 捕獲進 `out`。這直接導致解析出來的數字個數 `len(nums)` 超過期間個數 `len(per)`（`len(nums) != len(per)`），進而觸發第 112 行的 `continue`，將整行非常重要的營收或淨損益數據全數丟棄！
-- 建議怎麼改：
-  嚴格要求左右括號成對出現 `\(\s*([\d,]+(?:\.\d+)?)\s*\)`，並在提取前先過濾掉獨立的註腳數字標記。
-- 確定程度：高。
+  統一在產出 `have` 鍵值時先將時間物件標準化為美東日期字串，以確保排重精確。
+- 確定程度：中。
 
 ---
 
