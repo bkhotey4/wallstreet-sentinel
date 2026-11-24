@@ -1,8 +1,8 @@
-台北時間 2026-11-24 17:50
+台北時間 2026-11-24 18:52
 
-# Gemini 第二意見（第 46 版）
+# Gemini 第二意見（第 47 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -220,7 +220,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### POL-2｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
 - **事實**：美國眾議院外交事務委員會主席 Brian Mast 依據《出口管制改革法案》（ECRA）法定權限，公開商務部 BIS 內部機密許可證統計（眾院外委會官方新聞稿：`https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/`，發布時間：2026-11-19）。
 - **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **879,868 顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆）。
-- **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignaffairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
+- **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
 
 ---
 
@@ -643,61 +643,85 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 17 時對應檔案（排序編號除以 24 餘數為 17 之檔案清單，聚焦審查 `tools/site_ipo.py`、`tools/site_events.py` 與 `wsb/data/forced_flows.py` 等模組）：
+本批稽核依照規範審查專案中台北時間 18 時對應檔案（排序編號除以 24 餘數為 18 之檔案清單，本批稽核檔案清單：`tools/site_ai.py`、`tools/site_estrev.py`、`tools/site_live.py`、`tools/site_threads.py`、`tools/tw_paper.py`、`wsb/analytics/crash_odds.py`、`wsb/analytics/implied_log.py`、`wsb/analytics/rulebook.py`、`wsb/analytics/vix_explain.py`、`wsb/data/earn_official.py`、`wsb/data/fullmarket.py`、`wsb/data/sec.py`、`wsb/data/tw_macro2.py`）：
 
-### CODE-1｜tools/site_ipo.py：第 197 行 _us_done() 當 r.get("lockup") 為 None 時渲染出「None 天」之破圖與贅字問題
-- **檔案路徑與行號**：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L196-L198)
+### CODE-1｜wsb/data/earn_official.py：第 76-79 行 parse_202() 在 filings 欄位長度不一時未檢查索引邊界致 IndexError
+- **檔案路徑與行號**：[wsb/data/earn_official.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_official.py#L76-L80)
 - **程式碼片段**：
   ```python
-  f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>' for r in rows]
+  acc = (f.get("acceptanceDateTime") or [""] * len(forms))[i]
+  day = et_day(acc, (f.get("filingDate") or [""] * len(forms))[i])
+  an = (f.get("accessionNumber") or [""] * len(forms))[i]
+  doc = (f.get("primaryDocument") or [""] * len(forms))[i]
   ```
 - **為什麼有問題**：
-  在 `_us_done()` 函式渲染美股最近 120 天已定價之 IPO 清單時，若該檔 IPO 案件在招股書解析階段尚未抓取到明確的禁售天數（即 `r.get("lockup")` 為 `None`），程式未進行有效性檢查，直接將 `None` 格式化至字串中。
-  這會導致在已定價 IPO 表格的「禁售期到期」欄位中，向使用者渲染出 `—<div class="small muted">None 天</div>` 的介面瑕疵（出現 Python 物件字面值「None 天」），破壞版面專業度。
+  在 `parse_202()` 迭代 `forms` 時，第 73 行考慮到了 `items` 長度不一致的狀況（使用了 `items[i] if i < len(items) else ""`）。
+  然而在第 76-79 行中，`(f.get("acceptanceDateTime") or [""] * len(forms))[i]` 的寫法存在隱蔽邊界漏洞：若 SEC API 返回的 `acceptanceDateTime` 為非空列表，但其元素個數小於 `len(forms)`（SEC API 在部分極端情況或傳輸中斷時欄位長度不對齊），`or` 短路運算子不會執行後方的預設空陣列，直接執行 `[i]` 下標存取，將拋出 `IndexError: list index out of range`，導致整個 SEC 官方財報解析崩潰。
 - **建議怎麼改**：
-  加入對 `r.get("lockup")` 是否存在的條件判斷：
+  統一改用長度安全防護：
   ```python
-  lock_txt = f'<div class="small muted">{r["lockup"]} {T("天", "d")}</div>' if r.get("lockup") is not None else ""
-  f'<td class="nw">{_md(r.get("lock"))}{lock_txt}</td></tr>'
+  def _safe(arr, idx):
+      return arr[idx] if arr and idx < len(arr) else ""
+  acc = _safe(f.get("acceptanceDateTime"), i)
+  day = et_day(acc, _safe(f.get("filingDate"), i))
+  an = _safe(f.get("accessionNumber"), i)
+  doc = _safe(f.get("primaryDocument"), i)
   ```
 - **確定程度**：高。
 
-### CODE-2｜tools/site_events.py：第 161 行 ipo_rows() 在 caller 傳入 naive datetime 時引發 TypeError 崩潰
-- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L159-L162)
+### CODE-2｜tools/site_threads.py：第 61 行與第 67 行對 t["state"] 字典索引未提供 fallback 恐引發 KeyError
+- **檔案路徑與行號**：[tools/site_threads.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_threads.py#L61-L67)
 - **程式碼片段**：
   ```python
-  t = datetime.fromisoformat(d).replace(hour=9, minute=30, tzinfo=ET)
-  if not (now < t <= now + timedelta(days=days)):
-      continue
+  for t in sorted(th, key=lambda t: ({"升溫": 0, "官方新文件": 1, "有消息": 2, "安靜": 3}[t["state"]], -t["n48"])):
+  ...
+  blocks.append(f'<details class="sgx"{" open" if r and t["state"] != "安靜" else ""}><summary><b>{esc(t["zh"])}</b>　{PILL[t["state"]]}　48 小時 {t["n48"]} 則／平常約 {t["base"]} 則'
   ```
 - **為什麼有問題**：
-  在 `ipo_rows()` 中，`t` 是帶有紐約時區（`tzinfo=ET`）的 offset-aware `datetime` 物件。
-  然而在函式開頭並未對參數 `now` 進行時區標準化轉換。若外部模組或測試呼叫 `ipo_events(datetime.now())` 傳入未帶時區的 offset-naive 物件時，執行到第 161 行 `now < t` 將直接拋出：
-  `TypeError: can't compare offset-naive and offset-aware datetimes`，導致整個重大事件倒數看板生成中斷崩潰。相較之下，模組內其他函式（如 `earn_events`）均會先執行 `et_now = now.astimezone(ET)`。
+  在 `sec_threads()` 排序與渲染卡片時，程式碼直接使用 `{"升溫": 0, "官方新文件": 1, "有消息": 2, "安靜": 3}[t["state"]]` 以及 `PILL[t["state"]]` 進行嚴格字典取值。
+  若後端分析模組（`wsb/analytics/threads.py`）產生的主線狀態新增了新類別（如「冷卻」、「待觀察」）或因例外出現空字串／None，此處將直接拋出未捕捉的 `KeyError`，導致新聞日曆頁的主線追蹤卡片渲染直接中斷。
 - **建議怎麼改**：
-  在 `ipo_rows()` 函式開頭將 `now` 統一轉為 offset-aware 物件：
+  改用安全的 `.get()` 賦予預設值：
   ```python
-  if now.tzinfo is None:
-      now = now.replace(tzinfo=ZoneInfo("Asia/Taipei"))
+  rank = {"升溫": 0, "官方新文件": 1, "有消息": 2, "安靜": 3}.get(t.get("state"), 99)
+  pill_text = PILL.get(t.get("state"), t.get("state", ""))
   ```
 - **確定程度**：高。
 
-### CODE-3｜wsb/data/forced_flows.py：第 151 行 trend_view() 在價格持平（c[-1] == base）時將其誤判為向下偏空信號（-1）
-- **檔案路徑與行號**：[wsb/data/forced_flows.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/forced_flows.py#L149-L153)
+### CODE-3｜wsb/analytics/rulebook.py：第 130-132 行 check() 當 price 為 None 時引發 TypeError 崩潰
+- **檔案路徑與行號**：[wsb/analytics/rulebook.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/analytics/rulebook.py#L130-L133)
 - **程式碼片段**：
   ```python
-  for n in LOOKS:
-      base = c[-n - 1]
-      sig.append(1 if c[-1] > base else -1)
-      flips[n] = {"price": c[-n], "dist": c[-n] / c[-1] - 1, "up": c[-1] > base}
+  if ps.get("ma200") is not None and ps.get("mom_12_1") is not None and ps.get("rel_6m") is not None:
+      lag = float(c["trend_lag_pp"])
+      brk = price < ps["ma200"] and ps["mom_12_1"] < 0 and ps["rel_6m"] <= -lag
   ```
 - **為什麼有問題**：
-  在計算 CTA 趨勢跟隨基金模型（`trend_view()`）的 1 個月、3 個月、12 個月多空分數時，第 151 行使用了二元三元運算子 `1 if c[-1] > base else -1`。
-  當標的最新收盤價與基準日前一收盤價完全持平（`c[-1] == base`）時，程式未給予中性評價 `0`，而是直接歸入 `-1`（全空偏空信號）；且第 152 行 `"up"` 亦被標記為 `False`。這會在資產價格平盤時產生系統性偏空的模型偏誤，造成 CTA 多空趨勢得分失真。
+  在第 130 行的防護判斷中，程式僅檢查了 `ps.get("ma200")`、`ps.get("mom_12_1")` 與 `ps.get("rel_6m")` 是否存在，卻遺漏了檢查 `price`（即 `ps.get("price")`）是否為 `None`。
+  若在持股歷史行情計算時，`price` 為 `None`，第 132 行執行 `price < ps["ma200"]` 將在 Python 3 中直接觸發：
+  `TypeError: '<' not supported between instances of 'NoneType' and 'float'`，導致規則書出場檢驗拋出未捕捉異常。
 - **建議怎麼改**：
-  改為嚴謹的三元判斷，平盤時給予 0 分中性：
+  在條件判斷中補上 `price is not None`：
   ```python
-  sig.append(1 if c[-1] > base else (-1 if c[-1] < base else 0))
+  if price is not None and ps.get("ma200") is not None and ps.get("mom_12_1") is not None and ps.get("rel_6m") is not None:
+  ```
+- **確定程度**：高。
+
+### CODE-4｜tools/site_ai.py：第 78 行 flock_state 描述文字截取 flo["since"] 缺乏 None 防護
+- **檔案路徑與行號**：[tools/site_ai.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ai.py#L76-L79)
+- **程式碼片段**：
+  ```python
+  out["flock"] = (EMO[st], "鳥群：" + ("各產業開始一起動，衝擊容易擴散" if st == TENSE else
+                                      "各產業各走各的，沒有一起逃" if st == CALM else "各產業同步程度普通")
+                  + (f"（同步度 {flo['since'][:4]} 年以來最低）" if flo["ar_pct"] < 1 else f"（第 {flo['ar_pct']:.0f} 百分位）"))
+  ```
+- **為什麼有問題**：
+  在第 73 行處理 `turbulence` 時，作者謹慎地寫了 `(tur.get('since') or '')[:4]`。
+  但在第 78 行處理 `absorption`（鳥群）時，直接寫了 `flo['since'][:4]`。若該物理模型在歷史回溯計算中 `since` 欄位為 `None` 或非字串物件，執行切片 `[:4]` 將拋出 `TypeError: 'NoneType' object is not subscriptable`。
+- **建議怎麼改**：
+  統一比照第 73 行加上安全回退：
+  ```python
+  (flo.get('since') or '')[:4]
   ```
 - **確定程度**：高。
 
