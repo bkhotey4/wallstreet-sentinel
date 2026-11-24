@@ -1,8 +1,8 @@
-台北時間 2026-11-24 21:53
+台北時間 2026-11-24 22:52
 
-# Gemini 第二意見（第 50 版）
+# Gemini 第二意見（第 51 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -511,6 +511,11 @@
 - 正確應該是什麼：應確保大盤與期指即時跳動數據與期交所／證交所 OpenAPI 或 WebSocket 行情同步更新，避免在劇烈波動行情中誤導投資人。
 - 來源網址：臺灣證券交易所 OpenAPI 平台 https://openapi.twse.com.tw/ 。
 
+### SITE-3｜「政府穩市場」卡片未涵蓋證交所（TWSE）維持率調降至 120% 暨大赦條款官方公告
+- 本站寫了什麼：在「台股專業判讀」頁之「政府穩市場：金管會措施與國安基金」卡片中，僅抓取金管會新聞稿與財政部國安基金，最新一則為金管會 11/21 之禁空等五大措施，未列入證交所 11/23 正式發布的「維持率調降至 120% 暨取消舊追繳紀錄大赦條款」。
+- 正確應該是什麼：證交所 11/23 正式新聞公報（https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001 ）是本次阻斷融資斷頭潮的核心政策，卡片來源應擴充納入證交所新聞公告（`twse.com.tw`），或在穩市場卡片中以醒目標籤呈現該大赦措施。
+- 來源網址：臺灣證券交易所官方公報 https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001 。
+
 ---
 
 ## CAL 行事曆核對
@@ -552,64 +557,60 @@
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 21 時對應檔案（排序編號除以 24 餘數為 21 之檔案清單，本批稽核檔案涵蓋：`tools/site_ipo.py`、`tools/site_sections.py`、`tools/site_events.py`、`wsb/analytics/ipo.py` 等）：
+本批稽核依照規範審查專案中台北時間 22 時對應檔案（排序編號除以 24 餘數為 22 之檔案清單，本批稽核重點檔案涵蓋：`tools/site_tw_chips.py`、`tools/site_twdesk.py`、`tools/site_tw_nsf.py`、`wsb/data/tw_chips.py` 等）：
 
-### CODE-1｜tools/site_ipo.py：第 186 行 _stab() 在 below_in 為 None 時誤判為「期間守住」
-- 檔案路徑與行號：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L185-L187)
+### CODE-1｜tools/site_tw_chips.py：第 51 行寫死「個別帳戶低於 130% 會被追繳」與 11/24 起 120% 官方新制矛盾
+- 檔案路徑與行號：[tools/site_tw_chips.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_chips.py#L49-L52)
 - 程式碼片段：
   ```python
-  note = ("期間曾跌破" if r.get("below_in") else "期間守住") + ("、結束後跌破" if r.get("below_after") else "、結束後守住" if r.get("below_after") is False else "")
+  if mr.get("ratio"):
+      mp = _prev(d, "mratio", ("ratio",))
+      lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 130% 會被追繳）')
   ```
 - 為什麼有問題：
-  在 `_stab(r: Dict)` 渲染 IPO 穩價期（greenshoe window）狀態時，程式在處理 `below_after` 時有嚴謹檢查 `is False`（即若尚未走完 30 天則不輸出空泛文字）；然而在處理 `below_in` 時，卻僅使用三元運算子 `if r.get("below_in") else "期間守住"`。
-  當該 IPO 缺乏發行價資料（`offer is None`）或在穩價期間缺乏有效行情資料時，`r.get("below_in")` 的值為 `None`（falsy）。此時程式會直接落入 else 分支輸出「期間守住」，對使用者做出不實的利多陳述，誤導投資人以為該檔新股在穩價期間從未破發。
+  臺灣證券交易所已於 2026-11-23 正式頒布新措施，自 2026-11-24 起信用交易整戶擔保維持率追繳門檻全面調降至 120%，且此前低於 130% 之追繳紀錄全數取消。
+  程式在 `sec_tw_chips` 中直接將「個別帳戶低於 130% 會被追繳」寫死為常數字串，這會向讀者傳遞過時且錯誤的政策門檻，誤導投資人以為 130% 仍為強制追繳門檻。
 - 建議怎麼改：
-  明確檢查 `below_in` 是否具備布林值，若為 `None` 則標記為資料不足或不加入斷言：
+  更新為新制標準，並可備註新制生效日期：
   ```python
-  in_txt = "期間曾跌破" if r.get("below_in") is True else ("期間守住" if r.get("below_in") is False else "")
-  after_txt = "、結束後跌破" if r.get("below_after") is True else ("、結束後守住" if r.get("below_after") is False else "")
-  note = in_txt + after_txt
+  lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 120% 會被追繳，11/24 起新制）')
   ```
 - 確定程度：高。
 
-### CODE-2｜tools/site_sections.py：第 104、106 行 r.get("theme", "其他") 在 theme 為 None 時向 esc() 傳入 None 導致 TypeError
-- 檔案路徑與行號：[tools/site_sections.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_sections.py#L104-L107)
+### CODE-2｜tools/site_twdesk.py：第 243 行 rev_lead() 在 yoy_pos 為 None 時直接格式化引發 TypeError 崩潰
+- 檔案路徑與行號：[tools/site_twdesk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twdesk.py#L242-L245)
 - 程式碼片段：
   ```python
-  chg = r.get("chg5")
-  th = esc(r.get("theme", "其他"))
-  rows.append(
-      f'<tr data-th="{th}" data-q="{esc((r["name"] + " " + r["name_en"] + " " + r["code"]).lower())}">'
+  s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {v['yoy_pos']:.0f}% 的公司比去年同月成長"
+  if v.get("breadth") is not None:
+      s += f"、{v['breadth']:.0f}% 的公司近 3 個月成長在加速"
   ```
 - 為什麼有問題：
-  在 Python 中，字典若存在 `"theme": None` 的鍵值對，`r.get("theme", "其他")` 依然會回傳該鍵的值 `None`，而不是預設值 `"其他"`。
-  而 `esc` 是 `html.escape`，其僅接受字串；當傳入 `None` 時將直接引發未捕獲的 `TypeError: must be str, not None`，導致個股評分表卡片（`sec_scores`）渲染直接崩潰。
+  在 `wsb/data/tw_desk.py` 第 630 行中，`yoy_pos` 的計算邏輯為：
+  `"yoy_pos": (sum((t["yoy"] or 0) > 0 for t in trends) / len(trends) * 100) if trends else None`。
+  當 `trends` 列表為空（例如在月末清空快取重新抓取、或網路中斷只有部分資料時），`v["yoy_pos"]` 的值為 `None`。
+  在 `tools/site_twdesk.py` 中，程式對第 244 行的 `breadth` 進行了嚴謹的 `if v.get("breadth") is not None:` 檢查，但第 243 行對 `v['yoy_pos']` 卻完全沒有檢查，直接執行 `f"{v['yoy_pos']:.0f}%"`。當 `yoy_pos` 為 `None` 時，Python 將直接拋出未捕獲的 `TypeError: unsupported format string passed to NoneType.__format__`，導致整個「月營收：AI 供應鏈哪一層在加速」卡片（`sec_tw_revheat`）在網站建置時直接崩潰中斷。
 - 建議怎麼改：
-  改為邏輯運算子確保空值時回退至預設字串：
+  比照 `breadth` 進行防禦性檢查，或提供退回預設文字：
   ```python
-  th = esc(r.get("theme") or "其他")
+  pos_str = f"{v['yoy_pos']:.0f}%" if v.get("yoy_pos") is not None else "—%"
+  s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {pos_str} 的公司比去年同月成長"
   ```
 - 確定程度：高。
 
-### CODE-3｜tools/site_events.py：第 85、88 行 split_reported() 在感恩節休市或週末仍將盤前財報誤判為已開盤已公布（opened 為 True）
-- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L85-L89)
+### CODE-3｜tools/site_tw_nsf.py：資料源 U_FSC 僅收錄金管會新聞稿，漏接證交所（TWSE）重大市場穩定政策
+- 檔案路徑與行號：[tools/site_tw_nsf.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_nsf.py#L72-L76) 與 [wsb/data/tw_nsf.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_nsf.py#L83-L97)
 - 程式碼片段：
   ```python
-  opened = (et_now.hour, et_now.minute) >= PRE_DONE
-  up, moved = [], []
-  for x in cal.get("up") or []:
-      if x.get("date") == day and (str(x.get("sym") or "").upper() in released or (x.get("time") == "pre" and opened)):
-          moved.append({**x, "just": True})
+  # wsb/data/tw_nsf.py
+  FSC_BASE = "https://www.fsc.gov.tw/ch/"
+  U_FSC = FSC_BASE + "home.jsp?id=96&parentpath=0,2"
   ```
 - 為什麼有問題：
-  `PRE_DONE = (9, 30)`（美東開盤時間）。在 `split_reported()` 中，`opened = (et_now.hour, et_now.minute) >= PRE_DONE` 僅單純檢查美東時鐘是否大於等於 09:30，完全沒有檢查今天是否為美股交易日。
-  例如本週四感恩節（11/26 全日休市）或週六、週日，若網站排程在美東時間 09:30 之後執行構建，`opened` 將恆為 `True`。此時若當日行事曆有標註 `time: "pre"` 之項目，程式將直接判定為「開盤即視為已公布」，將其強制移至「最近已公布」（`past`）並打上 `just: True` 標籤，但實際上美股全日休市，該財報根本尚未發布。
+  `tw_nsf.py` 設計為「政府穩市場：金管會措施與國安基金」卡片之後端資料抓取器，其只向金管會官方網站（`fsc.gov.tw`）抓取新聞稿。然而，在實務上，許多對市場最具直接法律效力的重大穩定措施是由「臺灣證券交易所（TWSE）」本身直接以證交所名義公告（如 11/23 調降信用交易擔保維持率至 120% 暨大赦條款，公告於 `twse.com.tw/zh/page/news/`）。
+  這導致 `tw_nsf` 完全漏收了證交所自身發布的重大穩市場措施，卡片上只顯示 11/21 金管會措施，無法反映 11/23 證交所救市大赦新政。
 - 建議怎麼改：
-  引入交易日檢查（例如調用 `wsb.data.exchange_cal.us_open(et_now.date())`）：
-  ```python
-  from wsb.data.exchange_cal import us_open
-  opened = us_open(et_now.date()) and (et_now.hour, et_now.minute) >= PRE_DONE
-  ```
+  在 `tw_nsf.py` 增加抓取證交所公告端點（例如證交所 OpenAPI `announcement/notice` 或新聞公報頁），將兩者合併排序顯示。
 - 確定程度：高。
 
 ---
@@ -682,6 +683,6 @@
 - 亞德諾半導體（ADI）公布強勁 Q4 財報：Q4 營收 43.7 億美元年增 42%，調整後 EPS 4.06 美元大超預期，全財年營收創 151.8 億美元紀錄（https://investor.analog.com/financial-results/ ）。
 - 美國商務部 BIS 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）：聯邦公報發布最終規則，對新加坡與馬來西亞轉運實體祭出推定駁回禁令（https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。
 - 南韓外貿突破歷史里程碑：南韓關稅廳公告今年累計出口額突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301 ）。
-- 國際原油 WTI 價格回跌至 80 美元下方：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，WTI 跌至 79.18～79.97 美元（https://tradingeconomics.com/commodity/crude-oil ）。
+- 國際原油 WTI 價格回跌至 80 美元下方：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，WTI 跌至 79.57 美元（https://tradingeconomics.com/commodity/crude-oil ）。
 - 黃金價格大漲 3.4% 突破 3,650 美元後於 3,625～3,630 美元高檔整固：科技股反彈解除機構補保證金之強制流動性變現賣壓，技術性空頭回補（https://www.kitco.com/news/article/2026-11-23/gold-surges-back-above-3650-tech-stocks-rebound ）。
-- 日本股市 11/23 休市後今日強勁補漲：日經平均指數盤中大漲逾 2,000 點重登 58,000 點之上，強烈反映美股與費半狂飆之落後補漲動能（工商時報 https://www.ctee.com.tw/news/20261123700010 ）。
+- 日本股市 11/23 休市後今日強勁補漲：日經平均指數盤中大漲逾 2,200 點重登 58,000 點之上，強烈反映美股與費半狂飆之落後補漲動能（工商時報 https://www.ctee.com.tw/news/20261123700010 ）。
