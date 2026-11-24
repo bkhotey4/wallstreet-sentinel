@@ -1,8 +1,8 @@
-台北時間 2026-11-24 10:50
+台北時間 2026-11-24 11:50
 
-# Gemini 第二意見（第 39 版）
+# Gemini 第二意見（第 40 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -83,7 +83,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ---
 
-### D-5｜對 Claude 第 7 輪主線與情境之重大修正（黃仁勳回任、台指期夜盤狂飆 3,170 點近漲停與 11/24 早盤暴漲逾 3,300 點重返四萬點）
+### D-5｜對 Claude 第 7 輪主線與情境之重大修正（黃仁勳回任、台指期夜盤狂飆 3,170 點近漲停與 11/24 早盤暴漲逾 3,368 點重返四萬點）
 
 1. **對「120% 融資維持率」之定調**：
    - **最新事實反轉**：臺灣證券交易所已於 **2026-11-23 下午正式公告**《因應近期股市波動，證交所宣布調降信用交易整戶擔保維持率至120%》（`https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001`），自 **2026-11-24 起生效**，並明訂「11/24 前因低於 130% 已被通知者一律取消追繳紀錄且不處分擔保品」。
@@ -148,7 +148,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **本站漏掉的**：白宮與國安會官員在週末與董事會通話之具體備忘錄。
 
 ### HPE｜Q4 營收 145.5 億美元暴增 50% 大超預期，盤後 Cloud & AI 營收激增 68.6%
-- **事實**：慧與科技（HPE）於美東 11/23 盤後公布 2026 財年 Q4 財報，營收達 **145.5 億美元**（年增 50%），大幅超越市場共識的 144.3 億美元；Non-GAAP 每股盈餘達 **1.43 美元**（年增 130%），優於預期的 1.28 美元。其中 Cloud & AI 部門營收暴增 68.6% 至 113 億美元，伺服器營收接近翻倍。公司大幅調升 FY27 全年展望至 594～631 億美元，並授權 50 億美元庫藏股（HPE IR `https://investors.hpe.com/financial-results/`，2026-11-23 16:15 EST）。
+- **事實**：慧與科技（HPE）於美東 11/23 盤後公布 2026 財年 Q4 財報，營收達 **145.5 億美元**（精確值 145.47 億美元，年增 50%），大幅超越市場共識的 144.3 億美元；Non-GAAP 每股盈餘達 **1.43 美元**（年增 130%），優於預期的 1.28 美元。其中 Cloud & AI 部門營收暴增 68.6% 至 113 億美元，伺服器營收接近翻倍。公司大幅調升 FY27 全年展望至 594～631 億美元，並授權 50 億美元庫藏股（HPE IR `https://investors.hpe.com/financial-results/`，2026-11-23 16:15 EST）。
 - **傳聞**：市場傳出 HPE 最新 AI 伺服器機櫃訂單積壓已排至 2027 年年中。
 - **本站漏掉的**：HPE 雲端 AI 營收佔比已攀升至集團總營收的 77%。
 
@@ -220,7 +220,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### POL-2｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
 - **事實**：美國眾議院外交事務委員會主席 Brian Mast 依據《出口管制改革法案》（ECRA）法定權限，公開商務部 BIS 內部機密許可證統計（眾院外委會官方新聞稿：`https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/`，發布時間：2026-11-19）。
-- **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **87.9 萬顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆）。
+- **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **879,868 顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆）。
 - **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignaffairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
 
 ---
@@ -247,7 +247,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **事實**：臺灣證券交易所於 **2026-11-23 正式公告**：為減輕投資人籌措資金壓力並防堵斷頭連鎖賣壓，自 **2026-11-24 起**，信用交易整戶擔保維持率最低標準調降至 **120%**。更關鍵的是，**11/24 以前因低於 130% 而已被通知補繳者，一律取消追繳紀錄且不處分擔保品**；11/23 當日原應通知補繳者原則上毋須再通知（官方公告：`https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001`）。
 
 ### TWX-2｜11/24 週二台股早盤開盤歷史性報復性狂飆：大漲逾 3,368 點重返四萬點之上
-- **事實**：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 以及台指期夜盤狂噴 3,170 點激勵，11/24 台股早盤跳空開高 2,337 點開在 39,148.91 點，盤中更狂飆逾 3,368 點重返 40,000 點大關之上！台積電（2330）開盤直接亮燈漲停報 2,230 元，聯發科（2454）攻上漲停報 4,050 元，上市櫃超過 550 至 600 家公司同步亮燈漲停（Focus Taiwan `https://focustaiwan.tw/business/202611240005`，中央社 `https://www.cna.com.tw/news/afe/202611240015.aspx`）。
+- **事實**：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 以及台指期夜盤狂噴 3,170 點激勵，11/24 台股早盤跳空開高 2,337 點開在 39,148.91 點，盤中更狂飆逾 3,368 點重返 40,000 點大關之上（最高觸及 40,180.38 點）！台積電（2330）開盤直接亮燈漲停報 2,230 元，聯發科（2454）攻上漲停報 4,050 元，上市櫃超過 550 至 600 家公司同步亮燈漲停（Focus Taiwan `https://focustaiwan.tw/business/202611240005`，中央社 `https://www.cna.com.tw/news/afe/202611240015.aspx`）。
 
 ### TWX-3｜11/23 三大法人買賣金額官方 BFI82U 原表結算：賣超 511.77 億元
 - **事實**：證交所官方 `BFI82U` 原表正式結算 11/23 當日三大法人動向（`https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html`）：
@@ -276,7 +276,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### NR-2｜HPE 官方財報新聞稿：Q4 營收 145.5 億美元暴增 50%，Cloud & AI 營收大增 68.6%
 1. **原文**：HPE Investor Relations，《HPE Reports Fourth-Quarter and Full-Year Fiscal 2026 Results》，`https://investors.hpe.com/financial-results/`，發布時間：2026-11-23 16:15 EST，無記者署名（官方公報）。
-2. **具體事實**：Q4 營收達 145.5 億美元（年增 50%），高於市場共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（高於共識 1.28 美元）。Cloud & AI 業務營收暴增 68.6% 至 113 億美元，伺服器出貨量年增翻倍。FY27 營收預估上看 594～631 億美元，加碼 50 億美元庫藏股。
+2. **具體事實**：Q4 營收達 145.47 億美元（年增 50%），高於市場共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（高於共識 1.28 美元）。Cloud & AI 業務營收暴增 68.6% 至 113 億美元，伺服器出貨量年增翻倍。FY27 營收預估上看 594～631 億美元，加碼 50 億美元庫藏股。
 3. **消息來源**：HPE 官方財報新聞稿與 SEC 申報檔案。
 4. **標題落差**：標題中性陳述財報，內文顯示 AI 伺服器成長幅度創下歷史最高紀錄。
 5. **時間對得上嗎**：美股盤後發布，帶動 HPE 盤後走強並提振次日伺服器供應鏈情緒。
@@ -303,7 +303,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 5. **時間對得上嗎**：措施於週五盤後宣布，週一 11/23 開盤正式生效，時間嚴格對齊。
 
 ### NR-6｜紐約聯準銀行總裁 John Williams 11/23 演說全文：通膨依舊過高，貨幣政策仍須緊縮
-1. **原文**：紐約聯準銀行官網，《Monetary Policy and the Economic Outlook》，`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`，發布時間：2026-11-23 10:00 EST，發言人：紐約聯準銀行總裁 John Williams。
+1. **原文**：紐約聯準銀行官網，《The Economic Mixdown》，`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`，發布時間：2026-11-23 10:00 EST，發言人：紐約聯準銀行總裁 John Williams。
 2. **具體事實**：Williams 在紐約聖文森山大學演講指出，當前通膨仍舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續的方式及時回落至 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標；利率政策將依據數據全貌保持審慎偏緊。
 3. **消息來源**：紐約聯準銀行官方新聞稿與講稿。
 4. **標題落差**：標題為中性學術標題，內文傳遞出明確的抗通膨決心與偏鷹基調。
@@ -361,7 +361,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### TWB-2｜現在讀數與歷史極值對照（2026 年 11 月最新官方讀數）
 - **最新官方數據**：
-  - **M1B vs M2 年增率**：央行 9 月最新公布 M1B 年增 7.20%、M2 年增 7.24%（負差 -0.04%），連續三個月呈現 M1B 略低於 M2 之微幅死亡交叉（中央銀行官方公報 `https://www.cbc.gov.tw/`）。
+  - **M1B vs M2 年增率**：央行最新公布 10 月 M1B 年增 7.08%、M2 年增 7.11%（負差 -0.03%），9 月為 7.20% 對 7.24%，連續四個月呈現 M1B 略低於 M2 之死亡交叉（中央銀行官方公報 `https://www.cbc.gov.tw/`）。
   - **國發會景氣燈號**：9 月仍亮出代表過熱的「紅燈」（41 分），領先指標連續 14 個月上升至 104.69（國發會 `https://index.ndc.gov.tw/`）。
   - **融資餘額**：11/23 集中市場融資餘額為 4,338.07 億元，已自 10 月高點 6,464 億元大幅縮減約 33%（證交所 `https://www.twse.com.tw/`）。
   - **外銷訂單**：10 月外銷訂單創歷史新高達 1,238.2 億美元（年增 78.3%），基本面出貨尚未見頂（經濟部 `https://www.moea.gov.tw/`）。
@@ -453,26 +453,26 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### EARN-HPE｜慧與科技（Hewlett Packard Enterprise）Q4 財報正式公布（大幅超越共識）
 - **公布時間**：美東 2026-11-23 盤後（台北時間 11-24 05:15）。
 - **公布結果**：
-  - 營收：**145.5 億美元**（年增 50%），超越 FactSet 共識的 144.3 億美元。
+  - 營收：**145.47 億美元**（年增 50%），超越 FactSet 共識的 144.3 億美元。
   - Non-GAAP EPS：**1.43 美元**（年增 130%），優於共識的 1.28～1.29 美元。
   - Cloud & AI 營收：**113.0 億美元**（年增 68.6%），伺服器營收大增 94.7%。
 - **FY27 指引**：營收預計成長 27%～35%（達 594～631 億美元），Non-GAAP EPS 調升至 5.05～5.35 美元，授權 50 億美元庫藏股（出處：`https://investors.hpe.com/financial-results/`）。
 
 ### EARN-DELL｜戴爾科技（Dell Technologies）Q3 財報預期
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：FactSet 與 Zacks 共識預估非 GAAP 每股盈餘為 **6.63～6.76 美元**，營收共識約 **506.3 億～508.7 億美元**（公司自身指引為 490 億美元、EPS 6.50 美元，出處：`https://investors.delltechnologies.com/financial-results/`）。
-- **選擇權預估隱含波動**：選擇權市場定價業績發布後雙向隱含波動幅度約 **±7.8%**。
+- **市場預期**：FactSet 與 Zacks 共識預估非 GAAP 每股盈餘為 **6.55～6.62 美元**（公司自身指引 6.50 美元），營收共識約 **492 億～506.3 億美元**（公司指引約 490 億美元，出處：`https://investors.delltechnologies.com/financial-results/`）。
+- **選擇權預估隱含波動**：選擇權市場定價業績發布後雙向隱含波動幅度約 **±12%～16%**。
 - **上一季展望**：管理層預期 AI 伺服器出貨季增超過 30%，企業級 PC 換機需求穩步復甦。
 
 ### EARN-ADI｜亞德諾半導體（Analog Devices）Q4 財報預期
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 20:00）。
-- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.88～3.89 美元**（年增約 72%），營收共識約 **43.2 億美元**（出處：`https://investor.analog.com/financial-results/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.89～3.92 美元**，營收共識約 **43.0 億～43.6 億美元**（公司自身指引 43 億美元，出處：`https://investor.analog.com/financial-results/`）。
 - **選擇權預估隱含波動**：隱含單日波動幅度約 **±5.2%**。
 - **上一季展望**：工控與通訊客戶庫存調整進入尾聲，毛利率維持 74% 高檔。
 
 ### EARN-WDAY｜Workday Q3 財報預期
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：營收共識約 **2.69 億～2.75 億美元**，調整後每股盈餘預期約 **2.74～2.75 美元**（出處：`https://investor.workday.com/financial-releases/`）。
+- **市場預期**：營收共識約 **2.69 億～2.75 億美元**，調整後每股盈餘預期約 **2.74～2.80 美元**，訂閱營收指引約 25.15 億～25.20 億美元（出處：`https://investor.workday.com/financial-releases/`）。
 - **選擇權預估隱含波動**：隱含單日波動約 **±6.5%**。
 
 ### EARN-MDT｜美敦力（Medtronic）Q2 財報預期
@@ -484,8 +484,8 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ## FED 聯準會
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
-- **公開發言**：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學演講（講稿發布：`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。政策立場偏向審慎緊縮，密切觀察整體數據。
-- **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **91%～95%**，不升息機率為 5%～9%，升息 50 bps 機率低於 **5%**（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
+- **公開發言**：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表題為《The Economic Mixdown》演講（講稿發布：`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。政策立場偏向審慎緊縮，密切觀察整體數據。
+- **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **90%～95%**，不升息機率為 5%～10%，升息 50 bps 機率低於 **5%**（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
 
 ### FED-2｜聯準會監察長調查理事鮑曼（Michelle Bowman）溝通與靜默期合規情況
 - **公開事實**：聯準會監察長辦公室（OIG）針對主管金融監管之副主席鮑曼（Michelle Bowman）於 6 月 FOMC 會議後出席美銀主辦之非公開高階客戶晚宴是否違反靜默期（Blackout Period）與道德規範展開實質審查；鮑曼聲明恪守規定、未透漏貨幣政策機密（英國金融時報 `https://www.ft.com/`，2026-11-23）。
@@ -636,7 +636,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## SENT 散戶情緒
 
-### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡、台股開盤狂飆逾 3,368 點）
+### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡、台股開盤狂飆逾 3,368 點重登四萬點）
 - **PTT Stock 板**：11/23 加權指數暴漲 778.60 點後，晚間美股輝達大漲 31.48%、TSM ADR 狂飆 14.08%，台指期夜盤狂飆 3,170 點觸及漲停，24 日台股早盤更大漲逾 3,368 點攻克四萬點大關，台積電亮燈漲停報 2,230 元！聯發科漲停報 4,050 元！PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電直接漲停鎖死？」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手物理超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」、「超過 550 家漲停根本買不到」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 `https://www.ptt.cc/bbs/Stock/`）。
 - **Reddit r/wallstreetbets**：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權（Call Options）出現數十倍漲幅（+5,000%），看多情緒瞬間達到沸點（討論串：`https://www.reddit.com/r/wallstreetbets/`）。
 
@@ -644,70 +644,81 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 10 時對應檔案（排序編號除以 24 餘數為 10 之檔案清單，聚焦審查 `tools/site_twbubble.py`、`wsb/analytics/etf_flows.py`、`wsb/data/exchange_cal.py`、`wsb/data/taiwan_quotes.py` 等模組）：
+本批稽核依照規範審查專案中台北時間 11 時對應檔案（排序編號除以 24 餘數為 11 之檔案清單，聚焦審查 `tools/site_twdesk.py`、`wsb/data/tw_desk.py` 等台股專業判讀與估值模型模組）：
 
-### CODE-1｜tools/site_twbubble.py：第 71 行來源超連結文字固定寫死「證交所」，展示非證交所數列時標籤與資料源矛盾
-- **檔案路徑與行號**：[tools/site_twbubble.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twbubble.py#L71)
+### CODE-1｜tools/site_twdesk.py：第 190 行與第 198 行股票中位數 P/E（10/31 月底）與 10 年期公債殖利率（當日即時）跨期混用，致 ERP 跨期錯置且未向讀者標註公債採即時日期
+- **檔案路徑與行號**：[tools/site_twdesk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twdesk.py#L188-L193) 與 [wsb/data/tw_desk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_desk.py#L420-L426)
 - **程式碼片段**：
   ```python
-  def _row(x: Dict) -> str:
-      z = "—" if x["z"] is None else f'{x["z"]:+.1f}'
-      pct = "歷史不足" if x["pct"] is None else f'第 {x["pct"]} 百分位'
-      return (f'<tr><td>{x["light"]} <b>{esc(x["name"])}</b><div class="small muted">{esc(x["why"])}</div></td>'
-              f'<td class="r"><b>{esc(_fmt(x))}</b><div class="small muted">{esc(x["date"])}</div></td>'
-              f'<td class="r">{z}</td><td class="r">{pct}<div class="small muted">{esc(x["since"][:7])} 起 {x["n"]} 筆</div></td>'
-              f'<td class="r">{x["max"]:,.{x["dg"]}f}<div class="small muted">{esc(x["max_date"])}</div></td>'
-              f'<td><a href="{esc(x["src"])}" target="_blank" rel="noopener">證交所</a></td></tr>')
+  # wsb/data/tw_desk.py:
+  cur = erp[-1] if erp else None
+  if cur and daily:
+      last = max(daily)
+      y = ((daily[last] or {}).get("gov") or {}).get("10")
+      if y is not None:
+          cur.update(y10=float(y), erp=round(cur["ey"] - float(y), 2), y10_day=last)
+
+  # tools/site_twdesk.py:
+  f'<p class="small">{_md(e["date"])}：上市股票本益比中位數 {e["pe_med"]:.2f} 倍 → 盈餘殖利率 {e["ey"]:.2f}%；'
+  f'10 年期公債 {e["y10"]:.2f}% → 差距 {e["erp"]:.2f} 個百分點。'
   ```
 - **為什麼有問題**：
-  在 `_row()` 函式生成表格最後一欄時，鏈結文字固定寫死為 `證交所`。
-  然而在 `wsb/data/tw_bubble.py` 的快取資料結構中，指標項目不僅包含證交所資料（FMTQIK、TWTB4U、MI_MARGN、BWIBBU），也預留並載入了美債 10 年期殖利率（`us10`）等來自 FRED 或美國財政部的外部數列。當後續前端卡片納入外部宏觀利率對照時，連往美國 FRED 或財政部官網的鏈結依然會被標示為「證交所」，對使用者造成資料來源之混淆。
+  這正是任務單第 241 行特別指示追查之典型問題：**「表格某列顯示的日期其實是別的數列的日期」**。
+  在 `tw_desk.py` 中，歷史 ERP 數列是依每月底的 `BWIBBU` 股票本益比中位數與央行公債殖利率月資料配對。但為了呈現最新狀態，程式在最後一筆（`cur`）中，將 `y10` 替換為當日最新的市場即時報價（`y10_day`，例如 11/24），並用該即時公債殖利率去減上個月底（10/31）的股票盈餘殖利率計算出 `erp`。
+  然而在前端渲染 `site_twdesk.py` 第 190 行時，行首印出的日期卻僅有 `_md(e["date"])`（即顯示 10/31），使讀者誤以為該 10 年期公債殖利率與 ERP 差距是 10/31 的數據，造成跨越近一個月時間落差的數列混用與日期標示失真。
 - **建議怎麼改**：
-  將來源標籤文字參數化，由數列物件 `x` 提供 `x.get("src_name", "官方來源")`，避免直接寫死為特定機構名稱：
+  若使用了 `y10_day` 進行即時替換，應明確在段落中分別標明股票本益比資料月與公債殖利率即時日期，或標示為「股票估值 10/31、公債殖利率 11/24」：
   ```python
-  src_label = esc(x.get("src_name") or ("證交所" if "twse" in str(x.get("src", "")) else "官方來源"))
-  return (... f'<td><a href="{esc(x["src"])}" target="_blank" rel="noopener">{src_label}</a></td></tr>')
+  y10_note = f'（{_md(e["y10_day"])}）' if e.get("y10_day") and e["y10_day"] != e["date"] else ""
+  f'<p class="small">股票估值 {_md(e["date"])}：本益比中位數 {e["pe_med"]:.2f} 倍 → 盈餘殖利率 {e["ey"]:.2f}%；'
+  f'10 年期公債{y10_note} {e["y10"]:.2f}% → 差距 {e["erp"]:.2f} 個百分點。'
   ```
 - **確定程度**：高。
 
-### CODE-2｜wsb/analytics/etf_flows.py：第 28 行缺乏分母非零防護，極端異常資料下存在 ZeroDivisionError 風險
-- **檔案路徑與行號**：[wsb/analytics/etf_flows.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/analytics/etf_flows.py#L27-L29)
+### CODE-2｜tools/site_twdesk.py：第 243 行 rev_lead() 假定 v['latest'] 必為有效年月字串，快取為空時將引發 TypeError 崩潰整張月營收卡片
+- **檔案路徑與行號**：[tools/site_twdesk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twdesk.py#L233-L244)
 - **程式碼片段**：
   ```python
-  amt = (s1 - s0) * n1
-  out.append({"date": d1, "prev": d0, "amt": amt, "pct": amt / (s0 * n1) * 100, "span": int(np.busday_count(d0, d1))})
+  def _ym(ym: str) -> str:
+      return f"{int(ym[:4])} 年 {int(ym[5:7])} 月"
+
+  def rev_lead(v: Dict) -> str:
+      ...
+      s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {v['yoy_pos']:.0f}% 的公司比去年同月成長"
   ```
 - **為什麼有問題**：
-  在計算 ETF 資金流向百分比 `pct` 時，分母使用了前一期發行股數與當期淨值之乘積 `(s0 * n1)`。
-  若上游資料來源因新成立掛牌首日、資料源爬蟲異常或清算下市出現 `s0 == 0` 或 `n1 == 0`，程式將直接拋出 `ZeroDivisionError`，導致整個 ETF 流向計算模組中斷。
+  `_ym()` 函式直接執行字串切片 `ym[:4]` 與 `ym[5:7]` 並轉換為整數。
+  當上游月營收資料庫初次建置、快取逾期或爬蟲網路中斷時，`v.get("latest")` 可能為 `None` 或長度不足的空字串。此時 `_ym(v['latest'])` 將直接拋出 `TypeError: 'NoneType' object is not subscriptable` 或 `ValueError`，導致整張 `sec_tw_revheat` 月營收熱度卡片渲染失敗中斷。
 - **建議怎麼改**：
-  加入分母有效性保護：
+  在 `_ym` 中加入保護，或在 `rev_lead` 中先驗證 `v.get('latest')` 是否有效：
   ```python
-  denom = s0 * n1
-  pct = (amt / denom * 100) if (denom is not None and denom > 0) else None
-  out.append({"date": d1, "prev": d0, "amt": amt, "pct": pct, "span": int(np.busday_count(d0, d1))})
+  def _ym(ym: Optional[str]) -> str:
+      if not ym or len(ym) < 7:
+          return "最新"
+      return f"{int(ym[:4])} 年 {int(ym[5:7])} 月"
   ```
 - **確定程度**：高。
 
-### CODE-3｜wsb/data/exchange_cal.py：第 103 行 rows[0]["date"].startswith(str(y)) 假定首列必為當年度，可能引致誤判
-- **檔案路徑與行號**：[wsb/data/exchange_cal.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/exchange_cal.py#L102-L106)
+### CODE-3｜wsb/data/tw_desk.py：第 575 行 quarter_nowcast() 在季度營收累計 a == 0 時誤判為無資料回傳 None，使季增與年增率漏失 -100% 邊界值
+- **檔案路徑與行號**：[wsb/data/tw_desk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_desk.py#L573-L576)
 - **程式碼片段**：
   ```python
-  rows = parse_tw(js)
-  if rows and rows[0]["date"].startswith(str(y)):
-      tw[str(y)] = rows
-  elif y == today.year:
-      bad.append(f"{y}: no rows")
+  a, b, p = tot(cur), tot(ly), tot(prevq)
+  est = a * 3 / len(cur) if a is not None else None
+  return {"code": code, "months": len(cur), "qtd_yoy": (a / b - 1) * 100 if a and b else None,
+          "q_vs_prev": (est / p - 1) * 100 if est and p else None}
   ```
 - **為什麼有問題**：
-  `parse_tw` 解析證交所休市表時，檢查條件直接綁定 `rows[0]["date"].startswith(str(y))`。若證交所官方排程在年初發布時，表格首列包含了前一年度最後交易日的封關結算備註（或民國年轉換後跨年條目排列在首位），即使當年度所有休市日均成功解析，也會因為首行日期不符而被判定為失敗，向 `bad` 陣列寫入錯誤並觸發 HEALTH 警報。
+  在 Python 中，數值 `0` 在布林判斷下為 `False`。
+  當某檔生技、特殊控股或新掛牌公司在當季營收為零（`a == 0`），而去年同期有正常營收（`b > 0`）時，條件 `if a and b` 會因為 `a == 0` 被評估為假，直接回傳 `None`（顯示為缺漏無資料），而不是精確反映年減 `-100.0%` 的實質業績崩跌；同理，`if est and p` 也會因此將歸零預估判定為無資料。
 - **建議怎麼改**：
-  改為檢查回傳陣列中是否存在任何一筆符合當年度之有效日期：
+  改為顯式檢查是否為 `None` 以及分母是否大於零：
   ```python
-  if rows and any(r.get("date", "").startswith(str(y)) for r in rows):
-      tw[str(y)] = [r for r in rows if r.get("date", "").startswith(str(y))]
+  qtd_yoy = ((a / b - 1) * 100) if (a is not None and b is not None and b > 0) else None
+  q_vs_prev = ((est / p - 1) * 100) if (est is not None and p is not None and p > 0) else None
+  return {"code": code, "months": len(cur), "qtd_yoy": qtd_yoy, "q_vs_prev": q_vs_prev}
   ```
-- **確定程度**：中。
+- **確定程度**：高。
 
 ---
 
@@ -780,9 +791,9 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
    - 美東時間：**2026 年 11 月 25 日（週三）08:30 AM EST**（台北時間 11 月 25 日 21:30）。
 2. **感恩節休市**：11/26（四）美股美債全日休市；11/27（五）美股提前於 13:00 EST 休市，美債提前於 14:00 EST 休市。
 3. **11/24～11/25 市值 500 億美元以上公司財報預期**：
-   - **DELL（戴爾科技）**：11/24 盤後，FactSet 共識 EPS 6.63～6.76 美元，營收 506.3 億～508.7 億美元。
-   - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.88～3.89 美元，營收 43.2 億美元。
-   - **WDAY（Workday）**：11/24 盤後，共識營收 2.69 億～2.75 億美元，EPS 2.74～2.75 美元。
+   - **DELL（戴爾科技）**：11/24 盤後，FactSet 共識 EPS 6.55～6.62 美元，營收 492 億～506.3 億美元。
+   - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.89～3.92 美元，營收 43.0 億～43.6 億美元。
+   - **WDAY（Workday）**：11/24 盤後，共識營收 2.69 億～2.75 億美元，EPS 2.74～2.80 美元。
    - **MDT（美敦力）**：11/24 盤前，共識 EPS 1.33～1.34 美元，營收 94.8 億～95.8 億美元。
 4. **日本財務省週末對日圓官方說法**：
    - 財務官三村淳於專訪與公開發言中重申（`https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/`）：日圓近期波動過快，官方對外匯市場過度單向投機維持「隨時採取斷固措施（Decisive Action）」之最高警戒，160 關卡為防禦防線。
