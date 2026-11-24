@@ -1,6 +1,6 @@
-台北時間 2026-11-24 16:50
+台北時間 2026-11-24 17:50
 
-# Gemini 第二意見（第 45 版）
+# Gemini 第二意見（第 46 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -643,70 +643,61 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 16 時對應檔案（排序編號除以 24 餘數為 16 之檔案清單，聚焦審查 `wsb/data/earn_release.py`、`wsb/data/valhist.py` 與 `tools/site_gemini.py` 等模組）：
+本批稽核依照規範審查專案中台北時間 17 時對應檔案（排序編號除以 24 餘數為 17 之檔案清單，聚焦審查 `tools/site_ipo.py`、`tools/site_events.py` 與 `wsb/data/forced_flows.py` 等模組）：
 
-### CODE-1｜wsb/data/earn_release.py：第 321 行 outlook_vs_now 未防禦 a['v'] 為零之除以零崩潰
-- **檔案路徑與行號**：[wsb/data/earn_release.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_release.py#L320-L323)
+### CODE-1｜tools/site_ipo.py：第 197 行 _us_done() 當 r.get("lockup") 為 None 時渲染出「None 天」之破圖與贅字問題
+- **檔案路徑與行號**：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L196-L198)
 - **程式碼片段**：
   ```python
-  if not a:
+  f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>' for r in rows]
+  ```
+- **為什麼有問題**：
+  在 `_us_done()` 函式渲染美股最近 120 天已定價之 IPO 清單時，若該檔 IPO 案件在招股書解析階段尚未抓取到明確的禁售天數（即 `r.get("lockup")` 為 `None`），程式未進行有效性檢查，直接將 `None` 格式化至字串中。
+  這會導致在已定價 IPO 表格的「禁售期到期」欄位中，向使用者渲染出 `—<div class="small muted">None 天</div>` 的介面瑕疵（出現 Python 物件字面值「None 天」），破壞版面專業度。
+- **建議怎麼改**：
+  加入對 `r.get("lockup")` 是否存在的條件判斷：
+  ```python
+  lock_txt = f'<div class="small muted">{r["lockup"]} {T("天", "d")}</div>' if r.get("lockup") is not None else ""
+  f'<td class="nw">{_md(r.get("lock"))}{lock_txt}</td></tr>'
+  ```
+- **確定程度**：高。
+
+### CODE-2｜tools/site_events.py：第 161 行 ipo_rows() 在 caller 傳入 naive datetime 時引發 TypeError 崩潰
+- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L159-L162)
+- **程式碼片段**：
+  ```python
+  t = datetime.fromisoformat(d).replace(hour=9, minute=30, tzinfo=ET)
+  if not (now < t <= now + timedelta(days=days)):
       continue
-  chg = (g["mid"] / a["v"] - 1) * 100 if g["unit"] == "B" else g["mid"] - a["v"]
-  out.append({"metric": g["metric"], "mid": g["mid"], "now": a["v"], "chg": round(chg, 2), "unit": g["unit"], "cur": g.get("cur")})
   ```
 - **為什麼有問題**：
-  在 `outlook_vs_now()` 函式中，當取得當季實際值 `a` 時，若 `a` 為字典物件 `{"v": 0.0, "cur": "USD", ...}`（例如初創生技股、虧損或零營收季報），`bool(a)` 判定為 `True`，因此不會被 `if not a: continue` 擋下。
-  緊接著計算成長率時，程式執行 `(g["mid"] / a["v"] - 1) * 100`。當 `a["v"] == 0` 且 `g["unit"] == "B"` 時，將直接拋出 `ZeroDivisionError: float division by zero`，導致整筆財報比對解析全面中斷並崩潰。
+  在 `ipo_rows()` 中，`t` 是帶有紐約時區（`tzinfo=ET`）的 offset-aware `datetime` 物件。
+  然而在函式開頭並未對參數 `now` 進行時區標準化轉換。若外部模組或測試呼叫 `ipo_events(datetime.now())` 傳入未帶時區的 offset-naive 物件時，執行到第 161 行 `now < t` 將直接拋出：
+  `TypeError: can't compare offset-naive and offset-aware datetimes`，導致整個重大事件倒數看板生成中斷崩潰。相較之下，模組內其他函式（如 `earn_events`）均會先執行 `et_now = now.astimezone(ET)`。
 - **建議怎麼改**：
-  在除法計算前加入對分母 `a["v"]` 非零之防禦判斷：
+  在 `ipo_rows()` 函式開頭將 `now` 統一轉為 offset-aware 物件：
   ```python
-  if g["unit"] == "B":
-      chg = (g["mid"] / a["v"] - 1) * 100 if a.get("v") else 0.0
-  else:
-      chg = g["mid"] - a["v"]
+  if now.tzinfo is None:
+      now = now.replace(tzinfo=ZoneInfo("Asia/Taipei"))
   ```
 - **確定程度**：高。
 
-### CODE-2｜wsb/data/valhist.py：第 384 行拆股判定使用月份比較（str(sp_d)[:7] > last['sh_ym']），同月拆股將漏乘拆股比率
-- **檔案路徑與行號**：[wsb/data/valhist.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/valhist.py#L383-L386)
+### CODE-3｜wsb/data/forced_flows.py：第 151 行 trend_view() 在價格持平（c[-1] == base）時將其誤判為向下偏空信號（-1）
+- **檔案路徑與行號**：[wsb/data/forced_flows.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/forced_flows.py#L149-L153)
 - **程式碼片段**：
   ```python
-  for sp_d, ratio in p.get("sp") or []:
-      if str(sp_d)[:7] > last["sh_ym"] and ratio:
-          last["sh"] *= ratio
-  mc_now = now_px * last["sh"]
+  for n in LOOKS:
+      base = c[-n - 1]
+      sig.append(1 if c[-1] > base else -1)
+      flips[n] = {"price": c[-n], "dist": c[-n] / c[-1] - 1, "up": c[-1] > base}
   ```
 - **為什麼有問題**：
-  在計算美股最新估值區間時，`last["sh_ym"]` 記錄的是股數資料所屬季度的最後月份字串（例如 Q3 為 `"2026-09"`）。
-  第 384 行使用 `str(sp_d)[:7] > last["sh_ym"]` 來判斷拆股是否發生在財報季末之後。
-  然而，若某檔股票的股票分割（Split）恰好發生在該季末當月的下旬（例如季度基準日為 9 月 28 日，而拆股生效日為 9 月 30 日），拆股日期字串的前 7 碼為 `"2026-09"`。此時 `"2026-09" > "2026-09"` 結果為 `False`！
-  這會導致程式未能對股數乘上拆股倍率（例如 10 倍分割），而 `now_px` 卻已經是分割後的除權價格（僅剩 1/10）。兩者相乘將導致 `mc_now` 市值嚴重縮水 10 倍，造成最新本益比（P/E）與股價淨值比（P/B）計算出現極大偏誤。
+  在計算 CTA 趨勢跟隨基金模型（`trend_view()`）的 1 個月、3 個月、12 個月多空分數時，第 151 行使用了二元三元運算子 `1 if c[-1] > base else -1`。
+  當標的最新收盤價與基準日前一收盤價完全持平（`c[-1] == base`）時，程式未給予中性評價 `0`，而是直接歸入 `-1`（全空偏空信號）；且第 152 行 `"up"` 亦被標記為 `False`。這會在資產價格平盤時產生系統性偏空的模型偏誤，造成 CTA 多空趨勢得分失真。
 - **建議怎麼改**：
-  改用完整的日曆天（ISO 日期字串）進行嚴謹的比對：
+  改為嚴謹的三元判斷，平盤時給予 0 分中性：
   ```python
-  for sp_d, ratio in p.get("sp") or []:
-      if str(sp_d)[:10] > last.get("sh_date", last["sh_ym"] + "-28") and ratio:
-          last["sh"] *= ratio
-  ```
-- **確定程度**：高。
-
-### CODE-3｜tools/site_gemini.py：第 80 行在 cos 為空時拼接字串出現「；。」贅字標點異常
-- **檔案路徑與行號**：[tools/site_gemini.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_gemini.py#L78-L81)
-- **程式碼片段**：
-  ```python
-  cos = [i for i in items if not any(i["sym"].startswith(k + "-") for k in GROUP)]
-  lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 條分析師、政策、供應鏈、財報預期等補充），找到 {nf} 條附來源的原因"
-          + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + f"；" + (f"最大的一家是{zh.get(cos[0]['sym'], cos[0]['sym'])}：{cos[0]['why']}。" if cos else "。"))
-  ```
-- **為什麼有問題**：
-  在 `tools/site_gemini.py` 的 `sec_gemini()` 函式中，當某輪回答中全部為總經、政策或主題條目而未列出單一公司（即 `cos` 串列為空時），字串拼接邏輯為：
-  `... + f"；" + "。"`
-  這會在前端卡片首句導言的末尾產生 `「...找到 45 條附來源的原因；。」` 的標點符號贅字錯誤（分號緊接句號）。
-- **建議怎麼改**：
-  將分號移入三元運算子內部，確保無公司時正確以句號結尾：
-  ```python
-  lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 條分析師、政策、供應鏈、財報預期等補充），找到 {nf} 條附來源的原因"
-          + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + (f"；最大的一家是{zh.get(cos[0]['sym'], cos[0]['sym'])}：{cos[0]['why']}。" if cos else "。"))
+  sig.append(1 if c[-1] > base else (-1 if c[-1] < base else 0))
   ```
 - **確定程度**：高。
 
