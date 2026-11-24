@@ -1,6 +1,6 @@
-台北時間 2026-11-24 23:52
+台北時間 2026-11-25 00:52
 
-# Gemini 第二意見（第 52 版）
+# Gemini 第二意見（第 53 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -99,7 +99,7 @@
 - 本站漏掉的：Zscaler 既有 8,000 家企業客戶交叉銷售潛力。
 
 ### ADI｜亞德諾半導體 Q4 營收 43.7 億美元、調整後 EPS 4.06 美元雙雙大超預期
-- 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 100%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 151.8 億美元（年增 38%）（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
+- 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 100%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 151.8 億美元（年增 38%），自由現金流達 55 億美元（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：供應鏈傳出車用電子與工業自動化客戶重啟補庫存訂單。
 - 本站漏掉的：ADI 工業通訊與電源管理晶片毛利率穩健回升至 69.3%。
 
@@ -114,7 +114,7 @@
 - 本站漏掉的：HPE 雲端 AI 營收佔比已攀升至集團總營收的 77%。
 
 ### NVDA｜黃仁勳獲全票通過即刻回任執行長引爆狂飆 31.48%，週二盤前高檔拉回 5%
-- 事實：NVIDIA 董事會於 11/23 公告黃仁勳全票回任執行長與董事，川普公開確認介入斡旋。11/23 股價暴漲 31.48% 收在 165.05 美元，單日市值增加約 1 兆美元（NVIDIA Newsroom https://nvidianews.nvidia.com/news/nvidia-board-reinstates-jensen-huang-as-ceo ，2026-11-23 07:00 EST）。11/24 美股盤前股價拉回約 5% 至 156～157 美元進行獲利回吐與整固。
+- 事實：NVIDIA 董事會於 11/23 公告黃仁勳全票回任執行長與董事，川普公開確認介入斡旋。11/23 股價暴漲 31.48% 收在 165.05 美元，單日市值增加約 1 兆美元（NVIDIA Newsroom https://nvidianews.nvidia.com/news/nvidia-board-reinstates-jensen-huang-as-ceo ，2026-11-23 07:00 EST）。11/24 美股盤前與早盤股價拉回約 5% 至 155～157 美元進行獲利回吐與整固。
 - 傳聞：市場傳出黃仁勳已同意建立獨立經銷審查機制以應對 12/1 國會聽證。
 - 本站漏掉的：NVDA 週二盤前拉回消化 0DTE 期權平倉獲利之短期波動。
 
@@ -124,7 +124,7 @@
 - 本站漏掉的：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至近 18% 之套利窗口。
 
 ### DELL｜戴爾科技即將公布 Q3 財報，市場預期營收 493～508 億美元、EPS 6.50～6.76 美元
-- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收預估約 492.7 億至 508.7 億美元（年增 82%～88%），選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
+- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收預估約 492.7 億至 508.7 億美元（年增 82%～88%），AI 伺服器積壓訂單達 950 億美元，選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：市場傳出 AI 伺服器積壓訂單已突破 1,000 億美元大關。
 - 本站漏掉的：戴爾企業級 PC 換機潮與 AI 伺服器出貨比重之消長。
 
@@ -166,11 +166,11 @@
 
 ### AN-1｜華爾街投行在黃仁勳回任後全面調升 Nvidia 看法
 - 事實：在 NVIDIA 董事會於 11/23 宣布黃仁勳回任後，華爾街投行迅速啟動評等與看法調整：
-  1. Melius Research：分析師 Ben Reitzes 調升評等，將價格預測由 185 美元大幅調升至 220 美元，指出管理層穩定消除了 CUDA 生態系中斷之最大系統性風險（Melius Research https://www.meliusresearch.com/research/nvda-reinstatement-20261123 ，2026-11-23 08:30 EST）。
-  2. Bernstein：分析師 Stacy Rasgon 將評等由 Market Perform 調升至 Outperform，維持 200 美元看法（Bernstein Research https://www.bernsteinresearch.com/research/nvda-update-20261123 ，2026-11-23 09:00 EST）。
-  3. Oppenheimer：分析師 Rick Schafer 將評等由 Perform 調升至 Outperform，看法調高至 250 美元。
-  4. StoneX：分析師 Cody Acree 調升評等，看法調高至 270 美元。
-  5. Citi：分析師 Atif Malik 維持正面看法，將價格預測由 225 美元調高至 240 美元。
+  1. Melius Research：分析師 Ben Reitzes 將評等由 Hold 調升至 Buy，價格預測由 185 美元大幅調升至 220 美元，指出管理層穩定消除了 CUDA 生態系中斷之最大系統性風險（Melius Research https://www.meliusresearch.com/research/nvda-reinstatement-20261123 ，2026-11-23 08:30 EST）。
+  2. Bernstein：分析師 Stacy Rasgon 將評等由 Market Perform 調升至 Outperform，維持 200 美元價格預測（Bernstein Research https://www.bernsteinresearch.com/research/nvda-update-20261123 ，2026-11-23 09:00 EST）。
+  3. Oppenheimer：分析師 Rick Schafer 將評等由 Perform 調升至 Outperform，價格預測調高至 250 美元。
+  4. StoneX：分析師 Cody Acree 調升評等至 Buy，價格預測調高至 270 美元。
+  5. Citi：分析師 Atif Malik 維持 Buy 評等，將價格預測由 225 美元調高至 240 美元。
 
 ### AN-2｜CrowdStrike 439 億美元收購 Zscaler 引爆券商調整評等與看法分歧
 - 事實：在 CrowdStrike 宣布收購 Zscaler 後，華爾街分析師迅速發布研究報告：
@@ -181,7 +181,7 @@
   5. Wells Fargo：維持 Overweight 評等，將價格預測調低至 265 美元。
 
 ### AN-3｜Zscaler 獲併購後券商全面轉向中立評等並錨定 260 美元收購價
-- 事實：因 ZS 採固定換股比例（1.135 股 CRWD）進行全股票收購，華爾街投行將其評等移出主動買進清單：
+- 事實：因 ZS 採固定換股比例（1.135 股 CRWD）進行全股票收購，華爾街投行將其評等移出主動進場清單：
   1. Morgan Stanley：維持 Equalweight 評等，將價格預測由 185 美元調高至 260 美元，直接對齊收購隱含價值（Morgan Stanley Research https://www.morganstanley.com/research/zs-crwd-acquisition-20261124 ，2026-11-24 08:15 EST）。
   2. Stifel、Jefferies、Bernstein、Oppenheimer、TD Cowen：同步將評等由 Buy / Outperform 調降至 Hold / Market Perform，將價格預測統一錨定在 260 美元合併套利水準。
 
@@ -189,7 +189,7 @@
 - 事實：William Blair 分析師將 Nvidia 評等下調至 Market Perform，將 AMD 評等上調至 Outperform（William Blair Research https://www.williamblair.com/Insights/Equity-Research/2026/11/NVDA-AMD-Update ，2026-11-12 台北）。
 
 ### AN-5｜Rothschild & Co Redburn 將 Broadcom 調降至 Neutral（無新進展）
-- 事實：Redburn 分析師將博通（AVGO）評等由 Buy 調降至 Neutral，看法自 595 美元調低至 398 美元（Redburn Research https://www.redburn.com/research/broadcom-2026-11-13 ，2026-11-13 台北）。
+- 事實：Redburn 分析師將博通（AVGO）評等由 Buy 調降至 Neutral，價格預測自 595 美元調低至 398 美元（Redburn Research https://www.redburn.com/research/broadcom-2026-11-13 ，2026-11-13 台北）。
 
 ---
 
@@ -199,7 +199,7 @@
 - 事實：美國商務部工業與安全局（BIS）於聯邦公報發布臨時最終規則（IFR）編號 RIN 0694-AK50，標題為《Addressing Remote Access to Advanced Semiconductors》（聯邦公報官方查詢 https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors ，2026-11-19 08:45 EST）。增訂 EAR § 744.24，禁止向全球資料中心出口受管制晶片（ECCN 3A090, 4A090），若該中心向中國或 D:5 國家實體提供超過 1,200 萬累計 TPP 算力服務；並對出口至印尼、馬來西亞、新加坡、泰國、巴西等 5 國要求專案許可。
 
 ### POL-2｜美國商務部 BIS 於 11/23 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）
-- 事實：美國商務部 BIS 於 2026-11-23 發布最終規則（Docket No. 261123-0006, RIN 0694-AK59），將涉嫌非法轉運管制 AI 晶片的 Megaspeed International 及其東南亞 6 家關聯實體列入貿易黑名單（聯邦公報官方發布 https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ，2026-11-23 08:45 EST）。實體涵蓋新加坡 Megaspeed International Pte. Ltd.（7Road）、Swiftdata、Apex Enterprise Solutions（阿里巴巴關聯公司）；馬來西亞 MSFusion、PT Megaspeed、Speedmatrix；泰國 Megaspeed (Thailand)。出口審查一律適用「推定駁回（Presumption of Denial）」。
+- 事實：美國商務部 BIS 於 2026-11-23 發布最終規則（Docket No. 261123-0006, RIN 0694-AK59），將涉嫌非法轉運管制 AI 晶片的 Megaspeed International 及其東南亞 6 家關聯實體列入貿易黑名單（聯邦公報官方發布 https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ，2026-11-23 08:45 EST）。實體涵蓋新加坡 Megaspeed International Pte. Ltd.（7Road）、Swiftdata、Apex Enterprise Solutions（阿里巴巴關聯公司）；馬來西亞 MSFusion、PT Megaspeed、Speedmatrix；泰國 Megaspeed (Thailand)。出口審查一律適用「推定駁回（Presumption of Denial）」。阿里巴巴已對此發表聲明強烈抗議，稱將 Apex 列入清單為錯誤決定，並將循法律途徑救濟。
 
 ### POL-3｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
 - 事實：美國眾議院外委會主席 Brian Mast 依 ECRA 法定權限公開商務部機密數據（眾院外委會新聞稿 https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/ ，2026-11-19 11:30 EST）。2025 年 12 月至 2026 年 5 月間企業申請 340 萬顆晶片，BIS 累計核准 879,868 顆高階 AI 晶片出口中國（騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆，狀態均為 Approved, not shipped）。外委會與美中特別委員會排定黃仁勳 12/1、法務長 Tim Teter 12/2 出席閉門聽證。
@@ -231,7 +231,7 @@
 - 事實：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 激勵，11/24 台股終場以 40,122.35 點作收，大漲 +3,310.46 點（+8.99%），盤中最高暴衝 3,368.49 點觸及 40,180.38 點，創台股史上收盤與盤中最大漲點紀錄！台積電（2330）直接跳空鎖死在漲停價 2,230 元，聯發科（2454）漲停報 4,050 元，鴻海（2317）與台達電（2308）全數漲停，上市櫃超過 600 家公司亮燈漲停（中央社 https://www.cna.com.tw/news/afe/202611240015.aspx ，2026-11-24 14:00 台北）。全日成交值因惜售縮減至 4,194.05 億元。
 
 ### TWX-3｜11/24 三大法人官方 BFI82U 結算：逆勢賣超 1,230.11 億元（外資連 7 賣超 503.9 億元、自營商避險大賣 826.1 億元、投信買超 84 億元）
-- 事實：證交所官方 BFI82U 原表結算 11/24 三大法人動向（https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html ，2026-11-24 16:30 台北）：外資及陸資賣超 503.90 億元（連續第 7 日賣超）；投信買超 84.04 億元（唯一買超）；自營商合計賣超 810.25 億元（自行買賣買超 15.86 億元，避險賣超 826.12 億元）；三大法人合計賣超 1,230.11 億元。形成「散戶與投信進場、外資與自營商大幅倒貨對沖」的背離籌碼結構。
+- 事實：證交所官方 BFI82U 原表結算 11/24 三大法人動向（https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html ，2026-11-24 16:30 台北）：外資及陸資賣超 503.90 億元（連續第 7 日賣超）；投信買超 84.04 億元（唯一買超）；自營商合計賣超 810.25 億元（自行買賣買超 15.86 億元，避險賣超 826.12 億元）；三大法人合計賣超 1,230.11 億元。形成「散戶與投信進場、外資與自營商大幅出脫對沖」的背離籌碼結構。
 
 ### TWX-4｜11/24 集中市場融資餘額最新官方統計：融資暴增 197.0 億元至 4,535.6 億元（11/23 融資餘額為 4,338.07 億元）
 - 事實：證交所 MI_MARGN 官方最新原表結算，11/24 集中市場融資餘額由前一日的 4,338.07 億元急遽反彈增加 197.0 億元至 4,535.6 億元，散戶槓桿在維持率 120% 大赦與台股漲停刺激下大規模重返市場；11/23 集中市場融資餘額為 4,338.07 億元，單日僅微減 14.19 億元，融券減少 26,834 張（融券餘額 172,957 張）（證交所官方表 https://www.twse.com.tw/zh/page/trading/exchange/MI_MARGN.html ，2026-11-24 23:00 台北）。
@@ -252,7 +252,7 @@
 
 ### NR-2｜Analog Devices 官方新聞室：Q4 營收 43.7 億美元、EPS 4.06 美元雙超預期
 1. 原文：Analog Devices IR，《Analog Devices Reports Fourth Quarter and Full Year Fiscal 2026 Results》，https://investor.analog.com/financial-results/ ，發布時間：2026-11-24 07:00 EST，無記者署名（官方公報）。
-2. 內文的具體事實：Q4 營收達 43.7 億美元（年增 42%），高於市場共識 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 151.8 億美元（年增 38%）。工控與通訊客戶庫存調節告一段落。
+2. 內文的具體事實：Q4 營收達 43.7 億美元（年增 42%），高於市場共識 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 151.8 億美元（年增 38%），自由現金流達 55 億美元。工控與通訊客戶庫存調節告一段落。
 3. 消息來源：公司官方財報公報。
 4. 標題沒說的或說過頭的：標題客觀陳述財報，內文顯示營收與獲利均刷新同期歷史紀錄。
 5. 時間對得上嗎：美東 11/24 盤前發布，為早盤半導體類股提供基本面支撐。
@@ -301,7 +301,7 @@
 
 ### NR-9｜美國商務部 BIS 11/23 正式公告將 Megaspeed 及其關聯實體列入實體清單
 1. 原文：美國商務部聯邦公報，《Addition of Entities to the Entity List: Megaspeed International and Affiliates》，https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ，發布時間：2026-11-23 08:45 EST，無記者署名（官方公報）。
-2. 內文的具體事實：BIS 確認將新加坡 Megaspeed、Swiftdata、Apex Enterprise Solutions 以及馬來西亞、泰國共 7 個實體加入 Entity List，指出其存在重大風險將受管制先進運算商品轉移給未獲授權用戶。所有出口許可適用推定駁回原則。
+2. 內文的具體事實：BIS 確認將新加坡 Megaspeed、Swiftdata、Apex Enterprise Solutions 以及馬來西亞、泰國共 7 個實體加入 Entity List，指出其存在重大風險將受管制先進運算商品轉移給未獲授權用戶。所有出口許可適用推定駁回原則。阿里巴巴發布官方抗議稱 Apex 未轉運受限晶片。
 3. 消息來源：美國商務部聯邦公報。
 4. 標題沒說的或說過頭的：標題與內文一致，正式提升至行政黑名單層級。
 5. 時間對得上嗎：於黃仁勳復職同日發布，顯示對東南亞轉運漏洞之精準打擊。
@@ -318,10 +318,10 @@
 ## 保留項目
 
 ### TWC-0｜台股覆蓋清單核對（保留項目，無新進展）
-- 事實：本輪為週二時段，依規則保留上一版結果（無新進展）。
+- 事實：本輪為週三清晨時段，依規則保留上一版結果（無新進展）。
 
 ### TWQ-0｜台股專業判讀核對（保留項目，無新進展）
-- 事實：本輪為週二時段，依規則保留上一版結果（無新進展）。
+- 事實：本輪為週三清晨時段，依規則保留上一版結果（無新進展）。
 
 ---
 
@@ -371,7 +371,7 @@
 ### TWD-1｜未來一個月台股三大獨立劇本因果鏈推演
 - 事實：在美股狂飆反彈、夜盤狂噴 3,170 點、11/24 台股終場大漲 3,310.46 點收在 40,122.35 點後：
   1. 劇本 A：高檔震盪消化法人賣壓（機率 50%）。因果鏈第一環：11/24 台股暴漲收復四萬點但外資現貨大賣 503 億元、期貨淨空單 10.3 萬口，指數在 39,500～41,000 點進行換手。第一個會動的數字：成交金額能否回升至 6,000～7,500 億元之健康量。
-  2. 劇本 B：融資回籠與外資認錯回補之軋空延續（機率 40%）。因果鏈第一環：維持率 120% 大赦取消斷頭，外資在感恩節前被迫停損平倉空單 1.5 萬口以上。第一個會動的數字：期交所外資台指期淨空單單日減幅突破 1.5 萬口。
+  2. 劇本 B：融資回籠與外資認錯回補之軋空延續（機率 40%）。因果鏈第一環：維持率 120% 大赦取消斷頭，外資在感恩節前被迫平倉空單 1.5 萬口以上。第一個會動的數字：期交所外資台指期淨空單單日減幅突破 1.5 萬口。
   3. 劇本 C：美國國安與反壟斷調查再次冷卻（機率 10%）。因果鏈第一環：12/1 眾議院閉門聽證後國會推動出口全面審查法案。第一個會動的數字：外資現貨再次單日賣超突破 400 億元。
 
 ### TWD-2｜產業輪值深挖：AI 伺服器組裝與資安網路安全（鴻海「四個相信」、CrowdStrike 併購 Zscaler）
@@ -391,7 +391,7 @@
 - 事實：公布時間：美東 2026-11-23 盤後（台北時間 11-24 05:05）。Non-GAAP EPS 達 0.34 美元（高於共識 0.31 美元），營收達 15.8 億美元（年增 32%）。宣布以 439 億美元全股票收購 Zscaler，每股 ZS 換發 1.135 股 CRWD，合併後 ARR 突破 100 億美元（出處：CrowdStrike IR https://ir.crowdstrike.com/news-releases/2026-11-23-crowdstrike-to-acquire-zscaler ）。
 
 ### EARN-ADI｜亞德諾半導體（ADI）Q4 財報公布超預期（營收 43.7 億美元，EPS 4.06 美元）
-- 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 20:00）。營收達 43.7 億美元（年增 42%），超越 FactSet 共識 43.2 億美元；調整後 EPS 達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 151.8 億美元創歷史新高（出處：ADI IR https://investor.analog.com/financial-results/ ）。
+- 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 20:00）。營收達 43.7 億美元（年增 42%），超越 FactSet 共識 43.2 億美元；調整後 EPS 達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 151.8 億美元創歷史新高，全年自由現金流 55 億美元（出處：ADI IR https://investor.analog.com/financial-results/ ）。
 
 ### EARN-MDT｜美敦力（MDT）Q2 財報公布（營收 93.6 億美元，Non-GAAP EPS 1.34 美元）
 - 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 19:45）。營收 93.64 億美元（有機成長 6.5%），Non-GAAP EPS 為 1.34 美元（超越共識 1.33 美元），重申全財年 EPS 5.94 至 6.00 美元展望（出處：Medtronic IR https://investorrelations.medtronic.com/ ）。
@@ -400,17 +400,17 @@
 - 事實：公布時間：美東 2026-11-23 盤後（台北時間 11-24 05:15）。營收 145.47 億美元（年增 50%），超越共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（年增 130%），優於共識 1.28 美元。Cloud & AI 營收 113 億美元（年增 68.6%），伺服器出貨翻倍（出處：HPE IR https://investors.hpe.com/financial-results/ ）。
 
 ### EARN-DELL｜戴爾科技（DELL）Q3 財報預期（營收共識 493～508 億美元，EPS 6.50～6.76 美元）
-- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收共識約 492.7 億至 508.7 億美元（年增 82%～88%），選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收共識約 492.7 億至 508.7 億美元（年增 82%～88%），AI 伺服器單季營收預估達 190 億美元，積壓訂單坐擁 950 億美元，選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
 
 ### EARN-WDAY｜Workday（WDAY）Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
-- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。營收共識約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%），選擇權隱含波動約 ±7.0%～10.0%（出處：Workday IR https://investor.workday.com/financial-releases/ ）。
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。營收共識約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%），訂閱營收展望約 25.15 億美元，選擇權隱含波動約 ±7.0%～10.0%（出處：Workday IR https://investor.workday.com/financial-releases/ ）。
 
 ---
 
 ## FED 聯準會
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
-- 事實：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表演講《The Economic Mixdown》（講稿發布：https://www.newyorkfed.org/newsevents/speeches/2026/wil261123 ）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動確保通膨回到 2% 目標，預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。CME FedWatch 最新數據顯示，市場預期 12 月 FOMC 升息 25 bps 之機率高達 95.3%～97.8%，升息 50 bps 機率降至 2%～4.5%，暫停升息機率趨近零（出處：CME FedWatch https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html ，2026-11-24 21:30 台北）。
+- 事實：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表演講《The Economic Mixdown》（講稿發布：https://www.newyorkfed.org/newsevents/speeches/2026/wil261123 ）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動確保通膨回到 2% 目標，預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。CME FedWatch 最新數據顯示，市場預期 12 月 FOMC 升息 25 bps 之機率高達 95.3%～97.8%，升息 50 bps 機率降至 2%～4.5%，維持利率不變機率趨近零（出處：CME FedWatch https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html ，2026-11-24 21:30 台北）。
 
 ### FED-2｜聯準會監察長調查副主席鮑曼（Michelle Bowman）溝通與靜默期合規情況
 - 事實：聯準會監察長辦公室（OIG）針對主管金融監管之副主席鮑曼（Michelle Bowman）於 6 月 FOMC 會議後出席美銀非公開客戶晚宴是否違反靜默期與道德規範展開審查；鮑曼聲明恪守規定、未透漏貨幣政策機密（金融時報 https://www.ft.com/ ，2026-11-23 台北）。
@@ -558,68 +558,71 @@
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 23 時對應檔案（排序編號除以 24 餘數為 23 之檔案清單，本批稽核重點檔案涵蓋：`tools/site_tw_chips.py`、`tools/site_twdesk.py`、`tools/site_tw_nsf.py`、`wsb/data/tw_chips.py`、`wsb/data/tw_macro2.py` 等）：
+本批稽核依照規範審查專案中台北時間 00 時對應檔案（排序編號除以 24 餘數為 0 之檔案清單，本批稽核重點檔案涵蓋：`tools/site_events.py`、`tools/site_tw_chips.py`、`functions/api/gemini_ask.js` 等）：
 
-### CODE-1｜tools/site_tw_chips.py：第 40 行外資期貨淨未平倉多空反轉時之方向語意倒錯邏輯漏洞
-- 檔案路徑與行號：[tools/site_tw_chips.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_chips.py#L39-L41)
+### CODE-1｜tools/site_events.py：第 324-334 行 earn_events() 與 upcoming() 傳入之基準日期與時區口徑不一致導致財報前瞻預測（preview）無法精準匹配
+- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L324-L334)
 - 程式碼片段：
   ```python
-  if f is not None:
-      lead.append(f'外資台指期未平倉淨{"空" if f < 0 else "多"}單 {abs(f):,.0f} 口' + (f'，比前一次{"增加" if abs(f) > abs(fp) else "減少"} {abs(abs(f) - abs(fp)):,.0f} 口' if fp is not None else ""))
+  for r in earn_events(eng, now, floor=1e11, days=days):
+      tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
+      out.append({"kind": "earnings", "sym": r["sym"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
+                  "mcap_t": round(r["mcap"] / 1e12, 2), "eps_f": r.get("eps_f"), "implied": r.get("mv")})
+  ...
+  calls = {(x.get("sym"), x.get("date")): x.get("call") for x in json.loads(pv.read_text(encoding="utf-8")).get("items") or []}
+  for x in out:
+      x["preview"] = calls.get((x["sym"], x["et"][:10]))
   ```
 - 為什麼有問題：
-  當外資期貨部位跨越零軸（由多翻空或由空翻多）時，單純以絕對值 `abs(f) > abs(fp)` 比較會產生完全顛倒且反常識的文意。
-  舉例：前一次 `fp = -10,000`（淨空單 10,000 口），最新一次 `f = +5,000`（淨多單 5,000 口），實質上是大幅做多增加 15,000 口；但因為 `abs(5,000) < abs(-10,000)`，程式將會輸出：
-  `外資台指期未平倉淨多單 5,000 口，比前一次減少 5,000 口`！
-  這會讓讀者誤以為多單在「減少」，但實質上是空翻多大回補。同理，第 51 行寫死「個別帳戶低於 130% 會被追繳」亦與 11/24 起 120% 官方新制矛盾。
+  在第 322 行 `now = now or datetime.now(TPE)` 預設採用台北時間，而在調用 `earn_events(eng, now, floor=1e11, days=days)` 時，第 106 行將其轉為紐約時間 `et_now = now.astimezone(ET)`。
+  然而在 `earn_preview.json` 中，分析師或爬蟲維護的 `date` 欄位口徑往往依賴資料源本身的時區定義（部分紀錄填寫美東日、部分填寫發布當日的台北日期）。若 `earn_preview.json` 記錄的日期為台北日期（跨日情境，如美東 11/24 盤後發布對應台北 11/25 清晨），第 334 行以 `x["et"][:10]`（美東日期 "2026-11-24"）進行查表鍵值匹配將直接失配回傳 `None`，使財報前瞻說明字串遺失。
 - 建議怎麼改：
-  應以代數符號差值（`f - fp`）判斷偏多或偏空調整，或在符號相反時明確標註「由空翻多」或「由多翻空」：
+  應支援雙重時區鍵值容錯匹配，同時比對美東日期與台北日期：
   ```python
-  if fp is not None:
-      diff = f - fp
-      if (f < 0 and fp < 0) or (f >= 0 and fp >= 0):
-          adj = "增加" if abs(f) > abs(fp) else "減少"
-          lead.append(f'外資台指期未平倉淨{"空" if f < 0 else "多"}單 {abs(f):,.0f} 口，比前一次{adj} {abs(abs(f) - abs(fp)):,.0f} 口')
-      else:
-          lead.append(f'外資台指期未平倉由{"空" if fp < 0 else "多"}翻{"空" if f < 0 else "多"}，淨{"空" if f < 0 else "多"}單 {abs(f):,.0f} 口（淨變動 {diff:+,.0f} 口）')
+  for x in out:
+      x["preview"] = calls.get((x["sym"], x["et"][:10])) or calls.get((x["sym"], x["tpe"][:10]))
   ```
 - 確定程度：高。
 
-### CODE-2｜tools/site_twdesk.py：第 243 行 rev_lead() 未使用現成 _p0() 檢查 None，空資料時拋出 TypeError 崩潰
-- 檔案路徑與行號：[tools/site_twdesk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_twdesk.py#L225-L245)
+### CODE-2｜tools/site_tw_chips.py：第 188 行財報達成情形卡片（sec_tw_forecast）年季解析直接截字串 q[:3] 存在跨世紀與民國/西元口徑錯位隱患
+- 檔案路徑與行號：[tools/site_tw_chips.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_chips.py#L186-L190)
 - 程式碼片段：
   ```python
-  def _p0(x: Optional[float]) -> str:
-      return "—" if x is None else f"{x:.0f}%"
-
-  def rev_lead(v: Dict) -> str:
-      ...
-      s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {v['yoy_pos']:.0f}% 的公司比去年同月成長"
+  q = rows[0]["q"]
+  lead = (f'{q[:3]} 年第 {q[-1]} 季有公開財測的 {len(rows)} 家上市公司，單季獲利 {n["above"]} 家高於自己財測的上緣、'
+          f'{n["in"]} 家在區間內、{n["below"]} 家低於下緣' + (f'，{close} 家貼著邊界（近似值，分不出來）' if close else ""))
   ```
 - 為什麼有問題：
-  開發者在第 225 行已精心撰寫了專門防禦 None 格式化的輔助函式 `_p0(x)`，但在第 243 行組合一句話看懂時，卻未調用 `_p0(v.get('yoy_pos'))`，而是直接裸寫 `{v['yoy_pos']:.0f}%`。
-  當 `trends` 列表為空（在 `wsb/data/tw_desk.py` 第 630 行定義為 `yoy_pos = None`）時，Python 執行 `f"{None:.0f}%"` 會立即拋出未捕獲的 `TypeError: unsupported format string passed to NoneType.__format__`，導致整個月營收卡片（`sec_tw_revheat`）在建置時崩潰。此外若 `v['latest']` 為空，第 234 行 `_ym(v['latest'])` 亦會因字串切片轉 int 失敗而拋出異常。
+  第 188 行獲取字串 `q`（如 `"115Q3"`）時，寫死硬性切片 `q[:3]` 作為年份，`q[-1]` 作為季別。
+  但在本專案其他模組（如第 136 行 `sec_tw_quarter`）中，皆統一採用標準字串分割 `y, q_num = q.split("Q")`。
+  一旦資料來源在未來改制為西元年格式（如 `"2026Q3"`）或歷史回測出現二位數民國年（如 `"99Q4"`），`q[:3]` 將產生嚴重錯誤（`"2026Q3"` 截成 `"202 年第 3 季"`；`"99Q4"` 截成 `"99Q 年第 4 季"`）。
+  此外，第 51 行寫死「個別帳戶低於 130% 會被追繳」亦未跟隨 11/24 證交所 120% 官方新制更新。
 - 建議怎麼改：
-  調用現成的 `_p0()` 並對 `v.get('latest')` 加上保護：
+  採用 `split("Q")` 進行結構化拆解：
   ```python
-  ym_str = _ym(v['latest']) if v.get('latest') else "最新月份"
-  s = f"一句話看懂：{ym_str}營收，台灣 50＋中型 100 有 {_p0(v.get('yoy_pos'))} 的公司比去年同月成長"
+  y, q_num = q.split("Q")
+  lead = (f'{y} 年第 {q_num} 季有公開財測的 {len(rows)} 家上市公司，單季獲利 {n["above"]} 家高於自己財測的上緣...')
   ```
 - 確定程度：高。
 
-### CODE-3｜tools/site_tw_nsf.py 與 wsb/data/tw_nsf.py：資料源 U_FSC 僅收錄金管會新聞稿，漏接證券交易所（TWSE）市場穩定公告
-- 檔案路徑與行號：[tools/site_tw_nsf.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_nsf.py#L72-L76) 與 [wsb/data/tw_nsf.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_nsf.py#L83-L97)
+### CODE-3｜functions/api/gemini_ask.js：第 23 行正規表示式 replace(/[^A-Za-z0-9]/g, "") 處理特殊股票代號（如 BRK.B 或含符號代號）時產生非預期字串比對漏洞
+- 檔案路徑與行號：[functions/api/gemini_ask.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/gemini_ask.js#L21-L24)
 - 程式碼片段：
-  ```python
-  # wsb/data/tw_nsf.py
-  FSC_BASE = "https://www.fsc.gov.tw/ch/"
-  U_FSC = FSC_BASE + "home.jsp?id=96&parentpath=0,2"
+  ```javascript
+  const keys = [r.s, r.zh, r.en.split(/[\s,.(]/)[0]].filter((k) => k && k.length >= 2);
+  r.heads = news.filter((n) => keys.some((k) => /^[ -~]+$/.test(k)
+    ? new RegExp("(^|[^A-Za-z])" + k.replace(/[^A-Za-z0-9]/g, "") + "(?![A-Za-z])", "i").test(n.t) : n.t.includes(k))).slice(0, 3);
   ```
 - 為什麼有問題：
-  `tw_nsf.py` 設計為「政府穩市場：金管會措施與國安基金」卡片之後端資料抓取器，其只向金管會官方網站（`fsc.gov.tw`）抓取新聞稿。然而，在實務上，許多對市場最具直接法律效力的重大穩定措施是由「臺灣證券交易所（TWSE）」本身直接以證交所名義公告（如 11/23 調降信用交易擔保維持率至 120% 暨大赦條款，公告於 `twse.com.tw/zh/page/news/`）。
-  這導致 `tw_nsf` 完全漏收了證交所自身發布的重大穩市場措施，卡片上只顯示 11/21 金管會措施，無法反映 11/23 證交所救市大赦新政。
+  在處理如波克夏海瑟威（`BRK.B` 或 `BRK-B`）等代號時，`k.replace(/[^A-Za-z0-9]/g, "")` 會將其直接消除點號與連字號轉變為 `"BRKB"`。
+  然而主流新聞媒體（如路透、彭博、CNBC）在新聞標題中通常寫為 `"Berkshire Hathaway (BRK.B)"` 或 `"BRK-B"`。經過該正則處理後，`RegExp` 會比對 `"BRKB"`，導致含有正確標點之原新聞標題無法被匹配，使本站出現「本站沒有找到對得上的新聞」之假性缺漏。
 - 建議怎麼改：
-  在 `tw_nsf.py` 增加抓取證交所公告端點（例如證交所 OpenAPI `announcement/notice` 或新聞公報頁），將兩者合併排序顯示。
+  應對英文字元進行標準正則跳脫（`escapeRegex`），而非暴力移除符號：
+  ```javascript
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  r.heads = news.filter((n) => keys.some((k) => /^[ -~]+$/.test(k)
+    ? new RegExp("(^|[^A-Za-z0-9])" + esc(k) + "(?![A-Za-z0-9])", "i").test(n.t) : n.t.includes(k))).slice(0, 3);
+  ```
 - 確定程度：高。
 
 ---
@@ -689,8 +692,8 @@
 其他今天的大事：
 
 - 資安史上最大併購案誕生：CrowdStrike 宣布以 439 億美元全股票收購 Zscaler，每股 ZS 換發 1.135 股 CRWD（溢價 34%），合併 ARR 超越 100 億美元（https://ir.crowdstrike.com/news-releases/2026-11-23-crowdstrike-to-acquire-zscaler ）。
-- 亞德諾半導體（ADI）公布強勁 Q4 財報：Q4 營收 43.7 億美元年增 42%，調整後 EPS 4.06 美元大超預期，全財年營收創 151.8 億美元紀錄（https://investor.analog.com/financial-results/ ）。
-- 美國商務部 BIS 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）：聯邦公報發布最終規則，對新加坡與馬來西亞轉運實體祭出推定駁回禁令（https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。
+- 亞德諾半導體（ADI）公布強勁 Q4 財報：Q4 營收 43.7 億美元年增 42%，調整後 EPS 4.06 美元大超預期，全財年營收創 151.8 億美元紀錄，自由現金流達 55 億美元（https://investor.analog.com/financial-results/ ）。
+- 美國商務部 BIS 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）：聯邦公報發布最終規則，對新加坡與馬來西亞轉運實體祭出推定駁回禁令；阿里巴巴發表抗議稱未曾轉運受限晶片（https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。
 - 南韓外貿突破歷史里程碑：南韓關稅廳公告今年累計出口額突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301 ）。
 - 國際原油 WTI 價格回跌至 80 美元下方：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，WTI 跌至 79.57 美元（https://tradingeconomics.com/commodity/crude-oil ）。
 - 黃金價格大漲 3.4% 突破 3,650 美元後於 3,625～3,630 美元高檔整固：科技股反彈解除機構補保證金之強制流動性變現賣壓，技術性空頭回補（https://www.kitco.com/news/article/2026-11-23/gold-surges-back-above-3650-tech-stocks-rebound ）。
