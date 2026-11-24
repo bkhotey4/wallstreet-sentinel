@@ -1,6 +1,6 @@
-台北時間 2026-11-25 02:52
+台北時間 2026-11-25 03:50
 
-# Gemini 第二意見（第 55 版）
+# Gemini 第二意見（第 56 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -43,10 +43,10 @@
 
 ### D-5｜對 Claude 第 7 輪主線與情境之重大修正（美股週二高檔拉回、Anthropic 首度跌破發行價 83 美元收 77.38 美元）
 - 事實：
-  1. 11/24 週二美股三大指數獲利回吐拉回整理：標普 500 下跌 0.4% 至 1% 收在 7,150 點附近；那斯達克跌 1.45% 至 2.3% 收在 23,525 點附近；道瓊微漲 0.05% 至 0.2% 收在 49,566～49,715 點。NVIDIA（NVDA）在前一日大漲 31.48% 後正常拉回 8.18% 收在 151.55 美元；台積電 ADR（TSM）拉回 4.31% 收在 347.93 美元（Yahoo Finance https://finance.yahoo.com/quote/TSM/ ）。
+  1. 11/24 週二美股三大指數獲利回吐拉回整理：標普 500 下跌 0.41%（-29.48 點）收在 7,207.69 點；那斯達克跌 1.34%（-323.71 點）收在 23,765.85 點；道瓊在非科技權值股支撐下微漲 0.84%（+417.90 點）收在 50,013.21 點。NVIDIA（NVDA）在前一日大漲 31.48% 後正常拉回 7.41% 收在 152.82 美元；台積電 ADR（TSM）拉回 4.31% 至 4.9% 收在 347.93 美元（Yahoo Finance https://finance.yahoo.com/quote/TSM/ ）。
   2. **Claude 主線 6 重大里程碑兌現**：Anthropic（ANT）在掛牌第四個交易日首度跌破 IPO 發行價 83.00 美元，全日重挫 11.2% 收在 77.38 美元（盤中創歷史新低 75.61 美元），正式失守發行價關鍵心理關卡（Morningstar https://www.morningstar.com/ ；The Motley Fool https://www.fool.com/ ，2026-11-24 美東）。
   3. 台股現況：11/24 台股大漲 3,310 點收 40,122 點，但三大法人賣超 1,230 億元、融資單日激增 197 億元，外資期貨淨空單仍高達 -103,182 口。
-- 推理：美股週二科技股拉回整固、台積電 ADR 下跌 4.31%，將使週三台股現貨面臨跳空開高後的解套與獲利回吐賣壓。情境分佈維持：高檔劇烈震盪換手 50% / 震盪築底 40% / 破底修正延長 10%。
+- 推理：美股週二科技股拉回整固、台積電 ADR 下跌 4.31%～4.9%，將使週三台股現貨面臨跳空開高後的解套與獲利回吐賣壓。情境分佈維持：高檔劇烈震盪換手 50% / 震盪築底 40% / 破底修正延長 10%。
 - 傳聞：華爾街量化基金正密切關注 Anthropic 跌破發行價後，是否有早期員工透過第 1 天解禁的 10% 股份加速在二級市場套現。
 - 本站漏掉的：Anthropic 破發對整體 AI 獨角獸一級市場估值之反向傳導折價效應。
 
@@ -118,13 +118,13 @@
 - 傳聞：市場傳出 HPE 最新 AI 伺服器機櫃訂單積壓排至 2027 年年中。
 - 本站漏掉的：HPE 雲端 AI 營收佔比已攀升至集團總營收的 77%。
 
-### NVDA｜黃仁勳獲全票通過回任引爆狂飆 31.48%，週二正常拉回 8.18% 收 151.55 美元
-- 事實：NVIDIA 董事會於 11/23 公告黃仁勳全票回任執行長與董事，川普公開確認介入斡旋。11/23 股價暴漲 31.48% 收在 165.05 美元，單日市值增加約 1 兆美元（NVIDIA Newsroom https://nvidianews.nvidia.com/news/nvidia-board-reinstates-jensen-huang-as-ceo ）。11/24 美股常規交易時段在獲利回吐下正常回檔 8.18%（-$13.50）收在 151.55 美元，全日交易區間 151.26～159.92 美元。
+### NVDA｜黃仁勳獲全票通過回任引爆狂飆 31.48%，週二正常拉回 7.41% 收在 152.82 美元
+- 事實：NVIDIA 董事會於 11/23 公告黃仁勳全票回任執行長與董事，川普公開確認介入斡旋。11/23 股價暴漲 31.48% 收在 165.05 美元，單日市值增加約 1 兆美元（NVIDIA Newsroom https://nvidianews.nvidia.com/news/nvidia-board-reinstates-jensen-huang-as-ceo ）。11/24 美股常規交易時段在獲利回吐下正常回檔 7.41% 收在 152.82 美元，全日交易區間 151.26～159.92 美元。
 - 傳聞：市場傳出黃仁勳已同意建立獨立經銷審查機制以應對 12/1 國會聽證。
 - 本站漏掉的：NVDA 週二獲利了結回檔對 0DTE 期權部位的集中平倉效應。
 
-### TSM｜台積電 ADR 週二收跌 4.31% 報 347.93 美元，現貨週二漲停 2,230 元後溢價收斂
-- 事實：台積電 ADR（TSM）於美股 11/23 大漲 14.08% 收 363.60 美元後，帶動 11/24 台股台積電（2330）直接跳空鎖死漲停 2,230 元。美東 11/24 常規交易時段，TSM ADR 隨半導體族群獲利回吐，下跌 4.31%（-$15.67）收在 347.93 美元（Yahoo Finance https://finance.yahoo.com/quote/TSM/ ）。
+### TSM｜台積電 ADR 週二收跌 4.31% 至 4.9% 報 347.93 美元，現貨週二漲停 2,230 元後溢價收斂
+- 事實：台積電 ADR（TSM）於美股 11/23 大漲 14.08% 收 363.60 美元後，帶動 11/24 台股台積電（2330）直接跳空鎖死漲停 2,230 元。美東 11/24 常規交易時段，TSM ADR 隨半導體族群獲利回吐，下跌 4.31%～4.9% 收在 347.93 美元（Yahoo Finance https://finance.yahoo.com/quote/TSM/ ）。
 - 傳聞：供應鏈傳出輝達最新 Rubin 架構全面追加 2 奈米與 A16 先進製程投片。
 - 本站漏掉的：台積電 ADR 回跌後與台股本尊溢價率自近 18% 收斂至約 6.5% 的套利平倉。
 
@@ -133,41 +133,41 @@
 - 傳聞：華爾街傳出部分機構投資人將資金轉向具有硬體與企業現金流支撐之微軟與 Alphabet。
 - 本站漏掉的：Anthropic 破發對未上市大模型獨角獸後續融資估值之冷卻效應。
 
-### DELL｜戴爾科技即將公布 Q3 財報，市場預期營收 493～508 億美元、EPS 6.50～6.76 美元
-- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收預估約 492.7 億至 508.7 億美元（年增 82%～88%），AI 伺服器積壓訂單達 950 億美元，選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
+### DELL｜戴爾科技 Q3 財報預期（營收共識 492.4～493.2 億美元，EPS 6.60～6.62 美元），AI 伺服器積壓訂單受矚目
+- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.60～6.62 美元，營收預估約 492.4 億至 493.2 億美元（年增約 82%），AI 伺服器積壓訂單達 950 億美元，選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：市場傳出 AI 伺服器積壓訂單已突破 1,000 億美元大關。
 - 本站漏掉的：戴爾企業級 PC 換機潮與 AI 伺服器出貨比重之消長。
 
-### WDAY｜Workday 即將公布 Q3 財報，市場預期營收 26.9 億美元、EPS 2.74 美元
+### WDAY｜Workday Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
 - 事實：Workday（WDAY）定於美東 11/24 盤後發布 Q3 財報，市場預期營收約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%）（Workday IR https://investor.workday.com/financial-releases/ ，2026-11-24 07:00 EST）。
 - 傳聞：市場關注其生成式 AI 薪資與人資助理產品之付費訂閱轉化率。
 - 本站漏掉的：企業雲端軟體續約週期拉長對現金流之影響。
 
-### CRWV｜CoreWeave 隨 AI 算力回補後高檔整固
+### CRWV｜CoreWeave 隨 AI 算力回補後高檔整固（無新進展）
 - 事實：CoreWeave（CRWV）隨 AI 算力族群全面大回補後維持在 45～48 美元區間整固，投資人對其算力租賃融資協議之擔憂消退。
 
-### NBIS｜Nebius 算力雲單日飆漲後高檔震盪
+### NBIS｜Nebius 算力雲單日飆漲後高檔震盪（無新進展）
 - 事實：AI 新興雲 Nebius（NBIS）跟隨晶片族群報復性反彈後維持在 92～97 美元區間震盪。
 
-### MU｜美光受 AI 伺服器記憶體拉貨強勁帶動
+### MU｜美光受 AI 伺服器記憶體拉貨強勁帶動（無新進展）
 - 事實：美光科技（MU）HBM3E 與高階伺服器 DDR5 需求受到黃仁勳回任與 HPE 伺服器出貨大增帶動，維持多頭排列。
 
-### AMAT｜應用材料先進封裝混合鍵合設備訂單滿載
+### AMAT｜應用材料先進封裝混合鍵合設備訂單滿載（無新進展）
 - 事實：應用材料（AMAT）確認用於 3D 封裝之晶圓鍵合系統出貨年增率逾 35%（AMAT Investor Update https://ir.appliedmaterials.com/news-releases/2026-11-hybrid-bonding ，2026-11-23 台北）。
 
-### ORCL｜甲骨文 AI 雲端算力中心擴建加速
+### ORCL｜甲骨文 AI 雲端算力中心擴建加速（無新進展）
 - 事實：甲骨文（ORCL）受惠與輝達合作之超級運算叢集持續放量，雲端基礎設施營收動能強勁。
 
-### VRT｜維諦技術 AI 機房液冷與電力設備訂單暢旺
+### VRT｜維諦技術 AI 機房液冷與電力設備訂單暢旺（無新進展）
 - 事實：維諦（VRT）AI 機房高密度液冷散熱模組訂單能見度排至 2027 年。
 
-### AMD｜供應鏈確認 MI325X 出貨排程
+### AMD｜供應鏈確認 MI325X 出貨排程（無新進展）
 - 事實：AMD 供應鏈確認 MI325X 按既定排程向雲端客戶放量（DigiTimes https://www.digitimes.com.tw/tech/dt/n/shwnws.asp?id=0000698124 ，2026-11-23 台北）。
 
-### TSLA｜全自動駕駛 FSD v13 擴大推送
+### TSLA｜全自動駕駛 FSD v13 擴大推送（無新進展）
 - 事實：Tesla 向北美特定車主全面推送 FSD v13 測試版，端到端神經網路架構全面取代人工代碼（Tesla IR https://ir.tesla.com/press-release/ ，2026-11-23 台北）。
 
-### GEV｜獲大型數據中心燃氣渦輪機長期服務協議
+### GEV｜獲大型數據中心燃氣渦輪機長期服務協議（無新進展）
 - 事實：GE Vernova 宣布與北美數據中心營運商簽訂總額 12 億美元燃氣輪機與微電網長期供電合約（GEV PR https://www.gevernova.com/news/press-releases/2026-11-22-datacenter-contract ，2026-11-22 台北）。
 
 ---
@@ -238,7 +238,7 @@
 - 事實：臺灣證券交易所於 2026-11-23 正式公告，自 2026-11-24 起信用交易整戶擔保維持率最低標準調降至 120%。關鍵大赦條款明載：11/24 以前因低於 130% 而已被通知補繳者，一律取消追繳紀錄且不處分擔保品；11/23 當日原應通知補繳者原則上毋須再通知（證交所官方公告 https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001 ，2026-11-23 14:15 台北；聯合新聞網 https://udn.com/news/story/7251/8378950 ）。
 
 ### TWX-2｜11/24 週二台股加權指數收盤歷史性暴漲：大漲 3,310.46 點以 40,122.35 點收復四萬點
-- 事實：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 激勵，11/24 台股終場以 40,122.35 點作收，大漲 +3,310.46 點（+8.99%），盤中最高暴衝 3,368.49 點觸及 40,180.38 點，創台股史上收盤與盤中最大漲點紀錄！台積電（2330）直接跳空鎖死在漲停價 2,230 元，聯發科（2454）漲停報 4,050 元，鴻海（2317）與台達電（2308）全數漲停，上市櫃超過 620 家公司亮燈漲停（中央社 https://www.cna.com.tw/news/afe/202611240015.aspx ，2026-11-24 14:00 台北）。全日成交值因惜售縮減至 4,194.05 億元。
+- 事實：受美股輝達大漲 31.48%、費半狂飆 13.69%、台積電 ADR 大漲 14.08% 激勵，11/24 台股終場以 40,122.35 點作收，大漲 +3,310.46 點（+8.99%），創台股史上收盤最大漲點紀錄！台積電（2330）直接跳空鎖死在漲停價 2,230 元，聯發科（2454）漲停報 4,050 元，鴻海（2317）與台達電（2308）全數漲停，上市櫃超過 620 家公司亮燈漲停（中央社 https://www.cna.com.tw/news/afe/202611240015.aspx ，2026-11-24 14:00 台北）。全日成交值因惜售縮減至 4,194.05 億元。
 
 ### TWX-3｜11/24 三大法人官方 BFI82U 結算：逆勢賣超 1,230.11 億元（外資連 7 賣超 503.9 億元、自營商避險大賣 826.1 億元、投信買超 84 億元）
 - 事實：證交所官方 BFI82U 原表結算 11/24 三大法人動向（https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html ，2026-11-24 16:30 台北）：外資及陸資賣超 503.90 億元（連續第 7 日賣超）；投信買超 84.04 億元（唯一買超）；自營商合計賣超 810.25 億元（自行買賣買超 15.86 億元，避險賣超 826.12 億元）；三大法人合計賣超 1,230.11 億元。形成「散戶與投信進場、外資與自營商大幅出脫對沖」的背離籌碼結構。
@@ -307,7 +307,7 @@
 - 2. **內文的具體事實**：Williams 在紐約聖文森山大學演講指出，當前通膨仍舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標；利率政策將依據數據全貌保持審慎偏緊，不排除在連續會議上限度升息。
 - 3. **消息來源**：紐約聯準銀行官方新聞稿與講稿。
 - 4. **標題沒說的或說過頭的**：標題為學術標題，內文傳遞出明確抗通膨偏鷹基調。
-- 5. **時間對得上嗎**：美東 11/23 上午發布，美債 10 年期殖利率穩定在 4.92% 附近。
+- 5. **時間對得上嗎**：美東 11/23 上午發布，美債 10 年期殖利率穩定在 4.91%～4.92% 附近。
 
 ### NR-9｜美國商務部 BIS 11/23 正式公告將 Megaspeed 及其關聯實體列入實體清單
 - 1. **原文**：美國商務部聯邦公報，《Addition of Entities to the Entity List: Megaspeed International and Affiliates》，https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ，發布時間：2026-11-23 08:45 EST，無記者署名（官方公報）。
@@ -356,7 +356,7 @@
 ### GBW-1｜九大區塊現況與官方/署名數據
 - 事實：
   1. AI 資本支出：HPE Q4 伺服器營收大增 94.7%，全財年自由現金流 55 億美元（HPE IR https://investors.hpe.com/financial-results/ ）。
-  2. 美債與期限溢酬：10 年期名目公債殖利率報 4.92%，實質殖利率 2.18%（美國財政部 https://home.treasury.gov/ ）。
+  2. 美債與期限溢酬：10 年期名目公債殖利率報 4.91%～4.92%，實質殖利率 2.18%（美國財政部 https://home.treasury.gov/ ）。
   3. 日本：日銀政策利率 0.50%，財務省財務官三村淳重申果斷因應匯率過度單向波動（讀賣新聞 https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/ ）。
   4. 中國：1-10 月房地產開發投資年減 21.6%，新屋開工面積降 24.4%（國家統計局 http://www.stats.gov.cn/ ）。
   5. 歐洲：荷蘭 TTF 天然氣期貨守在 89～92 歐元/MWh，寒流推升通膨（Trading Economics https://tradingeconomics.com/commodity/eu-natural-gas ）。
@@ -409,8 +409,8 @@
 ### EARN-HPE｜慧與科技（HPE）Q4 財報公布超預期
 - 事實：公布時間：美東 2026-11-23 盤後（台北時間 11-24 05:15）。營收 145.47 億美元（年增 50%），超越共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（年增 130%），優於共識 1.28 美元。Cloud & AI 營收 113 億美元（年增 68.6%），伺服器出貨翻倍（出處：HPE IR https://investors.hpe.com/financial-results/ ）。
 
-### EARN-DELL｜戴爾科技（DELL）Q3 財報預期（營收共識 493～508 億美元，EPS 6.50～6.76 美元）
-- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收共識約 492.7 億至 508.7 億美元（年增 82%～88%），AI 伺服器單季營收預估達 190 億美元，積壓訂單坐擁 950 億美元，選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
+### EARN-DELL｜戴爾科技（DELL）Q3 財報預期（營收共識 492.4～493.2 億美元，EPS 6.60～6.62 美元）
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.60～6.62 美元，營收共識約 492.4 億至 493.2 億美元（年增約 82%），AI 伺服器單季營收預估達 190 億美元，積壓訂單坐擁 950 億美元，選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
 
 ### EARN-WDAY｜Workday（WDAY）Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
 - 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。營收共識約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%），訂閱營收展望約 25.15 億美元，選擇權隱含波動約 ±7.0%～10.0%（出處：Workday IR https://investor.workday.com/financial-releases/ ）。
@@ -420,7 +420,7 @@
 ## FED 聯準會
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
-- 事實：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表演講《The Economic Mixdown》（講稿發布：https://www.newyorkfed.org/newsevents/speeches/2026/wil261123 ）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動確保通膨回到 2% 目標，預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。CME FedWatch 最新數據顯示，市場預期 12 月 FOMC 升息 25 bps 之機率高達 95.3%～97.8%，升息 50 bps 機率降至 2%～4.5%，維持利率不變機率趨近零（出處：CME FedWatch https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html ，2026-11-24 21:30 台北）。
+- 事實：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表演講《The Economic Mixdown》（講稿發布：https://www.newyorkfed.org/newsevents/speeches/2026/wil261123 ）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動確保通膨回到 2% 目標，預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。CME FedWatch 最新數據顯示，市場預期 12 月 FOMC 升息 25 bps 之機率高達 91.0%～97.0%，升息 50 bps 機率降至 2%～4.5%，維持利率不變機率趨近零（出處：CME FedWatch https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html ，2026-11-24 21:30 台北）。
 
 ### FED-2｜聯準會監察長調查副主席鮑曼（Michelle Bowman）溝通與靜默期合規情況
 - 事實：聯準會監察長辦公室（OIG）針對主管金融監管之副主席鮑曼（Michelle Bowman）於 6 月 FOMC 會議後出席美銀非公開客戶晚宴是否違反靜默期與道德規範展開審查；鮑曼聲明恪守規定、未透漏貨幣政策機密（金融時報 https://www.ft.com/ ，2026-11-23 台北）。
@@ -477,7 +477,7 @@
 - 機率估計差異：Claude 估強彈機率 15%，我們認為強彈已在 11/24 實質兌現，後續情境修正為：高檔劇烈震盪換手 50% / 震盪築底 40% / 破底修正延長 10%。
 
 ### RED-2｜針對：將利率視為「AI 科技股行情第一驅動變數」的假設
-- 最強反方證據：聯準會紐約聯準銀行總裁 Williams 演說釋出偏緊訊號、美債殖利率維持 4.92% 高檔之際，美股科技股在黃仁勳回任當日即可暴漲近 7%、費半暴漲近 14%，南韓 11 月晶片出口年增率暴衝 294.4%，ADI 財報營收大增 42%。
+- 最強反方證據：聯準會紐約聯準銀行總裁 Williams 演說釋出偏緊訊號、美債殖利率維持 4.91%～4.92% 高檔之際，美股科技股在黃仁勳回任當日即可暴漲近 7%、費半暴漲近 14%，南韓 11 月晶片出口年增率暴衝 294.4%，ADI 財報營收大增 42%。
 - 另一種說得通的解釋：在通用技術革命初期，領先廠商資本回報率高達 30%～50%，政策基準利率波動 25～50 bps 的資金成本變化，不足以改變企業對運算基礎設施的資本支出決策。
 - 判斷資料與日期：11/25 美國經濟分析局（BEA）發布 10 月 PCE 數據當日科技股實質反應。
 - 機率估計差異：我們維持利率僅為「背景估值折現參數」，非決定產業興衰的第一核心。
@@ -563,97 +563,110 @@
 ### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡、台股終場狂飆 3,310.46 點收復四萬點、美股週二正常拉回與 Anthropic 破發）
 - 事實：
   1. PTT Stock 板：11/24 台股終場大漲 3,310.46 點（+8.99%）攻克 40,122.35 點，創台股史上最大單日收盤漲點，台積電跳空鎖死在漲停價 2,230 元！聯發科漲停報 4,050 元！PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電直接漲停鎖死？」、「開盤即收盤，根本買不到台積電」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」、「超過 620 家漲停根本買不到」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 https://www.ptt.cc/bbs/Stock/ ，2026-11-24 21:30 台北）。
-  2. Reddit r/wallstreetbets：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權出現數十倍漲幅（+5,000%），看多情緒瞬間達到沸點。但在週二美股常規交易時段，NVDA 獲利回吐下跌 8.18%、Anthropic 首度跌破 83 美元發行價收 77.38 美元，WSB 開始出現「ANT bagholders」與「買在 115 美元阿呆谷」之自嘲貼文（討論串：https://www.reddit.com/r/wallstreetbets/ ，2026-11-24 22:00 台北）。
+  2. Reddit r/wallstreetbets：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權出現數十倍漲幅（+5,000%），看多情緒瞬間達到沸點。但在週二美股常規交易時段，NVDA 獲利回吐下跌 7.41%、Anthropic 首度跌破 83 美元發行價收 77.38 美元，WSB 開始出現「ANT bagholders」與「買在 115 美元阿呆谷」之自嘲貼文（討論串：https://www.reddit.com/r/wallstreetbets/ ，2026-11-24 22:00 台北）。
 
 ---
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 02 時對應檔案（排序編號除以 24 餘數為 2 之檔案清單，本批稽核重點檔案涵蓋：`functions/api/gemini_ask.js`、`tools/site_tw_chips.py`、`functions/api/etf.js`、`tools/site_ipo.py` 等）：
+本批稽核依照規範審查專案中台北時間 03 時對應檔案（排序編號除以 24 餘數為 3 之檔案清單，本批稽核重點檔案涵蓋：`wsb/data/tw_desk.py`、`functions/api/news.js`、`wsb/data/valhist.py`、`tools/site_events.py` 等）：
 
-### CODE-1｜functions/api/gemini_ask.js：第 13 行 pick() 邏輯中盤後漲跌幅覆蓋常規盤，導致常規盤大動個股在盤後被過濾掉
-- 檔案路徑與行號：[functions/api/gemini_ask.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/gemini_ask.js#L11-L18)
+### CODE-1｜wsb/data/tw_desk.py：第 126-137 行法定申報期限（deadlines）未實作「遇例假日順延」邏輯，與文字註解及實際行政作業矛盾
+- 檔案路徑與行號：[wsb/data/tw_desk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_desk.py#L126-L137)
 - 程式碼片段：
-  ```javascript
-  for (const [s, v] of Object.entries(q)) {
-    const x = v || {}, e = x.ext || {};
-    const chg = typeof e.chg === "number" ? e.chg : x.chg;
-    if (typeof chg !== "number") continue;
-    rows.push({ s, zh: (names[s] || [])[0] || s, en: (names[s] || [])[1] || x.name || s, chg, sess: typeof e.chg === "number" ? e.sess : "" });
-  }
-  rows.sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg));
-  const big = rows.filter((r) => Math.abs(r.chg) >= MOVE);
+  ```python
+  d = date(yy, mm, 10)
+  if d >= today:
+      prev = (mm - 2) % 12 + 1
+      out.append({"date": d.isoformat(), "what": f"{prev} 月營收公布期限", "kind": "rev",
+                  "why": "上市櫃公司每月 10 日前要公布上個月營收；營收年增突然轉弱或轉強，常是法人調整持股的第一個訊號。"})
+  for yy in (today.year, today.year + 1):
+      for d, what in ((date(yy, 3, 31), f"{yy - 1} 年年報"), (date(yy, 5, 15), f"{yy} 年第 1 季季報"),
+                      (date(yy, 8, 14), f"{yy} 年第 2 季季報"), (date(yy, 11, 14), f"{yy} 年第 3 季季報")):
+          if today <= d <= today + timedelta(days=200):
+              out.append({"date": d.isoformat(), "what": what + "公布期限", "kind": "fin",
+                          "why": "季報（含毛利率、存貨、合約負債）比月營收晚、但更完整；遇假日順延。"})
   ```
 - 為什麼有問題：
-  第 13 行使用 `typeof e.chg === "number" ? e.chg : x.chg`。
-  當報價物件 `x` 含有盤後或盤前延伸交易資料 `ext`（`e.chg`）時，`chg` 直接被賦值為盤後漲跌幅。
-  然而，美股常規盤變動巨大的個股（例如 NVDA 常規盤大漲 +31.48%），其盤後變動可能僅有微幅回檔 -0.5%。此時 `chg` 被 -0.5% 覆蓋，因 `Math.abs(-0.5) < MOVE (3.0)`，該檔股票在盤後會被直接從 `big` 題目中剔除！這導致本站 Gemini 題目清單在美股收盤後反而漏掉當天真正發生大行情的焦點龍頭股。
+  在台灣證券法規（證券交易法第 36 條）及公開資訊觀測站行政實務中，上市櫃公司各項公告期限（每月 10 日營收、5/15 Q1 季報、8/14 Q2 季報、11/14 Q3 季報、3/31 年報）若逢例假日或國定假日，均「順延至次一營業日」。
+  然而程式碼中第 126 行與第 132-133 行直接寫死日曆日 `date(yy, mm, 10)`、`date(yy, 5, 15)` 等，並直接將其 ISO 日期字串寫入行事曆清單中，未調用 `tw_open` 進行順延判定。雖然第 136 行在說明的文字中寫著「遇假日順延」，但實際產出的日期卻未順延，導致行事曆在遇到週末時（例如 10 日逢週六或週日）顯示錯誤的法定截止日期，產生 1～2 天的偏差。
 - 建議怎麼改：
-  應以常規交易盤與盤後交易盤之最大絕對波動幅度作為排序與過濾依據，或分別保留常規盤與延伸盤：
-  ```javascript
-  const regChg = typeof x.chg === "number" ? x.chg : null;
-  const extChg = typeof e.chg === "number" ? e.chg : null;
-  const chg = (extChg !== null && Math.abs(extChg) >= MOVE) ? extChg : (regChg !== null ? regChg : extChg);
-  const sess = (chg === extChg && extChg !== null) ? e.sess : "";
+  函式應接收交易日判斷函式 `tw_open`（或利用 `on_or_after`），將遇例假日之截止日調整為次一交易日：
+  ```python
+  def _next_business_day(d: date, tw_open) -> date:
+      while not tw_open(d):
+          d += timedelta(days=1)
+      return d
   ```
+  並將 `d = _next_business_day(d, tw_open)` 套用於 `rev` 與 `fin` 各項日期。
 - 確定程度：高。
 
-### CODE-2｜tools/site_tw_chips.py：第 51 行融資維持率說明文字仍寫死「個別帳戶低於 130% 會被追繳」，未更新至證交所 11/24 實施的 120% 官方新制
-- 檔案路徑與行號：[tools/site_tw_chips.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_chips.py#L48-L52)
-- 程式碼片段：
-  ```python
-  mr, dt = d.get("mratio") or {}, d.get("daytrade") or {}
-  if mr.get("ratio"):
-      mp = _prev(d, "mratio", ("ratio",))
-      lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 130% 會被追繳）')
-  ```
-- 為什麼有問題：
-  第 51 行字串硬性寫死 `'；個別帳戶低於 130% 會被追繳）'`。
-  但臺灣證券交易所已於 2026-11-23 正式公告，自 2026-11-24 起信用交易整戶擔保維持率調降至 120%，券商追繳通知門檻同步調降至 120%。此處寫死的 130% 與最新法規及市場真實運作相悖，會對使用者產生誤導。
-- 建議怎麼改：
-  更新該說明字串為 120% 新制標準：
-  ```python
-  lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 120% 會被追繳）')
-  ```
-- 確定程度：高。
-
-### CODE-3｜functions/api/etf.js：第 39-40 行上游 TWSE 異常時直接回傳 HTTP 502 破壞前端優雅降級
-- 檔案路徑與行號：[functions/api/etf.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/etf.js#L38-L41)
+### CODE-2｜functions/api/news.js：第 10-51 行 FEEDS 官方新聞源缺少臺灣證券交易所（TWSE），致使 120% 擔保維持率等官方重磅公告無法被邊緣函式自動即時採集
+- 檔案路徑與行號：[functions/api/news.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/news.js#L10-L51)
 - 程式碼片段：
   ```javascript
-  } catch (e) { /* source down → empty list; the page keeps its build-time copy */ }
-  const res = new Response(JSON.stringify({ ts: Math.floor(Date.now() / 1000), rows }), {
-    status: rows.length ? 200 : 502,
+  const FEEDS = [
+    { s: "中央社財經", o: "cna", u: "https://feeds.feedburner.com/rsscna/finance", lang: "zh", all: true },
+    // ...
+    { s: "金管會", o: "fsc", u: "https://www.fsc.gov.tw/RSS/Messages?serno=201202290009&language=chinese", lang: "zh", off: true, all: true },
+    // ...
+  ];
   ```
 - 為什麼有問題：
-  在非交易時段或證交所 MIS 系統維護時，`rows` 可能為空陣列。
-  第 40 行將狀態碼直接設為 `502`（Bad Gateway），導致前端 `fetch("/api/etf").then(r => r.json())` 在遇到非 200 狀態時拋出未捕獲之 HTTP 例外，無法讀取 response body 內的 `{ ts, rows: [] }`，阻礙了前端降級邏輯（使用建置期靜態副本）的平滑執行。
+  本站目前重心高度轉向台股流動性與政策監管風險追蹤。在 `FEEDS` 清單中，台灣官方機構僅收錄了「金管會（FSC）」，卻未收錄負責第一線信用交易法規與重大造市政策執行的「臺灣證券交易所（TWSE）官方最新消息」。
+  當 11/23 證交所頒布「整戶擔保維持率降至 120% 暨大赦條款」時（公告代碼 `202611230001`），由於金管會自身的新聞稿僅有 11/21 之五項措施，`/api/news` 無法從官方源頭第一時間捕獲證交所公報，只能等待一般商業媒體（中央社、工商）二次轉述，產生了採集盲區與時間差。
 - 建議怎麼改：
-  回傳 200 狀態碼並在 JSON 內標記來源狀態，避免邊緣函數層級報錯：
+  在 `FEEDS` 中補上臺灣證券交易所的官方新聞公告來源（例如 TWSE OpenAPI 或 RSS 專區）：
   ```javascript
-  const res = new Response(JSON.stringify({ ts: Math.floor(Date.now() / 1000), rows, ok: rows.length > 0 }), {
-    status: 200,
+  { s: "臺灣證券交易所", o: "twse", u: "https://www.twse.com.tw/zh/RSS/news", lang: "zh", off: true, all: true },
   ```
+  確保主管機關政策與市場第一線交易所的救市公告能第一時間直達系統。
 - 確定程度：高。
 
-### CODE-4｜tools/site_ipo.py：第 253-255 行台股取消承銷過濾直接使用 _date.today() 存在跨時區（UTC vs 台北時間）偏差
-- 檔案路徑與行號：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L253-L256)
+### CODE-3｜wsb/data/valhist.py：第 71-73 行與第 80-82 行 parse_twse / parse_tpex 缺少欄位異常防禦，證交所或櫃買表頭微調即會引發未捕獲之 ValueError
+- 檔案路徑與行號：[wsb/data/valhist.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/valhist.py#L71-L73) 與 [L80-L82](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/valhist.py#L80-L82)
 - 程式碼片段：
   ```python
-  from datetime import date as _date, timedelta as _td
-  since = (_date.today() - _td(days=CANCEL_SHOW_DAYS)).isoformat()
-  off = [r for r in (t.get("cancelled") or []) if (r.get("list") or "") >= since]
+  f = js.get("fields") or []
+  i_code, i_pe, i_pb, i_y = f.index("證券代號"), f.index("本益比"), f.index("股價淨值比"), f.index("殖利率(%)")
   ```
 - 為什麼有問題：
-  在 Cloudflare Pages / CI 建置環境中，系統預設時區通常為 UTC。
-  第 254 行直接調用標準函式庫 `_date.today()`，取得的是建置伺服器的 UTC 日期。
-  然而台股（`t.get("cancelled")`）的掛牌日 `r["list"]` 係以台北時間（UTC+8）為準。在台北時間上午 00:00～08:00 間（即 UTC 前一日 16:00～24:00），`_date.today()` 取出的日期將比台北時間慢一天，導致 `since` 閥值計算產生 1 天之日期邊界錯位。
+  第 72 行與第 81 行直接使用 Python List 的 `.index()` 尋找特定中文欄位名稱（如 `"證券代號"`、`"殖利率(%)"`）。
+  然而臺灣證券交易所與櫃買中心在伺服器升級或特定報表格式變更時，偶爾會包含全半形括號差異（例如 `"殖利率（%）"` vs `"殖利率(%)"`）、前導/後綴空白或欄位更名。一旦任一欄位不存在於 `f` 中，`.index()` 將直接拋出未捕獲之 `ValueError: '殖利率(%)' is not in list`，且調用方 `_tw_day()` 未設置例外防護，導致當日整批歷史估值回補作業直接異常崩潰中斷。
 - 建議怎麼改：
-  導入台北時區或使用共用時區函式：
+  增加安全欄位索引輔助函式，支援模糊匹配與例外容錯：
   ```python
-  from datetime import datetime, timedelta as _td, timezone
-  _TPE = timezone(_td(hours=8))
-  since = (datetime.now(_TPE).date() - _td(days=CANCEL_SHOW_DAYS)).isoformat()
+  def _find_idx(fields: list, name: str) -> Optional[int]:
+      name_clean = name.replace(" ", "").replace("（", "(").replace("）", ")")
+      for idx, fld in enumerate(fields):
+          if name_clean in str(fld).replace(" ", "").replace("（", "(").replace("）", ")"):
+              return idx
+      return None
+  ```
+  若必要欄位缺失，則記錄日誌並優雅回傳空字典，避免程式崩潰。
+- 確定程度：高。
+
+### CODE-4｜tools/site_events.py：第 128-130 行 _earn_tile() 財報事件剩餘天數計算直接使用美東時區日期相減，在台北清晨建置時產生跨日邊界偏差
+- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L128-L131)
+- 程式碼片段：
+  ```python
+  (hh, mm), tz, ten = EARN_TIME.get(r.get("time") or "", ((16, 5), "時間未定", "time n/a"))
+  t = datetime.fromisoformat(day).replace(hour=hh, minute=mm, tzinfo=ET)
+  if t <= et_now or r.get("sym") in out_today:
+      continue
+  x = sx.get(r["sym"]) or {}
+  out.append({"key": "earn", "sym": r["sym"], "zh": f"{zh.get(r['sym'], r.get('name') or r['sym'])}財報（{tz}）",
+              "en": f"{r.get('name') or r['sym']} earnings ({ten})", "next": t.isoformat(), "ts": int(t.timestamp()),
+              "days": (t.date() - et_now.date()).days, ...})
+  ```
+- 為什麼有問題：
+  在 `earn_events()` 中，第 131 行計算剩餘天數 `"days"` 係使用 `(t.date() - et_now.date()).days`，兩者皆為美東時間（ET）日期。
+  然而在 `index_events()`（第 198 行）中，計算剩餘天數卻是以台北時間為準：`(t.astimezone(TPE).date() - now.astimezone(TPE).date()).days`。
+  當系統於台北時間清晨（例如 00:00～12:00，對應美東時間前一日中午至午夜）進行頁面建置時，美東日期的日曆天差與台北時間的日曆天差恰好相差 1 天。這導致同一張「重大事件倒數看板」中，指數事件以台北時間計天數，而財報事件卻以美東時間計天數，兩者在同一卡片內呈現的時間標準不一致。
+- 建議怎麼改：
+  統一兩者口徑，均標準化至台北時間日曆天計算，或明確依使用者所在時區進行基準日對齊：
+  ```python
+  "days": (t.astimezone(TPE).date() - now.astimezone(TPE).date()).days
   ```
 - 確定程度：高。
 
@@ -683,9 +696,7 @@
 - 事實：官方備案：SEC EDGAR Form 424B4 最終招股說明書（備案編號：000162828026074944，https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm ，CIK: 0002130357）。
   - 章節標題：`Shares Eligible for Future Sale` 與 `Underwriting—Lock-Up and Market Standoff Agreements`。
   - 英文原文逐字句引述：
-    > "on or after the commencement of trading of our Class A common stock on the first trading day following the date of this prospectus, up to 10% of the aggregate number of lock-up securities held by such lock-up parties as of the last day of the month preceding the month of the date of this prospectus may be Transferred;"
-  - 後續階梯解禁條款：
-    > "on or after 6:00 AM Eastern Time on each of the dates that are 13, 27, 41, 55, and 69 days, respectively, after the FY26 Earnings Release Date, up to an additional 9.5% of the aggregate number of lock-up securities..."
+    > "Of these shares, 3.7 billion shares subject to the 180-day lock-up and market standoff period may become eligible for sale prior to the expiration of that period, including up to 10% of the aggregate number of lock-up securities held by our non-founder directors, officers, and current and former employees and consultants, which may be transferred or sold beginning on the first trading day of our Class A common stock."
   - 承銷商自由裁量權原句：
     > "The representatives, in their joint discretion, may release the lock-up securities described above in whole or in part at any time."
 
@@ -713,7 +724,7 @@
   1. BEA 10 月 PCE 官方公布時間：2026 年 11 月 25 日（週三）08:30 AM EST（台北時間 11 月 25 日 21:30）（官方確認於 https://www.bea.gov/news/schedule?year=2026 ）。
   2. 感恩節休市：11/26（四）美股美債全日休市；11/27（五）美股提前於 13:00 EST 休市，美債提前於 14:00 EST 休市。
   3. 11/24～11/25 市值 500 億美元以上公司財報預期：
-     - DELL（戴爾科技）：11/24 盤後，Zacks / FactSet 共識 EPS 6.50～6.76 美元，營收 493～508.7 億美元。
+     - DELL（戴爾科技）：11/24 盤後，Zacks / FactSet 共識 EPS 6.60～6.62 美元，營收 492.4～493.2 億美元。
      - ADI（亞德諾半導體）：11/24 盤前公布，營收 43.7 億美元（超預期），EPS 4.06 美元（超預期）。
      - WDAY（Workday）：11/24 盤後，共識營收 26.9 億美元，EPS 2.74 美元。
      - MDT（美敦力）：11/24 盤前公布，營收 93.64 億美元，EPS 1.34 美元。
@@ -728,6 +739,6 @@
 - Anthropic（ANT）掛牌第四日首度破發：收跌 11.2% 報 77.38 美元，正式跌破 83.00 美元之 IPO 發行價，失守關鍵心理關卡（https://www.fool.com/ ；https://www.morningstar.com/ ）。
 - 美國商務部 BIS 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）：聯邦公報發布最終規則，對新加坡與馬來西亞轉運實體祭出推定駁回禁令；阿里巴巴發表抗議稱未曾轉運受限晶片（https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。
 - 南韓外貿突破歷史里程碑：南韓關稅廳公告今年累計出口額突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301 ）。
-- 國際原油 WTI 價格回跌至 80 美元下方：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，WTI 報 79.97～80.17 美元（https://tradingeconomics.com/commodity/crude-oil ）。
-- 黃金價格於 3,582～3,622 美元高檔整固：科技股反彈解除機構補保證金之強制流動性變現賣壓，技術性空頭回補（https://www.kitco.com/ ）。
+- 國際原油 WTI 價格於 79.5～81.3 美元區間整固：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，WTI 報 79.57 美元（https://tradingeconomics.com/commodity/crude-oil ）。
+- 黃金價格於 3,560～3,650 美元高檔整固：科技股反彈解除機構補保證金之強制流動性變現賣壓，現貨報 3,623～3,635 美元（https://www.kitco.com/ ）。
 - 日本股市 11/23 休市後強勁補漲：日經平均指數大漲 3.91%（+2,207.98 點）收在 58,644.63 點重登 58,000 點之上，反映全球科技股強勁修復動能（https://www.japantimes.co.jp/ ）。
