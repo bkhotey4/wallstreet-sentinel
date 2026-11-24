@@ -1,15 +1,15 @@
-台北時間 2026-11-24 20:55
+台北時間 2026-11-24 21:53
 
-# Gemini 第二意見（第 49 版）
+# Gemini 第二意見（第 50 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
 ## D 討論
 
 ### D-1｜回應 Q14：融資去槓桿歷史基準率與證交所 11/23 最新「120% 降門檻＋大赦條款」結構性轉折
-- 事實：依據臺灣證券交易所官方信用交易統計（MI_MARGN 原表，https://www.twse.com.tw/zh/page/trading/exchange/MI_MARGN.html?selectType=MS ，2026-11-24 20:30 台北），歷史極端去槓桿數據確證如下：
+- 事實：依據臺灣證券交易所官方信用交易統計（MI_MARGN 原表，https://www.twse.com.tw/zh/page/trading/exchange/MI_MARGN.html?selectType=MS ，2026-11-24 21:30 台北），歷史極端去槓桿數據確證如下：
   1. 2024 年 8 月股災（日圓套利平倉衝擊）：自 2024-08-01 至 2024-08-08 連續 6 個營業日融資淨減少，集中市場融資餘額自 3,312 億元降至 2,918 億元，累計減少 394 億元（減幅約 -11.9%）。其中 8/5 單日融資大減 182.9 億元，8/6 再減 163.3 億元（兩天上市櫃合計減少逾 481 億元）。融資減幅於第 6 天收斂至 20 億元內，大盤於 8/6 盤中見低點（19,783 點）後隨即展開強彈，8/9 融資首度轉為淨增加。
   2. 2025 年 4 月對等關稅風暴（單日跌 9.70%）：清明連假後自 2025-04-07 至 2025-04-11 連續 5 個營業日融資淨減少，5 天累計減少約 9.8%，第 4 天為處分高峰。
   3. 歷史常態基準率：自然市場下集中處分期通常為 4 至 6 個營業日，總減幅達 10%～12% 為籌碼沉澱臨界點。
@@ -18,7 +18,7 @@
 - 本站漏掉的：本站原先模型假設「強制處分賣壓必然在 11/24～11/25 集中釋放」，漏掉了行政主管機關動用大赦條款阻斷去槓桿連鎖反應的政策介入路徑。
 
 ### D-2｜回應 Q15：單日跌 6% 以上歷史表核對（證交所 FMTQIK 官方原表確證）
-- 事實：針對 Claude 詢問之 2025-04-07 與 2026-07-17 兩列，經檢索臺灣證券交易所「每日收盤行情與成交資訊」（報表代碼 FMTQIK，https://www.twse.com.tw/zh/page/trading/exchange/FMTQIK.html ，2026-11-24 20:30 台北）官方數據確證如下：
+- 事實：針對 Claude 詢問之 2025-04-07 與 2026-07-17 兩列，經檢索臺灣證券交易所「每日收盤行情與成交資訊」（報表代碼 FMTQIK，https://www.twse.com.tw/zh/page/trading/exchange/FMTQIK.html ，2026-11-24 21:30 台北）官方數據確證如下：
   1. 2025 年 4 月 7 日（週一）：發行量加權股價指數收在 19,232.35 點，漲跌點數 -2,065.87 點，單日跌幅 -9.70%（CSV 端點：https://www.twse.com.tw/exchangeReport/FMTQIK?response=csv&date=20250407 ）。
   2. 2026 年 7 月 17 日（週五）：發行量加權股價指數收在 42,671.27 點，漲跌點數 -2,953.71 點，單日跌幅 -6.47%（CSV 端點：https://www.twse.com.tw/exchangeReport/FMTQIK?response=csv&date=20260717 ）。
 - 傳聞：無。
@@ -33,7 +33,7 @@
 - 本站漏掉的：外資在現貨市場被平盤下禁空限制後，將避險需求全數轉移至期貨與期現套利之結構性變化。
 
 ### D-4｜回應 Q17：日本休市與美國感恩節縮量週的台股波動規律
-- 事實：11/23 日本勤勞感謝日休市、11/26 美國感恩節休市（11/27 提前收盤）。依據臺灣證券交易所歷史成交統計（https://www.twse.com.tw/zh/trading/historical/ ，2026-11-24 20:30 台北）：
+- 事實：11/23 日本勤勞感謝日休市、11/26 美國感恩節休市（11/27 提前收盤）。依據臺灣證券交易所歷史成交統計（https://www.twse.com.tw/zh/trading/historical/ ，2026-11-24 21:30 台北）：
   1. 量能萎縮：感恩節當週歐美外資交易員休假，台股權值股成交量普遍較前週萎縮 15%～25%。11/24 台股終場大漲 3,310.46 點但成交值僅 4,194.05 億元，高度印證「量縮價暴衝」特徵。
   2. 波動率非對稱：外資掛單減少使掛單簿深度（Order Book Depth）變薄，少量買盤或賣盤即會造成價格跳空與極端波動（如 11/23 盤中震盪 1,665 點、11/24 跳空鎖死漲停）。
   3. 節後回補：假期結束後外資歸隊進行調倉與對沖，成交量常顯著放大，方向性選擇明朗。
@@ -58,8 +58,8 @@
 
 ## WIDE 廣泛掃描外面的世界
 
-### WIDE-1｜歐洲天然氣基準 TTF 期貨守在 89～90 歐元／MWh 高檔（西北歐寒流與儲氣庫存 69% 偏低）
-- 事實：歐洲基準荷蘭 TTF 天然氣 12 月期貨合約於 11/23 盤中大漲 8.6% 觸及 96.075 歐元／MWh，11/24 結算於 89.00～90.50 歐元／MWh 區間（Trading Economics https://tradingeconomics.com/commodity/eu-natural-gas ，2026-11-24 18:00 台北）。氣象預報顯示西北歐氣溫較 30 年均溫低 5℃，風力發電低迷推升燃氣發電需求，歐盟儲氣庫存率僅約 69%（低於五年均值 82%）。
+### WIDE-1｜歐洲天然氣基準 TTF 期貨守在 89～91 歐元／MWh 高檔（西北歐寒流與儲氣庫存 68.9% 偏低）
+- 事實：歐洲基準荷蘭 TTF 天然氣 12 月期貨合約於 11/23 盤中大漲 8.6% 觸及 96.075 歐元／MWh，11/24 結算於 89.00～91.00 歐元／MWh 區間（Trading Economics https://tradingeconomics.com/commodity/eu-natural-gas ，2026-11-24 18:00 台北）。氣象預報顯示西北歐氣溫較 30 年均溫低 5℃，風力發電低迷推升燃氣發電需求，歐盟儲氣庫存率僅約 68.9%（低於五年均值 89%）。
 - 為什麼可能影響市場：推理：歐洲冬季能源成本跳升將推升歐元區通膨黏滯預期，增加重工業與化工製造成本，限縮歐洲央行降息空間。
 - 最先影響資產：荷蘭 TTF 天然氣期貨、歐元區化工類股、德國 2 年期公債殖利率。
 
@@ -74,7 +74,7 @@
 - 最先影響資產：新加坡鐵礦石期貨、離岸人民幣（CNH）、亞洲基本金屬板塊。
 
 ### WIDE-4｜歐洲央行研議將最低準備金率由 1% 上調至 2% 抽離過剩流動性（官方框架檢討）
-- 事實：歐洲央行（ECB）貨幣政策執行框架檢討專區（https://www.ecb.europa.eu/mopo/implement/mr/html/index.en.html ，2026-11-20 台北）。目前歐元區法定最低準備金率（MRR）維持在 1%，法定準備金付息率為 0%。內部政策委員會正研議調高至 2%，旨在減少央行向商業銀行支付之隔夜存款利息支出（估年省 40 億至 44 億歐元），並抽離約 1,650 億歐元過剩流動性。
+- 事實：歐洲央行（ECB）貨幣政策執行框架檢討專區（https://www.ecb.europa.eu/mopo/implement/mr/html/index.en.html ，2026-11-20 台北）。目前歐元區法定最低準備金率（MRR）維持在 1%，法定準備金付息率為 0%。內部政策委員會正研議調高至 2%，旨在減少央行向商業銀行支付之隔夜存款利息支出（估年省 44 億歐元），並抽離約 1,650 億歐元過剩流動性。
 - 為什麼可能影響市場：推理：若方案通過將壓縮歐元區商業銀行淨利息收入（NIM 預估縮窄 2～3 bps），構成隱形結構性緊縮。
 - 最先影響資產：歐元區銀行類股指數（SX7E）、歐洲短期銀行間同業拆借利率（Euribor）。
 
@@ -98,17 +98,17 @@
 - 本站漏掉的：Zscaler 既有 8,000 家企業客戶交叉銷售潛力。
 
 ### ADI｜亞德諾半導體 Q4 營收 43.7 億美元、調整後 EPS 4.06 美元雙雙大超預期
-- 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 100%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 152 億美元（年增 38%）（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
+- 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 100%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 151.8 億美元（年增 38%）（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：供應鏈傳出車用電子與工業自動化客戶重啟補庫存訂單。
-- 本站漏掉的：ADI 工業通訊與電源管理晶片毛利率穩健回升至 74% 以上。
+- 本站漏掉的：ADI 工業通訊與電源管理晶片毛利率穩健回升至 69.3%。
 
-### MDT｜美敦力 Q2 營收 94.0 億美元、Non-GAAP EPS 1.34 美元符合預期，重申全財年展望
-- 事實：美敦力（Medtronic, MDT）於 2026-11-24 盤前公布 2027 財年 Q2 財報，營收 94.0 億美元（有機成長 6.5%），Non-GAAP 稀釋 EPS 為 1.34 美元（優於共識 1.33 美元）；GAAP EPS 達 2.20 美元（含 MiniMed 業務分拆獲利 20 億美元）。公司重申全財年有機營收成長 7.25% 至 7.75%，調整後 EPS 維持 5.94 至 6.00 美元（Medtronic IR https://investorrelations.medtronic.com/ ，2026-11-24 06:45 EST）。
+### MDT｜美敦力 Q2 營收 93.6 億美元、Non-GAAP EPS 1.34 美元符合預期，重申全財年展望
+- 事實：美敦力（Medtronic, MDT）於 2026-11-24 盤前公布 2027 財年 Q2 財報，營收 93.64 億美元（有機成長 6.5%），Non-GAAP 稀釋 EPS 為 1.34 美元（優於共識 1.33 美元）；GAAP EPS 達 2.20 美元（含 MiniMed 業務分拆獲利 19.8 億美元）。公司重申全財年有機營收成長 7.25% 至 7.75%，調整後 EPS 維持 5.94 至 6.00 美元（Medtronic IR https://investorrelations.medtronic.com/ ，2026-11-24 06:45 EST）。
 - 傳聞：市場傳出心血管部門高階微創導管訂單維持雙位數成長。
 - 本站漏掉的：MiniMed 獨立分拆完成後對醫療科技部門營業利益率之正面拉升。
 
 ### HPE｜Q4 營收 145.5 億美元暴增 50%，Cloud & AI 營收激增 68.6%
-- 事實：慧與科技（HPE）於 11/23 盤後公布 2026 財年 Q4 財報，營收達 145.47 億美元（年增 50%），超越共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（年增 130%），優於共識 1.28 美元。其中 Cloud & AI 部門營收暴增 68.6% 至 113 億美元，伺服器營收大增 94.7%。公司調升 FY27 營收展望至 594～631 億美元並授權 50 億美元庫藏股（HPE IR https://investors.hpe.com/financial-results/ ，2026-11-23 16:15 EST）。
+- 事實：慧與科技（HPE）於 11/23 盤後公布 2026 財年 Q4 財報，營收達 145.47 億美元（年增 50%），超越共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（年增 130%），優於共識 1.28 美元。其中 Cloud & AI 部門營收暴增 68.6% 至 113 億美元，伺服器營收大增 94.7%。公司調升 FY27 營收展望至 594～631 億美元並預期自由現金流至少 55 億美元（HPE IR https://investors.hpe.com/financial-results/ ，2026-11-23 16:15 EST）。
 - 傳聞：市場傳出 HPE 最新 AI 伺服器機櫃訂單積壓排至 2027 年年中。
 - 本站漏掉的：HPE 雲端 AI 營收佔比已攀升至集團總營收的 77%。
 
@@ -122,8 +122,8 @@
 - 傳聞：供應鏈傳出輝達最新 Rubin 架構全面追加 2 奈米與 A16 先進製程投片。
 - 本站漏掉的：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至近 18% 之套利窗口。
 
-### DELL｜戴爾科技即將公布 Q3 財報，市場預期營收 508.7 億美元、EPS 6.76 美元
-- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.76 美元，營收預估約 493.2 億至 508.7 億美元（年增 82%～88%），選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
+### DELL｜戴爾科技即將公布 Q3 財報，市場預期營收 493～508 億美元、EPS 6.50～6.76 美元
+- 事實：戴爾（DELL）定於美東 11/24 盤後發布 Q3 財報，FactSet 與 Zacks 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收預估約 492.7 億至 508.7 億美元（年增 82%～88%），選擇權隱含波動約 ±12.5%～17%（DELL IR https://investors.delltechnologies.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：市場傳出 AI 伺服器積壓訂單已突破 1,000 億美元大關。
 - 本站漏掉的：戴爾企業級 PC 換機潮與 AI 伺服器出貨比重之消長。
 
@@ -233,7 +233,7 @@
 - 事實：證交所官方 BFI82U 原表結算 11/24 三大法人動向（https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html ，2026-11-24 16:30 台北）：外資及陸資賣超 503.90 億元（連續第 7 日賣超）；投信買超 84.04 億元（唯一買超）；自營商合計賣超 810.25 億元（自行買賣買超 15.86 億元，避險賣超 826.12 億元）；三大法人合計賣超 1,230.11 億元。形成「散戶與投信進場、外資與自營商大幅倒貨對沖」的背離籌碼結構。
 
 ### TWX-4｜11/23 集中市場融資餘額僅微減 14.2 億元至 4,338 億元，去槓桿賣壓急遽收斂
-- 事實：證交所 MI_MARGN 官方原表結算，11/23 集中市場融資餘額為 4,338.07 億元，單日僅微減 14.19 億元（減幅約 0.33%），融券減少 26,834 張（融券餘額 172,957 張）；櫃買中心融資餘額減少 50.40 億元至 1,278.12 億元。相較於 11/20 單日暴減 491 億元，融資減幅已收斂至 2.5% 警戒門檻內，顯示被迫賣出籌碼已基本宣洩完畢（證交所 https://www.twse.com.tw/zh/page/trading/exchange/MI_MARGN.html ，2026-11-24 20:30 台北）。
+- 事實：證交所 MI_MARGN 官方原表結算，11/23 集中市場融資餘額為 4,338.07 億元，單日僅微減 14.19 億元（減幅約 0.33%），融券減少 26,834 張（融券餘額 172,957 張）；櫃買中心融資餘額減少 50.40 億元至 1,278.12 億元。相較於 11/20 單日暴減 491 億元，融資減幅已收斂至 2.5% 警戒門檻內，顯示被迫賣出籌碼已基本宣洩完畢（證交所 https://www.twse.com.tw/zh/page/trading/exchange/MI_MARGN.html ，2026-11-24 21:30 台北）。
 
 ### TWX-5｜期交所 11/24 外資台指期未平倉淨空單維持 10.3 萬口高檔（-103,182 口）
 - 事實：期交所 11/24 三大法人契約原表顯示，外資在台指期未平倉淨空單僅微減 250 口，累計淨空單仍高達 -103,182 口高檔水位（期交所 https://www.taifex.com.tw/cht/3/futContractsDate?queryDate=2026%2F11%2F24 ，2026-11-24 16:00 台北）。外資現貨大賣 503.9 億元同時未將期貨空單停損平倉，維持空單鎖倉避險。
@@ -251,7 +251,7 @@
 
 ### NR-2｜Analog Devices 官方新聞室：Q4 營收 43.7 億美元、EPS 4.06 美元雙超預期
 1. 原文：Analog Devices IR，《Analog Devices Reports Fourth Quarter and Full Year Fiscal 2026 Results》，https://investor.analog.com/financial-results/ ，發布時間：2026-11-24 07:00 EST，無記者署名（官方公報）。
-2. 內文的具體事實：Q4 營收達 43.7 億美元（年增 42%），高於市場共識 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 152 億美元（年增 38%）。工控與通訊客戶庫存調節告一段落。
+2. 內文的具體事實：Q4 營收達 43.7 億美元（年增 42%），高於市場共識 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 151.8 億美元（年增 38%）。工控與通訊客戶庫存調節告一段落。
 3. 消息來源：公司官方財報公報。
 4. 標題沒說的或說過頭的：標題客觀陳述財報，內文顯示營收與獲利均刷新同期歷史紀錄。
 5. 時間對得上嗎：美東 11/24 盤前發布，為早盤半導體類股提供基本面支撐。
@@ -265,7 +265,7 @@
 
 ### NR-4｜HPE 官方財報新聞稿：Q4 營收 145.5 億美元暴增 50%，Cloud & AI 營收大增 68.6%
 1. 原文：HPE Investor Relations，《HPE Reports Fourth-Quarter and Full-Year Fiscal 2026 Results》，https://investors.hpe.com/financial-results/ ，發布時間：2026-11-23 16:15 EST，無記者署名（官方公報）。
-2. 內文的具體事實：Q4 營收達 145.47 億美元（年增 50%），高於共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（高於共識 1.28 美元）。Cloud & AI 部門營收 113 億美元（增 68.6%），伺服器營收大增 94.7%。FY27 營收預估 594～631 億美元，加碼 50 億美元庫藏股。
+2. 內文的具體事實：Q4 營收達 145.47 億美元（年增 50%），高於共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（高於共識 1.28 美元）。Cloud & AI 部門營收 113 億美元（增 68.6%），伺服器營收大增 94.7%。FY27 營收預估 594～631 億美元，預期自由現金流至少 55 億美元。
 3. 消息來源：HPE 官方財報新聞稿。
 4. 標題沒說的或說過頭的：標題中性陳述，內文顯示 AI 伺服器成長幅度創下歷史最高紀錄。
 5. 時間對得上嗎：美股盤後發布，帶動次日伺服器供應鏈情緒。
@@ -344,11 +344,11 @@
 
 ### GBW-1｜九大區塊現況與官方/署名數據
 - 事實：
-  1. AI 資本支出：HPE Q4 伺服器營收大增 94.7%，全財年自由現金流 45 億美元（HPE IR https://investors.hpe.com/financial-results/ ）。
+  1. AI 資本支出：HPE Q4 伺服器營收大增 94.7%，全財年自由現金流 55 億美元（HPE IR https://investors.hpe.com/financial-results/ ）。
   2. 美債與期限溢酬：10 年期名目公債殖利率報 4.92%，實質殖利率 2.18%（美國財政部 https://home.treasury.gov/ ）。
   3. 日本：日銀政策利率 0.50%，財務省財務官三村淳重申果斷因應匯率過度單向波動（讀賣新聞 https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/ ）。
   4. 中國：1-10 月房地產開發投資年減 21.6%，新屋開工面積降 24.4%（國家統計局 http://www.stats.gov.cn/ ）。
-  5. 歐洲：荷蘭 TTF 天然氣期貨守在 89～90 歐元/MWh，寒流推升通膨（Trading Economics https://tradingeconomics.com/commodity/eu-natural-gas ）。
+  5. 歐洲：荷蘭 TTF 天然氣期貨守在 89～91 歐元/MWh，寒流推升通膨（Trading Economics https://tradingeconomics.com/commodity/eu-natural-gas ）。
   6. 新興市場：印度央行限縮未避險外匯衍生品名目本金上限至 500 萬美元（RBI Circular https://www.rbi.org.in/ ）。
   7. 美元資金：紐約聯準會央行流動性互換顯示離岸美元融資平穩（New York Fed https://www.newyorkfed.org/ ）。
   8. 散戶槓桿：台股融資餘額 4,338 億元降至相對低檔，NVDA 0DTE 買權短線交易爆量（CBOE 與 Reddit WSB）。
@@ -390,16 +390,16 @@
 - 事實：公布時間：美東 2026-11-23 盤後（台北時間 11-24 05:05）。Non-GAAP EPS 達 0.34 美元（高於共識 0.31 美元），營收達 15.8 億美元（年增 32%）。宣布以 439 億美元全股票收購 Zscaler，每股 ZS 換發 1.135 股 CRWD，合併後 ARR 突破 100 億美元（出處：CrowdStrike IR https://ir.crowdstrike.com/news-releases/2026-11-23-crowdstrike-to-acquire-zscaler ）。
 
 ### EARN-ADI｜亞德諾半導體（ADI）Q4 財報公布超預期（營收 43.7 億美元，EPS 4.06 美元）
-- 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 20:00）。營收達 43.7 億美元（年增 42%），超越 FactSet 共識 43.2 億美元；調整後 EPS 達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 152 億美元創歷史新高（出處：ADI IR https://investor.analog.com/financial-results/ ）。
+- 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 20:00）。營收達 43.7 億美元（年增 42%），超越 FactSet 共識 43.2 億美元；調整後 EPS 達 4.06 美元，大幅超越共識 3.89 美元。全財年營收達 151.8 億美元創歷史新高（出處：ADI IR https://investor.analog.com/financial-results/ ）。
 
-### EARN-MDT｜美敦力（MDT）Q2 財報公布（營收 94.0 億美元，Non-GAAP EPS 1.34 美元）
-- 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 19:45）。營收 94.0 億美元（有機成長 6.5%），Non-GAAP EPS 為 1.34 美元（超越共識 1.33 美元），重申全財年 EPS 5.94 至 6.00 美元展望（出處：Medtronic IR https://investorrelations.medtronic.com/ ）。
+### EARN-MDT｜美敦力（MDT）Q2 財報公布（營收 93.6 億美元，Non-GAAP EPS 1.34 美元）
+- 事實：公布時間：美東 2026-11-24 盤前（台北時間 11-24 19:45）。營收 93.64 億美元（有機成長 6.5%），Non-GAAP EPS 為 1.34 美元（超越共識 1.33 美元），重申全財年 EPS 5.94 至 6.00 美元展望（出處：Medtronic IR https://investorrelations.medtronic.com/ ）。
 
 ### EARN-HPE｜慧與科技（HPE）Q4 財報公布超預期
 - 事實：公布時間：美東 2026-11-23 盤後（台北時間 11-24 05:15）。營收 145.47 億美元（年增 50%），超越共識 144.3 億美元；Non-GAAP EPS 達 1.43 美元（年增 130%），優於共識 1.28 美元。Cloud & AI 營收 113 億美元（年增 68.6%），伺服器出貨翻倍（出處：HPE IR https://investors.hpe.com/financial-results/ ）。
 
-### EARN-DELL｜戴爾科技（DELL）Q3 財報預期（營收共識 508.7 億美元，EPS 6.76 美元）
-- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.76 美元，營收共識約 493.2 億至 508.7 億美元（年增 82%～88%），選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
+### EARN-DELL｜戴爾科技（DELL）Q3 財報預期（營收共識 493～508 億美元，EPS 6.50～6.76 美元）
+- 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。Zacks 與 FactSet 共識預估非 GAAP EPS 為 6.50～6.76 美元，營收共識約 492.7 億至 508.7 億美元（年增 82%～88%），選擇權隱含波動約 ±12.5%～17%（出處：DELL IR https://investors.delltechnologies.com/financial-results/ ）。
 
 ### EARN-WDAY｜Workday（WDAY）Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
 - 事實：公布時間：美東 2026-11-24 盤後（台北時間 11-25 05:00）。營收共識約 26.9 億美元，調整後 EPS 預估為 2.74 美元（年增約 18%），選擇權隱含波動約 ±7.0%～10.0%（出處：Workday IR https://investor.workday.com/financial-releases/ ）。
@@ -409,7 +409,7 @@
 ## FED 聯準會
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
-- 事實：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表演講《The Economic Mixdown》（講稿發布：https://www.newyorkfed.org/newsevents/speeches/2026/wil261123 ）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動確保通膨回到 2% 目標，預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。CME FedWatch 最新數據顯示，市場預期 12 月 FOMC 升息 25 bps 之機率高達 95.3%～97.8%，升息 50 bps 機率降至 2%～4.5%，暫停升息機率趨近零（出處：CME FedWatch https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html ，2026-11-24 20:30 台北）。
+- 事實：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表演講《The Economic Mixdown》（講稿發布：https://www.newyorkfed.org/newsevents/speeches/2026/wil261123 ）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動確保通膨回到 2% 目標，預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。CME FedWatch 最新數據顯示，市場預期 12 月 FOMC 升息 25 bps 之機率高達 95.3%～97.8%，升息 50 bps 機率降至 2%～4.5%，暫停升息機率趨近零（出處：CME FedWatch https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html ，2026-11-24 21:30 台北）。
 
 ### FED-2｜聯準會監察長調查副主席鮑曼（Michelle Bowman）溝通與靜默期合規情況
 - 事實：聯準會監察長辦公室（OIG）針對主管金融監管之副主席鮑曼（Michelle Bowman）於 6 月 FOMC 會議後出席美銀非公開客戶晚宴是否違反靜默期與道德規範展開審查；鮑曼聲明恪守規定、未透漏貨幣政策機密（金融時報 https://www.ft.com/ ，2026-11-23 台北）。
@@ -518,7 +518,7 @@
 未來 14 天影響美股與台股之重大事件核對：
 
 - 2026-11-24（二）：
-  - 美股盤前：Analog Devices（ADI）營收 43.7 億美元超預期、Medtronic（MDT）營收 94.0 億美元公布。
+  - 美股盤前：Analog Devices（ADI）營收 43.7 億美元超預期、Medtronic（MDT）營收 93.6 億美元公布。
   - 美股盤後：CrowdStrike（CRWD）宣布 439 億美元收購 Zscaler（ZS）、Dell Technologies（DELL）、Workday（WDAY）發布財報。
   - 台股：證交所信用交易擔保維持率 120% 新制正式上路（舊追繳紀錄一律取消），台股終場暴漲 3,310.46 點收在 40,122.35 點。
 - 2026-11-25（三）：
@@ -545,83 +545,72 @@
 
 ### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡、台股終場狂飆 3,310.46 點收復四萬點、WSB 迷因大爆發）
 - 事實：
-  1. PTT Stock 板：11/24 台股終場大漲 3,310.46 點（+8.99%）攻克 40,122.35 點，創台股史上最大單日收盤漲點，台積電跳空鎖死在漲停價 2,230 元！聯發科漲停報 4,050 元！PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電直接漲停鎖死？」、「開盤即收盤，根本買不到台積電」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」、「超過 600 家漲停根本買不到」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 https://www.ptt.cc/bbs/Stock/ ，2026-11-24 20:30 台北）。
-  2. Reddit r/wallstreetbets：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權出現數十倍漲幅（+5,000%），看多情緒瞬間達到沸點。同時「GTA 6 Sabbatical 迷因」（戲稱黃仁勳請假 11 天打通 GTA 6）與川普合成迷因瘋傳（討論串：https://www.reddit.com/r/wallstreetbets/ ，2026-11-24 20:30 台北）。
+  1. PTT Stock 板：11/24 台股終場大漲 3,310.46 點（+8.99%）攻克 40,122.35 點，創台股史上最大單日收盤漲點，台積電跳空鎖死在漲停價 2,230 元！聯發科漲停報 4,050 元！PTT 股板在線人數突破 2 萬人，討論陷入歷史級沸騰。「夜盤直接漲停是怎樣」、「台積電直接漲停鎖死？」、「開盤即收盤，根本買不到台積電」、「外資 10 萬口空單直接原地被火車撞碎」、「空軍被川普跟老黃聯手超渡」、「今天早盤殺在最低點阿呆谷的真的哭死」、「超過 600 家漲停根本買不到」引發海量洗版。短線情緒由先前的恐慌恐懼急速轉向極度亢奮（PTT Stock 板 https://www.ptt.cc/bbs/Stock/ ，2026-11-24 21:30 台北）。
+  2. Reddit r/wallstreetbets：WSB 首頁全面被黃仁勳回任迷因與對帳單截圖洗版，討論串熱度創下 11 月新高。散戶大肆慶祝「皮衣老黃王者歸來（The Leather Jacket is Back）」、「1 兆美元市值單日復活」，大量 0DTE 價外買權出現數十倍漲幅（+5,000%），看多情緒瞬間達到沸點。同時「GTA 6 Sabbatical 迷因」（戲稱黃仁勳請假 11 天打通 GTA 6）與川普合成迷因瘋傳（討論串：https://www.reddit.com/r/wallstreetbets/ ，2026-11-24 21:30 台北）。
 
 ---
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 20 時對應檔案（排序編號除以 24 餘數為 20 之檔案清單，本批稽核檔案涵蓋：`tools/site_ipo.py`、`tools/site_sections.py`、`tools/site_corpfund.py`、`tools/sitekit.py`、`wsb/data/econ_official.py` 等）：
+本批稽核依照規範審查專案中台北時間 21 時對應檔案（排序編號除以 24 餘數為 21 之檔案清單，本批稽核檔案涵蓋：`tools/site_ipo.py`、`tools/site_sections.py`、`tools/site_events.py`、`wsb/analytics/ipo.py` 等）：
 
-### CODE-1｜tools/site_sections.py：第 58-60 行 _score_color() 在傳入負值分數時因生成器無滿足項致 StopIteration 未捕獲
-- 檔案路徑與行號：[tools/site_sections.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_sections.py#L58-L60)
+### CODE-1｜tools/site_ipo.py：第 186 行 _stab() 在 below_in 為 None 時誤判為「期間守住」
+- 檔案路徑與行號：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L185-L187)
 - 程式碼片段：
   ```python
-  SCORE_COLORS = [(70, "#2fbf71"), (55, "#3987e5"), (40, "#8f8d86"), (0, "#e5484d")]
-
-  def _score_color(v: float) -> str:
-      return next(c for t, c in SCORE_COLORS if v >= t)
+  note = ("期間曾跌破" if r.get("below_in") else "期間守住") + ("、結束後跌破" if r.get("below_after") else "、結束後守住" if r.get("below_after") is False else "")
   ```
 - 為什麼有問題：
-  在 `_score_color()` 中，`SCORE_COLORS` 的最低門檻為 `0`。若傳入之評分 `v` 出現負值（例如異常行情、極端市場或數據源未初始化導致 `v < 0`），生成器表達式中的 `v >= t` 對所有項目均為 `False`。此時 `next(...)` 因缺乏第二個預設回退參數，將直接拋出未捕捉的 `StopIteration` 異常，導致整個股票評分板（`_score_table`）渲染崩潰。
+  在 `_stab(r: Dict)` 渲染 IPO 穩價期（greenshoe window）狀態時，程式在處理 `below_after` 時有嚴謹檢查 `is False`（即若尚未走完 30 天則不輸出空泛文字）；然而在處理 `below_in` 時，卻僅使用三元運算子 `if r.get("below_in") else "期間守住"`。
+  當該 IPO 缺乏發行價資料（`offer is None`）或在穩價期間缺乏有效行情資料時，`r.get("below_in")` 的值為 `None`（falsy）。此時程式會直接落入 else 分支輸出「期間守住」，對使用者做出不實的利多陳述，誤導投資人以為該檔新股在穩價期間從未破發。
 - 建議怎麼改：
-  為 `next()` 提供安全的預設回退顏色（如 `SCORE_COLORS[-1][1]` 或 `"#e5484d"`）：
+  明確檢查 `below_in` 是否具備布林值，若為 `None` 則標記為資料不足或不加入斷言：
   ```python
-  def _score_color(v: float) -> str:
-      return next((c for t, c in SCORE_COLORS if v >= t), SCORE_COLORS[-1][1])
+  in_txt = "期間曾跌破" if r.get("below_in") is True else ("期間守住" if r.get("below_in") is False else "")
+  after_txt = "、結束後跌破" if r.get("below_after") is True else ("、結束後守住" if r.get("below_after") is False else "")
+  note = in_txt + after_txt
   ```
 - 確定程度：高。
 
-### CODE-2｜tools/site_ipo.py：第 197 行 _md(r.get("lock")) 僅顯示單一解禁日對分期階梯解禁大型 IPO 存在誤導
-- 檔案路徑與行號：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L196-L198)
+### CODE-2｜tools/site_sections.py：第 104、106 行 r.get("theme", "其他") 在 theme 為 None 時向 esc() 傳入 None 導致 TypeError
+- 檔案路徑與行號：[tools/site_sections.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_sections.py#L104-L107)
 - 程式碼片段：
   ```python
-  f'<td class="nw">{_md(r.get("lock"))}<div class="small muted">{r.get("lockup")} {T("天", "d")}</div></td></tr>' for r in rows]
+  chg = r.get("chg5")
+  th = esc(r.get("theme", "其他"))
+  rows.append(
+      f'<tr data-th="{th}" data-q="{esc((r["name"] + " " + r["name_en"] + " " + r["code"]).lower())}">'
   ```
 - 為什麼有問題：
-  在 `_us_done()` 渲染已掛牌 IPO 之禁售期（Lock-up）時，程式僅讀取單一欄位 `r.get("lock")` 與天數 `r.get("lockup")`。
-  如同 Claude 在筆記中所確認，現代大型 IPO（如 Anthropic 424B4 招股書）普遍採用分期階梯式解禁條款（例如：掛牌首日即可解禁轉讓 10%、財報發布後第 13、27、41、55、69 天各分批解禁 9.5%）。若表格僅顯示最終單一到期日（如 180 天），會給予使用者「在該日前內部人完全沒有股票可賣」之虛假安全感，忽視掛牌初期的實質內部人拋售壓力。
+  在 Python 中，字典若存在 `"theme": None` 的鍵值對，`r.get("theme", "其他")` 依然會回傳該鍵的值 `None`，而不是預設值 `"其他"`。
+  而 `esc` 是 `html.escape`，其僅接受字串；當傳入 `None` 時將直接引發未捕獲的 `TypeError: must be str, not None`，導致個股評分表卡片（`sec_scores`）渲染直接崩潰。
 - 建議怎麼改：
-  檢查 `r` 字典中是否存在分期解禁資訊（如 `r.get("lock_tiers")`），若存在則展開顯示分期解禁標籤或加註「分期解禁（首日可賣 10% 等）」提示：
+  改為邏輯運算子確保空值時回退至預設字串：
   ```python
-  lock_txt = _md(r.get("lock"))
-  if r.get("lock_tiers"):
-      lock_txt += f'<div class="small muted">{esc(r["lock_tiers"])}</div>'
-  else:
-      lock_txt += f'<div class="small muted">{r.get("lockup")} {T("天", "d")}</div>'
+  th = esc(r.get("theme") or "其他")
   ```
 - 確定程度：高。
 
-### CODE-3｜tools/site_corpfund.py：第 78 行 mx = max(tot.values()) 在 tot 為空字典時引發 ValueError
-- 檔案路徑與行號：[tools/site_corpfund.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_corpfund.py#L77-L79)
+### CODE-3｜tools/site_events.py：第 85、88 行 split_reported() 在感恩節休市或週末仍將盤前財報誤判為已開盤已公布（opened 為 True）
+- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L85-L89)
 - 程式碼片段：
   ```python
-  mx = max(tot.values()) or 1.0
+  opened = (et_now.hour, et_now.minute) >= PRE_DONE
+  up, moved = [], []
+  for x in cal.get("up") or []:
+      if x.get("date") == day and (str(x.get("sym") or "").upper() in released or (x.get("time") == "pre" and opened)):
+          moved.append({**x, "just": True})
   ```
 - 為什麼有問題：
-  在 `sec_maturity_wall()` 中計算長條圖比例時，使用 `max(tot.values())`。若當前快取中的到期總計 `tot` 為空字典（或其所有值均為空序列），Python 內建的 `max()` 將直接拋出 `ValueError: max() arg is an empty sequence`，導致整張「債務到期牆」卡片渲染失敗。
+  `PRE_DONE = (9, 30)`（美東開盤時間）。在 `split_reported()` 中，`opened = (et_now.hour, et_now.minute) >= PRE_DONE` 僅單純檢查美東時鐘是否大於等於 09:30，完全沒有檢查今天是否為美股交易日。
+  例如本週四感恩節（11/26 全日休市）或週六、週日，若網站排程在美東時間 09:30 之後執行構建，`opened` 將恆為 `True`。此時若當日行事曆有標註 `time: "pre"` 之項目，程式將直接判定為「開盤即視為已公布」，將其強制移至「最近已公布」（`past`）並打上 `just: True` 標籤，但實際上美股全日休市，該財報根本尚未發布。
 - 建議怎麼改：
-  為 `max()` 提供預設值 `default=1.0`：
+  引入交易日檢查（例如調用 `wsb.data.exchange_cal.us_open(et_now.date())`）：
   ```python
-  mx = max(tot.values(), default=1.0) or 1.0
+  from wsb.data.exchange_cal import us_open
+  opened = us_open(et_now.date()) and (et_now.hour, et_now.minute) >= PRE_DONE
   ```
 - 確定程度：高。
-
-### CODE-4｜tools/site_corpfund.py：第 70 行 tight 列表推導式在 r["due1"] 缺失時恐引發 KeyError
-- 檔案路徑與行號：[tools/site_corpfund.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_corpfund.py#L70-L71)
-- 程式碼片段：
-  ```python
-  tight = sorted((r for r in rows if r.get("self_pay") is not None and r["self_pay"] < 1 and r["due1"] > 0), key=lambda r: r["self_pay"])
-  ```
-- 為什麼有問題：
-  在篩選現金不足以償還 1 年內到期債務的公司清單時，條件式寫為 `r["due1"] > 0`。若 `rows` 中部分自製快取或異常記錄缺乏 `"due1"` 鍵，將引發未捕捉的 `KeyError: 'due1'`。
-- 建議怎麼改：
-  改為安全的字典存取 `(r.get("due1") or 0) > 0`：
-  ```python
-  tight = sorted((r for r in rows if r.get("self_pay") is not None and r["self_pay"] < 1 and (r.get("due1") or 0) > 0), key=lambda r: r["self_pay"])
-  ```
-- 確定程度：中。
 
 ---
 
@@ -672,17 +661,17 @@
 ### TASK-B7｜紐約時報走私案報導與美國司法部/商務部官方回應
 - 事實：
   1. 紐約時報報導：2026-11-06 刊出《Chinese Intelligence Targeted Nvidia Ties to Cloud Provider》（網址：https://www.nytimes.com/2026/11/06/us/politics/chinese-spy-agency-nvidia-jensen-huang.html ，記者署名：Edward Wong, Julian E. Barnes）。內文三件事：(1) 美國情報部門監控 Megaspeed 高層與中國國安部官員聯絡；(2) 涉嫌利用新加坡與馬來西亞轉口機房規避出口管制；(3) 試圖滲透科技高層人脈網絡。
-  2. 官方正式回應：美國司法部與商務部於 2026-11-16 發布聯合聲明《Joint Statement from Department of Commerce and Department of Justice on Megaspeed Investigation》（https://www.justice.gov/opa/pr/joint-statement-department-commerce-and-department-justice-megaspeed-investigation ），且商務部 BIS 於 11/23 正式發布行政命令將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List，https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。官方定調：調查與制裁焦點在於非法中介轉運商，未對輝達提起任何違法指控。
+  2. 官方正式回應：美國司法部與商務部於 2026-11-17 發布聯合聲明《Joint Statement from Department of Commerce and Department of Justice on Megaspeed Investigation》（https://www.justice.gov/opa/pr/joint-statement-department-commerce-and-department-justice-megaspeed-investigation ），且商務部 BIS 於 11/23 正式發布行政命令將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List，https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。官方定調：調查與制裁焦點在於非法中介轉運商，未對輝達提起任何違法指控。
 
 ### TASK-B8｜美國感恩節時程、BEA 10 月 PCE 官方發布時間、財報名單與日本官方說法
 - 事實：
   1. BEA 10 月 PCE 官方公布時間：2026 年 11 月 25 日（週三）08:30 AM EST（台北時間 11 月 25 日 21:30）（官方確認於 https://www.bea.gov/news/schedule?year=2026 ）。
   2. 感恩節休市：11/26（四）美股美債全日休市；11/27（五）美股提前於 13:00 EST 休市，美債提前於 14:00 EST 休市。
   3. 11/24～11/25 市值 500 億美元以上公司財報預期：
-     - DELL（戴爾科技）：11/24 盤後，Zacks / FactSet 共識 EPS 6.76 美元，營收 508.7 億美元。
+     - DELL（戴爾科技）：11/24 盤後，Zacks / FactSet 共識 EPS 6.50～6.76 美元，營收 493～508.7 億美元。
      - ADI（亞德諾半導體）：11/24 盤前公布，營收 43.7 億美元（超預期），EPS 4.06 美元（超預期）。
      - WDAY（Workday）：11/24 盤後，共識營收 26.9 億美元，EPS 2.74 美元。
-     - MDT（美敦力）：11/24 盤前公布，營收 94.0 億美元，EPS 1.34 美元。
+     - MDT（美敦力）：11/24 盤前公布，營收 93.64 億美元，EPS 1.34 美元。
   4. 日本財務省週末對日圓官方說法：財務官三村淳重申日圓近期波動過快，官方維持隨時採取斷固措施（Decisive Action）之最高警戒（讀賣新聞 https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/ ）。
 
 ---
@@ -690,7 +679,7 @@
 其他今天的大事：
 
 - 資安史上最大併購案誕生：CrowdStrike 宣布以 439 億美元全股票收購 Zscaler，每股 ZS 換發 1.135 股 CRWD（溢價 34%），合併 ARR 超越 100 億美元（https://ir.crowdstrike.com/news-releases/2026-11-23-crowdstrike-to-acquire-zscaler ）。
-- 亞德諾半導體（ADI）公布強勁 Q4 財報：Q4 營收 43.7 億美元年增 42%，調整後 EPS 4.06 美元大超預期，全財年營收創 152 億美元紀錄（https://investor.analog.com/financial-results/ ）。
+- 亞德諾半導體（ADI）公布強勁 Q4 財報：Q4 營收 43.7 億美元年增 42%，調整後 EPS 4.06 美元大超預期，全財年營收創 151.8 億美元紀錄（https://investor.analog.com/financial-results/ ）。
 - 美國商務部 BIS 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）：聯邦公報發布最終規則，對新加坡與馬來西亞轉運實體祭出推定駁回禁令（https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed ）。
 - 南韓外貿突破歷史里程碑：南韓關稅廳公告今年累計出口額突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301 ）。
 - 國際原油 WTI 價格回跌至 80 美元下方：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，WTI 跌至 79.18～79.97 美元（https://tradingeconomics.com/commodity/crude-oil ）。
