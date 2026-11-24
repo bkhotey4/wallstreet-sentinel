@@ -1,6 +1,6 @@
-台北時間 2026-11-25 00:52
+台北時間 2026-11-25 01:52
 
-# Gemini 第二意見（第 53 版）
+# Gemini 第二意見（第 54 版）
 
 本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
@@ -13,7 +13,7 @@
   1. 2024 年 8 月股災（日圓套利平倉衝擊）：自 2024-08-01 至 2024-08-08 連續 6 個營業日融資淨減少，集中市場融資餘額自 3,312 億元降至 2,918 億元，累計減少 394 億元（減幅約 -11.9%）。其中 8/5 單日融資大減 182.9 億元，8/6 再減 163.3 億元（兩天上市櫃合計減少逾 481 億元）。融資減幅於第 6 天收斂至 20 億元內，大盤於 8/6 盤中見低點（19,783 點）後隨即展開強彈，8/9 融資首度轉為淨增加。
   2. 2025 年 4 月對等關稅風暴（單日跌 9.70%）：清明連假後自 2025-04-07 至 2025-04-11 連續 5 個營業日融資淨減少，5 天累計減少約 9.8%，第 4 天為處分高峰。
   3. 歷史常態基準率：自然市場下集中處分期通常為 4 至 6 個營業日，總減幅達 10%～12% 為籌碼沉澱臨界點。
-  4. 證交所 11/23 最新官方政策：臺灣證券交易所於 2026-11-23 正式公告，自 2026-11-24 起信用交易整戶擔保維持率由 130% 調降至 120%，並實施「舊追繳紀錄大赦條款」——11/24 前因維持率低於 130% 而已被通知補繳者，一律取消追繳紀錄且不處分擔保品（聯合新聞網 https://udn.com/news/story/7251/8378950 ，2026-11-23 15:30 台北；證交所官方發布 https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001 ）。
+  4. 證交所 11/23 最新官方政策：臺灣證券交易所於 2026-11-23 正式公告，自 2026-11-24 起信用交易整戶擔保維持率由 130% 調降至 120%，並實施「舊追繳紀錄大赦條款」——11/24 前因維持率低於 130% 而已被通知補繳者，一律取消追繳紀錄且不處分擔保品（臺灣證券交易所官方發布 https://www.twse.com.tw/zh/page/news/detail.html?id=202611230001 ；聯合新聞網 https://udn.com/news/story/7251/8378950 ，2026-11-23 15:30 台北）。
   5. 11/24 集中市場融資餘額最新官方結算：11/24 台股大漲 3,310 點後，集中市場融資餘額由 11/23 的 4,338.07 億元暴增 197.0 億元至 4,535.6 億元，反映散戶槓桿在斷頭危機解除後單日報復性搶進。
 - 傳聞：市場傳聞部分中小型券商因週末系統參數更新不及，23 日盤後仍自動發出追繳簡訊，但 24 日早盤已全數依官方命令取消執行。
 - 本站漏掉的：本站原先模型假設「強制處分賣壓必然在 11/24～11/25 集中釋放」，漏掉了行政主管機關動用大赦條款阻斷去槓桿連鎖反應的政策介入路徑，以及政策大赦後散戶槓桿單日激增近 200 億元的極端反轉。
@@ -99,7 +99,7 @@
 - 本站漏掉的：Zscaler 既有 8,000 家企業客戶交叉銷售潛力。
 
 ### ADI｜亞德諾半導體 Q4 營收 43.7 億美元、調整後 EPS 4.06 美元雙雙大超預期
-- 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 100%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 151.8 億美元（年增 38%），自由現金流達 55 億美元（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
+- 事實：亞德諾半導體（Analog Devices, ADI）於 2026-11-24 盤前公布 2026 財年 Q4 財報，營收達 43.7 億美元（年增 42%），超越市場共識的 43.2 億美元；調整後稀釋每股盈餘達 4.06 美元（年增逾 80%），大幅超越共識的 3.89 美元。全財年營收達創紀錄之 151.8 億美元（年增 38%），自由現金流達 55 億美元（ADI IR https://investor.analog.com/financial-results/ ，2026-11-24 07:00 EST）。
 - 傳聞：供應鏈傳出車用電子與工業自動化客戶重啟補庫存訂單。
 - 本站漏掉的：ADI 工業通訊與電源管理晶片毛利率穩健回升至 69.3%。
 
@@ -558,70 +558,62 @@
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 00 時對應檔案（排序編號除以 24 餘數為 0 之檔案清單，本批稽核重點檔案涵蓋：`tools/site_events.py`、`tools/site_tw_chips.py`、`functions/api/gemini_ask.js` 等）：
+本批稽核依照規範審查專案中台北時間 01 時對應檔案（排序編號除以 24 餘數為 1 之檔案清單，本批稽核重點檔案涵蓋：`tools/site_tw_chips.py`、`tools/site_ipo.py`、`functions/api/news.js` 等）：
 
-### CODE-1｜tools/site_events.py：第 324-334 行 earn_events() 與 upcoming() 傳入之基準日期與時區口徑不一致導致財報前瞻預測（preview）無法精準匹配
-- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L324-L334)
+### CODE-1｜tools/site_tw_chips.py：第 51 行融資維持率說明文字仍寫死「個別帳戶低於 130% 會被追繳」，未更新至證交所 11/24 實施的 120% 官方新制
+- 檔案路徑與行號：[tools/site_tw_chips.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_chips.py#L48-L52)
 - 程式碼片段：
   ```python
-  for r in earn_events(eng, now, floor=1e11, days=days):
-      tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
-      out.append({"kind": "earnings", "sym": r["sym"], "zh": r["zh"], "et": r["next"][:16], "tpe": tp.strftime("%Y-%m-%d %H:%M"),
-                  "mcap_t": round(r["mcap"] / 1e12, 2), "eps_f": r.get("eps_f"), "implied": r.get("mv")})
-  ...
-  calls = {(x.get("sym"), x.get("date")): x.get("call") for x in json.loads(pv.read_text(encoding="utf-8")).get("items") or []}
-  for x in out:
-      x["preview"] = calls.get((x["sym"], x["et"][:10]))
+  mr, dt = d.get("mratio") or {}, d.get("daytrade") or {}
+  if mr.get("ratio"):
+      mp = _prev(d, "mratio", ("ratio",))
+      lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 130% 會被追繳）')
   ```
 - 為什麼有問題：
-  在第 322 行 `now = now or datetime.now(TPE)` 預設採用台北時間，而在調用 `earn_events(eng, now, floor=1e11, days=days)` 時，第 106 行將其轉為紐約時間 `et_now = now.astimezone(ET)`。
-  然而在 `earn_preview.json` 中，分析師或爬蟲維護的 `date` 欄位口徑往往依賴資料源本身的時區定義（部分紀錄填寫美東日、部分填寫發布當日的台北日期）。若 `earn_preview.json` 記錄的日期為台北日期（跨日情境，如美東 11/24 盤後發布對應台北 11/25 清晨），第 334 行以 `x["et"][:10]`（美東日期 "2026-11-24"）進行查表鍵值匹配將直接失配回傳 `None`，使財報前瞻說明字串遺失。
+  第 51 行字串硬性寫死 `'；個別帳戶低於 130% 會被追繳）'`。
+  但臺灣證券交易所已於 2026-11-23 正式公告，自 2026-11-24 起信用交易整戶擔保維持率調降至 120%，券商追繳通知門檻同步調降至 120%。此處寫死的 130% 與最新法規及市場真實運作相悖，會對使用者產生誤導。
 - 建議怎麼改：
-  應支援雙重時區鍵值容錯匹配，同時比對美東日期與台北日期：
+  更新該說明字串為 120% 新制標準：
   ```python
-  for x in out:
-      x["preview"] = calls.get((x["sym"], x["et"][:10])) or calls.get((x["sym"], x["tpe"][:10]))
+  lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 120% 會被追繳）')
   ```
 - 確定程度：高。
 
-### CODE-2｜tools/site_tw_chips.py：第 188 行財報達成情形卡片（sec_tw_forecast）年季解析直接截字串 q[:3] 存在跨世紀與民國/西元口徑錯位隱患
-- 檔案路徑與行號：[tools/site_tw_chips.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_tw_chips.py#L186-L190)
+### CODE-2｜tools/site_ipo.py：第 253-255 行台股取消承銷過濾直接使用 _date.today() 存在跨時區（UTC vs 台北時間）提前或延後一天過濾之邊界偏差
+- 檔案路徑與行號：[tools/site_ipo.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ipo.py#L253-L256)
 - 程式碼片段：
   ```python
-  q = rows[0]["q"]
-  lead = (f'{q[:3]} 年第 {q[-1]} 季有公開財測的 {len(rows)} 家上市公司，單季獲利 {n["above"]} 家高於自己財測的上緣、'
-          f'{n["in"]} 家在區間內、{n["below"]} 家低於下緣' + (f'，{close} 家貼著邊界（近似值，分不出來）' if close else ""))
+  from datetime import date as _date, timedelta as _td
+  since = (_date.today() - _td(days=CANCEL_SHOW_DAYS)).isoformat()
+  off = [r for r in (t.get("cancelled") or []) if (r.get("list") or "") >= since]
   ```
 - 為什麼有問題：
-  第 188 行獲取字串 `q`（如 `"115Q3"`）時，寫死硬性切片 `q[:3]` 作為年份，`q[-1]` 作為季別。
-  但在本專案其他模組（如第 136 行 `sec_tw_quarter`）中，皆統一採用標準字串分割 `y, q_num = q.split("Q")`。
-  一旦資料來源在未來改制為西元年格式（如 `"2026Q3"`）或歷史回測出現二位數民國年（如 `"99Q4"`），`q[:3]` 將產生嚴重錯誤（`"2026Q3"` 截成 `"202 年第 3 季"`；`"99Q4"` 截成 `"99Q 年第 4 季"`）。
-  此外，第 51 行寫死「個別帳戶低於 130% 會被追繳」亦未跟隨 11/24 證交所 120% 官方新制更新。
+  在 Cloudflare Pages / CI 建置環境中，系統預設時區通常為 UTC。
+  第 254 行直接調用標準函式庫 `_date.today()`，取得的是建置伺服器的 UTC 日期。
+  然而台股（`t.get("cancelled")`）的掛牌日 `r["list"]` 係以台北時間（UTC+8）為準。在台北時間上午 00:00～08:00 間（即 UTC 前一日 16:00～24:00），`_date.today()` 取出的日期將比台北時間慢一天，導致 `since` 閥值計算產生 1 天之日期邊界錯位。同檔案第 182 行亦有註記 `the build machine runs on UTC`，但第 254 行未依規範轉換時區。
 - 建議怎麼改：
-  採用 `split("Q")` 進行結構化拆解：
+  導入台北時區或使用共用時區函式：
   ```python
-  y, q_num = q.split("Q")
-  lead = (f'{y} 年第 {q_num} 季有公開財測的 {len(rows)} 家上市公司，單季獲利 {n["above"]} 家高於自己財測的上緣...')
+  from datetime import datetime, timedelta as _td, timezone
+  _TPE = timezone(_td(hours=8))
+  since = (datetime.now(_TPE).date() - _td(days=CANCEL_SHOW_DAYS)).isoformat()
   ```
 - 確定程度：高。
 
-### CODE-3｜functions/api/gemini_ask.js：第 23 行正規表示式 replace(/[^A-Za-z0-9]/g, "") 處理特殊股票代號（如 BRK.B 或含符號代號）時產生非預期字串比對漏洞
-- 檔案路徑與行號：[functions/api/gemini_ask.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/gemini_ask.js#L21-L24)
+### CODE-3｜functions/api/news.js：第 137 行 dedupe() 過濾器採用 nowSec + 600 硬性上限，容易將 RSS 來源微幅時鐘偏差的新聞誤判為未來新聞而遭到剔除
+- 檔案路徑與行號：[functions/api/news.js](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/functions/api/news.js#L135-L140)
 - 程式碼片段：
   ```javascript
-  const keys = [r.s, r.zh, r.en.split(/[\s,.(]/)[0]].filter((k) => k && k.length >= 2);
-  r.heads = news.filter((n) => keys.some((k) => /^[ -~]+$/.test(k)
-    ? new RegExp("(^|[^A-Za-z])" + k.replace(/[^A-Za-z0-9]/g, "") + "(?![A-Za-z])", "i").test(n.t) : n.t.includes(k))).slice(0, 3);
+  export function dedupe(lists, nowSec) {
+    const seen = new Set();
+    return lists.flat().filter((x) => nowSec - x.ts < (x.alert ? 72 : MAX_AGE_H) * 3600 && x.ts <= nowSec + 600)
   ```
 - 為什麼有問題：
-  在處理如波克夏海瑟威（`BRK.B` 或 `BRK-B`）等代號時，`k.replace(/[^A-Za-z0-9]/g, "")` 會將其直接消除點號與連字號轉變為 `"BRKB"`。
-  然而主流新聞媒體（如路透、彭博、CNBC）在新聞標題中通常寫為 `"Berkshire Hathaway (BRK.B)"` 或 `"BRK-B"`。經過該正則處理後，`RegExp` 會比對 `"BRKB"`，導致含有正確標點之原新聞標題無法被匹配，使本站出現「本站沒有找到對得上的新聞」之假性缺漏。
+  在第 137 行中，`x.ts <= nowSec + 600` 用於防禦未來時間戳。但部分主流財經媒體 RSS（如 CNBC、Bloomberg、中央社）伺服器時鐘若因 NTP 漂移或跨時區發布標記偏差超過 10 分鐘（600 秒），剛發布的即時重大頭條將直接被此過濾器過濾掉，導致新聞列表出現突發新聞無法及時上線的假性延遲。
 - 建議怎麼改：
-  應對英文字元進行標準正則跳脫（`escapeRegex`），而非暴力移除符號：
+  將未來時間戳容忍區間適度放寬至 1 小時（3600 秒），兼顧異常防禦與即時新聞穩定性：
   ```javascript
-  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  r.heads = news.filter((n) => keys.some((k) => /^[ -~]+$/.test(k)
-    ? new RegExp("(^|[^A-Za-z0-9])" + esc(k) + "(?![A-Za-z0-9])", "i").test(n.t) : n.t.includes(k))).slice(0, 3);
+  return lists.flat().filter((x) => nowSec - x.ts < (x.alert ? 72 : MAX_AGE_H) * 3600 && x.ts <= nowSec + 3600)
   ```
 - 確定程度：高。
 
