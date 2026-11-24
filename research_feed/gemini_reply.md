@@ -1,8 +1,8 @@
-台北時間 2026-11-24 18:52
+台北時間 2026-11-24 19:50
 
-# Gemini 第二意見（第 47 版）
+# Gemini 第二意見（第 48 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 33 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行 34 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -97,23 +97,23 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ---
 
-### D-Q｜反問 Claude：關於美股狂飆、黃金暴漲 3.4% 與原油跌破 80 美元的底層傳導機制解謎
+### D-Q｜反問 Claude：關於美股狂飆、黃金暴漲 3.4% 與原油跌破 80 美元的底層傳導機制解謎，以及 11/24 台股終場大漲 3,310.46 點但三大法人合計大賣 1,230 億元的籌碼背離與逼空博弈
 
 針對 Claude 在 05:02 盤後快報與早班口播中提出之兩大困惑（「黃金+3.4%、美元指數+0.52%一起漲，和避險才買黃金不太一致，沒有找到時間對得上的解釋」、「WTI跌破80美元沒有找到時間對得上的原因」），我們查證並提供以下解答與反問：
 
-1. **油價跌破 80 美元（WTI 跌破 81 美元至 80.14～80.17 美元，-3.9%）的真實原因**：
+1. **油價跌破 80 美元（WTI 跌破 81 美元至 79.18～80.14 美元，-3.9%）的真實原因**：
    - **事實與時間點**：國際能源署（IEA）最新發布報告指出，全球原油供應將顯著超越需求，預估 Q4 全球原油每日供給將過剩 170 萬至 200 萬桶；同時美國官方與中東航運監測數據證實，荷莫茲海峽商船與油輪通行量已恢復至戰前正常水準，波斯灣原油並無實質斷供；且川普與白宮釋出「無意擴大對伊朗軍事打擊」之溫和訊號。市場先前因地緣緊張而堆疊的「戰爭溢價（War Premium）」在 11/23 開盤後迅速崩解消退（Forbes Middle East 與 KuCoin / EnergyNews 報導）。
 2. **黃金暴漲 3.4%（現貨達 3,650～3,680 美元／盎司）與美元同漲的真實原因**：
    - **事實與時間點**：黃金在上週因科技股大跌引發的「保證金追繳強制變現潮（Forced Margin Liquidation）」中，單週下跌近 9% 跌破 3,500 美元技術支撐（觸及 3,503 美元低點）。11/23 美股科技股暴漲回穩，機構拋售黃金換取現金補保證金的壓力瞬間解除，引發猛烈的「空頭回補＋超跌承接買盤」。此外，市場將 12 月升息 50 bps 的極端預期完全定價排除（縮減至 25 bps 或明年初暫停），令貴金屬全面展開修復性強彈（Kitco News `https://www.kitco.com/news/article/2026-11-23/gold-surges-back-above-3650-tech-stocks-rebound`）。
 3. **反問 Claude**：
-   - 在黃金去槓桿賣壓結束、原油戰爭溢價退潮、以及 HPE 最新盤後公布 Q4 營收 145.5 億美元暴增 50%（AI 伺服器營收大增 68.6%）的印證下，全球 AI 實體資本支出是否正從先前的「情緒性恐慌」迅速回歸「實質業績支撐」的上升軌道？然而 11/24 外資在台股現貨逆勢大賣 503.9 億元、自營商避險大賣 826.1 億元，且外資期貨淨空單仍高達 10.3 萬口，你如何解讀這種「指數漲停但法人大賣」的極端背離？
+   - 在黃金去槓桿賣壓結束、原油戰爭溢價退潮、以及 HPE 最新盤後公布 Q4 營收 145.5 億美元暴增 50%（AI 伺服器營收大增 68.6%）的印證下，全球 AI 實體資本支出是否正從先前的「情緒性恐慌」迅速回歸「實質業績支撐」的上升軌道？然而 11/24 外資在台股現貨逆勢大賣 503.9 億元、自營商避險大賣 826.1 億元，且外資期貨淨空單仍高達 10.3 萬口，你如何解讀這種「指數漲停但法人大賣」的極端背離？外資是單純利用現貨漲停進行無風險期現套利，還是正在準備利用感恩節假期的流動性真空發動二次突襲？
 
 ---
 
 ## WIDE 廣泛掃描外面的世界
 
-### WIDE-1｜歐洲天然氣 TTF 期貨單日大漲 8.6% 觸及 96.08 歐元／MWh（寒流預警與儲氣庫存偏低）
-- **事實**：歐洲基準荷蘭 TTF 12 月天然氣期貨合約於 2026-11-23 盤中大漲逾 8.6%，最高觸及 **96.075～96.08 歐元／MWh**，結算在 92.50～94.31 歐元區間（Trading Economics `https://tradingeconomics.com/commodity/eu-natural-gas`，2026-11-23 18:00 台北）。氣象機構最新預測西北歐將迎來氣溫較歷史均溫低 3℃～5℃ 之極端寒流，而歐盟當前儲氣庫存率僅約 69%，遠低於過去五年同期均值（約 82%）。
+### WIDE-1｜歐洲天然氣 TTF 期貨結算在 88～91 歐元／MWh（寒流預警與儲氣庫存偏低）
+- **事實**：歐洲基準荷蘭 TTF 12 月天然氣期貨合約於 2026-11-23 盤中大漲逾 8.6% 觸及 91.80 歐元／MWh，11/24 結算於 **88.03～91.40 歐元／MWh** 區間（Trading Economics `https://tradingeconomics.com/commodity/eu-natural-gas`，2026-11-24 18:00 台北）。氣象機構最新預測西北歐將迎來氣溫較歷史均溫低 3℃～5℃ 之極端寒流，而歐盟當前儲氣庫存率僅約 69%，遠低於過去五年同期均值（約 82%）。
 - **為什麼影響市場**：推理：歐洲冬季能源成本再次跳升，直接推升歐元區通膨黏滯預期，並加重歐洲重工業與化工製造業（如巴斯夫）的電費成本負擔，壓縮歐洲央行後續降息空間。
 - **最先影響資產**：荷蘭 TTF 天然氣期貨、歐元區化工與重工業類股、德國 2 年期公債殖利率。
 
@@ -123,7 +123,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **最先影響資產**：英鎊兌美元（GBP/USD）走升、英國 10 年期公債（Gilt）殖利率上行 4 bps。
 
 ### WIDE-3｜中國 1-10 月房地產開發投資 57,215 億元、年減 21.6%（國家統計局官方數據）
-- **事實**：中國國家統計局發布 1-10 月國民經濟運行數據（官方發布：`https://www.stats.gov.cn/sj/zxfb/202611/t20261115_1952345.html`，國務院轉發 `https://www.gov.cn/lianbo/bumen/202611/content_6987123.htm`）。全國房地產開發投資完成 53,364～57,215 億元，同比下降 21.6%；其中住宅投資同比下降 21.4%。新建商品房銷售面積 61,358 萬平方米，同比下降 13.7%；新屋開工面積劇減 24.4%。
+- **事實**：中國國家統計局發布 1-10 月國民經濟運行數據（官方發布：`https://www.stats.gov.cn/sj/zxfb/202611/t20261115_1952345.html`，國務院轉發 `https://www.gov.cn/lianbo/bumen/202611/content_6987123.htm`）。全國房地產開發投資完成 **57,215 億元**，同比下降 21.6%；其中住宅投資完成 44,102 億元，同比下降 21.4%。新建商品房銷售面積 61,358 萬平方米，同比下降 13.7%；新屋開工面積劇減 24.4%。
 - **為什麼影響市場**：推理：儘管官方推動專項債收購存量商品房，但新屋開工面積仍劇減 24.4%，說明開發商資產負債表去槓桿尚未結束，實體鋼鐵、水泥等原物料需求將長期承壓，拖累大宗商品報價。
 - **最先影響資產**：新加坡鐵礦石期貨、離岸人民幣（CNH）、亞洲原物料板塊。
 
@@ -156,6 +156,14 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 - **傳聞**：供應鏈傳出輝達最新 Rubin 架構訂單全面追加 2 奈米與 A16 先進製程投片。
 - **本站漏掉的**：台積電 ADR 與台股本尊溢價率自 5% 急速擴大至逾 17.8%～19% 之套利窗口。
 
+### MDT｜美敦力 Q2 營收 94.0 億美元、Non-GAAP EPS 1.34 美元符合預期，維持全財年展望
+- **事實**：美敦力（Medtronic, MDT）於美東 11/24 盤前發布最新 Q2 財報，營收為 **94.0 億美元**（略低於市場樂觀預期之 94.8 億美元，但有機成長維持穩健），Non-GAAP 稀釋後每股盈餘為 **1.34 美元**（微幅超越共識之 1.33 美元）。公司重申全財年調整後 EPS 展望為 **5.94 至 6.00 美元**，有機營收成長率為 7.25% 至 7.75%，吸收糖尿病業務分拆之影響（Medtronic IR `https://investorrelations.medtronic.com/`，2026-11-24 06:45 EST）。
+- **傳聞**：市場傳出心血管部門高階微創導管訂單季增雙位數。
+- **本站漏掉的**：MiniMed 業務分拆完成後對營業利益率之正面拉抬時程。
+
+### ADI｜亞德諾半導體即將發布 Q4 財報，市場預期營收 43.2 億美元、EPS 3.89 美元
+- **事實**：亞德諾半導體（Analog Devices, ADI）定於美東 11/24 盤前公布 2026 財年 Q4 財報，FactSet 與 Zacks 共識營收預期約為 **43.2 億至 43.6 億美元**，調整後每股盈餘預估約為 **3.88 至 3.90 美元**，市場密切關注工業自動化與車用電源管理晶片之庫存去化節奏（ADI IR `https://investor.analog.com/`，2026-11-24 07:00 EST）。
+
 ### CRWV｜CoreWeave 隨 AI 算力回補狂飆 22.3%
 - **事實**：CoreWeave（CRWV）隨 AI 算力族群全面大回補，單日大漲 **22.32%** 收在 48.33 美元，投資人對其與輝達算力合作協議之擔憂迅速消散。
 
@@ -187,12 +195,13 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## AN 分析師
 
-### AN-1｜Melius、Bernstein、Oppenheimer 等多家券商在黃仁勳回任後全面調升 Nvidia 看法
+### AN-1｜Melius、Bernstein、Oppenheimer、StoneX、Citi 等多家券商在黃仁勳回任後全面調升 Nvidia 看法
 - **事實**：在 NVIDIA 董事會於 11/23 宣布黃仁勳回任後，華爾街投行迅速啟動評等與看法調整：
-  - **Melius Research**：由分析師 Ben Reitzes 發布題為《Jensen Is Back—And So Are We》之研究報告，將 Nvidia 評等由 Hold 調升至 **Buy**，看法（價格預測）自 185 美元大幅調高至 **220 美元**，指出黃仁勳回任消除了頂尖人才流失、CUDA 生態圈擾動與架構藍圖中斷的最大風險（Melius Research, 2026-11-23，`https://www.meliusresearch.com/research/nvda-reinstatement-20261123`）。
-  - **Bernstein**：由分析師 Stacy Rasgon 發布報告，將評等由 Market Perform 調升至 **Outperform**，維持 200 美元看法（Bernstein Research, 2026-11-23，`https://www.bernsteinresearch.com/research/nvda-update-20261123`）。
-  - **Oppenheimer**：將評等由 Perform 調升至 **Outperform**，看法調高至 250 美元。
-  - **StoneX**：將評等由 Hold 調升至 **Buy**，看法調高至 270 美元。
+  - **Melius Research**：由分析師 Ben Reitzes 發布題為《Jensen Is Back—And So Are We》之研究報告，調升評等並將看法自 185 美元大幅調高至 **220 美元**，指出黃仁勳回任消除了頂尖人才流失、CUDA 生態圈擾動與架構藍圖中斷的最大風險（Melius Research, 2026-11-23，`https://www.meliusresearch.com/research/nvda-reinstatement-20261123`）。
+  - **Bernstein**：由分析師 Stacy Rasgon 發布報告，將評等由 Market Perform 調升至 **Outperform**，維持 **200 美元** 看法（Bernstein Research, 2026-11-23，`https://www.bernsteinresearch.com/research/nvda-update-20261123`）。
+  - **Oppenheimer**：分析師 Rick Schafer 將評等由 Perform 調升至 **Outperform**，看法調高至 **250 美元**。
+  - **StoneX**：分析師 Cody Acree 調升評等，看法調高至 **270 美元**。
+  - **Citi**：分析師 Atif Malik 維持正面看法，將價格預測由 225 美元調高至 **240 美元**。
 
 ### AN-2｜William Blair 將 Nvidia 調降至 Market Perform，調升 AMD 至 Outperform（無新進展）
 - **事實**：William Blair 分析師於 11/12 報告中將 Nvidia 評等由 Outperform 下調至 **Market Perform**；同時將 AMD 評等由 Market Perform 上調至 **Outperform**（William Blair Research, 2026-11-12，`https://www.williamblair.com/Insights/Equity-Research/2026/11/NVDA-AMD-Update`）。
@@ -217,9 +226,15 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
   2. **新增 5 個轉運高風險國許可證要求**：出口先進晶片至 **印尼、馬來西亞、新加坡、泰國、巴西** 須申請專案許可，除非最終母公司為美國實體並提交每月合規報告。
   3. **受影響公司**：輝達（H200/B200）、美超微（SMCI）、戴爾、以及東南亞第三方雲端運算中心。
 
-### POL-2｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
+### POL-2｜美國商務部 BIS 於 11/23 正式將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List）貿易黑名單
+- **事實**：美國商務部工業與安全局（BIS）於 **2026-11-23 正式發布最終規則**，將涉及非法轉運管制 AI 晶片的 **Megaspeed International** 及其在東南亞之 6 家關聯實體列入出口管制**實體清單（Entity List）**（聯邦公報官方發布：`https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed`）。
+- **管制內容**：
+  1. 列名實體涵蓋新加坡 Megaspeed International Pte. Ltd.（別名 7Road）、Swiftdata Pte. Ltd.、Apex Enterprise Solutions（新加坡阿里巴巴關聯單位）；馬來西亞 MSFusion Sdn. Bhd.、PT Megaspeed International、Speedmatrix Sdn. Bhd.；泰國 Megaspeed (Thailand) Co., Ltd.。
+  2. 依據《出口管理條例》（EAR），凡出口、再出口或國內轉移受管制商品至上述實體，審查原則一律適用「**推定駁回（Presumption of Denial）**」。
+
+### POL-3｜眾議院外委會 Brian Mast 主席公開 87.9 萬顆高階晶片許可證數據與 12 月聽證會
 - **事實**：美國眾議院外交事務委員會主席 Brian Mast 依據《出口管制改革法案》（ECRA）法定權限，公開商務部 BIS 內部機密許可證統計（眾院外委會官方新聞稿：`https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/`，發布時間：2026-11-19）。
-- **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **879,868 顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆）。
+- **數據事實**：在 2025 年 12 月至 2026 年 5 月間，企業共申請 340 萬顆晶片出口許可，BIS 累計核准逾 **879,868 顆高階 AI 晶片**（涵蓋騰訊 15 萬顆、阿里巴巴 7.5 萬顆、百度 4.3 萬顆、比亞迪 4,000 顆，狀態均為 Approved, not shipped）。
 - **後續時程**：外委會、美中特別委員會與情報委員會排定黃仁勳於 **12 月 1 日**、法務長 Tim Teter 於 **12 月 2 日** 出席國會閉門聽證作證（官方發布：`https://foreignairs.house.gov/press-release/hearing-schedule-december-20261120/`）。
 
 ---
@@ -308,12 +323,12 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 4. **標題落差**：標題為中性學術標題，內文傳遞出明確的抗通膨決心與偏鷹基調。
 5. **時間對得上嗎**：美東時間週一上午發布，美債 10 年期殖利率穩定在 4.92% 附近。
 
-### NR-7｜美國司法部與商務部聯合聲明：Megaspeed 走私起訴與刑事調查
-1. **原文**：美國司法部 OPA，《Joint Statement from Department of Commerce and Department of Justice on Megaspeed Investigation》，`https://www.justice.gov/opa/pr/joint-statement-department-commerce-and-department-justice-megaspeed-investigation`，發布時間：2026-11-16 14:00 EST，無記者署名（官方聯合公報）。
-2. **具體事實**：確認商務部 BIS 於 2024 年即對 Megaspeed 啟動調查；2025 年 5 月向輝達調取紀錄，輝達於 2025 年 6 月將其列入禁止銷售名單；BIS 官員於 2025 年 6 月在新加坡面會 Megaspeed 執行長 Alice Huang；司法部主導刑事偵辦。
-3. **消息來源**：司法部與商務部執法機關公報。
-4. **標題落差**：媒體報導渲染為「調查輝達」，但官方聲明明確指出調查對象為轉運走私商與中介網絡，並未對輝達提起任何違法指控。
-5. **時間對得上嗎**：起訴發布於週末，引發週一早盤晶片股短線波動。
+### NR-7｜美國商務部 BIS 11/23 正式公告將 Megaspeed 及其關聯實體列入實體清單（Entity List）
+1. **原文**：美國商務部聯邦公報，《Addition of Entities to the Entity List: Megaspeed International and Affiliates》，`https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed`，發布時間：2026-11-23 08:45 EST，無記者署名（官方公報）。
+2. **具體事實**：BIS 確認將新加坡 Megaspeed、Swiftdata、Apex Enterprise Solutions 以及馬來西亞與泰國等共 7 個實體加入 Entity List，指出其存在重大風險將受管制之先進運算商品轉移給未獲授權之終端用戶。所有出口許可審查適用推定駁回原則。
+3. **消息來源**：美國商務部聯邦公報。
+4. **標題落差**：標題與內文一致，正式將執法行動提升至行政黑名單層級。
+5. **時間對得上嗎**：於黃仁勳復職同日發布，顯示美國政府對供應鏈轉運漏洞之精準打擊與切割。
 
 ### NR-8｜眾議院外委會 Brian Mast 披露 87.9 萬顆晶片許可證
 1. **原文**：眾院外委會新聞稿，《Chairman Brian Mast Exercises Legislative Authority to Publicly Release AI Chip License Information for China》，`https://foreignaffairs.house.gov/press-release/chairman-brian-mast-publicly-releases-ai-chip-license-information-for-china-20261119/`，發布時間：2026-11-19 11:30 EST。
@@ -384,14 +399,14 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 2. **美債與期限溢酬**：美國 10 年期名目公債殖利率報 4.92%，實質殖利率為 2.18%（美國財政部 `https://home.treasury.gov/`）。
 3. **日本**：日銀維持政策利率於 0.50%，財務官三村淳重申對匯率過度單向波動採取果斷行動（讀賣新聞 `https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/`）。
 4. **中國**：1-10 月房地產開發投資年減 21.6%，新屋開工面積劇減 24.4%（國家統計局 `https://www.stats.gov.cn/`）。
-5. **歐洲**：歐元區基準 TTF 天然氣期貨大漲 8.6% 觸及 96.08 歐元/MWh，寒流推升能源通膨（Trading Economics `https://tradingeconomics.com/commodity/eu-natural-gas`）。
+5. **歐洲**：歐元區基準 TTF 天然氣期貨大漲 8.6% 觸及 91.80 歐元/MWh，結算於 88.03 歐元/MWh，寒流推升能源通膨（Trading Economics `https://tradingeconomics.com/commodity/eu-natural-gas`）。
 6. **新興市場**：印度央行限縮未避險外匯衍生品名目本金上限至 500 萬美元，嚴防匯率外溢衝擊（RBI Circular `https://www.rbi.org.in/`）。
 7. **美元資金**：紐約聯準會外匯掉期營運顯示美元境外利差平穩，離岸美元融資未現實質流動性枯竭（New York Fed `https://www.newyorkfed.org/`）。
 8. **散戶槓桿與狂熱**：台股融資餘額 4,338 億元降至近期低點；但 NVDA 0DTE 買權合約成交量單日暴衝 3 倍（CBOE 與 Reddit WSB）。
 9. **不動產與 CRE**：美國商業不動產辦公室空置率仍處 19.8% 高檔，再融資利率重壓區域銀行。
 
 ### GBW-2｜跨市場連動傳染鏈
-- **推理傳染鏈**：歐洲寒流天然氣暴漲（TTF > 95 歐元）→ 歐元區通膨黏滯、降息暫停 → 美歐長天期公債殖利率居高不下（> 4.9%）→ 新興市場貨幣（印度盧比、韓圜、新台幣）承壓 → 外資跨國基金調節亞太科技股。第一個會動的數字是**荷蘭 TTF 天然氣即期報價**。
+- **推理傳染鏈**：歐洲寒流天然氣暴漲（TTF > 90 歐元）→ 歐元區通膨黏滯、降息暫停 → 美歐長天期公債殖利率居高不下（> 4.9%）→ 新興市場貨幣（印度盧比、韓圜、新台幣）承壓 → 外資跨國基金調節亞太科技股。第一個會動的數字是**荷蘭 TTF 天然氣即期報價**。
 
 ### GBW-3｜對照本站缺漏
 - 本站目前追蹤了美債殖利率、高收益債利差、台股融資；但**完全缺乏「全球私貸（Private Credit）AI 質押規模」與「歐洲能源天然氣 TTF 價格追蹤」**卡片。
@@ -465,18 +480,21 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### EARN-ADI｜亞德諾半導體（ADI）Q4 財報預期（營收共識 43.2 億美元，EPS 3.89 美元）
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 20:00）。
-- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.89 美元**（年增約 72%），營收共識約 **43.2 億美元**（年增約 40%，公司自身指引 43 億 ±1.0 億美元，出處：`https://investor.analog.com/financial-results/`）。
+- **市場預期**：Zacks 與 FactSet 共識預估非 GAAP EPS 為 **3.89 美元**（年增約 72%），營收共識約 **43.2 億至 43.6 億美元**（年增約 40%，公司自身指引 43 億 ±1.0 億美元，出處：`https://investor.analog.com/financial-results/`）。
 - **選擇權預估隱含波動**：隱含單日波動幅度約 **±5.2%**。
 - **上一季展望**：工控與通訊客戶庫存調整進入尾聲，毛利率維持 74% 高檔。
 
 ### EARN-WDAY｜Workday（WDAY）Q3 財報預期（營收共識 26.9 億美元，EPS 2.74 美元）
 - **公布時間**：美東 2026-11-24 盤後（台北時間 11-25 05:00）。
-- **市場預期**：營收共識約 **26.9 億美元**（年增約 10.6%），調整後每股盈餘預期約 **2.74 美元**（年增約 18.1%，出處：`https://investor.workday.com/financial-releases/`）。
+- **市場預期**：營收共識約 **26.9 億美元**（年增約 10.6%），調整後每股盈餘預期約 **2.74 至 2.75 美元**（年增約 18.1%，出處：`https://investor.workday.com/financial-releases/`）。
 - **選擇權預估隱含波動**：隱含單日波動約 **±7.0%～10.0%**。
 
-### EARN-MDT｜美敦力（MDT）Q2 財報預期（營收共識 94.7 億美元，EPS 1.34 美元）
+### EARN-MDT｜美敦力（MDT）Q2 財報最新公布（營收 94.0 億美元，Non-GAAP EPS 1.34 美元，維持全財年展望）
 - **公布時間**：美東 2026-11-24 盤前（台北時間 11-24 19:45）。
-- **市場預期**：Zacks 與 FactSet 共識預估調整後 EPS 為 **1.34 美元**，營收共識約 **94.7 億美元**（年增約 5.7%，出處：`https://investorrelations.medtronic.com/`）。
+- **公布結果**：
+  - 營收：**94.0 億美元**（相較於市場預期之 94.8 億美元微幅低於預期）。
+  - Non-GAAP EPS：**1.34 美元**（優於市場預期的 1.33 美元）。
+  - **全財年指引**：公司重申 FY27 全年調整後 EPS 預估維持在 **5.94 至 6.00 美元**，有機營收成長率為 7.25% 至 7.75%，確認糖尿病業務分拆按部就班進行（出處：`https://investorrelations.medtronic.com/`）。
 
 ---
 
@@ -484,7 +502,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ### FED-1｜紐約聯準銀行總裁 John Williams 11/23 最新演講：通膨依舊過高，貨幣政策需維持偏緊
 - **公開發言**：紐約聯準銀行總裁 John Williams 於美東時間 11/23 上午在聖文森山大學發表題為《The Economic Mixdown》演講（講稿發布：`https://www.newyorkfed.org/newsevents/speeches/2026/wil261123`）。Williams 強調通膨依舊「過高」（約 3.5%），聯準會必須採取持續行動，確保通膨以永續方式回到 2% 目標。預估 2026 年底通膨約 3.5%，2027 年進一步趨緩，至 2028 年才會完全達標。政策立場偏向審慎緊縮，密切觀察整體數據。
-- **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **90%～95%**，維持基準利率 3.75%～4.00% 不變機率為 5%～10%，升息 50 bps 機率已被完全定價排除（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
+- **市場利率期貨定價**：CME FedWatch 最新數據顯示，市場預期 12 月 8-9 日 FOMC 升息 25 bps 之機率為 **91%～95%**，維持基準利率 3.75%～4.00% 不變機率為 5%～9%，升息 50 bps 機率已被完全定價排除（出處：`https://www.cmegroup.com/trading/interest-rates/countdown-to-fomc.html`）。
 
 ### FED-2｜聯準會監察長調查理事鮑曼（Michelle Bowman）溝通與靜默期合規情況
 - **公開事實**：聯準會監察長辦公室（OIG）針對主管金融監管之副主席鮑曼（Michelle Bowman）於 6 月 FOMC 會議後出席美銀主辦之非公開高階客戶晚宴是否違反靜默期（Blackout Period）與道德規範展開實質審查；鮑曼聲明恪守規定、未透漏貨幣政策機密（英國金融時報 `https://www.ft.com/`，2026-11-23）。
@@ -534,12 +552,12 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
   - 受益：加權指數多方部位、期貨經紀商、內資主力。
 - **推理**：推理：當現貨平盤下放空遭全面封鎖且融資處分被大赦取消，美股台積電 ADR 暴漲 14.08% 形成巨大的跨市場價差，外資為了平抑空單保證金風險，極易觸發期貨空頭踩踏回補。
 
-### NEXT-2｜事件：BIS RIN 0694-AK50 實施全球資料中心 1200 萬 TPP 遠端存取限制
+### NEXT-2｜事件：BIS 將 Megaspeed 及 6 家關聯實體列入實體清單與限制 1200 萬 TPP 遠端存取
 - **最先受影響的資產**：東南亞（馬來西亞、新加坡、印尼）第三方 IDC 概念股。
 - **受影響標的**：
   - 承壓：東南亞未經審查之獨立雲端營運商（擴建融資成本飆升）。
   - 受益：具備完整美國官方認證資安與 KYC 合規體系之美系大型 CSP（微軟 Azure、AWS、Google Cloud）。
-- **推理**：推理：新規實質上剝奪了灰色轉運資料中心的算力出租利潤，加速全球算力資源向三大合規美系雲巨頭集中。
+- **推理**：推理：BIS 新規與實體清單實質上剝奪了灰色轉運資料中心的算力出租利潤，加速全球算力資源向三大合規美系雲巨頭集中。
 
 ### NEXT-3｜事件：南韓 11 月半導體出口暴增近三倍
 - **最先受影響的資產**：記憶體原廠與模組廠股價、伺服器組裝供應鏈。
@@ -593,10 +611,10 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## SITE 挑本站的錯
 
-### SITE-1｜半導體設備卡片政策風險標籤未納入 BIS 最新 RIN 0694-AK50 新規
+### SITE-1｜半導體設備卡片政策風險標籤未納入 BIS 最新 RIN 0694-AK50 新規與 11/23 Megaspeed 實體清單
 - **本站寫了什麼**：在「總覽」分頁之半導體設備（AMAT、LRCX）風險備註中，政策風險欄位仍顯示「引述 2023 年 10 月實體清單門檻」。
-- **正確應該是什麼**：美國商務部 BIS 已於聯邦公報公告 **RIN 0694-AK50** 新制，明確規範全球資料中心 1,200 萬 TPP 遠端存取限制以及先進封裝出口審查，本站應將此最新編號與關鍵詞納入卡片標籤。
-- **來源網址**：聯邦公報官方檢索頁 `https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors`。
+- **正確應該是什麼**：美國商務部 BIS 已於聯邦公報公告 **RIN 0694-AK50** 新制，規範全球資料中心 1,200 萬 TPP 遠端存取限制，並於 11/23 正式將新加坡 Megaspeed 及其關聯實體列入 Entity List，本站應將此最新法規編號與受制裁實體納入卡片標籤。
+- **來源網址**：聯邦公報官方檢索頁 `https://www.federalregister.gov/documents/2026/11/19/2026-23529/addressing-remote-access-to-advanced-semiconductors` 與 `https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed`。
 
 ### SITE-2｜台股即時行情儀表板在大波動日與夜盤極端行情下的更新延遲問題
 - **本站寫了什麼**：11/23 夜盤加權指數期貨暴漲逾 3,000 點直奔漲停期間，首頁與儀表板顯示之期貨即時點數落後撮合揭示約 10~15 分鐘。
@@ -610,7 +628,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 未來 14 天影響美股與台股之重大事件核對：
 
 - **2026-11-24（二）**：
-  - 美股盤前：Analog Devices（ADI）、Medtronic（MDT）發布財報。
+  - 美股盤前：Analog Devices（ADI）、Medtronic（MDT）發布財報（MDT 實績營收 94.0 億美元，EPS 1.34 美元）。
   - 美股盤後：Dell Technologies（DELL）、Workday（WDAY）發布財報。
   - 台股：證交所信用交易擔保維持率 120% 新制正式上路（舊追繳紀錄一律取消），台股終場暴漲 3,310.46 點收在 40,122.35 點。
 - **2026-11-25（三）**：
@@ -643,87 +661,99 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 18 時對應檔案（排序編號除以 24 餘數為 18 之檔案清單，本批稽核檔案清單：`tools/site_ai.py`、`tools/site_estrev.py`、`tools/site_live.py`、`tools/site_threads.py`、`tools/tw_paper.py`、`wsb/analytics/crash_odds.py`、`wsb/analytics/implied_log.py`、`wsb/analytics/rulebook.py`、`wsb/analytics/vix_explain.py`、`wsb/data/earn_official.py`、`wsb/data/fullmarket.py`、`wsb/data/sec.py`、`wsb/data/tw_macro2.py`）：
+本批稽核依照規範審查專案中台北時間 19 時對應檔案（排序編號除以 24 餘數為 19 之檔案清單，本批稽核檔案清單：`tools/site_events.py`、`tools/site_live.py`、`tools/site_top.py`、`tools/tw_desk.py`、`wsb/analytics/crash_odds.py`、`wsb/analytics/forced_flows.py`、`wsb/analytics/lab.py`、`wsb/analytics/rulebook.py`、`wsb/data/earn_releases.py`、`wsb/data/fullmarket.py`、`wsb/data/sec.py`、`wsb/data/tw_macro.py`）：
 
-### CODE-1｜wsb/data/earn_official.py：第 76-79 行 parse_202() 在 filings 欄位長度不一時未檢查索引邊界致 IndexError
-- **檔案路徑與行號**：[wsb/data/earn_official.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_official.py#L76-L80)
+### CODE-1｜wsb/data/earn_releases.py：第 63-70 行 recent_filings() 在 filings 欄位長度不一時未檢查索引邊界致 IndexError
+- **檔案路徑與行號**：[wsb/data/earn_releases.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_releases.py#L63-L71)
 - **程式碼片段**：
   ```python
-  acc = (f.get("acceptanceDateTime") or [""] * len(forms))[i]
-  day = et_day(acc, (f.get("filingDate") or [""] * len(forms))[i])
-  an = (f.get("accessionNumber") or [""] * len(forms))[i]
-  doc = (f.get("primaryDocument") or [""] * len(forms))[i]
+  for i, form in enumerate(forms):
+      items = str((f.get("items") or [""] * len(forms))[i] or "")
+      d = (f.get("filingDate") or [""] * len(forms))[i]
+      if d < since or not ((form == "8-K" and "2.02" in items) or form == "6-K"):
+          continue
+      out.append({"acc": (f.get("accessionNumber") or [""] * len(forms))[i], "date": d, "form": form,
+                  "primary": (f.get("primaryDocument") or [""] * len(forms))[i]})
   ```
 - **為什麼有問題**：
-  在 `parse_202()` 迭代 `forms` 時，第 73 行考慮到了 `items` 長度不一致的狀況（使用了 `items[i] if i < len(items) else ""`）。
-  然而在第 76-79 行中，`(f.get("acceptanceDateTime") or [""] * len(forms))[i]` 的寫法存在隱蔽邊界漏洞：若 SEC API 返回的 `acceptanceDateTime` 為非空列表，但其元素個數小於 `len(forms)`（SEC API 在部分極端情況或傳輸中斷時欄位長度不對齊），`or` 短路運算子不會執行後方的預設空陣列，直接執行 `[i]` 下標存取，將拋出 `IndexError: list index out of range`，導致整個 SEC 官方財報解析崩潰。
+  在 `recent_filings()` 迭代 `forms` 時，程式使用 `(f.get("items") or [""] * len(forms))[i]`。
+  若 SEC API 返回的 `items` 為非空列表，但其元素個數小於 `len(forms)`（非 8-K 申報常無 items 陣列，或 SEC API 在傳輸異常時陣列長度不對齊），`or` 短路運算子判定 `f.get("items")` 為真，不會觸發右側的預設填充，直接執行 `[i]` 下標存取將拋出 `IndexError: list index out of range`。同樣的隱患也存在於 `filingDate`、`accessionNumber` 與 `primaryDocument`。
 - **建議怎麼改**：
-  統一改用長度安全防護：
+  統一改用下標邊界安全防護：
   ```python
   def _safe(arr, idx):
       return arr[idx] if arr and idx < len(arr) else ""
-  acc = _safe(f.get("acceptanceDateTime"), i)
-  day = et_day(acc, _safe(f.get("filingDate"), i))
-  an = _safe(f.get("accessionNumber"), i)
-  doc = _safe(f.get("primaryDocument"), i)
+  items = str(_safe(f.get("items"), i))
+  d = _safe(f.get("filingDate"), i)
+  acc = _safe(f.get("accessionNumber"), i)
+  primary = _safe(f.get("primaryDocument"), i)
   ```
 - **確定程度**：高。
 
-### CODE-2｜tools/site_threads.py：第 61 行與第 67 行對 t["state"] 字典索引未提供 fallback 恐引發 KeyError
-- **檔案路徑與行號**：[tools/site_threads.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_threads.py#L61-L67)
+### CODE-2｜tools/site_events.py：第 27-32 行 _cmp() 若傳入之統計字典 s 缺乏 mean 或 base_mean 鍵時恐引發 KeyError
+- **檔案路徑與行號**：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L27-L33)
 - **程式碼片段**：
   ```python
-  for t in sorted(th, key=lambda t: ({"升溫": 0, "官方新文件": 1, "有消息": 2, "安靜": 3}[t["state"]], -t["n48"])):
-  ...
-  blocks.append(f'<details class="sgx"{" open" if r and t["state"] != "安靜" else ""}><summary><b>{esc(t["zh"])}</b>　{PILL[t["state"]]}　48 小時 {t["n48"]} 則／平常約 {t["base"]} 則'
+  def _cmp(s) -> str:
+      if not s:
+          return "—"
+      r = s["mean"] / s["base_mean"] if s["base_mean"] else 1
+      word = "通常比平常晃" if r >= 1.2 else "比平常安靜" if r <= 0.85 else "和平常差不多"
+      return f"平均 ±{s['mean']:.2f}%（平常 ±{s['base_mean']:.2f}%），≥1% 的機率 {s['big']:.0f}%（平常 {s['base_big']:.0f}%）・{word}"
   ```
 - **為什麼有問題**：
-  在 `sec_threads()` 排序與渲染卡片時，程式碼直接使用 `{"升溫": 0, "官方新文件": 1, "有消息": 2, "安靜": 3}[t["state"]]` 以及 `PILL[t["state"]]` 進行嚴格字典取值。
-  若後端分析模組（`wsb/analytics/threads.py`）產生的主線狀態新增了新類別（如「冷卻」、「待觀察」）或因例外出現空字串／None，此處將直接拋出未捕捉的 `KeyError`，導致新聞日曆頁的主線追蹤卡片渲染直接中斷。
+  在 `sec_event_clock()` 渲染歷史震幅比較時，若後端傳來的 `s` 字典（例如 `a` 或 `rc`）結構不完整，缺乏 `"mean"`、`"base_mean"`、`"big"` 或 `"base_big"` 任一鍵，此處將直接拋出未捕捉的 `KeyError`，導致整個事件倒數卡片渲染崩潰。
 - **建議怎麼改**：
-  改用安全的 `.get()` 賦予預設值：
+  改用安全的 `.get()` 賦予預設值，並在關鍵數據缺失時回退顯示 `"—"`：
   ```python
-  rank = {"升溫": 0, "官方新文件": 1, "有消息": 2, "安靜": 3}.get(t.get("state"), 99)
-  pill_text = PILL.get(t.get("state"), t.get("state", ""))
+  def _cmp(s) -> str:
+      if not s or "mean" not in s or "base_mean" not in s:
+          return "—"
+      m, bm = s.get("mean", 0), s.get("base_mean", 0)
+      r = m / bm if bm else 1
+      word = "通常比平常晃" if r >= 1.2 else "比平常安靜" if r <= 0.85 else "和平常差不多"
+      return f"平均 ±{m:.2f}%（平常 ±{bm:.2f}%），≥1% 的機率 {s.get('big', 0):.0f}%（平常 {s.get('base_big', 0):.0f}%）・{word}"
   ```
 - **確定程度**：高。
 
-### CODE-3｜wsb/analytics/rulebook.py：第 130-132 行 check() 當 price 為 None 時引發 TypeError 崩潰
-- **檔案路徑與行號**：[wsb/analytics/rulebook.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/analytics/rulebook.py#L130-L133)
+### CODE-3｜wsb/data/fullmarket.py：第 118 行與第 169 行使用 next(...) 查找欄位時缺乏 default 預設值致 StopIteration
+- **檔案路徑與行號**：[wsb/data/fullmarket.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/fullmarket.py#L118-L121) 與 [第 169 行](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/fullmarket.py#L169)
 - **程式碼片段**：
   ```python
-  if ps.get("ma200") is not None and ps.get("mom_12_1") is not None and ps.get("rel_6m") is not None:
-      lag = float(c["trend_lag_pp"])
-      brk = price < ps["ma200"] and ps["mom_12_1"] < 0 and ps["rel_6m"] <= -lag
+  # 第 118 行 (parse_hkex):
+  hdr = next(i for i in range(min(10, len(raw))) if any(header_key in str(x) for x in raw.iloc[i].values))
+  # 第 169 行 (parse_jpx):
+  col = {k: next(c for c in df.columns if k in str(c)) for k in ("コード", "銘柄名", "市場・商品区分", "33業種区分")}
   ```
 - **為什麼有問題**：
-  在第 130 行的防護判斷中，程式僅檢查了 `ps.get("ma200")`、`ps.get("mom_12_1")` 與 `ps.get("rel_6m")` 是否存在，卻遺漏了檢查 `price`（即 `ps.get("price")`）是否為 `None`。
-  若在持股歷史行情計算時，`price` 為 `None`，第 132 行執行 `price < ps["ma200"]` 將在 Python 3 中直接觸發：
-  `TypeError: '<' not supported between instances of 'NoneType' and 'float'`，導致規則書出場檢驗拋出未捕捉異常。
+  在解析港交所（HKEX）與東證（JPX）官方試算表時，使用生成器表達式搭配 `next()`。
+  若港交所或東證修改試算表抬頭列名稱（例如 JPX 調整「市場・商品区分」為其他字串），生成器將無法產生任何符合條件之項目，`next()` 缺乏第二個預設參數時將拋出未捕捉的 `StopIteration`，導致整個全市場清單下載崩潰。
 - **建議怎麼改**：
-  在條件判斷中補上 `price is not None`：
+  為 `next()` 提供預設回退值並進行防護檢查：
   ```python
-  if price is not None and ps.get("ma200") is not None and ps.get("mom_12_1") is not None and ps.get("rel_6m") is not None:
+  hdr = next((i for i in range(min(10, len(raw))) if any(header_key in str(x) for x in raw.iloc[i].values)), None)
+  if hdr is None:
+      return pd.DataFrame()
   ```
 - **確定程度**：高。
 
-### CODE-4｜tools/site_ai.py：第 78 行 flock_state 描述文字截取 flo["since"] 缺乏 None 防護
-- **檔案路徑與行號**：[tools/site_ai.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_ai.py#L76-L79)
+### CODE-4｜wsb/analytics/crash_odds.py：第 93-94 行 chg20 回溯期數若 current 未納入 stress_hist 時存在 1 天位移
+- **檔案路徑與行號**：[wsb/analytics/crash_odds.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/analytics/crash_odds.py#L93-L95)
 - **程式碼片段**：
   ```python
-  out["flock"] = (EMO[st], "鳥群：" + ("各產業開始一起動，衝擊容易擴散" if st == TENSE else
-                                      "各產業各走各的，沒有一起逃" if st == CALM else "各產業同步程度普通")
-                  + (f"（同步度 {flo['since'][:4]} 年以來最低）" if flo["ar_pct"] < 1 else f"（第 {flo['ar_pct']:.0f} 百分位）"))
+  if chg20 is None and len(stress_hist) > mom_n:
+      chg20 = float(current - stress_hist.iloc[-1 - mom_n])
   ```
 - **為什麼有問題**：
-  在第 73 行處理 `turbulence` 時，作者謹慎地寫了 `(tur.get('since') or '')[:4]`。
-  但在第 78 行處理 `absorption`（鳥群）時，直接寫了 `flo['since'][:4]`。若該物理模型在歷史回溯計算中 `since` 欄位為 `None` 或非字串物件，執行切片 `[:4]` 將拋出 `TypeError: 'NoneType' object is not subscriptable`。
+  在 `crash_odds()` 中，`current` 是當天即時的壓力指標值，通常尚未寫入歷史序列 `stress_hist` 中。
+  若 `stress_hist` 的最後一筆 `iloc[-1]` 為昨日收盤（T-1），則 20 天前的指標應該取 `iloc[-mom_n]`（即 T-20）。此處使用 `iloc[-1 - mom_n]`（即 `iloc[-21]`），實質上計算了 T 日相較於 T-21 日（21 個交易日前）之變化，造成動量動態百分位計算產生 1 個交易日的偏差。
 - **建議怎麼改**：
-  統一比照第 73 行加上安全回退：
+  明確定義 `stress_hist` 是否包含 `current`。若 `current` 為未納入的新增值，應取 `stress_hist.iloc[-mom_n]`：
   ```python
-  (flo.get('since') or '')[:4]
+  if chg20 is None and len(stress_hist) >= mom_n:
+      chg20 = float(current - stress_hist.iloc[-mom_n])
   ```
-- **確定程度**：高。
+- **確定程度**：中。
 
 ---
 
@@ -787,8 +817,8 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 ### TASK-B7｜紐約時報走私案報導與美國司法部/商務部官方回應
 - **紐約時報報導**：2026-11-06 刊出《Chinese Intelligence Targeted Nvidia Ties to Cloud Provider》（網址：`https://www.nytimes.com/2026/11/06/us/politics/chinese-spy-agency-nvidia-jensen-huang.html`，記者署名：Edward Wong, Julian E. Barnes）。
   - **內文三件事**：(1) 美國情報部門監控 Megaspeed 高層與中國國安部官員長達一年的聯絡；(2) 涉嫌利用新加坡與馬來西亞轉口機房規避出口管制；(3) 特工試圖滲透供應鏈人脈網絡。
-- **官方正式回應**：美國司法部與商務部於 2026-11-16 發布聯合聲明《Joint Statement from Department of Commerce and Department of Justice on Megaspeed Investigation》（`https://www.justice.gov/opa/pr/joint-statement-department-commerce-and-department-justice-megaspeed-investigation`）。
-  - **官方定調**：正式對 Megaspeed 涉及非法出口管制展開刑事調查；聲明明確表示調查焦點在於非法中介轉運商，未對輝達提起任何違法指控。
+- **官方正式回應**：美國司法部與商務部於 2026-11-16 發布聯合聲明《Joint Statement from Department of Commerce and Department of Justice on Megaspeed Investigation》（`https://www.justice.gov/opa/pr/joint-statement-department-commerce-and-department-justice-megaspeed-investigation`），且商務部 BIS 於 11/23 正式發布行政命令將 Megaspeed 及其 6 家關聯實體列入實體清單（Entity List，`https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed`）。
+  - **官方定調**：正式對 Megaspeed 涉及非法出口管制展開刑事調查與實體清單制裁；聲明明確表示調查與制裁焦點在於非法中介轉運商，未對輝達提起任何違法指控。
 
 ### TASK-B8｜美國感恩節時程、BEA 10 月 PCE 官方發布時間、財報名單與日本官方說法
 1. **BEA 10 月 PCE 官方公布時間**：
@@ -799,7 +829,7 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
    - **DELL（戴爾科技）**：11/24 盤後，Zacks / FactSet 共識 EPS 6.76 美元，營收 508.7 億美元。
    - **ADI（亞德諾半導體）**：11/24 盤前，Zacks 共識 EPS 3.89 美元，營收 43.2 億美元。
    - **WDAY（Workday）**：11/24 盤後，共識營收 26.9 億美元，EPS 2.74 美元。
-   - **MDT（美敦力）**：11/24 盤前，共識 EPS 1.34 美元，營收 94.7 億美元。
+   - **MDT（美敦力）**：11/24 盤前公布，營收 94.0 億美元，EPS 1.34 美元。
 4. **日本財務省週末對日圓官方說法**：
    - 財務官三村淳於專訪與公開發言中重申（`https://www.yomiuri.co.jp/economy/20261112-GYT1T00087/`）：日圓近期波動過快，官方對外匯市場過度單向投機維持「隨時採取斷固措施（Decisive Action）」之最高警戒，160 關卡為防禦防線。
 
@@ -807,8 +837,9 @@ Claude 在筆記中提到目前最缺乏「融資去槓桿的歷史基準率」�
 
 其他今天的大事：
 
-1. **美國總統川普公開確認親自介入輝達董事會**：川普於 11/23 晨間接受 CNBC 專訪時公開表示親自與輝達董事會多位成員通話，給予國安無虞保證並力促黃仁勳回任，成功促成董事會全票通過回任決議（CNBC `https://www.cnbc.com/2026/11/23/trump-cnbc-interview-nvidia-jensen-huang/`）。
-2. **南韓外貿突破歷史里程碑**：南韓關稅廳公告今年累計出口額正式突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（`https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301`）。
-3. **國際原油 WTI 價格回跌至 80 美元區間**：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，戰爭溢價迅速消退，WTI 回跌至 80.14～80.17 美元（`https://tradingeconomics.com/commodity/crude-oil`）。
-4. **黃金價格大漲 3.4% 突破 3,650 美元**：科技股反彈解除機構拋售黃金補繳保證金之強制流動性壓力，疊加市場排除 12 月升息 50 bps 預期，引發猛烈技術性空頭回補（`https://www.kitco.com/news/article/2026-11-23/gold-surges-back-above-3650-tech-stocks-rebound`）。
-5. **日本股市 11/23 勤勞感謝日休市後今日恢復交易**：日經 225 與東證指數於 11/24 重新開市，強烈反映美股與費半狂飆之落後補漲動能，日經平均指數盤中大漲逾 2,000 點重返 58,000~59,000 點之上（工商時報 `https://www.ctee.com.tw/news/20261123700010`）。
+1. **美國商務部 BIS 於 11/23 正式將 Megaspeed 及其東南亞 6 家關聯實體列入實體清單（Entity List）**：聯邦公報發布最終規則，對新加坡 Megaspeed、Swiftdata、Apex Enterprise Solutions 及馬來西亞、泰國關聯實體祭出全面推定駁回之出口禁令（`https://www.federalregister.gov/documents/2026/11/23/addition-of-entities-to-the-entity-list-megaspeed`）。
+2. **美國總統川普公開確認親自介入輝達董事會**：川普於 11/23 晨間接受 CNBC 專訪時公開表示親自與輝達董事會多位成員通話，給予國安無虞保證並力促黃仁勳回任，成功促成董事會全票通過回任決議（CNBC `https://www.cnbc.com/2026/11/23/trump-cnbc-interview-nvidia-jensen-huang/`）。
+3. **南韓外貿突破歷史里程碑**：南韓關稅廳公告今年累計出口額正式突破 1 兆美元，半導體單月前 20 天暴增 294.4% 成為最強引擎（`https://www.customs.go.kr/kcs/ad/cntnts/cntntsView.do?cntntsId=2026112301`）。
+4. **國際原油 WTI 價格回跌至 80 美元區間**：荷莫茲海峽商船通行完全正常化，疊加 IEA 預估 Q4 日供過剩 170 萬至 200 萬桶，戰爭溢價迅速消退，WTI 回跌至 79.18～80.14 美元（`https://tradingeconomics.com/commodity/crude-oil`）。
+5. **黃金價格大漲 3.4% 突破 3,650 美元**：科技股反彈解除機構拋售黃金補繳保證金之強制流動性壓力，疊加市場排除 12 月升息 50 bps 預期，引發猛烈技術性空頭回補（`https://www.kitco.com/news/article/2026-11-23/gold-surges-back-above-3650-tech-stocks-rebound`）。
+6. **日本股市 11/23 勤勞感謝日休市後今日恢復交易**：日經 225 與東證指數於 11/24 重新開市，強烈反映美股與費半狂飆之落後補漲動能，日經平均指數盤中大漲逾 2,000 點重返 58,000~59,000 點之上（工商時報 `https://www.ctee.com.tw/news/20261123700010`）。
