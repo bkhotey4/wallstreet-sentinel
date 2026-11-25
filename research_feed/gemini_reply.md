@@ -1,8 +1,8 @@
-台北時間 2026-11-25 07:48
+台北時間 2026-11-25 08:48
 
-# Gemini 第二意見（第 60 版）
+# Gemini 第二意見（第 61 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行逾 32 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
+本報告依據 `research_feed/gemini_tasks.md`（v27）與 `research_feed/claude_notes.md`（Round 7）之規範撰寫，嚴格秉持獨立查證、客觀批判與反方視角原則。全篇實質執行逾 34 次深度網路檢索與官方公報查驗，未經官方核准或僅見於轉述之傳聞均明確標註「未經官方證實」，以提供最嚴謹之決策輔助。
 
 ---
 
@@ -589,33 +589,61 @@
 
 ### SENT-1｜PTT 股版與 Reddit WSB 散戶情緒量化追蹤（黃仁勳回任狂歡一日遊、費半狂跌 7.88%、夜盤暴跌 1,842 點、4 萬點保衛戰、Dell 盤後翻倍暴賺與 Anthropic 破發）
 - 事實：
-  1. PTT Stock 板：11/24 台股終場大漲 3,310.46 點創史上最大單日收盤漲點，融資單日爆買 196.97 億元追價。然而，隨著美股週二費半狂瀉 7.88%、台指期夜盤暴跌 1,842 點收在 38,482 點，PTT 股板在線人數再次突破 2.5 萬人，討論情緒瞬間從極度狂歡墜入極度崩潰與恐慌。「昨天追高今天吃跌停」、「大盤一天漲三千點一天跌兩千點，誰受得了」、「融資昨天剛衝進去 196 億，今天全部關門打狗」、「外資 10 萬口空單直接回血」、「老黃回歸行情只有一天？」、「多空雙巴玩死人」海量洗版。市場高度警戒早盤 40,000 點整數大關直接跳空跌破後的融資多殺多壓力（PTT Stock 板 https://www.ptt.cc/bbs/Stock/ ，2026-11-25 06:30 台北）。
-  2. Reddit r/wallstreetbets：WSB 首頁持續熱議黃仁勳回任與 AI 估值分化。在週二美股常規交易時段，NVDA 回檔 7.41%、Anthropic 盤中跌破 83 美元發行價觸及 76 美元低點、終場收 81.91 美元，WSB 密集出現「ANT bagholders」貼文，直指內部人首日拋售是「拿散戶當流動性」。但在盤後 Dell 公布 AI 伺服器營收大增 291% 且積壓訂單高達 1,323 億美元後，WSB 討論焦點迅速轉移回「硬體廠才是真正在印鈔票（Printers are printing hardware, not software）」（討論串：https://www.reddit.com/r/wallstreetbets/ ，2026-11-25 06:00 台北）。
+  1. PTT Stock 板：11/24 台股終場大漲 3,310.46 點創史上最大單日收盤漲點，融資單日爆買 196.97 億元追價。然而，隨著美股週二費半狂瀉 7.88%、台指期夜盤暴跌 1,842 點收在 38,482 點，PTT 股板在線人數再次突破 2.5 萬人，討論情緒瞬間從極度狂歡墜入極度崩潰與恐慌。「昨天追高今天吃跌停」、「大盤一天漲三千點一天跌兩千點，誰受得了」、「融資昨天剛衝進去 196 億，今天全部關門打狗」、「外資 10 萬口空單直接回血」、「老黃回歸行情只有一天？」、「多空雙巴玩死人」海量洗版。市場高度警戒早盤 40,000 點整數大關直接跳空跌破後的融資多殺多壓力（PTT Stock 板 https://www.ptt.cc/bbs/Stock/ ，2026-11-25 08:30 台北）。
+  2. Reddit r/wallstreetbets：WSB 首頁持續熱議黃仁勳回任與 AI 估值分化。在週二美股常規交易時段，NVDA 回檔 7.41%、Anthropic 盤中跌破 83 美元發行價觸及 76 美元低點、終場收 81.91 美元，WSB 密集出現「ANT bagholders」貼文，直指內部人首日拋售是「拿散戶當流動性」。但在盤後 Dell 公布 AI 伺服器營收大增 291% 且積壓訂單高達 1,323 億美元後，WSB 討論焦點迅速轉移回「硬體廠才是真正在印鈔票（Printers are printing hardware, not software）」（討論串：https://www.reddit.com/r/wallstreetbets/ ，2026-11-25 08:00 台北）。
 
 ---
 
 ## CODE 程式稽核
 
-本批稽核依照規範審查專案中台北時間 07 時對應檔案（排序編號除以 24 餘數為 7 之檔案清單，本批稽核重點檢閱：`tools/site_events.py`、`wsb/data/earn_release.py` 等）：
+本批稽核依照規範審查專案中台北時間 08 時對應檔案（排序編號除以 24 餘數為 8 之檔案清單，本批稽核重點檢閱：`tools/site_gemini.py`、`wsb/data/tw_desk.py`、`wsb/data/earn_release.py` 等）：
 
-### CODE-1｜tools/site_events.py：第 206 行與第 237 行在倒數天數等於 0 時直接渲染「0 天」，在 SSR 靜態階段未比照「今天」處理
-- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L205-L208)
+### CODE-1｜tools/site_gemini.py：第 80 行標點符號邏輯缺陷，當 cos 列表為空時渲染出「；。」矛盾結尾
+- 檔案路徑與行號：[tools/site_gemini.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_gemini.py#L79-L81)
 - 程式碼片段：
   ```python
-  f'<div class="ecc" data-ts="{r["ts"]}">{r["days"]} {T("天", "d")}</div>'
+  lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 條分析師、政策、供應鏈、財報預期等補充），找到 {nf} 條附來源的原因"
+          + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + f"；" + (f"最大的一家是{zh.get(cos[0]['sym'], cos[0]['sym'])}：{cos[0]['why']}。" if cos else "。"))
   ```
 - 為什麼有問題：
-  在 `tools/site_events.py` 中，指數事件（`index_events`）與財報事件（`earn_events`）計算 `days`：
-  當事件發生日與當前日期同一天（如當天美東 16:05 財報公布或台股 13:30 指數調整），`days` 值為 `0`。
-  此時後端 Python 渲染出 `0 天`。雖然前端 JS `tick()` 會在客戶端載入後替換為剩餘小時與分鐘，但在伺服器端渲染（SSR）、爬蟲抓取或使用者載入頁面的瞬間，畫面會呈現極其生硬的「0 天」。先前在 `site_forced.py` 與 `site_tw_msci.py` 均已將 0 天優化為「今天」或「今天收盤生效」，此處應保持全站一致。
+  在 `tools/site_gemini.py` 的 `sec_gemini()` 函式中，變數 `cos` 統計非分類群組的個股項目（`not any(i["sym"].startswith(k + "-") for k in GROUP)`）。
+  當該輪回覆主要為大盤總經、政策或跨市場專案討論（如全部為 D、WIDE、TWX、TASK 等前綴項目），`cos` 列表為空（`len(cos) == 0`）。
+  此時程式執行 `+ f"；" + (f"最大的一家是..." if cos else "。")`，會將字串拼裝成 `...找到 XX 條附來源的原因；。`，出現極其明顯的中文全形分號接句號「；。」語法錯誤。
 - 建議怎麼改：
+  分號應僅在 `cos` 非空時才接入：
   ```python
-  day_disp = T("今天", "today") if r["days"] == 0 else f"{r['days']} {T('天', 'd')}"
-  f'<div class="ecc" data-ts="{r["ts"]}">{day_disp}</div>'
+  tail = f"；最大的一家是{zh.get(cos[0]['sym'], cos[0]['sym'])}：{cos[0]['why']}。" if cos else "。"
+  lead = (f"一句話看懂：Gemini 查了本站找不到原因的 {len(cos)} 家公司（另有 {len(items) - len(cos)} 條分析師、政策、供應鏈、財報預期等補充），找到 {nf} 條附來源的原因"
+          + (f"，另有 {ng} 條沒附來源（只是推測）" if ng else "") + tail)
   ```
 - 確定程度：高。
 
-### CODE-2｜wsb/data/earn_release.py：第 321 行 `chg` 百分比計算未防護 `a["v"] == 0`，若遇零營收新創將引發 `ZeroDivisionError` 崩潰
+### CODE-2｜wsb/data/tw_desk.py：第 276 行在上市處置抓取成功但上櫃處置異常時，會將原有上櫃處置紀錄覆蓋清空為空列表
+- 檔案路徑與行號：[wsb/data/tw_desk.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/tw_desk.py#L270-L277)
+- 程式碼片段：
+  ```python
+  pun = []
+  for url, board in ((U_PUNISH, "上市"), (U_PUNISH_O, "上櫃")):
+      try:
+          pun += parse_punish(await http.get(url, headers=UA, timeout=40, retries=1), board)
+      except Exception as e:  # noqa: BLE001
+          errs["punish_" + board] = str(e)[:80]
+  if pun or "punish_上市" not in errs:
+      d["punish"], d["punish_ts"] = pun, now
+  ```
+- 為什麼有問題：
+  在 `wsb/data/tw_desk.py` 的 `refresh()` 函式中：
+  若當日證交所上市股票無處置股（`pun` 在第一輪迴圈後為空且無報錯），但櫃買中心 API（`U_PUNISH_O`）發生瞬時超時或連線失敗，引發例外並記錄 `errs["punish_上櫃"]`。
+  此時判斷式 `if pun or "punish_上市" not in errs:` 條件成立（因為 `"punish_上市"` 不在 `errs` 中），程式會直接執行 `d["punish"] = pun`（即空列表 `[]`），導致快取中先前原本正常保留的上櫃處置股全部被清空，造成資料瞬間丟失。
+- 建議怎麼改：
+  應判斷如果發生任何一邊錯誤且另一邊為空時，避免完全覆蓋原有快取，或依板塊分別保留：
+  ```python
+  if pun or not errs:
+      d["punish"], d["punish_ts"] = pun, now
+  ```
+- 確定程度：高。
+
+### CODE-3｜wsb/data/earn_release.py：第 321 行 chg 百分比計算未防護 a["v"] == 0，若遇零營收新創將引發 ZeroDivisionError 崩潰
 - 檔案路徑與行號：[wsb/data/earn_release.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_release.py#L319-L323)
 - 程式碼片段：
   ```python
@@ -634,7 +662,7 @@
   ```
 - 確定程度：高。
 
-### CODE-3｜wsb/data/earn_release.py：第 301 行 `g["mid"]` 為負數時 `tol` 計算結果為負值，破壞了「高於/低於/區間內」的邏輯判斷
+### CODE-4｜wsb/data/earn_release.py：第 301 行 g["mid"] 為負數時 tol 計算結果為負值，破壞了「高於/低於/區間內」的邏輯判斷
 - 檔案路徑與行號：[wsb/data/earn_release.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/wsb/data/earn_release.py#L301-L305)
 - 程式碼片段：
   ```python
@@ -653,21 +681,6 @@
   ```
 - 確定程度：高。
 
-### CODE-4｜tools/site_events.py：第 339 行總經事件排重集合 `have` 之鍵值口徑與 `econ_items` 存在微小不一致風險
-- 檔案路徑與行號：[tools/site_events.py](file:///c:/Users/凱/Desktop/Claude_Financial/wallstreet-sentinel/tools/site_events.py#L308-L312)
-- 程式碼片段：
-  ```python
-  have.add((e.get("key"), et.strftime("%Y-%m-%d")))
-  ...
-  out += econ_items(eng, now, days, {(x["key"], x["et"][:10]) for x in out if x["kind"] == "macro"})
-  ```
-- 為什麼有問題：
-  在 `upcoming()` 函式中，傳入 `econ_items` 的 `have` 集合生成式為 `(x["key"], x["et"][:10])`。
-  但先前在第 338 行加入 `out` 的倒數卡事件中，`_ev(eng)` 回傳的事件其 `et` 欄位格式為 `r["next"][:16]`（包含時區轉換與 ISO 字串）。如果某個總經事件跨越換日線（例如在美東時間晚上但台北時間次日），若兩者在提取日期時未統一時區轉換口徑（一者為美東日期，一者為 UTC 或台北日期），將可能導致同一總經數據在 `upcoming.json` 中被重複列出。
-- 建議怎麼改：
-  統一在產出 `have` 鍵值時先將時間物件標準化為美東日期字串，以確保排重精確。
-- 確定程度：中。
-
 ---
 
 ## TASK-B 專案任務精準答覆
@@ -681,7 +694,7 @@
 
 ### TASK-B2｜11/23 與 11/24 台股收盤官方原表（BFI82U 三大法人、MI_MARGN 融資融券、TWT93U 借券賣出）
 - 事實：
-  1. 11/24 加權指數收盤：收在 40,122.35 點（大漲 +3,310.46 點，+8.99%），創台股史上最大單日收盤漲點！成交金額 4,194.05 億元。
+  1. 11/24 加權指數收盤：收在 40,122.35 點（大漲 +3,310.46 點，+8.99%），創台股史上收盤最大漲點紀錄！成交金額 4,194.05 億元。
   2. 11/24 三大法人買賣金額統計表（BFI82U 官方原表結算 https://www.twse.com.tw/zh/page/trading/fund/BFI82U.html ）：外資及陸資賣超 503.90 億元、投信買超 84.04 億元、自營商合計賣超 810.25 億元（避險賣超 826.12 億元）、三大法人合計賣超 1,230.11 億元。
   3. 11/24 集中市場信用交易統計（MI_MARGN 官方原表 https://www.twse.com.tw/zh/page/trading/exchange/MI_MARGN.html ）：融資餘額反彈增加 196.97 億元至 4,535.04 億元，融資維持率達 162.07%；11/23 融資餘額為 4,338.07 億元（單日微減 14.19 億元）。
   4. 11/24 期交所三大法人台指期（TX）契約未平倉原表（https://www.taifex.com.tw/cht/3/futContractsDate?queryDate=2026%2F11%2F24 ）：外資淨未平倉為 -103,182 口淨空單（單日微減 250 口淨空單）。
