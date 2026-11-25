@@ -5,6 +5,7 @@ what happened, so the page also shows how often the calls were right (hit rate a
 from __future__ import annotations
 
 import html
+import re
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -57,7 +58,29 @@ def thin(it: Dict) -> bool:
     return flat or any("證據不足" in str(b) for b in it.get("basis") or [])
 
 
-def _item(it: Dict, tw: Optional[List[Dict]] = None) -> str:
+# 11-26 self-audit: 290 template lines (「台股／港股相關公司連動偏正面」) and 198 「查無」 on this one card. A template impact
+# says nothing about this company, so it is left out; 「查無」 bullets collapse into one 「查不到」 line; scored reports
+# show the call and the result only (their scenarios are history).
+GENERIC = re.compile(r"連動偏(正|負)面|影響中性|情緒偏(正面|弱|負面)")
+
+
+def _basis(bs: List) -> str:
+    keep, gaps = [], []
+    for b in bs or []:
+        b = str(b or "").strip()
+        if not b:
+            continue
+        if "查無" in b and len(re.sub(r"[^一-鿿]", "", b.replace("查無", ""))) < 30:
+            gaps += [g.strip(" ：:。；") for g in re.split(r"[。；]", b) if "查無" in g]
+        else:
+            keep.append(b)
+    out = "".join(f"<li>{_esc(b)}</li>" for b in keep)
+    if gaps:
+        out += f'<li class="muted">查不到的：{_esc("、".join(dict.fromkeys(g.replace("查無", "").strip(" ：:") for g in gaps if g.replace("查無", "").strip(" ：:"))))}</li>'
+    return out
+
+
+def _item(it: Dict, tw: Optional[List[Dict]] = None, compact: bool = False) -> str:
     p = _probs(it.get("probs"))
     call = str(it.get("call") or "")
     head = (f'<h3>{_esc(it.get("name") or it.get("sym"))} <span class="muted small">{_esc(it.get("sym"))}・{_esc(it.get("date"))}</span> '
@@ -74,9 +97,9 @@ def _item(it: Dict, tw: Optional[List[Dict]] = None) -> str:
     sc_map = {"好": "上修", "中間": "維持", "壞": "下修"}
     sp = lambda s: (p.get(sc_map.get(str(s.get("name")), "")) if p else None) or s.get("prob")  # noqa: E731
     sc = "".join(f'<li><b>{_esc(s.get("name"))}（{_esc(f"{float(sp(s)):.0f}" if isinstance(sp(s), (int, float)) else sp(s))}%）</b>：{_esc(s.get("what"))}'
-                 + (f'<div class="small muted">影響：{_esc(s.get("impact"))}</div>' if s.get("impact") else "") + "</li>"
-                 for s in (it.get("scenarios") or []) if isinstance(s, dict))
-    basis = "".join(f"<li>{_esc(b)}</li>" for b in (it.get("basis") or []) if b)
+                 + (f'<div class="small muted">影響：{_esc(s.get("impact"))}</div>' if s.get("impact") and not GENERIC.search(str(s.get("impact"))) else "") + "</li>"
+                 for s in (it.get("scenarios") or []) if isinstance(s, dict)) if not compact else ""
+    basis = _basis(it.get("basis")) if not compact else ""
     out = ""
     if it.get("outcome"):
         ok = p and it["outcome"] in OUTS and max(p, key=p.get) == it["outcome"]
@@ -172,7 +195,7 @@ def sec_earn_preview(eng) -> str:
     miss_txt = ('<p class="warn"><b>⚠ 快公布了、還沒有前瞻：</b>' + "、".join(f'{_esc(m["name"])}（{_esc(m["date"][5:].replace("-", "/"))}）' for m in miss)
                 + "。前瞻每天晚上 8 點（台北）由分析任務補上；這一行是本站自己的檢查，補上後就會消失。</p>") if miss else ""
     wait_txt = (f'<details class="sgx"><summary>另有 {len(waiting)} 家已經公布、還在等對答案（結果補進來後會算進成績單）</summary>'
-                + "".join(_item(x) for x in sorted(waiting, key=lambda x: str(x["date"]), reverse=True)) + '</details>' if waiting else "")
+                + "".join(_item(x, compact=True) for x in sorted(waiting, key=lambda x: str(x["date"]), reverse=True)) + '</details>' if waiting else "")
     # 11-17: the 8-item cap filled with 11/17's smaller names and dropped Walmart (11/19, ~$1T) although the lead line named it.
     # Every company named in the lead, and every one worth ≥ BIG_FLOOR, is always shown; the rest fill the cap by date.
     must = {id(x) for x in lead_items} | {id(x) for x in up if big.get(str(x["sym"]).upper(), 0.0) >= BIG_FLOOR}
@@ -184,7 +207,7 @@ def sec_earn_preview(eng) -> str:
     more_txt = (f'<details class="sgx"><summary>看其餘 {len(rest)} 家公司的前瞻</summary>' + "".join(_item(x, tw(x)) for x in rest) + '</details>') if rest else ""
     body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + miss_txt + "".join(_item(x, tw(x)) for x in shown) + more_txt + wait_txt
             + (f'<h3>前瞻指標</h3><ul>{gauges}</ul>' if gauges else "") + f'<h3>成績單</h3>{rec}'
-            + ("".join(_item(x) for x in past[:4]) if past else "")
-            + ((f'<details class="sgx"><summary>看其餘 {len(past) - 4} 筆已對答案的紀錄</summary>' + "".join(_item(x) for x in past[4:]) + '</details>') if len(past) > 4 else "")
+            + ("".join(_item(x, compact=True) for x in past[:4]) if past else "")
+            + ((f'<details class="sgx"><summary>看其餘 {len(past) - 4} 筆已對答案的紀錄</summary>' + "".join(_item(x, compact=True) for x in past[4:]) + '</details>') if len(past) > 4 else "")
             + f'<p class="note">{note}{"　更新 " + _esc(d.get("updated")) if d.get("updated") else ""}</p>')
     return card("財報前瞻：公布前的機率估計與成績單", "Earnings preview & track record", body, "wide")
