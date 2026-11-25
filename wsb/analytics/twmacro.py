@@ -347,7 +347,8 @@ def calendar_rows(d: Dict, today: Optional[date] = None) -> List[Dict]:
 
     for r, key, fmt in ((rows[0], "cpi_yoy", lambda ym, v: f"年增 {v:.2f}%" + (f"（核心 {by[ym]['core_yoy']:.2f}%）" if by.get(ym, {}).get("core_yoy") is not None else "")),
                         (rows[1], "exports", lambda ym, v: f"{v:,.0f} 億美元" + (f"，年增 {by[ym]['exports_yoy']:+.1f}%" if by.get(ym, {}).get("exports_yoy") is not None else "")),
-                        (rows[2], "orders", lambda ym, v: f"{v / 100:,.0f} 億美元" + (f"，年增 {_yoy(ym, 'orders'):+.1f}%" if _yoy(ym, "orders") is not None else ""))):
+                        (rows[2], "orders", lambda ym, v: f"{v / 100:,.0f} 億美元" + (f"，年增 {_yoy(ym, 'orders'):+.1f}%" if _yoy(ym, "orders") is not None else "")),
+                        (rows[3], "m1b_yoy", lambda ym, v: f"M1B 年增 {v:.2f}%" + (f"、M2 {by[ym]['m2_yoy']:.2f}%" if by.get(ym, {}).get("m2_yoy") is not None else ""))):
         got = M2.latest_stat(st, key) if st else None
         if got and (not r["last"] or got[0] >= r["last"]):
             r["last"], r["val"], r["src"] = got[0], fmt(*got), "主計總處統計資訊網"
@@ -415,7 +416,7 @@ def read(r: Dict) -> Dict:
 
 def build(eng) -> Dict:
     from ..data import twmacro as TM
-    d = TM.load()
+    d = TM.overlay(TM.load())
     if not d.get("cbc") and not d.get("daily"):
         return {"available": False}
     us10 = None

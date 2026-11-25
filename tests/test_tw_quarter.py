@@ -124,7 +124,18 @@ def test_stat():
     assert M.latest_stat(d, "cpi_yoy") == ("2026-10", 2.33) and M.latest_stat(d, "exports") is None
 
 
+def test_overlay():
+    """Official months newer than the CBC / 國發會 series are appended for readers, with unit conversion; older ones never overwrite."""
+    from wsb.data import twmacro as TM
+    d = {"cbc": {"fxres": [["2026-09", 600745.0]], "m1b": [["2026-09", 7.2]]}, "ndc": {"ip": [["2026-10", 150.0]]}}
+    stat = [{"ym": "2026-09", "fxres": 600.74, "m1b_yoy": 7.2, "ip": 141.0}, {"ym": "2026-10", "fxres": 596.44, "m1b_yoy": 7.08, "ip": 151.3}]
+    out = TM.overlay(d, stat)
+    assert out["cbc"]["fxres"][-1] == ["2026-10", 596440.0] and out["cbc"]["m1b"][-1] == ["2026-10", 7.08]
+    assert out["ndc"]["ip"] == [["2026-10", 150.0]] and out["official"] == {"cbc.fxres": ["2026-10"], "cbc.m1b": ["2026-10"]}
+
+
 if __name__ == "__main__":
+    test_overlay()
     test_stat()
     test_forecast_view()
     test_wage()

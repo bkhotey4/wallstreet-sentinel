@@ -80,6 +80,34 @@ def load() -> Dict:
         return {}
 
 
+# 11-26: the CBC API and the 國發會 database stop at 2026-09 while the agencies have published October (found when the 台灣數據日曆
+# said 2026-09 for everything). Months the official 統計資訊網 already has are appended for the readers (never saved back,
+# so the next CBC / 國發會 download still replaces its own series). Same definitions, checked on overlapping months:
+# fxres 百萬美元 = 十億美元 × 1000, M1B／M2 年增率, 工業生產指數, 失業率, CPI 年增率.
+OVERLAY = (("cbc", "fxres", "fxres", 1000.0), ("cbc", "m1b", "m1b_yoy", 1.0), ("cbc", "m2", "m2_yoy", 1.0),
+           ("cbc", "cpi", "cpi_yoy", 1.0), ("ndc", "ip", "ip", 1.0), ("ndc", "unemp", "unemp", 1.0))
+
+
+def overlay(d: Dict, stat: Optional[List[Dict]] = None) -> Dict:
+    if stat is None:
+        try:
+            from . import tw_macro2 as M2
+            stat = M2.refresh().get("stat") or []
+        except Exception:  # noqa: BLE001
+            stat = []
+    d.setdefault("official", {})
+    for grp, key, sk, k in OVERLAY:
+        ser = (d.get(grp) or {}).get(key)
+        if not isinstance(ser, list) or not ser:
+            continue
+        last = ser[-1][0]
+        add = [[r["ym"], round(r[sk] * k, 4)] for r in stat if r.get(sk) is not None and r["ym"] > last]
+        if add:
+            d[grp][key] = ser + add
+            d["official"][f"{grp}.{key}"] = [a[0] for a in add]
+    return d
+
+
 def _save(d: Dict) -> None:
     tmp = FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")

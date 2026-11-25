@@ -85,10 +85,11 @@ def parse_wage(page: str) -> List[Dict]:
 # 11-26: 主計總處統計資訊網 carries October CPI / export orders / exports weeks before the 國發會 database the 台灣數據日曆 used
 # (it showed 2026-09 for everything while the agencies had published October). Exact series titles (one page holds several).
 U_STAT = "https://www.stat.gov.tw/Point.aspx?sid={sid}&n={n}&sms=11480"
-STAT_PAGES = (("t.2", 3581), ("t.5", 3584), ("t.8", 3587))
+STAT_PAGES = (("t.2", 3581), ("t.5", 3584), ("t.8", 3587), ("t.10", 3589), ("t.3", 3582))
 STAT_KEYS = {"消費者物價指數年增率": "cpi_yoy", "核心CPI年增率": "core_yoy", "生產者物價指數年增率": "ppi_yoy",
              "工業生產指數年增率": "ip_yoy", "外銷訂單": "orders", "出口金額": "exports", "出口年增率": "exports_yoy",
-             "進口年增率": "imports_yoy"}
+             "進口年增率": "imports_yoy", "外匯存底(期底)": "fxres", "貨幣總計數(M1B)年增率": "m1b_yoy",
+             "貨幣總計數(M2)年增率": "m2_yoy", "工業生產指數": "ip", "失業率": "unemp"}
 SRC_STAT = "https://www.stat.gov.tw/Point.aspx?sid=t.2&n=3581&sms=11480"
 
 
