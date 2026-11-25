@@ -114,5 +114,20 @@ def test_card_words():
         assert bad not in h, bad
 
 
+def test_night_gap():
+    from tools import site_twpreopen as S
+    """Weekend: the Friday night session closed 51 h before Monday's 09:00 open, so the card must say its price is stale."""
+    from datetime import datetime, timezone
+    assert S.gap_hours("2026-11-20", datetime(2026, 11, 23, 0, 30, tzinfo=timezone.utc)) == 51
+    assert S.gap_hours("2026-11-24", datetime(2026, 11, 25, 0, 30, tzinfo=timezone.utc)) == 3
+    row = {"month": "202612", "open": 1, "high": 1, "low": 1, "last": 34000.0, "pct": -5.25, "vol": 1}
+    tx = {"session": "2026-11-20", "near": row, "rows": [row], "light": "🔴", "twii": ["2026-11-20", 36000.0], "implied": 34110.0, "gap_h": 51}
+    v = {"txn": tx}
+    assert "51 小時" in S.lead(v) and "週末或連假" in S.body(v)
+    v["txn"] = {**tx, "gap_h": 3}
+    assert "小時" not in S.lead(v) and "週末或連假" not in S.body(v)
+
+
 if __name__ == "__main__":
+    test_night_gap()
     test_parsers(); test_adr_math(); test_calendar_and_lights(); test_lev_etf(); test_revised_day_is_read_again(); test_card_words(); print("ok")

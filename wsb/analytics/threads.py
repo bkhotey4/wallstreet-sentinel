@@ -78,6 +78,13 @@ THREADS = [
      ["油價", "原油", "荷姆茲", "伊朗", "以色列", "烏克蘭", "俄羅斯", "OPEC", "oil", "crude", "Hormuz", "Iran", "Israel", "Ukraine", "Russia"],
      [("BZ=F", "布蘭特原油"), ("GC=F", "黃金"), ("^VIX", "VIX")],
      "戰爭與能源供給，經由油價傳到通膨與利率。"),
+    # 11-25: 美國依 301 條款對 14 個經濟體（含台灣）提議加關稅，主線裡沒有「關稅」這條，網站沒把它串起來
+    ("tariffs", "關稅與貿易協定",
+     ["關稅", "對等關稅", "301條款", "301 條款", "301調查", "232條款", "232 條款", "貿易協定", "貿易談判", "經貿", "產能過剩",
+      "tariff", "tariffs", "Section 301", "Section 232", "Section 122", "USTR", "trade deal", "trade deals", "trade war", "reciprocal trade",
+      "overcapacity", "duties", "levies"],
+     [("TWD=X", "美元兌新台幣"), ("^TWII", "台股加權"), ("DX-Y.NYB", "美元指數")],
+     "美國關稅稅率與各國貿易協定，決定台灣出口的成本與新台幣；也會經由進口物價推高美國通膨。"),
 ]
 ASCII = re.compile(r"^[ -~’]+$")
 

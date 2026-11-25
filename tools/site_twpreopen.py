@@ -44,7 +44,8 @@ def lead(v: Dict) -> str:
     tx = v.get("txn")
     if tx:
         parts.append(f"台指期夜盤（{_md(tx['session'])} 晚上到隔天清晨）近月收 {tx['near']['last']:,.0f}，比日盤結算 {_s(tx['near']['pct'], 2)}% {tx['light']}"
-                     + (f"，若加權指數開盤跟著動同樣幅度約 {tx['implied']:,.0f} 點" if tx.get("implied") else ""))
+                     + (f"，若加權指數開盤跟著動同樣幅度約 {tx['implied']:,.0f} 點" if tx.get("implied") else "")
+                     + (f"（但夜盤收盤到現在已 {tx['gap_h']} 小時，這段時間的新聞不在這個價格裡）" if (tx.get("gap_h") or 0) >= 12 else ""))
     if m:
         parts.append(f"融資 {_md(m['d'])} 一天{'減少' if m['diff'] < 0 else '增加'} {abs(m['diff']):,.0f} 億元（{_s(m['pct'])}% {m['light']}）")
     cal = [c for c in v.get("cal") or [] if c["dispose"] >= _cut() and not c.get("void")]
@@ -79,6 +80,10 @@ def body(v: Dict) -> str:
                    f'近月 {esc(tx["near"]["month"])} 收 {tx["near"]["last"]:,.0f}，比前一個日盤結算 {_s(tx["near"]["pct"], 2)}%'
                    + (f'；加權指數 {_md(tx["twii"][0])} 收 {tx["twii"][1]:,.0f}，套同樣幅度 ≈ {tx["implied"]:,.0f} 點（算術，期貨和現貨之間平常就有價差）' if tx.get("implied") else "")
                    + '。</p>'
+                   + (f'<p class="small">⚠️ 夜盤 {_md(tx["session"])} 隔天清晨 05:00 就收盤了，到現在已經 {tx["gap_h"]} 小時（週末或連假）。'
+                      '這段時間出的新聞（例如週末的政策、公司公告）夜盤沒機會反應，所以換算出來的開盤只是「週五晚上為止」的看法，'
+                      '週一實際開盤可能差很多：11/20 週五夜盤跌 5.25%（換算約 34,142 點），週六金管會宣布全面禁止平盤以下放空等措施，11/23 週一實際開在約 35,899 點，比換算少跌很多。</p>'
+                      if (tx.get("gap_h") or 0) >= 12 else "")
                    + fold_rows(rows, 3, "<tr><th>月份</th><th class='r'>開</th><th class='r'>高</th><th class='r'>低</th><th class='r'>收</th><th class='r'>漲跌</th><th class='r'>成交量（口）</th></tr>", "個月份")
                    + f'<p class="note">來源：<a href="{esc(SRC_TXN)}" target="_blank" rel="noopener">期交所期貨每日交易行情（盤後交易時段）</a>，抓取 {esc(tx.get("fetched") or "—")}。'
                    '燈號（自訂）：台指期一天的波動標準差約 1.3%，夜盤漲跌 ±3% 以上 🔴、±1.5% 以上 🟡。</p>')
@@ -141,7 +146,19 @@ def tx_night(px: Dict) -> Dict:
     if not n.get("near") or not c or str(n.get("session")) < str(c[-1][0]):
         return {}
     pct = n["near"].get("pct")
-    return {**n, "light": TN.light(pct), "twii": c[-1], "implied": c[-1][1] * (1 + pct / 100) if pct is not None and c[-1][1] else None}
+    return {**n, "light": TN.light(pct), "twii": c[-1], "implied": c[-1][1] * (1 + pct / 100) if pct is not None and c[-1][1] else None,
+            "gap_h": gap_hours(str(n["session"]))}
+
+
+def gap_hours(session: str, now: Optional[datetime] = None) -> Optional[int]:
+    """Hours since the night session closed (05:00 Taipei the day after `session`).
+    2026-11-23 盲點：週五夜盤 −5.25%，但週六清晨收盤後到週一開盤之間的週末新聞不在夜盤價格裡，換算高估了週一的開低。"""
+    try:
+        end = datetime.fromisoformat(session[:10]).replace(hour=5, tzinfo=TPE) + timedelta(days=1)
+    except ValueError:
+        return None
+    now = now or datetime.now(timezone.utc)
+    return int((now - end).total_seconds() // 3600)
 
 
 def sec_tw_preopen(eng=None) -> str:

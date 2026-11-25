@@ -76,7 +76,24 @@ def test_events():
     SOF.FILE.unlink()
 
 
+def test_sessions():
+    """2026-11-25: yesterday's US close must not fire the next evening, and a new session is not blocked by the cooldown."""
+    hs = BR.hits(eng({"^GSPC": -6.0}), NOW)
+    assert hs and hs[0]["asof"] == "2026-11-09"
+    late = datetime(2026, 11, 10, 10, 58, tzinfo=timezone.utc)                   # 18:58 台北 the next day
+    assert BR.hits(eng({"^GSPC": -6.0}), late) == []                              # > 9 h after the 11/09 close
+    assert BR.fresh("^TWII", "2026-11-09", datetime(2026, 11, 9, 14, 0, tzinfo=timezone.utc))
+    assert not BR.fresh("^TWII", "2026-11-09", datetime(2026, 11, 9, 15, 0, tzinfo=timezone.utc))
+    st = {"last_ts": NOW.timestamp() - 3600, "sessions": ["US:2026-11-08"]}
+    d = BR.decide(hs, st, NOW)
+    assert d["fire"] and "新的一個交易時段" in d["why"] and d["sessions"] == ["US:2026-11-09"]
+    st = {"last_ts": NOW.timestamp() - 3600, "sessions": ["US:2026-11-09"]}
+    assert not BR.decide(hs, st, NOW)["fire"]                                      # same session: cooldown holds
+    assert not BR.decide(hs, {"last_ts": NOW.timestamp() - 3600}, NOW)["fire"]      # old state without sessions: cooldown holds
+
+
 if __name__ == "__main__":
+    test_sessions()
     test_rule()
     test_guards()
     test_events()

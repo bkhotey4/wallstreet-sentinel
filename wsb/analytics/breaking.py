@@ -2,7 +2,7 @@
 
 規則（2015 年起回測平均每年約 5 次，抓到的是 2020 年 3 月、2024-08-05、2025 年 4 月這類日子）：
   任一主要行情的單日變動 ≥ 自己近 60 日波動的 5 倍，或同一天有 2 項 ≥ 4 倍。
-冷卻 6 小時；每一班固定口播（約每 3 小時一班，見 EDITIONS）前 30 分鐘不發，因為那一班馬上就到。
+冷卻 6 小時（換了一個交易時段不擋，2026-11-25）；收盤 9 小時後的變動不算；每一班固定口播（約每 3 小時一班，見 EDITIONS）前 30 分鐘不發，因為那一班馬上就到。
 每次建置寫 breaking.json（公開，只有行情數字），fire=true 時 workflow 才去叫 routine。
 狀態存 data_cache/econ_breaking.json（CI 保留 econ_*）。描述現況，不是預測。"""
 from __future__ import annotations
@@ -42,6 +42,25 @@ def _load() -> Dict:
         return {}
 
 
+STALE_H = 9                      # a session's move counts until 9 h after its close (2026-11-25)
+
+
+def session(sym: str, asof: str) -> str:
+    """Which trading session a quote belongs to: TW for the TAIEX, US for everything else (sector ETFs, futures, FX)."""
+    return ("TW:" if sym == "^TWII" else "US:") + str(asof)[:10]
+
+
+def fresh(sym: str, asof: str, now: datetime) -> bool:
+    """2026-11-25: 11/24 美股收盤的費半急跌，隔天 18:58 才發加班，冷卻時間又擋掉當晚 PCE／關稅的新一輪大跌。
+    收盤（台股 13:30、其他以美股 16:00 美東 ≈ 21:00 UTC 計）後 9 小時，那一盤的變動就算舊聞（早班口播已講）。"""
+    try:
+        d = datetime.fromisoformat(str(asof)[:10]).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return False
+    close = d + (timedelta(hours=5, minutes=30) if sym == "^TWII" else timedelta(hours=21))
+    return now <= close + timedelta(hours=STALE_H)
+
+
 def hits(eng, now: Optional[datetime] = None) -> List[Dict]:
     now = now or datetime.now(timezone.utc)
     cut = (now - timedelta(days=2)).strftime("%Y-%m-%d")
@@ -50,6 +69,8 @@ def hits(eng, now: Optional[datetime] = None) -> List[Dict]:
     for t in ASSETS:
         sg, x = eng.market.sigma_move(t), eng.market.q(t)
         if sg is None or not x or x.get("chg_pct") is None or str(x.get("asof", "")) < cut:
+            continue
+        if not fresh(t, x["asof"], now):
             continue
         if not (x["chg_pct"] == x["chg_pct"]) or np.sign(sg) != np.sign(x["chg_pct"]):
             continue                                   # quote and history disagree → data glitch
@@ -79,13 +100,16 @@ def events(eng, now: Optional[datetime] = None) -> List[Dict]:
             x = eng.market.q(sym)
             if not x or x.get("chg_pct") is None or str(x.get("asof", "")) < cut or h is None or sym not in h.columns:
                 continue
+            if not fresh(sym, x["asof"], now):
+                continue
             sd = SS.robust_sd(h[sym])
             lv = SS.level(float(x["chg_pct"]), sd)
             if lv:
-                lit.append({"sym": sym, "zh": zh, "chg": float(x["chg_pct"]), "z": float(x["chg_pct"]) / sd, "lv": lv})
+                lit.append({"sym": sym, "zh": zh, "chg": float(x["chg_pct"]), "z": float(x["chg_pct"]) / sd, "lv": lv,
+                            "asof": str(x["asof"])[:10]})
         if any(a["lv"] >= 2 for a in lit) or len(lit) >= 2:
             for a in sorted(lit, key=lambda a: a["z"]):
-                out.append({"kind": "sector", "key": f'sec:{a["sym"]}',
+                out.append({"kind": "sector", "key": f'sec:{a["sym"]}', "session": session(a["sym"], a["asof"]),
                             "text": f'族群急跌：{a["zh"]} {a["chg"]:+.1f}%（平常一天的 {abs(a["z"]):.1f} 倍）'})
     except Exception:  # noqa: BLE001
         pass
@@ -108,9 +132,14 @@ def decide(hs: List[Dict], state: Dict, now: datetime, ev: Optional[List[Dict]] 
     hm = now.astimezone(TPE).strftime("%H:%M")
     quiet = any(a <= hm < b for a, b in QUIET)
     cool = now.timestamp() - float(state.get("last_ts") or 0) < COOLDOWN
-    fire = trig and not quiet and not cool
-    why = ("沒有達到條件" if not trig else "下一班固定口播 30 分鐘內就到" if quiet else "6 小時內已經加班過" if cool else "發車")
-    return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why, "reasons": ev,
+    sess = sorted({session(h["t"], h.get("asof", "")) for h in hs} | {e["session"] for e in ev if e.get("session")})
+    # 冷卻只擋「同一盤」的後續變動；換了一個交易時段（例如上一班講的是昨晚美股，現在是今晚美股）就不擋
+    new_sess = "sessions" in state and bool(set(sess) - set(state.get("sessions") or []))
+    blocked = cool and not new_sess
+    fire = trig and not quiet and not blocked
+    why = ("沒有達到條件" if not trig else "下一班固定口播 30 分鐘內就到" if quiet else "6 小時內已經加班過" if blocked
+           else "冷卻中，但這是新的一個交易時段，照樣發車" if cool else "發車")
+    return {"ts": int(now.timestamp()), "fire": fire, "key": key, "hits": hs, "why": why, "reasons": ev, "sessions": sess,
             "rule": (f"任一行情 ≥ 平常波動 {ONE:g} 倍，或兩項 ≥ {TWO:g} 倍；或族群紅燈／兩個族群黃燈；"
                      "或 3 小時內有 SEC 重大申報（破產、資安、減損、下市通知、財報重編、債務被要求提前清償、控制權變動、裁員重整、"
                      "有人申報持股逾 5%、執行長／財務長／董事長離職）")}
@@ -129,7 +158,8 @@ def build(eng, now: Optional[datetime] = None) -> Dict:
     st = _load()
     d = decide(hs, st, now, ev)
     if d["fire"]:
-        st.update(last_ts=d["ts"], last_key=d["key"])
+        st.update(last_ts=d["ts"], last_key=d["key"], sessions=sorted(set(d["sessions"]) | set(
+            st.get("sessions") or [] if d["ts"] - float(st.get("last_ts") or 0) < COOLDOWN else [])))
         st.setdefault("log", []).append({"ts": d["ts"], "key": d["key"], "hits": hs})
         st["log"] = st["log"][-50:]
         tmp = FILE.with_suffix(".tmp")
