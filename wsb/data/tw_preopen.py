@@ -231,6 +231,15 @@ def _save(d: Dict) -> None:
         log.warning("tw_preopen cache not saved: %s", e)
 
 
+def settled(day: str, fetched: Optional[float]) -> bool:
+    """True when a stored day was read late enough to be final.  證交所 revises BFI82U the same evening (11/25: 投信
+    +535.3 億 in the afternoon, +550.3 億 at 22:00) and MI_MARGN overnight, so a day keeps being re-read until noon of
+    the next day, Taipei (12:00 = 04:00 UTC)."""
+    if not fetched:
+        return False
+    return float(fetched) >= datetime.fromisoformat(day + "T04:00:00+00:00").timestamp() + 86400
+
+
 async def refresh() -> Dict:
     d = load()
     now = time.time()
@@ -251,8 +260,9 @@ async def refresh() -> Dict:
     tried = d.setdefault("tried", {})
     for kind, url, parse in (("mg", U_MG, parse_mg), ("bfi", U_BFI, parse_bfi)):
         have = d.setdefault(kind, {})
+        seen = d.setdefault("seen", {})
         for day in days:
-            if day in have or now - float(tried.get(f"{kind}:{day}", 0)) < RETRY:
+            if (day in have and settled(day, seen.get(f"{kind}:{day}"))) or now - float(tried.get(f"{kind}:{day}", 0)) < RETRY:
                 continue
             tried[f"{kind}:{day}"] = now
             ymd = day.replace("-", "")
@@ -265,6 +275,8 @@ async def refresh() -> Dict:
                 v = None
             if v:
                 have[day] = list(v) if kind == "mg" else v
+                seen[f"{kind}:{day}"] = now
+        d["seen"] = {k: t for k, t in seen.items() if k.split(":")[1] in days}
         d[kind] = {k: have[k] for k in sorted(have)[-40:]}
     d["tried"] = {k: v for k, v in tried.items() if now - v < 3 * 86400}
     d["ts"] = now

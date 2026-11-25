@@ -62,6 +62,44 @@ def test_lev_etf():
     assert P.lev_etf({}) is None
 
 
+def test_revised_day_is_read_again():
+    """11/25: BFI82U said 投信 +535.3 in the afternoon and +550.3 that night; the card kept the first number."""
+    import asyncio
+    import tempfile
+    from datetime import datetime, timezone
+    from pathlib import Path
+    ts = lambda s: datetime.fromisoformat(s).replace(tzinfo=timezone.utc).timestamp()   # noqa: E731
+    assert not P.settled("2026-11-25", None)                              # old cache without a stamp: read once more
+    assert not P.settled("2026-11-25", ts("2026-11-25T08:00:00"))         # 16:00 Taipei, first version
+    assert not P.settled("2026-11-25", ts("2026-11-26T03:00:00"))
+    assert P.settled("2026-11-25", ts("2026-11-26T04:30:00"))             # 12:30 Taipei the next day: final
+    vals, real = [53531942295, 55034724295], (P.FILE, P.http.get, P.time.time)
+    clock = [ts("2026-11-25T08:00:00")]
+    n = {"bfi": 0}
+
+    async def get(url, **k):
+        if url == P.U_BFI:
+            n["bfi"] += 1
+            return {"stat": "OK", "data": [["自營商(避險)", "0", "0", "-5470364428"], ["投信", "0", "0", str(vals[min(n["bfi"], 2) - 1])]]}
+        if url == P.U_MG:
+            return {"stat": "x"}
+        raise RuntimeError("no yahoo")
+    with tempfile.TemporaryDirectory() as td:
+        try:
+            P.FILE, P.http.get, P.time.time = Path(td) / "x.json", get, lambda: clock[0]
+            P._save({"px": {"2330.TW": {"c": [["2026-11-25", 2150.0]]}}})
+            assert asyncio.run(P.refresh())["bfi"]["2026-11-25"]["trust"] == 535.3
+            clock[0] = ts("2026-11-25T14:00:00")
+            assert asyncio.run(P.refresh())["bfi"]["2026-11-25"]["trust"] == 550.3
+            clock[0] = ts("2026-11-26T05:00:00")
+            asyncio.run(P.refresh())
+            clock[0] = ts("2026-11-26T09:00:00")
+            asyncio.run(P.refresh())
+            assert n["bfi"] == 3, n                                       # final: not read again
+        finally:
+            P.FILE, P.http.get, P.time.time = real
+
+
 def test_card_words():
     from tools import site_twpreopen as S
     tw = _series(300, 0, lambda k: 1000.0)
@@ -77,4 +115,4 @@ def test_card_words():
 
 
 if __name__ == "__main__":
-    test_parsers(); test_adr_math(); test_calendar_and_lights(); test_lev_etf(); test_card_words(); print("ok")
+    test_parsers(); test_adr_math(); test_calendar_and_lights(); test_lev_etf(); test_revised_day_is_read_again(); test_card_words(); print("ok")
