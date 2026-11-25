@@ -91,6 +91,7 @@ STAT_KEYS = {"消費者物價指數年增率": "cpi_yoy", "核心CPI年增率": 
              "進口年增率": "imports_yoy", "外匯存底(期底)": "fxres", "貨幣總計數(M1B)年增率": "m1b_yoy",
              "貨幣總計數(M2)年增率": "m2_yoy", "工業生產指數": "ip", "失業率": "unemp"}
 SRC_STAT = "https://www.stat.gov.tw/Point.aspx?sid=t.2&n=3581&sms=11480"
+STAT_V = 2                       # bump when STAT_PAGES / STAT_KEYS grow, so a cache made with fewer pages is refetched
 
 
 def parse_stat(page: str, rows: Optional[Dict[str, Dict]] = None) -> Dict[str, Dict]:
@@ -147,7 +148,7 @@ def _load(f) -> Dict:
 
 def refresh(force: bool = False) -> Dict:
     d = _load(FILE)
-    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("unemp") and d.get("wage") and d.get("stat"):   # all three, or a failed one waits 12 h (Gemini CODE-4, 11-22)
+    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("unemp") and d.get("wage") and d.get("stat") and d.get("stat_v") == STAT_V:   # all three, or a failed one waits 12 h (Gemini CODE-4, 11-22)
         return _with_seed(d)
     d["ts"] = time.time()
     for name, fn in (("pmi", lambda: parse_pmi(_get(U_PMI))), ("unemp", lambda: parse_unemp(_get(U_UNEMP))),
@@ -158,6 +159,8 @@ def refresh(force: bool = False) -> Dict:
                 d[name] = v
         except Exception as e:  # noqa: BLE001
             log.info("tw macro2 %s unavailable: %s", name, e)
+    if d.get("stat") and set(d["stat"][-1]) >= {"m1b_yoy", "fxres"}:
+        d["stat_v"] = STAT_V
     d["fetched"] = datetime.now(TPE).strftime("%Y-%m-%d %H:%M")
     try:
         tmp = FILE.with_suffix(".tmp")
@@ -173,7 +176,9 @@ def _with_seed(d: Dict) -> Dict:
     s = _load(SEED)
     for name in ("pmi", "unemp", "wage", "stat"):
         mine, theirs = d.get(name) or [], s.get(name) or []
-        if theirs and (not mine or theirs[-1]["ym"] > mine[-1]["ym"]):
+        # 11-26: a cached 3-page 「stat」 (no M1B / 外匯存底) is as new as the seed's 5-page one, so also take the seed when it has more fields
+        if theirs and (not mine or theirs[-1]["ym"] > mine[-1]["ym"]
+                       or (theirs[-1]["ym"] == mine[-1]["ym"] and len(theirs[-1]) > len(mine[-1]))):
             d[name] = theirs
     return d
 
