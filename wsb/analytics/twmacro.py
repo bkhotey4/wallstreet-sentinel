@@ -322,15 +322,30 @@ def calendar_rows(d: Dict, today: Optional[date] = None) -> List[Dict]:
         return rows[-1][0] if rows else None
 
     cbc, ndc = d.get("cbc") or {}, d.get("ndc") or {}
-    rows = [{"zh": "物價指數 CPI（主計總處）", "when": nxt(6), "last": latest(cbc.get("cpi")), "why": "通膨高低決定央行要不要升息"},
-            {"zh": "海關進出口（財政部）", "when": nxt(8), "last": latest(ndc.get("exports")), "why": "台灣經濟最主要的引擎"},
-            {"zh": "外銷訂單（經濟部）", "when": nxt(20), "last": latest(ndc.get("orders_idx")), "why": "接單是出口的前一步，領先 1～3 個月"},
-            {"zh": "金融統計 M1B／M2（央行）", "when": nxt(25), "last": latest(cbc.get("m1b")), "why": "市場資金是否充沛"},
-            {"zh": "景氣對策信號燈號（國發會）", "when": nxt(27), "last": latest(ndc.get("light")), "why": "一個燈號總結整體景氣"}]
+    # 11-26 self-audit: 「為什麼重要」 now says what a move does to people and prices; `lag` marks a month the agency has already
+    # published but this site's source (國發會資料庫 / 央行彙整, refreshed around the 27th) does not carry yet.
+    rows = [{"zh": "物價指數 CPI（主計總處）", "day": 6, "when": nxt(6), "last": latest(cbc.get("cpi")),
+             "why": "物價漲得快 → 央行比較可能升息，房貸和企業借錢跟著變貴"},
+            {"zh": "海關進出口（財政部）", "day": 8, "when": nxt(8), "last": latest(ndc.get("exports")),
+             "why": "台灣經濟最主要的引擎；出口年增突然轉弱，常是法人下修台股獲利的第一步"},
+            {"zh": "外銷訂單（經濟部）", "day": 20, "when": nxt(20), "last": latest(ndc.get("orders_idx")),
+             "why": "訂單比出口早 1～3 個月；連續兩個月轉弱，要留意下一季出口"},
+            {"zh": "金融統計 M1B／M2（央行）", "day": 25, "when": nxt(25), "last": latest(cbc.get("m1b")),
+             "why": "M1B（活期存款等隨時能用的錢）成長比 M2 快，代表資金往股市跑；反過來是資金退潮"},
+            {"zh": "景氣對策信號燈號（國發會）", "day": 27, "when": nxt(27), "last": latest(ndc.get("light")),
+             "why": "一個燈號總結整體景氣：紅燈＝熱絡；從紅燈降下來，常是景氣從高點轉弱的第一個訊號"}]
+    for r in rows:
+        y, m = today.year, today.month
+        if today.day < r["day"]:                               # this month's release has not happened yet
+            y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+        ey, em = (y - 1, 12) if m == 1 else (y, m - 1)          # a release in month m covers month m − 1
+        exp = f"{ey}-{em:02d}"
+        if r["last"] and r["last"] < exp:
+            r["lag"] = exp
     q = [m for m in (3, 6, 9, 12)]
     y = today.year
     cands = [_third_thursday(y, m) for m in q] + [_third_thursday(y + 1, 3)]
-    rows.append({"zh": "央行理監事會（利率決策）", "when": next(x for x in cands if x >= today), "last": latest(cbc.get("disc")), "why": "決定台灣的基準利率與房貸管制"})
+    rows.append({"zh": "央行理監事會（利率決策）", "when": next(x for x in cands if x >= today), "last": latest(cbc.get("disc")), "why": "升息 → 房貸與企業借錢變貴、台股評價承壓；也決定房貸管制鬆緊"})
     for r in rows:                                              # usual timing, not an announced date
         r["approx"] = True
         r["when_zh"] = f"約 {r['when']:%m-%d}"
