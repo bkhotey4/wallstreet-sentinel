@@ -21,7 +21,7 @@ GROUP = {"D": "💬 和 Claude 的討論", "WIDE": "🌍 外面的世界", "TASK
          "FED": "🏦 聯準會", "SITE": "🛠 本站挑錯", "CALL": "🎙 法說會重點", "NEXT": "🔗 二階影響（推理）",
          "RED": "⚖️ 反方意見", "CAL": "🗓 行事曆核對", "SENT": "💬 散戶情緒（不是事實）", "WEEK": "📋 這週漏掉的", "BLIND": "🔭 本站的盲點",
          "TWX": "📈 台股情報", "TWD": "🧠 台股深度思考", "TWB": "🫧 台股泡沫觀察", "GBW": "🌐 全球泡沫地圖", "TWQ": "🧾 台股專業判讀核對", "TWC": "🗂 台股覆蓋清單核對", "NR": "📰 讀完全文的新聞"}
-HIDE = ("CODE-",)                                           # the code audit is for Claude's daily task, not the public page
+HIDE = ("CODE-", "READ-")                                   # the code audit and the reader audit (11-26) are for Claude's daily task, not the public page
 
 
 def _a(x: Dict) -> str:

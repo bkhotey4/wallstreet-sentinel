@@ -276,6 +276,31 @@ def gemini_unknown_groups(reply: str) -> List[str]:
     return sorted(c for c in codes if c not in known)
 
 
+LAG = re.compile(r"資料期：本站\s*(\d{4}-\d{2}(?:-\d{2})?|\d{4}Q\d)\s*｜\s*官方\s*(\d{4}-\d{2}(?:-\d{2})?|\d{4}Q\d)\s*｜\s*(https?://\S+)")
+OFFICIAL = ("stat.gov.tw", "mof.gov.tw", "moea.gov.tw", "cbc.gov.tw", "ndc.gov.tw", "fsc.gov.tw", "twse.com.tw", "tpex.org.tw", "taifex.com.tw",
+            "stlouisfed.org", "bea.gov", "bls.gov", "census.gov", "federalreserve.gov", "treasury.gov", "sec.gov", "dgbas.gov.tw")
+
+
+def read_items(reply: str) -> Dict:
+    """Gemini's READ section (11-26, user: 「不希望下次還有甚麼數據還沒修」): the cards it covered this round, the 「然後呢」 wording
+    problems, and the 「比官方慢」 lines — only those whose URL is on an issuing agency's own domain (news re-tellings are dropped)."""
+    out: Dict = {"scope": "", "lag": [], "wording": []}
+    for blk in re.split(r"(?m)^### ", reply or "")[1:]:
+        head, _, body = blk.partition("\n")
+        if not head.startswith("READ-"):
+            continue
+        if head.startswith("READ-範圍"):
+            out["scope"] = head.split("｜", 1)[-1].strip()
+            continue
+        card = (re.search(r"#\d\d-\d\d", head) or re.search(r"#\d\d", head))
+        lags = [m for m in LAG.finditer(blk) if any(d in m.group(3) for d in OFFICIAL)]
+        for m in lags:
+            out["lag"].append({"card": card.group(0) if card else "", "site": m.group(1), "official": m.group(2), "url": m.group(3).rstrip("）)。,，")})
+        if not lags:
+            out["wording"].append({"card": card.group(0) if card else "", "text": head.split("｜", 1)[-1].strip()[:120]})
+    return out
+
+
 # ------------------------------------------------------------------ run
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
@@ -348,6 +373,7 @@ def main() -> Dict:
     try:
         gr = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed" / "gemini_reply.md"
         rep["gemini_groups"] = gemini_unknown_groups(gr.read_text(encoding="utf-8")) if gr.exists() else []
+        rep["read"] = read_items(gr.read_text(encoding="utf-8")) if gr.exists() else {}
     except Exception as e:  # noqa: BLE001
         rep["gemini_groups"], rep["gemini_groups_error"] = [], str(e)
     OUT.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -397,6 +423,14 @@ def summary(rep: Dict) -> str:
         lines.append("⚠ 剛掛牌的 IPO 沒有發行價（424B4 沒讀懂？查 wsb/data/ipo_data.offer_price，修好後把 OFFER_V 加一）：" + "、".join(rep["ipo_blank"]))
     if rep.get("old_reads"):
         lines.append("⚠ 手寫判讀比新聞舊（先讀原文再改寫）：" + "、".join(rep["old_reads"]))
+    rd = rep.get("read") or {}
+    if rd.get("lag"):
+        lines.append("⚠ Gemini READ：官方已公布更新一期、本站還沒有（先點開官方網址確認，再改成讀原始來源）：" + "；".join(
+            f"{x['card']} 本站 {x['site']} → 官方 {x['official']} {x['url']}" for x in rd["lag"]))
+    if rd.get("wording"):
+        lines.append("Gemini READ：寫了等於沒寫（讀卡片原文確認後改寫）：" + "；".join(f"{x['card']} {x['text']}" for x in rd["wording"][:10]))
+    if rd.get("scope"):
+        lines.append("Gemini READ 本輪範圍：" + rd["scope"])
     if rep.get("gemini_groups"):
         lines.append("⚠ Gemini 回答有網站不認得的段落代碼（加到 tools/site_gemini.py GROUP 和 order）：" + "、".join(rep["gemini_groups"]))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))

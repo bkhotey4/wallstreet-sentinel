@@ -49,6 +49,19 @@ def test_summary_routines_and_tw_forecast_listed():
     assert "排程紅黃燈：台灣總經展望（late" in s and "持股檔" not in s
 
 
+def test_read_items():
+    """Gemini READ (11-26): scope line, official-domain lag lines only, the rest as wording problems."""
+    from tools import daily_audit as A
+    r = "\n".join(["### READ-範圍｜本輪看了：#39-01～#39-03（共 3 張）",
+                   "### READ-1｜#39-03：外銷訂單停在 9 月", "資料期：本站 2026-09｜官方 2026-10｜https://www.stat.gov.tw/Point.aspx?sid=t.5",
+                   "### READ-2｜#44-01：燈號說明只有顏色", "文字",
+                   "### READ-3｜#01-02：新聞說法", "資料期：本站 2026-09｜官方 2026-10｜https://news.cnyes.com/x", "### SITE-1｜x", ""])
+    d = A.read_items(r)
+    assert d["scope"].startswith("本輪看了") and [x["card"] for x in d["lag"]] == ["#39-03"]
+    assert d["lag"][0]["official"] == "2026-10" and [x["card"] for x in d["wording"]] == ["#44-01", "#01-02"]
+    assert "READ" not in A.gemini_unknown_groups(r)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
