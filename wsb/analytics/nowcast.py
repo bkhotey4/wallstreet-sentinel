@@ -247,7 +247,7 @@ MEAN = {
     "pce": {"what": "PCE 是聯準會最看重的物價數字，看「東西一個月漲了多少」。聯準會希望一年只漲 2%。",
             "unit": "%", "nm": "核心 PCE 月增",
             "hot": "物價還在加速 → 聯準會更可能升息、更晚降息 → 美債殖利率往上、美元偏強；要很久才回本的科技股、AI 股通常壓力最大，台股電子跟著費半。",
-            "mid": "和大家預期的差不多 → 市場鬆一口氣，影響通常不大，焦點回到財報。",
+            "mid": "和大家預期的差不多 → 物價這一項沒有帶來新的壓力；當天市場往哪走，由同時發生的其他事決定。",
             "cool": "物價降溫 → 升息壓力變小 → 殖利率回落；成長股、半導體通常受惠。如果同時消費也明顯轉弱，市場會轉而擔心景氣。",
             "next": "接下來看：殖利率是不是跟著動、下次 FOMC 的升息／降息機率有沒有變（財經日曆 FOMC 卡）。"},
     "gdp": {"what": "GDP 是美國經濟這一季成長多快（換算成一年的速度）。0 以下代表萎縮。",
@@ -340,7 +340,7 @@ def describe(e: Dict, log: Dict[str, Dict]) -> Optional[Dict]:
             return None
         side = "hot" if a >= hi - 1e-9 and (exact or a > hi) else "cool" if a <= lo + 1e-9 and (exact or a < lo) else "mid"
         word = {"hot": f"高於{rn}", "cool": f"低於{rn}", "mid": f"和{rn}差不多"}[side]
-        out["result"] = f"公布 {_fmt(a, k)}（網站事前估 {_fmt(v, k)}）：{word}。代表：{mn[side]}"
+        out["result"] = f"公布 {_fmt(a, k)}（網站事前估 {_fmt(v, k)}）：{word}。通常代表：{mn[side]}"
         out["side"] = side
         out["zh"] = f"事前估算 {_fmt(v, k)} → 公布 {_fmt(a, k)}，{word}。"
     else:

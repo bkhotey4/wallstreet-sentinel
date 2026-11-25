@@ -87,14 +87,41 @@ def sec_econ_week(eng) -> str:
     return card("本週重要經濟數據", "This week's key releases", body + f'<p class="note">{note}</p>', "wide")
 
 
-def _nc_body(e: Dict) -> str:
+REACT = (("QQQ", "那斯達克 100", "%"), ("^TNX", "美債 10 年殖利率", "bp"), ("DX-Y.NYB", "美元指數", "%"))
+
+
+def _reaction(eng, e: Dict) -> str:
+    """11-26 self-audit: the 10/PCE card said 「和預期差不多 → 市場鬆一口氣」 on a night the Nasdaq fell ~3%. Once a print is out,
+    show what markets actually did on that US session next to the textbook meaning, and say other news counts too."""
+    mk = getattr(eng, "market", None)
+    if mk is None or not e.get("released"):
+        return ""
+    parts = []
+    for sym, zh, unit in REACT:
+        try:
+            q = mk.q(sym)
+        except Exception:  # noqa: BLE001
+            q = None
+        if not q or q.get("chg_pct") is None or str(q.get("asof", ""))[:10] != str(e.get("date"))[:10]:
+            continue
+        if unit == "bp" and q.get("price") is not None and q.get("prev") is not None:
+            parts.append(f'{zh} {(float(q["price"]) - float(q["prev"])) * 100:+.0f} 個基點')
+        else:
+            parts.append(f'{zh} {float(q["chg_pct"]):+.1f}%')
+    if not parts:
+        return ""
+    return (f'<p class="small"><b>{T("當天實際反應", "What markets did")}：</b>{esc("、".join(parts))}'
+            f'<span class="muted">{T("（美股當天收盤或最新報價；同一天的其他新聞也算在裡面，不全是這個數字造成的，原因見「今晚大事看板」與即時新聞）", "")}</span></p>')
+
+
+def _nc_body(e: Dict, eng=None) -> str:
     """One event's plain explainer: what it is → the estimate → what a high / middle / low print means (or what the
     actual print means once out) → what to watch; the method folded."""
     n = e["nowcast"]
     from wsb.analytics.nowcast import _fmt
     cons = (f'<br><span class="muted small">{T("市場預期", "Consensus")}：{esc(_fmt(n["cons"], n["key"]))}</span>' if n.get("cons") is not None else "")
     if n.get("result"):
-        mid = f'<p><b>{T("結果", "Result")}：</b>{esc(n["result"])}</p>'
+        mid = f'<p><b>{T("結果", "Result")}：</b>{esc(n["result"])}</p>' + _reaction(eng, e)
     else:
         mid = ('<p><b>' + T("公布後怎麼看", "How to read the print") + '：</b></p><ul class="takeaways">'
                + "".join(f'<li><b>{esc(c)}</b>：{esc(m)}</li>' for c, m in n["bands"]) + "</ul>")
@@ -116,7 +143,7 @@ def sec_nowcast(eng) -> str:
         when = ("已公布" if e["released"] else f"台北 {e['tpe']}" if e.get("tpe") else f"{dd} 天後")
         title = (f"{name[0]}（{when}）：" + ("公布了，代表什麼" if e["released"] else "公布前估算與怎麼解讀"),
                  f"{name[1]} ({e['date'][5:]}): " + ("what the print means" if e["released"] else "estimate and how to read it"))
-        out.append(card(title[0], title[1], _nc_body(e) + f'<p class="small"><a href="#ev-{esc(e["id"].replace(":", "-"))}">{T("看完整影響劇本 →", "Full scenarios →")}</a></p>', "wide"))
+        out.append(card(title[0], title[1], _nc_body(e, eng) + f'<p class="small"><a href="#ev-{esc(e["id"].replace(":", "-"))}">{T("看完整影響劇本 →", "Full scenarios →")}</a></p>', "wide"))
     return "".join(out)
 
 
