@@ -23,7 +23,7 @@ def test_parse_and_single_quarter():
 
 def test_otc_and_warn():
     s = C.parse_sbl_otc([{"Date": "1151120", "SecuritiesBorrowingBalanceOfTheMarketDay": "2,384,000", "SecuritiesBorrowingBalancePreviousDay": "2379000"}])
-    assert s == {"date": "1151120", "total": 2384000.0, "prev": 2379000.0}
+    assert s == {"date": "1151120", "total": 2384000.0, "prev": 2379000.0, "skipped": 0}
     w = C.parse_warn([{"Code": "", "Name": ""}], [{"SecuritiesCompanyCode": "1569", "CompanyName": "濱川", "TradingInformation": "跌幅達41.4%"}])
     assert w == [{"code": "1569", "name": "濱川", "why": "跌幅達41.4%", "board": "上櫃", "date": None}]
     from datetime import date
@@ -43,7 +43,8 @@ def test_margin_ratio_and_daytrade():
     mg = {"date": "20261120", "tables": [{"data": [["融資(交易單位)", "", "", "", "", "8,398,744"], ["融資金額(仟元)", "", "", "", "484,368,360", "1,000"]]},
                                          {"data": [["2330", "台積電", "", "", "", "", "1", "", "", "", "", "", "", "", "", ""],
                                                    ["9999", "沒收盤", "", "", "", "", "5", "", "", "", "", "", "", "", "", ""]]}]}
-    r = C.margin_ratio(mg, [{"Code": "2330", "ClosingPrice": "1,500.00"}])
+    assert C.margin_ratio(mg, [{"Code": "2330", "ClosingPrice": "1,500.00", "Date": "1151119"}]) is None   # 11-25: closes of another day
+    r = C.margin_ratio(mg, [{"Code": "2330", "ClosingPrice": "1,500.00", "Date": "1151120"}])
     assert abs(r["ratio"] - 1 * 1000 * 1500 / (1000 * 1000) * 100) < 1e-9          # 1 lot × 1,500 ÷ 1,000 thousand
     dt = C.parse_daytrade({"date": "20261120", "tables": [{"title": "115年11月20日 當日沖銷交易統計資訊", "data": [["4,460,672,000", "26.1", "x", "34.48"]]}]})
     assert dt == {"date": "20261120", "share_pct": 26.1, "value_pct": 34.48}
@@ -107,7 +108,24 @@ def test_forecast_view():
     assert C._range("9455288~10182350") == (9455288.0, 10182350.0) and C._range("x") is None
 
 
+def test_stat():
+    """主計總處統計資訊網: exact titles only, first value per month wins (CPI page repeats 年增率, export page repeats months)."""
+    import html as _h
+    import json as _j
+    from wsb.data import tw_macro2 as M
+    ser = [{"Title": "消費者物價指數", "data": [{"Date": "2026/10/1", "Value": "112.90"}]},
+           {"Title": "消費者物價指數年增率", "data": [{"Date": "2026/10/1", "Value": "2.33"}, {"Date": "2026/9/1", "Value": "2.70"}]},
+           {"Title": "消費者物價指數年增率", "data": [{"Date": "2026/10/1", "Value": "9.99"}]},
+           {"Title": "外銷訂單", "data": [{"Date": "2026/10/1", "Value": "123,820"}, {"Date": "2025/10/1", "Value": "69,434"}]}]
+    page = f'<input id="ContentPlaceHolder1_hidChartData" value="{_h.escape(_j.dumps(ser, ensure_ascii=False))}">'
+    rows = M.parse_stat(page)
+    assert rows["2026-10"]["cpi_yoy"] == 2.33 and "cpi" not in rows["2026-10"] and rows["2026-10"]["orders"] == 123820.0
+    d = {"stat": [rows[k] for k in sorted(rows)]}
+    assert M.latest_stat(d, "cpi_yoy") == ("2026-10", 2.33) and M.latest_stat(d, "exports") is None
+
+
 if __name__ == "__main__":
+    test_stat()
     test_forecast_view()
     test_wage()
     test_pulse_months_and_stamp()

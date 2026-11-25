@@ -88,11 +88,12 @@ def sec_tw_calendar(eng) -> str:
     if not r.get("available") or not r.get("cal"):
         return ""
     rows = "".join(f'<tr><td class="nw"><b>{x["when"]:%m-%d}</b>（{WD[x["when"].weekday()]}）</td><td>{T(x["zh"], "")}</td>'
-                   f'<td class="small muted">{esc(x["last"] or "—")}' + (f'<div class="warn">官方 {esc(x["lag"])} 應已公布，本站來源還沒更新</div>' if x.get("lag") else "") + '</td><td class="small">{T(x["why"], "")}</td></tr>' for x in r["cal"])
+                   f'<td class="small muted">{esc(x["last"] or "—")}' + (f'<div><b>{esc(x["val"])}</b></div>' if x.get("val") else "") + (f'<div class="warn">官方 {esc(x["lag"])} 應已公布，本站來源還沒更新</div>' if x.get("lag") else "") + '</td><td class="small">{T(x["why"], "")}</td></tr>' for x in r["cal"])
     first = r["cal"][0]
     lead = f"一句話看懂：下一個台灣重要數據是{first.get('when_zh') or '約 ' + format(first['when'], '%m-%d')} 的{first['zh']}。"
     how = ("日期依各機關的慣例推算（例如國發會約每月 27 日、央行理監事會在 3／6／9／12 月），遇假日會前後移動，以官方公告為準。"
-           "「本站最新資料」是目前抓到的最新月份，公布後下一次網站更新就會自動換成新數字。")
+           "「本站最新資料」是目前抓到的最新月份，公布後下一次網站更新就會自動換成新數字；CPI、出口、外銷訂單直接讀主計總處統計資訊網（官方公布當天就有），"
+           "其他項目讀國發會景氣指標資料庫與央行，約每月 27 日一起更新。")
     body = (_lead(lead) + f'<div class="scroll"><table class="mini"><thead><tr><th>{T("約略日期", "Approx. date")}</th><th>{T("數據", "Release")}</th>'
             f'<th>{T("本站最新資料", "Latest here")}</th><th>{T("對你的意思", "Why")}</th></tr></thead><tbody>{rows}</tbody></table></div>' + _how(how, "日期怎麼來"))
     return card("台灣數據日曆：接下來公布什麼", "Taiwan data calendar", body, "wide")

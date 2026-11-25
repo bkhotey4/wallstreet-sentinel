@@ -42,7 +42,7 @@ def main() -> dict:
     try:
         from wsb.data import tw_macro2 as M2
         s = M2.write_seed(FEED / "tw_macro2_seed.json")
-        out["macro2"] = {"fetched": s.get("fetched"), "pmi": (s.get("pmi") or [{}])[-1].get("ym"), "unemp": (s.get("unemp") or [{}])[-1].get("ym"), "wage": (s.get("wage") or [{}])[-1].get("ym")}
+        out["macro2"] = {"fetched": s.get("fetched"), "pmi": (s.get("pmi") or [{}])[-1].get("ym"), "unemp": (s.get("unemp") or [{}])[-1].get("ym"), "wage": (s.get("wage") or [{}])[-1].get("ym"), "stat": (s.get("stat") or [{}])[-1].get("ym")}
     except Exception as e:  # noqa: BLE001
         out["macro2"] = {"error": str(e)}
     try:

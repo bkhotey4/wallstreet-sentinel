@@ -82,6 +82,54 @@ def parse_wage(page: str) -> List[Dict]:
     return [rows[k] for k in sorted(rows)]
 
 
+# 11-26: 主計總處統計資訊網 carries October CPI / export orders / exports weeks before the 國發會 database the 台灣數據日曆 used
+# (it showed 2026-09 for everything while the agencies had published October). Exact series titles (one page holds several).
+U_STAT = "https://www.stat.gov.tw/Point.aspx?sid={sid}&n={n}&sms=11480"
+STAT_PAGES = (("t.2", 3581), ("t.5", 3584), ("t.8", 3587))
+STAT_KEYS = {"消費者物價指數年增率": "cpi_yoy", "核心CPI年增率": "core_yoy", "生產者物價指數年增率": "ppi_yoy",
+             "工業生產指數年增率": "ip_yoy", "外銷訂單": "orders", "出口金額": "exports", "出口年增率": "exports_yoy",
+             "進口年增率": "imports_yoy"}
+SRC_STAT = "https://www.stat.gov.tw/Point.aspx?sid=t.2&n=3581&sms=11480"
+
+
+def parse_stat(page: str, rows: Optional[Dict[str, Dict]] = None) -> Dict[str, Dict]:
+    """hidChartData series whose title is exactly one of STAT_KEYS → {ym: {ym, key: value}}; the first value seen for a
+    month wins (the export page repeats months; the CPI page has a second, shorter 年增率 series)."""
+    import html as _html
+    rows = {} if rows is None else rows
+    m = re.search(r'id="ContentPlaceHolder1_hidChartData" value="([^"]*)"', page or "")
+    if not m:
+        return rows
+    try:
+        series = json.loads(_html.unescape(m.group(1)))
+    except ValueError:
+        return rows
+    for sr in series if isinstance(series, list) else []:
+        key = STAT_KEYS.get(str(sr.get("Title") or "").strip())
+        for x in (sr.get("data") or []) if key else []:
+            dm = re.fullmatch(r"(\d{4})/(\d{1,2})/\d{1,2}", str(x.get("Date") or ""))
+            v = str(x.get("Value") or "").replace(",", "")
+            if dm and re.fullmatch(r"-?\d+(\.\d+)?", v):
+                ym = f"{dm.group(1)}-{int(dm.group(2)):02d}"
+                rows.setdefault(ym, {"ym": ym}).setdefault(key, float(v))
+    return rows
+
+
+def fetch_stat() -> List[Dict]:
+    rows: Dict[str, Dict] = {}
+    for sid, n in STAT_PAGES:
+        parse_stat(_get(U_STAT.format(sid=sid, n=n)), rows)
+    return [rows[k] for k in sorted(rows)]
+
+
+def latest_stat(d: Dict, key: str):
+    """(ym, value) of the newest month that has `key`, or None."""
+    for r in reversed(d.get("stat") or []):
+        if r.get(key) is not None:
+            return r["ym"], r[key]
+    return None
+
+
 def _get(url: str, kind: str = "text") -> str:
     import requests
     r = requests.get(url, headers=UA, timeout=40)
@@ -98,11 +146,11 @@ def _load(f) -> Dict:
 
 def refresh(force: bool = False) -> Dict:
     d = _load(FILE)
-    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("unemp") and d.get("wage"):   # all three, or a failed one waits 12 h (Gemini CODE-4, 11-22)
+    if not force and time.time() - float(d.get("ts") or 0) < TTL and d.get("pmi") and d.get("unemp") and d.get("wage") and d.get("stat"):   # all three, or a failed one waits 12 h (Gemini CODE-4, 11-22)
         return _with_seed(d)
     d["ts"] = time.time()
     for name, fn in (("pmi", lambda: parse_pmi(_get(U_PMI))), ("unemp", lambda: parse_unemp(_get(U_UNEMP))),
-                     ("wage", lambda: parse_wage(_get(U_WAGE)))):
+                     ("wage", lambda: parse_wage(_get(U_WAGE))), ("stat", fetch_stat)):
         try:
             v = fn()
             if v:
@@ -122,7 +170,7 @@ def refresh(force: bool = False) -> Dict:
 def _with_seed(d: Dict) -> Dict:
     """PC relay for a cloud build that cannot reach the government file servers: newer series win."""
     s = _load(SEED)
-    for name in ("pmi", "unemp", "wage"):
+    for name in ("pmi", "unemp", "wage", "stat"):
         mine, theirs = d.get(name) or [], s.get(name) or []
         if theirs and (not mine or theirs[-1]["ym"] > mine[-1]["ym"]):
             d[name] = theirs
@@ -132,6 +180,6 @@ def _with_seed(d: Dict) -> Dict:
 def write_seed(path=SEED) -> Dict:
     d = refresh(force=True)
     out = {"fetched": d.get("fetched"), "pmi": (d.get("pmi") or [])[-60:], "unemp": (d.get("unemp") or [])[-60:],
-           "wage": (d.get("wage") or [])[-60:]}
+           "wage": (d.get("wage") or [])[-60:], "stat": (d.get("stat") or [])[-60:]}
     Path(path).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
