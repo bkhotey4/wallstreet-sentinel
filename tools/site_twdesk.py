@@ -14,9 +14,17 @@ TPE = timezone(timedelta(hours=8))
 WD = "一二三四五六日"
 FEED = Path(__file__).resolve().parents[1] / "research_feed"          # public repo only (absent on the private copy)
 KIND_ZH = {"msci": "MSCI 季度審查生效", "tw50": "台灣 50 指數調整生效", "ftse": "富時（FTSE）全球指數季度調整生效"}
-KIND_WHY = {"msci": "追蹤 MSCI 新興市場、全世界指數的被動基金在當天收盤照新權重調整；台股權重一變，外資就得在收盤買或賣台股。",
-            "tw50": "0050、006208 等追蹤台灣 50 的基金照新成分股調整，被加入或剔除的股票收盤成交量放大。",
-            "ftse": "追蹤富時全球、新興市場指數的被動基金在當天收盤照新權重調整。"}
+# 「為什麼重要」→「對市場的意思」(11-26, user: 「#41-01 的為何重要，我感覺不出來，都說用規則去推算?? 然後...?」):
+# each cell now says what happens to prices that day and what it does NOT mean; 「規則推算」 is explained once under the table.
+KIND_WHY = {"msci": "外資的被動基金（跟 MSCI 新興市場、全世界指數）當天收盤一定要照新權重買賣台股。被調高權重的股票收盤前常被買上去，"
+                    "被調低的被賣下來；隔一兩天常回吐。這是「非成交不可」的單，不是外資看好或看壞。",
+            "tw50": "0050、006208 當天收盤一定要買新加入台灣 50 的股票、賣掉被剔除的；那幾檔收盤成交量會暴增、收盤價可能被扭曲，"
+                    "隔天常回吐。不代表公司基本面變了。",
+            "ftse": "追蹤富時指數的被動基金當天收盤照新權重買賣；和 MSCI 同一類，金額通常比 MSCI 小。"}
+ETF_WHY = "當天收盤一定要買新加入的、賣掉被刪的，不看價格；那幾檔收盤價常被推高或壓低，隔天常回吐。"
+FLOW_WHY = ("這張表在說：哪幾天、有多少錢「不管價格，收盤一定要成交」。被動基金（ETF、跟指數的外資基金）的規則就是照指數持股，"
+            "指數一換名單，它們只能在生效日收盤照做。所以那幾天名單上的股票收盤前急拉或急殺、爆大量，常常只是這些基金在換股，"
+            "不是公司或大盤出了新消息；金額越大（看「估算金額」），扭曲越明顯。")
 
 
 def _md(iso: Optional[str]) -> str:
@@ -81,6 +89,7 @@ def flow_lead(v: Dict) -> str:
     s = f"一句話看懂：下一個「基金不得不在收盤成交」的日子是 {_md(d0)}：{names}。"
     if big:
         s += f"規模最大的是 {_md(big[0])}的{big[1]}：每換掉 1% 的成分，大約有 {_yi(big[2])}元要在當天收盤買賣。"
+    s += "對你的意思：這些日子收盤前的急拉、急殺和爆量，常常只是基金「非成交不可」，隔一兩天會回吐，不是公司或大盤出了新消息。"
     return s
 
 
@@ -97,17 +106,19 @@ def sec_tw_flowcal(eng=None, v: Optional[Dict] = None) -> str:
     # A. index + ETF reviews
     rows = []
     for e in v.get("index") or []:
-        rows.append(e["date"] + f'<tr><td>{_md(e["date"])}</td><td>{esc(KIND_ZH.get(e["kind"], e["kind"]))}</td><td>—</td><td class="small">{esc(KIND_WHY.get(e["kind"], ""))}（規則推算）</td></tr>')
+        rows.append(e["date"] + f'<tr><td>{_md(e["date"])}</td><td>{esc(KIND_ZH.get(e["kind"], e["kind"]))}</td><td>—</td><td class="small">{esc(KIND_WHY.get(e["kind"], ""))}</td></tr>')
     for r in v.get("etf") or []:
         when = _md(r["next"]["date"]) if r["next"].get("date") else f'{int(r["next"]["month"][5:7])} 月（生效日以指數公司公告為準）'
         size = f'規模 {_yi(r.get("aum"))}元（{esc(r.get("asof") or "")}）；每換 1% 成分 ≈ {_yi(r.get("per1"))}元' if r.get("aum") else "規模待更新"
         rows.append((r["next"]["date"] or r["next"]["month"] + "-32") + f'<tr><td>{when}</td><td>{esc(r["code"])} {esc(r["name"])}</td><td class="small">{size}</td>'
-                    f'<td class="small">追蹤 <a href="{esc(r["src"])}" target="_blank" rel="noopener">{esc(r["index"])}</a>，每年 {"、".join(str(m) for m in r["months"])} 月調整（{"規則推算" if r["rule"] != "announce" else "依編製規則整理"}）。</td></tr>')
+                    f'<td class="small">{esc(ETF_WHY)}<div class="muted">追蹤 <a href="{esc(r["src"])}" target="_blank" rel="noopener">{esc(r["index"])}</a>，'
+                    f'每年 {"、".join(str(m) for m in r["months"])} 月調整{"" if r["rule"] != "announce" else "，生效日看指數公司公告"}。</div></td></tr>')
     rows = [x[10:] for x in sorted(rows)]
-    body += "<h3>指數與 ETF 調整（被動基金被迫成交）</h3>" + fold_rows(
-        rows, 8, "<tr><th>日期</th><th>事件</th><th>估算金額</th><th>為什麼重要</th></tr>", "筆")
+    body += f'<h3>指數與 ETF 調整（被動基金被迫成交）</h3><p class="small">{esc(FLOW_WHY)}</p>' + fold_rows(
+        rows, 8, "<tr><th>日期</th><th>事件</th><th>估算金額</th><th>對市場的意思</th></tr>", "筆")
     body += ('<p class="small muted">估算方法：ETF 規模＝投信公布的淨值 × 受益權單位數；「每換 1% 成分」＝規模 × 1%。'
-             '實際換多少要看指數公司公告的增刪名單。</p>')
+             '實際換多少要看指數公司公告的增刪名單。日期：指數公司公開了固定的調整規則（例如「每季最後一個月的第三個星期五」），'
+             '本站照規則算出日期；正式日期以指數公司公告為準。</p>')
     seed = v.get("seed") or {}
     items = seed.get("items") or []
     if items:
@@ -240,7 +251,12 @@ def rev_lead(v: Dict) -> str:
         return ""
     hot = max(L, key=lambda x: x["yoy3_med"])
     cold = min(L, key=lambda x: x["yoy3_med"])
-    s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {v['yoy_pos']:.0f}% 的公司比去年同月成長"
+    s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 "
+    if v.get("yoy_pos") is None:
+        s += "還沒有可比的去年同月營收"
+    else:
+        n_y, n_t = v.get("n_yoy"), len(v.get("trends") or [])
+        s += (f"有年增資料的 {n_y} 檔裡，" if n_y is not None and n_y < n_t else "有 ") + f"{v['yoy_pos']:.0f}% 的公司比去年同月成長"
     if v.get("breadth") is not None:
         s += f"、{v['breadth']:.0f}% 的公司近 3 個月成長在加速"
     s += f"；AI 供應鏈裡最熱的是{hot['name']}（近 3 個月年增中位數 {hot['yoy3_med']:+.0f}%）"
