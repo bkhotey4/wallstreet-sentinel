@@ -116,10 +116,76 @@ def _row(r: Dict, notes: Dict[str, Dict]) -> str:
             f'<td><b>{star}{esc(r["name"])}</b> <span class="tk">{esc(r["code"])}</span><div class="small">{pill} {esc(r["board"])}'
             + (f'・{esc(r["layer"])}' if r.get("layer") else "") + f'</div></td>'
             f'<td class="small">{_prog_text(r["prog"], r["code"]) if r.get("big") else "<span class=muted>不在追蹤範圍</span>"}{note}</td>'
-            f'<td class="small muted">{esc(r["summary"][:120])}</td></tr>')
+            f'<td class="small">{_watch_text(r)}</td></tr>')
 
 
-HEAD = "<tr><th>日期</th><th>公司</th><th>這一季營收走到哪（程式計算）</th><th>公司怎麼說這場</th></tr>"
+def _watch_text(r: Dict) -> str:
+    """這場要看什麼 (11-25, user: 「公司怎麼說這場…我不需要知道受誰邀請參加」): the MOPS 摘要 is mostly 「受邀參加某證券論壇」,
+    so the column now says what kind of meeting it is and what the revenue trend makes worth listening for."""
+    kind = ("公司自己的財報說明，會有新數字（上一季財報，常有下一季展望）。" if r.get("kind") == "自辦法說"
+            else "券商辦的論壇，通常不公布新數字；能聽的是管理層口頭對下一季的看法。")
+    p, code = r.get("prog") or {}, str(r.get("code") or "")
+    if code.startswith(FIN):
+        ask = "金融股：看資產品質與投資損益（股市大跌時，持有的股票債券會有評價損失）。"
+    elif not p:
+        ask = ""
+    else:
+        acc, yoy = p.get("accel"), _pct(p.get("yoy"))
+        ask = ("" if acc is None else
+               f"營收近 3 個月加速（最新年增 {yoy}）：聽它說這是新訂單、會延續，還是客戶提前拉貨的一次性。" if acc > 3 else
+               f"營收近 3 個月放緩（最新年增 {yoy}）：聽放緩的原因（客戶延後、價格下降或匯率），和下一季會不會回升。" if acc < -3 else
+               f"營收持平（最新年增 {yoy}）：聽下一季的看法有沒有改變。")
+    return esc(kind) + (f"<br><b>{esc(ask)}</b>" if ask else "")
+
+
+HEAD = "<tr><th>日期</th><th>公司</th><th>這一季營收走到哪（程式計算）</th><th>這場要看什麼</th></tr>"
+
+
+def us_links(eng, now: Optional[datetime] = None, days: int = 21, floor: float = 5e10) -> List[Dict]:
+    """美股財報 → 台股誰會跟著動 (11-25, user: 「台股財報前瞻怎麼跟美股財報前瞻的內容差異很大?」): 台股這三週幾乎只有券商論壇，
+    真正會在這段時間動到台股的，是美股大公司的財報。每一家接下來 21 天要公布、市值 ≥ 500 億美元、本站有股價的美股公司，
+    配上「它晚上漲跌、台股隔天跟著動」的台股——和即時新聞影響估算同一套方法（舊資料估 β，最後 250 組沒看過的資料驗證）。
+    金融股排除：它們跟的是整個大盤，不是這家公司。"""
+    from tools.site_events import earn_events
+    from wsb.analytics import news_impact as NI
+    from wsb.data.stocks import universe
+    sp = getattr(eng, "stockprices", None)
+    cl = getattr(sp, "close", None)
+    if cl is None or getattr(cl, "empty", True):
+        return []
+    allu = {}
+    for mk in ("us", "tw"):
+        for k, v in ((universe().get(mk) or {}).get("symbols") or {}).items():
+            allu[k] = (v[0], v[1] if len(v) > 1 else k, mk)
+    tws = [k for k, v in allu.items() if v[2] == "tw" and k in cl.columns and not k.startswith(FIN)]
+    calls = {(x.get("sym"), x.get("date")): x.get("call") for x in (_json(FEED / "earn_preview.json").get("items") or []) if isinstance(x, dict)}
+    out = []
+    for r in earn_events(eng, now or datetime.now(TPE), floor=floor, days=days):
+        if r["sym"] not in cl.columns:
+            continue
+        tw = NI.tw_direct(cl, r["sym"], tws, allu)[:5]
+        if not tw:
+            continue
+        tp = datetime.fromisoformat(r["next"]).astimezone(TPE)
+        out.append({"sym": r["sym"], "zh": r["zh"], "tpe": tp.strftime("%m/%d %H:%M"), "exact": "時間未定" not in str(r.get("zh")),
+                    "call": calls.get((r["sym"], r["next"][:10])), "tw": tw})
+    return out
+
+
+def _us_links_html(rows: List[Dict]) -> str:
+    if not rows:
+        return ""
+    tr = [f'<tr><td>{esc(r["tpe"])}</td><td><b>{esc(r["zh"])}</b> <span class="tk">{esc(r["sym"])}</span>'
+          + (f'<div class="small muted">美股財報前瞻：{esc(r["call"])}</div>' if r.get("call") else "") + '</td><td class="small">'
+          + "、".join(f'{esc(t["zh"])}（β {t["beta"]:.2f}）' for t in r["tw"]) + "</td></tr>" for r in rows]
+    names = "、".join(r["zh"].split("財報")[0] for r in rows[:3])
+    b0 = rows[0]["tw"][0]["beta"]
+    return (f'<h3>這三週真正會動到台股的：美股大公司財報</h3>'
+            f'<p class="small">台股這段時間多是券商論壇、不公布新數字；會帶動台股的，反而是美股財報（{esc(names)} 等 {len(rows)} 家）。'
+            f'下表是「這家美股公司晚上漲跌，隔天台股跟著動」的公司。β {b0:.2f} 代表美股動 5%、台股隔天平均動 {b0 * 5:.1f}%（同方向）；'
+            '每一檔都用最後 250 組沒看過的資料驗證過。這是過去的統計關係，不是供貨合約，也不代表這次一定一樣。'
+            '美股那邊的機率判斷在「美股財報」頁的「財報前瞻」。</p>'
+            + fold_rows(tr, 8, "<tr><th>台北時間</th><th>美股公司</th><th>過去隔天跟著動的台股</th></tr>", "家"))
 
 
 def sec_tw_earn_preview(eng=None) -> str:
@@ -145,10 +211,15 @@ def sec_tw_earn_preview(eng=None) -> str:
     past = [_row(r, notes) for r in v["past"]]
     from wsb.data import tw_desk as D
     dl = "".join(f'<li><b>{x["date"][5:].replace("-", "/")}</b> {esc(x["what"])}</li>' for x in D.deadlines(date.fromisoformat(v["today"]))[:4])
+    try:
+        links = us_links(eng)
+    except Exception:  # noqa: BLE001
+        links = []
     body = (f'<p class="rimp big2"><b>一句話看懂：{esc(lead)}</b></p>' + (f'<p class="small">{esc(sub)}</p>' if sub else "")
             + '<p class="small">台股的優勢：每月 10 日前就公布上個月營收，所以季報出來前，已經知道這一季的一兩個月。下表把每場法說會配上'
               '「這一季營收已經走到哪」；⭐＝台灣 50 成分股。「券商論壇」是券商邀請的投資論壇，通常不公布新的財務數字；「自辦法說」才是公司自己的財報說明。</p>'
             + (fold_rows(up_rows, max(nbig, 12), HEAD, "場") if up_rows else '<p class="small muted">接下來 3 週沒有法說會。</p>')
+            + _us_links_html(links)
             + (f'<details class="sgx"><summary>剛開完的（過去 {BACK} 天，{len(past)} 場）</summary>{fold_rows(past, 15, HEAD, "場")}</details>' if past else "")
             + (f'<p class="small"><b>接下來的期限</b></p><ul class="small">{dl}</ul>' if dl else "")
             + f'<p class="note">法說會來自公開資訊觀測站法人說明會一覽表（抓取 {esc(v.get("fetched") or "—")}）；月營收來自公開資訊觀測站每月營收彙總表'
