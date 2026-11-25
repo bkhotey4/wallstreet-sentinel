@@ -1,113 +1,112 @@
 {
- "updated": "2026-11-24T07:05",
+ "updated": "2026-11-25T21:10",
  "verdict": "部分有根據",
- "summary": "股市大跌、VIX 飆高和高利率都是真的，但公司債利差仍低、整體金融壓力指數仍低於平均；壓力正在上升，不過還沒到金融體系失靈。",
+ "summary": "股市與波動指數的恐慌有真實跌幅，但信用市場與整體金融壓力仍低於歷史平均，大家怕的「體系崩潰」沒有數據支持。",
  "narratives": [
   {
-   "claim": "AI 泡沫正在破裂，科技股崩跌（11/5 納指 -5.5%、費半 -12%，台股重挫）",
-   "source": "https://udn.com/news/story/6811/9148328",
+   "claim": "AI 泡沫正在破裂，美股重挫",
+   "source": "https://www.cityam.com/?p=2376662",
    "judgement": "部分支持",
-   "reason": "股價下跌是真的：標普500比10/6高點低11.6%，1個月前到現在跌9.8%；VIX 35.89，是10年來第98百分位。但這是價格與情緒，不是信用市場出問題：Baa 利差1.61%只在10年第13百分位，OFR 壓力指數 -1.26 仍低於歷史平均。目前像是急跌的股市修正，數據還看不到體系性崩壞。",
+   "reason": "標普 500 從 11/21 前後的 7,757 一路跌到 11/20 的 6,910，約跌 10.9%，下跌是真的。但 11/23 已反彈到 7,237（+4.7%），而且高收益債利差只有 3.76%，沒有出現企業借不到錢的跡象。「跌幅」有根據，「泡沫破裂＝金融危機」這部分沒有。",
    "data": [
     {
-     "name": "S&P 500",
-     "value": "6910.39，比約1個月前（7663.43）低9.8%，比2026-10-06高點（7818.93）低11.6%",
-     "date": "2026-11-20",
+     "name": "標普 500 指數",
+     "value": "7,757（10/21）→ 6,910（11/20）→ 7,237（11/23）",
+     "date": "2026-11-23",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500"
     },
     {
+     "name": "高收益債利差",
+     "value": "3.76%（11/20）；一個月前 3.40%（10/22）；11/23 為 3.63%",
+     "date": "2026-11-23",
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+    }
+   ]
+  },
+  {
+   "claim": "恐慌指數飆高，市場像崩盤前夕",
+   "source": "https://www.newsbytesapp.com/news/business/nasdaq-session-erases-25-trillion-amid-nvidia-ai-trading-panic/tldr",
+   "judgement": "部分支持",
+   "reason": "VIX 11/20 衝到 35.89，是這段期間最高，隔個交易日（11/23）就降到 26.62。OFR 壓力指數的波動分項在近 10 年約第 90 百分位，確實偏高；但整體壓力指數 -0.449 仍低於 0（歷史平均），股票估值與信用分項也都低於平均。恐慌集中在股市波動，不是全面性的。",
+   "data": [
+    {
      "name": "VIX 恐慌指數",
-     "value": "35.89（10年第98百分位；21個交易日前 19.03）",
-     "date": "2026-11-20",
+     "value": "35.89（11/20）→ 26.62（11/23）",
+     "date": "2026-11-23",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS"
     },
     {
      "name": "OFR 金融壓力指數",
-     "value": "-1.259（0＝歷史平均；10年第72百分位；21個交易日前 -1.975；波動分項 +0.328 已轉正）",
-     "date": "2026-11-19",
+     "value": "-0.449（11/20）；21 個交易日前 -1.479；近 10 年約第 81 百分位",
+     "date": "2026-11-20",
+     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
+    },
+    {
+     "name": "OFR 波動分項",
+     "value": "0.906（11/20），一個月前 0.301，近 10 年約第 90 百分位",
+     "date": "2026-11-20",
+     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
+    },
+    {
+     "name": "OFR 信用分項",
+     "value": "-0.782（11/20），一個月前 -0.868，近 10 年約第 22 百分位",
+     "date": "2026-11-20",
      "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
     }
    ]
   },
   {
-   "claim": "美債殖利率飆高、高利率壓垮股市",
-   "source": "https://fortune.com/2026/09/13/stock-market-outlook-late-stage-bubble-crash-2027-treasury-yields-5-percent/",
+   "claim": "美債殖利率衝上 5%，科技股估值被壓垮",
+   "source": "https://wantrich.chinatimes.com/news/20261106900096-420101",
    "judgement": "部分支持",
-   "reason": "利率水準確實高：10年期4.92%在10年第98百分位，2年期4.63%第91百分位。但10年期已從10/5高點5.31%回落，也比1個月前（5.13%）低0.21個百分點，不是正在失控上升。長短利差+0.29個百分點為正，沒有倒掛。高利率是背景壓力，近一個月並未惡化。",
+   "reason": "10 年期美債殖利率 11/13 到 5.15%，確實超過 5%；但 11/20 已回到 4.92%、11/23 持平。2 年期同期從 4.88% 降到 4.63%，利率壓力正在緩解，不是持續惡化。",
    "data": [
     {
-     "name": "10 年期公債殖利率",
-     "value": "4.92%（10年第98百分位；1個月前 5.13%；2026-10-05 高點 5.31%）",
-     "date": "2026-11-20",
+     "name": "10 年期美債殖利率",
+     "value": "5.15%（11/13）→ 4.92%（11/23）",
+     "date": "2026-11-23",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
     },
     {
-     "name": "2 年期公債殖利率",
-     "value": "4.63%（10年第91百分位；1個月前 4.81%）",
-     "date": "2026-11-20",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2"
-    },
-    {
-     "name": "10年減2年利差",
-     "value": "+0.29個百分點（1個月前 +0.31）",
+     "name": "2 年期美債殖利率",
+     "value": "4.88%（11/13）→ 4.63%（11/23）",
      "date": "2026-11-23",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y"
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2"
     }
    ]
   },
   {
-   "claim": "信用市場開始出問題，企業債務危機要來了",
-   "source": "https://www.kuwaittimes.com/article/52488/business/ai-tremor-exposes-global-markets-volatility-fault-lines/amp",
-   "judgement": "被誇大",
-   "reason": "高收益債利差1個月內由3.40%升到3.76%，方向是變緊張，且在近3年（FRED 只提供近3年）第96百分位；但仍低於2025-04-07 的高點4.61%。Baa 利差1.61%在10年第13百分位，OFR 信用分項 -0.84 仍遠低於平均。信用有轉弱跡象，但離危機水準還遠。",
+   "claim": "股災會演變成信用危機、銀行與企業債出事",
+   "source": "https://www.khaleejtimes.com/asia/post-us-elections-investor-question-ai-boom-as-global-tech-stocks-tumble",
+   "judgement": "數據不支持",
+   "reason": "高收益債利差 3.76%，仍低；OFR 的信用分項 -0.782 低於平均，資金面分項 -0.016 也接近平均。目前沒有信用市場同步惡化的證據。（CFTC 持倉資料這次連不上，抓不到。）",
    "data": [
     {
      "name": "高收益債利差",
-     "value": "3.76%（近3年第96百分位；1個月前 3.40%；近3年高點 4.61%）",
+     "value": "3.76%（11/20），一個月前 3.40%",
      "date": "2026-11-20",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
     },
     {
-     "name": "Baa 公司債利差",
-     "value": "1.61%（10年第13百分位；1個月前 1.44%）",
-     "date": "2026-11-20",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA10Y"
-    },
-    {
      "name": "OFR 信用分項",
-     "value": "-0.841（21個交易日前 -0.920）",
-     "date": "2026-11-19",
-     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
-    }
-   ]
-  },
-  {
-   "claim": "日圓貶值與外國央行減持美債，會引爆全球資金出逃",
-   "source": "https://www.kuwaittimes.com/article/52488/business/ai-tremor-exposes-global-markets-volatility-fault-lines/amp",
-   "judgement": "部分支持",
-   "reason": "外國央行託管的美債確實下降：2.54兆美元，約1個月前2.64兆，降3.5%，且處在2016年以來偏低位置。日圓158.76兌1美元，仍低於2026-07-29 的163.86，近一個月只小貶0.4%。這些是值得留意的資金流向，但沒有看到急速失控。（CFTC 持倉資料這次連不上，抓不到。）",
-   "data": [
-    {
-     "name": "外國央行託管美債",
-     "value": "2,544,011 百萬美元（約1個月前 2,636,947；2016年以來第1百分位）",
-     "date": "2026-11-18",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WMTSECL1"
-    },
-    {
-     "name": "美元兌日圓",
-     "value": "158.76（1個月前 158.13；2026-07-29 高點 163.86）",
+     "value": "-0.782",
      "date": "2026-11-20",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXJPUS"
+     "url": "https://www.financialresearch.gov/financial-stress-index/data/fsi.csv"
     }
    ]
   }
  ],
  "watch": [
-  "OFR 金融壓力指數由 -1.26 升破 0（高於歷史平均），判讀才會轉為「恐慌有根據」",
-  "Baa 公司債利差由 1.61% 升破 2.0%，或高收益債利差升破 4.5%",
-  "VIX 持續在 35 以上超過一週，且 10 年期殖利率再升破 5.3%"
+  "高收益債利差升破 5%（目前 3.63%–3.76%），代表信用市場開始跟著出事，判讀會改為「恐慌有根據」",
+  "OFR 金融壓力指數升到 0 以上（目前 -0.449）且信用分項由負轉正",
+  "VIX 再度收在 30 以上並連續多天不退，或標普 500 收盤跌破 11/20 的 6,910"
  ],
  "history": [
+  {
+   "time": "2026-11-25T21:10",
+   "verdict": "部分有根據",
+   "summary": "股市與波動指數的恐慌有真實跌幅，但信用市場與整體金融壓力仍低於歷史平均，大家怕的「體系崩潰」沒有數據支持。"
+  },
   {
    "time": "2026-11-24T07:05",
    "verdict": "部分有根據",
