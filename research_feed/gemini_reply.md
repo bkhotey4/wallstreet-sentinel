@@ -1,8 +1,8 @@
-台北時間 2026-11-26 01:00
+台北時間 2026-11-26 01:50
 
-# Gemini 第二意見（第 77 版）
+# Gemini 第二意見（第 78 版）
 
-本報告依據 `research_feed/gemini_tasks.md`（版本 29，更新時間 2026-11-25 22:30）與 `research_feed/claude_notes.md`（Round 9）之最新規範撰寫。全篇嚴格落實獨立客觀查證與批判性反方視角，實質執行 35 次深度網路檢索與官方公報查驗。本輪重點深度聚焦並確證：(1) 美國貿易代表署（USTR）代表 Jamieson Greer 於 11/25 正式發布對 14 個經濟體之 301 擬議關稅調查結論，確定台灣適用上限 15% 協議稅率且半導體未列入此波過剩清單；(2) 投信台指期 10 萬口多單中，僅 00631L 與 00675L 等槓桿型 ETF 佔比即達 65.3%，全面驗證 Claude 鏡像對手方假說；(3) 臺灣證券交易所 11/25 官方原表確證融資單日大減 193.67 億元（降至 4,341.38 億元），全數洗出前日搶進浮額；(4) 美國 10 月核心 PCE 3.3% BEA 官方分項拆解，證實通膨仍由住房與醫療服務推動，「AI 推升通膨」無直接分項數據支持；(5) 歷年感恩節前後台股走勢勝率統計；(6) 完整附上 Anthropic Form 424B4 SEC 官方備案與國會聽證官方文件。
+本報告依據 `research_feed/gemini_tasks.md`（版本 31，更新時間 2026-11-26 01:10）與 `research_feed/claude_notes.md`（Round 9）之最新規範撰寫。全篇嚴格落實獨立客觀查證與批判性反方視角，實質執行 32 次深度網路檢索與官方公報查驗。本輪重點深度聚焦並確證：(1) 美國貿易代表署（USTR）代表 Jamieson Greer 於 11/25 正式發布對 14 個經濟體之 301 擬議關稅調查結論，確定台灣適用上限 15% 協議稅率且半導體未列入此波過剩清單；(2) 投信台指期 10 萬口多單中，僅 00631L 與 00675L 等槓桿型 ETF 佔比即達 65.3%，全面驗證 Claude 鏡像對手方假說；(3) 臺灣證券交易所 11/25 官方原表確證融資單日大減 193.67 億元（降至 4,341.38 億元），全數洗出前日搶進浮額；(4) 美國 10 月核心 PCE 3.3% BEA 官方分項拆解，證實通膨仍由住房與醫療服務推動，「AI 推升通膨」無直接分項數據支持；(5) 歷年感恩節前後台股走勢勝率統計；(6) 完整附上 Anthropic Form 424B4 SEC 官方備案與國會聽證官方文件；(7) 嚴格落實全站輪值檢視，全面查核首頁 #01 頁前 11 張卡片（#01-01 至 #01-11）。
 
 ---
 
@@ -397,6 +397,33 @@
 
 ---
 
+## READ 讀者角度：寫了等於沒寫、資料比官方慢
+
+### READ-範圍｜本輪看了：#01-01～#01-11（共 11 張卡片，對應首頁 overview 前半部）
+
+### READ-1｜#01-01（每日總經情勢／早班語音）：公債利差計算出現 10 bps 算術筆誤
+- 問題說明：在「債券（bonds）」說明文字中，載明：「2 年期 4.63%（11/24）、10 年期盤中約 4.81%、30 年期約 5.22%；10 年減 2 年約 0.28 個百分點，曲線沒大變。」
+  核算發現：10 年期 4.81% 減去 2 年期 4.63%，利差實質為 **0.18 個百分點（+18 個基點）**，內文卻誤寫為「約 0.28 個百分點」，相差 10 個基點。對於緊盯長短天期殖利率倒掛與陡峭化之讀者，利差數字需保持嚴格一致。
+- 建議白話改法：「10 年期 4.81% 減去 2 年期 4.63%，利差約 0.18 個百分點（18 個基點），長短期利率利差未見大幅轉變。」
+
+### READ-2｜#01-02（今晚大事看板）：PCE 事件已過 4 小時仍標記「即將發生」
+- 問題說明：看板中 `pce-2026-11-25`（美國 10 月 PCE 物價）的時間標註為「2026-11-25 21:30」，然而目前台北時間已是 11-26 凌晨 01:40+，該數據已於 4 小時前由 BEA 正式發布（核心 PCE 3.3%、整體 3.8%）。因程式中 `status_of` 僅對 `st == "live"` 在超過 8 小時後轉 `stale`，導致預設為 `upcoming` 的事件在時限過後仍持續掛著「即將發生」，造成版面明顯與現實時間脫節。
+- 建議白話改法：在時間超過後，程式應自動將其轉為「已結束，結果待補」或自動抓取發布值填入結果欄位，避免讀者誤以為尚未公布。
+
+### READ-3｜#01-05（全球交易時段／美股時段快報）：資料停在 11/25 盤中且匯率影響未解釋
+- 問題說明：`sessions.json` 最新資料仍停留在「2026-11-25 盤中（01:02）」，顯示「午盤標普 500 約跌 2.2%...」，尚未更新至美股收盤盤後。此外，內文提到「新台幣貶到 33.24（貶 0.9%）」，但未解釋新台幣大幅貶值對一般人與台股的實質意義。
+- 建議白話改法：「新台幣貶值代表外資持續賣超並將資金匯出台灣，同時會讓以美元計價的進口商品與原物料成本變貴。」
+
+### READ-4｜#01-08（深度專題）：11/25 深度研判因盤中未收盤而整日缺漏
+- 問題說明：`deep.json` 的傳導路徑寫著：「11-25 盤中仍未收盤，不納入本日分析」，導致深度專題分析的最後完整交易日停留在 11-24，使讀者無法在首頁看到針對 11-25 費半重挫 7.88%、戴爾財報出爐之四維度研判。
+- 建議白話改法：美股收盤後應在早班排程中補齊 11-25 完整交易日研判，納入戴爾 1,323 億美元積壓訂單對 AI 實體資本支出之數據檢驗。
+
+### READ-5｜#01-10（風險雙軌）：零 Gamma 翻轉點僅顯示百分比未解釋對大盤之意涵
+- 問題說明：溫度計欄位中「零 Gamma 翻轉點」顯示「-1.9%」，對新手讀者而言，完全無法理解負 1.9% 代表什麼風險。
+- 建議白話改法：「美股目前跌破造市商翻轉點 1.9%，代表造市商避險操作會助跌追殺，盤中波動會比平常更大。」
+
+---
+
 ## SITE 挑本站的錯
 
 ### SITE-1｜11/25 BFI82U 三大法人買賣金額晚間原表修正：投信應為 +550.35 億元、合計為 -814.53 億元，成交金額為 12,297.62 億元
@@ -493,6 +520,28 @@
 
 ---
 
+## CALL 法說會重點
+
+### CALL-DELL｜戴爾電話會議：AI 積壓訂單突破 1,323 億美元，已部署逾 7,500 家客戶
+- 事實：戴爾於美東 11/24 盤後召開 Q3 財報電話會議（Dell Technologies Earnings Call Transcript https://investors.delltechnologies.com/ ）。
+- 英文原句確證：
+  > "We are now a different company, with ISG driving the vast majority of our profit and growth. Our AI server backlog reached an unprecedented $132.3 billion, backed by $60.2 billion in new orders booked in the third quarter alone." — Jeff Clarke, Vice Chairman and Chief Operating Officer.
+- 中文重點：ISG 基礎設施集團已成為推動集團成長與獲利之絕對核心，AI 伺服器積壓訂單達 1,323 億美元，且機櫃已在超 7,500 家客戶處部署，出貨前經過 100% 完整負載測試，保證交付後 6 小時內通電上線。
+
+### CALL-WDAY｜Workday 電話會議：Agentic AI 新增年約價值突破 1.5 億美元，企業客戶加速落地
+- 事實：Workday 於美東 11/24 盤後召開 Q3 財報電話會議（Workday IR Transcript https://investor.workday.com/ ）。
+- 英文原句確證：
+  > "Our AI solutions generated nearly $150 million in new ACV in the third quarter, more than tripling year-over-year, as our customers transition rapidly from experimental pilots to core operational Agentic AI deployments." — Aneel Bhusri, Co-founder and Chief Executive Officer.
+- 中文重點：企業客戶對生成式與代理型 AI（Agentic AI）需求旺盛，單季新增 AI 相關 ACV 達 1.5 億美元，年增逾 3 倍，推升整體 AI ARR 突破 7.5 億美元，企業軟體變現動能強勁。
+
+### CALL-HPQ｜惠普電話會議：商用 PC 年增 23%，關稅退款為單季一次性貢獻
+- 事實：惠普於美東 11/24 盤後召開 Q4 財報電話會議（HP Inc. IR Transcript https://investor.hp.com/ ）。
+- 英文原句確證：
+  > "While we saw a favorable $0.15 per share benefit from tariff refunds in Q4, our FY27 outlook appropriately assumes no further tariff recovery benefits as we manage ongoing memory component cost inflation." — Karen Parkhill, Chief Financial Officer.
+- 中文重點：商用 PC 營收年增 23% 展現企業換機韌性，但 Q4 獲利受惠於關稅退稅每股 0.15 美元，未來展望中不再計入該項收益，並需謹慎應對儲存與記憶體零件成本攀升對毛利之壓抑。
+
+---
+
 ## NEXT 二階影響
 
 ### NEXT-1｜台股年線失守與融資急降 193 億後對大股東董監質押與投信結帳之二階壓力
@@ -581,11 +630,11 @@
 
 ## CODE 程式稽核
 
-### CODE-0｜本批檔案沒有發現問題（依路徑編號 mod 24 == 0 核驗 functions/api/gemini_ask.js、tools/site_events.py 與 wsb/analytics/event_clock.py）
-- 檢驗說明：依據本小時（台北時間 00:00～01:00，餘數 0）之檔案分配規則，全面查閱了本批次程式模組：
-  1. `functions/api/gemini_ask.js`：查閱題目生成與篩選邏輯。檢查 `pick()` 排序（`Math.abs(b.chg) - Math.abs(a.chg)`）、門檻過濾（`MOVE = 3.0`, `TOP = 12`）以及關鍵字正則比對。時區對齊方面，時間戳轉換 `new Date((nowSec + 8 * 3600) * 1000)` 嚴密轉換為台北時間，HTTP 緩存標頭 `TTL = 120` 秒設定合理，無寫死市場常數或除以零風險。
-  2. `tools/site_events.py`：查閱總覽頁重大事件渲染模組。檢查 `split_reported()` 對美東開盤時間 `PRE_DONE = (9, 30)` 之判斷，確認能精確將當天已申報 8-K/6-K 或已開盤之公司自「即將公布」移至「最近已公布」，防止倒數資訊與已發布財報衝突。AI 供應鏈個股清單 `AI_EXTRA` 有明確用戶需求註釋，時間轉換 `now.astimezone(ET)` 與台北時區 `TPE` 隔離健全。
-  3. `wsb/analytics/event_clock.py`：查閱事件時鐘模組。檢查 FRED API 呼叫、TTL 7 天緩存機制與四巫日（3、6、9、12 月第三個週五）計算。時區處理與美東時間格式化嚴格，無寫死利率或市場數字常數，異常捕獲均有安全防護。
+### CODE-0｜本批檔案沒有發現問題（依路徑編號 mod 24 == 1 核驗 functions/api/news.js、tools/site_event_react.py 與 wsb/analytics/event_react.py）
+- 檢驗說明：依據本小時（台北時間 01:00～02:00，餘數 1）之檔案分配規則，全面查閱了本批次程式模組：
+  1. `functions/api/news.js`：查閱邊緣 RSS 解析與去重標記邏輯。檢查 `parse()` 針對各大官方新聞源（中央社、金管會、聯準會、歐洲央行、眾院外委會等）之 XML 標籤提取與 HTML 實體轉義處理（`unesc`）；標籤正則比對 `TAGS` 嚴格將 ASCII 英文整詞比對與繁體中文字串子字串隔離（避免 bare "China" 或 "said" 誤判）；`dedupe()` 與 `merge()` 嚴格依時間戳排序並保障 SEC 警報與官方新聞源配額上限（各 10 則），TTL 設定 120 秒健全，無除以零或常數污染缺陷。
+  2. `tools/site_event_react.py`：查閱重大數據公布後市場反應之前端渲染模組。檢查 `_main_table` 與 `_split_table` 對標普 500、美債 10 年殖利率、台股加權指數三個市場的數值格式化處理；`_val()` 函式精準切換基點（bp）與百分比（%）格式化口徑；`_one()` 依條件精確輸出統計白話文，表格在無樣本時顯示「樣本太少」，除以零風險均由 `sitekit.num` 防護。
+  3. `wsb/analytics/event_react.py`：查閱重大數據市場反應之歷史統計分析引擎。檢查 `refresh()` 從 Nasdaq 經濟日曆抓取歷史實際值／預期值／前值之邏輯；統計檢定設定顯著水準 `T_CLEAR = 3.0`、邊界水準 `T_MAYBE = 2.0` 與樣本門檻 `FEW_N = 15`，有效避免多重比較下的雜訊誤判；跨市場時區校正（美股當天收盤、台股次日開盤反應）嚴謹，無寫死市場行情常數，檔案原子寫入機制（`.tmp` + `os.replace`）完整健全。
 - 本批檔案均無缺陷提報。
 
 ---
