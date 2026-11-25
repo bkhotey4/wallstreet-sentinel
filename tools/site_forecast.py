@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import html
+import re
 import json
 import os
 import logging
@@ -17,6 +18,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from tools.sitekit import card, guard_safe
+from tools import feedcheck as FC
 
 log = logging.getLogger(__name__)
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "forecast.json"   # public repo only
@@ -30,7 +32,7 @@ def _json(f: Path) -> Dict:
         d = json.loads(f.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return d if isinstance(d, dict) else {}
+    return FC.scrub(d) if isinstance(d, dict) else {}       # AI quotes of the headline closes checked against ours
 
 
 def load() -> Dict:
@@ -98,6 +100,19 @@ def voice_history(x: Dict, keep: int = 24) -> List[Dict]:
 
 def _paras(x: Dict) -> str:
     return "".join(f"<p>{_e(p)}</p>" for p in str(x.get("script") or "").split("\n") if p.strip())
+
+
+def _one_lines(text) -> str:
+    """一句話看懂 as one line per sentence (user 11-25: 「#01-06 的一句話看懂，是否能作換行?」): the first sentence stays bold,
+    each later sentence starts on its own line, and a short 「標籤：」 at its start is bold so the eye can scan the paragraph."""
+    sents = [x.strip() for x in re.split(r"(?<=。)", str(text or "")) if x.strip()]
+    if not sents:
+        return "<b>一句話看懂：</b>"
+    out = [f"<b>一句話看懂：{_e(sents[0])}</b>"]
+    for x in sents[1:]:
+        m = re.match(r"^([^。：，]{1,14})：(.+)$", x)
+        out.append(f"<b>{_e(m.group(1))}：</b>{_e(m.group(2))}" if m else _e(x))
+    return "<br>".join(out)
 
 
 def _ed_pill(ed: str) -> str:
@@ -280,7 +295,7 @@ def sec_forecast(eng) -> str:
     more = ("".join(f'<p class="small"><b>{_e(p["name"])}</b>：{_e(p.get("what"))}</p>' for p in paths)
             + "".join(f'<p class="small"><b>{_e(g["name"])}</b>：{_e(g["read"])} {_e(g.get("evidence"))}</p>' for g in nq)
             + _why(live) + (f'<p class="small muted">來源：{_src(d.get("sources"))}</p>' if d.get("sources") else ""))
-    body = (f'<p class="rimp"><b>一句話看懂：{_e(d.get("one"))}</b></p>'
+    body = (f'<p class="rimp">{_one_lines(d.get("one"))}</p>'
             + (f'<p class="small">三種走法：{pline}</p>' if pline else "") + _table(live)
             + (f'<p class="small muted">另有 {len(overdue)} 題已到期、等對答案：{"、".join(_e(x["name"]) for x in overdue)}。</p>' if overdue else "")
             + (f'<p class="small"><b>下一季</b>：{_e((d.get("nextq") or {}).get("one"))}</p><p class="small">{nline}</p>' if nq else "")
