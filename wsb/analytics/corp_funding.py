@@ -63,7 +63,8 @@ def refi(b: Dict, ylds: Dict[str, float]) -> Optional[Dict]:
     t = tier(b)
     mkt = ylds.get(t)
     coupon = intr / debt if intr and debt and debt > 0 else None
-    out = {"due1": due1 or 0.0, "due2": due2 or 0.0, "due": due, "debt": debt, "tier": t, "coupon": coupon,
+    # a missing bucket stays None ("—" on the card): 0 would read as "nothing due this year"
+    out = {"due1": due1, "due2": due2, "due": due, "debt": debt, "tier": t, "coupon": coupon,
            "cash": _f(b.get("cash")), "ebit": ebit, "mat_end": b.get("mat_end")}
     if coupon is not None and mkt is not None:
         out["gap"] = mkt - coupon

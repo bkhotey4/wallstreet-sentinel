@@ -67,7 +67,7 @@ def sec_maturity_wall(eng) -> str:
     tot = w["tot"]
     rows = CF.refi_table(cache, names, yl) if yl else []
     extra = sum(r["extra"] for r in rows if r.get("extra") and r["extra"] > 0)
-    tight = sorted((r for r in rows if r.get("self_pay") is not None and r["self_pay"] < 1 and r["due1"] > 0), key=lambda r: r["self_pay"])
+    tight = sorted((r for r in rows if r.get("self_pay") is not None and r["self_pay"] < 1 and (r["due1"] or 0) > 0), key=lambda r: r["self_pay"])
     heavy = sorted((r for r in rows if r.get("extra_ebit") is not None and r["extra_ebit"] > 0.05), key=lambda r: -r["extra_ebit"])
     lead = (f"追蹤的 {w['n']} 家非金融公司，未來 12 個月要還 <b>{_b(tot['mat1'])}</b> 的債務本金、第 2 年再 {_b(tot['mat2'])}"
             + (f"；如果照現在的市場利率借新還舊，這兩年到期的債一年要多付約 <b>{_b(extra)}</b> 利息" if extra > 0 else "")

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from tools.sitekit import card, guard_safe
+from tools import feedcheck as FC
 
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "deep.json"   # public repo only
 VERDICT = {"有數據支持": "up", "部分支持": "", "證據不足": "muted", "與數據不符": "down"}
@@ -26,7 +27,7 @@ def load() -> Dict:
         d = json.loads(FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return d if isinstance(d, dict) else {}
+    return FC.scrub(d) if isinstance(d, dict) else {}       # AI quotes of the headline closes checked against ours
 
 
 def _e(x) -> str:

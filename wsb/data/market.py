@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import time
+from datetime import date
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -17,6 +18,47 @@ import pandas as pd
 
 from ..config import DATA_DIR, SETTINGS, history_start
 from ..health import HEALTH
+from . import rolls as ROLL
+
+YIELDS = ("^TNX", "^FVX", "^TYX", "^IRX")   # Yahoo's Treasury yield indices: still print a number on bond holidays
+
+
+def _bond_closed(days) -> Dict[str, str]:
+    from .exchange_cal import us_bond_closed
+    ys = sorted({int(str(d)[:4]) for d in days}) or [date.today().year]
+    return us_bond_closed(ys[0], ys[-1])
+
+
+def _drop_bond_holidays(s: pd.Series) -> pd.Series:
+    """Remove the bars Yahoo prints on SIFMA full-close days (2026-11-11 Veterans Day: ^TNX 4.998 while the last real
+    close was 11-10's 4.98), so the next day's change is measured against the last real close."""
+    if s is None or s.empty:
+        return s
+    closed = _bond_closed([s.index[0].year, s.index[-1].year])
+    if not closed:
+        return s
+    keep = [d.strftime("%Y-%m-%d") not in closed for d in s.index]
+    return s[keep]
+
+
+def _bond_quote(qt: dict, clean: pd.Series) -> dict:
+    """A yield quote on a bond holiday → the last real close, change unknown, bond_closed = holiday name.
+    On the day after → the change against the last real close, not against the holiday's number."""
+    d = str(qt["asof"])[:10]
+    closed = _bond_closed([d[:4]])
+    before = clean[clean.index < pd.Timestamp(d)] if clean is not None and len(clean) else pd.Series(dtype=float)
+    if d in closed:
+        if not len(before):
+            return {**qt, "chg_pct": np.nan, "bond_closed": closed[d]}
+        last = float(before.iloc[-1])
+        prev = float(before.iloc[-2]) if len(before) >= 2 else None
+        return {**qt, "price": last, "prev": prev, "chg_pct": np.nan, "asof": before.index[-1].strftime("%Y-%m-%d"),
+                "bond_closed": closed[d], "bond_closed_date": d}
+    if len(before) and qt.get("price") is not None:
+        prev = float(before.iloc[-1])
+        if prev and prev != qt.get("prev"):
+            qt = {**qt, "prev": prev, "chg_pct": (float(qt["price"]) / prev - 1) * 100}
+    return qt
 
 log = logging.getLogger(__name__)
 _HIST_FILE = DATA_DIR / "history_close.pkl"
@@ -428,7 +470,19 @@ class MarketData:
     # ------------------------------------------------------------------
     def series(self, ticker: str) -> pd.Series:
         if ticker in self.history.columns:
-            return self.history[ticker].dropna()
+            s = self.history[ticker].dropna()
+            peer = ROLL.PEERS.get(ticker)
+            if peer and peer in self.history.columns:      # oil futures: no contract-roll gap in the history (wsb.data.rolls)
+                key = (ticker, len(s), float(s.iloc[-1]) if len(s) else None, len(self.history[peer].dropna()))
+                cache = self.__dict__.setdefault("_roll_cache", {})
+                hit = cache.get(ticker)
+                if not hit or hit[0] != key:
+                    hit = (key, ROLL.adjust(s, self.history[peer].dropna(), ticker))
+                    cache[ticker] = hit
+                return hit[1]
+            if ticker in YIELDS:                           # Treasury yields: no bar on a bond-market holiday (SIFMA)
+                return _drop_bond_holidays(s)
+            return s
         return pd.Series(dtype=float)
 
     def q(self, ticker: str) -> Optional[dict]:
@@ -438,13 +492,25 @@ class MarketData:
         qt = self.quotes.get(ticker)
         if not qt:
             return qt
-        s = self.series(ticker)
+        s = self.history[ticker].dropna() if ticker in self.history.columns else pd.Series(dtype=float)   # raw closes, not roll-adjusted
         s = s[s > 0]
         if len(s) >= 2:
             last_d = s.index[-1].strftime("%Y-%m-%d")
             if str(qt.get("asof", ""))[:10] < last_d:
                 last, prev = float(s.iloc[-1]), float(s.iloc[-2])
                 qt = {**qt, "price": last, "prev": prev, "chg_pct": (last / prev - 1) * 100, "asof": last_d, "src": "history"}
+        peer = ROLL.PEERS.get(ticker)
+        if peer and qt.get("asof"):
+            pq = self.quotes.get(peer) or {}
+            if str(pq.get("asof", ""))[:10] == str(qt["asof"])[:10]:
+                try:
+                    roll = ROLL.is_roll_day(ticker, date.fromisoformat(str(qt["asof"])[:10]), qt.get("chg_pct"), pq.get("chg_pct"))
+                except ValueError:
+                    roll = False
+                if roll:                                    # the change is partly the gap between two contracts: unknown
+                    qt = {**qt, "chg_pct": np.nan, "roll": True}
+        if ticker in YIELDS and qt.get("asof"):
+            qt = _bond_quote(qt, self.series(ticker))
         # stale = the bar is older than the market's last session: shown, but never a "new move" alert
         return {**qt, "stale": F.stale(ticker, qt.get("asof", "")), "session": F.session(ticker)}
 

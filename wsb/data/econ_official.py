@@ -254,14 +254,15 @@ def merge(old: List[Dict], new: List[Dict], ff: Optional[List[Dict]] = None) -> 
     return out
 
 
-async def fill(days: Dict[str, Dict], today: date, ahead: int, ff: Optional[List[Dict]] = None) -> int:
+async def fill(days: Dict[str, Dict], today: date, ahead: int, ff: Optional[List[Dict]] = None, now: Optional[str] = None) -> int:
     """Fill the day cache from official sources: future release days get their rows (no values yet), released days in the
     last 7 days get actual / previous. Returns the number of days changed. Needs FRED_API_KEY."""
     if not FRED_API_KEY:
         return 0
     sc = await schedule(today, ahead)
     calls, changed, cache = 0, 0, {}
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    # `now` (UTC ISO "…Z") decides which release times have passed; tests pass a fixed clock (11-25 audit P3-19)
+    now = now or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     lo, hi = (today - timedelta(days=7)).isoformat(), (today + timedelta(days=ahead)).isoformat()
     for day in sorted(sc):
         if not lo <= day <= hi:

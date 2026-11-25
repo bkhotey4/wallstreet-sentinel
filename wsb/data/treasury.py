@@ -171,6 +171,30 @@ def curve(fred, when: Optional[pd.Timestamp] = None) -> List[Dict]:
     return out
 
 
+def live10(eng, now: List[Dict]) -> Optional[Dict]:
+    """The 10-year yield from the market quote (^TNX) when it is newer than FRED's DGS10, which posts a day late.
+    The curve stays one FRED date; this is what "the 10-year now" should quote."""
+    try:
+        q = eng.market.q("^TNX") if getattr(eng, "market", None) is not None else None
+    except Exception:  # noqa: BLE001
+        q = None
+    d10 = next((c["date"] for c in now if c["sid"] == "DGS10"), "")
+    if not q or q.get("price") is None or not q.get("asof") or str(q["asof"])[:10] <= d10:
+        return None
+    return {"yield": float(q["price"]), "date": str(q["asof"])[:10], "fred_date": d10}
+
+
+def bond_closed(eng) -> Optional[Dict]:
+    """{'name', 'date', 'last_date'} when the latest ^TNX bar fell on a SIFMA bond holiday (no new Treasury close)."""
+    try:
+        q = eng.market.q("^TNX") if getattr(eng, "market", None) is not None else None
+    except Exception:  # noqa: BLE001
+        q = None
+    if not q or not q.get("bond_closed"):
+        return None
+    return {"name": q["bond_closed"], "date": q.get("bond_closed_date") or q.get("asof"), "last_date": q.get("asof")}
+
+
 def build(eng) -> Dict:
     fred = eng.fred
     now = curve(fred)
@@ -200,7 +224,7 @@ def build(eng) -> Dict:
     move = eng.market.series("^MOVE") if getattr(eng, "market", None) is not None else pd.Series(dtype=float)
     tr = getattr(eng, "treasury", None)
     auctions = tr.auctions if tr is not None else []
-    return {"available": bool(now) or bool(auctions), "curves": curves, "spreads": spreads,
+    return {"available": bool(now) or bool(auctions), "curves": curves, "spreads": spreads, "live10": live10(eng, now), "bond_closed": bond_closed(eng),
             "term_premium": {"value": float(tp.iloc[-1]), "date": tp.index[-1].strftime("%Y-%m-%d"), "hist": tp,
                              "pctile": float((tp < tp.iloc[-1]).mean() * 100)} if len(tp) > 20 else None,
             "move": {"value": float(move.iloc[-1]), "hist": move, "pctile": float((move.tail(2520) < move.iloc[-1]).mean() * 100)}
@@ -215,7 +239,15 @@ def summary_lines(t: Dict) -> List[str]:
     c = {x["sid"]: x["yield"] for x in t["curves"].get("now", [])}
     if c:
         lab = {"DGS3MO": "3個月", "DGS2": "2年", "DGS10": "10年", "DGS30": "30年"}
-        L.append("殖利率曲線：" + "、".join(f"{lab[k]} {v:.2f}%" for k, v in c.items() if k in lab))
+        d = min((x["date"] for x in t["curves"].get("now", []) if x.get("date")), default="")
+        L.append(f"殖利率曲線（FRED，資料日 {d}）：" + "、".join(f"{lab[k]} {v:.2f}%" for k, v in c.items() if k in lab))
+    lv = t.get("live10")
+    if lv:
+        L.append(f"10 年期殖利率最新報價 {lv['yield']:.3f}%（{lv['date']}，比上面 FRED 的 {lv['fred_date']} 新；說「現在的 10 年」請用這個）")
+    bc = t.get("bond_closed")
+    if bc:
+        L.append(f"{bc['date']} 是{bc['name']}，美國債市休市（股市可能照開），殖利率沒有新收盤；最後的正式收盤是 {bc['last_date']}。"
+                 "不要寫今天殖利率漲跌幾個基點。")
     for k, lab in (("10y2y", "10年-2年"), ("10y3m", "10年-3月")):
         sp = t["spreads"].get(k)
         if sp:

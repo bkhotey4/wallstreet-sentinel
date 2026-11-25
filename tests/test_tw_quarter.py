@@ -23,7 +23,7 @@ def test_parse_and_single_quarter():
 
 def test_otc_and_warn():
     s = C.parse_sbl_otc([{"Date": "1151120", "SecuritiesBorrowingBalanceOfTheMarketDay": "2,384,000", "SecuritiesBorrowingBalancePreviousDay": "2379000"}])
-    assert s == {"date": "1151120", "total": 2384000.0, "prev": 2379000.0}
+    assert s == {"date": "1151120", "total": 2384000.0, "prev": 2379000.0, "skipped": 0}
     w = C.parse_warn([{"Code": "", "Name": ""}], [{"SecuritiesCompanyCode": "1569", "CompanyName": "濱川", "TradingInformation": "跌幅達41.4%"}])
     assert w == [{"code": "1569", "name": "濱川", "why": "跌幅達41.4%", "board": "上櫃", "date": None}]
     from datetime import date

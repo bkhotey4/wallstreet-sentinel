@@ -68,6 +68,48 @@ def us_session_tpe(d: date, early: bool = False) -> str:
     return f"{a:%H:%M}–{'隔天 ' if b.date() > a.date() else ''}{b:%H:%M}"
 
 
+# ------------------------------------------------------------------ US bond market (SIFMA recommendation, rules)
+BOND_ZH = {"New Year's Day": "元旦", "Martin Luther King Jr. Day": "金恩紀念日", "Washington's Birthday": "總統日",
+           "Good Friday": "耶穌受難日", "Memorial Day": "陣亡將士紀念日", "Juneteenth National Independence Day": "六月節",
+           "Independence Day": "獨立紀念日", "Labor Day": "勞動節", "Columbus Day": "哥倫布日", "Veterans Day": "退伍軍人節",
+           "Thanksgiving Day": "感恩節", "Christmas Day": "聖誕節"}
+
+
+def _good_friday(y: int) -> date:
+    from dateutil.easter import easter               # dateutil ships with pandas
+    return easter(y) - timedelta(days=2)
+
+
+def us_bond_closed(y0: int, y1: int) -> Dict[str, str]:
+    """{iso date: Chinese name} for weekdays the US Treasury market is closed (SIFMA full-close recommendation).
+    Federal holidays — including Columbus Day and Veterans Day, when the stock market stays open — plus Good Friday.
+    A holiday on Saturday is observed the Friday before (July 4 2026 → July 3), except New Year's Day and Veterans Day,
+    for which SIFMA keeps the Friday open. SIFMA sometimes changes Good Friday to a noon close when the jobs report falls
+    on it (2026-04-03); the rule cannot know that, so Good Friday counts as closed."""
+    out: Dict[str, str] = {}
+    try:
+        import holidays
+        for d, n in holidays.US(years=range(y0, y1 + 1)).items():
+            n = str(n)
+            base = n.replace(" (observed)", "")
+            if d.weekday() >= 5:
+                continue
+            if n.endswith("(observed)") and base in ("New Year's Day", "Veterans Day") and d.weekday() == 4:
+                continue                                 # Saturday holiday: SIFMA keeps the Friday open for these two
+            if base in BOND_ZH:
+                out[d.isoformat()] = BOND_ZH[base]
+    except Exception:  # noqa: BLE001
+        return {}
+    for y in range(y0, y1 + 1):
+        out[_good_friday(y).isoformat()] = BOND_ZH["Good Friday"]
+    return out
+
+
+def bond_open(d: date, closed: Optional[Dict[str, str]] = None) -> bool:
+    closed = us_bond_closed(d.year, d.year) if closed is None else closed
+    return d.weekday() < 5 and d.isoformat() not in closed
+
+
 # ------------------------------------------------------------------ Taiwan (official file)
 def parse_tw(js: Dict) -> List[Dict]:
     """TWSE schedule rows → [{date, name, open}] ; 'open' True only for 開始交易日／最後交易日 rows."""

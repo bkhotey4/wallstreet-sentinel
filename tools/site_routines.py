@@ -29,6 +29,11 @@ EXPECT = (
     ("ai_view.json", "獨立 AI 觀察員", "AI observer", 12, True),        # trading days 07:00/21:00 (11-22: weekends were flagged late)
     ("earn_preview.json", "財報前瞻", "Earnings previews", 24, False),
     ("earn_after.json", "財報後解讀", "Post-earnings reads", 12, True),  # no reports on weekends, nothing to write (11-22)
+    # 11-25 audit P3-16: these three stopped for 7–15 days with no light (earn_after_rest since 11-10)
+    ("earn_after_more.json", "財報後解讀（更多公司）", "Post-earnings reads (more)", 48, True),
+    ("earn_after_asia.json", "財報後解讀（亞洲）", "Post-earnings reads (Asia)", 48, True),
+    ("earn_after_rest.json", "財報後解讀（其他市場）", "Post-earnings reads (rest)", 48, True),
+    ("event_board.json", "今晚大事看板", "Tonight's event board", 48, True),   # stopped 11-20 22:15, nothing flagged
     ("forecast.json", "一個月預判", "One-month calls", 96, False),
     ("bonds.json", "債市深度判讀", "Bond deep read", 24, True),        # runs Mon–Fri (US)
     ("feed.json", "學術動態", "Research feed", 168, False),

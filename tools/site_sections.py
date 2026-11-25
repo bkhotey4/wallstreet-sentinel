@@ -633,6 +633,10 @@ def sec_bonds(eng) -> str:
     kv += "".join(f'<div><span class="muted">{T(zh, en)}</span><b>{num(now.get(sid), 2)}%</b></div>'
                  for sid, zh, en in (("DGS3MO", "3 個月", "3M"), ("DGS2", "2 年", "2Y"), ("DGS10", "10 年", "10Y"), ("DGS30", "30 年", "30Y"))
                  if sid in now)
+    lv = b.get("live10")
+    if lv:                                      # FRED posts a day late: the market quote is the 10-year "now"
+        kv += (f'<div><span class="muted">{T("10 年最新報價", "10Y latest quote")}</span><b>{lv["yield"]:.3f}%</b>'
+               f' <span class="small muted">{esc(lv["date"][5:])}</span></div>')
     for k, zh, en in (("10y2y", "10年−2年利差", "10Y−2Y"), ("10y3m", "10年−3月利差", "10Y−3M")):
         if k in sp:
             nd = sp[k]["inverted_days"]

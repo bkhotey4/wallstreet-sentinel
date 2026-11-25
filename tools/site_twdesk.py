@@ -240,7 +240,12 @@ def rev_lead(v: Dict) -> str:
         return ""
     hot = max(L, key=lambda x: x["yoy3_med"])
     cold = min(L, key=lambda x: x["yoy3_med"])
-    s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 有 {v['yoy_pos']:.0f}% 的公司比去年同月成長"
+    s = f"一句話看懂：{_ym(v['latest'])}營收，台灣 50＋中型 100 "
+    if v.get("yoy_pos") is None:
+        s += "還沒有可比的去年同月營收"
+    else:
+        n_y, n_t = v.get("n_yoy"), len(v.get("trends") or [])
+        s += (f"有年增資料的 {n_y} 檔裡，" if n_y is not None and n_y < n_t else "有 ") + f"{v['yoy_pos']:.0f}% 的公司比去年同月成長"
     if v.get("breadth") is not None:
         s += f"、{v['breadth']:.0f}% 的公司近 3 個月成長在加速"
     s += f"；AI 供應鏈裡最熱的是{hot['name']}（近 3 個月年增中位數 {hot['yoy3_med']:+.0f}%）"

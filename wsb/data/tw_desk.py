@@ -627,7 +627,9 @@ def rev_view(d: Optional[Dict] = None, desk: Optional[Dict] = None, seed: Option
         pass
     return {"latest": latest, "n_months": len(order), "univ_n": len(codes), "trends": trends,
             "breadth": (sum(t["accel"] > 0 for t in acc) / len(acc) * 100) if acc else None, "n_acc": len(acc),
-            "yoy_pos": (sum((t["yoy"] or 0) > 0 for t in trends) / len(trends) * 100) if trends else None,
+            # denominator = companies with a y/y figure (11-25 audit P3-18: a missing y/y counted as "not growing")
+            "yoy_pos": (sum(t["yoy"] > 0 for t in yy) / len(yy) * 100) if (yy := [t for t in trends if t["yoy"] is not None]) else None,
+            "n_yoy": len([t for t in trends if t["yoy"] is not None]),
             "layers": layers, "capex": capex, "ts": d.get("ts"), "seed_at": (seed or {}).get("fetched")}
 
 

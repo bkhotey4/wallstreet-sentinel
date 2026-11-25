@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from tools.sitekit import card, guard_safe
+from tools import feedcheck as FC
 
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "bonds.json"   # public repo only
 TREND = {"改善": "up", "惡化": "dn"}
@@ -19,7 +20,7 @@ def load() -> Dict:
         d = json.loads(FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return d if isinstance(d, dict) else {}
+    return FC.scrub(d) if isinstance(d, dict) else {}       # AI quotes of the headline closes checked against ours
 
 
 def _e(x) -> str:

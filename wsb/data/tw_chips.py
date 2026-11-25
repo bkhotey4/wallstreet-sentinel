@@ -66,25 +66,33 @@ def parse_sbl(js: Dict, universe: Optional[set] = None) -> Dict:
     """Total borrowed-share short balance (shares) today vs the day before, and the stocks that added the most."""
     data = (js or {}).get("data") or []
     tot = prev = 0.0
-    moves = []
+    moves, skipped = [], 0
     for r in data:
         if len(r) < 13:
             continue
-        p, today = _n(r[8]) or 0.0, _n(r[12]) or 0.0
+        p, today = _n(r[8]), _n(r[12])
+        if p is None or today is None:                  # 11-25 audit P3-20: a blank side is not 0 (the whole balance
+            skipped += 1                                 # would rank as "added today"); leave the row out of both
+            continue
         tot += today
         prev += p
         if universe is None or r[0] in universe:
             moves.append({"code": r[0], "name": r[1].strip(), "bal": today, "chg": today - p})
     moves.sort(key=lambda x: -x["chg"])
-    return {"date": (js or {}).get("date"), "total": tot, "prev": prev, "add": moves[:10], "cut": sorted(moves, key=lambda x: x["chg"])[:10]}
+    return {"date": (js or {}).get("date"), "total": tot, "prev": prev, "skipped": skipped, "add": moves[:10], "cut": sorted(moves, key=lambda x: x["chg"])[:10]}
 
 
 def parse_sbl_otc(rows: List[Dict]) -> Dict:
     tot = prev = 0.0
+    skipped = 0
     for r in rows or []:
-        tot += _n(r.get("SecuritiesBorrowingBalanceOfTheMarketDay")) or 0.0
-        prev += _n(r.get("SecuritiesBorrowingBalancePreviousDay")) or 0.0
-    return {"date": (rows or [{}])[0].get("Date"), "total": tot, "prev": prev}
+        t, p = _n(r.get("SecuritiesBorrowingBalanceOfTheMarketDay")), _n(r.get("SecuritiesBorrowingBalancePreviousDay"))
+        if t is None or p is None:                       # same rule as parse_sbl (11-25 audit P3-20)
+            skipped += 1
+            continue
+        tot += t
+        prev += p
+    return {"date": (rows or [{}])[0].get("Date"), "total": tot, "prev": prev, "skipped": skipped}
 
 
 def parse_warn(listed: List[Dict], otc: List[Dict]) -> List[Dict]:
@@ -164,8 +172,12 @@ def parse_pledge(rows: List[Dict], universe: Optional[set] = None) -> List[Dict]
         if not code or (universe is not None and code not in universe):
             continue
         a = agg.setdefault(code, {"code": code, "name": str(r.get("公司名稱") or "").strip(), "held": 0.0, "pledged": 0.0, "ym": r.get("資料年月")})
-        a["held"] += _n(r.get("目前持股")) or 0.0
-        a["pledged"] += _n(r.get("設質股數")) or 0.0
+        held, pledged = _n(r.get("目前持股")), _n(r.get("設質股數"))
+        if held is None:                                 # 11-25 audit P3-20: no holding → the row's pledge has no base
+            a["partial"] = a.get("partial", 0) + 1
+            continue
+        a["held"] += held
+        a["pledged"] += pledged or 0.0                   # a blank pledge column on a filled row means none pledged
     out = [{**a, "pct": a["pledged"] / a["held"] * 100} for a in agg.values() if a["held"] > 0]
     return sorted(out, key=lambda x: -x["pct"])
 
