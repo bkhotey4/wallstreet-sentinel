@@ -338,6 +338,13 @@ def main() -> Dict:
         rep["etf_seed"] = EF.write_seed(feed / "etf_flows_seed.json") if feed.is_dir() else 0
     except Exception as e:  # noqa: BLE001
         rep["etf_seed_error"] = str(e)
+    try:                                                      # hand-written reads older than the news they explain (11-25)
+        feed = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
+        tj = json.loads(_get(SITE + f"threads.json?v={int(time.time())}", 30))
+        rd = {n: json.loads((feed / n).read_text(encoding="utf-8")).get("updated") for n in ("threads_read.json", "dots_read.json", "tw_forecast.json")}
+        rep["old_reads"] = old_reads(tj.get("threads") or [], rd, time.time())
+    except Exception as e:  # noqa: BLE001
+        rep["old_reads"], rep["old_reads_error"] = [], str(e)
     try:
         gr = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed" / "gemini_reply.md"
         rep["gemini_groups"] = gemini_unknown_groups(gr.read_text(encoding="utf-8")) if gr.exists() else []
@@ -345,6 +352,24 @@ def main() -> Dict:
         rep["gemini_groups"], rep["gemini_groups_error"] = [], str(e)
     OUT.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     return rep
+
+
+READ_MAX_H = 48
+
+
+def old_reads(threads: List[Dict], updated: Dict[str, str], now: float) -> List[str]:
+    """Hand-written reads (no cloud routine rewrites them) that are older than 48 h while a thread is 升溫 or has a new official paper.
+    11-25: they still said the NVIDIA chair would not take the CEO back, two days after the board did."""
+    from tools.site_routines import parse_updated
+    hot = [t.get("id") for t in threads if t.get("state") in ("升溫", "官方新文件")]
+    if not hot:
+        return []
+    out = []
+    for name, raw in updated.items():
+        ts = parse_updated(raw)
+        if ts is None or now - ts > READ_MAX_H * 3600:
+            out.append(f"{name}（{raw or '沒有時間'}；升溫主線 {len(hot)} 條）")
+    return out
 
 
 def summary(rep: Dict) -> str:
@@ -370,6 +395,8 @@ def summary(rep: Dict) -> str:
     lines.append(f"自我檢查 {len(rep.get('selfcheck') or [])} 項：" + "；".join(i["text"] for i in rep.get("selfcheck") or []))
     if rep.get("ipo_blank"):
         lines.append("⚠ 剛掛牌的 IPO 沒有發行價（424B4 沒讀懂？查 wsb/data/ipo_data.offer_price，修好後把 OFFER_V 加一）：" + "、".join(rep["ipo_blank"]))
+    if rep.get("old_reads"):
+        lines.append("⚠ 手寫判讀比新聞舊（先讀原文再改寫）：" + "、".join(rep["old_reads"]))
     if rep.get("gemini_groups"):
         lines.append("⚠ Gemini 回答有網站不認得的段落代碼（加到 tools/site_gemini.py GROUP 和 order）：" + "、".join(rep["gemini_groups"]))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))

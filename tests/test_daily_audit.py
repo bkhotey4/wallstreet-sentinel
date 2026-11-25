@@ -89,7 +89,23 @@ def test_gemini_unknown_groups():
     assert "ZZZ" in A.summary({"gemini_groups": ["ZZZ"]})
 
 
+def test_old_reads_and_shared_cause():
+    import time as _t
+    from datetime import datetime, timedelta, timezone
+    from tools import daily_audit as A, sys_health as H
+    now = _t.time()
+    f = lambda h: datetime.fromtimestamp(now - h * 3600, timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")      # noqa: E731
+    hot = [{"id": "a", "state": "升溫"}]
+    assert len(A.old_reads(hot, {"x.json": f(60), "y.json": f(3)}, now)) == 1
+    assert A.old_reads([{"id": "a", "state": "安靜"}], {"x.json": f(60)}, now) == []
+    row = lambda i: {"file": f"{i}.json", "zh": str(i), "st": "stop", "age": 30, "every": 6}                             # noqa: E731
+    assert "共同原因" in H.routine_issues([row(i) for i in range(4)])[0]["text"]
+    assert "共同原因" not in H.routine_issues([row(i) for i in range(3)])[0]["text"]
+
+
 if __name__ == "__main__":
+    test_old_reads_and_shared_cause()
+    print("ok test_old_reads_and_shared_cause")
     test_gemini_unknown_groups()
     print("ok test_gemini_unknown_groups")
     test_lagging_rows()

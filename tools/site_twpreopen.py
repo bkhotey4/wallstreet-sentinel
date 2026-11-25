@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Dict, Optional
 
 from tools.sitekit import T, card, esc, fold_rows
+from wsb.data.tw_margin import SRC as MARGIN_SRC, floor_on
 
 WD = "一二三四五六日"
 TPE = timezone(timedelta(hours=8))
@@ -46,7 +47,7 @@ def lead(v: Dict) -> str:
                      + (f"，若加權指數開盤跟著動同樣幅度約 {tx['implied']:,.0f} 點" if tx.get("implied") else ""))
     if m:
         parts.append(f"融資 {_md(m['d'])} 一天{'減少' if m['diff'] < 0 else '增加'} {abs(m['diff']):,.0f} 億元（{_s(m['pct'])}% {m['light']}）")
-    cal = [c for c in v.get("cal") or [] if c["dispose"] >= _cut()]
+    cal = [c for c in v.get("cal") or [] if c["dispose"] >= _cut() and not c.get("void")]
     if cal:
         parts.append("追繳後的處分日落在 " + "、".join(_md(c["dispose"]) for c in cal))
     if lv:
@@ -96,10 +97,11 @@ def body(v: Dict) -> str:
     if cal:
         today = _cut()
         rows = [f'<tr><td>{_md(c["d"])}</td><td class="r">{_s(c["ix"], 2)}%</td><td class="r">{_s(c["mg"], 2)}%</td>'
-                f'<td>{_md(c["topup"])}</td><td>{_md(c["dispose"])}{"（已過）" if c["dispose"] < today else ""}</td></tr>' for c in reversed(cal)]
+                f'<td>{_md(c["topup"])}</td><td>{_md(c["dispose"])}{"（已取消，不處分）" if c.get("void") else "（已過）" if c["dispose"] < today else ""}</td></tr>' for c in reversed(cal)]
         out.append("<h3>追繳與處分日曆（大跌日之後）</h3>"
                    + fold_rows(rows, 5, "<tr><th>大跌日 T</th><th class='r'>加權指數</th><th class='r'>融資</th><th>補繳期限 T+2</th><th>處分 T+3 起</th></tr>", "天")
-                   + f'<p class="note">規則：整戶擔保維持率低於 130%，券商在 T 日收盤後通知，T+2 日前要補繳，沒補的從 T+3 日起可以處分（<a href="{esc(SRC_RULE)}" target="_blank" rel="noopener">證交所說明，2026-07 報導</a>）。'
+                   + f'<p class="note">規則：整戶擔保維持率低於 {floor_on()}%，券商在 T 日收盤後通知，T+2 日前要補繳，沒補的從 T+3 日起可以處分（<a href="{esc(SRC_RULE)}" target="_blank" rel="noopener">證交所說明，2026-07 報導</a>）。'
+                   f'證交所 11/23 新聞稿：11/24 起追繳線由 130% 降到 120%，而且 11/24 前已經通知的追繳一律取消、不處分（<a href="{esc(MARGIN_SRC)}" target="_blank" rel="noopener">原文</a>）；表裡標「已取消」的就是這些。'
                    '交易日已扣掉證交所休市日。列入條件：加權指數單日跌 2% 以上或融資單日減 2.5% 以上。不知道有多少人被追繳，只知道時間。</p>')
     b = v.get("bfi") or []
     if b:

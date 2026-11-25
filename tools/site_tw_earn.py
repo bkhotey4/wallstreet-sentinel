@@ -227,7 +227,9 @@ def alerts_public() -> Dict:
         mg = (v.get("mg") or [])[-1:] or [{}]
         adr = v.get("adr") or {}
         out["preopen"] = {"adr_light": v.get("adr_light"), "adr_now": adr.get("now"), "adr_pct": adr.get("pct"), "adr_mid": adr.get("mid"),
-                          "adr_chg_mid": adr.get("chg_mid"), "mg": mg[0], "cal": v.get("cal") or []}
+                          "adr_chg_mid": adr.get("chg_mid"), "mg": mg[0], "cal": [c for c in v.get("cal") or [] if not c.get("void")]}
+        from wsb.data.tw_margin import floor_on
+        out["preopen"]["floor"] = floor_on()
         try:
             from wsb.data import tw_chips as CH
             out["preopen"]["mratio"] = (CH.refresh().get("mratio") or {}).get("ratio")
@@ -267,8 +269,14 @@ def alerts_public() -> Dict:
         if nd.get("news"):
             top = nd["news"][0]
             out["nsf"] = {**top, "status": nd.get("status") or {}, "body": ((nd.get("bodies") or {}).get(top["url"]) or "")[:700]}
-        if nd.get("fsc"):
-            ft = nd["fsc"][0]
+        rules = list(nd.get("fsc") or [])
+        try:
+            from wsb.data import tw_margin as TM
+            rules += TM.refresh().get("news") or []        # 證交所自己宣布的措施
+        except Exception:  # noqa: BLE001
+            pass
+        if rules:
+            ft = max(rules, key=lambda r: r["date"])
             out["fsc"] = {**ft, "body": ((nd.get("fsc_bodies") or {}).get(ft["url"]) or "")[:900]}
     except Exception:  # noqa: BLE001
         pass

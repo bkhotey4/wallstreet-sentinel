@@ -313,6 +313,9 @@ def after_issues(html: str, reads: List[Dict], today: str, days: int = 5, floor_
 RAW_FEED = "https://raw.githubusercontent.com/bkhotey4/wallstreet-sentinel/main/research_feed/"
 
 
+SHARED_N = 4                           # this many AI cards late or stopped at once = look for one shared cause first
+
+
 def routine_issues(rows: List[Dict]) -> List[Dict]:
     """The 排程健康表 rows (tools/site_routines.rows) that are 🔴 stopped / never written, or 🟡 late — so a cloud routine that
     keeps "succeeding" without writing anything (財報後解讀 11-14→11-16: blocked sources, every run gave up) reaches the owner
@@ -326,6 +329,9 @@ def routine_issues(rows: List[Dict]) -> List[Dict]:
         out.append({"key": f"routine:{r['file']}:{r['st']}", "urgent": r["st"] != "late",
                     "text": f"**排程健康**：{'🔴' if r['st'] != 'late' else '🟡'} {r['zh']} {when}（應該每 {r['every']} 小時一次）。"
                             "排程本身可能顯示成功，但沒有寫出檔案；要看執行紀錄找原因。"})
+    if len(out) >= SHARED_N:               # 11-24: five cards "stopped" for one cause — the account's weekly limit, 13 hours
+        out[0]["text"] = (f"**排程健康**：{len(out)} 張 AI 卡同時沒更新，比較像共同原因（例如每週用量額度用完，到重設時間會自己恢復），不是各自壞掉。"
+                          "先看任一個執行紀錄有沒有「weekly limit」。") + " " + out[0]["text"]
     return out
 
 

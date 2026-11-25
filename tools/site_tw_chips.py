@@ -45,10 +45,11 @@ def sec_tw_chips(eng=None) -> str:
     so = d.get("sbl_otc") or {}
     if so.get("total"):
         lead.append(f'上櫃 {so["total"] / 1e8:,.2f} 億股（{(so["total"] - so.get("prev", 0)) / 1e4:+,.0f} 萬股）')
+    from wsb.data.tw_margin import floor_on
     mr, dt = d.get("mratio") or {}, d.get("daytrade") or {}
     if mr.get("ratio"):
         mp = _prev(d, "mratio", ("ratio",))
-        lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（估算' + (f'，前一次 {mp:.0f}%' if mp else "") + '；個別帳戶低於 130% 會被追繳）')
+        lead.append(f'上市整體融資維持率約 {mr["ratio"]:.0f}%（{str(mr.get("date"))[4:6]}/{str(mr.get("date"))[6:]} 收盤，估算' + (f'，前一次 {mp:.0f}%' if mp else "") + f'；個別帳戶低於 {floor_on()}% 會被追繳）')
     if dt.get("value_pct") is not None:
         lead.append(f'當沖占成交金額 {dt["value_pct"]:.1f}%')
     warn = d.get("warn") or []

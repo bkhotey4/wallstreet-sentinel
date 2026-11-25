@@ -24,6 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 from ..config import DATA_DIR
 from . import http
+from .tw_margin import voided
 
 log = logging.getLogger(__name__)
 FILE = DATA_DIR / "econ_tw_preopen.json"
@@ -167,6 +168,12 @@ def tw_days_after(d: str, n: int, closed: Dict[str, str]) -> str:
     return x.isoformat()
 
 
+def closed_days(days: List[str], now: Optional[datetime] = None) -> List[str]:
+    """Without today before the 13:30 close (+30 min): a half-finished session is not a fall yet (11-25)."""
+    n = now or datetime.utcnow() + timedelta(hours=8)
+    return [d for d in days if not (d == n.date().isoformat() and n.hour < 14)]
+
+
 def call_calendar(days: List[str], twii: List, mg: Dict[str, List[float]], closed: Dict[str, str]) -> List[Dict]:
     """For each recent day with a big fall (TAIEX ≤ −2% or margin ≤ −2.5%): notice after that close, top up by T+2,
     disposal from T+3 (TWSE rule as explained in 2026-07)."""
@@ -179,8 +186,9 @@ def call_calendar(days: List[str], twii: List, mg: Dict[str, List[float]], close
         m = mg.get(d)
         mc = (m[1] / m[0] - 1) * 100 if m and m[0] else None
         if (ix is not None and ix <= -2) or (mc is not None and mc <= -2.5):
-            out.append({"d": d, "ix": None if ix is None else round(ix, 2), "mg": None if mc is None else round(mc, 2),
-                        "notice": d, "topup": tw_days_after(d, 2, closed), "dispose": tw_days_after(d, 3, closed)})
+            due = tw_days_after(d, 3, closed)
+            out.append({"d": d, "void": voided(d, due), "ix": None if ix is None else round(ix, 2), "mg": None if mc is None else round(mc, 2),
+                        "notice": d, "topup": tw_days_after(d, 2, closed), "dispose": due})
     return out
 
 
@@ -280,7 +288,7 @@ def view_from(d: Dict, nav: Optional[Dict] = None, closed: Optional[Dict[str, st
     adr = adr_view(c("TSM"), c("2330.TW"), c("TWD=X"))
     return {"adr": adr, "adr_light": adr_light(adr["pct"] if adr else None), "adr_t": (px.get("TSM") or {}).get("t"),
             "night": overnight(px), "mg": mrows, "bfi": brows,
-            "cal": call_calendar(days, c("^TWII"), mg, closed or {}), "lev": lev_etf(nav or {}),
+            "cal": call_calendar(closed_days(days), c("^TWII"), mg, closed or {}), "lev": lev_etf(nav or {}),
             "px_ts": d.get("px_ts"), "ts": d.get("ts")}
 
 

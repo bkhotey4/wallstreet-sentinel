@@ -1149,7 +1149,7 @@ def twal_embed(a: Dict) -> Dict:
         if mg.get("light") == "🔴":
             lines.append(f'・融資餘額 {str(mg.get("d"))[5:]} 一天 {mg.get("pct")}%（{mg.get("now")} 億元），借錢買股的人還在被迫賣。')
         if p.get("mratio"):
-            lines.append(f'・上市整體融資維持率約 {p["mratio"]:.0f}%（本站估算；個別帳戶低於 130% 會被追繳）。')
+            lines.append(f'・上市整體融資維持率約 {p["mratio"]:.0f}%（本站估算' + (f'；個別帳戶低於 {p["floor"]}% 會被追繳' if p.get("floor") else "") + '）。')
         for c in a.get("due") or []:
             lines.append(f'・{str(c.get("d"))[5:]} 那天被追繳的融資：' + ("今天是補繳期限" if c.get("topup") == time.strftime("%Y-%m-%d", _tpe(time.time())) else "今天起可能被處分（斷頭）"))
         return {"title": "🚦 台股開盤前紅燈", "color": 0xE5484D, "url": url + "#taiwan",
@@ -1166,10 +1166,10 @@ def twal_embed(a: Dict) -> Dict:
                 "footer": {"text": "WallStreet Sentinel · 台股月營收 · 公開資訊觀測站 · 不構成投資建議"}}
     if a["kind"] == "fsc":
         g = a["g"]
-        return {"title": f'⚖️ 金管會：{g.get("title")}'[:250], "color": 0xF59E0B, "url": g.get("url") or url + "#tw_desk",
-                "description": (f'一句話看懂：金管會 {g.get("date")} 公布新的股市規定（原文如下）。這些規定改變的是誰能放空、誰被迫買回；'
+        return {"title": f'⚖️ {g.get("by") or "金管會"}：{g.get("title")}'[:250], "color": 0xF59E0B, "url": g.get("url") or url + "#tw_desk",
+                "description": (f'一句話看懂：{g.get("by") or "金管會"} {g.get("date")} 公布新的股市規定。這些規定改變的是誰能放空、誰被迫買或賣；'
                                 '每一項的白話說明在網站「台股專業判讀」頁的「政府穩市場」卡。' + NL + NL + (g.get("body") or "")[:900])[:4000],
-                "footer": {"text": "WallStreet Sentinel · 金管會原文 · 不構成投資建議"}}
+                "footer": {"text": "WallStreet Sentinel · 官方原文 · 不構成投資建議"}}
     if a["kind"] == "nsf":
         f, st = a["f"], (a["f"].get("status") or {})
         what = {"on": "國安基金目前在執行護盤", "off": "國安基金目前沒有在執行護盤"}.get(st.get("state"), "國安基金有新的官方新聞稿")

@@ -130,7 +130,7 @@ def parse_large_opt(rows: List[Dict]) -> Dict:
 
 
 def margin_ratio(mg: Dict, closes: List[Dict]) -> Optional[Dict]:
-    """上市整體融資維持率（估算）＝ Σ 每檔融資餘額（張）× 1,000 × 收盤價 ÷ 融資金額。和媒體常用的算法相同；個別帳戶低於 130% 會被追繳。"""
+    """上市整體融資維持率（估算）＝ Σ 每檔融資餘額（張）× 1,000 × 收盤價 ÷ 融資金額。和媒體常用的算法相同；個別帳戶低於追繳線（wsb/data/tw_margin.floor_on）會被追繳。"""
     tabs = (mg or {}).get("tables") or []
     if len(tabs) < 2:
         return None
@@ -141,9 +141,11 @@ def margin_ratio(mg: Dict, closes: List[Dict]) -> Optional[Dict]:
         p, bal = px.get(str(r[0])), _n(r[6])
         if p and bal:
             mv += bal * 1000 * p
-    if not loan:
+    pxd = str((closes or [{}])[0].get("Date") or "")
+    pxd = str(int(pxd[:3]) + 1911) + pxd[3:] if re.fullmatch(r"\d{7}", pxd) else ""
+    if not loan or not mv or pxd != str(mg.get("date")):      # 11-25: 11/24 margin × 11/23 closes read 148% (same day: 162%)
         return None
-    return {"date": mg.get("date"), "ratio": mv / (loan * 1000) * 100, "mv": mv, "loan": loan * 1000}
+    return {"date": mg.get("date"), "px_date": pxd, "ratio": mv / (loan * 1000) * 100, "mv": mv, "loan": loan * 1000}
 
 
 def parse_daytrade(js: Dict) -> Optional[Dict]:
@@ -305,6 +307,14 @@ def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
     for name in ("sbl_otc", "warn", "mratio", "daytrade", "fc15", "fc16"):   # use the relay when this machine has none
         if not d.get(name) and seed.get(name):
             d[name] = seed[name]
+    mine, theirs = d.get("mratio") or {}, seed.get("mratio") or {}
+    if theirs.get("px_date") and (not mine.get("px_date") or theirs["date"] > mine["date"]):
+        d["mratio"] = theirs
+    elif mine and not mine.get("px_date"):
+        d["mratio"] = None                                   # built before the same-day check: may mix two days
+    for h in (d.get("hist") or {}).values():
+        if isinstance(h.get("mratio"), dict) and not h["mratio"].get("px_date"):
+            h.pop("mratio")
 
 
 def refresh(force: bool = False) -> Dict:

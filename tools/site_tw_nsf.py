@@ -39,6 +39,8 @@ def next_report(today: date, last: Optional[str]) -> str:
 MECH = [("平盤以下", "禁止平盤以下放空：當天價格低於前一天收盤時不能新放空，跌的日子少了一股賣壓；但券商、期貨商的避險不受限，所以不是「完全沒有人能賣」。"),
         ("融券保證金", "融券保證金提高：放空要先押更多錢，新放空的人會變少，已經放空的人不受影響。"),
         ("認售權證", "暫停發行認售權證：認售權證是「賭下跌」的權證，發行券商要放空股票避險；不再發新的，這種機械性的賣出就少了。"),
+        ("維持率", "改追繳線（擔保維持率最低標準）：借錢買股的人跌到這條線才會被要求補錢，補不出來券商才賣股票。線往下調，"
+                   "這幾天被迫賣的人變少；但借錢的人可以撐更久，如果再跌一段，下一次被迫賣可能更集中（後半是推論）。"),
         ("庫藏股", "鼓勵庫藏股：公司自己買回股票，是少數「不看價格、照計畫買」的買方；本站「台股財報」頁會列出新公告的庫藏股。"),
         ("召回", "鼓勵出借人召回借出的股票：借券放空的人被要求還股票，就得買回來還——這是被迫的買單，短期可能讓被放空很多的股票反彈（軋空），"
                  "但召回要照契約、分批發生。哪些股票回補壓力最大（回補天數）見同一頁的「借券放空集中度」卡。"),
@@ -57,6 +59,11 @@ def sec_tw_nsf(eng=None, today: Optional[date] = None) -> str:
         return ""
     news, st = d.get("news") or [], d.get("status") or {}
     fsc, fb = d.get("fsc") or [], d.get("fsc_bodies") or {}
+    try:                                                   # 證交所自己宣布的措施（11/23 的 120% 不在金管會清單）
+        from wsb.data import tw_margin as TM
+        fsc = sorted(fsc + (TM.refresh().get("news") or []), key=lambda r: r["date"], reverse=True)[:30]
+    except Exception:  # noqa: BLE001
+        pass
     if not news and not fsc:
         return ""
     today = today or date.today()
@@ -70,8 +77,8 @@ def sec_tw_nsf(eng=None, today: Optional[date] = None) -> str:
     else:
         lead = f'國安基金最新官方新聞稿是 {news[0]["date"]}「{news[0]["title"]}」。'
     if fsc:
-        eff = re.search(r"自(\d{2,3})年(\d{1,2})月(\d{1,2})日起", fb.get(fsc[0]["url"]) or "")
-        lead += (f'金管會最新的市場措施是 {fsc[0]["date"]}「{fsc[0]["title"]}」'
+        eff = re.search(r"自(\d{2,3})年(\d{1,2})月(\d{1,2})日起", fb.get(fsc[0]["url"]) or fsc[0]["title"])
+        lead += (f'{fsc[0].get("by") or "金管會"}最新的市場措施是 {fsc[0]["date"]}「{fsc[0]["title"]}」'
                  + (f'，{int(eff.group(1)) + 1911}-{int(eff.group(2)):02d}-{int(eff.group(3)):02d} 起實施' if eff else "") + "。")
     body_txt = (d.get("bodies") or {}).get(news[0]["url"]) or ""
     paras = [p for p in body_txt.split("\n") if p.strip()][:3]
@@ -79,14 +86,14 @@ def sec_tw_nsf(eng=None, today: Optional[date] = None) -> str:
     if fsc:
         top = fb.get(fsc[0]["url"]) or ""
         items = [x for x in top.split("\n") if x.strip()]
-        mech = [t for k, t in MECH if k in top]
+        mech = [t for k, t in MECH if k in (top or fsc[0]["title"])]
         rows_f = [f'<tr><td>{esc(r["date"])}</td><td>{_link(r["url"], r["title"])}</td></tr>' for r in fsc]
-        fsc_html = (f'<h3>金管會市場穩定措施（{_link(fsc[0]["url"], "最新一則原文")}）</h3>'
+        fsc_html = (f'<h3>金管會與證交所市場穩定措施（{_link(fsc[0]["url"], "最新一則原文")}）</h3>'
                     + "".join(f'<p class="small">{esc(x)}</p>' for x in items[:8])
                     + (f'<p class="small"><b>每一項改變了什麼（白話）：</b></p><ul class="small">' + "".join(f"<li>{esc(t)}</li>" for t in mech) + "</ul>" if mech else "")
                     + '<p class="small muted">研究上，2008 年各國禁止放空時，被禁的股票交易變得比較不順（買賣價差變大），但股價沒有因此比較撐'
                       '（Beber 與 Pagano，2013 年《Journal of Finance》）；限空擋得住「新的放空」，擋不住融資斷頭和外資賣超。</p>'
-                    + fold_rows(rows_f, 4, '<tr><th>發布日期</th><th>金管會新聞稿</th></tr>', "則"))
+                    + fold_rows(rows_f, 4, '<tr><th>發布日期</th><th>官方新聞稿</th></tr>', "則"))
     ep = episodes(news)
     ep_rows = "".join(f'<tr><td>{esc(e["start"])}</td><td>{esc(e["stop"] or "執行中")}</td>'
                       f'<td class="r">{"—" if e["days"] is None else e["days"]}</td></tr>' for e in ep)
