@@ -141,6 +141,21 @@ def _watch_text(r: Dict) -> str:
 HEAD = "<tr><th>日期</th><th>公司</th><th>這一季營收走到哪（程式計算）</th><th>這場要看什麼</th></tr>"
 
 
+def tw_followers(eng, sym: str, top: int = 5) -> List[Dict]:
+    """Taiwan stocks (financials left out) whose next session has followed `sym`'s night, validated out of sample (tw_direct)."""
+    from wsb.analytics import news_impact as NI
+    from wsb.data.stocks import universe
+    cl = getattr(getattr(eng, "stockprices", None), "close", None)
+    if cl is None or getattr(cl, "empty", True) or sym not in cl.columns:
+        return []
+    allu = {}
+    for mk in ("us", "tw"):
+        for k, v in ((universe().get(mk) or {}).get("symbols") or {}).items():
+            allu[k] = (v[0], v[1] if len(v) > 1 else k, mk)
+    tws = [k for k, v in allu.items() if v[2] == "tw" and k in cl.columns and not k.startswith(FIN)]
+    return NI.tw_direct(cl, sym, tws, allu)[:top]
+
+
 def us_links(eng, now: Optional[datetime] = None, days: int = 21, floor: float = 5e10) -> List[Dict]:
     """美股財報 → 台股誰會跟著動 (11-25, user: 「台股財報前瞻怎麼跟美股財報前瞻的內容差異很大?」): 台股這三週幾乎只有券商論壇，
     真正會在這段時間動到台股的，是美股大公司的財報。每一家接下來 21 天要公布、市值 ≥ 500 億美元、本站有股價的美股公司，

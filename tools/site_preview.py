@@ -50,11 +50,21 @@ def _esc(x) -> str:
     return html.escape(guard_safe(str(x or "")))   # AI-written: banned words reworded
 
 
-def _item(it: Dict) -> str:
+def thin(it: Dict) -> bool:
+    """A call with no evidence behind it (11-26): the routine says 證據不足 or left the odds at 25/50/25."""
+    p = _probs(it.get("probs")) or {}
+    flat = bool(p) and max(p.values()) - min(p.values()) <= 25 and round(max(p.values())) == 50
+    return flat or any("證據不足" in str(b) for b in it.get("basis") or [])
+
+
+def _item(it: Dict, tw: Optional[List[Dict]] = None) -> str:
     p = _probs(it.get("probs"))
     call = str(it.get("call") or "")
     head = (f'<h3>{_esc(it.get("name") or it.get("sym"))} <span class="muted small">{_esc(it.get("sym"))}・{_esc(it.get("date"))}</span> '
-            f'<b class="{CALLS.get(call, "")}">{_esc(call)}</b></h3>')
+            f'<b class="{CALLS.get(call, "")}">{_esc(call)}</b>'
+            + (' <span class="pill muted">證據不足，機率接近平均</span>' if not it.get("outcome") and thin(it) else "") + '</h3>')
+    twl = ('<p class="small"><b>台股過去隔天跟著動的：</b>' + "、".join(f'{_esc(t["zh"])}（β {t["beta"]:.2f}）' for t in tw)
+           + '<span class="muted">（β 0.2＝這家動 5%，台股隔天平均動 1%；過去的統計關係，見「台股財報前瞻」）</span></p>') if tw else ""
     bar = ""
     if p:
         bar = ('<p>資本支出／財測：' + "、".join(f'{k} <b>{p[k]:.0f}%</b>' for k in OUTS)
@@ -72,7 +82,7 @@ def _item(it: Dict) -> str:
         ok = p and it["outcome"] in OUTS and max(p, key=p.get) == it["outcome"]
         out = (f'<p class="rimp"><b>結果：{_esc(it["outcome"])}</b>' + (" ✅ 猜中" if ok else " ❌ 沒猜中" if p else "")
                + (f'——{_esc(it.get("outcome_note"))}' if it.get("outcome_note") else "") + "</p>")
-    return (f'<div class="rpt">{head}{out}{bar}' + (f"<ul>{sc}</ul>" if sc else "")
+    return (f'<div class="rpt">{head}{out}{bar}' + (f"<ul>{sc}</ul>" if sc else "") + twl
             + (f'<details class="sgx"><summary>判斷依據</summary><ul class="small">{basis}</ul></details>' if basis else "") + "</div>")
 
 
@@ -141,6 +151,18 @@ def sec_earn_preview(eng) -> str:
     lead_items = sorted(up, key=lambda x: -big.get(str(x["sym"]).upper(), 0.0))[:4]      # the biggest reports first
     lead = "一句話看懂：" + ("、".join(f'{x.get("name") or x["sym"]}（{str(x["date"])[5:].replace("-", "/")}）{x.get("call", "")}'
                                        for x in lead_items) + "（財報前的機率估計）。" if up else "最近沒有即將公布的重點財報。")
+    nthin = sum(1 for x in lead_items if thin(x))
+    if up and nthin == len(lead_items):
+        lead += "這幾家目前都證據不足，機率接近平均分配，參考價值低。"
+    elif nthin:
+        lead += f"其中 {nthin} 家證據不足、機率接近平均。"
+
+    def tw(x):
+        try:
+            from tools.site_tw_earn import tw_followers
+            return tw_followers(eng, str(x["sym"]).upper())
+        except Exception:  # noqa: BLE001
+            return []
     gauges = "".join(f'<li><b>{_esc(g.get("name"))}</b>：{_esc(g.get("read"))}</li>' for g in (d.get("gauges") or []) if isinstance(g, dict))
     rec = (f'<p class="rimp">過去 {sc["n"]} 次預估：最可能的情境猜中 {sc["hits"]} 次（{sc["hits"] / sc["n"] * 100:.0f}%）；'
            f'Brier 分數 {sc["brier"]:.2f}（0 是完美、0.67 等於每次都猜三分之一，越低越準）。</p>') if sc else '<p class="small muted">還沒有已公布的結果可以對答案；每次財報公布後會自動記錄猜中與否。</p>'
@@ -159,8 +181,8 @@ def sec_earn_preview(eng) -> str:
     shown.sort(key=lambda x: (str(x["date"]), -big.get(str(x["sym"]).upper(), 0.0)))
     # 11-17 (user): show ALL the data, not part of it — the rest are folded, never dropped
     rest = [x for x in up if id(x) not in {id(y) for y in shown}]
-    more_txt = (f'<details class="sgx"><summary>看其餘 {len(rest)} 家公司的前瞻</summary>' + "".join(_item(x) for x in rest) + '</details>') if rest else ""
-    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + miss_txt + "".join(_item(x) for x in shown) + more_txt + wait_txt
+    more_txt = (f'<details class="sgx"><summary>看其餘 {len(rest)} 家公司的前瞻</summary>' + "".join(_item(x, tw(x)) for x in rest) + '</details>') if rest else ""
+    body = (f'<p class="rimp big2"><b>{_esc(lead)}</b></p>' + miss_txt + "".join(_item(x, tw(x)) for x in shown) + more_txt + wait_txt
             + (f'<h3>前瞻指標</h3><ul>{gauges}</ul>' if gauges else "") + f'<h3>成績單</h3>{rec}'
             + ("".join(_item(x) for x in past[:4]) if past else "")
             + ((f'<details class="sgx"><summary>看其餘 {len(past) - 4} 筆已對答案的紀錄</summary>' + "".join(_item(x) for x in past[4:]) + '</details>') if len(past) > 4 else "")
