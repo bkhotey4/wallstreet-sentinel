@@ -93,7 +93,7 @@ from tools import site_chokepoints as SCP
 from tools import site_fedspeech as SFS
 from tools import site_respress as SRP
 from tools import site_memspot as SMS
-from tools import site_freight as SFR
+from tools import site_freight as SFRT
 from tools import site_fiscal as SFI
 from tools import site_forced as SFO
 from tools import site_korea as SKO
@@ -1392,7 +1392,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tech", "美股財報", "US earnings", [SPV.sec_earn_preview, S3.sec_earn_verdict, SER.sec_est_rev, SAF.sec_earn_after_us, SAF.sec_earn_all, S3.sec_tech_season, S3.sec_tech_board, S3.sec_tw_rev, S3.sec_us_tech, S3.sec_us_read]),
             ("growth", "成長估值", "Growth value", [SSC.sec_stock_check, SSC.sec_fund_trend, S3.sec_growth, S4.sec_debate]),
             ("themes", "族群", "Themes", [S2.sec_themes, S4.sec_explainer]),
-            ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SRP.sec_research_press, SMS.sec_mem_spot, SFR.sec_freight, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
+            ("industry", "產業體檢", "Sector health", [SIN2.sec_industry_note, SRP.sec_research_press, SMS.sec_mem_spot, SFRT.sec_freight, SIN.sec_sector_brief, SIN.sec_sector_table, SCR.sec_credit_health, SIN.sec_transmission, SIN.sec_real_economy, SIN.sec_ai_ledger, SIN.sec_themes_health, SIN.sec_company_health]),
             ("mood", "情緒與警報", "Mood & alarms", [SA.sec_vix_explain, SW2.sec_vix_term, S4.sec_fg, SBT.sec_bottom, SDC.sec_drop_check, SQ.sec_street, S4.sec_em, S4.sec_rules, S4.sec_geo]),
             ("risk", "風險模型", "Risk model", [S2.sec_canary, S2.sec_distress, sec_shock, sec_playbook_breaks, sec_macro, sec_quality, SRG.sec_regime_split, sec_model_health, STK.sec_track_record, SRT.sec_routine_health]),
             ("flows", "Gamma／暗池", "Gamma & flows", [sec_gamma, sec_darkpool, S2.sec_smart_retail_divergence, sec_positioning]),
@@ -1734,8 +1734,8 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     except Exception as e:  # noqa: BLE001
         log.warning("fed research data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 金融穩定缺口：財政部再融資、SOFR／常設回購、CFTC 基差交易
-        from wsb.data import stability as STB
-        await asyncio.wait_for(STB.refresh(), 150)
+        from wsb.data import stability as STBD
+        await asyncio.wait_for(STBD.refresh(), 150)
     except Exception as e:  # noqa: BLE001
         log.warning("stability data failed: %s", e if str(e) else type(e).__name__)
     try:                                           # 歐洲與亞洲：歐洲央行 CISS、各國公債利差（12 小時一次）
