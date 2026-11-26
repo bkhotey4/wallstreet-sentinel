@@ -103,10 +103,12 @@ def sec_tw_pledge(eng=None) -> str:
     rows = [f'<tr><td><b>{esc(x["name"])}</b> <span class="tk">{esc(x["code"])}</span></td><td class="r">{x["held"] / 1000:,.0f}</td>'
             f'<td class="r">{x["pledged"] / 1000:,.0f}</td><td class="r"><b>{x["pct"]:.0f}%</b></td></tr>' for x in p if x["pct"] > 0]
     ym = p[0].get("ym") or ""
+    np_ = sum(1 for x in p if x.get("partial"))       # 11-25 audit P3-20: rows without a holding figure were left out
     body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}</b></p>'
             '<p class="small">董監把股票質押給銀行借錢，股價大跌時可能被要求補擔保品或被斷頭，等於多一個被迫賣出的來源；質押比例高不一定有問題（有些是集團融資慣例），'
             '但在大跌時要多看一眼。</p>' + fold_rows(rows, 15, th, "家")
-            + f'<p class="note">證交所 OpenAPI 董監事持股餘額明細（資料年月 {esc(ym)}，每月更新）；比例＝董監本人持股中的設質股數 ÷ 目前持股。描述資料，不是投資建議。</p>')
+            + f'<p class="note">證交所 OpenAPI 董監事持股餘額明細（資料年月 {esc(ym)}，每月更新）；比例＝董監本人持股中的設質股數 ÷ 目前持股。'
+            + (f'有 {np_} 家公司部分董監的持股欄空白，那幾筆沒有算進比例。' if np_ else "") + '描述資料，不是投資建議。</p>')
     return card("董監質押：大跌時的另一個被迫賣方", "Insider share pledges", body, "wide")
 
 

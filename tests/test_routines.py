@@ -43,6 +43,23 @@ def main() -> None:
         assert rs["tw_note.json"]["st"] == "never"         # run passed over a day ago and still nothing → 🔴
         rs = {r["file"]: r for r in R.rows(now=ep("2027-01-05 09:00"), feed_dir=p)}
         assert rs["tw_note.json"]["st"] == "never"         # stays 🔴 in later months
+        # 11-26 backfills: a finished backlog is ⚪ done, a paused one ⚪ paused with names left, otherwise still 🔴
+        w = lambda n, d: (p / n).write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")  # noqa: E731
+        w("earn_backlog.json", {"items": [{"sym": "AAA"}, {"sym": "BBB"}]})
+        w("earn_after_more.json", {"updated": "2026-11-01 06:00 台北", "items": [{"sym": "AAA"}], "skipped": []})
+        w("earn_after.json", {"updated": "2026-11-01 06:00 台北", "items": []})
+        w("earn_backlog_asia.json", {"items": [{"mk": "tw", "sym": "2330"}]})
+        w("earn_after_asia.json", {"updated": "2026-11-01 06:00 台北", "items": [], "later": [{"mk": "tw", "sym": "2330"}]})
+        w("earn_backlog_rest.json", {"items": [{"mk": "hk", "sym": "0002"}, {"mk": "tw", "sym": "1101"}]})
+        w("earn_after_rest.json", {"updated": "2026-11-01 06:00 台北", "items": [{"mk": "hk", "sym": "0002"}]})
+        rs = {r["file"]: r for r in R.rows(now=ep("2026-11-26 10:00"), feed_dir=p)}
+        assert rs["earn_after_more.json"]["st"] == "stop" and rs["earn_after_more.json"]["left"] == 1
+        assert rs["earn_after_asia.json"]["st"] == "done"  # parked in `later` counts as handled
+        assert rs["earn_after_rest.json"]["st"] == "paused" and rs["earn_after_rest.json"]["left"] == 1
+        w("earn_after_more.json", {"updated": "2026-11-01 06:00 台北", "items": [{"sym": "AAA"}], "skipped": [{"sym": "BBB"}]})
+        rs = {r["file"]: r for r in R.rows(now=ep("2026-11-26 10:00"), feed_dir=p)}
+        assert rs["earn_after_more.json"]["st"] == "done"
+        assert rs["deep.json"]["st"] == "stop"             # a normal routine never turns ⚪
     html = R.sec_routine_health()
     assert "排程健康表" in html and "<table" in html
     print("test_routines: ok")

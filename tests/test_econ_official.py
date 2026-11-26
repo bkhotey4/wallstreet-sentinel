@@ -69,6 +69,7 @@ def main() -> None:
 
     # fill: schedule rows for a future day, values for a released day; no key → no-op
     real = (EO.schedule, EO.values, EO.FRED_API_KEY)
+    NOW = "2026-11-12T20:00:00Z"                     # fixed clock: 11-20 is still in the future
     try:
         EO.FRED_API_KEY = ""
         assert asyncio.run(EO.fill({}, date(2026, 11, 12), 45)) == 0
@@ -81,7 +82,7 @@ def main() -> None:
             return [dict(r, utc=EO.et_utc(day, 8, 30)) for r in new]
         EO.schedule, EO.values = sched, vals
         days = {"2026-11-10": {"ts": 0, "rows": [dict(r) for r in old], "final": False}}
-        n = asyncio.run(EO.fill(days, date(2026, 11, 12), 45, ff))
+        n = asyncio.run(EO.fill(days, date(2026, 11, 12), 45, ff, now=NOW))
         assert n == 2, n
         assert days["2026-11-10"]["rows"][0]["actual"] == "0.4%" and days["2026-11-10"]["src_fallback"] == "fred"
         um = days["2026-11-20"]["rows"]
@@ -89,7 +90,7 @@ def main() -> None:
         assert "2026-12-30" not in days                                                    # beyond the window
         # a released day that holds only the m/m (with its actual) still asks the official source for the y/y
         days = {"2026-11-10": {"ts": 0, "rows": [{"name": "CPI", "utc": "t", "actual": "0.4%", "cons": "0.3%", "prev": "0.6%"}], "final": False}}
-        asyncio.run(EO.fill(days, date(2026, 11, 12), 45, ff))
+        asyncio.run(EO.fill(days, date(2026, 11, 12), 45, ff, now=NOW))
         got = [r["actual"] for r in days["2026-11-10"]["rows"] if r["name"] == "CPI"]
         assert got == ["0.4%", "3.2%"], got
     finally:

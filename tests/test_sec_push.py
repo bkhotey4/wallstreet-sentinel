@@ -85,10 +85,11 @@ def main() -> None:
     P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.health_check, P.country_json = (
         fake_news, no_night, no_hold, fake_mkt, no_yen, fake_health, fake_country)
     P.CATCH_GAP = 10 ** 12                                  # the catch-up message has its own test below
-    real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts)
+    real = (SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts, P.owner_id)
     try:
         SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.sector_alerts = fake_refresh, fake_impact, fake_post, fake_dm, lambda: {}, no_sectors
         P.DISCORD_TOKEN, P.alert_channel = "t", lambda: "123"
+        P.owner_id = lambda: "1"                            # no .env in CI/cloud: "DM the owner" needs an owner id
         n = asyncio.run(P.run_once(now=1200))
         assert n == 3 and sent[0].startswith("🔴 SEC 申報：某公司") and sent[1].startswith("🔴 SEC 申報：輝達"), sent   # worst first; 7h-old skipped
         assert len(dms) == 2 and not any("邁威爾" in d for d in dms)                                           # director appointment: channel only
@@ -263,7 +264,7 @@ def main() -> None:
         P.DISCORD_TOKEN = ""
         assert asyncio.run(P.run_once(now=1600)) == 0
     finally:
-        SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts = real
+        SOF.refresh, P.impact, P.post, P.dm_channel, P.watch_list, P.DISCORD_TOKEN, P.alert_channel, P.sector_alerts, P.owner_id = real
         P.news_json, P.tx_night, P.holdings_run, P.market_now, P.yen_jump, P.CATCH_GAP, P.gap_moves, P.health_check, P.country_json = real2
         P.site_alerts_json, P.mops_new, P.tw_impact = real3
 

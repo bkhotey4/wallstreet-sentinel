@@ -52,8 +52,9 @@ def sec_china(eng) -> str:
     gap = mk.get("gap") or {}
     fx_txt = ""
     if fx:
-        fx_txt = (f"人民幣現在 1 美元兌 {fx['last']:.4f} 元，一年來" + ("升值" if (fx.get("y1") or 0) < 0 else "貶值")
-                  + f" {abs((fx.get('y1') or 0) * 100):.1f}%（數字變小＝人民幣變強）")
+        fy = fx.get("y1")                      # None when there is less than a year of history: say nothing, not "0.0%"
+        fx_txt = (f"人民幣現在 1 美元兌 {fx['last']:.4f} 元"
+                  + (f"，一年來{'升值' if fy < 0 else '貶值'} {abs(fy * 100):.1f}%（數字變小＝人民幣變強）" if fy is not None else ""))
         if gap:
             g_ = gap["now"]
             fx_txt += (f"；離岸人民幣比在岸{'弱' if g_ > 0 else '強'} {abs(g_) * 100:.2f}%"

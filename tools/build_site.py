@@ -26,6 +26,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from wsb.config import SETTINGS
+from tools import feedcheck as FCK
 from tools import site_sections as S2
 from tools import site_econ as S3
 from tools import site_intel as S4
@@ -272,8 +273,11 @@ def sec_strip(eng) -> str:
         price = q["price"] if q else float(s.iloc[-1])
         chg = q.get("chg_pct") if q else None
         asof = q.get("asof") if q else s.dropna().index[-1].strftime("%Y-%m-%d")
-        tiles.append(f'<div class="tile" data-lq="{esc(t)}" data-dg="{dg}" title="{esc(asof)}"><div class="tl">{T(zh, ASSET_EN.get(t, t))}<span class="asof">{esc(asof[5:])}</span></div>'
-                     f'<div class="tv">{num(price, dg)}</div><div class="tc {cls(chg)}">{num(chg, 2, sign=True, pct=True)}</div>{spark(s)}</div>')
+        bc = q.get("bond_closed") if q else None            # SIFMA holiday: the last real close, change "—"
+        tip = f"{asof}（{bc}債市休市，沿用前一天收盤）" if bc else asof
+        tiles.append(f'<div class="tile" data-lq="{esc(t)}" data-dg="{dg}" title="{esc(tip)}"><div class="tl">{T(zh, ASSET_EN.get(t, t))}<span class="asof">{esc(asof[5:])}</span></div>'
+                     f'<div class="tv">{num(price, dg)}</div><div class="tc {cls(chg)}">{num(chg, 2, sign=True, pct=True)}</div>'
+                     + (f'<div class="small muted">{T("債市休市", "Bond mkt closed")}</div>' if bc else "") + f'{spark(s)}</div>')
     return f'<div class="strip" aria-label="market strip">{"".join(tiles)}</div>' + SDU.foi_badge(eng) + SLV.bar_html(eng)
 
 
@@ -1368,6 +1372,7 @@ BLOCKS: Dict = {}                                          # 積木編號表 of 
 
 def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     _CHARTS.clear()
+    FCK.prime(eng)
     tz = ZoneInfo(SETTINGS.get("timezone", "Asia/Taipei"))
     now = datetime.now(tz)
     tabs = [("overview", "總覽", "Overview", [SFC.sec_macro_voice, SEB.sec_event_board, SNL.sec_news_live, SLY.sec_today_slot, SSN.sec_sessions, SFC.sec_forecast, SLN.sec_learn, SDP.sec_deep, SLY.sec_more_slot, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
@@ -1970,6 +1975,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
     except Exception:  # noqa: BLE001
         log.exception("earnings verdicts failed")
     out.mkdir(parents=True, exist_ok=True)
+    FCK.prime(eng)                           # the AI write-ups' quotes of the headline closes are checked against these
     SFC.make_audio(out / "market")          # before render: the card only shows a player when the file exists
     try:                                                   # 主線追蹤（11-21 盲點檢討）：存下即時新聞，串成長期主線
         from wsb.analytics import threads as THR

@@ -51,7 +51,7 @@ TL_V = 2                    # bump when timeline() learns a new form: every file
 OFFER_V = 2                     # bump when offer_price / the 424B4 read learns a new pattern: recent pricings are read once more
 OFFER_RETRY_DAYS = 120          # the "recently listed" table's window
 OFFER_PER_RUN = 6               # 424B4 re-reads per build (800 KB each)
-FINAL_KEYS = ("shares", "sell_shares", "gs_shares", "gs_days", "pp", "pp_total", "ioi_usd", "vote_ctrl")
+FINAL_KEYS = ("shares", "sell_shares", "sell_seen", "gs_shares", "gs_days", "pp", "pp_total", "ioi_usd", "vote_ctrl")
 COVER_V = 3                    # bump when parse_cover learns a new pattern: active filers' covers are read once more
 LISTED_TW = ("初上市", "初上櫃", "第一上市")
 
@@ -130,6 +130,8 @@ def parse_cover(t: str) -> Dict:
     sm = re.search(r"(?:stock|shares|ADSs) offered by the selling (?:stockholders|shareholders)\s+([\d,]{5,}) (?:shares|ADSs)", t[:400000])
     if sm and _num(sm.group(1)):
         out["sell_shares"] = _num(sm.group(1))
+    elif re.search(r"(?:offered|sold) by the selling (?:stockholders|shareholders)", t[:400000], re.I):
+        out["sell_seen"] = True                        # 11-25 audit P3-15: selling holders named, share count not read
     if m:
         out["shares"] = _num(m.group(1))
     out["spac"] = bool(re.search(r"initial business combination", t[:40000], re.I))

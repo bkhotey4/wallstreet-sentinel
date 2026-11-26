@@ -1527,6 +1527,12 @@ async def run_once(now: Optional[float] = None) -> int:
         except Exception as e:  # noqa: BLE001
             log.warning("holdings watch failed: %s", e)
         save()
+        try:                                               # 市場冷靜度（11-25）：收盤後三項轉好／轉壞才私訊擁有者，不是進場訊號
+            if not CLOUD and now > 1.7e9 and left("calm"):
+                from tools import calm_watch as CW
+                sent += await CW.run(sess, post, dm_channel, now)
+        except Exception as e:  # noqa: BLE001
+            log.warning("calm watch failed: %s", e)
         try:                                               # 美國商務部 BIS 新聞稿（出口管制宣布的當下；11-17 新增）
             if now - S["bi_ts"] >= BIS_EVERY and now > 1.7e9 and left("bis"):
                 from wsb.data import bis_news as BN

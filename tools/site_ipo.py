@@ -55,6 +55,8 @@ def deal_block(r: Dict) -> str:
                + (f"，以發行價 {num(hi, 2)} 美元算約 {_usd(tot * hi)}" if final else f"，以價格區間算約 {_usd(tot * lo)}～{_usd(tot * hi)}"))
         if gs:
             txt += f"；加上超額配售最多再 {gs / 1e6:,.1f} 百萬股（基本量的 {gs / tot * 100:.0f}%），最高約 {_usd((tot + gs) * hi)}"
+        if not sell and r.get("sell_seen"):          # 11-25 audit P3-15: don't read a missed count as "no selling holders"
+            txt += "；招股書提到老股東也會賣股，但沒讀到股數，總額可能少算"
         lines.append(txt + "。")
     if r.get("gs_shares"):
         lines.append(f"<b>超額配售（綠鞋）與穩價</b>：承銷商先多賣這些股票；上市後 {r.get('gs_days') or 30} 天內，股價漲就向公司加買（行使選擇權），"

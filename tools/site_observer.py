@@ -7,6 +7,7 @@ from pathlib import Path
 
 from tools.site_ai import _anchor
 from tools.sitekit import T, card, esc, guard_safe
+from tools import feedcheck as FC
 
 FILE = Path(__file__).resolve().parents[1] / "research_feed" / "ai_view.json"   # public site repo root, never synced over
 VERDICT_EMO = {"恐慌有根據": "🔴", "部分有根據": "🟠", "恐慌被誇大": "🟢", "數據很平靜": "🟢"}
@@ -16,9 +17,9 @@ JUDGE_CLS = {"數據支持": "dn", "部分支持": "muted", "被誇大": "up", "
 def load() -> dict:
     try:
         if FILE.exists():
-            return json.loads(FILE.read_text(encoding="utf-8"))
+            return FC.scrub(json.loads(FILE.read_text(encoding="utf-8")))
         from wsb.data import stability as ST
-        return ST.load().get("ai_view") or {}
+        return FC.scrub(ST.load().get("ai_view") or {})
     except Exception:  # noqa: BLE001
         return {}
 

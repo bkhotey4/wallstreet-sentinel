@@ -97,6 +97,8 @@ def test_corp_funding():
     r = CF.refi(b, ylds)
     assert abs(r["coupon"] - 0.03) < 1e-9 and abs(r["extra"] - 150 * 0.02) < 1e-9 and abs(r["extra_ebit"] - 0.01) < 1e-9
     assert abs(r["self_pay"] - 0.6) < 1e-9                                 # (40 cash + 20 free cash flow) / 100 due
+    r2 = CF.refi(dict(b, mat1=None), ylds)                                 # filing without a 12-month bucket
+    assert r2["due1"] is None and r2["due"] == 50.0 and "self_pay" not in r2  # unknown, not "0 due this year"
     cache = {"A": {"bs": b}, "B": {"bs": dict(b, deposits=5.0)}, "C": {"bs": {"wsh": 110.0, "wsh_yago": 100.0, "buyback_ttm": 5.0, "issue_ttm": 1.0},
                                                                     "offer": [{"form": "424B5", "date": "2026-11-01", "url": "u"}]}}
     names = {"A": {"zh": "甲", "kind": "corp"}, "B": {"zh": "乙", "kind": "auto"}, "C": {"zh": "丙", "kind": "corp"}}
@@ -152,6 +154,11 @@ def test_china():
     assert y["date"] == "2026-08-01" and abs(y["yoy"] - 0.30) < 1e-9 and abs(y["yoy3"] - 0.20) < 1e-9
     mk = CW.market_view({"CNY=X": {"d": ["2026-11-13"], "c": [7.0]}, "CNH=X": {"d": ["2026-11-13"], "c": [7.07]}})
     assert abs(mk["gap"]["now"] - 0.01) < 1e-9
+    from unittest.mock import patch
+    from tools import site_china as SC
+    with patch.object(CW, "view", lambda: {"mkt": mk}):                   # one day of history: no 1-year change
+        html = SC.sec_china(None)
+    assert "人民幣現在 1 美元兌 7.0000 元" in html and "一年來" not in html and "0.0%" not in html, html
 
 
 def test_rulings():

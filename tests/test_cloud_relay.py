@@ -131,13 +131,13 @@ def _run_env():
     tmp = pathlib.Path(tempfile.mkdtemp())
     st = {"alerts": [], "sent": [], "led": {}, "led_fail": False, "mops": {"groups": [], "sent": {}, "priv": set()}, "site": {},
           "country": {}, "bursts": [], "health": 0, "hold": 0, "led_calls": 0}
-    names = ("impact post dm_channel watch_list alert_channel sector_alerts stock_alerts news_json tx_night holdings_run market_now "
+    names = ("impact post dm_channel watch_list alert_channel owner_id sector_alerts stock_alerts news_json tx_night holdings_run market_now "
              "yen_jump gap_moves health_check country_json site_alerts_json mops_new tw_impact ledger PUSHED LAG DISCORD_TOKEN CLOUD CATCH_GAP FISCAL_EVERY FORCED_EVERY KOREA_EVERY RULINGS_EVERY EARNSOON_EVERY BIS_EVERY").split()
     real = {n: getattr(P, n) for n in names}
     real_refresh, real_mr = SOF.refresh, MR.FILE
     real_env = os.environ.get("WSB_BOT_AGE_MIN")
 
-    async def refresh(watch, now=0, **kw):
+    async def refresh(watch, now=0, **kw):                 # sec_push passes due=… (earnings-day filers)
         return {"alerts": list(st["alerts"])}
 
     async def impact(sess, sym, zh):
@@ -190,6 +190,7 @@ def _run_env():
         return None if st["led_fail"] else dict(st["led"])
 
     P.impact, P.post, P.dm_channel, P.watch_list, P.alert_channel = impact, post, dm, (lambda: {}), (lambda: "")
+    P.owner_id = lambda: "1"                               # no .env in CI/cloud: DMs need an owner id to be "configured"
     P.sector_alerts, P.stock_alerts, P.news_json, P.tx_night, P.holdings_run, P.market_now = empty, empty, news, none, hold, mkt
     P.yen_jump, P.gap_moves, P.health_check, P.country_json, P.site_alerts_json, P.mops_new, P.tw_impact, P.ledger = (
         none, gap, health, country, site, mops, twi, led)

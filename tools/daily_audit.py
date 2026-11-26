@@ -96,7 +96,8 @@ def classify(tips: List[Dict], now: float) -> List[Dict]:
 # ------------------------------------------------------------------ 2. hard-coded numbers in recently changed code (pure, tested)
 # market data typed in: money amounts, or "約／達／現在／目前 + a number + %／倍" (rule descriptions such as 每 10 天 or 跌 3% 才通知
 # are not data and are left out)
-NUM_UNIT = re.compile(r"(?<![{\w.])(\d[\d,]*(?:\.\d+)?)\s*(億美元|兆美元|億元|兆元|萬元|美元|億|兆)"
+# an exchange-rate quote unit ("1 美元兌 {x} 元", 11-26 site_china false positive) is a convention, not data
+NUM_UNIT = re.compile(r"(?<![{\w.])(\d[\d,]*(?:\.\d+)?)\s*(億美元|兆美元|億元|兆元|萬元|美元|億|兆)(?!\s*(?:兌|換))"
                       r"|(?:約|達|現在|目前|高達|只剩)\s*(\d[\d,]*(?:\.\d+)?)\s*(%|倍)")
 SKIP_LINE = re.compile(r"^\s*#|logging|log\.|assert |def |\bthreshold|\bTTL\b|range\(|sleep\(|timeout|[<>]=?\s*\d")
 
@@ -331,7 +332,7 @@ def main() -> Dict:
         feed = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
         rep["routines"] = [{"file": r["file"], "zh": r["zh"], "st": r["st"],
                             "age_h": None if r["age"] is None else round(r["age"], 1), "every_h": r["every"]}
-                           for r in SR.rows(feed_dir=feed if feed.is_dir() else SR.FEED_DIR) if r["st"] not in ("ok", "wait")]
+                           for r in SR.rows(feed_dir=feed if feed.is_dir() else SR.FEED_DIR) if r["st"] not in ("ok", "wait", "done", "paused")]
     except Exception as e:  # noqa: BLE001
         rep["routines"], rep["routines_error"] = [], str(e)
     try:                                                      # private: holdings files that disagree (symbols only)
