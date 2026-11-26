@@ -41,3 +41,17 @@ if __name__ == "__main__":
     test_parse_and_classify()
     test_reaction_vs_index()
     print("ok research press")
+
+
+def test_whole_words_and_sia():
+    assert R.classify("Global OLED Monitor Shipments Double YoY as Rankings Shift Dramatically")["topics"] == ["面板與顯示器"]
+    page = ('<a href="https://www.semiconductors.org/global-semiconductor-sales-increase-24-1-from-q2-2026-to-q3-2026/">Global Semiconductor '
+            'Sales Increase 24.1% from Q2 2026 to Q3 2026</a><a href="https://www.semiconductors.org/sia-statement-on-x/">SIA Statement on X</a>')
+    xs = R.parse_sia(page)
+    assert len(xs) == 1 and xs[0]["src"] == "SIA" and R.classify(xs[0]["title"])["topics"] == ["全球半導體銷售（SIA）"]
+    assert R.parse_date('<meta property="article:published_time" content="2026-11-03T13:00:00+00:00">') == "2026-11-03"
+
+
+if __name__ == "__main__":
+    test_whole_words_and_sia()
+    print("ok sia")

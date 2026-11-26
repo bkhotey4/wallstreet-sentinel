@@ -94,6 +94,8 @@ def main():
     test_distress_needs_capex_and_da()
     test_no_backfilled_history()
     test_ranks_not_imputed()
+    from tests.test_no_control_chars import test_no_control_chars   # 11-26: mangled backslash escapes in regexes
+    test_no_control_chars()
     print("HARDCODE AUDIT TESTS PASSED [OK]")
 
 

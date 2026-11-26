@@ -29,17 +29,20 @@ BASE = "https://www.trendforce.com/"
 TTL = 3 * 3600
 KEEP = 40
 HDR = {"User-Agent": "Mozilla/5.0 (WallStreetSentinel research bot)"}
+SIA_LIST = "https://www.semiconductors.org/news-events/latest-news/"
+SIA_DATA = re.compile(r"Semiconductor Sales", re.I)      # only the monthly global-sales data releases, not statements
 
-# title keyword → (產業, 本站追蹤的相關代號); only symbols in the tracked universe are used by the card
+# title keyword → (產業, 本站追蹤的相關代號); whole words only (11-26: 「Dramatically」 matched DRAM); only symbols in the tracked universe are used by the card
 TOPICS = (
-    (re.compile(r"NAND|SSD|Flash", re.I), "記憶體（NAND／SSD）", ["SNDK", "MU", "WDC", "2337.TW"]),
-    (re.compile(r"DRAM|HBM", re.I), "記憶體（DRAM／HBM）", ["MU", "2408.TW", "2344.TW"]),
-    (re.compile(r"Memory", re.I), "記憶體（整體）", ["MU", "SNDK", "2408.TW", "2344.TW", "2337.TW"]),
-    (re.compile(r"HDD|Hard Disk", re.I), "硬碟", ["STX", "WDC"]),
+    (re.compile(r"Global Semiconductor Sales", re.I), "全球半導體銷售（SIA）", ["TSM", "2330.TW", "NVDA", "MU", "2454.TW"]),
+    (re.compile(r"\bNAND\b|\bSSDs?\b|\bFlash\b", re.I), "記憶體（NAND／SSD）", ["SNDK", "MU", "WDC", "2337.TW"]),
+    (re.compile(r"\bDRAM\b|\bHBM\d?\b", re.I), "記憶體（DRAM／HBM）", ["MU", "2408.TW", "2344.TW"]),
+    (re.compile(r"\bMemory\b", re.I), "記憶體（整體）", ["MU", "SNDK", "2408.TW", "2344.TW", "2337.TW"]),
+    (re.compile(r"\bHDDs?\b|Hard Disk", re.I), "硬碟", ["STX", "WDC"]),
     (re.compile(r"Foundr|Wafer|Advanced Packaging|CoWoS", re.I), "晶圓代工與先進封裝", ["TSM", "2330.TW"]),
     (re.compile(r"AI Server|\bServers?\b|\bGPUs?\b|Data Cent", re.I), "AI 伺服器與雲端", ["NVDA", "SMCI", "DELL", "2317.TW", "2382.TW"]),
-    (re.compile(r"PCB|Glass Fiber|CCL|Substrate", re.I), "PCB 與材料", ["2383.TW", "3037.TW"]),
-    (re.compile(r"OLED|LCD|Panel|Monitor|Display|LED", re.I), "面板與顯示器", ["2409.TW", "3481.TW"]),
+    (re.compile(r"\bPCBs?\b|Glass Fiber|\bCCL\b|Substrate", re.I), "PCB 與材料", ["2383.TW", "3037.TW"]),
+    (re.compile(r"\bOLED\b|\bLCD\b|\bPanels?\b|\bMonitors?\b|Display|\bLED\b", re.I), "面板與顯示器", ["2409.TW", "3481.TW"]),
     (re.compile(r"Smartphone|Foldable|iPhone", re.I), "手機", ["AAPL", "2454.TW"]),
     (re.compile(r"\bNEV|\bEV\b|Electric Vehicle|BEV|Battery", re.I), "電動車與電池", ["TSLA"]),
     (re.compile(r"Notebook|Laptop|\bPC\b", re.I), "筆電與 PC", ["DELL", "2357.TW"]),
@@ -69,6 +72,23 @@ def parse_list(page: str) -> List[Dict]:
         seen.add(path)
         out.append({"id": m.group(5), "date": f"{m.group(2)}-{m.group(3)}-{m.group(4)}", "title": title, "url": BASE + path})
     return sorted(out, key=lambda r: (r["date"], r["id"]), reverse=True)
+
+
+def parse_sia(page: str) -> List[Dict]:
+    """SIA news page → [{id, title, url, src}] for the monthly global-sales releases (dates are read from each article)."""
+    out, seen = [], set()
+    for m in re.finditer(r'<a[^>]+href="(https://www\.semiconductors\.org/([a-z0-9-]+)/)"[^>]*>(.*?)</a>', page or "", re.S):
+        title = _text(m.group(3))
+        if not SIA_DATA.search(title) or m.group(1) in seen:
+            continue
+        seen.add(m.group(1))
+        out.append({"id": "sia-" + m.group(2)[:60], "title": title, "url": m.group(1), "src": "SIA"})
+    return out
+
+
+def parse_date(page: str) -> Optional[str]:
+    m = re.search(r'article:published_time"\s+content="(\d{4}-\d\d-\d\d)', page or "") or re.search(r'datetime="(\d{4}-\d\d-\d\d)', page or "")
+    return m.group(1) if m else None
 
 
 def parse_lead(page: str) -> Optional[str]:
@@ -110,6 +130,17 @@ async def refresh(force: bool = False, now: float = 0) -> Dict:
         FILE.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
         return d
     old = {x["id"]: x for x in d.get("items") or []}
+    try:                                               # SIA monthly global chip sales (11-26): date + lead from the article
+        for it in parse_sia(await http.get(SIA_LIST, kind="text", headers=HDR, timeout=30, retries=1))[:6]:
+            if old.get(it["id"], {}).get("date"):
+                items.append({**old[it["id"]], **it})
+                continue
+            page = await http.get(it["url"], kind="text", headers=HDR, timeout=30, retries=0)
+            if parse_date(page):
+                items.append({**it, "date": parse_date(page), "lead": parse_lead(page)})
+    except Exception as e:  # noqa: BLE001
+        log.info("SIA releases: %s", e)
+    items.sort(key=lambda r: (r["date"], str(r["id"])), reverse=True)
     out = []
     for it in items[:KEEP]:
         x = {**old.get(it["id"], {}), **it, **classify(it["title"])}

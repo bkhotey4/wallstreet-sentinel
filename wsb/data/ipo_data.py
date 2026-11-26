@@ -189,7 +189,7 @@ def listing_date(t: str) -> Optional[Dict]:
         return None
     from datetime import date as _date
     d = _date(int(m.group(3)), MONTHS[m.group(2).lower()], int(m.group(1)))
-    aus = bool(re.search(r"Australian Eastern (?:Daylight|Standard) Time|AEDT|AEST", t))
+    aus = bool(re.search(r"Australian Eastern (?:Daylight|Standard) Time|\bAEDT\b|\bAEST\b", t))
     if aus:
         d = d - timedelta(days=1)
     return {"list": d.isoformat(), "tz": "澳洲時間（已換成美國日期）" if aus else "倫敦時間"}

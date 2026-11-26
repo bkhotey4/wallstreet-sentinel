@@ -66,13 +66,13 @@ def _lead(rows: List[Dict], today: Optional[date] = None, days: int = 14) -> str
     today = today or date.today()
     recent = [r for r in rows if (today - date.fromisoformat(r["date"])).days <= days]
     if not recent:
-        return "一句話看懂：最近兩週 TrendForce 沒有新的新聞稿。"
+        return "一句話看懂：最近兩週 TrendForce／SIA 沒有新的新聞稿。"
     tagged = [r for r in recent if r.get("react") and r.get("avg_ex") is not None]
     if not tagged:
-        return f"一句話看懂：最近兩週 TrendForce 發了 {len(recent)} 份新聞稿，和本站追蹤股票對得上的還沒有收盤資料。"
+        return f"一句話看懂：最近兩週 TrendForce／SIA 發了 {len(recent)} 份新聞稿，和本站追蹤股票對得上的還沒有收盤資料。"
     top = max(tagged, key=lambda r: abs(r["avg_ex"]))
     side = "多跌" if top["avg_ex"] < 0 else "多漲"
-    s = (f"一句話看懂：最近兩週 TrendForce 發了 {len(recent)} 份新聞稿；相關股票反應最大的是 {top['date'][5:]} 的"
+    s = (f"一句話看懂：最近兩週 TrendForce／SIA 發了 {len(recent)} 份新聞稿；相關股票反應最大的是 {top['date'][5:]} 的"
          f"「{'、'.join(top.get('topics') or ['其他'])}」報告（{DIR_ZH.get(top.get('dir'), '標題沒有明確方向')}），"
          f"相關股票報告後第一個交易日平均比大盤{side} {abs(top['avg_ex']):.1f} 個百分點。")
     if abs(top["avg_ex"]) < 2:
@@ -112,10 +112,10 @@ def sec_research_press(eng) -> str:
                    f'<td class="small">{esc("、".join(r.get("topics") or ["其他"]))}<div class="muted">{esc(DIR_ZH.get(r.get("dir"), ""))}</div></td>'
                    f'<td class="small">{react}</td></tr>')
     head = '<tr><th>日期</th><th>報告（原文）</th><th>主要產業／標題方向</th><th>相關股票：報告後第一個交易日（比大盤；到現在）</th></tr>'
-    note = ("來源：TrendForce（集邦科技）官方新聞稿列表，每 3 小時讀一次。主要產業由標題關鍵字對到本站追蹤名單（只取第一個對到的產業）；"
+    note = ("來源：TrendForce（集邦科技）官方新聞稿列表，與美國半導體產業協會（SIA）每月全球半導體銷售新聞稿，每 3 小時讀一次。主要產業由標題關鍵字對到本站追蹤名單（只取第一個對到的產業）；"
             "「標題方向」只看標題用字（例如 Decline、Cut＝往下；Rise、Shortage＝往上），內容以原文為準。"
             "美股用報告當天收盤（TrendForce 在台北白天發布，早於美股開盤），台股用隔天收盤（發布時間不一定在收盤前）；"
             "「比大盤」＝個股漲跌減同一天加權指數或標普 500 的漲跌，用來分辨是產業自己動還是整個市場一起動。"
             "同一天可能還有別的消息，漲跌不等於報告造成的。")
-    return card("研究機構最新報告（TrendForce）", "Research house releases",
+    return card("研究機構最新報告（TrendForce／SIA）", "Research & industry releases",
                 f'<p class="rimp big2"><b>{esc(_lead(rows))}</b></p>' + fold_rows(trs, 8, head, "份") + f'<p class="note">{note}</p>', "wide")
