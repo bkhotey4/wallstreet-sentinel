@@ -303,6 +303,49 @@ def read_items(reply: str) -> Dict:
 
 
 # ------------------------------------------------------------------ run
+def blind_movers(closes: Dict[str, List[float]], meta: Dict[str, Dict], z_min: float = 4.0, days: int = 5) -> List[Dict]:
+    """Pure: untracked large companies whose biggest daily move in the last `days` sessions is ≥ z_min × their own normal
+    day (σ of the 65 sessions before the last 15).  11-26: Sandisk fell 14% on 11-20 and SK hynix 32% in a month while
+    neither was tracked, so no alert fired and the TrendForce report behind it never reached the site."""
+    import numpy as np
+    out = []
+    for sym, cl in closes.items():
+        c = np.array([x for x in cl if x is not None], float)
+        if len(c) < 60:
+            continue
+        r = c[1:] / c[:-1] - 1
+        sd = r[-80:-15].std()
+        last = r[-days:]
+        if not sd or not len(last):
+            continue
+        i = int(np.abs(last).argmax())
+        z = last[i] / sd
+        if abs(z) >= z_min:
+            m = meta.get(sym) or {}
+            out.append({"sym": sym, "name": m.get("name", "")[:40], "ind": m.get("ind"), "mcap_b": round((m.get("mcap") or 0) / 1e9),
+                        "pct": round(last[i] * 100, 1), "z": round(float(z), 1), "m20": round((c[-1] / c[-21] - 1) * 100, 1)})
+    return sorted(out, key=lambda x: -abs(x["z"]))
+
+
+def scan_untracked(min_mcap: float = 4e10, pause: float = 0.15) -> List[Dict]:
+    """US companies ≥ min_mcap in the full-market list that the site does not track → blind_movers (Yahoo chart API, ~2 min)."""
+    from wsb.data.stocks import universe
+    rows = (json.loads((DATA_DIR / "fullmarket_lists.json").read_text(encoding="utf-8")).get("markets") or {}).get("us") or []
+    tracked = set()
+    for m in universe().values():
+        tracked |= set(m["symbols"])
+    big = {r["sym"]: r for r in rows if (r.get("mcap") or 0) >= min_mcap and r.get("sym") not in tracked and "%" not in str(r.get("name"))}
+    closes = {}
+    for sym in big:
+        try:
+            j = json.loads(_get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=6mo&interval=1d", 20))
+            closes[sym] = j["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(pause)
+    return blind_movers(closes, big)
+
+
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
     try:
@@ -358,6 +401,10 @@ def main() -> Dict:
         rep["stopped"] = explain_stopped(stopped_trading((pd.read_pickle(DATA_DIR / "stock_prices.pkl") or {}).get("close")))
     except Exception:  # noqa: BLE001
         rep["stopped"] = []
+    try:                                                      # 11-26: big untracked movers (the Sandisk / SK hynix blind spot)
+        rep["blind"] = scan_untracked()
+    except Exception as e:  # noqa: BLE001
+        rep["blind"], rep["blind_error"] = [], str(e)
     try:                                                      # PC-only official rows: tools.relay_push uploads them itself (11-26)
         from tools import relay_push as RP
         rep["relay"] = RP.summary(RP.load(), time.time())
@@ -436,6 +483,9 @@ def summary(rep: Dict) -> str:
     if rep.get("gemini_groups"):
         lines.append("⚠ Gemini 回答有網站不認得的段落代碼（加到 tools/site_gemini.py GROUP 和 order）：" + "、".join(rep["gemini_groups"]))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))
+    if rep.get("blind"):
+        lines.append("⚠ 沒追蹤的大公司大動（市值 400 億美元以上、近 5 天單日 ≥ 4 倍平常波動；先讀原因，AI／台灣供應鏈相關的加進 settings.yaml 追蹤名單）："
+                     + "；".join(f"{x['sym']} {x['name']}（{x['ind']}，{x['mcap_b']}B）{x['pct']:+.1f}%＝{x['z']:+.1f} 倍，20 天 {x['m20']:+.1f}%" for x in rep["blind"][:12]))
     lines.append("停止交易的追蹤股票：" + ("、".join(f"{x['sym']}（最後 {x['last']}；SEC：{'、'.join(x.get('why') or []) or '查不到原因'}）"
                                                 for x in rep.get("stopped") or []) or "沒有"))
     lines.append("接下來 3 天：" + "、".join(f"{x.get('zh')} {x.get('tpe')}" for x in (rep.get("ahead") or [])[:10]))

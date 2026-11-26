@@ -127,3 +127,21 @@ if __name__ == "__main__":
     print("ok test_stopped_trading")
     test_ipo_blank_price()
     print("ok test_ipo_blank_price")
+
+
+def test_blind_movers():
+    """11-26: an untracked large cap with a 4σ day is listed; a calm one and a short history are not."""
+    import random
+    from tools import daily_audit as A
+    random.seed(1)
+    calm = [100.0]
+    for _ in range(120):
+        calm.append(calm[-1] * (1 + random.gauss(0, 0.01)))
+    shock = calm[:-2] + [calm[-3] * 0.86, calm[-3] * 0.85]
+    got = A.blind_movers({"SNDK": shock, "CALM": calm, "NEW": calm[:30]}, {"SNDK": {"name": "Sandisk", "ind": "科技", "mcap": 1e11}})
+    assert [x["sym"] for x in got] == ["SNDK"] and got[0]["pct"] == -14.0 and got[0]["z"] < -4, got
+
+
+if __name__ == "__main__":
+    test_blind_movers()
+    print("ok test_blind_movers")

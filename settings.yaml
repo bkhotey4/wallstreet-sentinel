@@ -817,6 +817,12 @@ stockscore:
         SNDK: [Sandisk, Sandisk, 半導體]           # 11-26: NAND 主角不在名單，11/20 −14% 沒觸發個股大動
         WDC: [威騰電子, Western Digital, 半導體]
         STX: [希捷, Seagate, 半導體]
+        SKHY: [SK 海力士, SK hynix, 半導體]        # 11-26 盲點掃描：20 天 −32%，未追蹤
+        MPWR: [芯源系統, Monolithic Power, 半導體]   # AI 伺服器電源；11/23 +16.8%
+        APH: [安費諾, Amphenol, 電子零組件]          # AI 機櫃連接器；11/23 +11%
+        HPE: [慧與, Hewlett Packard Enterprise, AI伺服器與雲端]
+        DLR: [Digital Realty, Digital Realty, AI伺服器與雲端]   # 資料中心 REIT
+        PWR: [Quanta Services, Quanta Services, 電力與工業]    # 電網工程；11/5 −12.3%
         QCOM: [高通, Qualcomm, 半導體]
         TXN: [德州儀器, Texas Instruments, 半導體]
         INTC: [英特爾, Intel, 半導體]
