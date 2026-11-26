@@ -39,6 +39,15 @@ def cfg() -> Dict:
     return SETTINGS.get("fund_trend", {}) or {}
 
 
+def universe_text(hk: bool = True) -> str:
+    """The list rule in words, from the same settings the code filters with (11-26: three cards had 「200 億美元／前 150 大／
+    前 100 大」 typed in, so a settings change would have left them saying the old rule)."""
+    c = cfg()
+    us = float(c.get("us_min_mcap", 2e10)) / 1e8
+    s = f"美股市值 {us:,.0f} 億美元以上、台股市值前 {int(c.get('tw_top', 150))} 大"
+    return s + (f"、港股成交額前 {int(c.get('hk_top', 100))} 大" if hk else "")
+
+
 def load() -> Dict:
     try:
         return json.loads(FILE.read_text(encoding="utf-8")) if FILE.exists() else {}

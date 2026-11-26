@@ -392,7 +392,8 @@ async def site_shown(now: float) -> List[Dict]:
         from tools import site_routines as R
         tmp = Path(tempfile.mkdtemp(prefix="wsb_feeds_"))
         async with aiohttp.ClientSession() as s:
-            for name, *_rest in R.EXPECT:
+            # 11-26: the backlogs too, so a finished (⚪ 補寫完成) or paused backfill is not reported as stopped every day
+            for name in [e[0] for e in R.EXPECT] + sorted(set(R.BACKFILL.values())) + ["earn_after.json"]:
                 async with s.get(RAW_FEED + name, timeout=aiohttp.ClientTimeout(total=20)) as r:
                     if r.status == 200:
                         (tmp / name).write_bytes(await r.read())

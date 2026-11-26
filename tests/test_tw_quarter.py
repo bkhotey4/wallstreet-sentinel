@@ -31,6 +31,32 @@ def test_otc_and_warn():
     assert C.latest_quarters(date(2027, 4, 1)) == [(115, 4), (115, 3), (115, 2)]
 
 
+def test_large_json_and_csv():
+    """11-26: TAIFEX's large-trader table came back as JSON instead of CSV and the card silently went blank."""
+    import json as _j
+    js = _j.dumps([{"Date": "20261125", "Contract": "TX", "ContractName": "臺股期貨", "SettlementMonth": "999912", "TypeOfTraders": t,
+                    "Top5Buy": "97592", "Top5Sell": "70972", "Top10Buy": b10, "Top10Sell": "98606", "OIOfMarket": "141906"}
+                   for t, b10 in (("0", "108908"), ("1", "106853"))]
+                  + [{"Date": "20261125", "Contract": "TX", "SettlementMonth": "202612", "TypeOfTraders": "0", "Top5Buy": "1"}], ensure_ascii=False)
+    o = C.parse_large(js)
+    assert o["all"] == {"date": "20261125", "top5_net": 26620.0, "top10_net": 10302.0, "oi": 141906.0} and o["inst"]["top10_net"] == 8247.0
+    csv_text = chr(10).join(["日期,商品,名稱,月份,類別,b5,s5,b10,s10,oi", "20261125,TX,臺股期貨,999912,0,97592,70972,108908,98606,141906", ""])
+    assert C.parse_large(csv_text)["all"]["top10_net"] == 10302.0
+
+
+def test_relay_keeps_last_good_part():
+    from tools import relay_push as RP
+    old = {"fetched": "11-26 10:43", "large": {"all": {"date": "20261125"}}, "mratio": {"date": "20261125"}, "warn": [1]}
+    new = {"fetched": "11-26 22:47", "large": {}, "mratio": None, "warn": [2]}
+    assert RP.merge_empty(old, new) == {"fetched": "11-26 22:47", "large": {"all": {"date": "20261125"}}, "mratio": {"date": "20261125"}, "warn": [2]}
+    assert RP.keep(["research_feed/tw_chips_seed.json", "research_feed/holdings.json", "site/x_seed.json"]) == ["research_feed/tw_chips_seed.json"]
+    from datetime import datetime, timezone, timedelta
+    t = lambda h: datetime(2026, 11, 26, h, 0, tzinfo=timezone(timedelta(hours=8))).timestamp()  # noqa: E731
+    assert RP.due({}, t(10)) and not RP.due({}, t(3))
+    assert not RP.due({"running": True, "started": t(10) - 600}, t(10)) and RP.due({"running": True, "started": t(10) - 4 * 3600}, t(10))
+    assert not RP.due({"started": t(10) - 3600}, t(10))
+
+
 def test_large_opt():
     rows = [{"Contract": "TXO", "CallPut": "買權", "SettlementMonth": "999912", "TypeOfTraders": "1", "Top10Buy": "29116", "Top10Sell": "40854", "OIOfMarket": "95013", "Date": "20261120"},
             {"Contract": "TXO", "CallPut": "賣權", "SettlementMonth": "999912", "TypeOfTraders": "1", "Top10Buy": "7122", "Top10Sell": "8873", "OIOfMarket": "28549", "Date": "20261120"},
@@ -135,6 +161,8 @@ def test_overlay():
 
 
 if __name__ == "__main__":
+    test_large_json_and_csv()
+    test_relay_keeps_last_good_part()
     test_overlay()
     test_stat()
     test_forecast_view()

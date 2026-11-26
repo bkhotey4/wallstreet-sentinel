@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tools.sitekit import T, card, esc, fold_rows, num
+from wsb.data import fund_global as FG
 
 
 def _rng(x: dict) -> str:
@@ -88,7 +89,7 @@ def sec_drop_check(eng) -> str:
            "以及比同產業多跌多少；③ 企業利潤＝近 12 個月自由現金流率（金融業用淨利率）是正還是負；④ 市場結構＝名單裡跌深公司的比例，和過去 5 年每一週比。"
            "分類：財報走向不是轉弱、營收沒放慢、現金流為正＝本業沒變差；財報走向轉弱，或營收放慢且現金流或淨利為負＝本業也在轉弱；其他＝訊號不一。"
            "歷史成績用當時已公布的財報分類（季末後 45 天，第 4 季美股 60 天、台股 90 天），同一段下跌只算第一週，以週為單位重抽 1 萬次算區間。"
-           "名單和財報走向判斷相同（美股市值 200 億美元以上、台股市值前 150 大）；港股只有年報，不列。"
+           f"名單和財報走向判斷相同（{FG.universe_text(hk=False)}）；港股只有年報，不列。"
            "限制：名單是現在的大型股（倖存者偏差）、財報是修正後的數字。這是逐項檢查與歷史統計，不是買賣建議。")
     body = (f'<p class="rimp big2"><b>{esc(lead)}</b></p>' + secs
             + f'<details class="small"><summary>{T("怎麼判斷、歷史成績、限制", "Method and limits")}</summary><p class="note">{esc(how)}</p></details>')

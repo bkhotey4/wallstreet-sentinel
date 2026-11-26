@@ -114,8 +114,14 @@ def parse_inst(rows: List[Dict]) -> Dict:
 
 def parse_large(text: str) -> Dict:
     """台指期 all months (999912): top-5 / top-10 traders' long minus short, for all traders (0) and specific institutions (1)."""
-    rows = list(csv.reader(io.StringIO((text or "").lstrip("﻿"))))
+    text = (text or "").lstrip("﻿")
     out = {}
+    if text.lstrip().startswith("["):                # 2026-11-26: TAIFEX's open API switched this table from CSV to JSON
+        rows = [[str(d.get(k) or "") for k in ("Date", "Contract", "ContractName", "SettlementMonth", "TypeOfTraders",
+                                                "Top5Buy", "Top5Sell", "Top10Buy", "Top10Sell", "OIOfMarket")] for d in json.loads(text)]
+        rows.insert(0, [])
+    else:
+        rows = list(csv.reader(io.StringIO(text)))
     for r in rows[1:]:
         if len(r) >= 10 and r[1].strip() == "TX" and r[3].strip() == "999912":
             k = "all" if r[4].strip() == "0" else "inst"

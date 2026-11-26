@@ -1531,6 +1531,12 @@ async def run_once(now: Optional[float] = None) -> int:
             if not CLOUD and now > 1.7e9 and left("calm"):
                 from tools import calm_watch as CW
                 sent += await CW.run(sess, post, dm_channel, now)
+            if not CLOUD and now > 1.7e9 and left("relay"):  # 11-26: PC-only official rows upload themselves every 3 h
+                try:
+                    from tools import relay_push as RP
+                    RP.launch(now)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("relay launch failed: %s", e)
         except Exception as e:  # noqa: BLE001
             log.warning("calm watch failed: %s", e)
         try:                                               # 美國商務部 BIS 新聞稿（出口管制宣布的當下；11-17 新增）

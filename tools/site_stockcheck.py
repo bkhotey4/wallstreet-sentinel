@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tools.sitekit import T, card, esc, num
+from wsb.data import fund_global as FG
 
 ZH = {"AAPL": "蘋果", "MSFT": "微軟", "NVDA": "輝達", "GOOGL": "Alphabet", "AMZN": "亞馬遜", "META": "Meta", "AVGO": "博通", "TSM": "台積電 ADR",
       "TSLA": "特斯拉", "AMD": "超微", "ASML": "艾司摩爾", "NFLX": "網飛", "JPM": "摩根大通", "GS": "高盛", "MS": "摩根士丹利", "BAC": "美國銀行",
@@ -281,7 +282,7 @@ def sec_fund_trend(eng) -> str:
            f"每個訊號和這家公司自己過去的平常變動比，小於平常的 {F.DEAD:g} 倍當作持平；加總 +2 以上＝改善中、−2 以下＝轉弱中。"
            "金融業沒有毛利率與自由現金流，只用營收與淨利率。港股用年報：成長加速＝今年營收年增減去年，平常變動用同市場所有公司估。"
            f"歷史成績：美股、台股過去每一季做同樣判斷，財報公布日以季末後 {F.PUB_LAG} 天估（第 4 季年報：美股 60 天、台股 90 天），以季為單位重抽 1 萬次算區間。"
-           "名單：美股市值 200 億美元以上、台股市值前 150 大、港股成交額前 100 大。資料：SEC EDGAR、FinMind（台股財報）、Yahoo Finance（港股年報、股價）。"
+           f"名單：{FG.universe_text()}。" "資料：SEC EDGAR、FinMind（台股財報）、Yahoo Finance（港股年報、股價）。"
            + "".join(x + "。" for x in lim)
            + "限制：名單是現在的大型股（倖存者偏差）、財報是修正後的數字。這是描述與歷史統計，不是股價預測，也不是買賣建議。")
     body += f'<details class="small"><summary>{T("怎麼判斷、歷史成績、限制", "Method, track record, limits")}</summary><p class="note">{esc(how)}</p></details>'

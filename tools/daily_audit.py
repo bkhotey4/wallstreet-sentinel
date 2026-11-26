@@ -358,12 +358,11 @@ def main() -> Dict:
         rep["stopped"] = explain_stopped(stopped_trading((pd.read_pickle(DATA_DIR / "stock_prices.pkl") or {}).get("close")))
     except Exception:  # noqa: BLE001
         rep["stopped"] = []
-    try:                                                      # issuer data the cloud build is refused (Invesco 406 since 11-17)
-        from wsb.data import etf_flows as EF
-        feed = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
-        rep["etf_seed"] = EF.write_seed(feed / "etf_flows_seed.json") if feed.is_dir() else 0
+    try:                                                      # PC-only official rows: tools.relay_push uploads them itself (11-26)
+        from tools import relay_push as RP
+        rep["relay"] = RP.summary(RP.load(), time.time())
     except Exception as e:  # noqa: BLE001
-        rep["etf_seed_error"] = str(e)
+        rep["relay"] = f"電腦端接力狀態讀不到：{e}"
     try:                                                      # hand-written reads older than the news they explain (11-25)
         feed = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
         tj = json.loads(_get(SITE + f"threads.json?v={int(time.time())}", 30))
@@ -422,6 +421,8 @@ def summary(rep: Dict) -> str:
     lines.append(f"自我檢查 {len(rep.get('selfcheck') or [])} 項：" + "；".join(i["text"] for i in rep.get("selfcheck") or []))
     if rep.get("ipo_blank"):
         lines.append("⚠ 剛掛牌的 IPO 沒有發行價（424B4 沒讀懂？查 wsb/data/ipo_data.offer_price，修好後把 OFFER_V 加一）：" + "、".join(rep["ipo_blank"]))
+    if rep.get("relay"):
+        lines.append("⚠ " + rep["relay"] + "（tools/relay_push：看 data_cache/relay_push.log）")
     if rep.get("old_reads"):
         lines.append("⚠ 手寫判讀比新聞舊（先讀原文再改寫）：" + "、".join(rep["old_reads"]))
     rd = rep.get("read") or {}
@@ -442,5 +443,7 @@ def summary(rep: Dict) -> str:
 
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):        # 11-26: a cp950 console crashed on ⚠ after the report was written
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     r = main()
     print(summary(r))

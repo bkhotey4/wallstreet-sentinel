@@ -12,7 +12,8 @@ from pathlib import Path
 FEED = Path(__file__).resolve().parents[2] / "wallstreet-sentinel" / "research_feed"
 
 
-def main() -> dict:
+def main(feed: Path = FEED) -> dict:
+    FEED = feed  # noqa: N806  (11-26: tools.relay_push writes into its own clone of the public repo)
     from wsb.data import tw_desk as D
     from wsb.data import tw_irs as I
     out = {}
@@ -79,5 +80,6 @@ def main() -> dict:
     return out
 
 
-if __name__ == "__main__":
-    print(json.dumps(main(), ensure_ascii=False))
+if __name__ == "__main__":                # 11-26: writes and uploads by itself (tools.relay_push), so no seed waits for a hand commit
+    from tools import relay_push as RP
+    print(json.dumps(RP.run(), ensure_ascii=False, default=str))
