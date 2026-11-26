@@ -940,6 +940,10 @@ stockscore:
         2408.TW: [南亞科, Nanya Technology, 半導體]
         2344.TW: [華邦電, Winbond, 半導體]
         2337.TW: [旺宏, Macronix, 半導體]           # 11-26: NAND／NOR，對照 TrendForce NAND 報價
+        7765.TW: [中華資安, CHT Security, 軟體與資安]   # 11-26 盲點掃描：資安族群 11/13、11/20、11/25 集體漲停，未追蹤
+        2471.TW: [資通, Syscom Computer, 軟體與資安]
+        6614.TW: [資拓宏宇, IISI, 軟體與資安]
+        2468.TW: [華經, Fortune Information Systems, 軟體與資安]
         2317.TW: [鴻海, Hon Hai, AI伺服器與雲端]
         2382.TW: [廣達, Quanta, AI伺服器與雲端]
         3231.TW: [緯創, Wistron, AI伺服器與雲端]

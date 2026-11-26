@@ -346,6 +346,77 @@ def scan_untracked(min_mcap: float = 4e10, pause: float = 0.15) -> List[Dict]:
     return blind_movers(closes, big)
 
 
+def tw_clusters(series: Dict[str, Dict[str, float]], bench: Dict[str, float], meta: Dict[str, Dict], z_min: float = 3.0,
+                days: int = 7, group_min: int = 3) -> List[Dict]:
+    """Pure: untracked Taiwan stocks whose move, minus the TAIEX that day, is ≥ z_min × their own normal gap, in the last
+    `days` sessions; returned per day when ≥ group_min names moved together (a theme), plus any single name ≥ 5×.
+    11-26: eight IT-security names (資拓宏宇、資通、中華資安…) beat the market by ~16% on 11/20 while the TAIEX fell 6%,
+    after the 永豐銀 hack and the 11/13 Microsoft outage — none were tracked and the site never wrote about it."""
+    import numpy as np
+    bd = sorted(bench)
+    hits: Dict[str, List[Dict]] = {}
+    for sym, s in series.items():
+        ds = [d for d in bd if d in s]
+        if len(ds) < 60:
+            continue
+        c, b = np.array([s[d] for d in ds]), np.array([bench[d] for d in ds])
+        ex = (c[1:] / c[:-1] - 1) - (b[1:] / b[:-1] - 1)
+        sd = ex[-80:-15].std()
+        if not sd:
+            continue
+        for k in range(1, days + 1):
+            z = ex[-k] / sd
+            if abs(z) >= z_min:
+                m = meta.get(sym) or {}
+                hits.setdefault(ds[-k], []).append({"sym": sym, "name": m.get("name", ""), "ind": m.get("ind", ""),
+                                                    "ex": round(float(ex[-k]) * 100, 1), "z": round(float(z), 1)})
+    out = []
+    for day, xs in sorted(hits.items(), reverse=True):
+        groups: Dict[tuple, List[Dict]] = {}
+        for x in xs:                                   # a theme = the same industry moving the same way on the same day
+            groups.setdefault((x["ind"] or "—", x["z"] > 0), []).append(x)
+        for (ind_, _up), g in groups.items():
+            if len(g) >= group_min or any(abs(x["z"]) >= 5 for x in g):
+                out.append({"day": day, "ind": ind_, "n": len(g), "names": sorted(g, key=lambda x: -abs(x["z"]))[:10]})
+    return out
+
+
+def scan_untracked_tw(top: int = 200, otc_top: int = 60, pause: float = 0.12) -> List[Dict]:
+    """The day's most traded TWSE / TPEx stocks the site does not track → tw_clusters (official day tables + Yahoo, ~4 min)."""
+    from datetime import datetime, timedelta, timezone
+    from wsb.data.stocks import universe
+    tracked = set((universe().get("tw") or {}).get("symbols") or {})
+    lists = (json.loads((DATA_DIR / "fullmarket_lists.json").read_text(encoding="utf-8")).get("markets") or {}).get("tw") or []
+    ind = {r.get("code"): r.get("ind") for r in lists}
+    day = json.loads(_get("https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL", 30))
+    rows = sorted((r for r in day if str(r.get("Code", "")).isdigit() and len(r["Code"]) == 4), key=lambda r: -float(r.get("TradeValue") or 0))
+    cand = {r["Code"] + ".TW": {"name": r.get("Name"), "ind": ind.get(r["Code"], "")} for r in rows[:top] if not r["Code"].startswith("00")}
+    try:
+        otc = json.loads(_get("https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes", 30))
+        otc = [r for r in otc if str(r.get("SecuritiesCompanyCode", "")).isdigit() and len(r["SecuritiesCompanyCode"]) == 4]
+        otc.sort(key=lambda r: -float(str(r.get("TransactionAmount") or 0).replace(",", "") or 0))
+        cand.update({r["SecuritiesCompanyCode"] + ".TWO": {"name": r.get("CompanyName"), "ind": ind.get(r["SecuritiesCompanyCode"], "")} for r in otc[:otc_top]})
+    except Exception:  # noqa: BLE001
+        pass
+    tz = timezone(timedelta(hours=8))
+
+    def series(sym: str) -> Dict[str, float]:
+        j = json.loads(_get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=6mo&interval=1d", 20))["chart"]["result"][0]
+        return {datetime.fromtimestamp(t, tz).date().isoformat(): c for t, c in zip(j["timestamp"], j["indicators"]["quote"][0]["close"]) if c is not None}
+
+    bench = series("^TWII")
+    out = {}
+    for sym in cand:
+        if sym in tracked:
+            continue
+        try:
+            out[sym] = series(sym)
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(pause)
+    return tw_clusters(out, bench, cand)
+
+
 def main() -> Dict:
     rep: Dict = {"ts": int(time.time())}
     try:
@@ -405,6 +476,10 @@ def main() -> Dict:
         rep["blind"] = scan_untracked()
     except Exception as e:  # noqa: BLE001
         rep["blind"], rep["blind_error"] = [], str(e)
+    try:                                                      # 11-26: Taiwan theme moves among untracked names (資安族群)
+        rep["tw_clusters"] = scan_untracked_tw()
+    except Exception as e:  # noqa: BLE001
+        rep["tw_clusters"], rep["tw_clusters_error"] = [], str(e)
     try:                                                      # PC-only official rows: tools.relay_push uploads them itself (11-26)
         from tools import relay_push as RP
         rep["relay"] = RP.summary(RP.load(), time.time())
@@ -486,6 +561,10 @@ def summary(rep: Dict) -> str:
     if rep.get("blind"):
         lines.append("⚠ 沒追蹤的大公司大動（市值 400 億美元以上、近 5 天單日 ≥ 4 倍平常波動；先讀原因，AI／台灣供應鏈相關的加進 settings.yaml 追蹤名單）："
                      + "；".join(f"{x['sym']} {x['name']}（{x['ind']}，{x['mcap_b']}B）{x['pct']:+.1f}%＝{x['z']:+.1f} 倍，20 天 {x['m20']:+.1f}%" for x in rep["blind"][:12]))
+    if rep.get("tw_clusters"):
+        lines.append("⚠ 台股沒追蹤的族群同步大動（扣掉加權指數後 ≥ 3 倍平常差距、同一天 3 檔以上；先查原因：新聞、公告、政策，再決定加進追蹤名單或主線）："
+                     + "；".join(f"{c['day'][5:]} {c.get('ind', '')} {c['n']} 檔：" + "、".join(f"{x['name']}{x['sym'].split('.')[0]}（{x['ind'] or '—'}）{x['ex']:+.1f}%" for x in c["names"][:6])
+                                for c in rep["tw_clusters"][:5]))
     lines.append("停止交易的追蹤股票：" + ("、".join(f"{x['sym']}（最後 {x['last']}；SEC：{'、'.join(x.get('why') or []) or '查不到原因'}）"
                                                 for x in rep.get("stopped") or []) or "沒有"))
     lines.append("接下來 3 天：" + "、".join(f"{x.get('zh')} {x.get('tpe')}" for x in (rep.get("ahead") or [])[:10]))

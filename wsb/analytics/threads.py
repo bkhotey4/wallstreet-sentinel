@@ -85,6 +85,13 @@ THREADS = [
       "overcapacity", "duties", "levies"],
      [("TWD=X", "美元兌新台幣"), ("^TWII", "台股加權"), ("DX-Y.NYB", "美元指數")],
      "美國關稅稅率與各國貿易協定，決定台灣出口的成本與新台幣；也會經由進口物價推高美國通膨。"),
+    # 11-26: 永豐銀遭駭盜轉（11/5 起、418 人 4,176 萬元，金管會召 76 家資安長）、11/13 微軟大當機後台股資安股十多檔漲停，網站一個字都沒寫
+    ("cyber", "資安事件與資安股",
+     ["駭客", "遭駭", "資安", "網攻", "網路攻擊", "個資外洩", "資料外洩", "勒索軟體", "盜轉", "微軟當機", "系統當機", "cyberattack", "cyber attack",
+      "cyberattacks", "hack", "hacked", "hackers", "data breach", "breach", "ransomware", "service outage", "system outage", "CrowdStrike",
+      "Palo Alto Networks", "zero-day"],
+     [("CRWD", "CrowdStrike"), ("PANW", "Palo Alto"), ("^TWII", "台股加權")],
+     "駭客入侵銀行或大型系統當機，會讓金融監管加嚴、企業資安支出增加；台股資安股常在事件後幾天集體漲停，事件本身則可能讓被駭公司的股價與信用受傷。"),
 ]
 ASCII = re.compile(r"^[ -~’]+$")
 

@@ -145,3 +145,34 @@ def test_blind_movers():
 if __name__ == "__main__":
     test_blind_movers()
     print("ok test_blind_movers")
+
+
+def test_tw_clusters():
+    """Three untracked names beating the index by ~16% on the same day are one theme; one quiet name is not listed."""
+    import random
+    from datetime import date, timedelta
+    from tools import daily_audit as A
+    random.seed(2)
+    days = [(date(2026, 6, 1) + timedelta(days=i)).isoformat() for i in range(120)]
+    bench = {}
+    v = 100.0
+    for d in days:
+        v *= 1 + random.gauss(0, 0.01)
+        bench[d] = v
+    def follow(jump):
+        s, x = {}, 50.0
+        for i, d in enumerate(days):
+            r = (bench[d] / bench[days[i - 1]] - 1) if i else 0.0
+            x *= 1 + r + random.gauss(0, 0.008) + (jump if i == len(days) - 2 else 0.0)
+            s[d] = x
+        return s
+    ser = {"6614.TW": follow(0.16), "2471.TW": follow(0.16), "7765.TW": follow(0.16), "1101.TW": follow(0.0)}
+    meta = {s: {"name": s, "ind": "資訊服務"} for s in ("6614.TW", "2471.TW", "7765.TW")}
+    got = A.tw_clusters(ser, bench, meta)
+    assert len(got) == 1 and got[0]["day"] == days[-2] and got[0]["n"] == 3 and got[0]["ind"] == "資訊服務", got
+    assert "1101.TW" not in [x["sym"] for x in got[0]["names"]]
+
+
+if __name__ == "__main__":
+    test_tw_clusters()
+    print("ok test_tw_clusters")
