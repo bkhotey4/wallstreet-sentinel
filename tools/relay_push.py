@@ -111,6 +111,13 @@ def write(feed: Path) -> Dict:
         out["etf"] = EF.write_seed(feed / "etf_flows_seed.json")
     except Exception as e:  # noqa: BLE001
         out["etf"] = {"error": str(e)}
+    try:                                                # 11-26: TrendForce press list (cloud reach unknown)
+        import asyncio
+        from wsb.data import research_press as RPR
+        asyncio.run(RPR.refresh())
+        out["respress"] = len((RPR.write_seed(feed / "research_press_seed.json") or {}).get("items") or [])
+    except Exception as e:  # noqa: BLE001
+        out["respress"] = {"error": str(e)}
     return out
 
 

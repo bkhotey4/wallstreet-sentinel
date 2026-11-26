@@ -814,6 +814,9 @@ stockscore:
         LRCX: [科林研發, Lam Research, 半導體]
         AMAT: [應用材料, Applied Materials, 半導體]
         MU: [美光, Micron, 半導體]
+        SNDK: [Sandisk, Sandisk, 半導體]           # 11-26: NAND 主角不在名單，11/20 −14% 沒觸發個股大動
+        WDC: [威騰電子, Western Digital, 半導體]
+        STX: [希捷, Seagate, 半導體]
         QCOM: [高通, Qualcomm, 半導體]
         TXN: [德州儀器, Texas Instruments, 半導體]
         INTC: [英特爾, Intel, 半導體]
@@ -930,6 +933,7 @@ stockscore:
         3443.TW: [創意, Global Unichip, 半導體]
         2408.TW: [南亞科, Nanya Technology, 半導體]
         2344.TW: [華邦電, Winbond, 半導體]
+        2337.TW: [旺宏, Macronix, 半導體]           # 11-26: NAND／NOR，對照 TrendForce NAND 報價
         2317.TW: [鴻海, Hon Hai, AI伺服器與雲端]
         2382.TW: [廣達, Quanta, AI伺服器與雲端]
         3231.TW: [緯創, Wistron, AI伺服器與雲端]
