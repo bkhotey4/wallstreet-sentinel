@@ -17,10 +17,12 @@ def sec_industry_note(eng) -> str:
     if not notes:
         return ""
     e = lambda x: html.escape(guard_safe(str(x or "")))  # noqa: E731   AI-written text
-    sec = [x for x in (notes[0].get("sectors") or []) if isinstance(x, dict) and x.get("name") and x.get("read")]
+    # 11-26: a mid-week focus note (e.g. 記憶體快訊) has no sector table — keep showing the newest weekly one, with its week
+    src = next((n for n in notes if n.get("sectors")), {})
+    sec = [x for x in (src.get("sectors") or []) if isinstance(x, dict) and x.get("name") and x.get("read")]
     rows = "".join(f'<tr><td class="nw"><b>{e(x["name"])}</b>' + (f'<div class="small muted">{e(x.get("state"))}</div>' if x.get("state") else "")
                    + f'</td><td>{e(x["read"])}</td></tr>' for x in sec)
-    table = (f'<h3>各產業一句話</h3><div class="scroll"><table class="mini"><thead><tr><th>產業</th><th>這週的重點</th></tr></thead>'
+    table = (f'<h3>各產業一句話（{html.escape(str(src.get("month") or ""))}）</h3><div class="scroll"><table class="mini"><thead><tr><th>產業</th><th>這週的重點</th></tr></thead>'
              f'<tbody>{rows}</tbody></table></div>') if rows else ""
     old = "".join(f'<details class="sgx"><summary>{html.escape(str(n["month"]))}</summary>{_note_html(n)}</details>' for n in notes[1:6])
     note = ("每週六由 AI 分析任務讀取公開資料（公司財報與新聞稿、台積電月營收、記憶體價格、新雲端公司的債券與股價、本站產業體檢數據），"
