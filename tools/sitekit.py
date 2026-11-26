@@ -182,7 +182,8 @@ _LEGACY_BANNED = (("高估值", "估值偏高"), ("低估值", "估值偏低"), 
 GUARD_SAFE = GUARD_SAFE + _LEGACY_WORDING + _LEGACY_BANNED
 
 
-_ZERO_SIGN = re.compile(r"(?<![\d.])[+\-−]0\.(0+)(?=(?:</?[a-z]+[^>]*>)?\s?(?:%|bp|個百分點|百分點|pt))")
+_ZERO_SIGN = re.compile(r"(?<![\d.])[+\-−]0\.(0+)(?=(?:</?[a-z]+[^>]*>)?\s?(?:%|bp|個百分點|百分點|pt|億|萬|兆|元|口|張|倍))"
+                        r"|(?<=z )[+\-−]0\.(0+)(?![\d])")   # also 億元/口/z-scores (Gemini CODE-2, 11-26)
 _SCRIPT = re.compile(r"(<script\b.*?</script>|<style\b.*?</style>)", re.S | re.I)
 
 
@@ -190,7 +191,7 @@ def tidy_zero(page: str) -> str:
     """'+0.0%' / '-0.0%' / '−0.00 個百分點' → '0.0%' … in the shown text, never inside <script> / <style>
     (11-17 full check: 21 cards printed a signed zero; one card's own formatter was fixed earlier, this covers all)."""
     parts = _SCRIPT.split(page)
-    return "".join(p if i % 2 else _ZERO_SIGN.sub(lambda m: "0." + m.group(1), p) for i, p in enumerate(parts))
+    return "".join(p if i % 2 else _ZERO_SIGN.sub(lambda m: "0." + (m.group(1) or m.group(2)), p) for i, p in enumerate(parts))
 
 
 def guard_safe(s: str) -> str:

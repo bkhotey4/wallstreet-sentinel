@@ -316,7 +316,7 @@ def outlook_vs_now(actual: Dict, guide: List[Dict]) -> List[Dict]:
         a = actual.get(g["metric"] + ("_ng" if g.get("basis") == "ng" else ""))
         if g["metric"] == "revenue":
             a = (a or {}).get(g.get("cur") or "")
-        if not a:
+        if not a or (g["unit"] == "B" and not a["v"]):   # zero revenue this quarter: no % change (Gemini CODE-3, 11-26)
             continue
         chg = (g["mid"] / a["v"] - 1) * 100 if g["unit"] == "B" else g["mid"] - a["v"]
         out.append({"metric": g["metric"], "mid": g["mid"], "now": a["v"], "chg": round(chg, 2), "unit": g["unit"], "cur": g.get("cur")})

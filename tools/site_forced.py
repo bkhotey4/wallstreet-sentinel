@@ -38,10 +38,11 @@ def sec_index_events(eng) -> str:
         v = _view()
     except Exception:  # noqa: BLE001
         return ""
-    evs = v.get("events") or []
+    today = date.today()
+    # the 4 h cache can be built before midnight: drop dates already past, never print「還有 -1 天」(Gemini CODE-1, 11-26)
+    evs = [e for e in (v.get("events") or []) if e["date"] >= today.isoformat()]
     if not evs:
         return ""
-    today = date.today()
     med = v.get("past_med") or {}
     nxt = evs[0]
     days = (date.fromisoformat(nxt["date"]) - today).days
