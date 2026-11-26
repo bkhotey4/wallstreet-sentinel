@@ -119,6 +119,9 @@ def write(feed: Path) -> Dict:
         from wsb.data import mem_spot as MSP
         asyncio.run(MSP.refresh())
         out["memspot"] = len((MSP.write_seed(feed / "mem_spot_seed.json") or {}).get("snap") or {})
+        from wsb.data import freight as FRT
+        asyncio.run(FRT.refresh())
+        out["freight"] = len((FRT.write_seed(feed / "freight_seed.json") or {}).get("scfi") or [])
     except Exception as e:  # noqa: BLE001
         out["respress"] = {"error": str(e)}
     return out

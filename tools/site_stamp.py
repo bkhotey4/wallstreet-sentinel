@@ -483,6 +483,16 @@ def _memspot():
     return _ts(d.get("ts")), (max(ups)[:10] if ups else None)
 
 
+def _freight():
+    try:
+        from wsb.data import freight as F
+        d = F.load()
+    except Exception:  # noqa: BLE001
+        return None, None
+    h = d.get("scfi") or []
+    return _ts(d.get("ts")), (h[-1][0] if h else None)
+
+
 def _gemini():
     try:
         from wsb.data import gemini_reply as G
@@ -711,6 +721,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "polls": ("VoteHub 民調彙整", "VoteHub polls", lambda e: _polls(), 45),
     "gemini": ("Gemini 排程回答（Google 文件）", "Gemini scheduled answers", lambda e: _gemini(), 3),
     "ldi": ("英國央行與歐洲央行長天期公債", "BoE / ECB long yields", lambda e: _ldi(), 7),
+    "freight": ("上海航運交易所 SCFI 綜合指數", "Shanghai Shipping Exchange SCFI", lambda e: _freight(), 10),
     "memspot": ("DRAMeXchange 記憶體現貨價", "DRAMeXchange memory spot prices", lambda e: _memspot(), 5),
     "respress": ("TrendForce 新聞稿列表", "TrendForce press releases", lambda e: _respress(), 21),
     "fedreg": ("美國聯邦公報（總統文件、出口管制、301 關稅）", "Federal Register", lambda e: _fedreg(), 30),
@@ -793,7 +804,7 @@ MAX_AGE_H["darkpool"] = 24 * 5             # 11-23: its check time is the archiv
 
 CARD.update({                               # cards that had fallen back to their tab's sources (11-08 audit)
     "sec_outlook_hero": ["ssi", "fred", "px"], "sec_outlook_dims": ["ssi", "fred", "px"], "sec_outlook_mini": ["ssi", "fred", "px"],
-    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fiscal": ["fiscal"], "sec_index_events": ["forced"], "sec_mech_funds": ["forced"], "sec_rebalance": ["forced", "px"], "sec_exchange_cal": ["xcal"], "sec_korea_exports": ["korea"], "sec_china": ["china"], "sec_rulings": ["rulings", "px"], "sec_maturity_wall": ["corpfund", "fred"], "sec_share_supply": ["corpfund"], "sec_fed_register": ["fedreg", "px"], "sec_research_press": ["respress", "px"], "sec_mem_spot": ["memspot"], "sec_rate_pressure": ["fred", "px"],
+    "sec_intel": ["news", "px", "ssi"], "sec_real_economy": ["fred", "sec"], "sec_energy_chain": ["px", "fred", "twfuel"], "sec_chokepoints": ["ports", "px"], "sec_fed_speeches": ["fedspeech", "fred"], "sec_fiscal": ["fiscal"], "sec_index_events": ["forced"], "sec_mech_funds": ["forced"], "sec_rebalance": ["forced", "px"], "sec_exchange_cal": ["xcal"], "sec_korea_exports": ["korea"], "sec_china": ["china"], "sec_rulings": ["rulings", "px"], "sec_maturity_wall": ["corpfund", "fred"], "sec_share_supply": ["corpfund"], "sec_fed_register": ["fedreg", "px"], "sec_research_press": ["respress", "px"], "sec_mem_spot": ["memspot"], "sec_freight": ["freight", "px"], "sec_rate_pressure": ["fred", "px"],
 })
 
 
