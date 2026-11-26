@@ -67,3 +67,25 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def test_tw_calendar_and_missed_run():
+    """11-27: the Taiwan outlook (Mon–Fri 15:50) missed 11/26 while US Thanksgiving hid it; it must show 🟡 and name the run."""
+    from datetime import datetime
+    from tools import site_routines as R
+    tpe = R.TPE
+    ts = datetime(2026, 11, 25, 22, 55, tzinfo=tpe).timestamp()
+    now = datetime(2026, 11, 27, 0, 40, tzinfo=tpe).timestamp()
+    miss = R.missed_run("tw_forecast.json", ts, now)
+    assert miss == datetime(2026, 11, 26, 15, 50, tzinfo=tpe).timestamp()
+    assert R.missed_run("tw_forecast.json", datetime(2026, 11, 26, 16, 30, tzinfo=tpe).timestamp(), now) is None
+    early = datetime(2026, 11, 26, 16, 30, tzinfo=tpe).timestamp()        # inside the 2 h grace: not missed yet
+    assert R.missed_run("tw_forecast.json", ts, early) is None
+    assert abs(R.tw_hours(ts, now) - (now - ts) / 3600) < 0.01            # 11/26 is a Taiwan trading day: every hour counts
+    r = {"real": 19.0, "age": 2.0, "missed": None}
+    assert R._ago(r) == "19 小時前（休市不算：2 小時）"
+
+
+if __name__ == "__main__":
+    test_tw_calendar_and_missed_run()
+    print("ok test_tw_calendar_and_missed_run")

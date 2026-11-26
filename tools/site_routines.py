@@ -20,7 +20,7 @@ from tools.sitekit import T, card, esc
 
 TPE = ZoneInfo("Asia/Taipei")
 FEED_DIR = Path(__file__).resolve().parents[1] / "research_feed"
-# file, card name (zh, en), usual gap in hours, US-trading-days only
+# file, card name (zh, en), usual gap in hours, trading calendar (True / "us" = NYSE days, "tw" = TWSE days, False = every hour)
 EXPECT = (
     ("sessions.json", "美股今天怎麼了", "US session notes", 6, True),
     ("macro_voice.json", "每日總經情勢（口播）", "Daily macro voice", 12, False),
@@ -38,7 +38,7 @@ EXPECT = (
     ("bonds.json", "債市深度判讀", "Bond deep read", 24, True),        # runs Mon–Fri (US)
     ("feed.json", "學術動態", "Research feed", 168, False),
     ("industry_note.json", "產業筆記", "Industry note", 168, False),
-    ("tw_forecast.json", "台灣總經展望", "Taiwan macro outlook", 24, True),  # Mon–Fri 15:40 (added 11-21: the 11-20 run
+    ("tw_forecast.json", "台灣總經展望", "Taiwan macro outlook", 24, "tw"),   # 11-27: Taiwan calendar (US Thanksgiving hid a missed run)  # Mon–Fri 15:40 (added 11-21: the 11-20 run
                                                                                  # stopped at a permission prompt and nothing flagged it)
     ("tw_note.json", "台灣每月分析筆記", "Taiwan monthly note", 31 * 24, False),
 )
@@ -56,6 +56,10 @@ PAUSED = {"earn_after_rest.json": "2026-11-10 為省用量額度暫停（2026-11
 # First scheduled run (Taipei) of routines that were (re)set up and have not written their file yet (configuration,
 # from the routine's cron).  Before that run + 1 day of grace a missing file is ⚪ waiting, not 🔴.
 FIRST_RUN = {"tw_note.json": "2026-11-28 12:05"}
+# Fixed daily runs (configuration, from the scheduled task's cron, Taipei): (calendar, weekdays, HH:MM, grace hours).  The
+# gap rule alone tolerates a whole missed day (2 × 24 h); 11-26 the 15:50 Taiwan outlook stopped at a rejected command and
+# the table stayed green.  A run due on a trading day that has not written its file `grace` hours later shows 🟡 晚了.
+SCHED = {"tw_forecast.json": ("tw", (0, 1, 2, 3, 4), "15:50", 2.0)}
 GRACE_H = 24
 
 
@@ -79,6 +83,48 @@ def _stamp(name: str, d: Dict) -> Optional[float]:
         n = max(notes, key=lambda n: str(n.get("date") or n.get("month")))
         return parse_updated(n.get("date") or f'{n.get("month")}-28')
     return parse_updated(d.get("updated"))
+
+
+def _tw_open(d) -> bool:
+    try:
+        from wsb.data.exchange_cal import tw_closed
+        closed = tw_closed()
+    except Exception:  # noqa: BLE001
+        closed = {}
+    return d.weekday() < 5 and d.isoformat() not in closed
+
+
+def tw_hours(t0: float, t1: float) -> float:
+    """Hours between t0 and t1 not counting Taiwan market weekends and TWSE holidays (whole Taipei days)."""
+    total, cur = 0.0, datetime.fromtimestamp(t0, TPE)
+    end = datetime.fromtimestamp(t1, TPE)
+    open_ = {}
+    while cur < end:
+        nxt = min(end, cur.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
+        d = cur.date()
+        if d not in open_:
+            open_[d] = _tw_open(d)
+        if open_[d]:
+            total += (nxt - cur).total_seconds() / 3600
+        cur = nxt
+    return total
+
+
+def missed_run(name: str, ts: Optional[float], now: float) -> Optional[float]:
+    """Pure-ish: the latest scheduled run (epoch) that is past its grace and newer than the file's own time, else None."""
+    sc = SCHED.get(name)
+    if not sc or ts is None:
+        return None
+    cal, wds, hm, grace = sc
+    hh, mm = (int(x) for x in hm.split(":"))
+    d = datetime.fromtimestamp(now, TPE)
+    for back in range(0, 8):
+        day = (d - timedelta(days=back)).date()
+        run = datetime(day.year, day.month, day.day, hh, mm, tzinfo=TPE).timestamp()
+        if run + grace * 3600 > now or day.weekday() not in wds or (cal == "tw" and not _tw_open(day)):
+            continue
+        return run if ts < run else None
+    return None
 
 
 def weekday_hours(t0: float, t1: float) -> float:
@@ -130,8 +176,12 @@ def rows(now: Optional[float] = None, feed_dir: Path = FEED_DIR) -> List[Dict]:
     for name, zh, en, every, us_days in EXPECT:
         d = _load(feed_dir / name)
         ts = _stamp(name, d) if isinstance(d, dict) else None
-        age = None if ts is None else (weekday_hours(ts, now) if us_days else max(0.0, (now - ts) / 3600))
+        real = None if ts is None else max(0.0, (now - ts) / 3600)
+        age = None if ts is None else (tw_hours(ts, now) if us_days == "tw" else weekday_hours(ts, now) if us_days else real)
         st, first, left = status(age, every), None, None
+        miss = missed_run(name, ts, now)
+        if miss and st == "ok":
+            st = "late"
         if st == "never" and name in FIRST_RUN:
             first = parse_updated(FIRST_RUN[name])
             if first and now < first + GRACE_H * 3600:
@@ -142,7 +192,7 @@ def rows(now: Optional[float] = None, feed_dir: Path = FEED_DIR) -> List[Dict]:
                 st = "done"
             elif left and name in PAUSED:            # backlog unreadable → keep the red light
                 st = "paused"
-        out.append({"file": name, "zh": zh, "en": en, "every": every, "us_days": us_days, "ts": ts, "age": age,
+        out.append({"file": name, "zh": zh, "en": en, "every": every, "us_days": us_days, "ts": ts, "age": age, "real": real, "missed": miss,
                     "st": st, "first": first, "left": left, "why": PAUSED.get(name) if st == "paused" else None})
     return out
 
@@ -160,6 +210,17 @@ def _age(h: Optional[float]) -> str:
     if h is None:
         return "—"
     return f"{h / 24:.1f} 天前" if h >= 48 else f"{h:.0f} 小時前" if h >= 1 else "1 小時內"
+
+
+def _ago(r: Dict) -> str:
+    """Real elapsed time first (11-27: 「2 小時前」 next to an 18-hour-old stamp read as a bug); the hours the light uses come
+    after it when closed-market hours were left out, and a missed fixed run is named."""
+    s = _age(r.get("real", r["age"]))
+    if r.get("real") is not None and r["age"] is not None and r["real"] - r["age"] >= 2:
+        s += f"（休市不算：{_age(r['age']).replace('前', '')}）"
+    if r.get("missed"):
+        s += "；錯過 " + datetime.fromtimestamp(r["missed"], TPE).strftime("%m/%d %H:%M") + " 那次"
+    return s
 
 
 def sec_routine_health(eng=None) -> str:
@@ -194,10 +255,10 @@ def sec_routine_health(eng=None) -> str:
         if r["st"] == "paused" and r.get("why"):
             when += f"（{r['why']}）"
         trs.append(f'<tr><td>{T(r["zh"], r["en"])}</td><td>{ic} {T(sz, se)}</td><td class="r">{esc(when)}</td>'
-                   f'<td class="r">{esc(_age(r["age"]))}</td><td class="r">{esc(_gap(r["every"]))}'
-                   f'{T("（交易日）", " (trading days)") if r["us_days"] else ""}</td></tr>')
+                   f'<td class="r">{esc(_ago(r))}</td><td class="r">{esc(_gap(r["every"]))}'
+                   f'{T(("（台股交易日）" if r["us_days"] == "tw" else "（美股交易日）"), " (trading days)") if r["us_days"] else ""}</td></tr>')
     note = T("每張 AI 卡片都由雲端排程定時寫好再上傳，這張表看它們最後一次更新是多久以前，和平常的更新間隔比："
-             "不超過 2 倍是準時，2～4 倍是晚了，超過 4 倍或從來沒寫過就是停了；每月一次的排程在第一次執行日之前顯示 ⚪ 等第一次排程。美股相關的卡片不算週末。"
+             "不超過 2 倍是準時，2～4 倍是晚了，超過 4 倍或從來沒寫過就是停了；每天固定時間的排程（例如台灣總經展望平日 15:50）錯過一次就顯示晚了；每月一次的排程在第一次執行日之前顯示 ⚪ 等第一次排程。美股卡片不算美股休市時間，台股卡片不算台股休市時間；「距今」是真實經過的時間，括號內是扣掉休市後用來判斷燈號的時間。"
              "補寫型的排程（把一份待補清單一家一家寫完）清單都寫完、或刻意暫停時顯示 ⚪，並寫還剩幾家，不算停了。排程停了常見的原因是帳號用量額度用完，或排程的雲端環境連不到資料來源。",
              "Each AI card is written by a scheduled cloud job. Compared with its usual gap: ≤2× on time, 2–4× late, more or never = stopped. "
              "US cards skip weekends. Backfill jobs that only commit when there is something new are not listed.")
