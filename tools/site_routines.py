@@ -52,7 +52,7 @@ BACKFILL = {"earn_after_more.json": "earn_backlog.json", "earn_after_asia.json":
             "earn_after_rest.json": "earn_backlog_rest.json"}
 # Routines switched off on purpose (configuration, checked with RemoteTrigger get on the date shown).  Shown ⚪ with the
 # names still pending instead of 🔴 every day; remove the line when the routine is switched back on.
-PAUSED = {"earn_after_rest.json": "2026-11-10 為省用量額度暫停（2026-11-26 確認仍關閉）"}
+PAUSED = {"earn_after_rest.json": "2026-11-10 為省用量額度暫停；台股部分 11-27 起改由程式計算（台股財報頁「全部上市櫃財報速讀」），港股小型股仍暫停"}
 # First scheduled run (Taipei) of routines that were (re)set up and have not written their file yet (configuration,
 # from the routine's cron).  Before that run + 1 day of grace a missing file is ⚪ waiting, not 🔴.
 FIRST_RUN = {"tw_note.json": "2026-11-28 12:05"}

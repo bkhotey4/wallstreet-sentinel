@@ -475,10 +475,21 @@ def latest_quarters(today: Optional[date] = None, n: int = 3) -> List[tuple]:
     return out
 
 
+def fin_quarters(today: Optional[date] = None) -> List[tuple]:
+    """The last three filed quarters plus the newest one a year earlier and its previous quarter (11-27: needed for the
+    single-quarter year-over-year view of every listed company; Q1 a year earlier needs no previous quarter)."""
+    qs = latest_quarters(today)
+    if qs:
+        y, q = qs[0]
+        qs += [(y - 1, q)] + ([(y - 1, q - 1)] if q > 1 else [])
+    return list(dict.fromkeys(qs))
+
+
 def write_fin_seed(path=FIN_SEED) -> Dict:
-    """PC → cloud relay: cumulative statements of the last three filed quarters (public filings), keys like '115Q3'."""
+    """PC → cloud relay: cumulative statements of the last three filed quarters and the newest quarter a year earlier
+    (public filings), keys like '115Q3'."""
     snaps = {}
-    for y, q in latest_quarters():
+    for y, q in fin_quarters():
         got = fetch_quarter(y, q)
         if got:
             snaps[f"{y}Q{q}"] = got
@@ -515,7 +526,13 @@ def fin_view(snaps: Dict, codes: Optional[set] = None) -> Dict:
                 return None
             return single["ni"] * cum["eps"] / cum["ni"]
 
+        ly = single_quarter(snaps, code, str(y - 1), q) if q > 1 else (snaps.get(f"{y - 1}Q1") or {}).get(code)
+        lyc = (snaps.get(f"{y - 1}Q{q}") or {}).get(code)
         rows.append({"code": code, "name": cur.get("name"), "rev": rev, "eps": eps_of(sq, cur), "ni": sq.get("ni"),
+                     "rev_ly": ly.get("rev") if ly else None,
+                     "rev_yoy": m(rev - ly["rev"], ly["rev"]) if ly and ly.get("rev") and ly["rev"] > 0 else None,
+                     "gm_ly": m(ly.get("gross"), ly.get("rev")) if ly else None, "om_ly": m(ly.get("op"), ly.get("rev")) if ly else None,
+                     "eps_ly": eps_of(ly, lyc),
                      "gm": m(sq.get("gross"), rev), "om": m(sq.get("op"), rev), "eps_ytd": cur.get("eps"),
                      "rev_qoq": m(rev - pq["rev"], pq["rev"]) if pq and pq.get("rev") else None,
                      "gm_prev": m(pq.get("gross"), pq.get("rev")) if pq else None, "eps_prev": eps_of(pq, cur)})   # same (current) share basis

@@ -94,6 +94,7 @@ from tools import site_fedspeech as SFS
 from tools import site_respress as SRP
 from tools import site_memspot as SMS
 from tools import site_freight as SFRT
+from tools import site_tw_qall as STQA
 from tools import site_fiscal as SFI
 from tools import site_forced as SFO
 from tools import site_korea as SKO
@@ -1417,7 +1418,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_ai", "AI 視角看台灣", "AI view of Taiwan", [STW.sec_tw_brief, STF.sec_tw_forecast, STW.sec_tw_note, STW.sec_tw_calendar]),
             ("taiwan", "台股", "Taiwan", [STL.sec_tw_live, STPO.sec_tw_preopen, STRG.sec_tw_regime, STBB.sec_tw_bubble, STPP.sec_tw_paper, STL.sec_tw_days, S4.sec_link, SW2.sec_tw_foi, sec_taiwan_trends, sec_taiwan]),
             ("tw_desk", "台股專業判讀", "Taiwan desk", [STD.sec_tw_flowcal, STD.sec_tw_valband, STD.sec_tw_revheat, STD.sec_calib, STCHP.sec_tw_chips, STCHP.sec_tw_squeeze, STNSF.sec_tw_nsf, STMSCI.sec_tw_msci]),   # 11-22: 台股覆蓋清單 is my own checklist (research_feed/tw_coverage.json), not shown to the user
-            ("tw_earn", "台股財報", "Taiwan earnings", [STE2.sec_tw_earn_preview, STCHP.sec_tw_quarter, STCHP.sec_tw_forecast, STE2.sec_tw_corp, STCHP.sec_tw_pledge, STE2.sec_tw_earn_after]),
+            ("tw_earn", "台股財報", "Taiwan earnings", [STE2.sec_tw_earn_preview, STCHP.sec_tw_quarter, STQA.sec_tw_qall, STCHP.sec_tw_forecast, STE2.sec_tw_corp, STCHP.sec_tw_pledge, STE2.sec_tw_earn_after]),
             ("tw_bonds", "台灣債市", "Taiwan bonds", [STW.sec_tw_gov]),
             ("tw_credit", "台灣公司債", "Taiwan corporate bonds", [STW.sec_tw_corp]),
             ("tw_econ", "台灣經濟", "Taiwan economy", [STW.sec_tw_econ, STM2.sec_tw_pulse, SKO.sec_korea_exports]),
@@ -2127,6 +2128,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         log.exception("fund trend lists failed")
     try:                                   # 財報解讀總表: loaded only when opened
         SAF.publish(out / "market")
+        try:
+            STQA.publish(out / "market")                # 11-27: every listed company's quarter, loaded when opened
+        except Exception as e:  # noqa: BLE001
+            log.warning("tw quarter list failed: %s", e)
     except Exception:  # noqa: BLE001
         log.exception("earnings reads list failed")
     for src, name in ((TE.OUT_US, "ustech.json"), (TE.OUT_TW, "twrev.json"), (GR.OUT_US, "growth_us.json"), (GR.OUT_TW, "growth_tw.json")):

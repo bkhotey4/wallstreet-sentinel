@@ -69,7 +69,7 @@ def main(feed: Path = FEED) -> dict:
         from wsb.data import tw_chips as CH
         f = FEED / "tw_fin_seed.json"
         have = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
-        want = {f"{y}Q{q}" for y, q in CH.latest_quarters()}
+        want = {f"{y}Q{q}" for y, q in CH.fin_quarters()}          # 11-27: includes the newest quarter a year earlier
         if _t.time() - (f.stat().st_mtime if f.exists() else 0) > 3 * 86400 or not want <= set(have.get("snaps") or {}):
             s = CH.write_fin_seed(f)
             out["fin"] = {"fetched": s.get("fetched"), "quarters": sorted(s.get("snaps") or {})}
