@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-26 06:11 台北",
+ "updated": "2026-11-28 06:12 台北",
  "days": [
   {
    "date": "2026-11-05",
@@ -1778,6 +1778,128 @@
      "name": "WallStreet Sentinel 財經日曆 upcoming.json",
      "date": "2026-11-26",
      "url": "https://wallstreet-sentinel.pages.dev/upcoming.json"
+    }
+   ]
+  },
+  {
+   "date": "2026-11-27",
+   "one": "11-27 感恩節後半天盤，AI 晶片股反彈：標普 500 +1.60%、費半 +4.71%、VIX 掉到 23.81；但 10 年期殖利率回升到 4.94%，利率壓力沒有消失。",
+   "lens": [
+    {
+     "name": "現金流與實體限制",
+     "read": "今天沒有查到新的資本支出、現金流或產能數據；晶片股反彈是情緒回穩，不是基本面新證據。",
+     "evidence": "費半 8,774.86 → 9,186.71（+4.69%）、輝達 149.30 → 150.49 美元（Yahoo，11-27 收盤）。美國商務部新規（要求供應中國業者算力的海外資料中心申請許可，超過約 750 顆 H100／H200 等級晶片規模要許可，現有業者有 90 天辦理）是供給端的政策限制，報導見 Nextgov、TechSpot，我只讀到搜尋摘要，生效日未確認。",
+     "conf": "低"
+    },
+    {
+     "name": "資金與利率",
+     "read": "股市大漲、債券卻沒有跟著當避險：10 年期殖利率回升到 4.94%，美元指數小升，信用債沒壞。",
+     "evidence": "10 年期殖利率 4.848% → 4.936%（+8.8bp，^TNX）；美元指數 103.67 → 104.01；高收益債 ETF HYG 76.52 → 76.61、投資級債 ETF LQD 104.29 → 104.00。本站頁面寫 10 月核心 PCE 年增 3.3%，市場仍在討論 12 月升息（本站，未讀原始公告）。",
+     "conf": "中"
+    },
+    {
+     "name": "誰被迫買賣",
+     "read": "VIX 單日 −11.2%，反彈時避險需求退潮；但沒有部位或資金流的直接證據，不能說是空單回補。",
+     "evidence": "VIX 26.80 → 23.81（本站 api/quote）；標普 500 7,182.78 → 7,297.49。本站頁面：壓力指數 SSI 63、歷史百分位 88%、風險階段「戒備」；台股外資台指期淨空約 10.8 萬口（本站，來源未查）。沒有直接證據。",
+     "conf": "低"
+    },
+    {
+     "name": "市場在說什麼",
+     "read": "主流說法是「投資人暫時放下對 AI 的擔心」；數據一致，但只反彈一天，不代表風險解除。",
+     "evidence": "華爾街日報標題「Tech Stocks Jump as Investors Take a Break From AI Jitters」（只看到標題）；那斯達克綜合 23,585.80 → 24,129.50（+2.31%）；輝達 11-20 125.53、11-23 165.05、11-27 150.49（一週內波動極大）。黃金 +3.75%（本站）與股市同漲，不是典型避險走勢，原因我沒有查到。",
+     "conf": "中"
+    }
+   ],
+   "signals": [
+    {
+     "name": "科技巨頭資本支出",
+     "read": "沒有新的雲端公司資本支出財測。",
+     "trend": "持平",
+     "evidence": "本次沒有查到新的雲端公司指引；上次紀錄為微軟 Azure 年增 48%（本站，11-23）。",
+     "next": "邁威爾財報（台北 12-02 05:05 左右）、Salesforce 財報（台北 12-03 05:05 左右）（本站 upcoming.json，前一份紀錄）。"
+    },
+    {
+     "name": "資料中心政策",
+     "read": "聯邦層級出現新限制：商務部要求供應中國業者算力的海外資料中心申請出口許可；德州稽核沒有新進度。",
+     "trend": "轉壞",
+     "evidence": "美國商務部產業安全局（BIS）臨時最終規則：超過約 750 顆 H100／H200 等級晶片規模的海外資料中心要許可，現有業者 90 天內辦理，公開意見 60 天（Nextgov、TechSpot 搜尋摘要，11 月）。德州：州長 8-03 指示 PUCT 與 ERCOT 稽核，沒有查到 11 月新進度或完成日期。",
+     "next": "12-01 黃仁勳眾議院委員會、12-03 參議院聽證（本站頁面）；規則公開意見期限、德州 PUCT 公告。"
+    },
+    {
+     "name": "AI 新雲",
+     "read": "沒有查到新的融資、客戶或交付公告。",
+     "trend": "資料不足",
+     "evidence": "本次沒有讀到 CoreWeave、Nebius 新文件。",
+     "next": "兩家下一次融資公告或財報（日期尚未查到）。"
+    },
+    {
+     "name": "長線資金",
+     "read": "資料不足。",
+     "trend": "資料不足",
+     "evidence": "沒有可讀的 ETF 資金流金額；13F 快照為 9/30，有延遲。",
+     "next": "下一批 13F 截止日 2027-02-17；內部人申報隨時可能更新。"
+    }
+   ],
+   "checks": [
+    {
+     "claim": "AI 晶片股重新反彈，代表 AI 擔憂已經結束。",
+     "data": "只反彈一天：費半 11-24 −7.88%、11-25 −0.65%、11-27 +4.69%，仍低於 11-23 的 9,588.05；SSI 63（百分位 88%）仍是「戒備」。",
+     "verdict": "證據不足"
+    },
+    {
+     "claim": "股市反彈是因為利率壓力下降。",
+     "data": "10 年期殖利率 4.848% → 4.936%，反而上升 8.8bp。",
+     "verdict": "與數據不符"
+    },
+    {
+     "claim": "信用市場沒有跟著 AI 股緊張。",
+     "data": "高收益債 ETF HYG 11-20 76.33 → 11-27 76.61，沒有明顯下跌。",
+     "verdict": "有數據支持"
+    }
+   ],
+   "spill": "傳導路徑：美國新規限制供應中國業者的海外算力 → 晶片廠與伺服器供應鏈出貨不確定性（報導提到超微同日 −5.03%，我未驗證）；台股 AI 供應鏈情緒受影響，本站頁面提到外資台指期淨空單與外資連續賣超。信用債未同步走弱。",
+   "calls": [
+    {
+     "claim": "美股反彈後，VIX 12-11 仍低於 28。",
+     "by": "2026-12-11",
+     "measure": "CBOE VIX 2026-12-11 收盤價低於 28 算對；11-27 收盤 23.81。",
+     "result": "",
+     "note": ""
+    },
+    {
+     "claim": "高收益債 ETF（HYG）12-10 沒有明顯走弱。",
+     "by": "2026-12-10",
+     "measure": "Yahoo HYG 2026-12-10 收盤價不低於 75.00 算對；11-27 收盤 76.61。",
+     "result": "",
+     "note": ""
+    }
+   ],
+   "lesson": "11-27 單日大漲不能證明風險解除：同一週費半從 +14%、−7.9%、−0.65% 到 +4.7%，波動才是主角，單日方向沒有判斷力。",
+   "sources": [
+    {
+     "name": "Yahoo Finance 日線 chart API",
+     "date": "2026-11-27",
+     "url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=10d&interval=1d"
+    },
+    {
+     "name": "WallStreet Sentinel 行情 API",
+     "date": "2026-11-27",
+     "url": "https://wallstreet-sentinel.pages.dev/api/quote"
+    },
+    {
+     "name": "WallStreet Sentinel 新聞 API（僅標題）",
+     "date": "2026-11-27",
+     "url": "https://wallstreet-sentinel.pages.dev/api/news"
+    },
+    {
+     "name": "Nextgov：商務部收緊 AI 晶片遠端存取",
+     "date": "2026-11",
+     "url": "https://www.nextgov.com/artificial-intelligence/2026/11/commerce-department-moves-close-ai-chip-loophole/417255/"
+    },
+    {
+     "name": "Foley：德州州長暫停資料中心併網並要求稽核",
+     "date": "2026-08",
+     "url": "https://www.foley.com/insights/publications/2026/08/governor-abbott-pauses-texas-data-center-interconnections-and-calls-for-verification-and-audit-what-data-center-developers-need-to-know-now/"
     }
    ]
   }
