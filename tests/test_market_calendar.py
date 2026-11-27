@@ -60,6 +60,10 @@ def test_sessions_note():
     assert SS.stale_note("2026-11-06", datetime(2026, 11, 6, 23, 0, tzinfo=timezone.utc)) == ""
     ch = SS.chain({"chain": [{"step": "發生什麼", "text": "川普談伊朗", "src": "CNBC"}, {"text": "油價先跌"}, {"text": "<b>股市反彈</b>"}]})
     assert ch.count('class="cch"') == 3 and "→" in ch and "<b>股市" not in ch and SS.chain({"chain": [{"text": "x"}]}) == ""
+    # 11-27: the stamp's data date is the US trading day of the notes, not the Taipei date of the run (Thanksgiving)
+    feed = {"updated": "2026-11-26 06:02 台北", "items": [{"date": "2026-11-25", "phase": "盤後", "one": "x"},
+                                                       {"date": "2026-11-24", "phase": "盤前", "one": "y"}, {"date": "2026-11-26", "phase": "?"}]}
+    assert SS.trading_day(feed) == "2026-11-25" and SS.trading_day({}) is None
 
 
 if __name__ == "__main__":

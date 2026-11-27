@@ -650,6 +650,15 @@ def _feed_stamp(mod: str, attr: str = "load"):
     return ts, _feed_updated(mod, attr)
 
 
+def _sessions_day() -> Optional[str]:
+    """US trading day of the session notes (not the Taipei date of the run); lag 4 days like US quotes (3-day weekends)."""
+    try:
+        from tools import site_sessions
+        return _d(site_sessions.trading_day() or "")
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _g(eng, *path):
     o = eng
     for p in path:
@@ -694,7 +703,7 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "routines": ("雲端 AI 排程", "Cloud AI routines", lambda e: _routines_stamp(), 2),
     "after": ("財報後解讀（雲端 AI）", "Post-earnings notes", lambda e: _feed_stamp("site_after"), 2),
     "preview": ("財報前瞻（雲端 AI）", "Earnings previews", lambda e: _feed_stamp("site_preview"), 2),
-    "sessions": ("美股時段快報（雲端 AI）", "US session notes", lambda e: _feed_stamp("site_sessions"), 2),
+    "sessions": ("美股時段快報（雲端 AI）", "US session notes", lambda e: (_feed_stamp("site_sessions")[0], _sessions_day()), 4),
     "forecast": ("一個月預判（雲端 AI）", "One-month calls", lambda e: _feed_stamp("site_forecast"), 5),
     "twforecast": ("台灣總經展望（AI 依官方資料撰寫）", "Taiwan outlook", lambda e: _feed_stamp("site_twforecast"), 14),
     "afterall": ("財報判讀補寫（雲端 AI）", "Earnings reads", lambda e: _feed_stamp("site_after", "load_all"), 3),
@@ -794,7 +803,8 @@ MAX_AGE_H = {"fund": 9 * 24, "capexq": 9 * 24, "stockchk": 9 * 24, "fundgl": 9 *
 
 
 MAX_AGE_H.update({k: 24 * (SOURCES[k][3] + 1) for k in ("after", "preview", "sessions", "forecast", "bondread", "voice", "afterall", "learn", "deep")})
-MAX_AGE_H["rel"] = 8 * 24             # refreshed weekly by design
+MAX_AGE_H["sessions"] = 72                 # run time still ages as before (2-day lag); only the data date moved to the US day
+MAX_AGE_H["rel"] = 8 * 24            # refreshed weekly by design
 MAX_AGE_H["xcal"] = 8 * 24            # holiday calendars: wsb/data/exchange_cal.TTL is 7 days (11-17: flagged 偏舊 5 days a week)
 MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not a fault
 MAX_AGE_H["darkpool"] = 24 * 5             # 11-23: its check time is the archive mtime, which moves only when FINRA posts a new

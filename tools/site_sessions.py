@@ -55,6 +55,14 @@ def load() -> Dict:
     return FC.scrub(d) if isinstance(d, dict) else {}       # AI quotes of the headline closes checked against ours
 
 
+def trading_day(d: Optional[Dict] = None) -> Optional[str]:
+    """The US trading day the newest notes cover (11-27: the stamp showed 資料日 11-26, the Taipei day of the 11/25
+    post-close run, on Thanksgiving — read as if 11/26 had a session)."""
+    d = load() if d is None else d
+    days = [str(x["date"]) for x in (d.get("items") or []) if isinstance(x, dict) and x.get("date") and x.get("phase") in PHASES]
+    return max(days)[:10] if days else None
+
+
 def _e(x) -> str:
     return html.escape(guard_safe(str(x or "")))
 
