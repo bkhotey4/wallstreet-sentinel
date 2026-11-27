@@ -1,5 +1,5 @@
 {
-"fetched": "2026-11-27 13:45",
+"fetched": "2026-11-27 15:51",
 "source": "公開資訊觀測站法人說明會一覽表",
 "rows": [
 {
@@ -2024,7 +2024,7 @@
 "summary": "群益金鼎證券舉辦之線上法人說明會，說明本公司之營運成果以及未來展望。",
 "kind": "券商論壇",
 "board": "上櫃",
-"slides": false
+"slides": true
 },
 {
 "code": "1409",
@@ -2046,7 +2046,7 @@
 "summary": "公司財務與營運概況說明",
 "kind": "自辦法說",
 "board": "上市",
-"slides": false
+"slides": true
 },
 {
 "code": "1444",
@@ -2101,7 +2101,7 @@
 "summary": "本公司受邀參加康和證券所舉辦之法說會。",
 "kind": "券商論壇",
 "board": "上櫃",
-"slides": false
+"slides": true
 },
 {
 "code": "2924",
@@ -2123,7 +2123,7 @@
 "summary": "本公司受邀參加統一證券舉辦之法人說明會",
 "kind": "券商論壇",
 "board": "上櫃",
-"slides": false
+"slides": true
 },
 {
 "code": "4154",
@@ -2157,6 +2157,17 @@
 "kind": "自辦法說",
 "board": "上市",
 "slides": false
+},
+{
+"code": "6215",
+"name": "和椿",
+"date": "2026-11-30",
+"time": "10:30",
+"place": "新加坡",
+"summary": "本公司受邀參加IR Trust舉辦之新加坡NDR行程。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": true
 },
 {
 "code": "3287",
@@ -2269,6 +2280,28 @@
 "slides": true
 },
 {
+"code": "2884",
+"name": "玉山金",
+"date": "2026-12-01",
+"time": "11:00",
+"place": "線上",
+"summary": "2026年第3季財業務資訊",
+"kind": "自辦法說",
+"board": "上市",
+"slides": false
+},
+{
+"code": "3236",
+"name": "千如",
+"date": "2026-12-01",
+"time": "14:00",
+"place": "千如電機工業股份有限公司二廠 桃園市楊梅區環東路298巷98號",
+"summary": "本公司產品概述、財務績效及市場展望與機會",
+"kind": "自辦法說",
+"board": "上櫃",
+"slides": false
+},
+{
 "code": "4171",
 "name": "瑞基",
 "date": "2026-12-01",
@@ -2354,6 +2387,17 @@
 "summary": "本公司受邀參加台新證券舉辦之法說會，會中說明本公司2026年第3季營運概況。",
 "kind": "券商論壇",
 "board": "上市",
+"slides": false
+},
+{
+"code": "8066",
+"name": "來思達",
+"date": "2026-12-01",
+"time": "14:30",
+"place": "線上法說會",
+"summary": "本公司受邀參加康和綜合證券舉辦之法人說明會",
+"kind": "券商論壇",
+"board": "上櫃",
 "slides": false
 },
 {
@@ -2445,6 +2489,17 @@
 "slides": true
 },
 {
+"code": "3037",
+"name": "欣興",
+"date": "2026-12-02",
+"time": "13:30",
+"place": "台北晶華酒店",
+"summary": "本公司受邀參加元大證券舉辦之2026元大證券第四季投資論壇，會中就本公司已公開發布之財務數字、經營績效等相關資訊作說明。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": true
+},
+{
 "code": "3189",
 "name": "景碩",
 "date": "2026-12-02",
@@ -2465,6 +2520,17 @@
 "kind": "券商論壇",
 "board": "上櫃",
 "slides": false
+},
+{
+"code": "2409",
+"name": "友達",
+"date": "2026-12-02",
+"time": "14:00",
+"place": "香港",
+"summary": "本公司將參加國泰證舉辦之「Non-Deal Roadshow」，就115年第三季法說會之內容說明公司營運與財務概況。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": true
 },
 {
 "code": "8016",
@@ -2643,6 +2709,28 @@
 "slides": true
 },
 {
+"code": "8210",
+"name": "勤誠",
+"date": "2026-12-03",
+"time": "09:00",
+"place": "新加坡The Fullerton Hotel",
+"summary": "本公司受邀參加富邦證券、Jefferies及臺灣證券交易所共同於新加坡舉辦之「Taiwan Corporate Day 2026」",
+"kind": "券商論壇",
+"board": "上市",
+"slides": false
+},
+{
+"code": "3167",
+"name": "大量",
+"date": "2026-12-03",
+"time": "09:30",
+"place": "台北君悅酒店",
+"summary": "本公司受邀參加國泰證券2026第四季產業論壇，說明營運概況。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": false
+},
+{
 "code": "6223",
 "name": "旺矽",
 "date": "2026-12-03",
@@ -2651,6 +2739,17 @@
 "summary": "本公司受邀參加國泰證券2026年第四季論壇，說明本公司簡介與營運概況。",
 "kind": "券商論壇",
 "board": "上櫃",
+"slides": false
+},
+{
+"code": "4976",
+"name": "佳凌",
+"date": "2026-12-03",
+"time": "10:30",
+"place": "台北君悅酒店(台北市信義區松壽路2號)",
+"summary": "本公司受邀參加國泰證券2026年第四季論壇",
+"kind": "券商論壇",
+"board": "上市",
 "slides": false
 },
 {
@@ -2742,6 +2841,17 @@
 "slides": false
 },
 {
+"code": "3029",
+"name": "零壹",
+"date": "2026-12-03",
+"time": "14:30",
+"place": "線上法人說明會_Webex",
+"summary": "本公司受邀參加元大證券舉辦線上法人說明會，向投資人說明公司營運概況。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": false
+},
+{
 "code": "6728",
 "name": "上洋",
 "date": "2026-12-03",
@@ -2819,6 +2929,17 @@
 "slides": true
 },
 {
+"code": "1560",
+"name": "中砂",
+"date": "2026-12-07",
+"time": "09:00",
+"place": "Nomura Singapore Limited(10 Marina Boulevard, MBFC Tower 2, ",
+"summary": "本公司受邀參加野村證券舉辦之「Nomura Taiwan Corporate Day 2026 in Singapore and Hong Kong」，說明本公司第三季業務與財務概況。",
+"kind": "券商論壇",
+"board": "上市",
+"slides": false
+},
+{
 "code": "6510",
 "name": "精測",
 "date": "2026-12-07",
@@ -2827,6 +2948,17 @@
 "summary": "本公司受邀參加野村證券舉辦之「Nomura Taiwan Corporate Day 2026」，會中就本公司10/28法說會已公開之財務數字、經營績效等相關資訊進行說明。",
 "kind": "券商論壇",
 "board": "上櫃",
+"slides": true
+},
+{
+"code": "3037",
+"name": "欣興",
+"date": "2026-12-07",
+"time": "10:00",
+"place": "新加坡、香港",
+"summary": "本公司受邀參加Nomura舉辦之Nomura Taiwan Corporate Day，會中就本公司已公開發布之財務數字、經營績效等相關資訊作說明。",
+"kind": "券商論壇",
+"board": "上市",
 "slides": true
 },
 {
