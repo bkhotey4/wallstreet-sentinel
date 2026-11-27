@@ -327,14 +327,30 @@ def blind_movers(closes: Dict[str, List[float]], meta: Dict[str, Dict], z_min: f
     return sorted(out, key=lambda x: -abs(x["z"]))
 
 
-def scan_untracked(min_mcap: float = 4e10, pause: float = 0.15) -> List[Dict]:
+BLIND_MCAP = 4e10      # untracked-mover scan: US companies at least this large (USD)
+BLIND_Z = 4.0          # … whose biggest day in the last 5 sessions is ≥ this × their normal day
+TW_Z = 3.0             # Taiwan theme scan: move beyond the TAIEX ≥ this × normal gap
+TW_GROUP = 3           # … with at least this many names in one industry on one day
+TW_SOLO_Z = 5.0        # … or a single name this extreme
+# US ADRs of Taiwan companies: the home listing is what the site tracks (11-27: ASX +21% on 11-23 was flagged as
+# "untracked" although 3711.TW is on the watch list; it was the ADR catching up with two TW sessions, +5.5% and limit-up).
+ADR_HOME = {"TSM": "2330.TW", "ASX": "3711.TW", "UMC": "2303.TW", "CHT": "2412.TW", "IMOS": "8150.TW"}
+
+
+def untracked_us(rows: List[Dict], tracked: set, min_mcap: float = BLIND_MCAP) -> Dict[str, Dict]:
+    """Pure: large US names not tracked, also skipping ADRs whose home listing is tracked."""
+    return {r["sym"]: r for r in rows if (r.get("mcap") or 0) >= min_mcap and r.get("sym") not in tracked
+            and ADR_HOME.get(r.get("sym")) not in tracked and "%" not in str(r.get("name"))}
+
+
+def scan_untracked(min_mcap: float = BLIND_MCAP, pause: float = 0.15) -> List[Dict]:
     """US companies ≥ min_mcap in the full-market list that the site does not track → blind_movers (Yahoo chart API, ~2 min)."""
     from wsb.data.stocks import universe
     rows = (json.loads((DATA_DIR / "fullmarket_lists.json").read_text(encoding="utf-8")).get("markets") or {}).get("us") or []
     tracked = set()
     for m in universe().values():
         tracked |= set(m["symbols"])
-    big = {r["sym"]: r for r in rows if (r.get("mcap") or 0) >= min_mcap and r.get("sym") not in tracked and "%" not in str(r.get("name"))}
+    big = untracked_us(rows, tracked, min_mcap)
     closes = {}
     for sym in big:
         try:
@@ -343,11 +359,11 @@ def scan_untracked(min_mcap: float = 4e10, pause: float = 0.15) -> List[Dict]:
         except Exception:  # noqa: BLE001
             pass
         time.sleep(pause)
-    return blind_movers(closes, big)
+    return blind_movers(closes, big, z_min=BLIND_Z)
 
 
-def tw_clusters(series: Dict[str, Dict[str, float]], bench: Dict[str, float], meta: Dict[str, Dict], z_min: float = 3.0,
-                days: int = 7, group_min: int = 3) -> List[Dict]:
+def tw_clusters(series: Dict[str, Dict[str, float]], bench: Dict[str, float], meta: Dict[str, Dict], z_min: float = TW_Z,
+                days: int = 7, group_min: int = TW_GROUP, solo_z: float = TW_SOLO_Z) -> List[Dict]:
     """Pure: untracked Taiwan stocks whose move, minus the TAIEX that day, is ≥ z_min × their own normal gap, in the last
     `days` sessions; returned per day when ≥ group_min names moved together (a theme), plus any single name ≥ 5×.
     11-26: eight IT-security names (資拓宏宇、資通、中華資安…) beat the market by ~16% on 11/20 while the TAIEX fell 6%,
@@ -376,7 +392,7 @@ def tw_clusters(series: Dict[str, Dict[str, float]], bench: Dict[str, float], me
         for x in xs:                                   # a theme = the same industry moving the same way on the same day
             groups.setdefault((x["ind"] or "—", x["z"] > 0), []).append(x)
         for (ind_, _up), g in groups.items():
-            if len(g) >= group_min or any(abs(x["z"]) >= 5 for x in g):
+            if len(g) >= group_min or any(abs(x["z"]) >= solo_z for x in g):
                 out.append({"day": day, "ind": ind_, "n": len(g), "names": sorted(g, key=lambda x: -abs(x["z"]))[:10]})
     return out
 
@@ -490,6 +506,7 @@ def main() -> Dict:
         tj = json.loads(_get(SITE + f"threads.json?v={int(time.time())}", 30))
         rd = {n: json.loads((feed / n).read_text(encoding="utf-8")).get("updated") for n in ("threads_read.json", "dots_read.json", "tw_forecast.json")}
         rep["old_reads"] = old_reads(tj.get("threads") or [], rd, time.time())
+        rep["empty_threads"] = empty_threads(tj.get("threads") or [])
     except Exception as e:  # noqa: BLE001
         rep["old_reads"], rep["old_reads_error"] = [], str(e)
     try:
@@ -520,6 +537,12 @@ def old_reads(threads: List[Dict], updated: Dict[str, str], now: float) -> List[
     return out
 
 
+def empty_threads(threads: List[Dict]) -> List[str]:
+    """Story threads with no news at all in the window: usually the keyword set, not a quiet world.
+    11-27: 中國經濟與政策 had 0 items in 7 days while China trade-surplus and AI-rout headlines ran (curly apostrophe in 「China’s」)."""
+    return [f"{t.get('zh') or t.get('id')}（{t.get('id')}）" for t in threads if not (t.get("items") or [])]
+
+
 def summary(rep: Dict) -> str:
     # 2026-11-17: the site read timed out (home internet down) and this still printed 「偏舊卡片 0 張」 as if all were fresh
     lines = ([f"⚠ 讀不到網站（{rep['site_error']}）：偏舊卡片無法判斷，不是 0 張"] if rep.get("site_error")
@@ -547,6 +570,8 @@ def summary(rep: Dict) -> str:
         lines.append("⚠ " + rep["relay"] + "（tools/relay_push：看 data_cache/relay_push.log）")
     if rep.get("old_reads"):
         lines.append("⚠ 手寫判讀比新聞舊（先讀原文再改寫）：" + "、".join(rep["old_reads"]))
+    if rep.get("empty_threads"):
+        lines.append("⚠ 主線整段時間 0 則新聞（多半是關鍵字漏了，到 wsb/analytics/threads.py THREADS 對新聞標題補字）：" + "、".join(rep["empty_threads"]))
     rd = rep.get("read") or {}
     if rd.get("lag"):
         lines.append("⚠ Gemini READ：官方已公布更新一期、本站還沒有（先點開官方網址確認，再改成讀原始來源）：" + "；".join(
@@ -559,10 +584,10 @@ def summary(rep: Dict) -> str:
         lines.append("⚠ Gemini 回答有網站不認得的段落代碼（加到 tools/site_gemini.py GROUP 和 order）：" + "、".join(rep["gemini_groups"]))
     lines.append(f"即時推送超時：" + ("；".join(i["text"] for i in rep.get("overrun") or []) or "沒有"))
     if rep.get("blind"):
-        lines.append("⚠ 沒追蹤的大公司大動（市值 400 億美元以上、近 5 天單日 ≥ 4 倍平常波動；先讀原因，AI／台灣供應鏈相關的加進 settings.yaml 追蹤名單）："
+        lines.append(f"⚠ 沒追蹤的大公司大動（市值 {BLIND_MCAP / 1e8:,.0f} 億美元以上、近 5 天單日 ≥ {BLIND_Z:g} 倍平常波動；台股已追蹤的 ADR 不列；先讀原因，AI／台灣供應鏈相關的加進 settings.yaml 追蹤名單）："
                      + "；".join(f"{x['sym']} {x['name']}（{x['ind']}，{x['mcap_b']}B）{x['pct']:+.1f}%＝{x['z']:+.1f} 倍，20 天 {x['m20']:+.1f}%" for x in rep["blind"][:12]))
     if rep.get("tw_clusters"):
-        lines.append("⚠ 台股沒追蹤的族群同步大動（扣掉加權指數後 ≥ 3 倍平常差距、同一天 3 檔以上；先查原因：新聞、公告、政策，再決定加進追蹤名單或主線）："
+        lines.append(f"⚠ 台股沒追蹤的族群同步大動（扣掉加權指數後 ≥ {TW_Z:g} 倍平常差距、同一天同產業 {TW_GROUP} 檔以上，或單檔 ≥ {TW_SOLO_Z:g} 倍；先查原因：新聞、公告、政策，再決定加進追蹤名單或主線）："
                      + "；".join(f"{c['day'][5:]} {c.get('ind', '')} {c['n']} 檔：" + "、".join(f"{x['name']}{x['sym'].split('.')[0]}（{x['ind'] or '—'}）{x['ex']:+.1f}%" for x in c["names"][:6])
                                 for c in rep["tw_clusters"][:5]))
     lines.append("停止交易的追蹤股票：" + ("、".join(f"{x['sym']}（最後 {x['last']}；SEC：{'、'.join(x.get('why') or []) or '查不到原因'}）"

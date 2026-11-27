@@ -67,7 +67,17 @@ def test_card():
     assert "📝 讀過原文的判斷" in h and "從晶片擴大到模型" in h and "只是研究" in h and 'href="https://house.gov/r"' in h and "<details class=\"sgx\" open>" in h
 
 
+def test_china_econ_catches_market_headlines():
+    """11-27: the China thread had 0 items in a week; curly-apostrophe and market headlines now match."""
+    assert "china_econ" in T.match("Gold Deluge Keeps China’s $1 Trillion Trade Surplus in Check")
+    assert "china_econ" in T.match("China’s $1.7 Trillion AI Rout Turns Hot Trade Into Losing Bet")
+    assert "uscn_tech" in T.match("The Alice Huang Associate Accused of Funneling Nvidia Chips to China")
+    assert "uscn_tech" in T.match("雙黃間諜與晶片走私醜聞延燒")
+    assert "uscn_tech" not in T.match("Police arrest migrant smuggling ring")
+
+
 if __name__ == "__main__":
+    test_china_econ_catches_market_headlines()
     test_match_and_view()
     test_push_rules()
     test_card()

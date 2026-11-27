@@ -176,3 +176,21 @@ def test_tw_clusters():
 if __name__ == "__main__":
     test_tw_clusters()
     print("ok test_tw_clusters")
+
+
+def test_untracked_us_skips_tracked_adr():
+    """11-27: ASX (ASE ADR) +21% was listed as untracked although 3711.TW is tracked; the summary text derives its thresholds."""
+    from tools import daily_audit as A
+    rows = [{"sym": "ASX", "mcap": 7e10, "name": "ASE"}, {"sym": "SNY", "mcap": 1e11, "name": "Sanofi"},
+            {"sym": "TINY", "mcap": 1e9, "name": "x"}, {"sym": "UMC", "mcap": 5e10, "name": "UMC"}]
+    got = A.untracked_us(rows, {"3711.TW"})
+    assert set(got) == {"SNY", "UMC"}, got
+    txt = A.summary({"blind": [{"sym": "SNY", "name": "Sanofi", "ind": "醫療", "mcap_b": 112, "pct": 11.0, "z": 7.5, "m20": 28.8}],
+                     "tw_clusters": [{"day": "2026-11-20", "ind": "資訊服務", "n": 2, "names": []}]})
+    assert f"{A.BLIND_MCAP / 1e8:,.0f} 億美元" in txt and f"單檔 ≥ {A.TW_SOLO_Z:g} 倍" in txt, txt
+    assert A.empty_threads([{"id": "china_econ", "zh": "中國經濟與政策", "items": []}, {"id": "x", "items": [{"t": "a"}]}]) == ["中國經濟與政策（china_econ）"]
+
+
+if __name__ == "__main__":
+    test_untracked_us_skips_tracked_adr()
+    print("ok test_untracked_us_skips_tracked_adr")

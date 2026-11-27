@@ -29,7 +29,8 @@ THREADS = [
     ("uscn_tech", "美中科技脫鉤",
      ["出口管制", "實體清單", "華為", "中芯", "DeepSeek", "中國 AI", "中國AI", "中共", "美中", "export control", "export controls", "Entity List",
       "Huawei", "SMIC", "Chinese AI", "Chinese models", "Chinese chip", "Chinese chips", "China AI", "China chip", "China chips", "chip curbs",
-      "AI chips to China", "CCP", "PRC", "decoupling", "tech war", "Bureau of Industry and Security"],
+      "AI chips to China", "CCP", "PRC", "decoupling", "tech war", "Bureau of Industry and Security",
+      "chips to China", "chip smuggling", "晶片走私"],   # 11-27: 「Funneling Nvidia Chips to China」 and 晶片走私 stories missed
      [("^SOX", "費城半導體"), ("TSM", "台積電 ADR"), ("CNY=X", "美元兌人民幣")],
      "美國與中國在晶片、AI 模型、資料中心上一層一層切開，台灣供應鏈夾在中間。"),
     ("ai_capex", "AI 資本支出與獲利",
@@ -53,7 +54,10 @@ THREADS = [
      "借錢買股的人被迫賣，常是台股急跌的放大器。"),
     ("china_econ", "中國經濟與政策",
      ["人行", "中國人民銀行", "降準", "刺激", "房地產", "地方債", "PBOC", "People's Bank of China", "stimulus", "Evergrande", "Country Garden",
-      "Chinese economy", "China's economy", "yuan"],
+      "Chinese economy", "China's economy", "yuan",
+      # 11-27: 0 items in 7 days while 「China’s $1 Trillion Trade Surplus」「China’s $1.7 Trillion AI Rout」 ran (curly apostrophes, markets words)
+      "China's", "China’s", "Chinese stocks", "China stocks", "A-shares", "trade surplus", "renminbi",
+      "中國經濟", "陸股", "人民幣", "中國出口", "陸港股", "港股", "恆生", "恒生"],
      [("^HSI", "恆生指數"), ("CNY=X", "美元兌人民幣"), ("HG=F", "銅")],
      "中國景氣與政策，牽動香港股市、原物料與台灣的對中出口。"),
     # 11-21 self-review (user: 「我希望你可以自己思考哪裡有漏，你可以直接新增」): four threads a Taiwan / AI-chain reader needs
