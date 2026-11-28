@@ -234,6 +234,17 @@ real_economy:
 
 # ---------- FRED 總經 / 信用 / 流動性序列 ----------
 fred_series:
+  # 11-28 總經缺口盤點：成長（領先）、通膨（預期與薪資）、流動性、家庭 —— 餵進「總經全貌」九個面向
+  PERMIT: 建築許可（房市領先）
+  ANDENO: 核心資本財訂單（企業投資）
+  GACDFSA066MSFRBPHI: 費城聯準會製造業指數
+  MICH: 密大一年通膨預期
+  ECIWAG: 雇用成本指數（薪資）
+  M2SL: M2 貨幣供給
+  CSUSHPINSA: Case-Shiller 房價
+  EXHOSLUSM495S: 成屋銷售
+  DSPIC96: 實質可支配所得
+  TOTALSL: 消費者信貸
   BAMLH0A0HYM2: 高收益債利差 OAS
   BAMLC0A0CM: 投資級利差 OAS
   BAMLH0A3HYC: CCC級利差

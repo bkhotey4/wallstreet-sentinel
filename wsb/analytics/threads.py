@@ -35,7 +35,9 @@ THREADS = [
      "美國與中國在晶片、AI 模型、資料中心上一層一層切開，台灣供應鏈夾在中間。"),
     ("ai_capex", "AI 資本支出與獲利",
      ["資本支出", "資料中心", "雲端", "capex", "data center", "data centers", "hyperscaler", "hyperscalers", "AI spending", "AI bubble",
-      "GPU", "GPUs", "Anthropic", "OpenAI", "CoreWeave", "Nvidia", "輝達"],
+      "GPU", "GPUs", "Anthropic", "OpenAI", "CoreWeave", "Nvidia", "輝達",
+      # 11-28: Warsh's 11/16 remarks on the Fed's AI scenarios said "super intelligence", never "AI"
+      "super intelligence", "superintelligence", "超級智慧"],
      [("^SOX", "費城半導體"), ("NVDA", "輝達"), ("^TWII", "台股加權")],
      "大公司花在 AI 的錢賺不賺得回來，決定台灣伺服器與晶片訂單。"),
     ("fed_path", "聯準會與美國利率",
@@ -98,6 +100,19 @@ THREADS = [
       "Palo Alto Networks", "zero-day"],
      [("CRWD", "CrowdStrike"), ("PANW", "Palo Alto"), ("^TWII", "台股加權")],
      "駭客入侵銀行或大型系統當機，會讓金融監管加嚴、企業資安支出增加；台股資安股常在事件後幾天集體漲停，事件本身則可能讓被駭公司的股價與信用受傷。"),
+    # 11-28 gap review: Democrats won the midterms (House 258+ seats and the Senate, BBC 11-22) and the site had no thread for what the
+    # new Congress (seated 2027-01-03) means for tariffs, AI rules, the budget and Fed oversight
+    ("us_politics", "美國政治與政策路徑",
+     ["期中選舉", "國會", "眾議院", "參議院", "眾議長", "民主黨", "共和黨", "白宮", "預算案", "撥款", "midterm", "midterms", "Congress",
+      "House Democrats", "Senate", "Speaker", "Democrats", "Republicans", "White House", "appropriations", "filibuster", "impeachment"],
+     [("^GSPC", "標普 500"), ("^TNX", "美國 10 年期殖利率"), ("DX-Y.NYB", "美元指數")],
+     "選舉結果決定 2027 年後的關稅權限、AI 監管、預算與債務上限怎麼走；國會換人，政策的方向和不確定性都會跟著變，影響利率、美元與科技股。"),
+    # 11-28 gap review: Section 232 (national-security tariffs, incl. semiconductors) had zero coverage — closer to Taiwan than 301
+    ("s232_chips", "232 條款與半導體關稅",
+     ["232條款", "232 條款", "232調查", "Section 232", "232 investigation", "semiconductor tariff", "semiconductor tariffs", "chip tariff",
+      "chip tariffs", "半導體關稅", "晶片關稅", "CHIPS Act", "晶片法案"],
+     [("TSM", "台積電 ADR"), ("^SOX", "費城半導體"), ("^TWII", "台股加權")],
+     "美國以國家安全為由對半導體等產品課關稅（232 條款），稅率與豁免條件直接決定台積電與台灣供應鏈在美國的成本，以及赴美設廠的壓力。"),
 ]
 ASCII = re.compile(r"^[ -~’]+$")
 

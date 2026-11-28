@@ -1,4 +1,4 @@
-"""主線追蹤卡（新聞日曆頁，2026-11-21 盲點檢討）：把新聞串成 11 條長期主線，看哪一條正在升溫。規則在 wsb/analytics/threads.py。"""
+"""主線追蹤卡（新聞日曆頁，2026-11-21 盲點檢討）：把新聞串成多條長期主線（數量由 wsb/analytics/threads.THREADS 決定），看哪一條正在升溫。規則在 wsb/analytics/threads.py。"""
 from __future__ import annotations
 
 import time
@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict
 
 from tools.sitekit import card, esc, guard_safe
+from wsb.analytics import threads as TH
 
 VIEW: Dict = {}            # set by the build (build_site fetches /api/news, archives it, computes the view)
 PILL = {"升溫": "🔥 升溫", "官方新文件": "📄 官方新文件", "有消息": "有消息", "安靜": "安靜"}
@@ -69,7 +70,7 @@ def sec_threads(eng) -> str:
                       + (_read_html(r) if r else "")
                       + (f'<p class="small"><b>最近的新聞（標題）</b></p><ul class="small">{heads}</ul>' if heads else '<p class="small muted">最近 30 天沒有相關新聞。</p>') + "</details>")
     body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}</b></p>'
-            '<p class="small">每天的新聞各看各的，很容易漏掉「一則接一則、每則都不大」的事。這裡把新聞歸到 11 條長期主線，'
+            '<p class="small">每天的新聞各看各的，很容易漏掉「一則接一則、每則都不大」的事。這裡把新聞歸到 ' + str(len(TH.THREADS)) + ' 條長期主線，'
             '比較最近 48 小時和平常的則數；📄＝官方來源（央行、國會委員會等）。</p>' + "".join(blocks)
             + f'<p class="note">{esc(young)}依標題關鍵字歸類，只代表「相關新聞變多」，不是讀過內文的判斷，也不代表市場一定會動；'
             '📝＝每日排程讀過原始文件後寫的判斷（假設，附反對理由）；讀過全文的新聞也在每日總經「這班讀過的原文」。升溫＝48 小時 3 則以上而且是平常的 2 倍以上。Discord 在主線升溫或有官方新文件時提醒（每條主線一天最多一次）。</p>')

@@ -76,12 +76,23 @@ def pillars(fred, market) -> List[Dict]:
         claims = (icsa.iloc[-4:].mean() / icsa.iloc[-13:].mean() - 1) * 100
     sahm = _last(F("SAHMREALTIME"))
     retail = _chg(F("RSAFS"), 92, pct=True)
+    # 11-28 gap review: leading parts — permits (housing), core capital-goods orders (business investment), Philly Fed, real income
+    permit = _chg(F("PERMIT"), 92, pct=True)
+    capex = _chg(F("ANDENO"), 92, pct=True)
+    philly = _last(F("GACDFSA066MSFRBPHI"))
+    income = _chg(F("DSPIC96"), 92, pct=True)
     out.append({"key": "growth", "zh": "經濟成長與就業",
                 **_st(_sgn(claims, 3.0), (1 if sahm is not None and sahm >= 0.5 else 0 if sahm is not None else None),
-                                _sgn(retail, 0.5, worse_if_up=False)),
+                      _sgn(retail, 0.5, worse_if_up=False), _sgn(permit, 3.0, worse_if_up=False), _sgn(capex, 1.5, worse_if_up=False),
+                      (1 if philly is not None and philly < -10 else -1 if philly is not None and philly > 10 else 0 if philly is not None else None),
+                      _sgn(income, 0.5, worse_if_up=False)),
                 "facts": [f for f in (f"初領失業金近 4 週平均比近 13 週 {claims:+.1f}%" if claims is not None else "",
                                       f"薩姆衰退指標 {sahm:.2f}（0.5 以上歷史上多在衰退中）" if sahm is not None else "",
-                                      f"零售銷售 3 個月 {retail:+.1f}%" if retail is not None else "") if f]})
+                                      f"零售銷售 3 個月 {retail:+.1f}%" if retail is not None else "",
+                                      f"建築許可 3 個月 {permit:+.1f}%（房市領先）" if permit is not None else "",
+                                      f"核心資本財訂單 3 個月 {capex:+.1f}%（企業投資）" if capex is not None else "",
+                                      f"費城聯準會製造業 {philly:+.1f}（正＝擴張）" if philly is not None else "",
+                                      f"實質可支配所得 3 個月 {income:+.1f}%" if income is not None else "") if f]})
 
     # 2 通膨：核心 CPI 3 個月年化 vs 12 個月、10 年通膨預期 1 個月、布蘭特 1 個月
     core = F("CPILFESL").dropna()
@@ -91,12 +102,20 @@ def pillars(fred, market) -> List[Dict]:
         c12 = (core.iloc[-1] / core.iloc[-13] - 1) * 100
     be = _chg(F("T10YIE"))
     oil = _chg(M("BZ=F"), pct=True)
+    mich = _last(F("MICH"))                     # households' 1-year expectations (11-28 gap review)
+    mich_chg = _chg(F("MICH"), 92)
+    eci = F("ECIWAG").dropna()
+    eci_yoy = (eci.iloc[-1] / eci.iloc[-5] - 1) * 100 if len(eci) >= 5 else None
+    eci_prev = (eci.iloc[-2] / eci.iloc[-6] - 1) * 100 if len(eci) >= 6 else None
     out.append({"key": "inflation", "zh": "通膨", "core_up": c3 is not None and c12 is not None and c3 - c12 >= 0.3,
                 # core CPI counts twice: 11-28 oil −14% and breakevens −23 bp outvoted core re-accelerating (3.7% vs 2.9%)
-                **_st(*([_sgn((c3 - c12) if c3 is not None and c12 is not None else None, 0.3)] * 2), _sgn(be, 0.1), _sgn(oil, 8.0)),
+                **_st(*([_sgn((c3 - c12) if c3 is not None and c12 is not None else None, 0.3)] * 2), _sgn(be, 0.1), _sgn(oil, 8.0),
+                      _sgn(mich_chg, 0.3), _sgn((eci_yoy - eci_prev) if eci_yoy is not None and eci_prev is not None else None, 0.2)),
                 "facts": [f for f in (f"核心 CPI 近 3 個月年化 {c3:.1f}%、近 12 個月 {c12:.1f}%" if c3 is not None else "",
                                       f"10 年通膨預期 1 個月 {be * 100:+.0f} 個基點" if be is not None else "",
-                                      f"布蘭特原油 1 個月 {oil:+.1f}%" if oil is not None else "") if f]})
+                                      f"布蘭特原油 1 個月 {oil:+.1f}%" if oil is not None else "",
+                                      f"家庭預期一年後通膨 {mich:.1f}%（3 個月 {mich_chg:+.1f} 個百分點）" if mich is not None and mich_chg is not None else "",
+                                      f"雇用成本（薪資）年增 {eci_yoy:.1f}%" if eci_yoy is not None else "") if f]})
 
     # 3 利率與聯準會：2 年、10 年 1 個月變化
     y2, y10 = _chg(F("DGS2")), _chg(F("DGS10"))
@@ -121,9 +140,12 @@ def pillars(fred, market) -> List[Dict]:
         liq = (net.iloc[-1] / net.iloc[-5] - 1) * 100 if len(net) >= 5 else None
     except Exception:  # noqa: BLE001
         liq = None
+    m2 = F("M2SL").dropna()
+    m2_yoy = (m2.iloc[-1] / m2.iloc[-13] - 1) * 100 if len(m2) >= 13 else None
     out.append({"key": "liquidity", "zh": "市場上的錢（流動性）",
-                **_st(_sgn(liq, 1.0, worse_if_up=False)),
-                "facts": [f"聯準會資產扣掉財政部帳戶與逆回購，4 週 {liq:+.1f}%" if liq is not None else ""]})
+                **_st(_sgn(liq, 1.0, worse_if_up=False), (1 if m2_yoy is not None and m2_yoy < 0 else 0 if m2_yoy is not None else None)),
+                "facts": [f for f in (f"聯準會資產扣掉財政部帳戶與逆回購，4 週 {liq:+.1f}%" if liq is not None else "",
+                                      f"M2 貨幣供給年增 {m2_yoy:.1f}%" if m2_yoy is not None else "") if f]})
 
     # 6 美元與資金：美元指數、美元兌日圓、美元兌新台幣
     dxy, jpy, twd = _chg(M("DX-Y.NYB"), pct=True), _chg(M("JPY=X"), pct=True), _chg(M("TWD=X"), pct=True)
