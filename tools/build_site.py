@@ -1777,6 +1777,11 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(TWH.refresh(), 90)
     except Exception as e:  # noqa: BLE001
         log.warning("tw holders failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # CFTC 期貨部位（11-29，標普／那斯達克／日圓／比特幣）
+        from wsb.data import cot_pos as COTP
+        await asyncio.wait_for(COTP.refresh(), 75)
+    except Exception as e:  # noqa: BLE001
+        log.warning("cftc positioning failed: %s", e if str(e) else type(e).__name__)
     try:                                           # SCFI 貨櫃運價（11-26）
         from wsb.data import freight as FRT
         await asyncio.wait_for(FRT.refresh(), 45)

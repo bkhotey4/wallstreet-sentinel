@@ -843,8 +843,13 @@ def system_stamp(now: float) -> str:
             f' <span class="ago" data-ts="{int(now)}"></span></p>')
 
 
-def live_stamp() -> str:
-    return (f'<p class="upd">🕒 {T("即時：每次打開頁面時向報價服務抓取（Cloudflare 版），報價約有數分鐘延遲", "Live: fetched when the page opens (Cloudflare site)")}</p>')
+LIVE_TEXT = {"sec_news_live": "即時：打開頁面時抓最新新聞，之後每 5 分鐘自動更新"}   # 11-29: the news card said 「報價」 and showed no time
+
+
+def live_stamp(fname: str = "") -> str:
+    """Live cards fetch in the browser; the card's own script writes the fetch time into .lvupd (blank until it loads)."""
+    txt = LIVE_TEXT.get(fname, "即時：每次打開頁面時向報價服務抓取（Cloudflare 版），報價約有數分鐘延遲")
+    return f'<p class="upd">🕒 {T(txt, "Live: fetched when the page opens (Cloudflare site)")}<span class="lvupd"></span></p>'
 
 
 def pending_stamp(tips) -> str:
@@ -860,7 +865,7 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
     keys = sources_for(fname, tab)
     now = now or time.time()
     if fname in LIVE:
-        return live_stamp()
+        return live_stamp(fname)
     if not keys:
         return system_stamp(now)
     try:

@@ -140,11 +140,17 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     # against the same tenor's own recent auctions, wsb.data.treasury.judge)
     move = _last(M("^MOVE"))
     at = (extras or {}).get("auctions") or {}
+    ba = (extras or {}).get("basis") or {}
+    sofr_x, iorb_x = _last(F("SOFR")), _last(F("IORB"))
+    tight = sofr_x is not None and iorb_x is not None and (sofr_x - iorb_x) * 100 >= 3
+    # the basis trade is not a warning by itself: huge (≥ 95th pct) AND funding tight or MOVE ≥ 110 is the 2020-03 set-up
+    ba_s = None if ba.get("pct") is None else 1 if ba["pct"] >= 95 and (tight or (move or 0) >= 110) else 0
     out.append({"key": "treasury", "zh": "美債供需與定價", "curve": curve, "auct_weak": at.get("weak"),
                 **_st(_sgn(real, 0.10), _sgn(tp, 0.15), (1 if curve == "熊市變陡" else -1 if curve == "牛市變平" else 0 if curve else None),
                       _sgn(cust_chg, 2.0, worse_if_up=False),
                       (1 if move is not None and move >= 125 else -1 if move is not None and move < 80 else 0 if move is not None else None),
-                      (1 if at.get("weak", 0) >= 2 else -1 if at.get("strong", 0) >= 2 and not at.get("weak") else 0) if at.get("n") else None),
+                      (1 if at.get("weak", 0) >= 2 else -1 if at.get("strong", 0) >= 2 and not at.get("weak") else 0) if at.get("n") else None,
+                      ba_s), "basis_hot": ba_s == 1,
                 "facts": [f for f in ((f"10 年期 1 個月 {y10 * 100:+.0f} 個基點＝實質利率 {real * 100:+.0f}＋通膨預期 {be10 * 100:+.0f}"
                                        if y10 is not None and real is not None and be10 is not None else ""),
                                       f"期限溢價 1 個月 {tp * 100:+.0f} 個基點" if tp is not None else "",
@@ -154,7 +160,9 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
                                       (f"聯準會持有美債 13 週 {fed_chg * 10:+,.0f} 億美元" if fed_chg is not None else ""),
                                       f"MOVE 美債波動率 {move:.0f}（125 以上＝債市恐慌，80 以下＝很平靜）" if move is not None else "",
                                       (f"近 5 週 {at['n']} 場中長期公債標售：偏弱 {at['weak']}、偏強 {at['strong']}、其餘正常"
-                                       f"（和同天期前 6 場比得標倍數與交易商被迫吃下的比例）" if at.get("n") else "")) if f]})
+                                       f"（和同天期前 6 場比得標倍數與交易商被迫吃下的比例）" if at.get("n") else ""),
+                                      (f"美債基差交易規模 {ba['net'] / 1000:.2f} 兆美元（{ba['date'][5:]}，{ba['since']} 年以來第 {ba['pct']:.0f} 百分位；"
+                                       f"規模大本身不是警訊，碰上資金變緊或債市波動升高才會被迫平倉）" if ba.get("pct") is not None else "")) if f]})
 
     # 3c 市場在押什麼：交易台每天看的跨資產比值（11-28 使用者：「用華爾街的金融視角」）。比值 1 個月的變化，
     #    往下＝市場在避險或押景氣轉弱。這一欄看的是「價格怎麼定」，和上面的「數據怎麼說」對照，落差就是情報。
@@ -194,13 +202,20 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     mg = extras.get("margin_yoy")
     v1, v3, sk = _last(M("^VIX")), _last(M("^VIX3M")), _last(M("^SKEW"))
     term = (v1 / v3) if v1 and v3 else None
-    out.append({"key": "positioning", "zh": "部位與脆弱度",
+    # 11-29 desk pass: CFTC futures positioning — asset managers crowded long S&P (top 10% of 3 years) = fragile;
+    # hedge funds most short the yen in 3 years = the carry trade is crowded (2024-08 unwind)
+    cot = (extras or {}).get("cot") or {}
+    es, jy = cot.get("ES") or {}, cot.get("JPY") or {}
+    es_s = None if es.get("am_p") is None else 1 if es["am_p"] >= 90 else -1 if es["am_p"] <= 10 else 0
+    jy_s = None if jy.get("lev_p") is None else 1 if jy["lev_p"] <= 10 else 0
+    out.append({"key": "positioning", "zh": "部位與脆弱度", "yen_crowded": jy_s == 1,
                 **_st((1 if mg is not None and mg >= 30 else -1 if mg is not None and mg < 0 else 0 if mg is not None else None),
                       (1 if term is not None and term >= 1.0 else 0 if term is not None else None),
-                      (1 if sk is not None and sk >= 150 else 0 if sk is not None else None)),
+                      (1 if sk is not None and sk >= 150 else 0 if sk is not None else None), es_s, jy_s),
                 "facts": [f for f in (f"融資餘額年增 {mg:+.0f}%（30% 以上＝借錢買股很擁擠，跌時被迫賣）" if mg is not None else "",
                                       f"近月 VIX 對三個月 VIX {term:.2f}（1 以上＝短期恐慌高過長期）" if term is not None else "",
-                                      f"SKEW {sk:.0f}（150 以上＝大家在買崩盤保險）" if sk is not None else "") if f]})
+                                      f"SKEW {sk:.0f}（150 以上＝大家在買崩盤保險）" if sk is not None else "",
+                                      *[(cot[k].get("line") or "") for k in ("ES", "NQ", "JPY") if cot.get(k)]) if f]})
 
     # 4 金融條件與信用：芝加哥聯準會金融條件指數、高收益債利差、VIX
     nfci = _chg(F("NFCI"), 28)

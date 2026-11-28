@@ -112,6 +112,16 @@ def extras(eng) -> Dict:
             out["ciss"] = cs.sort_index().astype(float)
     except Exception:  # noqa: BLE001
         pass
+    try:                                   # CFTC 期貨部位（擁擠＝自己 3 年的前後 10%）
+        from wsb.data import cot_pos as COTP
+        out["cot"] = {k: {**v, "line": COTP.text(v)} for k, v in COTP.view(COTP.load()).items()}
+    except Exception:  # noqa: BLE001
+        pass
+    try:                                   # 美債基差交易規模（金融穩定監測，CFTC 美債期貨槓桿基金淨空單）
+        from wsb.data import stability as STB
+        out["basis"] = STB.basis_view(STB.load())
+    except Exception:  # noqa: BLE001
+        pass
     try:
         y = eng.margin_debt.yoy()
         if y is not None and len(y.dropna()):
@@ -151,6 +161,6 @@ def sec_macro_map(eng) -> str:
     note = ("每個面向用網站已有的官方數據與行情，比較最近和一個月前（初領失業金用近 4 週對近 13 週、核心 CPI 用近 3 個月年化對近 12 個月），"
             "超過門檻算轉好或轉壞；方向一律寫「對經濟與市場」（例如利率上升、美元轉強算轉壞）。成長與通膨兩個面向組合成四種階段："
             "金髮女孩（成長好、通膨降）、過熱、停滯性通膨的壓力、降溫。這是同一套規則的描述，不是預測；AI 寫的看法在總經口播與一個月預判。"
-            "資料來源：FRED（美國勞工部、聯準會、芝加哥聯準會）、美國財政部 TreasuryDirect（標售結果）、日本財務省（公債殖利率）、歐洲央行（CISS）、Yahoo 行情。")
+            "資料來源：FRED（美國勞工部、聯準會、芝加哥聯準會）、美國財政部 TreasuryDirect（標售結果）、CFTC 交易者持倉報告（期貨部位、基差交易）、日本財務省（公債殖利率）、歐洲央行（CISS）、Yahoo 行情。")
     return card("總經全貌：各面向一起看", "Macro map: all pillars together",
                 f'<p class="rimp big2"><b>{esc(lead(m))}</b></p>' + reg + table + conf + fl + f'<p class="note">{note}</p>', "wide")

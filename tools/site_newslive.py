@@ -93,6 +93,8 @@ function load(){fetch('/api/news',{cache:'no-store'}).then(function(r){if(!r.ok)
   items=d.items||[];bursts=d.bursts||[];filters();paint();paintBursts();var n=document.getElementById('nl_note');
   n.setAttribute('data-up','1');var st=n.querySelector('.nlup');if(!st){st=document.createElement('span');st.className='nlup';n.prepend(st);}
   st.textContent='最後更新 '+new Date(d.ts*1000).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})+'（'+(d.sources||[]).length+' 個來源有回應）。';
+  var sec=box.closest('section'),lu=sec&&sec.querySelector('.upd .lvupd'),nw=items.reduce(function(a,x){return Math.max(a,x.ts||0);},0);
+  if(lu)lu.textContent='・最後更新 '+hm(d.ts)+(nw?'，最新一則 '+ago(nw):'');
 }).catch(function(){if(!items.length){box.hidden=true;clearInterval(tm);}});}
 load();tm=setInterval(function(){if(!document.hidden)load();},300000);
 setInterval(paint,60000);   // the live bar lights change every minute
