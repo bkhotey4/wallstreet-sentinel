@@ -144,6 +144,10 @@ def _no_talks(d: dict, now: float = None) -> str:
             + '，所以不確定接下來兩週誰要講，請以<a href="https://www.federalreserve.gov/newsevents/calendar.htm" target="_blank" rel="noopener">官方行事曆</a>為準。</p>')
 
 
+THEME_ZH = {"AI": "對你的意思：聯準會開始為 AI 的不同結局做準備，包含投資回報不如預期、股價估值下跌、失業上升的情境；這是在做準備，不是預測，但代表官方承認這條風險路徑存在。",
+            "金融穩定": "對你的意思：講者點出金融體系的脆弱處（資產價格、槓桿、非銀行放款）；這類風險平常不顯眼，一旦出事會讓股債一起跌。"}
+
+
 def sec_fed_speeches(eng) -> str:
     try:
         from wsb.data import fed_speeches as FS
@@ -176,6 +180,15 @@ def sec_fed_speeches(eng) -> str:
             quotes.append(f'<li><b>{esc(_who(s))}</b> <span class="small muted">{esc(_dtxt(s))} 演講（美東日期）・'
                           f'同一天 2 年期美債殖利率 {esc(_move_txt(s["_mv"]))}</span><br>'
                           f'<span class="small">原文重點句：「{esc(s["key"])}」</span> <a class="small" href="{esc(s["url"])}" target="_blank" rel="noopener">全文</a></li>')
+    # 11-28: talks that are not about rates but name a risk (Warsh 11/16: the Board staff's AI scenarios, one with equity
+    # valuations falling and unemployment rising) — quoted as is, with one plain line on what the theme means for the reader
+    risky = [x for x in sp if x.get("risk") and (speech_day(x) is not None and speech_day(x) >= pd.Timestamp(_today()) - pd.Timedelta(days=30))]
+    risk_html = "".join(f'<li><b>{esc(_who(x))}</b> <span class="small muted">{esc(_dtxt(x))}・{esc(x.get("topic", ""))}</span><br>'
+                        + "".join(f'<span class="small">原文：「{esc(q)}」</span><br>' for q in x["risk"])
+                        + f'<span class="small">{THEME_ZH.get(x.get("theme", ""), "")}</span> '
+                        f'<a class="small" href="{esc(x["url"])}" target="_blank" rel="noopener">全文</a></li>' for x in risky[:4])
+    if risky and any(x.get("theme") == "AI" for x in risky):
+        lead += "另外，聯準會已經在推演 AI 的不同結局，其中一種是股價估值下跌、失業上升（見下方原文）。"
     up = upcoming_talks(d.get("upcoming"), _now())                       # a stale calendar must not list past talks
     up_html = "".join(f'<li>{esc(_cal_time(u["date"], u.get("time", "")))}・{esc(KIND.get(u["title"].split(" - ")[0].strip(), u["title"].split(" - ")[0]))}・'
                       f'{esc(_role(u["title"]))} {esc(u["title"].split(" - ")[-1].split()[-1])}：{esc(u.get("topic", ""))}</li>' for u in up[:6])
@@ -194,6 +207,7 @@ def sec_fed_speeches(eng) -> str:
                if from_ust else "") + '。')
     body = (f'<p class="rimp big2"><b>{lead}</b></p>'
             + (f'<ul>{"".join(quotes)}</ul>' if quotes else "")
+            + (f'<h3>沒談利率、但講到風險的演講</h3><ul>{risk_html}</ul>' if risk_html else "")
             + (f'<h3>接下來兩週誰要講</h3><ul class="small">{up_html}</ul>' if up_html else _no_talks(d))
             + f'<details class="sgx"><summary>{T("看最近 12 篇講話", "Recent speeches")}</summary>{table}</details>'
             + f'<p class="note">{note}</p>')

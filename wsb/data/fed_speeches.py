@@ -37,7 +37,31 @@ REGIONAL = {"dallas": {"rss": "https://www.dallasfed.org/rss/speeches.xml", "pag
                        "name": "達拉斯聯準會", "tz": "America/Chicago"}}
 REGIONAL_DAYS = 45                            # only recent regional speeches (their feeds hold years of items)
 KEEP = 40                                     # speeches kept in the cache
-SCORE_V = 8                                 # bump when score() changes so cached speeches are re-read
+SCORE_V = 9                                 # bump when score() changes so cached speeches are re-read
+
+# 11-28: Warsh's 11/16 opening remarks laid out the Board staff's three AI scenarios — one of them "equity valuations could fall,
+# leading to an economic slowdown and a more notable rise in unemployment" — and the card showed only 「多談就業 0／9」, because
+# the key sentence needs rate words.  Speeches that are not about rates still get their risk sentences: a theme word plus a
+# downside word in the same sentence, quoted as is.
+THEME = {"AI": re.compile(r"artificial intelligence|\bAI\b|super ?intelligence|\bSI\b|generative", re.I),
+         "金融穩定": re.compile(r"financial stability|asset (?:prices|valuations)|equity valuations|leverage|private credit|"
+                               r"nonbank|vulnerabilit", re.I)}
+DOWN = re.compile(r"\bfall\b|\bdecline|disappoint|disrupt|unemployment|jobless|slowdown|bubble|\bstress|turn down|correction|"
+                  r"displac|downside|vulnerab|costly|losses", re.I)
+
+
+def risk_lines(sents: List[str]) -> Dict:
+    """Pure: the main non-rate theme (≥ 3 mentions) and up to two sentences that pair a theme word with a downside word."""
+    text = " ".join(sents)
+    themes = [k for k, rx in THEME.items() if len(rx.findall(text)) >= 3]
+    out = []
+    for x in sents:
+        if 40 <= len(x) <= 400 and DOWN.search(x) and any(THEME[k].search(x) for k in THEME) or (
+                40 <= len(x) <= 400 and themes and DOWN.search(x) and re.search(r"scenario|outcome|could", x, re.I)):
+            out.append(x)
+    out = sorted(out, key=lambda x: -len(DOWN.findall(x)))[:2]        # the heaviest downside sentences first
+    return {"theme": themes[0] if themes else "", "risk": out}
+
 
 INFL = re.compile(r"\binflation\w*|\bprices?\b", re.I)
 JOBS = re.compile(r"\blabor market|\bemployment\b|\bunemployment\b|\bjobs?\b|\bhiring\b|\blayoffs?\b", re.I)
@@ -156,7 +180,8 @@ def score(text: str) -> Dict:
     mine = [s for s in sents if RATE.search(s) and MINE.search(s) and 40 <= len(s) <= 400
             and not AGENDA.search(s)]
     return {"words": len(text.split()), "infl": len(INFL.findall(text)), "jobs": len(JOBS.findall(text)),
-            "ease": len(ease), "tight": len(tight), "key": mine[0] if mine else "", "key_dir": key_dir(mine[0] if mine else "")}
+            "ease": len(ease), "tight": len(tight), "key": mine[0] if mine else "", "key_dir": key_dir(mine[0] if mine else ""),
+            **risk_lines(sents)}
 
 
 def key_dir(s: str) -> str:

@@ -115,3 +115,21 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def test_risk_lines_without_rate_words():
+    """11-28: Warsh's 11/16 remarks (Board staff AI scenarios) had no rate words, so the card showed only a count."""
+    from wsb.data import fed_speeches as F
+    sents = ["SI is an entirely new force in economic life and society, and super intelligence demands our attention.",
+             "The Board's staff has begun to evaluate various contingencies for AI and super intelligence outcomes.",
+             "At one end, SI leads to an increase in productivity and economic gains that are shared broadly.",
+             "After significant capital investment and stock market gains, expected returns could turn down and equity valuations "
+             "could fall, leading to an economic slowdown and a more notable rise in unemployment.",
+             "I'm grateful to Mary and her colleagues for helping to arrange this gathering."]
+    r = F.risk_lines(sents)
+    assert r["theme"] == "AI" and r["risk"][0].startswith("After significant capital investment"), r
+
+
+if __name__ == "__main__":
+    test_risk_lines_without_rate_words()
+    print("ok risk lines")
