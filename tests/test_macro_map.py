@@ -44,3 +44,20 @@ def test_curve_regime_and_real_rate_conflict():
 if __name__ == "__main__":
     test_curve_regime_and_real_rate_conflict()
     print("ok treasury pillar")
+
+
+def test_fed_path_and_hike_into_slowdown():
+    """11-28: futures priced a ~90% December hike while cross-asset prices leaned toward a slowdown."""
+    fw = {"available": True, "r0": 3.88, "meetings": [
+        {"date": "2026-12-09", "probs": {"0": 0.1, "25": 0.9}, "chg_bp": 22.5, "rate_after": 4.105, "week_ago": {"chg_bp": 15.0}},
+        {"date": "2027-03-17", "probs": {"25": 0.6, "50": 0.4}, "chg_bp": 35.0, "rate_after": 4.23}]}
+    p = M.fed_path(fw)
+    assert round(p["p_hike"], 2) == 0.9 and round(p["cum_bp"]) == 35 and p["wk_shift"] == 7.5 and "升息 90%" in p["text"]
+    assert M.fed_path({"available": False}) == {}
+    ps = P(pricing=1, growth=-1) + [{"key": "rates", "zh": "利率", "state": 1, "facts": [], "hike_next": 0.9}]
+    assert any(c.startswith("期貨市場押聯準會下次升息") for c in M.conflicts(ps))
+
+
+if __name__ == "__main__":
+    test_fed_path_and_hike_into_slowdown()
+    print("ok fed path")

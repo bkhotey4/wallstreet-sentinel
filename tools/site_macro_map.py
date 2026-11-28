@@ -71,6 +71,11 @@ def extras(eng) -> Dict:
     except Exception:  # noqa: BLE001
         pass
     try:
+        from wsb.data import fedwatch as FW
+        out["fedwatch"] = FW.view(eng)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
         y = eng.margin_debt.yoy()
         if y is not None and len(y.dropna()):
             out["margin_yoy"] = float(y.dropna().iloc[-1])

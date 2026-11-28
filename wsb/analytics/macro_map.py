@@ -117,12 +117,15 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
                                       f"家庭預期一年後通膨 {mich:.1f}%（3 個月 {mich_chg:+.1f} 個百分點）" if mich is not None and mich_chg is not None else "",
                                       f"雇用成本（薪資）年增 {eci_yoy:.1f}%" if eci_yoy is not None else "") if f]})
 
-    # 3 利率與聯準會：2 年、10 年 1 個月變化
+    # 3 利率與聯準會：2 年、10 年 1 個月變化＋期貨市場押的聯準會路徑（11-28：市場押 12 月升息約九成，卡上原本沒寫）
     y2, y10 = _chg(F("DGS2")), _chg(F("DGS10"))
-    out.append({"key": "rates", "zh": "利率與聯準會",
-                **_st(_sgn(y2, 0.15), _sgn(y10, 0.15)),
+    fw = (extras or {}).get("fedwatch") or {}
+    path = fed_path(fw)
+    out.append({"key": "rates", "zh": "利率與聯準會", "hike_next": path.get("p_hike"), "cum_bp": path.get("cum_bp"),
+                **_st(_sgn(y2, 0.15), _sgn(y10, 0.15), _sgn(path.get("wk_shift"), 5.0)),
                 "facts": [f for f in (f"2 年期殖利率 {(_last(F('DGS2')) or 0):.2f}%，1 個月 {y2 * 100:+.0f} 個基點" if y2 is not None else "",
-                                      f"10 年期 {(_last(F('DGS10')) or 0):.2f}%，1 個月 {y10 * 100:+.0f} 個基點" if y10 is not None else "") if f]})
+                                      f"10 年期 {(_last(F('DGS10')) or 0):.2f}%，1 個月 {y10 * 100:+.0f} 個基點" if y10 is not None else "",
+                                      path.get("text", "")) if f]})
 
     # 3b 美債供需與定價（11-28：使用者「你有思考過美債嗎」— 10 年期下降 15 個基點，拆開是通膨預期 −23、實質利率 +7；
     #    外國央行託管三個月 −717 億、聯準會持有 +468 億。只看名目殖利率會以為借錢變便宜）
@@ -206,12 +209,20 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
         liq = (net.iloc[-1] / net.iloc[-5] - 1) * 100 if len(net) >= 5 else None
     except Exception:  # noqa: BLE001
         liq = None
+    sofr, iorb = _last(F("SOFR")), _last(F("IORB"))
+    spread = (sofr - iorb) * 100 if sofr is not None and iorb is not None else None     # bp; > 0 = repo above the Fed's floor rate
+    res = F("WRESBAL").dropna()
+    res_chg = (res.iloc[-1] / res.iloc[-5] - 1) * 100 if len(res) >= 5 else None
     m2 = F("M2SL").dropna()
     m2_yoy = (m2.iloc[-1] / m2.iloc[-13] - 1) * 100 if len(m2) >= 13 else None
     out.append({"key": "liquidity", "zh": "市場上的錢（流動性）",
-                **_st(_sgn(liq, 1.0, worse_if_up=False), (1 if m2_yoy is not None and m2_yoy < 0 else 0 if m2_yoy is not None else None)),
+                **_st(_sgn(liq, 1.0, worse_if_up=False), (1 if m2_yoy is not None and m2_yoy < 0 else 0 if m2_yoy is not None else None),
+                      (1 if spread is not None and spread >= 3 else -1 if spread is not None and spread <= -8 else 0 if spread is not None else None)),
                 "facts": [f for f in (f"聯準會資產扣掉財政部帳戶與逆回購，4 週 {liq:+.1f}%" if liq is not None else "",
-                                      f"M2 貨幣供給年增 {m2_yoy:.1f}%" if m2_yoy is not None else "") if f]})
+                                      f"M2 貨幣供給年增 {m2_yoy:.1f}%" if m2_yoy is not None else "",
+                                      (f"SOFR 比準備金利率 {spread:+.0f} 個基點（正＝短期資金開始緊，2019 年 9 月回購市場出事前也是這樣）"
+                                       if spread is not None else ""),
+                                      f"銀行準備金 4 週 {res_chg:+.1f}%" if res_chg is not None else "") if f]})
 
     # 6 美元與資金：美元指數、美元兌日圓、美元兌新台幣
     dxy, jpy, twd = _chg(M("DX-Y.NYB"), pct=True), _chg(M("JPY=X"), pct=True), _chg(M("TWD=X"), pct=True)
@@ -254,6 +265,27 @@ REGIME = {(1, -1): ("停滯性通膨的壓力", "成長轉弱、通膨卻在升�
           (1, 1): ("降溫", "成長和通膨一起轉弱：降息的空間變大，債券通常比股票撐得住；要小心的是降溫變成衰退。"),
           (-1, -1): ("過熱", "成長和通膨一起升：企業獲利好，但利率可能被推高，估值高的股票最怕。"),
           (-1, 1): ("金髮女孩", "成長好、通膨降：對股市最友善的組合；要看它能撐多久。")}
+
+
+def fed_path(fw: Dict) -> Dict:
+    """Pure: from fedwatch.view — next meeting's hike probability, the cumulative move priced by the furthest meeting,
+    and how the next meeting's pricing moved over a week (bp; > 0 = more hikes priced)."""
+    ms = fw.get("meetings") or []
+    if not fw.get("available") or not ms:
+        return {}
+    nxt = ms[0]
+    probs = {int(float(k)): float(v) for k, v in (nxt.get("probs") or {}).items()}
+    p_hike = sum(v for k, v in probs.items() if k > 0)
+    p_cut = sum(v for k, v in probs.items() if k < 0)
+    r0 = fw.get("r0")
+    last = ms[-1]
+    cum = (last["rate_after"] - r0) * 100 if r0 is not None and last.get("rate_after") is not None else None
+    wk = nxt.get("week_ago")
+    shift = (nxt.get("chg_bp") or 0) - (wk.get("chg_bp") or 0) if wk else None
+    txt = (f"期貨市場押 {nxt['date'][5:]} 會議：升息 {p_hike * 100:.0f}%、降息 {p_cut * 100:.0f}%"
+           + (f"；到 {last['date'][:7]} 累計 {cum:+.0f} 個基點" if cum is not None else "")
+           + (f"；比一週前 {shift:+.0f} 個基點" if shift is not None else ""))
+    return {"p_hike": p_hike, "p_cut": p_cut, "cum_bp": cum, "wk_shift": shift, "text": txt}
 
 
 def curve_regime(d2: Optional[float], d10: Optional[float], band: float = 0.05) -> Optional[str]:
@@ -313,6 +345,10 @@ def conflicts(ps: List[Dict]) -> List[str]:
         out.append("名目殖利率在降，但扣掉通膨後的實質利率在升：看起來借錢變便宜，其實真實成本變貴，對高估值成長股和黃金是壓力。")
     if s.get("dollar") == 1 and "外國央行託管美債 13 週 -" in facts:
         out.append("美元轉強，同時外國央行在減持美債：常見的情況是亞洲央行賣美債換現金來穩住本國貨幣；若持續，長天期美債少了一個買家。")
+    rt = next((p for p in ps if p["key"] == "rates"), {})
+    if (rt.get("hike_next") or 0) >= 0.5 and (s.get("pricing") == 1 or s.get("growth") == 1):
+        out.append("期貨市場押聯準會下次升息，但跨資產價格或數據在押景氣轉弱：這是最怕的組合（景氣轉弱時還在升息），"
+                   "要看聯準會會議聲明與點陣圖會不會鬆口。")
     if s.get("earnings") == -1 and (s.get("ai") == 1 or s.get("taiwan") == 1):
         out.append("分析師還在上修獲利，股價卻在跌：要嘛是估值太高在修正（獲利沒問題），要嘛分析師還沒跟上；下修開始出現時，跌勢通常才真正反映基本面。")
     if s.get("positioning") == 1 and s.get("credit") == 1:
