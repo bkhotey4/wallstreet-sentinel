@@ -263,10 +263,12 @@ def test_darkpool_and_gamma():
     assert r["available"] and abs(r["dpi"] - 42.8) < 1e-6 and r["pctile"] is not None and r["etf"]["SPY"] == 35.0
     assert DP.compute({"2026-09-01": {"AAPL": [1, 2]}})["available"] is False      # too few names → no fake index
     from wsb.data.options import parse_chain
+    from datetime import datetime, timedelta, timezone
+    exp = (datetime.now(timezone.utc) + timedelta(days=30)).strftime("%y%m%d")   # was fixed 261120: the test broke once that day passed
     opts = []
     for k in range(5600, 6401, 50):
         for typ in ("C", "P"):
-            opts.append({"option": f"SPXW261120{typ}{k * 1000:08d}", "iv": 0.18, "open_interest": 1000, "volume": 10, "gamma": 0.001})
+            opts.append({"option": f"SPXW{exp}{typ}{k * 1000:08d}", "iv": 0.18, "open_interest": 1000, "volume": 10, "gamma": 0.001})
     r = parse_chain({"data": {"current_price": 6000, "options": opts}}, max_days=400)
     assert r["profile"] and r["by_strike"] and all(abs(k / 6000 - 1) <= 0.08 for k, _ in r["by_strike"])
 

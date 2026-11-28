@@ -195,7 +195,7 @@ def _run_env():
     P.yen_jump, P.gap_moves, P.health_check, P.country_json, P.site_alerts_json, P.mops_new, P.tw_impact, P.ledger = (
         none, gap, health, country, site, mops, twi, led)
     P.PUSHED, P.LAG, P.DISCORD_TOKEN, P.CATCH_GAP = tmp / "p.json", tmp / "lag.json", "t", 10 ** 12
-    P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = P.EARNSOON_EVERY = P.BIS_EVERY = 10 ** 12                                   # the fiscal countdown has its own test (tests/test_fiscal_night.py)
+    P.FISCAL_EVERY = P.FORCED_EVERY = P.KOREA_EVERY = P.RULINGS_EVERY = P.EARNSOON_EVERY = P.BIS_EVERY = P.TH_EVERY = P.TB_EVERY = P.TWAL_EVERY = P.PAPER_EVERY = P.CR_EVERY = 10 ** 12                                   # the fiscal countdown has its own test (tests/test_fiscal_night.py)
     SOF.refresh, MR.FILE = refresh, tmp / "mops.json"
 
     def restore():
