@@ -459,6 +459,25 @@ def conflicts(ps: List[Dict]) -> List[str]:
     return out
 
 
+# 11-29: which scheduled release tests which pillar — so the card says *when* a conflict gets its answer
+TESTS = (("nfp", "growth"), ("jolts", "growth"), ("claims", "growth"), ("ism", "growth"), ("retail", "growth"), ("gdp", "growth"),
+         ("payroll", "growth"), ("cpi", "inflation"), ("pce", "inflation"), ("ppi", "inflation"), ("fomc", "rates"))
+
+
+def tests_ahead(items: List[Dict], ps: List[Dict]) -> List[Dict]:
+    """Pure: upcoming.json macro items → [{tpe, zh, pillar, state}] for releases that test a pillar (first match by key)."""
+    zh = {p["key"]: (p["zh"], p["state"]) for p in ps}
+    out = []
+    for x in items or []:
+        if x.get("kind") != "macro":
+            continue
+        k = str(x.get("key") or "").lower()
+        pk = next((pk for kw, pk in TESTS if kw in k), None)
+        if pk and pk in zh:
+            out.append({"tpe": x.get("tpe"), "zh": x.get("zh"), "pillar": zh[pk][0], "state": zh[pk][1]})
+    return out
+
+
 def build(fred, market, now: Optional[float] = None, extras: Optional[Dict] = None) -> Dict:
     now = now or time.time()
     ps = pillars(fred, market, extras)

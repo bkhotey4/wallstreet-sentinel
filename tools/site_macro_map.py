@@ -180,6 +180,16 @@ def sec_macro_map(eng) -> str:
         fl = '<p class="small muted">和上週比，所有面向的方向都沒有翻轉。</p>'
     else:
         fl = '<p class="small muted">本站從 2026-11-28 開始每天存一份，滿一週後會列出「和上週比翻轉的面向」。</p>'
+    try:                                   # 接下來兩週：哪個公布日會檢驗哪個面向（同一份 upcoming 清單）
+        from tools import site_events as SEVT
+        ahead = MM.tests_ahead(SEVT.upcoming(eng, days=14).get("items") or [], m["pillars"])
+    except Exception:  # noqa: BLE001
+        ahead = []
+    m["ahead"] = LAST["ahead"] = ahead
+    if ahead:
+        li = "".join(f'<li>{esc(a["tpe"][5:16])}　{esc(a["zh"])} → 檢驗「{esc(a["pillar"])}」（現在 {LIGHT[a["state"]][1]}）</li>' for a in ahead)
+        fl += ('<h3>接下來兩週，哪天會檢驗哪個面向</h3><p class="small">上面的矛盾要靠這些數據回答；時間是台北時間。</p>'
+               f'<ul class="small">{li}</ul>')
     note = ("每個面向用網站已有的官方數據與行情，比較最近和一個月前（初領失業金用近 4 週對近 13 週、核心 CPI 用近 3 個月年化對近 12 個月），"
             "超過門檻算轉好或轉壞；方向一律寫「對經濟與市場」（例如利率上升、美元轉強算轉壞）。成長與通膨兩個面向組合成四種階段："
             "金髮女孩（成長好、通膨降）、過熱、停滯性通膨的壓力、降溫。這是同一套規則的描述，不是預測；AI 寫的看法在總經口播與一個月預判。"

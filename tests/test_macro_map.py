@@ -96,3 +96,16 @@ def test_energy_conflicts():
 if __name__ == "__main__":
     test_energy_conflicts()
     print("ok energy")
+
+
+def test_tests_ahead():
+    ps = [{"key": "growth", "zh": "經濟成長與就業", "state": -1}, {"key": "rates", "zh": "利率與聯準會", "state": 0}]
+    it = [{"kind": "macro", "key": "nfp", "zh": "非農就業", "tpe": "2026-12-04 21:30"}, {"kind": "earnings", "sym": "CRM"},
+          {"kind": "macro", "key": "fomc", "zh": "FOMC", "tpe": "2026-12-10 03:00"}, {"kind": "macro", "key": "cpi", "zh": "CPI", "tpe": "x"}]
+    a = M.tests_ahead(it, ps)
+    assert [x["pillar"] for x in a] == ["經濟成長與就業", "利率與聯準會"] and a[0]["state"] == -1
+
+
+if __name__ == "__main__":
+    test_tests_ahead()
+    print("ok ahead")
