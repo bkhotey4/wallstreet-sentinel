@@ -82,3 +82,17 @@ def test_auction_tally_and_global_conflicts():
 if __name__ == "__main__":
     test_auction_tally_and_global_conflicts()
     print("ok desk pass")
+
+
+def test_energy_conflicts():
+    """11-29: Hormuz at 3% of normal while Brent fell 14% in a month; energy stress during a slowdown = supply stagflation."""
+    ps = [{"key": "energy", "zh": "能源", "state": 1, "hz_ratio": 0.03, "oil": -13.9, "facts": []}, {"key": "growth", "zh": "成長", "state": 1, "facts": []}]
+    c = M.conflicts(ps)
+    assert any(x.startswith("荷姆茲海峽幾乎沒有船通過") for x in c) and any(x.startswith("能源或供應鏈壓力在升，同時經濟在轉弱") for x in c)
+    ps[0].update(hz_ratio=0.9)
+    assert not any(x.startswith("荷姆茲海峽幾乎沒有船通過") for x in M.conflicts(ps))
+
+
+if __name__ == "__main__":
+    test_energy_conflicts()
+    print("ok energy")

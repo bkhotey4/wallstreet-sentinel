@@ -291,6 +291,24 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
                                       (f"美日 10 年利差 1 個月 {spread * 100:+.0f} 個基點（縮小＝借日圓買美國資產的誘因變小）" if spread is not None else ""),
                                       (f"歐元區金融壓力指數 CISS {ciss:.2f}（0.2 以上＝壓力高）" if ciss is not None else "")) if f]})
 
+    # 6c 能源與供應鏈（11-29 desk pass）：油、天然氣、荷姆茲海峽通行（IMF PortWatch）、紐約聯準會全球供應鏈壓力 GSCPI。
+    #    通膨面向只看物價結果；這裡看源頭——供給斷了多少、運費與交期壓力往哪走。
+    ch = (extras or {}).get("choke") or {}
+    ng = _chg(M("NG=F"), pct=True)
+    hz, hz4 = ch.get("hz_ratio"), ch.get("hz_ratio_4w")
+    hz_d = (hz - hz4) if hz is not None and hz4 is not None else None
+    gs, gs3 = ch.get("gscpi"), ch.get("gscpi_chg3")
+    out.append({"key": "energy", "zh": "能源與供應鏈", "hz_ratio": hz, "oil": oil,
+                **_st(_sgn(oil, 8.0), _sgn(ng, 15.0), (None if hz_d is None else 1 if hz_d <= -0.15 else -1 if hz_d >= 0.15 else 0),
+                      _sgn(gs3, 0.3)),
+                "facts": [f for f in (f"布蘭特原油 1 個月 {oil:+.1f}%" if oil is not None else "",
+                                      f"天然氣 1 個月 {ng:+.1f}%" if ng is not None else "",
+                                      (f"荷姆茲海峽每天通過的船只有平常的 {hz * 100:.0f}%（{ch['hz_since']} 起偏低，{ch['hz_date'][5:]}）"
+                                       if hz is not None and ch.get("hz_since") else
+                                       f"荷姆茲海峽每天通過的船是平常的 {hz * 100:.0f}%（{ch.get('hz_date', '')[5:]}）" if hz is not None else ""),
+                                      (f"全球供應鏈壓力 GSCPI {gs:+.2f}（{ch['gscpi_m']}，3 個月 {gs3:+.2f}；0 是常態，1 以上偏緊）"
+                                       if gs is not None and gs3 is not None else "")) if f]})
+
     # 7 AI 投資循環：費半相對標普、輝達
     sox, spx, nv = _chg(M("^SOX"), pct=True), _chg(M("^GSPC"), pct=True), _chg(M("NVDA"), pct=True)
     rel = (sox - spx) if sox is not None and spx is not None else None
@@ -422,6 +440,12 @@ def conflicts(ps: List[Dict]) -> List[str]:
     if (gl.get("j10") or 0) >= 0.10 and y10f and int(y10f.group(1)) < 0:
         out.append("日本長期利率在升、美債利率在降：美日利差縮小，借日圓買美國資產的部位容易被迫平倉（2024 年 8 月 5 日日股單日跌 12% 就是這樣），"
                    "日本資金也比較想留在國內，美債少一個大買家。")
+    en = next((p for p in ps if p["key"] == "energy"), {})
+    if en.get("hz_ratio") is not None and en["hz_ratio"] < 0.3 and (en.get("oil") or 0) <= -8:
+        out.append("荷姆茲海峽幾乎沒有船通過，油價這個月卻大跌：價格在押需求轉弱，或是繞道、戰略儲備與其他產油國已經補上供給。"
+                   "如果接下來的經濟數據沒有轉弱，供給缺口還在，油價的下跌空間有限；若是需求真的轉弱，這是景氣訊號，不是好消息。")
+    if s.get("energy") == 1 and s.get("growth") == 1:
+        out.append("能源或供應鏈壓力在升，同時經濟在轉弱：這是供給衝擊型的停滯性通膨，央行降息救經濟會推高物價，最難處理。")
     rt = next((p for p in ps if p["key"] == "rates"), {})
     if (rt.get("hike_next") or 0) >= 0.5 and (s.get("pricing") == 1 or s.get("growth") == 1):
         out.append("期貨市場押聯準會下次升息，但跨資產價格或數據在押景氣轉弱：這是最怕的組合（景氣轉弱時還在升息），"

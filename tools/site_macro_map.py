@@ -29,6 +29,9 @@ MEAN = {
     "dollar": {1: "美元轉強或亞洲貨幣轉弱：外資容易從台灣等亞洲市場把錢換回美元。", -1: "美元轉弱，資金比較願意留在亞洲。", 0: "匯率沒有大動。"},
     "global": {1: "日本或歐洲的長期利率在升、或美日利差在縮：日本資金比較想留在國內，借日圓買海外資產的部位有被迫平倉的風險，美債與美股少一股買盤。",
                -1: "日本長期利率整體在降、歐洲金融壓力低：日本資金沒有被拉回國內的壓力，海外資金比較願意留在美債與美股。", 0: "日本與歐洲的利率和金融壓力沒有大動。"},
+    "energy": {1: "能源或供應鏈壓力在升：油價、運費與交期推高物價，聯準會更難降息；台灣能源幾乎全靠進口，電價與企業成本也會跟著上去。",
+               -1: "能源與供應鏈壓力在退：物價少一個上漲來源，但要分清楚是供給恢復（好事）還是需求轉弱（景氣訊號）。",
+               0: "能源與供應鏈沒有明顯變化。"},
     "ai": {1: "AI 股比大盤弱：台股電子、伺服器、記憶體的訂單預期可能被下修。", -1: "AI 股比大盤強：台灣供應鏈的訂單預期還在往上。", 0: "AI 股和大盤差不多。"},
     "china": {1: "中國需求或信心轉弱：原物料、航運與對中出口的台廠承壓。", -1: "中國與原物料回溫，對景氣循環股有利。", 0: "中國與原物料沒有明顯變化。"},
     "taiwan": {1: "台股走弱：前面幾個面向的壓力傳到了台灣。", -1: "台股走強。", 0: "台股沒有大動。"},
@@ -112,6 +115,25 @@ def extras(eng) -> Dict:
             out["ciss"] = cs.sort_index().astype(float)
     except Exception:  # noqa: BLE001
         pass
+    try:                                   # 荷姆茲海峽通行（IMF PortWatch）＋紐約聯準會 GSCPI
+        import pandas as pd
+        from wsb.data import chokepoints as CKP
+        v = CKP.view() or {}
+        hz = next((r for r in v.get("rows") or [] if r["id"] == "chokepoint6"), None)
+        c: Dict = {}
+        if hz and hz.get("base"):
+            c.update(hz_ratio=hz["ratio"], hz_since=hz.get("since"), hz_date=hz["date"])
+            wk = hz.get("weekly")
+            if wk is not None and len(wk) >= 5:
+                old = wk[wk.index <= pd.Timestamp(hz["date"]) - pd.Timedelta(days=28)]
+                if len(old):
+                    c["hz_ratio_4w"] = float(old.iloc[-1]) / hz["base"]
+        g = v.get("gscpi") or {}
+        if g.get("v") is not None:
+            c.update(gscpi=g["v"], gscpi_chg3=g.get("chg3"), gscpi_m=g["month"])
+        out["choke"] = c
+    except Exception:  # noqa: BLE001
+        pass
     try:                                   # CFTC 期貨部位（擁擠＝自己 3 年的前後 10%）
         from wsb.data import cot_pos as COTP
         out["cot"] = {k: {**v, "line": COTP.text(v)} for k, v in COTP.view(COTP.load()).items()}
@@ -161,6 +183,6 @@ def sec_macro_map(eng) -> str:
     note = ("每個面向用網站已有的官方數據與行情，比較最近和一個月前（初領失業金用近 4 週對近 13 週、核心 CPI 用近 3 個月年化對近 12 個月），"
             "超過門檻算轉好或轉壞；方向一律寫「對經濟與市場」（例如利率上升、美元轉強算轉壞）。成長與通膨兩個面向組合成四種階段："
             "金髮女孩（成長好、通膨降）、過熱、停滯性通膨的壓力、降溫。這是同一套規則的描述，不是預測；AI 寫的看法在總經口播與一個月預判。"
-            "資料來源：FRED（美國勞工部、聯準會、芝加哥聯準會）、美國財政部 TreasuryDirect（標售結果）、CFTC 交易者持倉報告（期貨部位、基差交易）、日本財務省（公債殖利率）、歐洲央行（CISS）、Yahoo 行情。")
+            "資料來源：FRED（美國勞工部、聯準會、芝加哥聯準會）、美國財政部 TreasuryDirect（標售結果）、CFTC 交易者持倉報告（期貨部位、基差交易）、日本財務省（公債殖利率）、IMF PortWatch（航道通行）、紐約聯準會（GSCPI）、歐洲央行（CISS）、Yahoo 行情。")
     return card("總經全貌：各面向一起看", "Macro map: all pillars together",
                 f'<p class="rimp big2"><b>{esc(lead(m))}</b></p>' + reg + table + conf + fl + f'<p class="note">{note}</p>', "wide")
