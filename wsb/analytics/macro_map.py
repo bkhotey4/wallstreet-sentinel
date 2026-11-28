@@ -206,10 +206,26 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     nfci = _chg(F("NFCI"), 28)
     hy = _chg(F("BAMLH0A0HYM2"))
     vix = _last(M("^VIX"))
+    # 11-28 desk pass: who gets hurt first — CCC minus BB (the weakest borrowers' extra cost), investment grade, and the
+    # Fed's loan-officer survey (net share of banks tightening business-loan standards, quarterly)
+    ig = _chg(F("BAMLC0A0CM"))
+    try:
+        q = (F("BAMLH0A3HYC") - F("BAMLH0A1HYBB")).dropna()
+    except Exception:  # noqa: BLE001
+        q = pd.Series(dtype=float)
+    ccc_bb = _chg(q)
+    sloos = _last(F("DRTSCILM"))
     out.append({"key": "credit", "zh": "金融條件與信用",
-                **_st(_sgn(nfci, 0.05), _sgn(hy, 0.30), (1 if vix and vix >= 25 else -1 if vix and vix < 16 else 0 if vix else None)),
+                **_st(_sgn(nfci, 0.05), _sgn(hy, 0.30), (1 if vix and vix >= 25 else -1 if vix and vix < 16 else 0 if vix else None),
+                      _sgn(ccc_bb, 0.75), _sgn(ig, 0.10),
+                      (1 if sloos is not None and sloos >= 20 else -1 if sloos is not None and sloos < 0 else 0 if sloos is not None else None)),
                 "facts": [f for f in (f"芝加哥聯準會金融條件指數 4 週 {nfci:+.2f}（正＝變緊）" if nfci is not None else "",
                                       f"高收益債利差 1 個月 {hy * 100:+.0f} 個基點" if hy is not None else "",
+                                      f"投資級公司債利差 1 個月 {ig * 100:+.0f} 個基點" if ig is not None else "",
+                                      (f"CCC 級比 BB 級多付的利差 1 個月 {ccc_bb * 100:+.0f} 個基點（擴大＝最弱的公司先借不到錢）"
+                                       if ccc_bb is not None else ""),
+                                      (f"銀行收緊企業放款標準的淨比例 {sloos:+.0f}%（聯準會放款主管調查，每季；20% 以上歷史上常在衰退前後）"
+                                       if sloos is not None else ""),
                                       f"VIX {vix:.1f}" if vix else "") if f]})
 
     # 5 流動性：聯準會資產 − 財政部帳戶 − 逆回購（4 週變化）
