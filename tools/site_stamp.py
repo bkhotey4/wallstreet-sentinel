@@ -888,6 +888,7 @@ MAX_AGE_H.update({k: 24 * (SOURCES[k][3] + 1) for k in ("after", "preview", "ses
 MAX_AGE_H["sessions"] = 72                 # run time still ages as before (2-day lag); only the data date moved to the US day
 MAX_AGE_H["rel"] = 8 * 24            # refreshed weekly by design
 MAX_AGE_H["xcal"] = 8 * 24            # holiday calendars: wsb/data/exchange_cal.TTL is 7 days (11-17: flagged 偏舊 5 days a week)
+MAX_AGE_H["twfin"] = 10 * 24             # 11-29: quarterly results; the PC relay re-reads them when filings change, not daily
 MAX_AGE_H["longhist"] = 24 * 3650          # researched history: its age is not a fault
 MAX_AGE_H["darkpool"] = 24 * 5             # 11-23: its check time is the archive mtime, which moves only when FINRA posts a new
                                            # trading day (Fri file → Sat 07:00, Mon file → Tue 07:00 TPE = 72 h, +1 day per holiday,
