@@ -136,16 +136,25 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     fedt = F("TREAST").dropna()
     fed_chg = (fedt.iloc[-1] - fedt.iloc[-14]) / 1000 if len(fedt) >= 14 else None   # $ billions over ~13 weeks
     curve = curve_regime(y2, y10)
-    out.append({"key": "treasury", "zh": "美債供需與定價", "curve": curve,
+    # 11-28 desk pass: bond-market fear (MOVE) and how the last month's coupon auctions went (bid-to-cover and dealer share
+    # against the same tenor's own recent auctions, wsb.data.treasury.judge)
+    move = _last(M("^MOVE"))
+    at = (extras or {}).get("auctions") or {}
+    out.append({"key": "treasury", "zh": "美債供需與定價", "curve": curve, "auct_weak": at.get("weak"),
                 **_st(_sgn(real, 0.10), _sgn(tp, 0.15), (1 if curve == "熊市變陡" else -1 if curve == "牛市變平" else 0 if curve else None),
-                      _sgn(cust_chg, 2.0, worse_if_up=False)),
+                      _sgn(cust_chg, 2.0, worse_if_up=False),
+                      (1 if move is not None and move >= 125 else -1 if move is not None and move < 80 else 0 if move is not None else None),
+                      (1 if at.get("weak", 0) >= 2 else -1 if at.get("strong", 0) >= 2 and not at.get("weak") else 0) if at.get("n") else None),
                 "facts": [f for f in ((f"10 年期 1 個月 {y10 * 100:+.0f} 個基點＝實質利率 {real * 100:+.0f}＋通膨預期 {be10 * 100:+.0f}"
                                        if y10 is not None and real is not None and be10 is not None else ""),
                                       f"期限溢價 1 個月 {tp * 100:+.0f} 個基點" if tp is not None else "",
                                       f"殖利率曲線：{curve}（2 年 {y2 * 100:+.0f}、10 年 {y10 * 100:+.0f}、30 年 {y30 * 100:+.0f} 個基點）"
                                       if curve and y30 is not None else "",
                                       f"外國央行託管美債 13 週 {cust_chg:+.1f}%" if cust_chg is not None else "",
-                                      (f"聯準會持有美債 13 週 {fed_chg * 10:+,.0f} 億美元" if fed_chg is not None else "")) if f]})
+                                      (f"聯準會持有美債 13 週 {fed_chg * 10:+,.0f} 億美元" if fed_chg is not None else ""),
+                                      f"MOVE 美債波動率 {move:.0f}（125 以上＝債市恐慌，80 以下＝很平靜）" if move is not None else "",
+                                      (f"近 5 週 {at['n']} 場中長期公債標售：偏弱 {at['weak']}、偏強 {at['strong']}、其餘正常"
+                                       f"（和同天期前 6 場比得標倍數與交易商被迫吃下的比例）" if at.get("n") else "")) if f]})
 
     # 3c 市場在押什麼：交易台每天看的跨資產比值（11-28 使用者：「用華爾街的金融視角」）。比值 1 個月的變化，
     #    往下＝市場在避險或押景氣轉弱。這一欄看的是「價格怎麼定」，和上面的「數據怎麼說」對照，落差就是情報。
@@ -232,6 +241,25 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
                                       f"美元兌新台幣 {twd:+.1f}%（正＝台幣貶）" if twd is not None else "",
                                       f"美元兌日圓 {jpy:+.1f}%（大跌＝日圓急升，借日圓的錢會被迫平倉）" if jpy is not None else "") if f]})
 
+    # 6b 海外利率（11-28 desk pass）：日本公債（財務省，日資料）與歐元區金融壓力指數 CISS（歐洲央行）。日本是美債最大的外國持有者，
+    #    日本長期利率升、美日利差縮，日本資金比較想留在國內，借日圓買海外資產的部位也可能被迫平倉（2024-08-05 就是這樣）。
+    jp = (extras or {}).get("jgb") or {}
+    j10, j30 = _chg(jp.get("10Y")), _chg(jp.get("30Y"))
+    spread = None
+    us10, jp10 = F("DGS10").dropna(), (jp.get("10Y") if jp.get("10Y") is not None else pd.Series(dtype=float)).dropna()
+    if len(us10) and len(jp10):
+        diff = (us10 - jp10.reindex(us10.index).ffill()).dropna()
+        spread = _chg(diff)
+    cs = (extras or {}).get("ciss")
+    ciss, ciss_chg = _last(cs), _chg(cs)
+    out.append({"key": "global", "zh": "海外利率（日本、歐洲）", "j10": j10, "spread_chg": spread,
+                **_st(_sgn(j10, 0.10), _sgn(j30, 0.15), (1 if spread is not None and spread <= -0.20 else 0 if spread is not None else None),
+                      (1 if ciss is not None and (ciss >= 0.2 or (ciss_chg or 0) >= 0.05) else 0 if ciss is not None else None)),
+                "facts": [f for f in ((f"日本 10 年公債 {_last(jp.get('10Y')):.2f}%，1 個月 {j10 * 100:+.0f} 個基點" if j10 is not None else ""),
+                                      (f"日本 30 年 {_last(jp.get('30Y')):.2f}%，1 個月 {j30 * 100:+.0f} 個基點" if j30 is not None else ""),
+                                      (f"美日 10 年利差 1 個月 {spread * 100:+.0f} 個基點（縮小＝借日圓買美國資產的誘因變小）" if spread is not None else ""),
+                                      (f"歐元區金融壓力指數 CISS {ciss:.2f}（0.2 以上＝壓力高）" if ciss is not None else "")) if f]})
+
     # 7 AI 投資循環：費半相對標普、輝達
     sox, spx, nv = _chg(M("^SOX"), pct=True), _chg(M("^GSPC"), pct=True), _chg(M("NVDA"), pct=True)
     rel = (sox - spx) if sox is not None and spx is not None else None
@@ -262,6 +290,14 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
 
 
 
+
+
+def auction_tally(auctions: List[Dict], today: str, days: int = 35) -> Dict:
+    """Pure: verdicts of coupon auctions held in the last `days` days (wsb.data.treasury rows, verdict 偏弱/偏強/正常)."""
+    cut = (pd.Timestamp(today) - pd.Timedelta(days=days)).strftime("%Y-%m-%d")
+    rs = [a for a in auctions or [] if (a.get("date") or "") >= cut and a.get("verdict") in ("偏弱", "偏強", "正常")]
+    return {"n": len(rs), "weak": sum(a["verdict"] == "偏弱" for a in rs), "strong": sum(a["verdict"] == "偏強" for a in rs),
+            "weak_terms": [a["term"] for a in rs if a["verdict"] == "偏弱"]}
 
 
 REGIME = {(1, -1): ("停滯性通膨的壓力", "成長轉弱、通膨卻在升：央行很難靠降息救經濟，股債常一起跌，是最難的組合。"),
@@ -348,6 +384,13 @@ def conflicts(ps: List[Dict]) -> List[str]:
         out.append("名目殖利率在降，但扣掉通膨後的實質利率在升：看起來借錢變便宜，其實真實成本變貴，對高估值成長股和黃金是壓力。")
     if s.get("dollar") == 1 and "外國央行託管美債 13 週 -" in facts:
         out.append("美元轉強，同時外國央行在減持美債：常見的情況是亞洲央行賣美債換現金來穩住本國貨幣；若持續，長天期美債少了一個買家。")
+    if (tr.get("auct_weak") or 0) >= 2 and "外國央行託管美債 13 週 -" in facts:
+        out.append("最近的美債標售需求偏弱，外國央行也在減持：長天期美債的買家在變少，殖利率可能因為供需而上升，和經濟好壞無關。")
+    gl = next((p for p in ps if p["key"] == "global"), {})
+    y10f = _re.search(r"10 年期 1 個月 ([+-]\d+) 個基點", facts)
+    if (gl.get("j10") or 0) >= 0.10 and y10f and int(y10f.group(1)) < 0:
+        out.append("日本長期利率在升、美債利率在降：美日利差縮小，借日圓買美國資產的部位容易被迫平倉（2024 年 8 月 5 日日股單日跌 12% 就是這樣），"
+                   "日本資金也比較想留在國內，美債少一個大買家。")
     rt = next((p for p in ps if p["key"] == "rates"), {})
     if (rt.get("hike_next") or 0) >= 0.5 and (s.get("pricing") == 1 or s.get("growth") == 1):
         out.append("期貨市場押聯準會下次升息，但跨資產價格或數據在押景氣轉弱：這是最怕的組合（景氣轉弱時還在升息），"

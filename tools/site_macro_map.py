@@ -27,6 +27,8 @@ MEAN = {
     "credit": {1: "借錢給公司的人開始擔心，體質弱的公司借新還舊變難，常比股市早反應。", -1: "信用市場平靜，企業借錢順利。", 0: "金融條件沒有明顯變化。"},
     "liquidity": {1: "市場上的錢在變少，風險資產少了一股推力。", -1: "市場上的錢在變多，對股市與加密資產有利。", 0: "流動性沒有明顯變化。"},
     "dollar": {1: "美元轉強或亞洲貨幣轉弱：外資容易從台灣等亞洲市場把錢換回美元。", -1: "美元轉弱，資金比較願意留在亞洲。", 0: "匯率沒有大動。"},
+    "global": {1: "日本或歐洲的長期利率在升、或美日利差在縮：日本資金比較想留在國內，借日圓買海外資產的部位有被迫平倉的風險，美債與美股少一股買盤。",
+               -1: "日本與歐洲利率在降、金融壓力低：海外資金比較願意流向美債與美股。", 0: "日本與歐洲的利率和金融壓力沒有大動。"},
     "ai": {1: "AI 股比大盤弱：台股電子、伺服器、記憶體的訂單預期可能被下修。", -1: "AI 股比大盤強：台灣供應鏈的訂單預期還在往上。", 0: "AI 股和大盤差不多。"},
     "china": {1: "中國需求或信心轉弱：原物料、航運與對中出口的台廠承壓。", -1: "中國與原物料回溫，對景氣循環股有利。", 0: "中國與原物料沒有明顯變化。"},
     "taiwan": {1: "台股走弱：前面幾個面向的壓力傳到了台灣。", -1: "台股走強。", 0: "台股沒有大動。"},
@@ -89,6 +91,27 @@ def extras(eng) -> Dict:
             out["holders"] = {"note": "集保大戶／散戶從 " + min(d["weeks"]) + " 開始每週存一份，滿兩週後比較"}
     except Exception:  # noqa: BLE001
         pass
+    try:                                   # 近 5 週美債標售的好壞（wsb.data.treasury.judge）
+        from datetime import datetime, timedelta, timezone
+        from wsb.analytics.macro_map import auction_tally
+        today = (datetime.now(timezone.utc) + timedelta(hours=8)).strftime("%Y-%m-%d")
+        out["auctions"] = auction_tally(eng.treasury.auctions, today)
+    except Exception:  # noqa: BLE001
+        pass
+    try:                                   # 日本公債（財務省）＋歐元區 CISS（歐洲央行）
+        out["jgb"] = {t: eng.global_yields.get(t) for t in ("10Y", "30Y")}
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        import pandas as pd
+        from wsb.data import euro_asia as EA
+        c = EA.load().get("ciss") or {}
+        if c:
+            cs = pd.Series(c)
+            cs.index = pd.to_datetime(cs.index)
+            out["ciss"] = cs.sort_index().astype(float)
+    except Exception:  # noqa: BLE001
+        pass
     try:
         y = eng.margin_debt.yoy()
         if y is not None and len(y.dropna()):
@@ -128,6 +151,6 @@ def sec_macro_map(eng) -> str:
     note = ("每個面向用網站已有的官方數據與行情，比較最近和一個月前（初領失業金用近 4 週對近 13 週、核心 CPI 用近 3 個月年化對近 12 個月），"
             "超過門檻算轉好或轉壞；方向一律寫「對經濟與市場」（例如利率上升、美元轉強算轉壞）。成長與通膨兩個面向組合成四種階段："
             "金髮女孩（成長好、通膨降）、過熱、停滯性通膨的壓力、降溫。這是同一套規則的描述，不是預測；AI 寫的看法在總經口播與一個月預判。"
-            "資料來源：FRED（美國勞工部、聯準會、芝加哥聯準會）、Yahoo 行情。")
+            "資料來源：FRED（美國勞工部、聯準會、芝加哥聯準會）、美國財政部 TreasuryDirect（標售結果）、日本財務省（公債殖利率）、歐洲央行（CISS）、Yahoo 行情。")
     return card("總經全貌：各面向一起看", "Macro map: all pillars together",
                 f'<p class="rimp big2"><b>{esc(lead(m))}</b></p>' + reg + table + conf + fl + f'<p class="note">{note}</p>', "wide")

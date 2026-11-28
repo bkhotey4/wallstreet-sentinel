@@ -61,3 +61,24 @@ def test_fed_path_and_hike_into_slowdown():
 if __name__ == "__main__":
     test_fed_path_and_hike_into_slowdown()
     print("ok fed path")
+
+
+def test_auction_tally_and_global_conflicts():
+    """11-28 desk pass: auction demand over 5 weeks, the yen-carry squeeze (JGB up while US 10y falls)."""
+    a = [{"date": "2026-11-25", "term": "7-Year", "verdict": "偏弱"}, {"date": "2026-11-12", "term": "30-Year", "verdict": "偏弱"},
+         {"date": "2026-11-10", "term": "10-Year", "verdict": "正常"}, {"date": "2026-10-01", "term": "5-Year", "verdict": "偏強"},
+         {"date": "2026-11-20", "term": "2-Year", "verdict": None}]
+    t = M.auction_tally(a, "2026-11-28")
+    assert t == {"n": 3, "weak": 2, "strong": 0, "weak_terms": ["7-Year", "30-Year"]}
+    ps = [{"key": "treasury", "zh": "美債", "state": 1, "auct_weak": 2, "facts": [
+              "10 年期 1 個月 -15 個基點＝實質利率 +2＋通膨預期 -17", "外國央行託管美債 13 週 -2.7%"]},
+          {"key": "global", "zh": "海外", "state": 1, "j10": 0.12, "facts": []}]
+    c = M.conflicts(ps)
+    assert any(x.startswith("最近的美債標售需求偏弱") for x in c) and any(x.startswith("日本長期利率在升") for x in c)
+    ps[1]["j10"] = -0.12
+    assert not any(x.startswith("日本長期利率在升") for x in M.conflicts(ps))
+
+
+if __name__ == "__main__":
+    test_auction_tally_and_global_conflicts()
+    print("ok desk pass")
