@@ -107,7 +107,7 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     eci = F("ECIWAG").dropna()
     eci_yoy = (eci.iloc[-1] / eci.iloc[-5] - 1) * 100 if len(eci) >= 5 else None
     eci_prev = (eci.iloc[-2] / eci.iloc[-6] - 1) * 100 if len(eci) >= 6 else None
-    out.append({"key": "inflation", "zh": "通膨", "core_up": c3 is not None and c12 is not None and c3 - c12 >= 0.3,
+    out.append({"key": "inflation", "zh": "通膨", "core_up": bool(c3 is not None and c12 is not None and c3 - c12 >= 0.3),
                 # core CPI counts twice: 11-28 oil −14% and breakevens −23 bp outvoted core re-accelerating (3.7% vs 2.9%)
                 **_st(*([_sgn((c3 - c12) if c3 is not None and c12 is not None else None, 0.3)] * 2), _sgn(be, 0.1), _sgn(oil, 8.0),
                       _sgn(mich_chg, 0.3), _sgn((eci_yoy - eci_prev) if eci_yoy is not None and eci_prev is not None else None, 0.2)),
