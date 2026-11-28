@@ -75,6 +75,20 @@ def extras(eng) -> Dict:
         out["fedwatch"] = FW.view(eng)
     except Exception:  # noqa: BLE001
         pass
+    try:                                   # 集保：追蹤名單裡「大戶減、散戶增」的家數（滿兩週才有）
+        from wsb.data import tw_holders as TWH
+        from wsb.data.stocks import universe
+        codes = {s.split(".")[0] for s in (universe().get("tw") or {}).get("symbols") or {}}
+        d = TWH.load()
+        ch = [c for c in TWH.changes(d) if c["code"] in codes]
+        if ch:
+            out["holders"] = {"n": len(ch), "week": max(d.get("weeks") or {"": 0}),
+                              "dist": sum(1 for c in ch if c["d_big"] < 0 and c["d_small_n"] > 0),
+                              "accum": sum(1 for c in ch if c["d_big"] > 0 and c["d_small_n"] < 0)}
+        elif d.get("weeks"):
+            out["holders"] = {"note": "集保大戶／散戶從 " + min(d["weeks"]) + " 開始每週存一份，滿兩週後比較"}
+    except Exception:  # noqa: BLE001
+        pass
     try:
         y = eng.margin_debt.yoy()
         if y is not None and len(y.dropna()):

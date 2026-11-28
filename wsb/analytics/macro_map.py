@@ -248,11 +248,14 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
                                       f"美元兌人民幣 {cny:+.1f}%" if cny is not None else "",
                                       f"銅 1 個月 {cu:+.1f}%" if cu is not None else "") if f]})
 
-    # 9 台灣傳導：加權指數
+    # 9 台灣傳導：加權指數＋集保大戶／散戶（11-28：泡沫頂部常見「大戶賣、散戶進」）
     tw = _chg(M("^TWII"), pct=True)
+    hold = extras.get("holders") or {}
     out.append({"key": "taiwan", "zh": "台灣（傳導終點）",
                 **_st(_sgn(tw, 4.0, worse_if_up=False)),
-                "facts": [f"加權指數 1 個月 {tw:+.1f}%" if tw is not None else ""]})
+                "facts": [f for f in (f"加權指數 1 個月 {tw:+.1f}%" if tw is not None else "",
+                                      (f"追蹤的 {hold['n']} 檔裡，這週千張大戶減持、散戶人數增加的有 {hold['dist']} 檔，相反的有 {hold['accum']} 檔"
+                                       f"（{hold['week']}，集保）" if hold.get("n") else hold.get("note", ""))) if f]})
     for p in out:
         p["facts"] = [f for f in p["facts"] if f]
     return out

@@ -1767,6 +1767,16 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
         await asyncio.wait_for(FRG.refresh(), 120)
     except Exception as e:  # noqa: BLE001
         log.warning("federal register failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 美債標售日曆（11-28，TreasuryDirect 官方 API）
+        from wsb.data import ust_auctions as UAU
+        await asyncio.wait_for(UAU.refresh(), 45)
+    except Exception as e:  # noqa: BLE001
+        log.warning("treasury auctions failed: %s", e if str(e) else type(e).__name__)
+    try:                                           # 集保戶股權分散表（11-28，每週大戶／散戶）
+        from wsb.data import tw_holders as TWH
+        await asyncio.wait_for(TWH.refresh(), 90)
+    except Exception as e:  # noqa: BLE001
+        log.warning("tw holders failed: %s", e if str(e) else type(e).__name__)
     try:                                           # SCFI 貨櫃運價（11-26）
         from wsb.data import freight as FRT
         await asyncio.wait_for(FRT.refresh(), 45)

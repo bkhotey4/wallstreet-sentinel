@@ -122,6 +122,9 @@ def write(feed: Path) -> Dict:
         from wsb.data import freight as FRT
         asyncio.run(FRT.refresh())
         out["freight"] = len((FRT.write_seed(feed / "freight_seed.json") or {}).get("scfi") or [])
+        from wsb.data import tw_holders as TWH
+        asyncio.run(TWH.refresh())
+        out["holders"] = len((TWH.write_seed(feed / "tw_holders_seed.json") or {}).get("weeks") or {})
     except Exception as e:  # noqa: BLE001
         out["respress"] = {"error": str(e)}
     return out

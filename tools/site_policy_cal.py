@@ -54,4 +54,34 @@ def sec_policy_calendar(eng=None) -> str:
             "取每份文件的意見徵詢截止日、生效日，以及文件「DATES」段落裡寫到的日期（例如公聽會），只列還沒到的。"
             "「這一天發生什麼」保留英文原文以免翻譯失真；「先動」是這類消息過去最先反應的資產。例行的展期、名單更新不列。")
     return card("政策時程表：美國政府接下來哪天會做什麼", "Policy calendar: scheduled US government dates",
-                f'<p class="rimp big2"><b>{esc(lead)}</b></p>' + fold_rows(trs, 12, head, "個日期") + f'<p class="note">{note}</p>', "wide")
+                f'<p class="rimp big2"><b>{esc(lead)}</b></p>' + fold_rows(trs, 12, head, "個日期") + _auctions() + f'<p class="note">{note}</p>', "wide")
+
+
+TERM_ZH = {"Year": "年", "Month": "個月"}
+
+
+def _term(t: str) -> str:
+    """'9-Year 11-Month' → '10 年期（增額）' style: round reopenings to the original tenor people know."""
+    import re
+    m = re.match(r"(\d+)-Year(?: (\d+)-Month)?", t or "")
+    if not m:
+        return t or ""
+    y = int(m.group(1)) + (1 if m.group(2) and int(m.group(2)) >= 6 else 0)
+    return f"{y} 年期"
+
+
+def _auctions() -> str:
+    """接下來的中長期美債標售（TreasuryDirect 官方 API）：長天期標售需求不好時，殖利率常當天急升。"""
+    try:
+        from wsb.data import ust_auctions as UA
+        items = [x for x in UA.load().get("items") or [] if x.get("issue")]
+    except Exception:  # noqa: BLE001
+        items = []
+    if not items:
+        return ""
+    lis = "".join(f'<li>{esc(x["announce"][5:])} 公布規模 → {esc(x["issue"][5:])} 交割：<b>{esc(_term(x["term"]))}{"（增額）" if x.get("reopen") else ""}</b>'
+                  + (f'，{x["amount_b"] * 10:,.0f} 億美元' if x.get("amount_b") else "")
+                  + '</li>' for x in items[:10])
+    return ('<h3>接下來的中長期美債標售</h3><ul class="small">' + lis + '</ul>'
+            '<p class="small muted">標售日在公布日與交割日之間（財政部 API 沒有給確切標售日，以財政部公告為準）。'
+            '對你的意思：10 年、30 年期標售時，若得標倍數偏低、得標殖利率比市場高（尾差），長期利率常當天急升，房貸與成長股跟著受壓。</p>')
