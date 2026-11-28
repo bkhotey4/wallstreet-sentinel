@@ -96,6 +96,7 @@ from tools import site_memspot as SMS
 from tools import site_freight as SFRT
 from tools import site_tw_qall as STQA
 from tools import site_ai_projects as SAIP
+from tools import site_macro_map as SMM
 from tools import site_fiscal as SFI
 from tools import site_forced as SFO
 from tools import site_korea as SKO
@@ -1383,7 +1384,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
     tabs = [("overview", "總覽", "Overview", [SFC.sec_macro_voice, SEB.sec_event_board, SNL.sec_news_live, SLY.sec_today_slot, SSN.sec_sessions, SFC.sec_forecast, SLN.sec_learn, SDP.sec_deep, SLY.sec_more_slot, SDU.sec_dual, SCG.sec_changes, SEV.sec_event_clock, S2.sec_focus, SA.sec_vix_hot, sec_ssi, sec_radar, sec_odds, SO.sec_outlook_mini, None, S3.sec_econ_mini, S4.sec_fg_mini,
                                                S2.sec_scores_mini, sec_trends]),
             ("premarket", "開盤前 30 秒與即時情勢", "Pre-open & live session", [SSN.sec_sessions, SQ.sec_premarket, SXG.sec_ext_gaps, SID.sec_intraday, SID.sec_why_days]),
-            ("outlook", "全方位風險", "Risk outlook", [SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
+            ("outlook", "全方位風險", "Risk outlook", [SMM.sec_macro_map, SO.sec_outlook_hero, SO.sec_outlook_dims, SSL.sec_vulnerability, SSL.sec_mpd, SO.sec_intel, SO.sec_exposure]),
             ("portfolio", "我的持股", "My holdings", [SP.sec_portfolio]),
             ("entry", "AI 視角看進場", "AI view of entry", [SEN.sec_ai_entry, SMK.sec_marks, SCD.sec_cool_check, SCD.sec_cool_history, SEN.sec_bull_env,
                                                        SEN.sec_cheap, SEN.sec_phased, SEN.sec_entry_links]),
