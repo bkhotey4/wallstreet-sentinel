@@ -63,7 +63,7 @@ def _sgn(x: Optional[float], band: float, worse_if_up: bool = True) -> Optional[
     return up if worse_if_up else -up
 
 
-def pillars(fred, market) -> List[Dict]:
+def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     """[{key, zh, state (-1 better / 0 flat / 1 worse / None), facts: [str]}] from the engine's FRED and market data."""
     F = lambda sid: fred.get(sid) if hasattr(fred, "get") else pd.Series(dtype=float)        # noqa: E731
     M = lambda t: market.series(t) if hasattr(market, "series") else pd.Series(dtype=float)  # noqa: E731
@@ -166,6 +166,29 @@ def pillars(fred, market) -> List[Dict]:
                                       f"區域銀行對大盤 {bk:+.1f}%（往下＝擔心放款與信用）" if bk is not None else "",
                                       f"新興市場對美股 {em:+.1f}%" if em is not None else "",
                                       f"比特幣 1 個月 {btc:+.1f}%（常被當成資金鬆緊的溫度計）" if btc is not None else "") if f]})
+
+    extras = extras or {}
+    # 3d 企業獲利預期：分析師 EPS 預估 30 天往上修與往下修的家數差（華爾街看盈餘修正廣度，比股價早反映基本面）
+    er = ((extras.get("estrev") or {}).get("h") or {}).get(30) or {}
+    net = er.get("net")
+    out.append({"key": "earnings", "zh": "企業獲利預期",
+                **_st(_sgn(net, 10.0, worse_if_up=False) if net is not None else None),
+                "facts": [f for f in ((f"分析師 30 天內上修 {er['up_pct']:.0f}%、下修 {er['dn_pct']:.0f}% 的公司（{er['n']} 家），{"淨上修" if net >= 0 else "淨下修"} {abs(net):.0f} 個百分點"
+                                       if net is not None else ""),
+                                      ({"up": "這週修正速度比過去一個月快（更樂觀）", "down": "這週下修速度加快", "steady": "這週修正速度和過去一個月差不多"}
+                                       .get((extras.get("estrev") or {}).get("speed") or "", ""))) if f]})
+
+    # 3e 部位與脆弱度：借錢買股的擁擠程度、VIX 期限結構、尾部避險需求
+    mg = extras.get("margin_yoy")
+    v1, v3, sk = _last(M("^VIX")), _last(M("^VIX3M")), _last(M("^SKEW"))
+    term = (v1 / v3) if v1 and v3 else None
+    out.append({"key": "positioning", "zh": "部位與脆弱度",
+                **_st((1 if mg is not None and mg >= 30 else -1 if mg is not None and mg < 0 else 0 if mg is not None else None),
+                      (1 if term is not None and term >= 1.0 else 0 if term is not None else None),
+                      (1 if sk is not None and sk >= 150 else 0 if sk is not None else None)),
+                "facts": [f for f in (f"融資餘額年增 {mg:+.0f}%（30% 以上＝借錢買股很擁擠，跌時被迫賣）" if mg is not None else "",
+                                      f"近月 VIX 對三個月 VIX {term:.2f}（1 以上＝短期恐慌高過長期）" if term is not None else "",
+                                      f"SKEW {sk:.0f}（150 以上＝大家在買崩盤保險）" if sk is not None else "") if f]})
 
     # 4 金融條件與信用：芝加哥聯準會金融條件指數、高收益債利差、VIX
     nfci = _chg(F("NFCI"), 28)
@@ -273,7 +296,9 @@ def conflicts(ps: List[Dict]) -> List[str]:
     if macro and mkt and sum(1 for x in macro if x == 1) <= 1 and sum(1 for x in mkt if x == 1) >= 3:
         # 11-28: claims, retail and yields fine, while SOX −21%, TAIEX −16%, copper −17% and HY spreads +59 bp
         out.insert(0, "經濟數據大致還好，但股市、AI 股、原物料或信用一起轉壞：要嘛市場在提前反應經濟轉弱（之後要看就業和消費會不會跟著變差），"
-                      "要嘛是估值太高的修正、不是景氣問題。這兩種的後續很不一樣，接下來的就業與消費數據是分辨的關鍵。")
+                      "要嘛是估值太高的修正、不是景氣問題。這兩種的後續很不一樣，接下來的就業與消費數據是分辨的關鍵。"
+                      + ("目前的線索偏向前者：分析師下修獲利的公司已經比上修多，基本面開始轉弱，不只是估值。" if s.get("earnings") == 1 else
+                         "目前的線索偏向後者：分析師還在上修獲利，基本面還撐著。" if s.get("earnings") == -1 else ""))
     pr = next((p for p in ps if p["key"] == "pricing"), {})
     if s.get("growth") == -1 and pr.get("cg") is not None and pr["cg"] <= -4 and (pr.get("cy") or 0) <= -2:
         out.append("數據說景氣還好，但價格在押景氣轉弱（銅金比和消費類股的相對表現都在往下）：通常市場比數據早 1～3 個月，"
@@ -288,14 +313,18 @@ def conflicts(ps: List[Dict]) -> List[str]:
         out.append("名目殖利率在降，但扣掉通膨後的實質利率在升：看起來借錢變便宜，其實真實成本變貴，對高估值成長股和黃金是壓力。")
     if s.get("dollar") == 1 and "外國央行託管美債 13 週 -" in facts:
         out.append("美元轉強，同時外國央行在減持美債：常見的情況是亞洲央行賣美債換現金來穩住本國貨幣；若持續，長天期美債少了一個買家。")
+    if s.get("earnings") == -1 and (s.get("ai") == 1 or s.get("taiwan") == 1):
+        out.append("分析師還在上修獲利，股價卻在跌：要嘛是估值太高在修正（獲利沒問題），要嘛分析師還沒跟上；下修開始出現時，跌勢通常才真正反映基本面。")
+    if s.get("positioning") == 1 and s.get("credit") == 1:
+        out.append("借錢買股或避險部位很擁擠，信用又在轉緊：這種組合下，小跌容易因為被迫賣出而放大。")
     if s.get("liquidity") == 1 and s.get("credit") == -1:
         out.append("市場上的錢在變少，但信用市場還很平靜：流動性通常比信用利差早反應。")
     return out
 
 
-def build(fred, market, now: Optional[float] = None) -> Dict:
+def build(fred, market, now: Optional[float] = None, extras: Optional[Dict] = None) -> Dict:
     now = now or time.time()
-    ps = pillars(fred, market)
+    ps = pillars(fred, market, extras)
     known = [p for p in ps if p["state"] is not None]
     out = {"ts": now, "pillars": ps, "regime": regime(ps), "conflicts": conflicts(ps),
            "worse": [p["zh"] for p in known if p["state"] == 1], "better": [p["zh"] for p in known if p["state"] == -1]}

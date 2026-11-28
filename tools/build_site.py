@@ -2070,7 +2070,7 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             from tools import site_macro_map as SMMJ
             if not SMMJ.LAST:                      # 11-28: this step runs before the pages are rendered
                 from wsb.analytics import macro_map as MMJ
-                SMMJ.LAST.update(MMJ.build(eng.fred, eng.market))
+                SMMJ.LAST.update(MMJ.build(eng.fred, eng.market, extras=SMMJ.extras(eng)))
             (out / "macro_map.json").write_text(json.dumps(SMMJ.LAST, ensure_ascii=False), encoding="utf-8")
         except Exception:  # noqa: BLE001
             log.exception("macro_map.json failed")

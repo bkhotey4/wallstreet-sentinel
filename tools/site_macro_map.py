@@ -21,6 +21,9 @@ MEAN = {
     "pricing": {1: "價格在押避險：資金躲進大型股、必需消費與黃金，市場對景氣的信心比數據悲觀。",
                 -1: "價格在押景氣與風險：資金願意買小型股、景氣循環與新興市場。",
                 0: "跨資產的訊號沒有一致方向。"},
+    "earnings": {1: "分析師在下修企業獲利：股價下跌開始有基本面理由，不只是估值修正。", -1: "分析師還在上修獲利：基本面撐著，下跌比較像估值或情緒。",
+                 0: "獲利預期上修和下修差不多。"},
+    "positioning": {1: "部位擁擠或恐慌升高：市場比較脆弱，壞消息容易被放大。", -1: "部位不擁擠：市場有承受壞消息的空間。", 0: "部位沒有特別擁擠。"},
     "credit": {1: "借錢給公司的人開始擔心，體質弱的公司借新還舊變難，常比股市早反應。", -1: "信用市場平靜，企業借錢順利。", 0: "金融條件沒有明顯變化。"},
     "liquidity": {1: "市場上的錢在變少，風險資產少了一股推力。", -1: "市場上的錢在變多，對股市與加密資產有利。", 0: "流動性沒有明顯變化。"},
     "dollar": {1: "美元轉強或亞洲貨幣轉弱：外資容易從台灣等亞洲市場把錢換回美元。", -1: "美元轉弱，資金比較願意留在亞洲。", 0: "匯率沒有大動。"},
@@ -59,10 +62,27 @@ def lead(m: Dict) -> str:
     return s
 
 
+def extras(eng) -> Dict:
+    """Earnings revisions and margin debt, read the same way the cards that show them do."""
+    out: Dict = {}
+    try:
+        from wsb.data import est_revisions as ER
+        out["estrev"] = ER.view()
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        y = eng.margin_debt.yoy()
+        if y is not None and len(y.dropna()):
+            out["margin_yoy"] = float(y.dropna().iloc[-1])
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
 def sec_macro_map(eng) -> str:
     from wsb.analytics import macro_map as MM
     try:
-        m = MM.build(eng.fred, eng.market)
+        m = MM.build(eng.fred, eng.market, extras=extras(eng))
     except Exception:  # noqa: BLE001
         return ""
     LAST.clear()
