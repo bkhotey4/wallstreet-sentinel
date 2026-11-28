@@ -2065,6 +2065,12 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             (out / "macro_dash.json").write_text(json.dumps(SMD.public(eng), ensure_ascii=False), encoding="utf-8")
         except Exception:  # noqa: BLE001
             log.exception("macro_dash.json failed")
+        try:                                       # 總經全貌（九個面向、階段、矛盾）給口播與預判引用，2026-11-28
+            from tools import site_macro_map as SMMJ
+            if SMMJ.LAST:
+                (out / "macro_map.json").write_text(json.dumps(SMMJ.LAST, ensure_ascii=False), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            log.exception("macro_map.json failed")
         try:                                       # 各國危機雷達：燈號、原因與警報清單（給推播程式和口播用）
             from wsb.data import country_risk as CRD
             cv = getattr(eng, "_country_risk", None) or CRD.view(eng)

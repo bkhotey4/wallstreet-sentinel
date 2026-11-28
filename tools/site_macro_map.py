@@ -8,6 +8,7 @@ from typing import Dict
 
 from tools.sitekit import card, esc
 
+LAST: Dict = {}                       # the last build, written to macro_map.json for the AI routines
 LIGHT = {1: ("🔴", "轉壞"), 0: ("🟡", "持平"), -1: ("🟢", "轉好"), None: ("⚪", "資料不足")}
 # what each pillar's direction means for an ordinary reader (transmission written once, as logic — not data)
 MEAN = {
@@ -58,6 +59,8 @@ def sec_macro_map(eng) -> str:
         m = MM.build(eng.fred, eng.market)
     except Exception:  # noqa: BLE001
         return ""
+    LAST.clear()
+    LAST.update(m)
     trs = []
     for p in m["pillars"]:
         ic, lab = ("🟠", "分歧") if p.get("mixed") and p["state"] == 0 else LIGHT[p["state"]]
