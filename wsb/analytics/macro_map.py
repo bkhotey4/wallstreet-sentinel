@@ -1,4 +1,4 @@
-"""總經全貌：九個面向一起看（2026-11-28）。
+"""總經全貌：各面向一起看（2026-11-28）。
 
 使用者：「做總經的情報整合，我怕你都蒐集單一資訊，沒辦法看到全貌」。本站有幾十張單點卡片，卻沒有一張把它們放在一起：
 現在整體在哪個階段、哪幾個面向在轉壞、哪些訊號互相打架、這週和上週比哪裡變了。這裡只用網站已經有的數據（FRED、行情），
@@ -124,6 +124,49 @@ def pillars(fred, market) -> List[Dict]:
                 "facts": [f for f in (f"2 年期殖利率 {(_last(F('DGS2')) or 0):.2f}%，1 個月 {y2 * 100:+.0f} 個基點" if y2 is not None else "",
                                       f"10 年期 {(_last(F('DGS10')) or 0):.2f}%，1 個月 {y10 * 100:+.0f} 個基點" if y10 is not None else "") if f]})
 
+    # 3b 美債供需與定價（11-28：使用者「你有思考過美債嗎」— 10 年期下降 15 個基點，拆開是通膨預期 −23、實質利率 +7；
+    #    外國央行託管三個月 −717 億、聯準會持有 +468 億。只看名目殖利率會以為借錢變便宜）
+    real, be10, tp = _chg(F("DFII10")), _chg(F("T10YIE")), _chg(F("THREEFYTP10"))
+    y30 = _chg(F("DGS30"))
+    cust = F("WMTSECL1").dropna()
+    cust_chg = (cust.iloc[-1] / cust.iloc[-14] - 1) * 100 if len(cust) >= 14 else None
+    fedt = F("TREAST").dropna()
+    fed_chg = (fedt.iloc[-1] - fedt.iloc[-14]) / 1000 if len(fedt) >= 14 else None   # $ billions over ~13 weeks
+    curve = curve_regime(y2, y10)
+    out.append({"key": "treasury", "zh": "美債供需與定價", "curve": curve,
+                **_st(_sgn(real, 0.10), _sgn(tp, 0.15), (1 if curve == "熊市變陡" else -1 if curve == "牛市變平" else 0 if curve else None),
+                      _sgn(cust_chg, 2.0, worse_if_up=False)),
+                "facts": [f for f in ((f"10 年期 1 個月 {y10 * 100:+.0f} 個基點＝實質利率 {real * 100:+.0f}＋通膨預期 {be10 * 100:+.0f}"
+                                       if y10 is not None and real is not None and be10 is not None else ""),
+                                      f"期限溢價 1 個月 {tp * 100:+.0f} 個基點" if tp is not None else "",
+                                      f"殖利率曲線：{curve}（2 年 {y2 * 100:+.0f}、10 年 {y10 * 100:+.0f}、30 年 {y30 * 100:+.0f} 個基點）"
+                                      if curve and y30 is not None else "",
+                                      f"外國央行託管美債 13 週 {cust_chg:+.1f}%" if cust_chg is not None else "",
+                                      (f"聯準會持有美債 13 週 {fed_chg * 10:+,.0f} 億美元" if fed_chg is not None else "")) if f]})
+
+    # 3c 市場在押什麼：交易台每天看的跨資產比值（11-28 使用者：「用華爾街的金融視角」）。比值 1 個月的變化，
+    #    往下＝市場在避險或押景氣轉弱。這一欄看的是「價格怎麼定」，和上面的「數據怎麼說」對照，落差就是情報。
+    def ratio(a: str, b: str) -> Optional[float]:
+        sa, sb = M(a).dropna(), M(b).dropna()
+        if sa.empty or sb.empty:
+            return None
+        r = (sa / sb).dropna()
+        return _chg(r, pct=True)
+    cg, sm, cy, ew, bk, em = (ratio("HG=F", "GC=F"), ratio("IWM", "SPY"), ratio("XLY", "XLP"), ratio("RSP", "SPY"),
+                              ratio("KRE", "SPY"), ratio("EEM", "SPY"))
+    btc = _chg(M("BTC-USD"), pct=True)
+    out.append({"key": "pricing", "zh": "市場在押什麼（跨資產）",
+                **_st(_sgn(cg, 4.0, worse_if_up=False), _sgn(sm, 2.0, worse_if_up=False), _sgn(cy, 2.0, worse_if_up=False),
+                      _sgn(bk, 3.0, worse_if_up=False), _sgn(em, 3.0, worse_if_up=False), _sgn(btc, 15.0, worse_if_up=False)),
+                "cg": cg, "cy": cy, "ew": ew,
+                "facts": [f for f in (f"銅金比 1 個月 {cg:+.1f}%（往下＝押景氣轉弱、買避險）" if cg is not None else "",
+                                      f"小型股對大型股 {sm:+.1f}%（往下＝不敢承擔風險）" if sm is not None else "",
+                                      f"非必需消費對必需消費 {cy:+.1f}%（往下＝押消費轉弱）" if cy is not None else "",
+                                      f"等權重對市值加權 {ew:+.1f}%（往上＝漲勢擴散到更多股票）" if ew is not None else "",
+                                      f"區域銀行對大盤 {bk:+.1f}%（往下＝擔心放款與信用）" if bk is not None else "",
+                                      f"新興市場對美股 {em:+.1f}%" if em is not None else "",
+                                      f"比特幣 1 個月 {btc:+.1f}%（常被當成資金鬆緊的溫度計）" if btc is not None else "") if f]})
+
     # 4 金融條件與信用：芝加哥聯準會金融條件指數、高收益債利差、VIX
     nfci = _chg(F("NFCI"), 28)
     hy = _chg(F("BAMLH0A0HYM2"))
@@ -190,6 +233,19 @@ REGIME = {(1, -1): ("停滯性通膨的壓力", "成長轉弱、通膨卻在升�
           (-1, 1): ("金髮女孩", "成長好、通膨降：對股市最友善的組合；要看它能撐多久。")}
 
 
+def curve_regime(d2: Optional[float], d10: Optional[float], band: float = 0.05) -> Optional[str]:
+    """Pure: the classic four curve moves from 1-month changes of the 2- and 10-year yields (percentage points).
+    牛市＝殖利率下跌；變陡＝10 年 − 2 年的差距擴大。熊市變陡（長端漲得多）最常和財政或期限溢價壓力一起出現。"""
+    if d2 is None or d10 is None or (abs(d2) < band and abs(d10) < band):
+        return None if d2 is None or d10 is None else "大致不動"
+    steep = (d10 - d2) > 0
+    if d2 < 0 and d10 < 0:
+        return "牛市變陡" if steep else "牛市變平"
+    if d2 > 0 and d10 > 0:
+        return "熊市變陡" if steep else "熊市變平"
+    return "變陡（短降長升）" if steep else "變平（短升長降）"
+
+
 def regime(ps: List[Dict]) -> Optional[Dict]:
     """Pure: growth state × inflation state → one of four regimes (needs both to have a direction)."""
     g = next((p["state"] for p in ps if p["key"] == "growth"), None)
@@ -218,6 +274,20 @@ def conflicts(ps: List[Dict]) -> List[str]:
         # 11-28: claims, retail and yields fine, while SOX −21%, TAIEX −16%, copper −17% and HY spreads +59 bp
         out.insert(0, "經濟數據大致還好，但股市、AI 股、原物料或信用一起轉壞：要嘛市場在提前反應經濟轉弱（之後要看就業和消費會不會跟著變差），"
                       "要嘛是估值太高的修正、不是景氣問題。這兩種的後續很不一樣，接下來的就業與消費數據是分辨的關鍵。")
+    pr = next((p for p in ps if p["key"] == "pricing"), {})
+    if s.get("growth") == -1 and pr.get("cg") is not None and pr["cg"] <= -4 and (pr.get("cy") or 0) <= -2:
+        out.append("數據說景氣還好，但價格在押景氣轉弱（銅金比和消費類股的相對表現都在往下）：通常市場比數據早 1～3 個月，"
+                   "如果接下來的就業與消費數據沒有跟著轉弱，這波就是虛驚；跟著轉弱，市場就是對的。")
+    if s.get("ai") == 1 and (pr.get("ew") or 0) >= 2:
+        out.append("AI 股在跌，但等權重指數比市值加權強：錢從少數大型科技股流向其他股票，比較像輪動，不是全面撤退。")
+    tr = next((p for p in ps if p["key"] == "treasury"), {})
+    facts = " ".join(tr.get("facts") or [])
+    import re as _re
+    m = _re.search(r"實質利率 ([+-]\d+)＋通膨預期 ([+-]\d+)", facts)
+    if m and int(m.group(1)) >= 5 and int(m.group(2)) < 0:
+        out.append("名目殖利率在降，但扣掉通膨後的實質利率在升：看起來借錢變便宜，其實真實成本變貴，對高估值成長股和黃金是壓力。")
+    if s.get("dollar") == 1 and "外國央行託管美債 13 週 -" in facts:
+        out.append("美元轉強，同時外國央行在減持美債：常見的情況是亞洲央行賣美債換現金來穩住本國貨幣；若持續，長天期美債少了一個買家。")
     if s.get("liquidity") == 1 and s.get("credit") == -1:
         out.append("市場上的錢在變少，但信用市場還很平靜：流動性通常比信用利差早反應。")
     return out

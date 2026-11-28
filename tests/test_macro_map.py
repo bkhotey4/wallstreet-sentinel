@@ -29,3 +29,18 @@ if __name__ == "__main__":
     test_macro_vs_market_conflict()
     test_score_core_counts_twice()
     print("ok macro map")
+
+
+def test_curve_regime_and_real_rate_conflict():
+    """11-28 (「你有思考過美債嗎」): 10y −15 bp was breakevens −23 and real +7; foreign official holdings fell as the dollar rose."""
+    assert M.curve_regime(-0.07, -0.15) == "牛市變平" and M.curve_regime(0.05, 0.20) == "熊市變陡"
+    assert M.curve_regime(-0.20, -0.05) == "牛市變陡" and M.curve_regime(0.01, -0.02) == "大致不動"
+    ps = P(dollar=1) + [{"key": "treasury", "zh": "美債", "state": 0, "facts": [
+        "10 年期 1 個月 -15 個基點＝實質利率 +7＋通膨預期 -23", "外國央行託管美債 13 週 -2.7%"]}]
+    c = M.conflicts(ps)
+    assert any(x.startswith("名目殖利率在降") for x in c) and any(x.startswith("美元轉強，同時外國央行在減持美債") for x in c)
+
+
+if __name__ == "__main__":
+    test_curve_regime_and_real_rate_conflict()
+    print("ok treasury pillar")

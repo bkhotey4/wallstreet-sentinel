@@ -236,6 +236,8 @@ real_economy:
 fred_series:
   # 11-28 總經缺口盤點：成長（領先）、通膨（預期與薪資）、流動性、家庭 —— 餵進「總經全貌」九個面向
   PERMIT: 建築許可（房市領先）
+  TREAST: 聯準會持有美國公債
+  WMTSECL1: 外國央行託管美債（紐約聯準會）
   ANDENO: 核心資本財訂單（企業投資）
   GACDFSA066MSFRBPHI: 費城聯準會製造業指數
   MICH: 密大一年通膨預期
