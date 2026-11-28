@@ -144,6 +144,30 @@ def _tax_loss(eng) -> List[Dict]:
     return sorted(out, key=lambda r: r["ytd"])
 
 
+def buyback_window(today: date) -> str:
+    """Pure: where we are in the usual corporate buyback blackout cycle (rule of thumb, not company data).
+    11-28 Wall Street checklist: buybacks are the largest net buyer of US stocks; most companies stop buying about two
+    weeks before quarter-end and resume a day or two after their earnings release (about 3–6 weeks after quarter-end)."""
+    q_end = date(today.year, ((today.month - 1) // 3 + 1) * 3, 1)
+    q_end = (q_end.replace(day=28) + timedelta(days=4))
+    q_end = q_end - timedelta(days=q_end.day)                      # last day of this quarter
+    start = q_end - timedelta(days=14)
+    prev_end = date(today.year, ((today.month - 1) // 3) * 3, 1) if today.month > 3 else date(today.year - 1, 12, 31)
+    if today.month > 3:
+        prev_end = (prev_end.replace(day=28) + timedelta(days=4))
+        prev_end = prev_end - timedelta(days=prev_end.day)
+    reopen = prev_end + timedelta(days=45)
+    if today <= reopen:
+        return (f"企業買回空窗期：上一季（{prev_end.month} 月底結束）的財報還在陸續公布，很多公司要等自己的財報公布後才能恢復買回自家股票，"
+                f"大約到 {_md(reopen.isoformat())} 前後大部分恢復。買回是美股最大的買家之一，空窗期少了這股買盤，跌時比較沒有人接（經驗法則，不是公司資料）。")
+    if today >= start:
+        return (f"企業買回空窗期：多數公司在季底（{_md(q_end.isoformat())}）前約兩週停止買回自家股票，直到財報公布後才恢復，"
+                f"現在已進入這段期間，美股少了最大的買家之一，跌時比較沒有人接（經驗法則，不是公司資料）。")
+    return (f"企業買回空窗期：現在多數公司可以買回自家股票（上一季財報已公布完）；約從 {_md(start.isoformat())} 起，"
+            f"多數公司會在季底前停止買回，直到 1 月下旬到 2 月初財報公布後才恢復（經驗法則，不是公司資料）。" if q_end.month == 12 else
+            f"企業買回空窗期：現在多數公司可以買回自家股票；約從 {_md(start.isoformat())} 起，多數公司會在季底前停止買回（經驗法則，不是公司資料）。")
+
+
 def sec_rebalance(eng) -> str:
     try:
         v = _view()
@@ -165,6 +189,9 @@ def sec_rebalance(eng) -> str:
         parts.append("年底節稅賣壓：美國投資人常在 12 月賣掉今年虧損的股票來抵稅（30 天內不能買回同一檔，否則不能抵）。"
                      f"追蹤的股票裡今年跌最多的：{'、'.join(esc(r['zh']) + ' ' + _pc(r['ytd'], 0) for r in losers)}。"
                      "台灣人買美股不用繳美國的資本利得稅，所以這是「別人」的賣壓，不是你要跟著做的事。")
+    bb = buyback_window(today)
+    if bb:
+        parts.append(bb)
     if not parts:
         return ""
     note = ("退休基金的股票與總資產來自聯準會金融帳（Z.1，FRED：退休基金持有的公司股票市值、金融資產總額"
