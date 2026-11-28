@@ -881,7 +881,7 @@ def stamp(eng, fname: str, tab: str, now: Optional[float] = None) -> str:
     d = max(dates) if dates else None
     when = datetime.fromtimestamp(ts, TPE).strftime("%m-%d %H:%M") if ts else None
     # a date-only source never claims "最後更新" (it may be a partial pass) — it says the time is not given (11-17)
-    parts = ([f'{T("最後更新", "Updated")} {when}'] if when else []) + ([f'{T("資料日", "data")} {esc(d[5:])}'] if d else [])         + ([T("（來源沒標更新時間）", " (no update time given)")] if d and not when else [])
+    parts = ([f'{T("最後更新", "Updated")} {when}'] if when else []) + ([f'{T("資料日", "data")} {esc(d[5:])}'] if d else [])         + ([T("（來源只標日期）", " (date only)")] if d and not when else [])
     txt = "🕒 " + "・".join(parts)
     if fname in DETAIL and tips:
         txt += f'<span class="updd">{T("（各來源最後檢查：" + "；".join(tips) + "）", "")}</span>'
