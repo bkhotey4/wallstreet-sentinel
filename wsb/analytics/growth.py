@@ -209,7 +209,7 @@ def score_us(rows: List[Dict], min_rev: float, min_g: float, cap_g: float = 100.
 
 US_COLS = ["rank", "sym", "name", "ind", "sub", "mcap", "per", "ttm", "g", "q_yoy", "accel", "gm", "om", "r40", "ps", "psg", "pe", "gav", "basis", "score", "st", "tech", "src", "small", "odd", "ma", "cash", "burn", "runway", "flag", "burn_basis",
            "gm_chg", "om_chg", "ar_yoy", "inv_yoy", "capex_pct", "tags", "read"]
-TW_COLS = ["rank", "code", "name", "ind", "board", "ym", "rev", "cum_yoy", "yoy", "streak", "pe", "pb", "dy", "peg", "score", "st", "cur"]
+TW_COLS = ["rank", "code", "name", "ind", "board", "ym", "rev", "cum_yoy", "yoy", "streak", "pe", "pb", "dy", "peg", "score", "st", "cur", "odd"]
 
 
 def pack(rows: List[Dict], cols: List[str], **extra) -> Dict:
@@ -249,9 +249,18 @@ def tw_rows(ed, tech: Optional[Dict[str, Dict]] = None, cur: Optional[set] = Non
     return out
 
 
-def score_tw(rows: List[Dict], min_g: float, min_rev_100m: float = 1.0) -> List[Dict]:
-    elig = {r["code"]: r for r in rows if (r["cum_yoy"] or -1) >= min_g and r.get("peg") is not None and r["rev"] >= min_rev_100m}
-    g = _rank({s: r["cum_yoy"] for s, r in elig.items()})
+def score_tw(rows: List[Dict], min_g: float, min_rev_100m: float = 1.0, cap_g: float = 100.0) -> List[Dict]:
+    # 11-28: 富旺 ranked 1st on revenue +36,182% (a builder booking a whole project): a growth % on a tiny base, or above
+    # 300%, is flagged and left unranked; growth counts at most cap_g% in the rank and in PEG (same rule as the US screen)
+    for r in rows:
+        g0 = r.get("cum_yoy")
+        base = r["rev"] / (1 + g0 / 100) if g0 is not None and g0 > -100 else None
+        r["odd"] = (g0 or 0) > 300 or (base is not None and base < min_rev_100m / 2)
+        if r.get("pe") and r["pe"] > 0 and g0 and g0 > 0:
+            r["peg"] = r["pe"] / min(g0, cap_g)
+    elig = {r["code"]: r for r in rows if (r["cum_yoy"] or -1) >= min_g and r.get("peg") is not None and r["rev"] >= min_rev_100m
+            and not r.get("odd")}
+    g = _rank({s: min(r["cum_yoy"], cap_g) for s, r in elig.items()})
     v = _rank({s: r["peg"] for s, r in elig.items()}, invert=True)
     m = _rank({s: r.get("yoy") for s, r in elig.items()})
     pb = _rank({s: r.get("pb") for s, r in elig.items()}, invert=True)

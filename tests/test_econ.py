@@ -622,3 +622,20 @@ def test_bot(eng):
 
 if __name__ == "__main__":
     main()
+
+
+def test_growth_tiny_base_unranked():
+    """11-28: 富旺 (revenue +36,182%, a builder booking a whole project) ranked 1st; Nurix (+8,426% one-off) ranked 2nd."""
+    from wsb.analytics import growth as G
+    mk = lambda c, g, rev, pe: {"code": c, "name": c, "ind": "x", "board": "上市", "ym": "2026-10", "rev": rev, "cum_yoy": g,  # noqa: E731
+                                "yoy": g, "streak": 3, "pe": pe, "pb": 2.0, "dy": 1.0, "peg": pe / g, "st": None, "cur": False}
+    rows = G.score_tw([mk("6219", 36182.0, 3.2, 20.0), mk("2330", 40.0, 3000.0, 25.0)]
+                      + [mk(str(1000 + i), 20.0 + 5 * i, 100.0 + i, 15.0 + i) for i in range(8)], 15.0)   # enough names to rank
+    by = {r["code"]: r for r in rows}
+    assert by["6219"]["odd"] and by["6219"]["score"] is None and by["2330"]["score"] is not None
+    assert abs(by["2330"]["peg"] - 25.0 / 40.0) < 1e-9
+
+
+if __name__ == "__main__":
+    test_growth_tiny_base_unranked()
+    print("ok growth tiny base")

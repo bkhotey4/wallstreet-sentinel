@@ -499,6 +499,16 @@ class MarketData:
             if str(qt.get("asof", ""))[:10] < last_d:
                 last, prev = float(s.iloc[-1]), float(s.iloc[-2])
                 qt = {**qt, "price": last, "prev": prev, "chg_pct": (last / prev - 1) * 100, "asof": last_d, "src": "history"}
+            elif str(qt.get("asof", ""))[:10] == last_d:     # only when the history reaches the quote's day (else it may be older)
+                # 11-28 audit P1-1: the round's download can miss a bar (^N225 had no 11-25 row), so its "previous" close is two
+                # sessions back and the strip showed −1.42% while the macro dashboard (history) showed +1.4%.  Measure the change
+                # against the history's last close before the quote's own day, so the strip and the dashboard describe one move.
+                asof = pd.Timestamp(str(qt.get("asof", ""))[:10]) if qt.get("asof") else None
+                before = s[s.index < asof] if asof is not None else s.iloc[0:0]
+                if len(before) and qt.get("price") is not None:
+                    prev = float(before.iloc[-1])
+                    if prev and prev != qt.get("prev"):
+                        qt = {**qt, "prev": prev, "chg_pct": (float(qt["price"]) / prev - 1) * 100, "prev_from": "history"}
         peer = ROLL.PEERS.get(ticker)
         if peer and qt.get("asof"):
             pq = self.quotes.get(peer) or {}

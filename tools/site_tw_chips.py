@@ -230,7 +230,7 @@ def sec_tw_squeeze(eng=None) -> str:
           '<th class="r">市值（億元）</th><th class="r">比前一天（張）</th></tr>')
     tr = [f'<tr><td>{i}</td><td>{esc(r["name"])}（{esc(r["code"])}）</td><td class="r">{r["bal"] / 1000:,.0f}</td>'
           f'<td class="r">{r["pct"]:.2f}%{" ⚠️" if r["pct"] >= 9.5 else ""}</td><td class="r"><b>{r["dtc"]:.1f}</b></td>'
-          f'<td class="r">{r["value"]:,.1f}</td><td class="r">{r["chg"] / 1000:+,.0f}</td></tr>' for i, r in enumerate(by_dtc, 1)]
+          f'<td class="r">{r["value"]:,.1f}</td><td class="r">{"—" if r["chg"] is None else format(r["chg"] / 1000, "+,.0f")}</td></tr>' for i, r in enumerate(by_dtc, 1)]
     body = (f'<p class="rimp"><b>一句話看懂：{esc(lead)}。</b></p>'
             '<p class="small">借券放空是先借別人的股票來賣、之後買回來還。出借的人（多半是壽險、投信、外資）把股票召回時，放空的人就得在市場上買回——'
             '「回補天數」＝借券放空餘額 ÷ 最近一天的成交量，數字越大，代表要買回時越難不推高價格（軋空）。'

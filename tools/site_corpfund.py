@@ -75,6 +75,12 @@ def sec_maturity_wall(eng) -> str:
     if tight:
         lead += f"手上現金加一年自由現金流還不夠還明年到期本金、得靠再借錢的有 {len(tight)} 家：{'、'.join(esc(r['zh']) for r in tight[:6])}。"
     t10 = (CF.load().get("yields") or {}).get("t10")
+    try:                                   # 11-28: the engine's DGS10 has Treasury's newer days filled in (FRED lags 1–2 days);
+        lt = eng.fred.latest("DGS10")      # this card showed 4.85% (11-25) while the rates card showed 4.94% (11-27)
+        if lt and (not t10 or lt["date"] > t10[0]):
+            t10 = [lt["date"], lt["value"] / 100]
+    except Exception:  # noqa: BLE001
+        pass
     mx = max(tot.values()) or 1.0
     bars = "".join(f'<div class="hb"><span class="hbl">{lbl}</span><span class="hbb" style="width:{max(2, tot[k] / mx * 100):.0f}%"></span>'
                    f'<span class="hbv">{_b(tot[k])}</span></div>' for k, lbl in CF.BUCKETS)

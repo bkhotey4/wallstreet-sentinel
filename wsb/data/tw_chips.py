@@ -309,7 +309,10 @@ def single_quarter(snaps: Dict, code: str, year: str, q: int) -> Optional[Dict]:
     prev = (snaps.get(f"{year}Q{q - 1}") or {}).get(code)
     if not prev:
         return None
-    return {k: (cur[k] - prev[k]) if isinstance(cur.get(k), float) and isinstance(prev.get(k), float) else cur.get(k) for k in cur}
+    # 11-28 audit P2-9: a figure missing from the earlier quarter must stay unknown, not fall back to the cumulative number
+    # (Q2 營業利益 blank → Q3's nine-month 營業利益 was used as one quarter: margin 15% instead of 5%, labelled 改善中).
+    return {k: ((cur[k] - prev[k]) if isinstance(prev.get(k), float) else None) if isinstance(cur.get(k), float) else cur.get(k)
+            for k in cur}
 
 
 def _apply_seed(d: Dict, day: Optional[Dict]) -> None:
@@ -554,12 +557,12 @@ def squeeze_view(twt93u: Dict, day_all: List[Dict], basic: List[Dict], min_bal: 
     for r in (twt93u or {}).get("data") or []:
         if len(r) < 13 or not re.fullmatch(r"\d{4}", str(r[0]).strip()):
             continue
-        code, bal, prev = str(r[0]).strip(), _n(r[12]) or 0.0, _n(r[8]) or 0.0
+        code, bal, prev = str(r[0]).strip(), _n(r[12]) or 0.0, _n(r[8])     # 11-28 P3-21: unread 前日餘額 → change unknown, not +all
         sh = shares.get(code)
         if bal < min_bal or not sh:
             continue
         v, px = vol.get(code, (None, None))
-        rows.append({"code": code, "name": str(r[1]).strip(), "bal": bal, "chg": bal - prev, "pct": bal / sh * 100,
+        rows.append({"code": code, "name": str(r[1]).strip(), "bal": bal, "chg": bal - prev if prev is not None else None, "pct": bal / sh * 100,
                      "dtc": bal / v if v else None, "value": bal * px / 1e8 if px else None})
     rows.sort(key=lambda x: -x["pct"])
     return {"date": (twt93u or {}).get("date"), "rows": rows}

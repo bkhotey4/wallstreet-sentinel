@@ -1240,3 +1240,17 @@ tax_rules:                    # 法定門檻（不是寫死的資料：法律改
     exempt_twd: 7500000              # 基本所得額 750 萬元以下免納
     rate: 0.20
     source: "https://www.etax.nat.gov.tw/etwmain/alien-tax-service/individual-income-basic-tax/bovNZmM"
+entry_think:                  # 每日總經「想進場前」六個燈號的門檻（11-28 稽核 P3-17 從程式移過來；自己設計的常用警戒線，不是回測過的模型）
+  margin_red: -3.0            # 融資餘額一天減少 3% 以上 → 紅
+  margin_yellow: -1.0
+  vix_line: 25.0
+  vix_near_hi: 0.95           # 接近 20 天內最高 = 最高 × 0.95 以上
+  vix_off_hi: 0.8             # 比 20 天最高少兩成以上 → 綠
+  low_days: 5                 # 幾個交易日沒有再創 20 天新低才算綠
+  credit_red: -3.0            # 高收益債 ETF 20 天跌幅
+  credit_yellow: -1.5
+  move_red: 130.0
+  move_yellow: 110.0
+  move_jump: 10.0             # MOVE 5 天升幅（%）
+  twd_red: 2.0                # 美元兌新台幣 20 天升幅（%），即新台幣貶值
+  twd_yellow: 1.0
