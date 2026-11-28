@@ -173,7 +173,7 @@ def pillars(fred, market, extras: Optional[Dict] = None) -> List[Dict]:
     net = er.get("net")
     out.append({"key": "earnings", "zh": "企業獲利預期",
                 **_st(_sgn(net, 10.0, worse_if_up=False) if net is not None else None),
-                "facts": [f for f in ((f"分析師 30 天內上修 {er['up_pct']:.0f}%、下修 {er['dn_pct']:.0f}% 的公司（{er['n']} 家），{"淨上修" if net >= 0 else "淨下修"} {abs(net):.0f} 個百分點"
+                "facts": [f for f in ((f"分析師 30 天內上修 {er['up_pct']:.0f}%、下修 {er['dn_pct']:.0f}% 的公司（{er['n']} 家），{'淨上修' if net >= 0 else '淨下修'} {abs(net):.0f} 個百分點"
                                        if net is not None else ""),
                                       ({"up": "這週修正速度比過去一個月快（更樂觀）", "down": "這週下修速度加快", "steady": "這週修正速度和過去一個月差不多"}
                                        .get((extras.get("estrev") or {}).get("speed") or "", ""))) if f]})
