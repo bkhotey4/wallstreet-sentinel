@@ -8,6 +8,7 @@ when the data is older than that source normally allows — so a stuck feed is v
 the header.  The page's JS adds "N 分鐘前" from data-ts, so a page opened hours after the build still reads correctly."""
 from __future__ import annotations
 
+import json
 import re
 import time
 from datetime import date, datetime, timedelta
@@ -680,6 +681,70 @@ def _g(eng, *path):
 
 
 # name → (label zh, label en, getter, days the data may lag before it counts as old)
+def _tpe_ts(txt) -> Optional[float]:
+    """'2026-11-28 22:41' (Taipei) → epoch."""
+    m = re.search(r"(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d)", str(txt or ""))
+    return datetime.strptime(m.group(1) + " " + m.group(2), "%Y-%m-%d %H:%M").replace(tzinfo=TPE).timestamp() if m else None
+
+
+def _month_end(ym: str) -> Optional[str]:
+    try:
+        y, mo = int(ym[:4]), int(ym[5:7])
+        return (date(y + mo // 12, mo % 12 + 1, 1) - timedelta(days=1)).isoformat()
+    except (TypeError, ValueError):
+        return None
+
+
+def _twirs() -> Src:
+    """11-29 台股財報頁: 法說會一覽表 fetch time + newest monthly revenue month (month end)."""
+    try:
+        from wsb.data import tw_irs as I
+        from tools import site_tw_earn as STE
+        ms = STE.months()
+        return _tpe_ts(I.refresh().get("fetched")), _month_end(max(ms)) if ms else None
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
+def _twfin() -> Src:
+    """Quarterly results seed (relayed from the PC): fetch time + the newest quarter's end (ROC year)."""
+    try:
+        from wsb.data import tw_chips as C
+        d = json.loads(C.FIN_SEED.read_text(encoding="utf-8")) if C.FIN_SEED.exists() else {}
+        ks = sorted(d.get("snaps") or {}, key=lambda k: (int(k.split("Q")[0]), int(k.split("Q")[1])))
+        if not ks:
+            return _tpe_ts(d.get("fetched")), None
+        y, q = int(ks[-1].split("Q")[0]) + 1911, int(ks[-1].split("Q")[1])
+        return _tpe_ts(d.get("fetched")), _month_end(f"{y}-{q * 3:02d}")
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
+def _twchips() -> Src:
+    """tw_chips cache (pledges are monthly): fetch time + the pledge table's month end."""
+    try:
+        from wsb.data import tw_chips as C
+        d = json.loads(C.FILE.read_text(encoding="utf-8")) if C.FILE.exists() else {}
+        p = d.get("pledge") or []
+        ym = str(p[0].get("ym") or "") if p else ""
+        if re.fullmatch(r"\d{5,6}", ym):                      # ROC 11510 → 2026-10
+            ym = f"{int(ym[:-2]) + 1911}-{ym[-2:]}"
+        return _ts(d.get("ts")), _month_end(ym) if ym else None
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
+def _twafter() -> Src:
+    """Taiwan post-earnings reads: when the feed files were last written + the newest Taiwan item's date."""
+    try:
+        from tools import site_after as SAF
+        tw = [x for x in SAF._items() if x.get("mk") == "tw"]
+        ts = max((f.stat().st_mtime for f in SAF.FILE.parent.glob("earn_after*.json")), default=None)
+        return ts, (max(str(x["date"])[:10] for x in tw) if tw else None)
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "px": ("美股報價", "US quotes", lambda e: (_ts(_g(e, "market", "quotes_ts")), _q(e, "^GSPC")), 4),
     "tw": ("台股報價", "Taiwan quotes", lambda e: (_ts(_g(e, "market", "quotes_ts")), _q(e, "^TWII")), 4),
@@ -773,6 +838,10 @@ SOURCES: Dict[str, Tuple[str, str, Callable[[object], Src], int]] = {
     "twfoi": ("外資台指期部位（FinMind）", "TAIFEX foreign OI", lambda e: (_ts(_twf("ts_check")), _twf_date()), 5),
     "observer": ("獨立 AI 觀察員", "AI observer", lambda e: (_ts(_stab_ts("ai_view")), _obs_date()), 4),
     "cover": ("覆蓋盤點", "Coverage audit", lambda e: (_ts(_stab_ts("coverage")), _cover_date()), 40),
+    "twirs": ("公開資訊觀測站法說會一覽表＋每月營收", "MOPS investor conferences + monthly revenue", lambda e: _twirs(), 45),
+    "twfin": ("公開資訊觀測站季報（綜合損益表，單季由累計數相減）", "MOPS quarterly results", lambda e: _twfin(), 190),   # Q3 stays the newest until the annual report (03-31)
+    "twchips": ("證交所 OpenAPI 董監持股與質押（每月）", "TWSE insider holdings & pledges", lambda e: _twchips(), 75),
+    "twafter": ("每日排程寫的台股財報解讀", "Daily Taiwan earnings reads", lambda e: _twafter(), 10),
     "model": ("模型體檢", "Model check", lambda e: (_ts(_g(e, "_quality_ts")) or _ts(_g(e, "lab", "ts")) or _ts(_g(e, "recompute_ts")), None), 0),
 }
 
@@ -783,6 +852,7 @@ TAB_DEFAULT: Dict[str, List[str]] = {
     "rotation": ["px"], "energy": ["px", "fred"], "crisis": ["ssi"], "valuation": ["fred", "px"], "markets": ["px"], "taiwan": ["tw", "taiwan"],
     "news": ["news"], "history": ["ssi"], "entry": ["px", "ssi"], "gbonds": ["fred"], "jgb": ["fred"], "ebonds": ["fred"], "wbonds": ["fred"], "cbonds": ["fred"],
     "cb_us": ["fred"], "cb_eu": ["fred"], "cb_em": ["fred"], "inputs": ["px", "fred"], "ai": ["px"], "stability": ["funding"],
+    "tw_earn": ["twirs"],
 }
 CARD: Dict[str, List[str]] = {
     "sec_premarket": ["px"], "sec_focus": ["px", "fedwatch", "econ"], "sec_vix_hot": ["px"], "sec_vix_explain": ["px"],
@@ -830,10 +900,17 @@ CARD.update({                               # cards that had fallen back to thei
 })
 
 
+# 11-29: the 台股財報 page's cards fell back to 「說明／工具」 (no tab default), and STCHP.sec_tw_forecast (財測達成) shares its
+# name with the 台灣總經展望 card, so it showed that routine's time.  "tab::fname" wins over the plain name.
+CARD.update({"tw_earn::sec_tw_earn_preview": ["twirs"], "tw_earn::sec_tw_earn_verdict": ["twirs", "twfin", "fullmkt"],
+             "tw_earn::sec_tw_earn_after": ["twafter"], "tw_earn::sec_tw_quarter": ["twfin"], "tw_earn::sec_tw_qall": ["twfin"],
+             "tw_earn::sec_tw_forecast": ["twfin"], "tw_earn::sec_tw_pledge": ["twchips"]})
+
+
 def sources_for(fname: str, tab: str) -> List[str]:
     if fname in NONE or fname in LIVE:
         return []
-    return CARD.get(fname) or TAB_DEFAULT.get(tab, [])
+    return CARD.get(f"{tab}::{fname}") or CARD.get(fname) or TAB_DEFAULT.get(tab, [])
 
 
 def system_stamp(now: float) -> str:
