@@ -57,7 +57,9 @@ THREADS = [
       "Chinese economy", "China's economy", "yuan",
       # 11-27: 0 items in 7 days while 「China’s $1 Trillion Trade Surplus」「China’s $1.7 Trillion AI Rout」 ran (curly apostrophes, markets words)
       "China's", "China’s", "Chinese stocks", "China stocks", "A-shares", "trade surplus", "renminbi",
-      "中國經濟", "陸股", "人民幣", "中國出口", "陸港股", "港股", "恆生", "恒生"],
+      "中國經濟", "陸股", "人民幣", "中國出口", "陸港股", "港股", "恆生", "恒生",
+      # 11-28: the State Council's 11/27 midday market-support statement (state funds, Central Huijin) moved HK chip stocks
+      "State Council", "national team", "Central Huijin", "國務院", "國家隊", "中央匯金"],
      [("^HSI", "恆生指數"), ("CNY=X", "美元兌人民幣"), ("HG=F", "銅")],
      "中國景氣與政策，牽動香港股市、原物料與台灣的對中出口。"),
     # 11-21 self-review (user: 「我希望你可以自己思考哪裡有漏，你可以直接新增」): four threads a Taiwan / AI-chain reader needs

@@ -95,6 +95,7 @@ from tools import site_respress as SRP
 from tools import site_memspot as SMS
 from tools import site_freight as SFRT
 from tools import site_tw_qall as STQA
+from tools import site_ai_projects as SAIP
 from tools import site_fiscal as SFI
 from tools import site_forced as SFO
 from tools import site_korea as SKO
@@ -1428,7 +1429,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("news", "新聞日曆", "News & calendar", [SEB.sec_event_board, SDT.sec_dots, STHR.sec_threads, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
-            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
+            ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SAIP.sec_ai_projects, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
             ("stability", "金融穩定監測", "Financial stability", [SST.sec_st_brief, SST.sec_st_refunding, SST.sec_st_funding, SST.sec_st_basis, SST.sec_st_ldi, SST.sec_st_fsr, SST.sec_st_sloos, SST.sec_st_ai, STR.sec_tr_fsi, STR.sec_tr_custody, STR.sec_tr_dollar, STR.sec_tr_yen, SST.sec_st_coverage]),
             ("tools", "工具", "Tools", [SLV.sec_lookup, SPTK.sec_tracker, SLV.sec_watch, SCA.sec_sizing, S4.sec_fees]),
             ("inputs", "指標明細", "All inputs", [sec_indicators]),

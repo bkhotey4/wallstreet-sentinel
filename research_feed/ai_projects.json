@@ -1,0 +1,23 @@
+{
+ "updated": "2026-11-28 20:10 台北（Claude，依公司官方原文）",
+ "items": [
+  {
+   "date": "2026-08-17",
+   "name": "PORTS-Pike（俄亥俄州派克郡）",
+   "who": "OpenAI（承租）、SB Energy（興建、擁有、營運）、NVIDIA（投資 SB Energy 15 億美元並提供信用支持）、美國能源部（提供已整治的前樸茨茅斯氣體擴散廠土地）",
+   "gw": 8.0,
+   "first": "2028 年首批 800 MW（大部分用 AEP 既有電網）",
+   "phase": "首期 4.25 GW 由 NVIDIA 的投資與信用支持；之後擴建需要新電廠（含天然氣）與新輸電線",
+   "power": "先用 AEP 既有電網，擴建要新建天然氣等電廠",
+   "terms": "SB Energy 興建並出租給 OpenAI 20 年；OpenAI 說容量完工才開始付錢；只放 NVIDIA 的 AI 運算設備",
+   "conditions": "要等基礎設施、許可、環評與融資到位",
+   "tw": "推論（公告沒有提台灣）：只放 NVIDIA 設備，NVIDIA 的 GPU 由台積電代工，AI 伺服器與機櫃組裝多在台灣廠商（鴻海、廣達、緯穎等），電源與散熱也有台廠；但首批要到 2028 年才上線，對近期訂單影響小。",
+   "src": [
+    {
+     "name": "OpenAI 官方公告（2026-08-17）",
+     "url": "https://openai.com/index/openai-joins-ports-pike-project/"
+    }
+   ]
+  }
+ ]
+}

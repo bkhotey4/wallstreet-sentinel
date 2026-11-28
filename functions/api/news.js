@@ -47,6 +47,11 @@ const FEEDS = [
   { s: "工商時報", o: "ctee", u: "https://www.ctee.com.tw/rss_web/livenews/ctee", lang: "zh", biz: true },
   { s: "Yahoo 個股新聞", o: "yahoo", u: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=NVDA,TSM,AVGO,AMD,MU,ASML,KLAC,LRCX,AMAT,MSFT,GOOGL,AMZN,META,AAPL,ORCL,TSLA,CRWV,SPCX&region=US&lang=en-US", lang: "en", biz: true },
   { s: "Seeking Alpha 快訊", o: "sa", u: "https://seekingalpha.com/market_currents.xml", lang: "en", biz: true },
+  // added 2026-11-28 (blind-spot review): on 11/27 China's State Council put out a rare midday statement on market support (state
+  // funds, Central Huijin); China's chip index had its biggest one-day gain on record and SMIC / Hua Hong / HKEX jumped in Hong Kong,
+  // but no feed here is a Hong Kong or mainland newsroom and nothing reached the page or Discord.  Xinhua's English RSS is dead
+  // (last item 2017) and gov.cn has no feed, so SCMP Business (it ran the statement at 06:56 UTC) is the Hong Kong / China desk.
+  { s: "南華早報財經", o: "scmp", u: "https://www.scmp.com/rss/92/feed/", lang: "en", biz: true },
   { s: "24/7 Wall St.", o: "247", u: "https://247wallst.com/feed/", lang: "en", only: ["科技", "台股", "分析師"] },   // mostly personal-finance pieces: chips, Taiwan and analyst notes only
 ];
 // tag → keywords.  Chinese: substring; English: whole word, any case.  A headline can carry several tags.
@@ -73,6 +78,9 @@ export const TAGS = [
               "Entity List", "Huawei", "SMIC", "Chinese AI", "Chinese models", "Chinese chip", "Chinese chips", "China AI", "China chip",
               "China chips", "chip curbs", "chip export", "chip exports", "AI chips to China", "tech war", "decoupling", "CCP", "PRC",
               "中共", "美中"]],   // not bare "China": too much noise
+  // 11-28: Beijing's market-support statements move Hong Kong and mainland stocks (and Taiwan's China-exposed names) the same day
+  ["陸港股", ["港股", "陸股", "恆生", "恒生", "國務院", "國家隊", "中央匯金", "滬深", "Hang Seng", "Hong Kong stocks", "China stocks",
+             "Chinese stocks", "State Council", "CSI 300", "national team", "Central Huijin", "STAR Market", "Shanghai Composite"]],
   ["分析師", ["調降評等", "調升評等", "price target", "downgrade", "downgrades", "downgraded", "upgrade", "upgrades", "upgraded"]],
   ["人事", ["辭職", "辭任", "下台", "接任", "執行長", "resigns", "steps down", "CEO"]],
   ["就業物價", ["通膨", "物價", "CPI", "就業", "非農", "失業", "inflation", "jobs", "payrolls", "unemployment"]],

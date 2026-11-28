@@ -318,7 +318,8 @@
   "industry::研究機構最新報告（TrendForce／SIA）": "28-10",
   "industry::記憶體現貨價（DRAMeXchange）": "28-11",
   "industry::貨櫃運價 SCFI × 航運股": "28-12",
-  "tw_earn::全部上市櫃第 # 季財報速讀（程式計算）": "52-07"
+  "tw_earn::全部上市櫃第 # 季財報速讀（程式計算）": "52-07",
+  "tw_ai::台灣每月分析筆記（AI 自動整理）": "39-04"
  },
  "discord": {
   "commands": {

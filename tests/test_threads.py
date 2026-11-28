@@ -74,6 +74,9 @@ def test_china_econ_catches_market_headlines():
     assert "uscn_tech" in T.match("The Alice Huang Associate Accused of Funneling Nvidia Chips to China")
     assert "uscn_tech" in T.match("雙黃間諜與晶片走私醜聞延燒")
     assert "uscn_tech" not in T.match("Police arrest migrant smuggling ring")
+    # 11-28: the State Council's midday market-support statement
+    assert "china_econ" in T.match("Beijing's State Council pledges national team support for equities")
+    assert "china_econ" in T.match("國務院：發揮中央匯金類平準基金作用")
 
 
 if __name__ == "__main__":

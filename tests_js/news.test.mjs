@@ -58,6 +58,10 @@ assert.ok(!x13[1].alert && x13[1].item === "13D/A" && x13[1].t.includes("SOMEONE
 // tags: one regex per tag behaves like the old keyword list
 assert.deepEqual(tag("Fed said AI chips"), ["利率", "科技"]);
 assert.deepEqual(tag("He said paid"), []);
+// 11-28: the State Council's market-support headline (SCMP, 11/27) must carry the China / Hong Kong equities tag
+assert.ok(tag("China’s State Council says it is considering more measures to bolster flagging stocks").includes("陸港股"));
+assert.ok(tag("國務院穩股市 國家隊進場").includes("陸港股"));
+assert.ok(!tag("Council says it will meet").includes("陸港股"));
 // a business desk keeps untagged headlines for counting only; a general feed drops them
 const rss = (t) => `<rss><item><title>${t}</title><link>https://x.test/a</link><pubDate>Thu, 12 Nov 2026 14:00:00 GMT</pubDate></item></rss>`;
 assert.equal(parse(rss("Boeing names new finance chief"), { s: "A", o: "a", lang: "en" }).length, 0);
