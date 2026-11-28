@@ -97,6 +97,7 @@ from tools import site_freight as SFRT
 from tools import site_tw_qall as STQA
 from tools import site_ai_projects as SAIP
 from tools import site_macro_map as SMM
+from tools import site_policy_cal as SPCL
 from tools import site_fiscal as SFI
 from tools import site_forced as SFO
 from tools import site_korea as SKO
@@ -1427,7 +1428,7 @@ def render(eng, ai_text: str = "", ai_engine: str = "") -> str:
             ("tw_money", "央行與資金", "Central bank & money", [STW.sec_tw_money, STB.sec_tw_bank]),
             ("tw_life", "壽險・房市・外資", "Insurers, housing & foreign money", [STW.sec_tw_life]),
             ("tw_etf", "台灣 ETF", "Taiwan ETFs", [STE.sec_etf_flow, STE.sec_etf_table, STEP.sec_etf_rank, STE.sec_etf_div, STEP.sec_etf_payout, STEP.sec_etf_rate, STEP.sec_etf_lev, STEP.sec_etf_active, STE.sec_etf_all, STE.sec_etf_tool]),
-            ("news", "新聞日曆", "News & calendar", [SEB.sec_event_board, SDT.sec_dots, STHR.sec_threads, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SRU.sec_rulings, sec_calendar, sec_news]),
+            ("news", "新聞日曆", "News & calendar", [SEB.sec_event_board, SDT.sec_dots, STHR.sec_threads, SGM.sec_gemini, SQ.sec_news_digest, SFR.sec_fed_register, SPCL.sec_policy_calendar, SRU.sec_rulings, sec_calendar, sec_news]),
             ("history", "時光機", "Time machine", [S2.sec_timemachine]),
             ("research", "學術研究", "Research", [SRS.sec_research_now, SRS.sec_research_feed, SRS.sec_research_points, SRS.sec_research_bonds]),
             ("ai", "AI 視角看風險", "AI view of risk", [SAI.sec_ai_brief, SOB.sec_ai_observer, SAI.sec_ai_score, SAI.sec_ai_bubble, SCH.sec_ai_chain, SAIP.sec_ai_projects, SCX.sec_ai_capex, SAI.sec_ai_elephant, SAI.sec_ai_heat, SAI.sec_ai_turb, SAI.sec_ai_flock, SAI.sec_ai_quake, SAI.sec_ai_analog, SAI.sec_ai_cross, SAI.sec_ai_intro]),
@@ -2067,8 +2068,10 @@ async def build(out: Path, use_ai: bool = True, engine=None, snapdir: Optional[P
             log.exception("macro_dash.json failed")
         try:                                       # 總經全貌（九個面向、階段、矛盾）給口播與預判引用，2026-11-28
             from tools import site_macro_map as SMMJ
-            if SMMJ.LAST:
-                (out / "macro_map.json").write_text(json.dumps(SMMJ.LAST, ensure_ascii=False), encoding="utf-8")
+            if not SMMJ.LAST:                      # 11-28: this step runs before the pages are rendered
+                from wsb.analytics import macro_map as MMJ
+                SMMJ.LAST.update(MMJ.build(eng.fred, eng.market))
+            (out / "macro_map.json").write_text(json.dumps(SMMJ.LAST, ensure_ascii=False), encoding="utf-8")
         except Exception:  # noqa: BLE001
             log.exception("macro_map.json failed")
         try:                                       # 各國危機雷達：燈號、原因與警報清單（給推播程式和口播用）

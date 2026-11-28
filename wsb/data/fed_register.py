@@ -30,7 +30,9 @@ API = "https://www.federalregister.gov/api/v1/documents.json"
 PAGE = "https://www.federalregister.gov/"
 DAYS = 45
 FIELDS = ("title", "abstract", "publication_date", "signing_date", "type", "subtype", "html_url", "agencies",
-          "executive_order_number", "document_number")
+          "executive_order_number", "document_number",
+          # 11-28 gap review (the 301 miss): the forward timeline — comment deadlines, hearings, effective dates
+          "comments_close_on", "effective_on", "dates")
 QUERIES = (
     ("pres", {"conditions[type][]": "PRESDOCU"}),
     ("bis", {"conditions[agencies][]": "industry-and-security-bureau"}),
@@ -89,7 +91,35 @@ def keep(r: Dict) -> Optional[Dict]:
     ags = [a.get("name") or a.get("raw_name") or "" for a in r.get("agencies") or []]
     return {"id": r.get("document_number"), "title": r.get("title", ""), "date": r.get("publication_date"),
             "signed": r.get("signing_date"), "type": r.get("subtype") or r.get("type"), "eo": r.get("executive_order_number"),
-            "url": r.get("html_url"), "agency": ags[0] if ags else "", "routine": bool(ROUTINE.search(r.get("title", ""))), **t}
+            "url": r.get("html_url"), "agency": ags[0] if ags else "", "routine": bool(ROUTINE.search(r.get("title", ""))),
+            "close": r.get("comments_close_on"), "effective": r.get("effective_on"), "dates": (r.get("dates") or "")[:600], **t}
+
+
+_MON = "January|February|March|April|May|June|July|August|September|October|November|December"
+_DATE = re.compile(rf"({_MON})\s+(\d{{1,2}}),\s+(\d{{4}})")
+
+
+def timeline(doc: Dict, today: date) -> List[Dict]:
+    """Pure: future dated steps of one document — comment deadline, effective date, and every 'Month D, YYYY' in its DATES text
+    with the clause around it (e.g. a public hearing).  One entry per date, the most specific wording kept."""
+    from datetime import datetime as _dt
+    out: Dict[str, str] = {}
+    if doc.get("close"):
+        out[doc["close"]] = "意見徵詢截止"
+    if doc.get("effective"):
+        out[doc["effective"]] = "生效"
+    # "12:01 a.m. eastern time on January 9" — abbreviations must not end the clause (11-28)
+    text = re.sub(r"\b([ap])\.m\.", r"\1m", doc.get("dates") or "", flags=re.I).replace("U.S.", "US")
+    for m in _DATE.finditer(text):
+        try:
+            d = _dt.strptime(f"{m.group(1)} {m.group(2)} {m.group(3)}", "%B %d %Y").date().isoformat()
+        except ValueError:
+            continue
+        a = max(text.rfind(".", 0, m.start()), text.rfind(";", 0, m.start())) + 1
+        b = min([i for i in (text.find(".", m.end()), text.find(";", m.end())) if i >= 0] or [len(text)])
+        clause = text[a:b].strip()
+        out.setdefault(d, clause[:200])
+    return [{"date": d, "what": w} for d, w in sorted(out.items()) if d >= today.isoformat()]
 
 
 async def refresh(force: bool = False) -> Dict:
@@ -97,7 +127,8 @@ async def refresh(force: bool = False) -> Dict:
     d = load()
     now = time.time()
     d["ts_check"] = now
-    if not due(d, ["docs"], TTL, now, force):
+    stale_fields = any("dates" not in x for x in d.get("docs") or [])   # 11-28: cached docs from before the timeline fields
+    if not due(d, ["docs"], TTL, now, force or stale_fields):
         return d
     d["try_each"]["docs"] = now
     since = (date.today() - timedelta(days=DAYS)).isoformat()

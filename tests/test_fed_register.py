@@ -57,3 +57,19 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def test_timeline_future_steps():
+    """11-28 (the 301 miss): comment deadlines, hearings and effective dates from the DATES text, future ones only."""
+    from datetime import date
+    from wsb.data import fed_register as FR
+    doc = {"close": "2026-12-15", "effective": None,
+           "dates": "November 9, 2026: suspended through 11:59 p.m. Eastern Time on January 9, 2027. The hearing will begin January 6, 2027."}
+    t = FR.timeline(doc, date(2026, 11, 28))
+    assert [x["date"] for x in t] == ["2026-12-15", "2027-01-06", "2027-01-09"], t
+    assert t[0]["what"] == "意見徵詢截止" and "hearing" in t[1]["what"] and "pm Eastern" in t[2]["what"]
+
+
+if __name__ == "__main__":
+    test_timeline_future_steps()
+    print("ok timeline")
