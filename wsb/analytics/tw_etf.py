@@ -215,9 +215,19 @@ def headline(r: Dict) -> str:
         big = sorted(((g["flow"], n) for n, g in k.items() if abs(g["flow"]) >= 1), key=lambda x: -abs(x[0]))[:2]
         parts.append(f"{_day_zh(r.get('asof'))}台股 ETF 合計淨{'流入' if r['flow_all'] >= 0 else '流出'} {abs(r['flow_all']):,.0f} 億元"
                      + ("（" + "、".join(f"{n} {f:+,.0f} 億" for f, n in big) + "）" if big else ""))
+        # 11-28 (Gemini READ #47-01): say what a flow does to the stocks inside, not only its size
+        if big and abs(big[0][0]) >= 20:
+            f0, n0 = big[0]
+            parts.append(f"{n0}一天淨{'流出' if f0 < 0 else '流入'} {abs(f0):,.0f} 億，代表投信要{'賣掉' if f0 < 0 else '買入'}這些 ETF 裡的股票"
+                         f"{'換現金，成分股多一筆不看價格的賣壓' if f0 < 0 else '，成分股多一筆不看價格的買盤'}")
     if r.get("n_prem_known"):
-        parts.append(f"{len(r['prem'])} 檔規模 {MIN_AUM:.0f} 億以上的 ETF 市價和淨值差 1% 以上" if r["prem"] else
-                     f"規模 {MIN_AUM:.0f} 億以上的 ETF 市價都貼近淨值（差距小於 1%）")
+        if r["prem"]:
+            top = r["prem"][0]
+            parts.append(f"{len(r['prem'])} 檔規模 {MIN_AUM:.0f} 億以上的 ETF 市價和淨值差 1% 以上"
+                         + (f"，最多的 {top['code']} 市價比淨值貴 {top['prem']:.1f}%：用市價買等於多付這麼多，溢價縮回時就算指數沒跌也會虧"
+                            if top["prem"] >= 2 else ""))
+        else:
+            parts.append(f"規模 {MIN_AUM:.0f} 億以上的 ETF 市價都貼近淨值（差距小於 1%）")
     else:
         parts.append("淨值資料暫缺，折溢價無法判斷")
     if r.get("exdiv"):

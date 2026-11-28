@@ -91,6 +91,9 @@ class FredData:
         try:
             if _cache_file().exists():
                 self._archive = pd.read_pickle(_cache_file())
+                # 11-28: fast builds never call refresh(), so ts stayed 0 and 11 cards said 「來源沒標更新時間」. The archive's
+                # save time is when these numbers were last fetched; a successful refresh() overwrites it.
+                self.ts = _cache_file().stat().st_mtime
         except Exception as e:  # noqa: BLE001
             log.warning("FRED archive unreadable: %s", e)
 
@@ -176,6 +179,7 @@ class FredData:
             HEALTH.ok("fred", ok, every=every)
         else:
             HEALTH.fail("fred", f"unreachable ({last_err}); 建議設定 FRED_API_KEY", every=every)
+
 
     async def fill_treasury(self, today=None) -> Dict[str, list]:
         """FRED posts the Treasury yields (DGS*) a day or two after Treasury itself; cards then said 「官方值查無」 for

@@ -42,6 +42,14 @@ def _sov_card(r, keys=None, title=("各國公債：美國、日本、歐洲、�
     hi = [x["zh"] for x in sv if x["pct"] >= 90]
     lead = (f"一句話看懂：{len(sv)} 個市場中 {len(up)} 個的長債利率比一年前高 0.25 個百分點以上"
             + (f"；{'、'.join(hi)} 在自己歷史的前 10% 高檔" if hi else "") + "。")
+    # 11-28 (Gemini READ #23-01): what it means — borrowing costs everywhere, and which country markets charge extra
+    if len(up) >= max(3, len(sv) * 2 // 3):
+        lead += "各國一起變貴，代表不是單一國家的問題：房貸、企業借錢和股票的估值壓力是全球性的，資金也比較難靠換到別國債市避開。"
+    wide = [x for x in sv if x.get("vs_de") is not None and x["vs_de"] >= 1.0]
+    if wide:
+        w = max(wide, key=lambda x: x["vs_de"])
+        lead += (f"{w['zh']}比德國多 {w['vs_de']:.2f} 個百分點，是市場要求的額外風險補償（通常反映財政或政治疑慮）；"
+                 "這個差距突然擴大時，歐洲銀行與歐元常先受壓。")
     body = (f'<p class="rimp big2"><b>{T(lead, "")}</b></p><div class="scroll"><table class="mini"><thead><tr><th>{T("市場", "Market")}</th>'
             f'<th class="r">{T("10 年期殖利率", "10Y yield")}</th><th class="r">{T("比一年前（百分點）", "1y chg (pp)")}</th>'
             f'<th class="r">{T("歷史百分位", "Pct")}</th><th class="r">{T("比美國", "vs US")}</th><th class="r">{T("比德國", "vs Germany")}</th>'

@@ -125,7 +125,8 @@ def sec_etf_rate(eng) -> str:
     head = (f"一句話看懂：{len(rs)} 檔債券 ETF 中有 {len(clear)} 檔明顯跟著美國 10 年期公債殖利率走"
             + (f"；最敏感的 {long_['code']} {long_['name'][:10]}，殖利率每上升 0.1 個百分點約 {long_['beta10']:+.1f}%" if long_ else "")
             + f"。10 年期殖利率現在 {y0['y_now']:.2f}%" + (f"，一年來 {y0['y_1y']:+.2f} 個百分點" if y0.get("y_1y") is not None else "")
-            + "；殖利率下跌時債券 ETF 漲，上升時跌。")
+            + "；殖利率下跌時債券 ETF 漲，上升時跌。"
+            + _fx_note(clear))
     tr = "".join(
         f'<tr><td>{_nm(x)}</td><td class="r">{num(x.get("aum"), 0)}</td><td class="r">{_yi(x["beta10"], 2, True)}%</td>'
         f'<td class="r">{num(x["dur"], 0)} {T("年", "y")}</td><td class="r">{_yi(x["fxb"], 2, True)}%</td>'
@@ -151,6 +152,18 @@ def sec_etf_rate(eng) -> str:
            "相當於存續期間＝殖利率每變動 1 個百分點的漲跌幅（%），長天期美債約 15～20 年；數字越大，利率變動時漲跌越大。"
            "解釋力＝這兩個因素能解釋多少每週漲跌（低於 30% 或方向不對的列為「關係不明顯」）。這是過去的平均關係，利率大幅變動時不一定成立，也不是對利率的預測。")
     return card("債券 ETF 對利率有多敏感", "How bond ETFs move with US yields", _lead(head) + tab + wb + fb + _how(how, "怎麼算的"), "wide")
+
+
+def _fx_note(rows) -> str:
+    """11-28 (Gemini READ #47-06): most of these hold US Treasuries priced in US dollars — the reader also carries the currency."""
+    fx = sorted(x["fxb"] for x in rows if x.get("fxb") is not None)
+    if len(fx) < 3:
+        return ""
+    med = fx[len(fx) // 2]
+    if med < 0.3:
+        return ""
+    return (f"另外要注意匯率：這些 ETF 多數持有美元計價的美債，美元兌新台幣每升 1%，中位數約 {med:+.1f}%；"
+            "新台幣升值時，就算美債殖利率下跌、債券上漲，換回台幣也可能賠。")
 
 
 # ------------------------------------------------------------------ 4. 槓桿／反向 ETF 的長期耗損
