@@ -225,6 +225,8 @@ async def refresh(force: bool = False) -> Dict:
     now = time.time()
     d["ts_check"] = now
     todo = due(d, ["rss", "cal", "ust2", *REGIONAL], TTL, now, force)
+    if "rss" not in todo and any(s.get("v") != SCORE_V for s in d.get("speeches") or []):
+        todo = list(todo) + ["rss"]          # 11-28: a new SCORE_V re-reads cached speeches now, not after the 6-hour TTL
     bad = []
 
     async def merge(items: List[Dict]) -> None:
