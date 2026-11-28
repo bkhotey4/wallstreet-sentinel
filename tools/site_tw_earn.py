@@ -243,6 +243,117 @@ def sec_tw_earn_preview(eng=None) -> str:
     return card("台股財報前瞻：接下來的法說會與本季營收進度", "Taiwan earnings preview", body, "wide")
 
 
+# ------------------------------------------------------------------ 台股財報結論（11-29，使用者：「台股財報為何不像美股財報的排版跟內容?」）
+def react(px, idx, day: str, n: int = 2) -> Optional[Dict]:
+    """Pure: close the trading day before `day` → close of the n-th trading day from `day` (stock and index, %, and the gap).
+    None until n trading days have passed — never a half-finished reaction."""
+    import pandas as pd
+    px, idx = px.dropna(), idx.dropna()
+    if px.empty or idx.empty:
+        return None
+    t = pd.Timestamp(day)
+    b, a = px[px.index < t], px[px.index >= t]
+    bi, ai = idx[idx.index < t], idx[idx.index >= t]
+    if b.empty or len(a) < n or bi.empty or len(ai) < n:
+        return None
+    s = (float(a.iloc[n - 1]) / float(b.iloc[-1]) - 1) * 100
+    m = (float(ai.iloc[n - 1]) / float(bi.iloc[-1]) - 1) * 100
+    return {"stock": s, "index": m, "excess": s - m}
+
+
+def verdict(acc: Optional[float], gm: Optional[float], gm_prev: Optional[float], yoy: Optional[float]) -> str:
+    """Pure: the fundamentals in a few words, fixed rules (accel ±3 pp as on the preview; margin vs last quarter ±0.5 pp).
+    A fast grower that slows is not 「轉弱」: 雙鴻 at +45% a year slowing from +90% is 「高成長但放慢」."""
+    g = None if gm is None or gm_prev is None else (1 if gm - gm_prev >= 0.5 else -1 if gm - gm_prev <= -0.5 else 0)
+    if yoy is not None and yoy < 0 and (acc is None or acc <= 3):
+        return "轉弱"
+    if acc is not None and acc > 3:
+        return "成長加快" if g != -1 else "分歧"
+    if acc is not None and acc < -3:
+        return "高成長但放慢" if yoy is not None and yoy >= 20 else "放慢"
+    if g == -1:
+        return "毛利下滑"
+    if g == 1:
+        return "毛利改善"
+    return "持平"
+
+
+def sec_tw_earn_verdict(eng=None) -> str:
+    """美股頁的「財報結論」在台股的對應：過去 7 天開過法說會的大公司，一列看完基本面（單季財報＋月營收二階導）和市場反應。"""
+    import pandas as pd
+    try:
+        v = view()
+    except Exception:  # noqa: BLE001
+        return ""
+    rows = list({r["code"]: r for r in sorted(v["past"], key=lambda r: r["date"]) if r["big"]}.values())
+    if not rows:
+        return ""
+    fin = {}
+    try:
+        from wsb.data import tw_chips as C
+        seed = json.loads(C.FIN_SEED.read_text(encoding="utf-8")) if C.FIN_SEED.exists() else {}
+        fv = C.fin_view(seed.get("snaps") or {}, {r["code"] for r in rows})
+        fin, fq = {x["code"]: x for x in fv.get("rows") or []}, fv.get("q")
+    except Exception:  # noqa: BLE001
+        fq = None
+    close = pd.DataFrame()
+    try:
+        from wsb.data import fullmarket as FM
+        close, _v = FM.load_prices("tw")
+    except Exception:  # noqa: BLE001
+        pass
+    sp = getattr(getattr(eng, "stockprices", None), "series", None)
+    idx = eng.market.series("^TWII") if eng is not None and hasattr(eng, "market") else pd.Series(dtype=float)
+
+    def px(code: str):
+        for sym in (code + ".TW", code + ".TWO"):
+            if sym in close.columns and close[sym].notna().sum() > 5:
+                return close[sym]
+            if sp:
+                s = sp(sym)
+                if len(s) > 5:
+                    return s
+        return pd.Series(dtype=float)
+
+    trs, n_v = [], {}
+    mixed = []
+    for r in sorted(rows, key=lambda r: r["date"], reverse=True):
+        f, pg = fin.get(r["code"]) or {}, r.get("prog") or {}
+        is_fin = r["code"].startswith(FIN)
+        vd = "金融股另看" if is_fin else verdict(pg.get("accel"), f.get("gm"), f.get("gm_prev"),
+                                                f.get("rev_yoy") if f.get("rev_yoy") is not None else pg.get("yoy"))
+        n_v[vd] = n_v.get(vd, 0) + 1
+        rc = react(px(r["code"]), idx, r["date"])
+        if rc and ((vd == "成長加快" and rc["excess"] <= -3) or (vd == "轉弱" and rc["excess"] >= 3)):
+            mixed.append(f'{r["name"]}（基本面{vd}、股價比大盤 {rc["excess"]:+.1f}%）')
+        cl = {"成長加快": "up", "毛利改善": "up", "轉弱": "dn", "毛利下滑": "dn", "放慢": "dn"}.get(vd, "")
+        q = ("—" if is_fin or not f else
+             f'營收年增 {_pct(f.get("rev_yoy"))}、比上季 {_pct(f.get("rev_qoq"))}<br><span class="small">毛利率 {f["gm"]:.1f}%'
+             + (f'（上季 {f["gm_prev"]:.1f}%）' if f.get("gm_prev") is not None else "") + "</span>" if f.get("gm") is not None else
+             f'營收年增 {_pct(f.get("rev_yoy"))}')
+        acc = pg.get("accel")
+        m = ("—" if is_fin or not pg else f'{pg["ym"][5:].lstrip("0")} 月年增 {_pct(pg.get("yoy"))}'
+             + ("" if acc is None else "，<b class=\"up\">加速</b>" if acc > 3 else "，<b class=\"dn\">放緩</b>" if acc < -3 else "，持平"))
+        rx = ('<span class="muted">還沒滿兩個交易日</span>' if rc is None else
+              f'<b class="{"up" if rc["stock"] > 0 else "dn" if rc["stock"] < 0 else ""}">{rc["stock"]:+.1f}%</b>'
+              f'<br><span class="small">比大盤 {rc["excess"]:+.1f}%</span>')
+        trs.append(f'<tr><td class="nw">{esc(r["date"][5:].replace("-", "/"))}</td><td><b>{esc(r["name"])}</b> <span class="muted small">{esc(r["code"])}'
+                   f'{"⭐" if r.get("tw50") else ""}</span><br><span class="small muted">{esc(r.get("kind") or "")}</span></td>'
+                   f'<td class="small">{q}</td><td class="small">{m}</td><td class="nw">{rx}</td><td class="nw"><b class="{cl}">{esc(vd)}</b></td></tr>')
+    head = "<tr><th>法說日</th><th>公司</th><th>最新一季（單季）</th><th>月營收（二階導）</th><th>法說後兩日股價</th><th>基本面</th></tr>"
+    lead = (f'過去 {BACK} 天開過法說會的 {len(rows)} 家大公司：' + "、".join(f"{k} {n} 家" for k, n in sorted(n_v.items(), key=lambda x: -x[1]))
+            + (f'；股價和基本面方向相反的有 {len(mixed)} 家（{"、".join(mixed[:3])}）' if mixed else "") + "。")
+    body = (f'<p class="rimp big2"><b>一句話看懂：{esc(lead)}</b></p>'
+            '<p class="small">這張是美股頁「財報結論」的台股版。台股和美股不一樣的地方：沒有免費的分析師共識預估，多數個股也沒有選擇權，'
+            '所以沒有「優於／低於預期」和「事前預期漲跌幅」；改用台股獨有的月營收看成長是加速還是放慢（二階導），配上最新一季的單季財報與毛利率。</p>'
+            + fold_rows(trs, 12, head, "家")
+            + (f'<p class="note">「基本面」規則固定：營收年增轉負＝轉弱；月營收近 3 個月比之前快 3 個百分點以上＝成長加快（毛利率同時比上季掉 0.5 個百分點以上＝分歧）；'
+               f'慢 3 個百分點以上＝放慢，年增仍在 20% 以上寫「高成長但放慢」；營收沒變化時看毛利率比上季改善或下滑。單季財報：公開資訊觀測站{("（" + esc(fq) + "）") if fq else ""}；月營收：公開資訊觀測站每月營收彙總表；'
+               '股價：證交所／櫃買中心收盤價，法說會前一個交易日到之後第二個交易日，「比大盤」是減去加權指數同期漲跌。股價和基本面相反時，'
+               '常見原因是市場早已反映、或法說會的展望（下一季）比已公布的數字更重要。描述資料，不是預測，也不是投資建議。</p>'))
+    return card("台股財報結論（最近 7 天的法說會）", "Taiwan earnings verdicts", body, "wide")
+
+
 def sec_tw_earn_after(eng=None) -> str:
     try:
         from tools import site_after as SAF

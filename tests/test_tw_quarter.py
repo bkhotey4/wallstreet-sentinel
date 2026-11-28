@@ -174,3 +174,22 @@ if __name__ == "__main__":
     test_parse_and_single_quarter()
     test_otc_and_warn()
     print("ok tw quarter")
+
+
+def test_tw_verdict_rules_and_reaction():
+    """11-29 台股財報結論: fixed fundamental words; reaction only after two full trading days, net of the index."""
+    import pandas as pd
+    from tools import site_tw_earn as E
+    assert E.verdict(5, 30, 29, 25) == "成長加快" and E.verdict(5, 28, 29, 25) == "分歧"
+    assert E.verdict(-45, None, None, 45) == "高成長但放慢" and E.verdict(-5, None, None, 8) == "放慢"
+    assert E.verdict(0, None, None, -3) == "轉弱" and E.verdict(0, 30, 31, 5) == "毛利下滑" and E.verdict(None, None, None, None) == "持平"
+    ix = pd.to_datetime(["2026-11-20", "2026-11-23", "2026-11-24", "2026-11-25"])
+    px, idx = pd.Series([100, 104, 110, 108], index=ix), pd.Series([1000, 1010, 1020, 1000], index=ix)
+    r = E.react(px, idx, "2026-11-23")
+    assert round(r["stock"], 1) == 10.0 and round(r["index"], 1) == 2.0 and round(r["excess"], 1) == 8.0
+    assert E.react(px, idx, "2026-11-25") is None
+
+
+if __name__ == "__main__":
+    test_tw_verdict_rules_and_reaction()
+    print("ok tw verdict")
