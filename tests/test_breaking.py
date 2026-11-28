@@ -38,7 +38,7 @@ def test_guards():
     assert not BR.decide(hs, {}, quiet)["fire"]
     assert not BR.decide(hs, {"last_ts": NOW.timestamp() - 3600}, NOW)["fire"]
     assert BR.decide(hs, {"last_ts": NOW.timestamp() - 7 * 3600}, NOW)["fire"]                # 6-hour cooldown
-    assert ("19:30", "20:00") in BR.QUIET and ("03:00", "03:30") in BR.QUIET and len(BR.QUIET) == 8
+    assert ("19:30", "20:00") in BR.QUIET and ("03:00", "03:30") in BR.QUIET and ("21:15", "21:45") in BR.QUIET and len(BR.QUIET) == 9   # 11-28 數據班
     assert BR.decide(hs, {}, datetime(2026, 11, 9, 11, 0, tzinfo=timezone.utc))["fire"]        # 19:00: 30 min rule, not an hour
     d = BR.build(eng({"^GSPC": -6.0}), NOW)
     assert d["fire"] and not BR.build(eng({"^GSPC": -6.0}), NOW)["fire"]   # state saved → cooldown
